@@ -19,11 +19,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const renderIcon = () => {
     switch (buttonIcon) {
       case 'calendar':
-        return <Calendar size={18} />;
+        return <Calendar size={16} className="mr-1" />;
       case 'monitor':
-        return <MonitorPlay size={18} />;
+        return <MonitorPlay size={16} className="mr-1" />;
       case 'info':
-        return <Info size={18} />;
+        return <Info size={16} className="mr-1" />;
       default:
         return null;
     }
@@ -31,26 +31,28 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
   return (
     <div 
-      className="card-indexa group relative h-96 overflow-hidden animate-fade-in transition-all duration-300" 
+      className="card-indexa group relative h-[440px] overflow-hidden rounded-md animate-fade-in transition-all duration-300" 
       style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6)), url(${backgroundImage})`,
+        backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-t from-indexa-purple-dark/80 to-transparent opacity-70 transition-opacity group-hover:opacity-90"></div>
+      <div className="absolute inset-0 bg-black opacity-40 transition-opacity group-hover:opacity-60"></div>
       
       {/* Efeito de desfoque no hover */}
       <div className="absolute inset-0 backdrop-blur-[0px] transition-all duration-500 group-hover:backdrop-blur-[3px]"></div>
       
       <div className="relative h-full flex flex-col justify-between p-6 z-10">
-        <h3 className="text-2xl font-bold text-white">{title}</h3>
+        <h3 className="text-2xl text-white">{title}</h3>
         
         <Button 
-          className="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm text-white border border-white/20 w-full sm:w-auto transition-transform transform group-hover:translate-y-0 translate-y-2"
+          variant="ghost"
+          className="bg-black/50 text-white border-none self-start rounded-full backdrop-blur-sm w-auto transition-transform transform hover:bg-black/60"
+          size="sm"
         >
           {renderIcon()}
-          <span className="ml-2">{buttonText}</span>
+          <span>{buttonText}</span>
         </Button>
       </div>
     </div>

@@ -10,15 +10,14 @@ const Footer = () => {
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Logo e Descrição */}
-          <div className="col-span-1 md:col-span-1">
+          <div className="col-span-1">
             <div className="mb-4">
               <img 
-                src="/lovable-uploads/0b464c46-e1d7-4cde-8f2e-ffded8c109a1.png" 
+                src="/lovable-uploads/f677426c-40b3-4d9c-a90d-29ecfd564e5e.png" 
                 alt="Indexa Logo" 
                 className="h-12 mb-4"
-                style={{ filter: 'brightness(0) invert(1)' }}
               />
-              <p className="text-sm text-gray-300 mt-4">
+              <p className="text-sm text-gray-300 mt-5 pr-8">
                 Transformando ideias em resultados através do marketing digital, produção audiovisual e publicidade inovadora.
               </p>
             </div>
@@ -28,12 +27,12 @@ const Footer = () => {
           <div className="col-span-1">
             <h3 className="text-lg font-medium mb-4">Links Rápidos</h3>
             <ul className="space-y-2">
-              <li><Link to="/" className="text-gray-300 hover:text-white transition-colors">Home</Link></li>
-              <li><Link to="/servicos" className="text-gray-300 hover:text-white transition-colors">Serviços</Link></li>
-              <li><Link to="/portfolio" className="text-gray-300 hover:text-white transition-colors">Portfolio</Link></li>
-              <li><Link to="/blog" className="text-gray-300 hover:text-white transition-colors">Blog</Link></li>
-              <li><Link to="/sobre-nos" className="text-gray-300 hover:text-white transition-colors">Sobre Nós</Link></li>
-              <li><Link to="/contato" className="text-gray-300 hover:text-white transition-colors">Contato</Link></li>
+              <li><Link to="/" className="text-gray-300 text-sm hover:text-white transition-colors">Home</Link></li>
+              <li><Link to="/servicos" className="text-gray-300 text-sm hover:text-white transition-colors">Serviços</Link></li>
+              <li><Link to="/portfolio" className="text-gray-300 text-sm hover:text-white transition-colors">Portfolio</Link></li>
+              <li><Link to="/blog" className="text-gray-300 text-sm hover:text-white transition-colors">Blog</Link></li>
+              <li><Link to="/sobre-nos" className="text-gray-300 text-sm hover:text-white transition-colors">Sobre Nós</Link></li>
+              <li><Link to="/contato" className="text-gray-300 text-sm hover:text-white transition-colors">Contato</Link></li>
             </ul>
           </div>
 
@@ -41,17 +40,19 @@ const Footer = () => {
           <div className="col-span-1">
             <h3 className="text-lg font-medium mb-4">Contato</h3>
             <ul className="space-y-4">
-              <li className="flex items-start">
-                <Phone className="h-5 w-5 mr-3 text-indexa-mint" />
-                <span>(45) 99125-0093</span>
+              <li className="flex items-center">
+                <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                <span className="text-sm">(45) 99125-0093</span>
+              </li>
+              <li className="flex items-center">
+                <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                <span className="text-sm">contato@indexamidia.com</span>
               </li>
               <li className="flex items-start">
-                <Mail className="h-5 w-5 mr-3 text-indexa-mint" />
-                <span>contato@indexamidia.com</span>
-              </li>
-              <li className="flex items-start">
-                <MapPin className="h-5 w-5 mr-3 text-indexa-mint" />
-                <span>Av. Paraná, 974 - Sala 301, And. 3 - Centro, Foz do Iguaçu - PR, 85852-000</span>
+                <MapPin className="h-4 w-4 mr-2 mt-1 text-gray-400" />
+                <span className="text-sm">
+                  Av. Paraná, 974 - Sala 301, And. 3 - Centro, Foz do Iguaçu - PR, 85852-000
+                </span>
               </li>
             </ul>
           </div>
@@ -62,13 +63,13 @@ const Footer = () => {
             <p className="text-sm text-gray-300 mb-4">
               Receba novidades e atualizações direto no seu e-mail.
             </p>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <input 
                 type="email" 
                 placeholder="Seu e-mail" 
-                className="w-full px-4 py-2 bg-transparent border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-indexa-mint"
+                className="w-full px-4 py-2 bg-transparent border border-gray-600 rounded-full text-white text-sm placeholder-gray-400 focus:outline-none focus:border-indexa-mint"
               />
-              <Button className="w-full bg-indexa-mint text-indexa-purple-dark hover:bg-opacity-90">
+              <Button className="w-full rounded-full bg-indexa-mint text-indexa-purple-dark hover:bg-opacity-90">
                 Inscrever-se
               </Button>
             </div>
