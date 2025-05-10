@@ -10,16 +10,21 @@ const Footer = () => {
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Logo e Descrição */}
-          <div className="col-span-1">
-            <div className="mb-4">
-              <p className="text-base text-white/80 mt-5 pr-8">
-                Transformando ideias em resultados através do marketing digital, produção audiovisual e publicidade inovadora.
-              </p>
+          <div className="col-span-1 text-center md:text-left">
+            <div className="mb-4 flex justify-center md:justify-start">
+              <img 
+                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
+                alt="Indexa Logo" 
+                className="h-12 w-auto filter drop-shadow-md" 
+              />
             </div>
+            <p className="text-base text-white/80 mt-3 pr-0 md:pr-8">
+              Transformando ideias em resultados através do marketing digital, produção audiovisual e publicidade inovadora.
+            </p>
           </div>
 
           {/* Links Rápidos */}
-          <div className="col-span-1">
+          <div className="col-span-1 text-center md:text-left">
             <h3 className="text-lg font-semibold mb-4">Links Rápidos</h3>
             <ul className="space-y-2">
               <li><Link to="/" className="text-white/80 text-base hover:text-white transition-colors">Home</Link></li>
@@ -32,18 +37,18 @@ const Footer = () => {
           </div>
 
           {/* Contato */}
-          <div className="col-span-1">
+          <div className="col-span-1 text-center md:text-left">
             <h3 className="text-lg font-semibold mb-4">Contato</h3>
             <ul className="space-y-4">
-              <li className="flex items-center">
+              <li className="flex items-center justify-center md:justify-start">
                 <Phone className="h-4 w-4 mr-2 text-white/80" />
                 <span className="text-base text-white/80">(45) 99125-0093</span>
               </li>
-              <li className="flex items-center">
+              <li className="flex items-center justify-center md:justify-start">
                 <Mail className="h-4 w-4 mr-2 text-white/80" />
                 <span className="text-base text-white/80">contato@indexamidia.com</span>
               </li>
-              <li className="flex items-start">
+              <li className="flex items-start justify-center md:justify-start">
                 <MapPin className="h-4 w-4 mr-2 mt-1 text-white/80" />
                 <span className="text-base text-white/80">
                   Av. Paraná, 974 - Sala 301, And. 3 - Centro, Foz do Iguaçu - PR, 85852-000
@@ -53,7 +58,7 @@ const Footer = () => {
           </div>
 
           {/* Newsletter */}
-          <div className="col-span-1">
+          <div className="col-span-1 text-center md:text-left">
             <h3 className="text-lg font-semibold mb-4">Newsletter</h3>
             <p className="text-base text-white/80 mb-4">
               Receba novidades e atualizações direto no seu e-mail.
@@ -71,7 +76,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-gray-700 text-center text-base text-white/80">
+        <div className="mt-8 pt-4 border-t border-gray-700 text-center text-base text-white/80">
           © 2025 Indexa Mídia. Todos os direitos reservados.
         </div>
       </div>
