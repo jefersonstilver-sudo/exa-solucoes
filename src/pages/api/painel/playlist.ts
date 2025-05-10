@@ -39,11 +39,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           timestamp: new Date().toISOString()
         });
       
-      // Return fallback video
+      // Return emergency fallback playlist
       return res.status(200).json({
-        fallback: true,
-        fallback_video_url: "/fallback/indexa_default.mp4",
-        emergency_mode: true
+        emergency: true,
+        message: "Painel temporariamente desativado por segurança.",
+        videos: [
+          {
+            url: "https://storage.indexa.com.br/institucional/painel-bloqueado.mp4",
+            nome: "Indexa Lockdown",
+            duracao: 30
+          }
+        ]
       });
     }
     
