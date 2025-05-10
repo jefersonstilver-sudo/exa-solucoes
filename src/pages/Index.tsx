@@ -7,8 +7,8 @@ const Index = () => {
   return (
     <Layout>
       {/* Cards de Serviço */}
-      <section className="py-8 mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <section className="py-6 mt-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
           <ServiceCard
             title="Marketing"
             backgroundImage="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80"
