@@ -12,12 +12,7 @@ const Footer = () => {
           {/* Logo e Descrição */}
           <div className="col-span-1">
             <div className="mb-4">
-              <img 
-                src="/lovable-uploads/262f3b00-af56-4493-b8f9-8214eb19bd6f.png" 
-                alt="Indexa Logo" 
-                className="h-12 mb-4"
-              />
-              <p className="text-sm text-gray-300 mt-5 pr-8">
+              <p className="text-sm text-purple-200 mt-5 pr-8">
                 Transformando ideias em resultados através do marketing digital, produção audiovisual e publicidade inovadora.
               </p>
             </div>
@@ -74,15 +69,6 @@ const Footer = () => {
               </Button>
             </div>
           </div>
-        </div>
-
-        {/* Logo no centro do rodapé */}
-        <div className="mt-8 flex justify-center">
-          <img 
-            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
-            alt="Indexa Logo" 
-            className="h-20 mb-4 object-contain"
-          />
         </div>
 
         <div className="mt-4 pt-4 border-t border-gray-700 text-center text-sm text-gray-400">
