@@ -23,9 +23,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('webhook_logs')
       .insert([
         {
-          source: 'mercado_pago',
+          origem: 'mercado_pago',
           payload: webhookData,
-          processed: false
+          status: 'received'
         }
       ]);
 
@@ -62,7 +62,7 @@ async function processApprovedPayment(paymentInfo: any) {
     
     // Update the order status
     const { error: orderUpdateError } = await supabase
-      .from('orders')
+      .from('pedidos')
       .update({
         payment_id: paymentInfo.id,
         payment_status: 'paid',
@@ -77,7 +77,7 @@ async function processApprovedPayment(paymentInfo: any) {
     
     // Get order data to create campaign if needed
     const { data: order, error: orderError } = await supabase
-      .from('orders')
+      .from('pedidos')
       .select('*')
       .eq('id', metadata.order_id)
       .single();
@@ -90,15 +90,16 @@ async function processApprovedPayment(paymentInfo: any) {
     // Create campaign from order if required
     if (order.order_type === 'campaign' && order.client_id) {
       const { error: campaignError } = await supabase
-        .from('campaigns')
+        .from('campanhas')
         .insert([
           {
             client_id: order.client_id,
-            title: order.description || 'Nova Campanha',
-            description: `Campanha criada a partir do pedido #${order.id}`,
-            status: 'draft',
-            start_date: new Date().toISOString(),
-            end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+            video_id: order.video_id || null,
+            painel_id: order.painel_id || null,
+            data_inicio: new Date().toISOString(),
+            data_fim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+            status: 'pendente',
+            obs: `Campanha criada a partir do pedido #${order.id}`
           }
         ]);
         
@@ -110,8 +111,8 @@ async function processApprovedPayment(paymentInfo: any) {
     // Mark the webhook as processed
     await supabase
       .from('webhook_logs')
-      .update({ processed: true })
-      .eq('payload->data->id', paymentInfo.id);
+      .update({ status: 'processed' })
+      .eq('id', paymentInfo.id);
       
   } catch (error) {
     console.error('Error processing payment:', error);

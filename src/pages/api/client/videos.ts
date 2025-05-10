@@ -42,12 +42,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 // Get videos for a campaign
 async function getVideos(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { campaignId, id } = req.query;
+    const campaignId = Array.isArray(req.query.campaignId) ? req.query.campaignId[0] : req.query.campaignId;
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     
     // First check if the campaign belongs to the user
     if (campaignId) {
       const { data: campaign, error: campaignError } = await supabase
-        .from('campaigns')
+        .from('campanhas')
         .select('id')
         .eq('id', campaignId)
         .eq('client_id', userId)
@@ -62,12 +63,9 @@ async function getVideos(req: NextApiRequest, res: NextApiResponse, userId: stri
       // Get single video
       const { data, error } = await supabase
         .from('videos')
-        .select(`
-          *,
-          campaigns!inner(client_id)
-        `)
+        .select('*')
         .eq('id', id)
-        .eq('campaigns.client_id', userId)
+        .eq('client_id', userId)
         .single();
         
       if (error || !data) {
@@ -80,7 +78,7 @@ async function getVideos(req: NextApiRequest, res: NextApiResponse, userId: stri
       const { data, error } = await supabase
         .from('videos')
         .select('*')
-        .eq('campaign_id', campaignId)
+        .eq('client_id', userId)
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -89,14 +87,11 @@ async function getVideos(req: NextApiRequest, res: NextApiResponse, userId: stri
       
       return res.status(200).json(data || []);
     } else {
-      // Get all videos for client's campaigns
+      // Get all videos for client
       const { data, error } = await supabase
         .from('videos')
-        .select(`
-          *,
-          campaigns!inner(client_id)
-        `)
-        .eq('campaigns.client_id', userId)
+        .select('*')
+        .eq('client_id', userId)
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -122,7 +117,7 @@ async function getUploadUrl(req: NextApiRequest, res: NextApiResponse, userId: s
     
     // Check if campaign belongs to user
     const { data: campaign, error: campaignError } = await supabase
-      .from('campaigns')
+      .from('campanhas')
       .select('id')
       .eq('id', campaignId)
       .eq('client_id', userId)
@@ -151,22 +146,10 @@ async function getUploadUrl(req: NextApiRequest, res: NextApiResponse, userId: s
 // Create a new video record
 async function createVideo(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { title, url, duration, campaign_id } = req.body;
+    const { title, url, duration } = req.body;
     
-    if (!title || !url || !campaign_id) {
+    if (!title || !url) {
       return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    // Check if campaign belongs to user
-    const { data: campaign, error: campaignError } = await supabase
-      .from('campaigns')
-      .select('id')
-      .eq('id', campaign_id)
-      .eq('client_id', userId)
-      .single();
-      
-    if (campaignError || !campaign) {
-      return res.status(404).json({ error: 'Campaign not found or access denied' });
     }
     
     // Create video record
@@ -174,10 +157,12 @@ async function createVideo(req: NextApiRequest, res: NextApiResponse, userId: st
       .from('videos')
       .insert([
         {
-          title,
-          url,
-          duration: duration || 0,
-          campaign_id
+          client_id: userId,
+          nome: title,
+          url: url,
+          duracao: duration || 0,
+          origem: 'upload',
+          status: 'ativo'
         }
       ])
       .select()
@@ -191,7 +176,7 @@ async function createVideo(req: NextApiRequest, res: NextApiResponse, userId: st
     await logUserAction(
       userId,
       'create_video',
-      { video_id: data.id, campaign_id }
+      { video_id: data.id }
     );
     
     return res.status(201).json(data);
@@ -210,16 +195,12 @@ async function updateVideo(req: NextApiRequest, res: NextApiResponse, userId: st
       return res.status(400).json({ error: 'Video ID is required' });
     }
     
-    // Check if video belongs to user's campaign
+    // Check if video belongs to user
     const { data: video, error: videoError } = await supabase
       .from('videos')
-      .select(`
-        id,
-        campaign_id,
-        campaigns!inner(client_id)
-      `)
+      .select('id')
       .eq('id', id)
-      .eq('campaigns.client_id', userId)
+      .eq('client_id', userId)
       .single();
       
     if (videoError || !video) {
@@ -230,8 +211,8 @@ async function updateVideo(req: NextApiRequest, res: NextApiResponse, userId: st
     const { data, error } = await supabase
       .from('videos')
       .update({
-        title,
-        duration
+        nome: title,
+        duracao: duration
       })
       .eq('id', id)
       .select()
@@ -258,23 +239,18 @@ async function updateVideo(req: NextApiRequest, res: NextApiResponse, userId: st
 // Delete a video
 async function deleteVideo(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { id } = req.query;
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     
     if (!id) {
       return res.status(400).json({ error: 'Video ID is required' });
     }
     
-    // Check if video belongs to user's campaign
+    // Check if video belongs to user
     const { data: video, error: videoError } = await supabase
       .from('videos')
-      .select(`
-        id,
-        url,
-        campaign_id,
-        campaigns!inner(client_id)
-      `)
+      .select('id, url')
       .eq('id', id)
-      .eq('campaigns.client_id', userId)
+      .eq('client_id', userId)
       .single();
       
     if (videoError || !video) {
@@ -309,7 +285,7 @@ async function deleteVideo(req: NextApiRequest, res: NextApiResponse, userId: st
     await logUserAction(
       userId,
       'delete_video',
-      { video_id: id, campaign_id: video.campaign_id }
+      { video_id: id }
     );
     
     return res.status(200).json({ message: 'Video deleted successfully' });

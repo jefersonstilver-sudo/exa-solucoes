@@ -38,14 +38,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 async function getCampaigns(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
     // Check if a specific campaign ID is requested
-    const { id } = req.query;
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     
     if (id) {
       // Get single campaign
       const { data, error } = await supabase
         .from('campanhas')
         .select('*')
-        .eq('id', String(id))
+        .eq('id', id)
         .eq('client_id', userId)
         .single();
         
@@ -175,7 +175,7 @@ async function updateCampaign(req: NextApiRequest, res: NextApiResponse, userId:
 // Delete a campaign
 async function deleteCampaign(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { id } = req.query;
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     
     if (!id) {
       return res.status(400).json({ error: 'Campaign ID is required' });

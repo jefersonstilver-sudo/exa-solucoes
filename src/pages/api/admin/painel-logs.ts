@@ -14,30 +14,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { panelId, limit = 100, offset = 0, startDate, endDate, eventType } = req.query;
+    const { 
+      panelId, 
+      limit = 100, 
+      offset = 0, 
+      startDate, 
+      endDate, 
+      eventType 
+    } = req.query;
+    
+    const parsedLimit = Number(Array.isArray(limit) ? limit[0] : limit);
+    const parsedOffset = Number(Array.isArray(offset) ? offset[0] : offset);
+    const parsedPanelId = Array.isArray(panelId) ? panelId[0] : panelId;
+    const parsedStartDate = Array.isArray(startDate) ? startDate[0] : startDate;
+    const parsedEndDate = Array.isArray(endDate) ? endDate[0] : endDate;
+    const parsedEventType = Array.isArray(eventType) ? eventType[0] : eventType;
     
     // Build query
     let query = supabase
       .from('painel_logs')
       .select('*, painels(name, location)')
       .order('created_at', { ascending: false })
-      .range(Number(offset), Number(offset) + Number(limit) - 1);
+      .range(parsedOffset, parsedOffset + parsedLimit - 1);
       
     // Apply filters if provided
-    if (panelId) {
-      query = query.eq('painel_id', panelId);
+    if (parsedPanelId) {
+      query = query.eq('painel_id', parsedPanelId);
     }
     
-    if (startDate) {
-      query = query.gte('created_at', String(startDate));
+    if (parsedStartDate) {
+      query = query.gte('created_at', parsedStartDate);
     }
     
-    if (endDate) {
-      query = query.lte('created_at', String(endDate));
+    if (parsedEndDate) {
+      query = query.lte('created_at', parsedEndDate);
     }
     
-    if (eventType) {
-      query = query.eq('status_sincronizacao', String(eventType));
+    if (parsedEventType) {
+      query = query.eq('status_sincronizacao', parsedEventType);
     }
     
     const { data, error, count } = await query;
@@ -55,9 +69,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: data || [],
       pagination: {
         total: totalCount,
-        offset: Number(offset),
-        limit: Number(limit),
-        hasMore: (Number(offset) + (data?.length || 0)) < (totalCount || 0)
+        offset: parsedOffset,
+        limit: parsedLimit,
+        hasMore: (parsedOffset + (data?.length || 0)) < (totalCount || 0)
       }
     });
   } catch (error) {
