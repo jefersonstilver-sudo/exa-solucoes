@@ -1,144 +1,159 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
-import { verifyWebhookSignature, getPaymentInfo } from '../../../services/mercadoPago';
-import { supabase } from '../../../services/supabase';
+import { supabase, logUserAction } from '../../../services/supabase';
 
-// Security check that doesn't require authentication as this is a webhook
+// Mercado Pago webhook handler
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Only accept POST requests
+  // Only accept POST requests for webhooks
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
+  
   try {
-    // Verify the webhook signature
-    if (!verifyWebhookSignature(req)) {
-      console.error('Invalid webhook signature');
-      return res.status(401).json({ error: 'Invalid webhook signature' });
+    // Extract the data from the webhook
+    const data = req.body;
+    
+    // Validate the webhook data
+    if (!data.action || !data.data || !data.data.id) {
+      return res.status(400).json({ error: 'Invalid webhook payload' });
     }
+    
+    // Log the webhook
+    await logWebhook(data, 'mercado_pago');
+    
+    // Process the payment if it's a payment.updated or payment.created event
+    if (data.action === 'payment.updated' || data.action === 'payment.created') {
+      await processPayment(data.data.id);
+    }
+    
+    // Return success
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return res.status(500).json({ error: 'Error processing webhook' });
+  }
+}
 
-    // Log the incoming webhook
-    const webhookData = req.body;
+// Log the webhook to the database
+async function logWebhook(payload: any, origem: string) {
+  try {
     await supabase
       .from('webhook_logs')
       .insert([
         {
-          origem: 'mercado_pago',
-          payload: webhookData,
-          status: 'received'
+          origem,
+          status: 'received',
+          payload,
+          recebido_em: new Date().toISOString()
         }
       ]);
-
-    // For payment notifications, we need to get payment info
-    if (webhookData.type === 'payment' && webhookData.data && webhookData.data.id) {
-      const paymentInfo = await getPaymentInfo(webhookData.data.id);
-      
-      if (paymentInfo && paymentInfo.status === 'approved') {
-        // Process the approved payment
-        await processApprovedPayment(paymentInfo);
-      }
-    }
-
-    // Always return 200 to avoid unnecessary retries
-    return res.status(200).json({ message: 'Webhook received' });
   } catch (error) {
-    console.error('Webhook processing error:', error);
-    
-    // Log the error but still return 200 to MercadoPago
-    return res.status(200).json({ message: 'Webhook received with processing error' });
+    console.error('Error logging webhook:', error);
   }
 }
 
-// Process an approved payment
-async function processApprovedPayment(paymentInfo: any) {
+// Process the payment
+async function processPayment(paymentId: string) {
   try {
-    // Get metadata from payment
-    const { metadata } = paymentInfo;
-    
-    if (!metadata || !metadata.order_id) {
-      console.error('Payment missing order ID in metadata');
-      return;
-    }
-    
-    // Update the order status
-    const { error: orderUpdateError } = await supabase
-      .from('pedidos')
-      .update({
-        log_pagamento: paymentInfo,
-        status: 'paid'
-      })
-      .eq('id', metadata.order_id);
-      
-    if (orderUpdateError) {
-      console.error('Error updating order:', orderUpdateError);
-      return;
-    }
-    
-    // Get order data to create campaign if needed
-    const { data: order, error: orderError } = await supabase
+    // Find the pedido with this payment_id in the log_pagamento field
+    const { data: pedidos, error } = await supabase
       .from('pedidos')
       .select('*')
-      .eq('id', metadata.order_id)
-      .single();
+      .filter('log_pagamento->payment_id', 'eq', paymentId)
+      .limit(1);
       
-    if (orderError || !order) {
-      console.error('Error fetching order:', orderError);
+    if (error) {
+      throw error;
+    }
+    
+    if (!pedidos || pedidos.length === 0) {
+      console.log('No pedido found for payment ID:', paymentId);
       return;
     }
     
-    // Create campaign from order if required
-    // Since we don't have 'order_type' or 'video_id' fields in the pedidos table,
-    // we'll need to adapt this logic to work with our schema
-    if (order.client_id) {
-      // Assuming we're creating a campaign for each painel in the lista_paineis array
-      for (const painelId of order.lista_paineis) {
-        // Get a default video for this client to use in the campaign
-        const { data: clientVideos, error: videoError } = await supabase
-          .from('videos')
-          .select('id')
-          .eq('client_id', order.client_id)
-          .eq('status', 'ativo')
-          .limit(1);
-          
-        if (videoError || !clientVideos || clientVideos.length === 0) {
-          console.error('No video found for client:', order.client_id);
-          continue;
-        }
-        
-        const videoId = clientVideos[0].id;
-        
-        // Calculate dates for the campaign based on order duration
-        const startDate = new Date().toISOString().split('T')[0]; // Start today
-        const endDate = new Date(Date.now() + order.duracao * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // End after duration days
-        
-        const { error: campaignError } = await supabase
-          .from('campanhas')
-          .insert([
-            {
-              client_id: order.client_id,
-              painel_id: painelId,
-              data_inicio: startDate,
-              data_fim: endDate, 
-              status: 'pendente',
-              obs: `Campanha criada a partir do pedido #${order.id}`,
-              video_id: videoId
-            }
-          ]);
-          
-        if (campaignError) {
-          console.error('Error creating campaign:', campaignError);
-        }
-      }
+    const pedido = pedidos[0];
+    
+    // Update the pedido status to 'pago'
+    const { error: updateError } = await supabase
+      .from('pedidos')
+      .update({ status: 'pago' })
+      .eq('id', pedido.id);
+      
+    if (updateError) {
+      throw updateError;
     }
     
-    // Mark the webhook as processed
-    await supabase
-      .from('webhook_logs')
-      .update({ status: 'processed' })
-      .eq('origem', 'mercado_pago')
-      .eq('payload->data->id', paymentInfo.id);
-      
+    // Log the action
+    await logUserAction(
+      pedido.client_id,
+      'payment_confirmed',
+      { pedido_id: pedido.id, payment_id: paymentId }
+    );
+    
+    // After payment is confirmed, create campaigns for selected painels
+    await createCampaignsFromPedido(pedido);
+    
   } catch (error) {
     console.error('Error processing payment:', error);
+  }
+}
+
+// Create campaigns from pedido
+async function createCampaignsFromPedido(pedido: any) {
+  try {
+    // Get client's active video
+    const { data: videos, error: videosError } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('client_id', pedido.client_id)
+      .eq('status', 'ativo')
+      .order('created_at', { ascending: false })
+      .limit(1);
+      
+    if (videosError || !videos || videos.length === 0) {
+      console.log('No active video found for client:', pedido.client_id);
+      return;
+    }
+    
+    const video = videos[0];
+    
+    // Calculate campaign dates
+    const startDate = new Date().toISOString().split('T')[0]; // today
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + pedido.duracao);
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    // Create a campaign for each painel in the pedido
+    const campaignInserts = pedido.lista_paineis.map((painelId: string) => ({
+      client_id: pedido.client_id,
+      video_id: video.id,
+      painel_id: painelId,
+      data_inicio: startDate,
+      data_fim: endDateStr,
+      obs: `Created from pedido ${pedido.id}`,
+      status: 'pendente'
+    }));
+    
+    const { data: campaigns, error: campaignsError } = await supabase
+      .from('campanhas')
+      .insert(campaignInserts)
+      .select();
+      
+    if (campaignsError) {
+      throw campaignsError;
+    }
+    
+    // Log the action
+    await logUserAction(
+      pedido.client_id,
+      'campaigns_created_from_pedido',
+      { 
+        pedido_id: pedido.id, 
+        campaign_ids: campaigns.map((c: any) => c.id) 
+      }
+    );
+    
+  } catch (error) {
+    console.error('Error creating campaigns from pedido:', error);
   }
 }

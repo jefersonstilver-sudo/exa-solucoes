@@ -73,10 +73,24 @@ async function getPedidos(req: NextApiRequest, res: NextApiResponse, userId: str
 // Create a new pedido
 async function createPedido(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { lista_paineis, duracao, valor_total } = req.body;
+    const { lista_paineis, duracao, valor_total, video_id } = req.body;
     
     if (!lista_paineis || !duracao || !valor_total) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Verify video exists and belongs to this user if video_id is provided
+    if (video_id) {
+      const { data: video, error: videoError } = await supabase
+        .from('videos')
+        .select('id')
+        .eq('id', video_id)
+        .eq('client_id', userId)
+        .single();
+        
+      if (videoError || !video) {
+        return res.status(404).json({ error: 'Video not found or does not belong to you' });
+      }
     }
     
     // Create pedido using the correct field names according to the schema
@@ -88,7 +102,8 @@ async function createPedido(req: NextApiRequest, res: NextApiResponse, userId: s
           lista_paineis,
           duracao,
           valor_total,
-          status: 'pendente'
+          status: 'pendente',
+          log_pagamento: { video_id } // Store video_id in log_pagamento for reference
         }
       ])
       .select()
@@ -102,7 +117,7 @@ async function createPedido(req: NextApiRequest, res: NextApiResponse, userId: s
     await logUserAction(
       userId,
       'create_pedido',
-      { pedido_id: data.id }
+      { pedido_id: data.id, video_id }
     );
     
     return res.status(201).json(data);
