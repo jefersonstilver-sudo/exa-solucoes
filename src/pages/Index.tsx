@@ -18,7 +18,7 @@ const Index = () => {
           />
           <ServiceCard
             title="Produtora"
-            backgroundImage="https://images.unsplash.com/photo-1533333584620-55ce7adb3d0c?auto=format&fit=crop&q=80"
+            backgroundImage="https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80"
             buttonText="Nossos trabalhos"
             buttonIcon="monitor"
           />
