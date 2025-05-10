@@ -82,14 +82,12 @@ export const logPanelEvent = async (
 ): Promise<void> => {
   const { error } = await supabase
     .from('painel_logs')
-    .insert([
-      {
-        painel_id: panelId,
-        status_sincronizacao: eventType,
-        uso_cpu: details.cpuUsage,
-        temperatura: details.temperature
-      }
-    ]);
+    .insert({
+      painel_id: panelId,
+      status_sincronizacao: eventType,
+      uso_cpu: details.cpuUsage,
+      temperatura: details.temperature
+    });
     
   if (error) throw error;
 };
@@ -104,17 +102,59 @@ export const logUserAction = async (
 ): Promise<void> => {
   const { error } = await supabase
     .from('webhook_logs')
-    .insert([
-      {
-        origem: 'user_action',
-        status: 'success',
-        payload: {
-          user_id: userId,
-          action,
-          details
-        }
+    .insert({
+      origem: 'user_action',
+      status: 'success',
+      payload: {
+        user_id: userId,
+        action,
+        details
       }
-    ]);
+    });
     
   if (error) throw error;
+};
+
+/**
+ * Fetches panels near a specific location
+ */
+export const getPanelsByLocation = async (
+  lat: number,
+  lng: number,
+  radiusMeters: number = 5000
+) => {
+  // In a real implementation, you'd use PostGIS functions like ST_DWithin
+  // For now, we'll use our RPC function
+  const { data, error } = await supabase.rpc('get_panels_by_location', {
+    lat,
+    lng,
+    radius_meters: radiusMeters
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Adds an item to the cart
+ */
+export const addToCart = async (
+  userId: string,
+  panelId: string,
+  duration: number
+) => {
+  const { data, error } = await supabase
+    .from('pedidos')
+    .insert({
+      client_id: userId,
+      lista_paineis: [panelId],
+      duracao: duration,
+      valor_total: 0, // This would be calculated by the server
+      status: 'pendente'
+    })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data;
 };
