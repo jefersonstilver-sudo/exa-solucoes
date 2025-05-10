@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Monitor, Info } from 'lucide-react';
+import { Coffee, Film, Satellite } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
 
@@ -22,11 +22,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const renderIcon = () => {
     switch (buttonIcon) {
       case 'calendar':
-        return <Calendar className="w-4 h-4" />;
+        return <Coffee className="w-5 h-5" />;
       case 'monitor':
-        return <Monitor className="w-4 h-4" />;
+        return <Film className="w-5 h-5" />;
       case 'info':
-        return <Info className="w-4 h-4" />;
+        return <Satellite className="w-5 h-5" />;
       default:
         return null;
     }
@@ -35,7 +35,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <div 
       className={cn(
-        'relative h-[420px] overflow-hidden rounded-xl group transition-all duration-300',
+        'relative h-[420px] overflow-hidden rounded-2xl group transition-all duration-300 p-6',
         className
       )}
       style={{
@@ -50,11 +50,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       {/* Blur effect that disappears on hover */}
       <div className="absolute inset-0 backdrop-blur-[2px] group-hover:backdrop-blur-0 transition-all duration-300"></div>
       
-      <div className="absolute inset-0 p-8 flex flex-col justify-between">
-        <h2 className="text-3xl font-bold text-white">{title}</h2>
+      <div className="absolute inset-0 p-6 flex flex-col justify-between">
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
         
         <Button 
-          className="mt-auto self-start bg-indexa-mint text-indexa-purple-dark hover:bg-white rounded-full flex items-center space-x-2"
+          className="mt-auto self-start bg-indexa-mint text-indexa-purple-dark hover:bg-white rounded-full flex items-center space-x-2 text-base font-medium px-6 py-2 hover:scale-105 transition-transform"
         >
           {renderIcon()}
           <span>{buttonText}</span>
