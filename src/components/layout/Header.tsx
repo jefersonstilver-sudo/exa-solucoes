@@ -13,11 +13,13 @@ const Header = () => {
       </div>
       
       <Link to="/" className="absolute left-1/2 transform -translate-x-1/2">
-        <img 
-          src="/lovable-uploads/262f3b00-af56-4493-b8f9-8214eb19bd6f.png" 
-          alt="Indexa Logo" 
-          className="h-12"
-        />
+        <div className="relative overflow-hidden rounded-full bg-white/5 backdrop-blur-sm p-2 transition-all duration-300 hover:bg-white/10">
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
+            alt="Indexa Logo" 
+            className="h-12 object-contain animate-fade-in hover:scale-105 transition-transform"
+          />
+        </div>
       </Link>
       
       <div className="flex items-center space-x-4">
