@@ -100,6 +100,57 @@ export type Database = {
           },
         ]
       }
+      configuracoes_sistema: {
+        Row: {
+          created_at: string | null
+          id: string
+          modo_emergencia: boolean
+          seed_hash: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          modo_emergencia?: boolean
+          seed_hash: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          modo_emergencia?: boolean
+          seed_hash?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      log_eventos_sistema: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          ip: string | null
+          tipo_evento: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ip?: string | null
+          tipo_evento: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ip?: string | null
+          tipo_evento?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       painel_logs: {
         Row: {
           created_at: string | null
@@ -349,6 +400,10 @@ export type Database = {
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      is_emergency_mode: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
     }
     Enums: {
