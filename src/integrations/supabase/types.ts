@@ -397,6 +397,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_panels_by_location: {
+        Args: { lat: number; lng: number; radius_meters: number }
+        Returns: {
+          id: string
+          code: string
+          building_id: string
+          status: string
+          ultima_sync: string
+          resolucao: string
+          modo: string
+          buildings: Json
+        }[]
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

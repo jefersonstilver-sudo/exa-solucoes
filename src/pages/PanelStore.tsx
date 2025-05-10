@@ -59,6 +59,8 @@ export default function PanelStore() {
             building_id,
             status,
             ultima_sync,
+            resolucao,
+            modo,
             buildings:building_id (
               id,
               nome,
@@ -73,18 +75,30 @@ export default function PanelStore() {
           .limit(40);
           
         if (error) throw error;
-        return data || [];
+        return data as Panel[] || [];
       }
       
-      // Use RPC function to get panels within radius
-      const { data, error } = await supabase.rpc('get_panels_by_location', {
-        lat: selectedLocation.lat,
-        lng: selectedLocation.lng,
-        radius_meters: filters.radius
-      });
-      
-      if (error) throw error;
-      return data || [];
+      try {
+        // Use RPC function to get panels within radius
+        const { data, error } = await supabase.rpc('get_panels_by_location', {
+          lat: selectedLocation.lat,
+          lng: selectedLocation.lng,
+          radius_meters: filters.radius
+        });
+        
+        if (error) throw error;
+        
+        // Ensure we always return an array
+        if (Array.isArray(data)) {
+          return data as Panel[];
+        } else {
+          console.warn('Unexpected response from get_panels_by_location:', data);
+          return [] as Panel[];
+        }
+      } catch (err) {
+        console.error('Error fetching panels by location:', err);
+        return [] as Panel[];
+      }
     },
     enabled: true
   });
@@ -225,7 +239,7 @@ export default function PanelStore() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">
                   {isLoading ? 'Buscando painéis...' : 
-                    panels?.length 
+                    panels && panels.length > 0
                       ? `${panels.length} painéis encontrados` 
                       : 'Nenhum painel encontrado'}
                 </h2>

@@ -123,12 +123,9 @@ export const getPanelsByLocation = async (
   lng: number,
   radiusMeters: number = 5000
 ) => {
-  // In a real implementation, you'd use PostGIS functions like ST_DWithin
-  // For now, we'll use our RPC function
-  const { data, error } = await supabase.rpc('get_panels_by_location', {
-    lat,
-    lng,
-    radius_meters: radiusMeters
+  // Use our custom RPC function that uses PostGIS
+  const { data, error } = await supabase.functions.invoke('get-panels-by-location', {
+    body: { lat, lng, radius_meters: radiusMeters }
   });
   
   if (error) throw error;

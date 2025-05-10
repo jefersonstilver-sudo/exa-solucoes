@@ -23,3 +23,9 @@ export interface Building {
 export interface PanelWithDistance extends Panel {
   distance?: number;
 }
+
+// Type for the response from get_panels_by_location RPC
+export interface GetPanelsByLocationResponse {
+  data: Panel[] | null;
+  error: Error | null;
+}
