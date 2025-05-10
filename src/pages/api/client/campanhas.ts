@@ -43,9 +43,9 @@ async function getCampaigns(req: NextApiRequest, res: NextApiResponse, userId: s
     if (id) {
       // Get single campaign
       const { data, error } = await supabase
-        .from('campaigns')
+        .from('campanhas')
         .select('*')
-        .eq('id', id)
+        .eq('id', String(id))
         .eq('client_id', userId)
         .single();
         
@@ -57,7 +57,7 @@ async function getCampaigns(req: NextApiRequest, res: NextApiResponse, userId: s
     } else {
       // Get all campaigns for this client
       const { data, error } = await supabase
-        .from('campaigns')
+        .from('campanhas')
         .select('*')
         .eq('client_id', userId)
         .order('created_at', { ascending: false });
@@ -77,23 +77,24 @@ async function getCampaigns(req: NextApiRequest, res: NextApiResponse, userId: s
 // Create a new campaign
 async function createCampaign(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { title, description, start_date, end_date } = req.body;
+    const { title, description, start_date, end_date, video_id, painel_id } = req.body;
     
-    if (!title || !start_date || !end_date) {
+    if (!video_id || !painel_id || !start_date || !end_date) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    // Create campaign
+    // Create campaign using the correct field names according to the schema
     const { data, error } = await supabase
-      .from('campaigns')
+      .from('campanhas')
       .insert([
         {
-          title,
-          description,
           client_id: userId,
-          start_date,
-          end_date,
-          status: 'draft'
+          video_id: video_id,
+          painel_id: painel_id,
+          data_inicio: start_date,
+          data_fim: end_date,
+          obs: description,
+          status: 'pendente'
         }
       ])
       .select()
@@ -107,7 +108,7 @@ async function createCampaign(req: NextApiRequest, res: NextApiResponse, userId:
     await logUserAction(
       userId,
       'create_campaign',
-      { campaign_id: data.id, title }
+      { campaign_id: data.id }
     );
     
     return res.status(201).json(data);
@@ -120,7 +121,7 @@ async function createCampaign(req: NextApiRequest, res: NextApiResponse, userId:
 // Update an existing campaign
 async function updateCampaign(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { id, title, description, start_date, end_date, status } = req.body;
+    const { id, video_id, painel_id, data_inicio, data_fim, obs, status } = req.body;
     
     if (!id) {
       return res.status(400).json({ error: 'Campaign ID is required' });
@@ -128,7 +129,7 @@ async function updateCampaign(req: NextApiRequest, res: NextApiResponse, userId:
     
     // Check if campaign belongs to user
     const { data: campaign, error: checkError } = await supabase
-      .from('campaigns')
+      .from('campanhas')
       .select('id')
       .eq('id', id)
       .eq('client_id', userId)
@@ -140,12 +141,13 @@ async function updateCampaign(req: NextApiRequest, res: NextApiResponse, userId:
     
     // Update campaign
     const { data, error } = await supabase
-      .from('campaigns')
+      .from('campanhas')
       .update({
-        title,
-        description,
-        start_date,
-        end_date,
+        video_id,
+        painel_id,
+        data_inicio,
+        data_fim,
+        obs,
         status
       })
       .eq('id', id)
@@ -181,7 +183,7 @@ async function deleteCampaign(req: NextApiRequest, res: NextApiResponse, userId:
     
     // Check if campaign belongs to user
     const { data: campaign, error: checkError } = await supabase
-      .from('campaigns')
+      .from('campanhas')
       .select('id')
       .eq('id', id)
       .eq('client_id', userId)
@@ -193,7 +195,7 @@ async function deleteCampaign(req: NextApiRequest, res: NextApiResponse, userId:
     
     // Delete campaign
     const { error } = await supabase
-      .from('campaigns')
+      .from('campanhas')
       .delete()
       .eq('id', id);
       

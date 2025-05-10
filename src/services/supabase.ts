@@ -8,37 +8,39 @@ export const supabase = supabaseClient;
 // Type definitions
 export interface Campaign {
   id: string;
-  title: string;
-  description: string;
   client_id: string;
-  start_date: string;
-  end_date: string;
-  status: 'draft' | 'active' | 'completed' | 'cancelled';
+  video_id: string;
+  painel_id: string;
+  data_inicio: string;
+  data_fim: string;
+  status: 'pendente' | 'ativo' | 'finalizado' | 'cancelado';
+  obs?: string;
   created_at: string;
 }
 
 export interface Video {
   id: string;
-  campaign_id: string;
+  client_id: string;
   url: string;
-  title: string;
-  duration: number;
+  nome: string;
+  duracao: number;
   created_at: string;
 }
 
 export interface Panel {
   id: string;
-  name: string;
-  location: string;
+  building_id: string;
+  code: string;
   status: 'online' | 'offline' | 'maintenance';
-  last_heartbeat: string;
+  ultima_sync: string;
 }
 
 export interface PanelLog {
   id: string;
-  panel_id: string;
-  event_type: string;
-  details: Record<string, any>;
+  painel_id: string;
+  status_sincronizacao: string;
+  uso_cpu?: number;
+  temperatura?: number;
   created_at: string;
 }
 

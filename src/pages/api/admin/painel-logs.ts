@@ -18,14 +18,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Build query
     let query = supabase
-      .from('panel_logs')
-      .select('*, panels(name, location)')
+      .from('painel_logs')
+      .select('*, painels(name, location)')
       .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
       
     // Apply filters if provided
     if (panelId) {
-      query = query.eq('panel_id', panelId);
+      query = query.eq('painel_id', panelId);
     }
     
     if (startDate) {
@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     
     if (eventType) {
-      query = query.eq('event_type', String(eventType));
+      query = query.eq('status_sincronizacao', String(eventType));
     }
     
     const { data, error, count } = await query;
@@ -48,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Get total count for pagination
     const { count: totalCount } = await supabase
-      .from('panel_logs')
+      .from('painel_logs')
       .select('*', { count: 'exact', head: true });
       
     return res.status(200).json({
@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         total: totalCount,
         offset: Number(offset),
         limit: Number(limit),
-        hasMore: (Number(offset) + data?.length || 0) < totalCount
+        hasMore: (Number(offset) + (data?.length || 0)) < (totalCount || 0)
       }
     });
   } catch (error) {
