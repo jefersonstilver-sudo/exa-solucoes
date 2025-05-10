@@ -36,19 +36,19 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <ServiceCard
             title="Marketing"
-            backgroundImage="/public/lovable-uploads/0b464c46-e1d7-4cde-8f2e-ffded8c109a1.png"
+            backgroundImage="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
             buttonText="Agende um café"
             buttonIcon="calendar"
           />
           <ServiceCard
             title="Produtora"
-            backgroundImage="/public/lovable-uploads/0b464c46-e1d7-4cde-8f2e-ffded8c109a1.png"
+            backgroundImage="https://images.unsplash.com/photo-1626602411112-10742f9a3ab8?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1171&q=80"
             buttonText="Nossos trabalhos"
             buttonIcon="monitor"
           />
           <ServiceCard
             title="Painéis Publicitários"
-            backgroundImage="/public/lovable-uploads/0b464c46-e1d7-4cde-8f2e-ffded8c109a1.png"
+            backgroundImage="https://images.unsplash.com/photo-1605810230434-7631ac76ec81?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
             buttonText="Saiba mais"
             buttonIcon="info"
           />
