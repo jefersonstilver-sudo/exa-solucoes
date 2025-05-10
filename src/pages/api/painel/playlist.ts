@@ -20,7 +20,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Panel ID is required' });
     }
     
-    const playlist = await getPanelPlaylist(String(panelId));
+    // Normalize panelId to string
+    const parsedPanelId = Array.isArray(panelId) ? panelId[0] : panelId;
+    
+    const playlist = await getPanelPlaylist(parsedPanelId);
     
     if (!playlist) {
       return res.status(404).json({ error: 'No active playlist found for this panel' });

@@ -23,6 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       eventType 
     } = req.query;
     
+    // Normalize query parameters
     const parsedLimit = Number(Array.isArray(limit) ? limit[0] : limit);
     const parsedOffset = Number(Array.isArray(offset) ? offset[0] : offset);
     const parsedPanelId = Array.isArray(panelId) ? panelId[0] : panelId;
@@ -54,17 +55,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       query = query.eq('status_sincronizacao', parsedEventType);
     }
     
-    const { data, error, count } = await query;
+    const { data, error } = await query;
     
     if (error) {
       throw error;
     }
     
     // Get total count for pagination
-    const { count: totalCount } = await supabase
+    const { count: totalCount, error: countError } = await supabase
       .from('painel_logs')
       .select('*', { count: 'exact', head: true });
       
+    if (countError) {
+      throw countError;
+    }
+    
     return res.status(200).json({
       data: data || [],
       pagination: {

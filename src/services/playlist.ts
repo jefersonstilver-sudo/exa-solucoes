@@ -26,56 +26,55 @@ export interface Playlist {
  */
 export const getPanelPlaylist = async (panelId: string): Promise<Playlist | null> => {
   try {
-    // Get the active playlist for this panel
-    const { data: playlist, error: playlistError } = await supabase
-      .from('playlists')
-      .select('*')
-      .eq('panel_id', panelId)
-      .eq('active', true)
-      .single();
-      
-    if (playlistError || !playlist) {
-      return null;
-    }
-    
-    // Get videos for this playlist
-    const { data: playlistVideos, error: videosError } = await supabase
-      .from('playlist_videos')
+    // Since we don't have playlists or playlist_videos tables,
+    // we'll adapt this to use the campanhas table which links panels and videos
+    const { data: campaigns, error: campaignsError } = await supabase
+      .from('campanhas')
       .select(`
         id,
-        video_id,
-        order,
+        painel_id,
+        data_inicio,
+        data_fim,
+        status,
         videos (
           id,
           url,
-          title,
-          duration
+          nome,
+          duracao
         )
       `)
-      .eq('playlist_id', playlist.id)
-      .order('order', { ascending: true });
+      .eq('painel_id', panelId)
+      .eq('status', 'ativo')
+      .order('data_inicio', { ascending: true });
       
-    if (videosError) {
-      console.error('Error fetching playlist videos:', videosError);
+    if (campaignsError || !campaigns || campaigns.length === 0) {
       return null;
     }
     
+    // Get the first active campaign
+    const activeCampaign = campaigns[0];
+    
     // Format the videos
-    const videos = (playlistVideos || []).map(pv => ({
-      id: pv.video_id,
-      url: pv.videos.url,
-      title: pv.videos.title,
-      duration: pv.videos.duration,
-      order: pv.order
-    }));
+    const videos: PlaylistVideo[] = [];
+    
+    // Add the video from the campaign if it exists
+    if (activeCampaign.videos) {
+      videos.push({
+        id: activeCampaign.videos.id,
+        url: activeCampaign.videos.url,
+        title: activeCampaign.videos.nome,
+        duration: activeCampaign.videos.duracao || 0,
+        order: 1
+      });
+    }
     
     return {
-      id: playlist.id,
-      panel_id: playlist.panel_id,
+      id: activeCampaign.id,
+      panel_id: activeCampaign.painel_id,
       videos,
-      active: playlist.active,
-      start_date: playlist.start_date,
-      end_date: playlist.end_date
+      active: activeCampaign.status === 'ativo',
+      start_date: activeCampaign.data_inicio,
+      end_date: activeCampaign.data_fim
     };
   } catch (error) {
     console.error('Error getting panel playlist:', error);
@@ -95,14 +94,15 @@ export const logVideoPlay = async (
   playDuration: number
 ): Promise<void> => {
   try {
+    // Since we don't have a video_plays table, we'll log this information to painel_logs
     await supabase
-      .from('video_plays')
+      .from('painel_logs')
       .insert([
         {
-          panel_id: panelId,
-          video_id: videoId,
-          play_duration: playDuration,
-          played_at: new Date().toISOString()
+          painel_id: panelId,
+          status_sincronizacao: 'video_play',
+          uso_cpu: playDuration, // Repurposing this field to store play duration
+          timestamp: new Date().toISOString()
         }
       ]);
   } catch (error) {
@@ -124,22 +124,22 @@ export const updatePanelStatus = async (
   try {
     // Update panel status
     await supabase
-      .from('panels')
+      .from('painels')
       .update({
         status,
-        last_heartbeat: new Date().toISOString(),
-        details
+        ultima_sync: new Date().toISOString()
       })
       .eq('id', panelId);
       
     // Log the status change
     await supabase
-      .from('panel_logs')
+      .from('painel_logs')
       .insert([
         {
-          panel_id: panelId,
-          event_type: 'status_change',
-          details: { status, ...details }
+          painel_id: panelId,
+          status_sincronizacao: `status_${status}`,
+          uso_cpu: details.cpuUsage,
+          temperatura: details.temperature
         }
       ]);
   } catch (error) {
