@@ -52,7 +52,7 @@ export default function PanelStore() {
       if (!selectedLocation) {
         // Return all panels if no location selected, limited to prevent overloading
         const { data, error } = await supabase
-          .from('painels')
+          .from('paineis')
           .select(`
             id, 
             code,
@@ -160,7 +160,11 @@ export default function PanelStore() {
     });
   };
 
-  const handleFilterChange = (newFilters: FilterOptions) => {
+  const handleFilterChange = (newFilters: Partial<FilterOptions>) => {
+    // Special handling for neighborhood filter
+    if (newFilters.neighborhood === 'all') {
+      newFilters.neighborhood = '';
+    }
     setFilters(prev => ({...prev, ...newFilters}));
   };
 

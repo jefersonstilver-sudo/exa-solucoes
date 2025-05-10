@@ -179,7 +179,8 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Bairros</SelectLabel>
-              <SelectItem value="">Todos os bairros</SelectItem>
+              {/* Fixed: Changed empty string value to "all" */}
+              <SelectItem value="all">Todos os bairros</SelectItem>
               {neighborhoodOptions.map(neighborhood => (
                 <SelectItem key={neighborhood} value={neighborhood}>
                   {neighborhood}
