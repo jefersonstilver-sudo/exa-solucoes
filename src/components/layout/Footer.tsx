@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 
 const Footer = () => {
   return (
-    <footer className="bg-indexa-purple-dark text-white pt-16 pb-8">
+    <footer className="bg-indexa-purple-dark text-white py-12">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Logo e Descrição */}
           <div className="col-span-1">
             <div className="mb-4">
               <img 
-                src="/lovable-uploads/f677426c-40b3-4d9c-a90d-29ecfd564e5e.png" 
+                src="/lovable-uploads/262f3b00-af56-4493-b8f9-8214eb19bd6f.png" 
                 alt="Indexa Logo" 
                 className="h-12 mb-4"
               />
@@ -76,7 +76,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-700 text-center text-sm text-gray-400">
+        <div className="mt-8 pt-8 border-t border-gray-700 text-center text-sm text-gray-400">
           © 2025 Indexa Mídia. Todos os direitos reservados.
         </div>
       </div>

@@ -12,7 +12,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col">
       <div className="bg-indexa-gradient flex-grow">
         <Header />
-        <main className="container mx-auto px-6 py-4">
+        <main className="container mx-auto px-6 py-8">
           {children}
         </main>
       </div>

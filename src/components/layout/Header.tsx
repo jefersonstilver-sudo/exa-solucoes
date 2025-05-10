@@ -14,7 +14,7 @@ const Header = () => {
       
       <Link to="/" className="absolute left-1/2 transform -translate-x-1/2">
         <img 
-          src="/lovable-uploads/f677426c-40b3-4d9c-a90d-29ecfd564e5e.png" 
+          src="/lovable-uploads/262f3b00-af56-4493-b8f9-8214eb19bd6f.png" 
           alt="Indexa Logo" 
           className="h-12"
         />

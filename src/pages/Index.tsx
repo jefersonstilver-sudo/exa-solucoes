@@ -2,6 +2,7 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
+import { Calendar, Monitor, Info } from 'lucide-react';
 
 const Index = () => {
   return (
