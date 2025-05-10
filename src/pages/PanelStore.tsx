@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Filter, CheckCircle, X, Search, Loader2 } from 'lucide-react';
@@ -88,9 +87,9 @@ export default function PanelStore() {
         
         if (error) throw error;
         
-        // Ensure we always return an array
         if (Array.isArray(data)) {
-          return data as Panel[];
+          // Cast the data to our Panel type
+          return data as unknown as Panel[];
         } else {
           console.warn('Unexpected response from get_panels_by_location:', data);
           return [] as Panel[];

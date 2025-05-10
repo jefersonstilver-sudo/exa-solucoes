@@ -1,6 +1,6 @@
-
 // Using the supabase client from the project
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
+import { GetPanelsByLocationResponse, Panel } from '@/types/panel';
 
 // Re-export the supabase client
 export const supabase = supabaseClient;
@@ -124,12 +124,14 @@ export const getPanelsByLocation = async (
   radiusMeters: number = 5000
 ) => {
   // Use our custom RPC function that uses PostGIS
-  const { data, error } = await supabase.functions.invoke('get-panels-by-location', {
-    body: { lat, lng, radius_meters: radiusMeters }
+  const { data, error } = await supabase.rpc('get_panels_by_location', {
+    lat,
+    lng, 
+    radius_meters: radiusMeters
   });
   
   if (error) throw error;
-  return data;
+  return data as Panel[];
 };
 
 /**
