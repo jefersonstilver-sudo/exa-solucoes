@@ -1,6 +1,4 @@
 
-import { createClient } from '@supabase/supabase-js';
-
 // Using the supabase client from the project
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
@@ -49,9 +47,9 @@ export interface PanelLog {
 /**
  * Fetches campaigns for a specific client
  */
-export const getClientCampaigns = async (clientId: string): Promise<Campaign[]> => {
+export const getClientCampaigns = async (clientId: string) => {
   const { data, error } = await supabase
-    .from('campaigns')
+    .from('campanhas')
     .select('*')
     .eq('client_id', clientId);
     
@@ -62,11 +60,11 @@ export const getClientCampaigns = async (clientId: string): Promise<Campaign[]> 
 /**
  * Fetches videos for a specific campaign
  */
-export const getCampaignVideos = async (campaignId: string): Promise<Video[]> => {
+export const getCampaignVideos = async (campaignId: string) => {
   const { data, error } = await supabase
     .from('videos')
     .select('*')
-    .eq('campaign_id', campaignId);
+    .eq('client_id', campaignId);
     
   if (error) throw error;
   return data || [];
@@ -81,12 +79,13 @@ export const logPanelEvent = async (
   details: Record<string, any>
 ): Promise<void> => {
   const { error } = await supabase
-    .from('panel_logs')
+    .from('painel_logs')
     .insert([
       {
-        panel_id: panelId,
-        event_type: eventType,
-        details
+        painel_id: panelId,
+        status_sincronizacao: eventType,
+        uso_cpu: details.cpuUsage,
+        temperatura: details.temperature
       }
     ]);
     
@@ -102,12 +101,16 @@ export const logUserAction = async (
   details: Record<string, any>
 ): Promise<void> => {
   const { error } = await supabase
-    .from('log_eventos_usuario')
+    .from('webhook_logs')
     .insert([
       {
-        user_id: userId,
-        action,
-        details
+        origem: 'user_action',
+        status: 'success',
+        payload: {
+          user_id: userId,
+          action,
+          details
+        }
       }
     ]);
     

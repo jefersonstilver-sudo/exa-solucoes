@@ -9,13 +9,347 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      buildings: {
+        Row: {
+          bairro: string
+          created_at: string | null
+          endereco: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          nome: string
+          status: string
+        }
+        Insert: {
+          bairro: string
+          created_at?: string | null
+          endereco: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome: string
+          status?: string
+        }
+        Update: {
+          bairro?: string
+          created_at?: string | null
+          endereco?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      campanhas: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          data_fim: string
+          data_inicio: string
+          id: string
+          obs: string | null
+          painel_id: string
+          status: string
+          video_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          data_fim: string
+          data_inicio: string
+          id?: string
+          obs?: string | null
+          painel_id: string
+          status?: string
+          video_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          obs?: string | null
+          painel_id?: string
+          status?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanhas_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campanhas_painel_id_fkey"
+            columns: ["painel_id"]
+            isOneToOne: false
+            referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campanhas_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      painel_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          painel_id: string
+          status_sincronizacao: string
+          temperatura: number | null
+          timestamp: string | null
+          uso_cpu: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          painel_id: string
+          status_sincronizacao: string
+          temperatura?: number | null
+          timestamp?: string | null
+          uso_cpu?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          painel_id?: string
+          status_sincronizacao?: string
+          temperatura?: number | null
+          timestamp?: string | null
+          uso_cpu?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "painel_logs_painel_id_fkey"
+            columns: ["painel_id"]
+            isOneToOne: false
+            referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      painels: {
+        Row: {
+          building_id: string
+          code: string
+          created_at: string | null
+          id: string
+          modo: string | null
+          resolucao: string | null
+          status: string
+          ultima_sync: string | null
+        }
+        Insert: {
+          building_id: string
+          code: string
+          created_at?: string | null
+          id?: string
+          modo?: string | null
+          resolucao?: string | null
+          status?: string
+          ultima_sync?: string | null
+        }
+        Update: {
+          building_id?: string
+          code?: string
+          created_at?: string | null
+          id?: string
+          modo?: string | null
+          resolucao?: string | null
+          status?: string
+          ultima_sync?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "painels_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          duracao: number
+          id: string
+          lista_paineis: string[]
+          log_pagamento: Json | null
+          status: string
+          valor_total: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          duracao: number
+          id?: string
+          lista_paineis: string[]
+          log_pagamento?: Json | null
+          status?: string
+          valor_total: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          duracao?: number
+          id?: string
+          lista_paineis?: string[]
+          log_pagamento?: Json | null
+          status?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_codes: {
+        Row: {
+          campanha_id: string
+          created_at: string | null
+          id: string
+          total_scans: number | null
+          url: string
+        }
+        Insert: {
+          campanha_id: string
+          created_at?: string | null
+          id?: string
+          total_scans?: number | null
+          url: string
+        }
+        Update: {
+          campanha_id?: string
+          created_at?: string | null
+          id?: string
+          total_scans?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "campanhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          data_criacao: string | null
+          email: string
+          id: string
+          role: string
+        }
+        Insert: {
+          data_criacao?: string | null
+          email: string
+          id: string
+          role: string
+        }
+        Update: {
+          data_criacao?: string | null
+          email?: string
+          id?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          duracao: number | null
+          id: string
+          nome: string
+          origem: string
+          status: string
+          url: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          duracao?: number | null
+          id?: string
+          nome: string
+          origem: string
+          status?: string
+          url: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          duracao?: number | null
+          id?: string
+          nome?: string
+          origem?: string
+          status?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          origem: string
+          payload: Json | null
+          recebido_em: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          origem: string
+          payload?: Json | null
+          recebido_em?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          origem?: string
+          payload?: Json | null
+          recebido_em?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
