@@ -1,7 +1,7 @@
 
 // Using the supabase client from the project
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
-import { GetPanelsByLocationResponse, Panel } from '@/types/panel';
+import { GetPanelsByLocationResponse, Panel, Building, PanelWithDistance } from '@/types/panel';
 
 // Re-export the supabase client
 export const supabase = supabaseClient;
@@ -117,7 +117,7 @@ export const getPanelsByLocation = async (
   lat: number,
   lng: number,
   radiusMeters: number = 5000
-) => {
+): Promise<Panel[]> => {
   // Use our custom RPC function that uses PostGIS
   const { data, error } = await supabase.rpc('get_panels_by_location', {
     lat,
@@ -126,7 +126,18 @@ export const getPanelsByLocation = async (
   });
   
   if (error) throw error;
-  return data as Panel[];
+  
+  if (Array.isArray(data)) {
+    // Properly map and cast the buildings property from Json to Building type
+    const panels: Panel[] = data.map((item: any) => ({
+      ...item,
+      buildings: item.buildings as Building
+    }));
+    return panels;
+  } else {
+    console.warn('Unexpected response from get_panels_by_location:', data);
+    return [] as Panel[];
+  }
 };
 
 /**

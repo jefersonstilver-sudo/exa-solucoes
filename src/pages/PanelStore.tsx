@@ -12,6 +12,7 @@ import { FilterOptions } from '@/types/filter';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { getPanelsByLocation } from '@/services/supabase';
 
 export default function PanelStore() {
   const { toast } = useToast();
@@ -74,25 +75,21 @@ export default function PanelStore() {
           .limit(40);
           
         if (error) throw error;
-        return data as unknown as Panel[] || [];
-      }
-      
-      try {
-        // Use RPC function to get panels within radius
-        const { data, error } = await supabase.rpc('get_panels_by_location', {
-          lat: selectedLocation.lat,
-          lng: selectedLocation.lng,
-          radius_meters: filters.radius
-        });
-        
-        if (error) throw error;
-        
+        // Properly map the data to ensure type compatibility
         if (Array.isArray(data)) {
           return data as unknown as Panel[];
         } else {
-          console.warn('Unexpected response from get_panels_by_location:', data);
           return [] as Panel[];
         }
+      }
+      
+      try {
+        // Use our helper function that properly maps the types
+        return await getPanelsByLocation(
+          selectedLocation.lat, 
+          selectedLocation.lng, 
+          filters.radius
+        );
       } catch (err) {
         console.error('Error fetching panels by location:', err);
         return [] as Panel[];
