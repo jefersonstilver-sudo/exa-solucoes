@@ -35,22 +35,22 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <div 
       className={cn(
-        'relative h-[420px] overflow-hidden rounded-2xl group transition-all duration-300 p-6 shadow-xl',
+        'relative h-[420px] overflow-hidden rounded-2xl group transition-all duration-300 p-6',
         className
       )}
       style={{
-        background: `linear-gradient(to bottom, rgba(24, 0, 36, 0.85), rgba(56, 6, 79, 0.95)), url(${backgroundImage})`,
+        backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
-      {/* Elegant gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1A1F2C]/90 to-[#38064F]/80 group-hover:opacity-90 transition-all duration-300"></div>
+      {/* Overlay escurecido para melhorar legibilidade */}
+      <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-all duration-300"></div>
       
-      {/* Subtle glow effect */}
-      <div className="absolute inset-0 group-hover:backdrop-blur-sm transition-all duration-500"></div>
+      {/* Blur effect that disappears on hover */}
+      <div className="absolute inset-0 backdrop-blur-[2px] group-hover:backdrop-blur-0 transition-all duration-300"></div>
       
-      <div className="absolute inset-0 p-6 flex flex-col justify-between z-10">
+      <div className="absolute inset-0 p-6 flex flex-col justify-between">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         
         <Button 
