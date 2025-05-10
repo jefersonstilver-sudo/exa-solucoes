@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Filter, CheckCircle, X, Search, Loader2 } from 'lucide-react';
@@ -52,7 +53,7 @@ export default function PanelStore() {
       if (!selectedLocation) {
         // Return all panels if no location selected, limited to prevent overloading
         const { data, error } = await supabase
-          .from('paineis')
+          .from('painels') // Using "painels" which is the correct table name in the TypeScript types
           .select(`
             id, 
             code,
