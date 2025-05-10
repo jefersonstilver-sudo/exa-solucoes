@@ -28,7 +28,7 @@ export const getPanelPlaylist = async (panelId: string): Promise<Playlist | null
   try {
     // Since we don't have playlists or playlist_videos tables,
     // we'll adapt this to use the campanhas table which links panels and videos
-    const { data: campaigns, error: campaignsError } = await supabase
+    const { data: campanhas, error: campaignError } = await supabase
       .from('campanhas')
       .select(`
         id,
@@ -47,12 +47,12 @@ export const getPanelPlaylist = async (panelId: string): Promise<Playlist | null
       .eq('status', 'ativo')
       .order('data_inicio', { ascending: true });
       
-    if (campaignsError || !campaigns || campaigns.length === 0) {
+    if (campaignError || !campanhas || campanhas.length === 0) {
       return null;
     }
     
     // Get the first active campaign
-    const activeCampaign = campaigns[0];
+    const activeCampaign = campanhas[0];
     
     // Format the videos
     const videos: PlaylistVideo[] = [];
@@ -102,7 +102,6 @@ export const logVideoPlay = async (
           painel_id: panelId,
           status_sincronizacao: 'video_play',
           uso_cpu: playDuration, // Repurposing this field to store play duration
-          timestamp: new Date().toISOString()
         }
       ]);
   } catch (error) {

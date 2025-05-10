@@ -92,18 +92,36 @@ async function processApprovedPayment(paymentInfo: any) {
     if (order.client_id) {
       // Assuming we're creating a campaign for each painel in the lista_paineis array
       for (const painelId of order.lista_paineis) {
+        // Get a default video for this client to use in the campaign
+        const { data: clientVideos, error: videoError } = await supabase
+          .from('videos')
+          .select('id')
+          .eq('client_id', order.client_id)
+          .eq('status', 'ativo')
+          .limit(1);
+          
+        if (videoError || !clientVideos || clientVideos.length === 0) {
+          console.error('No video found for client:', order.client_id);
+          continue;
+        }
+        
+        const videoId = clientVideos[0].id;
+        
+        // Calculate dates for the campaign based on order duration
+        const startDate = new Date().toISOString().split('T')[0]; // Start today
+        const endDate = new Date(Date.now() + order.duracao * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // End after duration days
+        
         const { error: campaignError } = await supabase
           .from('campanhas')
           .insert([
             {
               client_id: order.client_id,
               painel_id: painelId,
-              data_inicio: new Date().toISOString(),
-              data_fim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+              data_inicio: startDate,
+              data_fim: endDate, 
               status: 'pendente',
               obs: `Campanha criada a partir do pedido #${order.id}`,
-              // We're missing video_id which is required - must be handled properly in a real implementation
-              video_id: '00000000-0000-0000-0000-000000000000' // Placeholder UUID
+              video_id: videoId
             }
           ]);
           
@@ -117,7 +135,8 @@ async function processApprovedPayment(paymentInfo: any) {
     await supabase
       .from('webhook_logs')
       .update({ status: 'processed' })
-      .eq('id', paymentInfo.id);
+      .eq('origem', 'mercado_pago')
+      .eq('payload->data->id', paymentInfo.id);
       
   } catch (error) {
     console.error('Error processing payment:', error);

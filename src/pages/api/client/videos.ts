@@ -42,19 +42,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 // Get videos for a campaign
 async function getVideos(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const campaignId = Array.isArray(req.query.campaignId) ? req.query.campaignId[0] : req.query.campaignId;
+    const campanhaId = Array.isArray(req.query.campanhaId) ? req.query.campanhaId[0] : req.query.campanhaId;
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     
     // First check if the campaign belongs to the user
-    if (campaignId) {
-      const { data: campaign, error: campaignError } = await supabase
+    if (campanhaId) {
+      const { data: campanha, error: campanhaError } = await supabase
         .from('campanhas')
         .select('id')
-        .eq('id', campaignId)
+        .eq('id', campanhaId)
         .eq('client_id', userId)
         .single();
         
-      if (campaignError || !campaign) {
+      if (campanhaError || !campanha) {
         return res.status(404).json({ error: 'Campaign not found or access denied' });
       }
     }
@@ -73,7 +73,7 @@ async function getVideos(req: NextApiRequest, res: NextApiResponse, userId: stri
       }
       
       return res.status(200).json(data);
-    } else if (campaignId) {
+    } else if (campanhaId) {
       // Get all videos for campaign
       const { data, error } = await supabase
         .from('videos')
@@ -109,22 +109,24 @@ async function getVideos(req: NextApiRequest, res: NextApiResponse, userId: stri
 // Get pre-signed URL for uploading a video
 async function getUploadUrl(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { fileName, contentType, campaignId } = req.body;
+    const { fileName, contentType, campanhaId } = req.body;
     
-    if (!fileName || !contentType || !campaignId) {
+    if (!fileName || !contentType) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    // Check if campaign belongs to user
-    const { data: campaign, error: campaignError } = await supabase
-      .from('campanhas')
-      .select('id')
-      .eq('id', campaignId)
-      .eq('client_id', userId)
-      .single();
-      
-    if (campaignError || !campaign) {
-      return res.status(404).json({ error: 'Campaign not found or access denied' });
+    // Check if campaign belongs to user if campanhaId is provided
+    if (campanhaId) {
+      const { data: campanha, error: campanhaError } = await supabase
+        .from('campanhas')
+        .select('id')
+        .eq('id', campanhaId)
+        .eq('client_id', userId)
+        .single();
+        
+      if (campanhaError || !campanha) {
+        return res.status(404).json({ error: 'Campaign not found or access denied' });
+      }
     }
     
     const uploadData = await getSignedUploadUrl(fileName, contentType);
@@ -133,7 +135,7 @@ async function getUploadUrl(req: NextApiRequest, res: NextApiResponse, userId: s
     await logUserAction(
       userId,
       'request_upload_url',
-      { campaign_id: campaignId, file_name: fileName }
+      { campanha_id: campanhaId, file_name: fileName }
     );
     
     return res.status(200).json(uploadData);
@@ -146,10 +148,10 @@ async function getUploadUrl(req: NextApiRequest, res: NextApiResponse, userId: s
 // Create a new video record
 async function createVideo(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { title, url, duration } = req.body;
+    const { nome, url, duracao } = req.body;
     
-    if (!title || !url) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!nome || !url) {
+      return res.status(400).json({ error: 'Nome and URL are required' });
     }
     
     // Create video record
@@ -158,9 +160,9 @@ async function createVideo(req: NextApiRequest, res: NextApiResponse, userId: st
       .insert([
         {
           client_id: userId,
-          nome: title,
-          url: url,
-          duracao: duration || 0,
+          nome,
+          url,
+          duracao: duracao || 0,
           origem: 'upload',
           status: 'ativo'
         }
@@ -189,7 +191,7 @@ async function createVideo(req: NextApiRequest, res: NextApiResponse, userId: st
 // Update an existing video
 async function updateVideo(req: NextApiRequest, res: NextApiResponse, userId: string) {
   try {
-    const { id, title, duration } = req.body;
+    const { id, nome, duracao } = req.body;
     
     if (!id) {
       return res.status(400).json({ error: 'Video ID is required' });
@@ -211,8 +213,8 @@ async function updateVideo(req: NextApiRequest, res: NextApiResponse, userId: st
     const { data, error } = await supabase
       .from('videos')
       .update({
-        nome: title,
-        duracao: duration
+        nome,
+        duracao
       })
       .eq('id', id)
       .select()
