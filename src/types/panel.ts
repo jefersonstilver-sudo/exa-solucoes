@@ -1,4 +1,5 @@
 
+
 export interface Panel {
   id: string;
   code: string;
@@ -29,3 +30,4 @@ export interface GetPanelsByLocationResponse {
   data: Panel[] | null;
   error: Error | null;
 }
+

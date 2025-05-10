@@ -74,7 +74,7 @@ export default function PanelStore() {
           .limit(40);
           
         if (error) throw error;
-        return data as Panel[] || [];
+        return data as unknown as Panel[] || [];
       }
       
       try {
@@ -88,7 +88,6 @@ export default function PanelStore() {
         if (error) throw error;
         
         if (Array.isArray(data)) {
-          // Cast the data to our Panel type
           return data as unknown as Panel[];
         } else {
           console.warn('Unexpected response from get_panels_by_location:', data);

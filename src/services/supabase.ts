@@ -1,3 +1,4 @@
+
 // Using the supabase client from the project
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
 import { GetPanelsByLocationResponse, Panel } from '@/types/panel';
@@ -27,13 +28,7 @@ export interface Video {
   created_at: string;
 }
 
-export interface Panel {
-  id: string;
-  building_id: string;
-  code: string;
-  status: 'online' | 'offline' | 'maintenance';
-  ultima_sync: string;
-}
+// We're not redefining Panel here since we're importing it from types/panel.ts
 
 export interface PanelLog {
   id: string;
