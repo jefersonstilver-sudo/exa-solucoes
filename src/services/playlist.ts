@@ -17,6 +17,8 @@ export interface Playlist {
   active: boolean;
   start_date: string;
   end_date: string;
+  fallback?: boolean;
+  fallback_video_url?: string;
 }
 
 /**
@@ -26,6 +28,9 @@ export interface Playlist {
  */
 export const getPanelPlaylist = async (panelId: string): Promise<Playlist | null> => {
   try {
+    // Get current date for comparison
+    const currentDate = new Date().toISOString().split('T')[0];
+
     // Since we don't have playlists or playlist_videos tables,
     // we'll adapt this to use the campanhas table which links panels and videos
     const { data: campanhas, error: campaignError } = await supabase
@@ -45,6 +50,8 @@ export const getPanelPlaylist = async (panelId: string): Promise<Playlist | null
       `)
       .eq('painel_id', panelId)
       .eq('status', 'ativo')
+      .lte('data_inicio', currentDate)
+      .gte('data_fim', currentDate)
       .order('data_inicio', { ascending: true });
       
     if (campaignError || !campanhas || campanhas.length === 0) {
@@ -66,6 +73,11 @@ export const getPanelPlaylist = async (panelId: string): Promise<Playlist | null
         duration: activeCampaign.videos.duracao || 0,
         order: 1
       });
+    }
+
+    // If no videos were found, return null to trigger fallback
+    if (videos.length === 0) {
+      return null;
     }
     
     return {
@@ -110,6 +122,47 @@ export const logVideoPlay = async (
 };
 
 /**
+ * Logs emergency fallback activation for a panel
+ * @param panelId ID of the panel
+ * @param reason Reason for fallback: 'no_campanha', 'video_error', 'offline_mode', 'server_error'
+ */
+export const logEmergencyFallback = async (
+  panelId: string,
+  reason: 'no_campanha' | 'video_error' | 'offline_mode' | 'server_error'
+): Promise<void> => {
+  try {
+    const emergency_triggered_at = new Date().toISOString();
+    
+    // Log the emergency event
+    await supabase
+      .from('painel_logs')
+      .insert([
+        {
+          painel_id: panelId,
+          status_sincronizacao: 'emergencia',
+          uso_cpu: 0, // Not relevant for emergency logs
+          temperatura: 0, // Not relevant for emergency logs
+          // Store the reason and timestamp in the log
+          timestamp: emergency_triggered_at
+        }
+      ]);
+      
+    // Update panel status to reflect emergency mode
+    await supabase
+      .from('painels')
+      .update({
+        status: 'emergencia',
+        ultima_sync: emergency_triggered_at
+      })
+      .eq('id', panelId);
+      
+    console.log(`Emergency protocol activated for panel ${panelId}. Reason: ${reason}`);
+  } catch (error) {
+    console.error('Error logging emergency fallback:', error);
+  }
+};
+
+/**
  * Updates a panel's sync status
  * @param panelId ID of the panel
  * @param status Current status of the panel
@@ -117,7 +170,7 @@ export const logVideoPlay = async (
  */
 export const updatePanelStatus = async (
   panelId: string,
-  status: 'online' | 'offline' | 'maintenance',
+  status: 'online' | 'offline' | 'maintenance' | 'emergencia',
   details: Record<string, any> = {}
 ): Promise<void> => {
   try {
