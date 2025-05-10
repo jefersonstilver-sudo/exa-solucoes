@@ -6,7 +6,7 @@ import { ShoppingBag, KeyRound } from 'lucide-react';
 
 const Header = () => {
   return (
-    <header className="w-full py-6 px-6 md:px-12 flex items-center justify-between bg-[#180024cc] backdrop-blur-sm">
+    <header className="w-full py-6 px-6 md:px-12 flex items-center justify-between bg-[#180024cc] backdrop-blur-sm border-b border-white/10">
       <div className="flex items-center space-x-8">
         <Link to="/" className="text-white text-lg font-semibold hover:text-white/90 transition-colors">Produtora</Link>
         <Link to="/" className="text-white text-lg font-semibold hover:text-white/90 transition-colors">Marketing</Link>
