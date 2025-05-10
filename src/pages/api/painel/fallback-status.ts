@@ -24,8 +24,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Normalize panelId to string
     const parsedPanelId = Array.isArray(panelId) ? panelId[0] : panelId;
     
-    // Check if emergency mode is active
-    const { data: { is_emergency_mode } } = await supabase.rpc('is_emergency_mode');
+    // Check if emergency mode is active - correctly using RPC
+    const { data } = await supabase.rpc('is_emergency_mode');
+    const is_emergency_mode = data === true;
     
     // Get recent fallback events for this panel
     const { data: recentLogs, error: logsError } = await supabase

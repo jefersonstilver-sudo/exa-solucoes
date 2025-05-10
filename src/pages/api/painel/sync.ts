@@ -32,8 +32,9 @@ async function handleSync(req: NextApiRequest, res: NextApiResponse) {
     
     await updatePanelStatus(panelId, status, details);
     
-    // Check if emergency mode is active
-    const { data: { is_emergency_mode } } = await supabase.rpc('is_emergency_mode');
+    // Check if emergency mode is active - correctly using RPC
+    const { data } = await supabase.rpc('is_emergency_mode');
+    const is_emergency_mode = data === true;
     
     // Return current time for panel to sync
     return res.status(200).json({ 
@@ -78,17 +79,15 @@ async function handleVideoError(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    // Log video error
+    // Log video error - fixed to not use array
     await supabase
       .from('painel_logs')
-      .insert([
-        {
-          painel_id: panelId,
-          status_sincronizacao: 'video_error',
-          uso_cpu: 0,
-          temperatura: 0
-        }
-      ]);
+      .insert({
+        painel_id: panelId,
+        status_sincronizacao: 'video_error',
+        uso_cpu: 0,
+        temperatura: 0
+      });
     
     return res.status(200).json({ 
       message: 'Video error logged successfully',

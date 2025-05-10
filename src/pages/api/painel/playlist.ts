@@ -25,20 +25,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Normalize panelId to string
     const parsedPanelId = Array.isArray(panelId) ? panelId[0] : panelId;
     
-    // Check if emergency mode is active
-    const { data: { is_emergency_mode } } = await supabase.rpc('is_emergency_mode');
+    // Check if emergency mode is active - correctly using RPC
+    const { data } = await supabase.rpc('is_emergency_mode');
+    const is_emergency_mode = data === true;
     
     if (is_emergency_mode) {
-      // Log that emergency mode is active
+      // Log that emergency mode is active - fixed to not use array
       await supabase
         .from('painel_logs')
-        .insert([
-          {
-            painel_id: parsedPanelId,
-            status_sincronizacao: 'emergencia',
-            timestamp: new Date().toISOString()
-          }
-        ]);
+        .insert({
+          painel_id: parsedPanelId,
+          status_sincronizacao: 'emergencia',
+          timestamp: new Date().toISOString()
+        });
       
       // Return fallback video
       return res.status(200).json({
@@ -52,16 +51,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const playlist = await getPanelPlaylist(parsedPanelId);
     
     if (!playlist) {
-      // No active playlist - use fallback
+      // No active playlist - use fallback - fixed to not use array
       await supabase
         .from('painel_logs')
-        .insert([
-          {
-            painel_id: parsedPanelId,
-            status_sincronizacao: 'emergencia',
-            timestamp: new Date().toISOString()
-          }
-        ]);
+        .insert({
+          painel_id: parsedPanelId,
+          status_sincronizacao: 'emergencia',
+          timestamp: new Date().toISOString()
+        });
         
       return res.status(200).json({
         fallback: true,

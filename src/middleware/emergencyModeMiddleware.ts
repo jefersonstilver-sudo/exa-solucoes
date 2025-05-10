@@ -15,8 +15,9 @@ export function withEmergencyCheck(handler: NextApiHandler): NextApiHandler {
       return handler(req, res);
     }
     
-    // Check if system is in emergency mode
-    const { data: { is_emergency_mode } } = await supabase.rpc('is_emergency_mode');
+    // Check if system is in emergency mode - correctly using RPC
+    const { data } = await supabase.rpc('is_emergency_mode');
+    const is_emergency_mode = data === true;
     
     if (is_emergency_mode) {
       return res.status(503).json({ 
