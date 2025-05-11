@@ -97,7 +97,7 @@
 
 /* Estilos específicos para o Indexa */
 .card-indexa {
-  @apply overflow-hidden shadow-sm border border-gray-200 transition-all duration-300;
+  @apply overflow-hidden shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg;
 }
 
 .btn-indexa {
@@ -133,4 +133,25 @@
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Enhanced shadows for search and filter panels */
+.shadow-enhanced {
+  box-shadow: 0 10px 25px -5px rgba(74, 9, 104, 0.1), 0 8px 10px -6px rgba(74, 9, 104, 0.1);
+  transition: all 0.3s ease;
+}
+
+.shadow-enhanced:hover {
+  box-shadow: 0 20px 25px -5px rgba(74, 9, 104, 0.15), 0 10px 10px -5px rgba(74, 9, 104, 0.1);
+}
+
+.filter-panel {
+  border-radius: 0.75rem;
+  background-color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.filter-panel:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }

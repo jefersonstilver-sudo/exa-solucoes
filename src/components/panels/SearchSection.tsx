@@ -28,21 +28,21 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   panelsCount
 }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm mb-6 border border-gray-200">
-      <div className="p-4 border-b">
-        <h1 className="text-2xl font-bold text-indexa-purple mb-4">
+    <div className="bg-white rounded-lg shadow-lg mb-8 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
+      <div className="p-6 border-b">
+        <h1 className="text-2xl font-bold text-indexa-purple mb-6">
           Encontre Painéis Digitais
         </h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           <div className="md:col-span-2">
-            <label className="block text-sm mb-1 text-gray-500">Digite o bairro ou localização desejada</label>
+            <label className="block text-sm mb-2 text-gray-600 font-medium">Digite o bairro ou localização desejada</label>
             <div className="relative">
               <input
                 type="text"
                 value={searchLocation}
                 onChange={(e) => setSearchLocation(e.target.value)}
-                className="w-full px-4 py-2 border rounded-md focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none"
+                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none shadow-sm"
                 placeholder="Bairro, endereço ou ponto de referência"
                 disabled={isSearching}
               />
@@ -57,7 +57,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
               <button
                 onClick={() => handleSearch(searchLocation)}
                 disabled={isSearching || !searchLocation}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-indexa-purple p-1 rounded-md hover:bg-indexa-purple-dark disabled:bg-gray-300"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-indexa-purple p-1.5 rounded-md hover:bg-indexa-purple-dark disabled:bg-gray-300 transition-colors"
               >
                 {isSearching ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -69,17 +69,17 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           </div>
           
           <div>
-            <label className="block text-sm mb-1 text-gray-500">Data de início</label>
+            <label className="block text-sm mb-2 text-gray-600 font-medium">Data de início</label>
             <input
               type="date"
-              className="w-full px-4 py-2 border rounded-md focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none"
+              className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none shadow-sm"
             />
           </div>
           
           <div>
-            <label className="block text-sm mb-1 text-gray-500">Período</label>
+            <label className="block text-sm mb-2 text-gray-600 font-medium">Período</label>
             <select
-              className="w-full px-4 py-2 border rounded-md focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none appearance-none"
+              className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none appearance-none shadow-sm"
               defaultValue="30"
             >
               <option value="30">30 dias</option>
@@ -90,17 +90,17 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         </div>
         
         {selectedLocation && (
-          <div className="flex justify-between items-center mt-2">
+          <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
             <div className="flex items-center text-sm">
-              <MapPin className="w-4 h-4 mr-1 text-indexa-purple" />
-              <span className="text-indexa-purple">{searchLocation}</span>
+              <MapPin className="w-5 h-5 mr-1.5 text-indexa-purple" />
+              <span className="text-indexa-purple font-medium">{searchLocation}</span>
             </div>
-            <div className="flex items-center">
-              <span className="text-sm text-gray-500 mr-2">
+            <div className="flex items-center bg-gray-50 px-3 py-1.5 rounded-full">
+              <span className="text-sm text-gray-600 mr-2">
                 {panelsCount} resultados no raio de {filters.radius / 1000} km
               </span>
               <select 
-                className="px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indexa-purple"
+                className="px-2 py-1 text-sm border rounded-full focus:outline-none focus:ring-1 focus:ring-indexa-purple bg-white shadow-sm"
                 value={filters.radius}
                 onChange={(e) => handleFilterChange({ radius: Number(e.target.value) })}
               >

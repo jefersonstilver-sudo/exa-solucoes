@@ -77,6 +77,11 @@ export default {
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
 			},
+			boxShadow: {
+				'enhanced': '0 10px 25px -5px rgba(74, 9, 104, 0.1), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
+				'enhanced-hover': '0 20px 25px -5px rgba(74, 9, 104, 0.15), 0 10px 10px -5px rgba(74, 9, 104, 0.1)',
+				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)'
+			},
 			keyframes: {
 				'accordion-down': {
 					from: {

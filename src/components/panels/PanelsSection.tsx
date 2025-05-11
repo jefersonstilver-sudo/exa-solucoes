@@ -60,8 +60,8 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
         
         {/* Desktop Filter Sidebar */}
         <div className="hidden lg:block">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 sticky top-24">
-            <h2 className="font-bold text-lg mb-4 text-gray-800">Filtrar por</h2>
+          <div className="bg-white p-5 rounded-lg shadow-lg border border-gray-200 sticky top-24 hover:shadow-xl transition-shadow duration-300">
+            <h2 className="font-bold text-lg mb-5 text-gray-800">Filtrar por</h2>
             <PanelFilters 
               filters={filters} 
               onFilterChange={handleFilterChange}
