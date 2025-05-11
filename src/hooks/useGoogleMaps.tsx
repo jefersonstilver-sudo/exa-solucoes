@@ -1,5 +1,6 @@
 
 import { useMapLifecycle } from './useMapLifecycle';
+import { initializeGoogleMapsAPI } from './useGoogleMapsAPI';
 
 interface UseGoogleMapsProps {
   miniMap?: boolean;
@@ -29,7 +30,6 @@ export const useGoogleMaps = ({ miniMap, instanceId }: UseGoogleMapsProps) => {
     // Include these methods for backwards compatibility with existing code
     initializeGoogleMaps: async () => {
       // This is now handled by useMapLifecycle
-      const { initializeGoogleMapsAPI } = await import('./useGoogleMapsAPI');
       return initializeGoogleMapsAPI();
     },
     initializeMap: (center, zoom) => {

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { useGoogleMapsAPI } from './useGoogleMapsAPI';
+import { initializeGoogleMapsAPI } from './useGoogleMapsAPI';
 import { useMapInstance } from './useMapInstance';
 import { useToast } from './use-toast';
 
@@ -20,7 +20,6 @@ export const useMapLifecycle = ({ miniMap, selectedLocation, instanceId }: UseMa
   const { toast } = useToast();
   
   // Use our more focused hooks
-  const { initializeGoogleMapsAPI } = useGoogleMapsAPI();
   const { mapRef, mapContainerRef, initializeMap, cleanupMap } = useMapInstance({ miniMap });
 
   // Setup and cleanup
@@ -59,7 +58,7 @@ export const useMapLifecycle = ({ miniMap, selectedLocation, instanceId }: UseMa
       mountedRef.current = false;
       cleanupMap();
     };
-  }, [initializeGoogleMapsAPI, initializeMap, selectedLocation, cleanupMap, toast]);
+  }, [initializeMap, selectedLocation, cleanupMap, toast]);
 
   return {
     mapRef,
