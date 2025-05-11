@@ -33,7 +33,10 @@ const Header: React.FC<HeaderProps> = ({
   // Close cart when menu is opened
   const handleMenuOpen = () => {
     setIsMenuOpen(!isMenuOpen);
-    if (!isMenuOpen) setIsCartOpen(false);
+    if (!isMenuOpen) {
+      setIsCartOpen(false);
+      setIsMobileCartOpen(false);
+    }
   };
 
   // Handle mobile cart separately
@@ -93,30 +96,40 @@ const Header: React.FC<HeaderProps> = ({
           </Button>
           
           {/* Shopping cart moved to the right of the user icon */}
-          <Sheet open={isCartOpen} onOpenChange={handleCartOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="relative text-white hover:bg-white/20 rounded-full"
-              >
-                <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
-                {cartItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartItems.length}
-                  </span>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
-              <PanelCart 
-                cartItems={cartItems} 
-                onRemove={onRemoveFromCart} 
-                onClear={onClearCart} 
-                onChangeDuration={onChangeDuration} 
-              />
-            </SheetContent>
-          </Sheet>
+          {cartItems.length > 0 ? (
+            <Sheet open={isCartOpen} onOpenChange={handleCartOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="relative text-white hover:bg-white/20 rounded-full"
+                >
+                  <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
+                  {cartItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartItems.length}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
+                <PanelCart 
+                  cartItems={cartItems} 
+                  onRemove={onRemoveFromCart} 
+                  onClear={onClearCart} 
+                  onChangeDuration={onChangeDuration} 
+                />
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative text-white hover:bg-white/20 rounded-full"
+            >
+              <ShoppingBag className="h-6 w-6 text-indexa-mint" />
+            </Button>
+          )}
         </div>
       </div>
       
@@ -136,30 +149,40 @@ const Header: React.FC<HeaderProps> = ({
         </Button>
         
         {/* Shopping cart moved to the right of the user icon in mobile */}
-        <Sheet open={isMobileCartOpen} onOpenChange={handleMobileCartOpen}>
-          <SheetTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative text-white hover:bg-white/20 rounded-full"
-            >
-              <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
-              {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartItems.length}
-                </span>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[85%] overflow-auto">
-            <PanelCart 
-              cartItems={cartItems} 
-              onRemove={onRemoveFromCart} 
-              onClear={onClearCart} 
-              onChangeDuration={onChangeDuration} 
-            />
-          </SheetContent>
-        </Sheet>
+        {cartItems.length > 0 ? (
+          <Sheet open={isMobileCartOpen} onOpenChange={handleMobileCartOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative text-white hover:bg-white/20 rounded-full"
+              >
+                <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[85%] overflow-auto">
+              <PanelCart 
+                cartItems={cartItems} 
+                onRemove={onRemoveFromCart} 
+                onClear={onClearCart} 
+                onChangeDuration={onChangeDuration} 
+              />
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative text-white hover:bg-white/20 rounded-full"
+          >
+            <ShoppingBag className="h-6 w-6 text-indexa-mint" />
+          </Button>
+        )}
         
         <Button 
           variant="ghost" 
