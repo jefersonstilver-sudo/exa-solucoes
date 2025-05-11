@@ -24,16 +24,17 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center">
         <Link to="/" className="text-white text-lg font-semibold transition-colors">
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
             alt="Indexa Logo" 
-            className="h-14 w-auto object-contain" // Increased logo size even more
+            className="h-14 w-auto object-contain" 
           />
         </Link>
         
-        <div className="hidden md:flex gap-6">
+        {/* Increased spacing between logo and navigation items */}
+        <div className="hidden md:flex gap-6 ml-12">
           <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
             Produtora
           </Link>
@@ -77,7 +78,7 @@ const Header: React.FC<HeaderProps> = ({
                 size="icon" 
                 className="relative text-white hover:bg-white/20 rounded-full"
               >
-                <ShoppingBag className="h-6 w-6 text-indexa-mint" /> {/* More elegant shopping bag with mint color */}
+                <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
                 {cartItems.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {cartItems.length}
@@ -120,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({
               size="icon" 
               className="relative text-white hover:bg-white/20 rounded-full"
             >
-              <ShoppingBag className="h-6 w-6 text-indexa-mint" /> {/* More elegant shopping bag with mint color */}
+              <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
               {cartItems.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItems.length}
