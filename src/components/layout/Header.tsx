@@ -22,9 +22,9 @@ const Header: React.FC<HeaderProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-white shadow-sm border-b border-gray-200">
+    <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple to-indexa-purple-dark shadow-md border-b border-purple-800/30">
       <div className="flex items-center gap-6">
-        <Link to="/" className="text-indexa-purple text-lg font-semibold transition-colors">
+        <Link to="/" className="text-white text-lg font-semibold transition-colors">
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
             alt="Indexa Logo" 
@@ -33,13 +33,13 @@ const Header: React.FC<HeaderProps> = ({
         </Link>
         
         <div className="hidden md:flex gap-6">
-          <Link to="/" className="text-gray-700 font-medium hover:text-indexa-purple transition-colors">
+          <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
             Produtora
           </Link>
-          <Link to="/" className="text-gray-700 font-medium hover:text-indexa-purple transition-colors">
+          <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
             Marketing
           </Link>
-          <Link to="/paineis-digitais" className="text-gray-700 font-medium hover:text-indexa-purple transition-colors">
+          <Link to="/paineis-digitais" className="text-white/90 font-medium hover:text-white transition-colors">
             Painéis Digitais
           </Link>
         </div>
@@ -59,9 +59,9 @@ const Header: React.FC<HeaderProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="relative"
+              className="relative text-white hover:bg-white/20"
             >
-              <ShoppingBag className="h-6 w-6 text-indexa-purple" />
+              <ShoppingBag className="h-6 w-6" />
               {cartItems.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItems.length}
@@ -79,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({
           </SheetContent>
         </Sheet>
         
-        <Button className="bg-transparent border border-indexa-purple text-indexa-purple rounded-full hover:bg-indexa-purple hover:text-white text-base font-medium">
+        <Button className="bg-transparent border border-white text-white rounded-full hover:bg-white/20 hover:text-white text-base font-medium">
           <KeyRound className="mr-2 h-5 w-5" />
           Acesso
         </Button>
@@ -92,9 +92,9 @@ const Header: React.FC<HeaderProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="relative"
+              className="relative text-white hover:bg-white/20"
             >
-              <ShoppingBag className="h-6 w-6 text-indexa-purple" />
+              <ShoppingBag className="h-6 w-6" />
               {cartItems.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItems.length}
@@ -116,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({
           variant="ghost" 
           size="icon" 
           onClick={() => setIsMenuOpen(!isMenuOpen)} 
-          className="text-indexa-purple"
+          className="text-white hover:bg-white/20"
         >
           {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
@@ -124,18 +124,18 @@ const Header: React.FC<HeaderProps> = ({
       
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-white shadow-lg z-50 md:hidden">
+        <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-50 md:hidden">
           <div className="flex flex-col p-4 gap-4">
-            <Link to="/" className="text-gray-700 font-medium p-2 hover:bg-gray-100 rounded-md" onClick={() => setIsMenuOpen(false)}>
+            <Link to="/" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
               Produtora
             </Link>
-            <Link to="/" className="text-gray-700 font-medium p-2 hover:bg-gray-100 rounded-md" onClick={() => setIsMenuOpen(false)}>
+            <Link to="/" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
               Marketing
             </Link>
-            <Link to="/paineis-digitais" className="text-gray-700 font-medium p-2 hover:bg-gray-100 rounded-md" onClick={() => setIsMenuOpen(false)}>
+            <Link to="/paineis-digitais" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
               Painéis Digitais
             </Link>
-            <Button className="bg-indexa-purple text-white rounded-md hover:bg-indexa-purple-dark">
+            <Button className="bg-white/20 text-white rounded-md hover:bg-white/30">
               <KeyRound className="mr-2 h-5 w-5" />
               Acesso
             </Button>

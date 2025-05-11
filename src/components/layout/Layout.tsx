@@ -9,6 +9,7 @@ interface LayoutProps {
   onRemoveFromCart?: (id: string) => void;
   onClearCart?: () => void;
   onChangeDuration?: (id: string, duration: number) => void;
+  useGradientBackground?: boolean;
 }
 
 const Layout: React.FC<LayoutProps> = ({ 
@@ -16,10 +17,11 @@ const Layout: React.FC<LayoutProps> = ({
   cartItems = [], 
   onRemoveFromCart = () => {}, 
   onClearCart = () => {}, 
-  onChangeDuration = () => {} 
+  onChangeDuration = () => {},
+  useGradientBackground = false
 }) => {
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className={`min-h-screen flex flex-col ${useGradientBackground ? 'bg-gradient-to-br from-indexa-purple-light via-indexa-purple to-indexa-purple-dark' : 'bg-white'}`}>
       <Header 
         cartItems={cartItems}
         onRemoveFromCart={onRemoveFromCart}
