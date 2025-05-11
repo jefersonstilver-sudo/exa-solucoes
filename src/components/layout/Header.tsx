@@ -48,13 +48,15 @@ const Header: React.FC<HeaderProps> = ({
       </div>
       
       <div className="hidden md:flex items-center gap-4">
-        <Button 
-          variant="outline" 
-          className="bg-indexa-mint text-indexa-purple-dark rounded-full border-none hover:bg-opacity-90 text-base font-medium"
-        >
-          <ShoppingBag className="mr-2 h-5 w-5" />
-          Loja Online
-        </Button>
+        <Link to="/paineis-digitais/loja">
+          <Button 
+            variant="outline" 
+            className="bg-indexa-mint text-indexa-purple-dark rounded-full border-none hover:bg-opacity-90 text-base font-medium"
+          >
+            <ShoppingBag className="mr-2 h-5 w-5" />
+            Loja Online
+          </Button>
+        </Link>
 
         <div className="flex items-center gap-3">
           {/* User icon first */}
@@ -161,6 +163,9 @@ const Header: React.FC<HeaderProps> = ({
             </Link>
             <Link to="/paineis-digitais" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
               Painéis Digitais
+            </Link>
+            <Link to="/paineis-digitais/loja" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md bg-indexa-mint/20" onClick={() => setIsMenuOpen(false)}>
+              Loja Online
             </Link>
           </div>
         </div>
