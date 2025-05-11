@@ -555,7 +555,7 @@ export default function PanelStore() {
                     {panels?.length || 0} resultados no raio de {filters.radius / 1000} km
                   </span>
                   <select 
-                    className="px-2 py-1 text-sm border rounded-md focus:outline-none"
+                    className="px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indexa-purple"
                     value={filters.radius}
                     onChange={(e) => handleFilterChange({ radius: Number(e.target.value) })}
                   >

@@ -14,10 +14,11 @@ import { motion } from 'framer-motion';
 interface PanelMapProps {
   panels: Panel[];
   selectedLocation: {lat: number, lng: number} | null;
-  onAddToCart: (panel: Panel, duration?: number) => void;
+  onAddToCart?: (panel: Panel, duration?: number) => void;
+  miniMap?: boolean;  // Added miniMap prop
 }
 
-const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCart }) => {
+const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCart, miniMap = false }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -88,7 +89,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
           });
           
           pin.addEventListener('click', () => {
-            onAddToCart(panel);
+            if (onAddToCart) onAddToCart(panel);
           });
           
           pin.appendChild(tooltip);
@@ -168,25 +169,25 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
           </Tooltip>
         </TooltipProvider>
         
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-white">
-                <Info className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-sm">
-              <p>Clique nos marcadores para adicionar o painel ao carrinho. Em uma implementação real, este mapa usaria Google Maps ou Leaflet.</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {!miniMap && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="bg-white">
+                  <Info className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm">
+                <p>Clique nos marcadores para adicionar o painel ao carrinho. Em uma implementação real, este mapa usaria Google Maps ou Leaflet.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
       
       <div ref={mapContainerRef} className="w-full h-full">
         <div className="flex items-center justify-center h-full">
-          <div className="text-center p-4">
-            <p>Carregando mapa...</p>
-          </div>
+          <p>Carregando mapa...</p>
         </div>
       </div>
       
