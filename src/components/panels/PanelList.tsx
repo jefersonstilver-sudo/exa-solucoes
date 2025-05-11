@@ -15,10 +15,6 @@ interface PanelListProps {
   onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
-const durationOptions = [
-  { days: 30, discount: 0 }
-];
-
 // Array de amenidades de condomínio para exibição
 const amenities = [
   { icon: '🏋️', name: 'Academia' },
@@ -157,7 +153,7 @@ const PanelList: React.FC<PanelListProps> = ({
                 {/* Building image - full width */}
                 <div className="relative h-64 w-full bg-gradient-to-r from-gray-700 to-gray-900">
                   <img 
-                    src={(panel.buildings as any).imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'} 
+                    src={(panel.buildings as any)?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'} 
                     alt={panel.buildings?.nome || 'Building image'}
                     className="h-full w-full object-cover"
                   />
