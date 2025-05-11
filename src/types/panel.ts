@@ -1,10 +1,9 @@
 
-
 export interface Panel {
   id: string;
   code: string;
   building_id: string;
-  status: 'online' | 'offline' | 'maintenance';
+  status: 'online' | 'offline' | 'maintenance' | 'installing';
   ultima_sync: string;
   resolucao?: string;
   modo?: string;
@@ -30,4 +29,3 @@ export interface GetPanelsByLocationResponse {
   data: Panel[] | null;
   error: Error | null;
 }
-

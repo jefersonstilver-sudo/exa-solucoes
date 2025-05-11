@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Filter, CheckCircle, X, Search, Loader2 } from 'lucide-react';
@@ -262,6 +261,39 @@ export default function PanelStore() {
         if (selectedLocation) {
           console.log(`Filtering panels near selected location: ${selectedLocation.lat}, ${selectedLocation.lng}`);
           
+          try {
+            // In a real application, we would use the Supabase RPC function
+            // For now, let's simulate the distance calculation
+            if (process.env.NODE_ENV === 'production') {
+              // This would be the real implementation using Supabase
+              const result = await supabase.rpc('get_panels_by_location', {
+                lat: selectedLocation.lat,
+                lng: selectedLocation.lng,
+                radius_meters: filters.radius
+              });
+              
+              if (result.error) {
+                throw result.error;
+              }
+
+              // Map the API response to match our Panel type
+              return (result.data || []).map(panel => {
+                // Ensure status is one of the allowed values
+                let validStatus: 'online' | 'offline' | 'maintenance' = 'offline';
+                if (panel.status === 'online') validStatus = 'online';
+                else if (panel.status === 'maintenance') validStatus = 'maintenance';
+                
+                return {
+                  ...panel,
+                  status: validStatus
+                } as Panel;
+              });
+            }
+          } catch (error) {
+            console.error("Error fetching panels from API:", error);
+            // Fall back to mock data with distance calculation
+          }
+          
           // Simple distance calculation for demonstration
           filteredPanels = filteredPanels.map(panel => {
             if (panel.buildings?.latitude && panel.buildings?.longitude) {
@@ -276,7 +308,7 @@ export default function PanelStore() {
           }).filter(panel => (panel as any).distance <= filters.radius);
         }
         
-        return filteredPanels;
+        return filteredPanels as Panel[];
       } catch (err) {
         console.error('Error fetching panels:', err);
         return [] as Panel[];
