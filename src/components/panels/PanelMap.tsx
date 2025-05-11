@@ -36,8 +36,8 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
   const mapInstanceIdRef = useRef<string>(`map-${Math.random().toString(36).substr(2, 9)}`);
   const { toast } = useToast();
   const mountedRef = useRef(true); // Track if component is mounted
-  
-  // Load Google Maps script safely
+
+  // Safely load Google Maps script
   const loadGoogleMapsScript = useCallback(() => {
     // If already loaded, return resolved Promise
     if (window.google && window.google.maps) {
@@ -53,10 +53,8 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       console.log(`Google Maps script already loading - waiting - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
       
       return new Promise<void>((resolve) => {
-        // Define callback for when API is loaded
         const originalCallback = window.googleMapsCallback;
         window.googleMapsCallback = () => {
-          // Manter callback original se existir
           if (originalCallback) originalCallback();
           
           if (mountedRef.current) {
@@ -83,7 +81,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         // Timeout to avoid infinite loops
         setTimeout(() => {
           clearInterval(checkInterval);
-          resolve(); // Resolve even if not loaded
+          resolve(); // Resolve even if not loaded to avoid hanging
         }, 10000);
       });
     }
@@ -141,20 +139,20 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
     });
   }, [miniMap, toast]);
 
-  // Safely clear markers and info windows
+  // Safely clear markers and info windows with DOM safety checks
   const clearMarkersAndInfoWindows = useCallback(() => {
     console.log(`Clearing markers and info windows - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
     
-    // Clear markers
+    // Clear markers safely
     if (markersRef.current && markersRef.current.length > 0) {
       markersRef.current.forEach(marker => {
         if (marker) {
           try {
-            // Remove event listeners
+            // Safe event listener cleanup
             if (window.google && window.google.maps && google.maps.event) {
               google.maps.event.clearInstanceListeners(marker);
             }
-            // Remove marker from map
+            // Remove marker from map safely
             marker.setMap(null);
           } catch (error) {
             console.error('Error clearing marker:', error);
@@ -164,7 +162,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       markersRef.current = [];
     }
     
-    // Close and clear info windows
+    // Close and clear info windows safely
     if (infoWindowsRef.current && infoWindowsRef.current.length > 0) {
       infoWindowsRef.current.forEach(infoWindow => {
         if (infoWindow) {
@@ -182,7 +180,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
     }
   }, [miniMap]);
   
-  // Add markers for all panels
+  // Add markers for all panels with DOM safety checks
   const addMarkers = useCallback(() => {
     if (!mapRef.current || !window.google || !window.google.maps || !google.maps.Marker || !mapInitialized) {
       console.log(`Cannot add markers - map not ready - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
@@ -244,7 +242,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
               
               infoWindow.open(mapRef.current, marker);
               
-              // Add event listener to "Add to Cart" button inside info window
+              // Add event listener to button ONLY when the info window is opened
               google.maps.event.addListenerOnce(infoWindow, 'domready', () => {
                 const button = document.getElementById(`add-to-cart-${panelId}`);
                 if (button) {
@@ -292,7 +290,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
     }
   }, [panels, selectedLocation, clearMarkersAndInfoWindows, onAddToCart, miniMap, mapInitialized]);
   
-  // Add marker for selected location
+  // Add marker for selected location with safety checks
   const addSelectedLocationMarker = useCallback(() => {
     if (!mapRef.current || !selectedLocation || !window.google || !window.google.maps || !google.maps.Marker || !mapInitialized) {
       console.log(`Cannot add selected location marker - map not ready - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
@@ -347,7 +345,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
     }
   }, [selectedLocation, miniMap, mapInitialized]);
   
-  // Initialize map
+  // Initialize map with safety checks
   const initializeMap = useCallback(() => {
     // Safety check - exit early if prerequisites not met
     if (!mapContainerRef.current || !window.google || !window.google.maps || !google.maps.Map || mapInitialized) {
@@ -355,7 +353,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       return;
     }
     
-    // Verify DOM element still exists
+    // Verify DOM element still exists in document
     if (!document.body.contains(mapContainerRef.current)) {
       console.log(`Map container no longer in DOM - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
       return;
@@ -369,7 +367,6 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
         { lat: -15.793889, lng: -47.882778 }; // Default to Brasília
       
-      // Check if ControlPosition exists before using it
       const mapOptions: google.maps.MapOptions = {
         center: defaultCenter,
         zoom: selectedLocation ? 13 : 5,
@@ -399,13 +396,13 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         console.log('Failed to apply map styles:', error);
       }
       
-      // Create new map instance only if container exists
+      // Create new map instance only if container exists and is in DOM
       if (mapContainerRef.current && document.body.contains(mapContainerRef.current)) {
         mapRef.current = new google.maps.Map(mapContainerRef.current, mapOptions);
         setMapInitialized(true);
         setMapLoaded(true);
         
-        // Add markers after map initialization
+        // Add markers after map initialization with slight delay to ensure DOM is ready
         if (panels.length > 0) {
           setTimeout(() => {
             if (mountedRef.current && mapRef.current) {
@@ -472,7 +469,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
     
     setupMap();
     
-    // Cleanup function
+    // Crucial cleanup function to prevent removeChild errors
     return () => {
       console.log(`PanelMap unmounting - cleaning up - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
       mountedRef.current = false;
@@ -480,16 +477,16 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       // Clear all markers and info windows when component unmounts
       clearMarkersAndInfoWindows();
       
-      // Clear map instance
+      // Clear map instance and event listeners safely
       if (mapRef.current && window.google && window.google.maps && google.maps.event) {
         try {
           console.log(`Clearing map instance - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
           google.maps.event.clearInstanceListeners(mapRef.current);
+          mapRef.current = null;
         } catch (error) {
           console.error('Error clearing map event listeners:', error);
         }
       }
-      mapRef.current = null;
     };
   }, [clearMarkersAndInfoWindows, initializeMap, loadGoogleMapsScript, miniMap, toast]);
   
