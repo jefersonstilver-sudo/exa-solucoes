@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Maximize2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
@@ -14,10 +14,18 @@ interface MiniMapProps {
 
 const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart }) => {
   const [open, setOpen] = useState(false);
-  const [miniMapKey, setMiniMapKey] = useState(`mini-${Math.random().toString(36).substring(2, 9)}`);
-  const [fullMapKey, setFullMapKey] = useState(`full-${Math.random().toString(36).substring(2, 9)}`);
-  const [shouldRenderMiniMap, setShouldRenderMiniMap] = useState(true);
+  const [miniMapKey] = useState(`mini-${Math.random().toString(36).substring(2, 9)}`);
+  const [fullMapKey] = useState(`full-${Math.random().toString(36).substring(2, 9)}`);
   const [shouldRenderFullMap, setShouldRenderFullMap] = useState(false);
+  const componentMounted = useRef(true);
+  
+  // Track component mounting status
+  useEffect(() => {
+    componentMounted.current = true;
+    return () => {
+      componentMounted.current = false;
+    };
+  }, []);
   
   // Handle dialog state changes to prevent DOM manipulation conflicts
   useEffect(() => {
@@ -25,36 +33,27 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
     if (open) {
       // Small delay to ensure dialog animation starts first
       const timer = setTimeout(() => {
-        setShouldRenderFullMap(true);
+        if (componentMounted.current) {
+          setShouldRenderFullMap(true);
+        }
       }, 100);
       return () => clearTimeout(timer);
     } else {
       // When dialog closes, wait for animation to complete before unmounting
       const timer = setTimeout(() => {
-        setShouldRenderFullMap(false);
-        // Generate new key for full map when closed to ensure clean remount
-        setFullMapKey(`full-${Math.random().toString(36).substring(2, 9)}`);
+        if (componentMounted.current) {
+          setShouldRenderFullMap(false);
+        }
       }, 300);
       return () => clearTimeout(timer);
     }
   }, [open]);
-
-  // Regenerate mini map on component remount
-  useEffect(() => {
-    // Generate fresh IDs on mount to avoid stale references
-    setMiniMapKey(`mini-${Math.random().toString(36).substring(2, 9)}`);
-    setFullMapKey(`full-${Math.random().toString(36).substring(2, 9)}`);
-    
-    return () => {
-      // Ensure maps are unmounted during component cleanup
-      setShouldRenderMiniMap(false);
-      setShouldRenderFullMap(false);
-    };
-  }, []);
   
   // Dialog open handler with safety
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
+    if (componentMounted.current) {
+      setOpen(newOpen);
+    }
   };
   
   return (
@@ -69,29 +68,27 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
             variant="ghost" 
             size="icon" 
             className="h-8 w-8 text-gray-600 hover:text-indexa-purple"
-            onClick={() => setOpen(true)}
+            onClick={() => handleOpenChange(true)}
           >
             <Maximize2 className="h-4 w-4" />
           </Button>
         </div>
         <div className="h-[180px] relative">
-          {/* Only render mini map when needed with unique key */}
-          {shouldRenderMiniMap && (
-            <div className="h-full w-full">
-              <PanelMap
-                panels={panels}
-                selectedLocation={selectedLocation}
-                onAddToCart={onAddToCart}
-                miniMap={true}
-                instanceId={miniMapKey}
-                key={miniMapKey}
-              />
-            </div>
-          )}
+          {/* Mini map with unique key */}
+          <div className="h-full w-full">
+            <PanelMap
+              panels={panels}
+              selectedLocation={selectedLocation}
+              onAddToCart={onAddToCart}
+              miniMap={true}
+              instanceId={miniMapKey}
+              key={miniMapKey}
+            />
+          </div>
           {/* Overlay for click handling */}
           <div 
             className="absolute inset-0 bg-transparent cursor-pointer"
-            onClick={() => setOpen(true)}
+            onClick={() => handleOpenChange(true)}
             title="Clique para expandir o mapa"
           />
         </div>

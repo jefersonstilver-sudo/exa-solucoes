@@ -1,6 +1,6 @@
 
 /// <reference types="@types/google.maps" />
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import type { Panel } from '@/types/panel';
 import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 import { useMapMarkers } from '@/hooks/useMapMarkers';
@@ -28,6 +28,7 @@ const PanelMap: React.FC<PanelMapProps> = ({
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { toast } = useToast();
+  const componentMountedRef = useRef(true);
   
   // Use our custom hooks
   const {
@@ -44,34 +45,43 @@ const PanelMap: React.FC<PanelMapProps> = ({
     addPanelMarkers,
     addSelectedLocationMarker
   } = useMapMarkers({ onAddToCart, instanceId });
+
+  // Track component mounting status
+  useEffect(() => {
+    componentMountedRef.current = true;
+    return () => {
+      componentMountedRef.current = false;
+    };
+  }, []);
   
   // Update markers when data changes
   useEffect(() => {
-    if (mapInitialized && mapRef.current) {
-      // Add markers with delay to ensure map is ready
-      const timer = setTimeout(() => {
-        if (mountedRef.current && mapRef.current) {
-          // Add panel markers and get bounds
-          const bounds = addPanelMarkers(mapRef.current, panels, mapInitialized);
-          
-          // Add selected location marker if available
-          if (selectedLocation) {
-            addSelectedLocationMarker(mapRef.current, selectedLocation, mapInitialized);
-          }
-          // If no selected location but have markers, fit bounds
-          else if (bounds && !selectedLocation) {
-            fitMapToBounds(mapRef.current, bounds);
-          }
-        }
-      }, 500);
+    if (!mapInitialized || !mapRef.current || !componentMountedRef.current) return;
+    
+    // Add markers with delay to ensure map is ready
+    const timer = setTimeout(() => {
+      if (!componentMountedRef.current || !mapRef.current) return;
       
-      return () => clearTimeout(timer);
-    }
+      // Add panel markers and get bounds
+      const bounds = addPanelMarkers(mapRef.current, panels, mapInitialized);
+      
+      // Add selected location marker if available
+      if (selectedLocation) {
+        addSelectedLocationMarker(mapRef.current, selectedLocation, mapInitialized);
+      }
+      // If no selected location but have markers, fit bounds
+      else if (bounds && !selectedLocation) {
+        fitMapToBounds(mapRef.current, bounds);
+      }
+    }, 500);
     
     return () => {
-      clearMarkersAndInfoWindows();
+      clearTimeout(timer);
+      if (componentMountedRef.current) {
+        clearMarkersAndInfoWindows();
+      }
     };
-  }, [panels, selectedLocation, addPanelMarkers, addSelectedLocationMarker, mapInitialized, mapRef, mountedRef, clearMarkersAndInfoWindows]);
+  }, [panels, selectedLocation, addPanelMarkers, addSelectedLocationMarker, mapInitialized, mapRef, clearMarkersAndInfoWindows]);
 
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
