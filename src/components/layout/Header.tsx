@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, KeyRound, MapPin, Menu, X } from 'lucide-react';
+import { ShoppingBag, User, Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import PanelCart from '@/components/panels/PanelCart';
 
 interface HeaderProps {
@@ -22,13 +23,13 @@ const Header: React.FC<HeaderProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple to-indexa-purple-dark shadow-md border-b border-purple-800/30">
+    <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">
       <div className="flex items-center gap-6">
         <Link to="/" className="text-white text-lg font-semibold transition-colors">
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
             alt="Indexa Logo" 
-            className="h-10 w-auto object-contain"
+            className="h-12 w-auto object-contain" // Increased logo size
           />
         </Link>
         
@@ -54,35 +55,44 @@ const Header: React.FC<HeaderProps> = ({
           Loja Online
         </Button>
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative text-white hover:bg-white/20"
-            >
-              <ShoppingBag className="h-6 w-6" />
-              {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartItems.length}
-                </span>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
-            <PanelCart 
-              cartItems={cartItems} 
-              onRemove={onRemoveFromCart} 
-              onClear={onClearCart} 
-              onChangeDuration={onChangeDuration} 
-            />
-          </SheetContent>
-        </Sheet>
-        
-        <Button className="bg-transparent border border-white text-white rounded-full hover:bg-white/20 hover:text-white text-base font-medium">
-          <KeyRound className="mr-2 h-5 w-5" />
-          Acesso
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative text-white hover:bg-white/20"
+              >
+                <ShoppingBag className="h-6 w-6" />
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
+              <PanelCart 
+                cartItems={cartItems} 
+                onRemove={onRemoveFromCart} 
+                onClear={onClearCart} 
+                onChangeDuration={onChangeDuration} 
+              />
+            </SheetContent>
+          </Sheet>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/20 rounded-full"
+          >
+            <Avatar className="h-9 w-9 bg-indexa-purple-light border-2 border-indexa-mint">
+              <AvatarFallback className="bg-indexa-purple-light text-white">
+                <User className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </div>
       </div>
       
       {/* Mobile menu button */}
@@ -135,10 +145,20 @@ const Header: React.FC<HeaderProps> = ({
             <Link to="/paineis-digitais" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
               Painéis Digitais
             </Link>
-            <Button className="bg-white/20 text-white rounded-md hover:bg-white/30">
-              <KeyRound className="mr-2 h-5 w-5" />
-              Acesso
-            </Button>
+            <div className="flex items-center justify-between p-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-white/20 rounded-full" 
+              >
+                <Avatar className="h-8 w-8 bg-indexa-purple-light border-2 border-indexa-mint">
+                  <AvatarFallback className="bg-indexa-purple-light text-white">
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+              <span className="text-white/90 font-medium">Acesso</span>
+            </div>
           </div>
         </div>
       )}
