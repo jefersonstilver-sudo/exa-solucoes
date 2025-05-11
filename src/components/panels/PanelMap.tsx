@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Info } from 'lucide-react';
+import { MapPin, Info, Maximize, Minimize } from 'lucide-react';
 import { Panel } from '@/types/panel';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { motion } from 'framer-motion';
 
 interface PanelMapProps {
   panels: Panel[];
@@ -61,15 +62,19 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
           // Create tooltip when hovering over pin
           const tooltip = document.createElement('div');
           tooltip.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white p-3 rounded shadow-lg hidden';
-          tooltip.style.width = '200px';
+          tooltip.style.width = '220px';
           tooltip.style.zIndex = '20';
           tooltip.innerHTML = `
             <h4 class="font-semibold text-sm">${panel.buildings.nome}</h4>
-            <p class="text-xs text-gray-500 mb-2">${panel.buildings.endereco}</p>
+            <p class="text-xs text-gray-500 mb-2">${panel.buildings.endereco}, ${panel.buildings.bairro}</p>
             <p class="text-xs mb-1">Status: <span class="font-semibold ${
               panel.status === 'online' ? 'text-green-600' : 'text-amber-600'
             }">${panel.status === 'online' ? 'Ativo' : 'Instalando'}</span></p>
-            <button class="text-xs bg-indexa-purple hover:bg-indexa-purple-dark text-white px-2 py-1 rounded w-full">
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>${panel.resolucao || '1080p'}</span>
+              <span>Visualizações: 1.2k/mês</span>
+            </div>
+            <button class="mt-2 text-xs bg-[#7C3AED] hover:bg-[#00F894] text-white px-2 py-1 rounded w-full transition-all hover:scale-105 duration-200">
               Adicionar ao Carrinho
             </button>
           `;
@@ -96,21 +101,28 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         const x = ((selectedLocation.lng + 180) / 360) * 100;
         const y = ((90 - selectedLocation.lat) / 180) * 100;
         
+        // Add pulse animation container
+        const pulseContainer = document.createElement('div');
+        pulseContainer.className = 'absolute z-20';
+        pulseContainer.style.left = `${x}%`;
+        pulseContainer.style.top = `${y}%`;
+        
+        // Create pulse animation
+        const pulse = document.createElement('div');
+        pulse.className = 'absolute w-16 h-16 -ml-8 -mt-8 bg-[#00F894] opacity-20 rounded-full animate-ping';
+        
+        // Create search pin
         const searchPin = document.createElement('div');
-        searchPin.className = 'absolute w-8 h-8 -ml-4 -mt-4 bg-indexa-purple text-white rounded-full flex items-center justify-center z-20';
+        searchPin.className = 'absolute w-8 h-8 -ml-4 -mt-4 bg-[#7C3AED] text-white rounded-full flex items-center justify-center z-20';
+        searchPin.innerHTML = '<span>📍</span>';
         searchPin.style.left = `${x}%`;
         searchPin.style.top = `${y}%`;
-        searchPin.innerHTML = '<span>📍</span>';
         
-        const pulse = document.createElement('div');
-        pulse.className = 'absolute w-16 h-16 -ml-8 -mt-8 bg-indexa-purple opacity-20 rounded-full animate-ping';
-        pulse.style.left = `${x}%`;
-        pulse.style.top = `${y}%`;
-        
-        mapElement.appendChild(pulse);
+        pulseContainer.appendChild(pulse);
+        mapElement.appendChild(pulseContainer);
         mapElement.appendChild(searchPin);
         
-        // Add a "You are here" label
+        // Add a "Your search" label
         const label = document.createElement('div');
         label.className = 'absolute bg-white px-2 py-1 rounded shadow-md text-xs font-medium z-20';
         label.style.left = `${x}%`;
@@ -144,19 +156,9 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
             <TooltipTrigger asChild>
               <Button variant="outline" size="sm" className="bg-white" onClick={toggleFullscreen}>
                 {isFullscreen ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
-                    <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
-                    <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
-                    <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
-                  </svg>
+                  <Minimize className="h-4 w-4" />
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 3h6v6"></path>
-                    <path d="M9 21H3v-6"></path>
-                    <path d="M21 3 9 15"></path>
-                    <path d="M3 9 15 21"></path>
-                  </svg>
+                  <Maximize className="h-4 w-4" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -189,12 +191,20 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       </div>
       
       {isFullscreen && (
-        <Button 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
           className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
-          onClick={toggleFullscreen}
         >
-          Fechar Mapa
-        </Button>
+          <Button 
+            className="bg-[#7C3AED] hover:bg-[#00F894] transition-all hover:scale-105 duration-200"
+            onClick={toggleFullscreen}
+          >
+            Fechar Mapa
+          </Button>
+        </motion.div>
       )}
     </div>
   );

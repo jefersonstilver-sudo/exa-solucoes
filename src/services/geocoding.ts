@@ -14,9 +14,9 @@ export async function getLocationCoordinates(query: string): Promise<{lat: numbe
     const encodedQuery = encodeURIComponent(query);
     
     // Use OpenStreetMap's Nominatim API for geocoding
-    // Add "São Paulo" to the query to focus search in Brazil
+    // Add "Foz do Iguaçu" to the query to focus search in the target city
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodedQuery}+São+Paulo&format=json&limit=1&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/search?q=${encodedQuery}+Foz+do+Iguaçu&format=json&limit=1&addressdetails=1`,
       {
         headers: {
           // Add a user agent as requested by Nominatim usage policy
