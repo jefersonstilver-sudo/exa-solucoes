@@ -22,6 +22,25 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+
+  // Close menu when cart is opened
+  const handleCartOpen = (open: boolean) => {
+    setIsCartOpen(open);
+    if (open) setIsMenuOpen(false);
+  };
+  
+  // Close cart when menu is opened
+  const handleMenuOpen = () => {
+    setIsMenuOpen(!isMenuOpen);
+    if (!isMenuOpen) setIsCartOpen(false);
+  };
+
+  // Handle mobile cart separately
+  const handleMobileCartOpen = (open: boolean) => {
+    setIsMobileCartOpen(open);
+    if (open) setIsMenuOpen(false);
+  };
 
   return (
     <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">
@@ -74,7 +93,7 @@ const Header: React.FC<HeaderProps> = ({
           </Button>
           
           {/* Shopping cart moved to the right of the user icon */}
-          <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+          <Sheet open={isCartOpen} onOpenChange={handleCartOpen}>
             <SheetTrigger asChild>
               <Button 
                 variant="ghost" 
@@ -117,7 +136,7 @@ const Header: React.FC<HeaderProps> = ({
         </Button>
         
         {/* Shopping cart moved to the right of the user icon in mobile */}
-        <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+        <Sheet open={isMobileCartOpen} onOpenChange={handleMobileCartOpen}>
           <SheetTrigger asChild>
             <Button 
               variant="ghost" 
@@ -145,7 +164,7 @@ const Header: React.FC<HeaderProps> = ({
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => setIsMenuOpen(!isMenuOpen)} 
+          onClick={handleMenuOpen} 
           className="text-white hover:bg-white/20"
         >
           {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
