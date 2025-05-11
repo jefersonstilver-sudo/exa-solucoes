@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Check, CheckCircle, Building, MapPin, User, Clock, Monitor, Star, ArrowUpRight } from 'lucide-react';
+import { Check, CheckCircle, Building, MapPin, Users, Eye, Monitor, Star, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +16,17 @@ interface PanelListProps {
 }
 
 const durationOptions = [
-  { days: 30, discount: 0 },
-  { days: 60, discount: 5 },
-  { days: 90, discount: 10 }
+  { days: 30, discount: 0 }
+];
+
+// Array de amenidades de condomínio para exibição
+const amenities = [
+  { icon: '🏋️', name: 'Academia' },
+  { icon: '🏊', name: 'Piscina' },
+  { icon: '🎉', name: 'Salão de Festas' },
+  { icon: '🐶', name: 'Pet Place' },
+  { icon: '🥩', name: 'Área de Churrasqueira' },
+  { icon: '🧒', name: 'Playground' }
 ];
 
 const PanelList: React.FC<PanelListProps> = ({ 
@@ -33,14 +41,14 @@ const PanelList: React.FC<PanelListProps> = ({
   };
   
   // Simulate pricing based on panel info
-  const calculatePrice = (panel: Panel, days = 30) => {
+  const calculatePrice = (panel: Panel) => {
     // In a real implementation, this would come from the backend
     // Here we're using a simple formula for demonstration
     const basePrice = 100; // Base daily rate
     const locationFactor = panel.buildings?.bairro === 'Vila A' ? 1.5 : 
                           panel.buildings?.bairro === 'Centro' ? 1.3 : 1;
     
-    return Math.round(basePrice * locationFactor * days);
+    return Math.round(basePrice * locationFactor * 30);
   };
   
   // Format currency
@@ -49,6 +57,17 @@ const PanelList: React.FC<PanelListProps> = ({
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+  
+  // Generate random amenities for each panel
+  const getRandomAmenities = () => {
+    const shuffled = [...amenities].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.floor(Math.random() * 6) + 2); // 2-6 amenities
+  };
+  
+  // Generate random estimated residents
+  const getRandomResidents = () => {
+    return Math.floor(Math.random() * 800) + 200; // 200-1000 residents
   };
   
   // Animation variants
@@ -69,31 +88,27 @@ const PanelList: React.FC<PanelListProps> = ({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {[1, 2, 3].map(i => (
-          <Card key={i} className="overflow-hidden">
+          <Card key={i} className="overflow-hidden border border-gray-200">
             <CardContent className="p-0">
-              <div className="p-6">
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2 mb-4" />
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-6 w-24" />
+              <div className="h-52 bg-gray-200 animate-pulse"></div>
+              <div className="p-6 space-y-4">
+                <Skeleton className="h-7 w-2/3" />
+                <Skeleton className="h-5 w-full" />
+                <div className="flex gap-2 overflow-x-auto py-2">
+                  {[1, 2, 3, 4].map(a => (
+                    <Skeleton key={a} className="h-8 w-20 flex-shrink-0" />
+                  ))}
                 </div>
-                <div className="flex items-center mb-2">
-                  <Skeleton className="h-4 w-4 mr-2 rounded-full" />
-                  <Skeleton className="h-4 flex-1" />
+                <div className="grid grid-cols-2 gap-4">
+                  <Skeleton className="h-6" />
+                  <Skeleton className="h-6" />
                 </div>
-                <div className="flex items-center mb-4">
-                  <Skeleton className="h-4 w-4 mr-2 rounded-full" />
-                  <Skeleton className="h-4 flex-1" />
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-8 w-32" />
+                  <Skeleton className="h-10 w-36" />
                 </div>
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  <Skeleton className="h-12" />
-                  <Skeleton className="h-12" />
-                  <Skeleton className="h-12" />
-                </div>
-                <Skeleton className="h-10 w-full" />
               </div>
             </CardContent>
           </Card>
@@ -126,124 +141,126 @@ const PanelList: React.FC<PanelListProps> = ({
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
+      className="space-y-6"
     >
       {panels.map(panel => {
-        const visualizacoes = Math.floor(Math.random() * 5000) + 1000;
-        const rating = (Math.floor(Math.random() * 10) + 40) / 10; // Between 4.0 and 5.0
+        // Gerar dados simulados para cada painel
+        const visualizacoes = Math.floor(Math.random() * 50000) + 10000;
+        const randomAmenities = getRandomAmenities();
+        const estimatedResidents = getRandomResidents();
+        const price = calculatePrice(panel);
         
         return (
-          <motion.div key={panel.id} variants={itemVariants}>
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full">
+          <motion.div key={panel.id} variants={itemVariants} className="w-full">
+            <Card className="overflow-hidden border border-[#eaeaea] hover:shadow-lg transition-all duration-300">
               <CardContent className="p-0">
-                {/* Placeholder building facade image */}
-                <div className="relative h-44 bg-gradient-to-r from-[#7C3AED]/80 to-[#7C3AED] flex items-center justify-center">
-                  <Building className="h-16 w-16 text-white/80" />
+                {/* Building image - full width */}
+                <div className="relative h-64 w-full bg-gradient-to-r from-gray-700 to-gray-900">
+                  <img 
+                    src={(panel.buildings as any).imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'} 
+                    alt={panel.buildings?.nome || 'Building image'}
+                    className="h-full w-full object-cover"
+                  />
                   
-                  {/* Status badge */}
-                  <div className="absolute top-3 left-3">
-                    <Badge className={`${panel.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                      {panel.status === 'online' ? 'Ativo' : 'Instalando'}
-                    </Badge>
-                  </div>
-                  
-                  {/* Rating */}
-                  <div className="absolute top-3 right-3">
-                    <Badge className="bg-white text-gray-800 flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      {rating.toFixed(1)}
-                    </Badge>
+                  {/* Status indicator - small dot at top right */}
+                  <div className="absolute top-4 right-4 bg-white rounded-full shadow-md px-3 py-1.5 flex items-center gap-1.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${panel.status === 'online' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                    <span className="text-xs font-medium text-gray-800">
+                      {panel.status === 'online' ? 'Ativo' : 'Em instalação'}
+                    </span>
                   </div>
                 </div>
                 
                 <div className="p-6">
-                  <h3 className="font-semibold text-lg mb-1">{panel.buildings?.nome || 'Nome do Prédio'}</h3>
-                  <div className="flex items-start mb-3">
-                    <MapPin className="h-4 w-4 text-gray-500 mt-0.5 mr-1 flex-shrink-0" />
-                    <p className="text-sm text-muted-foreground">
+                  {/* Building name */}
+                  <h3 className="text-xl font-semibold text-gray-800 mb-1.5">
+                    {panel.buildings?.nome || 'Nome do Edifício'}
+                  </h3>
+                  
+                  {/* Address */}
+                  <div className="flex items-start mb-5">
+                    <MapPin className="h-5 w-5 text-gray-500 mt-0.5 mr-1.5 flex-shrink-0" />
+                    <p className="text-gray-600">
                       {panel.buildings?.endereco || 'Endereço'}, {panel.buildings?.bairro || 'Bairro'}
                     </p>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant="outline" className="bg-gray-50">
-                      {panel.resolucao || '1080p'}
-                    </Badge>
-                    <Badge variant="outline" className="bg-gray-50">
-                      {panel.buildings?.bairro || 'Bairro'}
-                    </Badge>
-                    {panel.modo && (
-                      <Badge variant="outline" className="bg-gray-50">
-                        {panel.modo}
-                      </Badge>
-                    )}
+                  {/* Amenities row with horizontal scroll if needed */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">Comodidades do condomínio:</h4>
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                      {randomAmenities.map((amenity, idx) => (
+                        <Badge 
+                          key={idx} 
+                          variant="outline" 
+                          className="flex items-center gap-1.5 py-1.5 px-3 whitespace-nowrap border-gray-200 bg-gray-50"
+                        >
+                          <span>{amenity.icon}</span>
+                          <span>{amenity.name}</span>
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                   
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <Monitor className="h-4 w-4 text-gray-500 mr-1" />
-                      <span className="text-sm">1 tela</span>
+                  {/* Stats section */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    {/* Residents */}
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="text-lg font-semibold text-gray-800">+{estimatedResidents}</p>
+                        <p className="text-sm text-gray-500">moradores impactados</p>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 text-gray-500 mr-1" />
-                      <span className="text-sm font-medium">
-                        {visualizacoes.toLocaleString('pt-BR')}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-1">views/mês</span>
+                    {/* Monthly views */}
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="text-lg font-semibold text-gray-800">+{visualizacoes.toLocaleString('pt-BR')}</p>
+                        <p className="text-sm text-gray-500">views/mês</p>
+                      </div>
+                    </div>
+                    
+                    {/* Screens */}
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="text-lg font-semibold text-gray-800">1</p>
+                        <p className="text-sm text-gray-500">tela instalada</p>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center mb-4">
-                    <Clock className="h-4 w-4 text-gray-500 mr-2" />
-                    <span className="text-sm">
-                      Atualizado: {panel.ultima_sync ? new Date(panel.ultima_sync).toLocaleDateString('pt-BR') : 'N/A'}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {durationOptions.map(option => {
-                      const price = calculatePrice(panel, option.days);
-                      const discountedPrice = price * (1 - (option.discount / 100));
-                      
-                      return (
-                        <div
-                          key={option.days}
-                          className="border rounded-lg p-2 text-center cursor-pointer hover:border-[#7C3AED] hover:shadow-md transition-all"
-                          onClick={() => onAddToCart(panel, option.days)}
-                        >
-                          <div className="font-medium text-sm mb-1">{option.days} dias</div>
-                          <div className="text-sm font-semibold">
-                            {formatCurrency(discountedPrice)}
-                            {option.discount > 0 && (
-                              <span className="block text-xs text-green-600">-{option.discount}%</span>
-                            )}
-                          </div>
+                  {/* Price and CTA section */}
+                  <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-100">
+                    <div className="mb-4 sm:mb-0">
+                      <p className="text-sm text-gray-500 mb-1">Preço por 30 dias:</p>
+                      <p className="text-2xl font-bold text-indexa-purple">{formatCurrency(price)}</p>
+                    </div>
+                    
+                    <Button 
+                      className={`transition-all text-base px-6 py-6 rounded-full ${
+                        isPanelInCart(panel.id) 
+                          ? 'bg-green-600 hover:bg-green-700 hover:scale-105' 
+                          : 'bg-[#00ffb7] hover:bg-[#00e6a5] text-gray-800 hover:scale-105 hover:shadow-lg'
+                      }`}
+                      onClick={() => onAddToCart(panel, 30)}
+                      disabled={isPanelInCart(panel.id)}
+                    >
+                      {isPanelInCart(panel.id) ? (
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5" />
+                          <span>Adicionado</span>
                         </div>
-                      );
-                    })}
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span>Adicionar ao carrinho</span>
+                          <ArrowUpRight className="h-5 w-5" />
+                        </div>
+                      )}
+                    </Button>
                   </div>
-                  
-                  <Button 
-                    className={`w-full transition-all hover:scale-105 duration-200 ${
-                      isPanelInCart(panel.id) 
-                        ? 'bg-green-600 hover:bg-green-700' 
-                        : 'bg-[#7C3AED] hover:bg-[#00F894]'
-                    }`}
-                    onClick={() => onAddToCart(panel)}
-                    disabled={isPanelInCart(panel.id)}
-                  >
-                    {isPanelInCart(panel.id) ? (
-                      <>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Adicionado ao carrinho
-                      </>
-                    ) : (
-                      <>
-                        Adicionar ao carrinho
-                      </>
-                    )}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
