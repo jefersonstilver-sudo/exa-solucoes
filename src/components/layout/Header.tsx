@@ -21,6 +21,7 @@ const Header: React.FC<HeaderProps> = ({
   onChangeDuration = () => {} 
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   return (
     <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">
@@ -73,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({
           </Button>
           
           {/* Shopping cart moved to the right of the user icon */}
-          <Sheet>
+          <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
             <SheetTrigger asChild>
               <Button 
                 variant="ghost" 
@@ -116,7 +117,7 @@ const Header: React.FC<HeaderProps> = ({
         </Button>
         
         {/* Shopping cart moved to the right of the user icon in mobile */}
-        <Sheet>
+        <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
           <SheetTrigger asChild>
             <Button 
               variant="ghost" 
