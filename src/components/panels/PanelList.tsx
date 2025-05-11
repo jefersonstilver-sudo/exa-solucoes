@@ -1,14 +1,13 @@
 
 import React from 'react';
-import { Check, CheckCircle, Building, MapPin, Users, Eye, Monitor, Star, ArrowUpRight } from 'lucide-react';
+import { Users, Eye, Monitor, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Panel } from '@/types/panel';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Tooltip } from '@/components/ui/tooltip';
-import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PanelListProps {
   panels: Panel[];
@@ -128,7 +127,7 @@ const PanelList: React.FC<PanelListProps> = ({
         animate={{ opacity: 1 }}
         className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center"
       >
-        <Building className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+        <div className="mx-auto h-12 w-12 text-gray-400 mb-3">🏙️</div>
         <h3 className="text-lg font-semibold mb-1">Nenhum painel encontrado</h3>
         <p className="text-muted-foreground mb-4">
           Tente ajustar seus filtros ou buscar em outra localização.
@@ -160,14 +159,14 @@ const PanelList: React.FC<PanelListProps> = ({
             <Card className="overflow-hidden border border-[#eaeaea] hover:shadow-lg transition-all duration-300">
               <CardContent className="p-0">
                 {/* Building image - full width */}
-                <div className="relative h-64 w-full bg-gradient-to-r from-gray-700 to-gray-900">
+                <div className="relative h-64 w-full">
                   <img 
                     src={(panel.buildings as any)?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'} 
                     alt={panel.buildings?.nome || 'Building image'}
                     className="h-full w-full object-cover"
                   />
                   
-                  {/* Status indicator - small dot at top right (mantido por ser relevante) */}
+                  {/* Status indicator - small dot at top right */}
                   <div className="absolute top-4 right-4 bg-white rounded-full shadow-md px-3 py-1.5 flex items-center gap-1.5">
                     <span className={`w-2.5 h-2.5 rounded-full ${panel.status === 'online' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
                     <span className="text-xs font-medium text-gray-800">
@@ -184,7 +183,6 @@ const PanelList: React.FC<PanelListProps> = ({
                   
                   {/* Address */}
                   <div className="flex items-start mb-5">
-                    <MapPin className="h-5 w-5 text-gray-500 mt-0.5 mr-1.5 flex-shrink-0" />
                     <p className="text-gray-600">
                       {panel.buildings?.endereco || 'Endereço'}, {panel.buildings?.bairro || 'Bairro'}
                     </p>
@@ -275,10 +273,7 @@ const PanelList: React.FC<PanelListProps> = ({
                               <span>Adicionado</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <span>Adicionar ao carrinho</span>
-                              <ArrowUpRight className="h-5 w-5" />
-                            </div>
+                            <span>Adicionar ao carrinho</span>
                           )}
                         </Button>
                       </motion.div>
