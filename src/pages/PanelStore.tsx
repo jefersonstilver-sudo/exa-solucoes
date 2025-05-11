@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Filter, CheckCircle, X, Search, Loader2 } from 'lucide-react';
@@ -7,7 +8,7 @@ import PanelMap from '@/components/panels/PanelMap';
 import PanelFilters from '@/components/panels/PanelFilters';
 import PanelList from '@/components/panels/PanelList';
 import PanelCart from '@/components/panels/PanelCart';
-import { Panel } from '@/types/panel';
+import { Panel, Building } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -279,13 +280,18 @@ export default function PanelStore() {
               // Map the API response to match our Panel type
               return (result.data || []).map(panel => {
                 // Ensure status is one of the allowed values
-                let validStatus: 'online' | 'offline' | 'maintenance' = 'offline';
+                let validStatus: 'online' | 'offline' | 'maintenance' | 'installing' = 'offline';
                 if (panel.status === 'online') validStatus = 'online';
                 else if (panel.status === 'maintenance') validStatus = 'maintenance';
+                else if (panel.status === 'installing') validStatus = 'installing';
+                
+                // Convert the buildings JSON to our Building type
+                const buildings = panel.buildings as any;
                 
                 return {
                   ...panel,
-                  status: validStatus
+                  status: validStatus,
+                  buildings: buildings as Building
                 } as Panel;
               });
             }
@@ -445,9 +451,104 @@ export default function PanelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 py-8"
       >
-        <h1 className="text-3xl font-bold text-[#7C3AED] mb-6">
-          Painéis Digitais
-        </h1>
+        <div className="bg-white rounded-lg shadow-md mb-6">
+          <div className="p-4 border-b flex flex-col space-y-4">
+            <h1 className="text-2xl font-bold text-[#7C3AED]">
+              Encontre Painéis Digitais
+            </h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm mb-1 text-gray-500">Digite o bairro ou localização desejada</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchLocation}
+                    onChange={(e) => setSearchLocation(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-md focus:ring-[#7C3AED] focus:border-[#7C3AED] focus:outline-none"
+                    placeholder="Bairro, endereço ou ponto de referência"
+                    disabled={isSearching}
+                  />
+                  {searchLocation && (
+                    <button
+                      onClick={() => setSearchLocation('')}
+                      className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleSearch(searchLocation)}
+                    disabled={isSearching || !searchLocation}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-[#7C3AED] p-1 rounded-md hover:bg-[#6A1888] disabled:bg-gray-300"
+                  >
+                    {isSearching ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm mb-1 text-gray-500">Data de início</label>
+                <input
+                  type="date"
+                  className="w-full px-4 py-2 border rounded-md focus:ring-[#7C3AED] focus:border-[#7C3AED] focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm mb-1 text-gray-500">Período</label>
+                <select
+                  className="w-full px-4 py-2 border rounded-md focus:ring-[#7C3AED] focus:border-[#7C3AED] focus:outline-none appearance-none"
+                  defaultValue="30"
+                >
+                  <option value="30">30 dias</option>
+                  <option value="60">60 dias</option>
+                  <option value="90">90 dias</option>
+                </select>
+              </div>
+            </div>
+            
+            {selectedLocation && (
+              <div className="flex justify-between items-center mt-2">
+                <div className="flex items-center text-sm">
+                  <MapPin className="w-4 h-4 mr-1 text-[#7C3AED]" />
+                  <span className="text-[#7C3AED]">{searchLocation}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-500 mr-2">
+                    {panels?.length || 0} resultados no raio de {filters.radius / 1000} km
+                  </span>
+                  <select 
+                    className="px-2 py-1 text-sm border rounded-md focus:outline-none"
+                    value={filters.radius}
+                    onChange={(e) => handleFilterChange({ radius: Number(e.target.value) })}
+                  >
+                    <option value="500">500m</option>
+                    <option value="1000">1km</option>
+                    <option value="3000">3km</option>
+                    <option value="5000">5km</option>
+                    <option value="10000">10km</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Map container */}
+          <div className="p-4 bg-gray-50">
+            <div className="h-[280px] rounded-lg overflow-hidden border">
+              <PanelMap 
+                panels={panels || []} 
+                selectedLocation={selectedLocation}
+                onAddToCart={handleAddToCart}
+              />
+            </div>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Mobile Filter Trigger */}
@@ -456,7 +557,7 @@ export default function PanelStore() {
               <SheetTrigger asChild>
                 <Button variant="outline" className="w-full border-[#7C3AED] text-[#7C3AED]">
                   <Filter className="mr-2 h-4 w-4" />
-                  Filtros
+                  Filtrar por
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[85%] sm:w-[350px] overflow-y-auto">
@@ -472,27 +573,23 @@ export default function PanelStore() {
           
           {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block lg:col-span-3 xl:col-span-3">
-            <PanelFilters 
-              filters={filters} 
-              onFilterChange={handleFilterChange}
-              onSearch={handleSearch}
-              loading={isLoading || isSearching}
-            />
+            <div className="sticky top-24">
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h2 className="font-bold text-lg mb-4">Filtrar por</h2>
+                <PanelFilters 
+                  filters={filters} 
+                  onFilterChange={handleFilterChange}
+                  onSearch={handleSearch}
+                  loading={isLoading || isSearching}
+                />
+              </div>
+            </div>
           </div>
           
           {/* Panel Results */}
           <div className="lg:col-span-6 xl:col-span-6">
-            {/* Map View */}
-            <div className="mb-6 rounded-lg overflow-hidden h-[350px] border shadow-md">
-              <PanelMap 
-                panels={panels || []} 
-                selectedLocation={selectedLocation}
-                onAddToCart={handleAddToCart}
-              />
-            </div>
-            
-            {/* Location info and search status */}
-            <div className="flex justify-between items-center mb-4 bg-white p-3 rounded-lg border shadow-sm">
+            {/* Loading and result count */}
+            <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-[#7C3AED]">
                 {isLoading || isSearching ? (
                   <div className="flex items-center">
@@ -500,30 +597,21 @@ export default function PanelStore() {
                     Buscando painéis...
                   </div>
                 ) : panels && panels.length > 0 ? (
-                  <>{panels.length} painéis encontrados</>
+                  <>Painéis disponíveis</>
                 ) : (
                   <>Nenhum painel encontrado</>
                 )}
               </h2>
-              {selectedLocation && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center text-sm bg-[#7C3AED]/10 px-2 py-1 rounded-md">
-                    <MapPin className="w-4 h-4 mr-1 text-[#7C3AED]" />
-                    <span className="truncate max-w-[200px] text-[#7C3AED]">{searchLocation}</span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleClearLocation}
-                    className="h-6 w-6 p-0 rounded-full hover:bg-red-100 hover:text-red-500"
-                  >
-                    <X className="h-3 w-3" />
-                    <span className="sr-only">Limpar localização</span>
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <select className="px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-[#7C3AED]">
+                  <option>Ordenar por: Maior Preço</option>
+                  <option>Ordenar por: Menor Preço</option>
+                  <option>Ordenar por: Mais visualizações</option>
+                </select>
+              </div>
             </div>
             
+            {/* Panel list */}
             <PanelList 
               panels={panels || []} 
               isLoading={isLoading || isSearching} 
@@ -534,18 +622,20 @@ export default function PanelStore() {
           
           {/* Cart Sidebar */}
           <div className="lg:col-span-3 xl:col-span-3">
-            <PanelCart 
-              cartItems={cartItems} 
-              onRemove={handleRemoveFromCart} 
-              onClear={handleClearCart}
-              onChangeDuration={(panelId, duration) => {
-                setCartItems(prev => prev.map(item => 
-                  item.panel.id === panelId 
-                    ? {...item, duration} 
-                    : item
-                ));
-              }}
-            />
+            <div className="sticky top-24">
+              <PanelCart 
+                cartItems={cartItems} 
+                onRemove={handleRemoveFromCart} 
+                onClear={handleClearCart}
+                onChangeDuration={(panelId, duration) => {
+                  setCartItems(prev => prev.map(item => 
+                    item.panel.id === panelId 
+                      ? {...item, duration} 
+                      : item
+                  ));
+                }}
+              />
+            </div>
           </div>
         </div>
       </motion.div>
