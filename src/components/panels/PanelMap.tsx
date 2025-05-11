@@ -15,136 +15,214 @@ interface PanelMapProps {
   panels: Panel[];
   selectedLocation: {lat: number, lng: number} | null;
   onAddToCart?: (panel: Panel, duration?: number) => void;
-  miniMap?: boolean;  // Added miniMap prop
+  miniMap?: boolean;
 }
 
 const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCart, miniMap = false }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
   
+  // Load Google Maps script
   useEffect(() => {
-    // In a real application, you would use a proper map library like Google Maps or Leaflet
-    // For demonstration purposes, we'll create a simple visualization
-    
-    const drawMap = () => {
-      if (!mapContainerRef.current) return;
-      
-      const container = mapContainerRef.current;
-      container.innerHTML = '';
-      
-      const mapElement = document.createElement('div');
-      mapElement.className = 'relative w-full h-full bg-gray-100';
-      container.appendChild(mapElement);
-      
-      console.log(`Drawing map with ${panels.length} panels and location: ${selectedLocation ? `${selectedLocation.lat}, ${selectedLocation.lng}` : 'none'}`);
-      
-      // Draw pins for all panels that have coordinates
-      panels.forEach(panel => {
-        if (panel.buildings?.latitude && panel.buildings?.longitude) {
-          // Normalize coordinates to fit in our view
-          const lat = panel.buildings.latitude;
-          const lng = panel.buildings.longitude;
-          
-          // Calculate position (simplified for demo)
-          // In a real map implementation, you would use proper geo positioning
-          const x = ((lng + 180) / 360) * 100;
-          const y = ((90 - lat) / 180) * 100;
-          
-          const pin = document.createElement('div');
-          pin.className = `absolute w-6 h-6 -ml-3 -mt-3 rounded-full border-2 border-white
-                           ${panel.status === 'online' ? 'bg-green-500' : 'bg-amber-500'}
-                           flex items-center justify-center text-white cursor-pointer
-                           transition-transform hover:scale-110 z-10`;
-          pin.style.left = `${x}%`;
-          pin.style.top = `${y}%`;
-          
-          pin.innerHTML = `<span class="text-xs font-bold">${panel.buildings.nome.substring(0, 1)}</span>`;
-          
-          // Create tooltip when hovering over pin
-          const tooltip = document.createElement('div');
-          tooltip.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white p-3 rounded shadow-lg hidden';
-          tooltip.style.width = '220px';
-          tooltip.style.zIndex = '20';
-          tooltip.innerHTML = `
-            <h4 class="font-semibold text-sm">${panel.buildings.nome}</h4>
-            <p class="text-xs text-gray-500 mb-2">${panel.buildings.endereco}, ${panel.buildings.bairro}</p>
-            <p class="text-xs mb-1">Status: <span class="font-semibold ${
-              panel.status === 'online' ? 'text-green-600' : 'text-amber-600'
-            }">${panel.status === 'online' ? 'Ativo' : 'Instalando'}</span></p>
-            <div class="flex justify-between text-xs text-gray-500">
-              <span>${panel.resolucao || '1080p'}</span>
-              <span>Visualizações: 1.2k/mês</span>
-            </div>
-            <button class="mt-2 text-xs bg-[#7C3AED] hover:bg-[#00F894] text-white px-2 py-1 rounded w-full transition-all hover:scale-105 duration-200">
-              Adicionar ao Carrinho
-            </button>
-          `;
-          
-          pin.addEventListener('mouseenter', () => {
-            tooltip.classList.remove('hidden');
-          });
-          
-          pin.addEventListener('mouseleave', () => {
-            tooltip.classList.add('hidden');
-          });
-          
-          pin.addEventListener('click', () => {
-            if (onAddToCart) onAddToCart(panel);
-          });
-          
-          pin.appendChild(tooltip);
-          mapElement.appendChild(pin);
-        }
-      });
-      
-      // Draw selected location pin if available
-      if (selectedLocation) {
-        const x = ((selectedLocation.lng + 180) / 360) * 100;
-        const y = ((90 - selectedLocation.lat) / 180) * 100;
-        
-        // Add pulse animation container
-        const pulseContainer = document.createElement('div');
-        pulseContainer.className = 'absolute z-20';
-        pulseContainer.style.left = `${x}%`;
-        pulseContainer.style.top = `${y}%`;
-        
-        // Create pulse animation
-        const pulse = document.createElement('div');
-        pulse.className = 'absolute w-16 h-16 -ml-8 -mt-8 bg-[#00F894] opacity-20 rounded-full animate-ping';
-        
-        // Create search pin
-        const searchPin = document.createElement('div');
-        searchPin.className = 'absolute w-8 h-8 -ml-4 -mt-4 bg-[#7C3AED] text-white rounded-full flex items-center justify-center z-20';
-        searchPin.innerHTML = '<span>📍</span>';
-        searchPin.style.left = `${x}%`;
-        searchPin.style.top = `${y}%`;
-        
-        pulseContainer.appendChild(pulse);
-        mapElement.appendChild(pulseContainer);
-        mapElement.appendChild(searchPin);
-        
-        // Add a "Your search" label
-        const label = document.createElement('div');
-        label.className = 'absolute bg-white px-2 py-1 rounded shadow-md text-xs font-medium z-20';
-        label.style.left = `${x}%`;
-        label.style.top = `${y - 4}%`;
-        label.style.transform = 'translate(-50%, -100%)';
-        label.textContent = 'Sua busca';
-        
-        mapElement.appendChild(label);
-      }
-    };
-    
-    drawMap();
-    
-    // Clean up function
-    return () => {
-      if (mapContainerRef.current) {
-        mapContainerRef.current.innerHTML = '';
-      }
-    };
-  }, [panels, selectedLocation, onAddToCart]);
+    // Check if the script is already loaded
+    if (window.google && window.google.maps) {
+      initializeMap();
+      return;
+    }
 
+    const googleMapScript = document.createElement('script');
+    googleMapScript.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAVQPvo8asVwVVuWBxReck6ohF9vvDR_qM&libraries=places`;
+    googleMapScript.async = true;
+    googleMapScript.defer = true;
+    googleMapScript.onload = initializeMap;
+    document.head.appendChild(googleMapScript);
+
+    return () => {
+      // Cleanup markers when component unmounts
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
+    };
+  }, []);
+  
+  // Initialize map
+  const initializeMap = () => {
+    if (!mapContainerRef.current) return;
+    
+    // Center on Brazil if no location is selected
+    const defaultCenter = selectedLocation ? 
+      { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
+      { lat: -15.793889, lng: -47.882778 }; // Default to Brasilia
+    
+    const mapOptions = {
+      center: defaultCenter,
+      zoom: selectedLocation ? 13 : 5,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      zoomControlOptions: {
+        position: google.maps.ControlPosition.RIGHT_TOP
+      },
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }]
+        }
+      ]
+    };
+    
+    mapRef.current = new google.maps.Map(mapContainerRef.current, mapOptions);
+    setMapLoaded(true);
+    
+    // Add markers after map is initialized
+    if (panels.length > 0) {
+      addMarkers();
+    }
+    
+    // Add selected location marker if available
+    if (selectedLocation) {
+      addSelectedLocationMarker();
+    }
+  };
+  
+  // Add markers for all panels
+  const addMarkers = () => {
+    if (!mapRef.current) return;
+    
+    // Clear existing markers first
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+    
+    // Add new markers for each panel
+    panels.forEach(panel => {
+      if (panel.buildings?.latitude && panel.buildings?.longitude) {
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div class="p-2 min-w-[220px]">
+              <h4 class="font-semibold text-sm">${panel.buildings.nome}</h4>
+              <p class="text-xs text-gray-500 mb-2">${panel.buildings.endereco}, ${panel.buildings.bairro}</p>
+              <p class="text-xs mb-1">Status: <span class="font-semibold ${
+                panel.status === 'online' ? 'text-green-600' : 'text-amber-600'
+              }">${panel.status === 'online' ? 'Ativo' : 'Instalando'}</span></p>
+              <div class="flex justify-between text-xs text-gray-500">
+                <span>${panel.resolucao || '1080p'}</span>
+                <span>Visualizações: 1.2k/mês</span>
+              </div>
+              <button id="add-to-cart-${panel.id}" class="mt-2 text-xs bg-[#7C3AED] hover:bg-[#00F894] text-white px-2 py-1 rounded w-full transition-all hover:scale-105 duration-200">
+                Adicionar ao Carrinho
+              </button>
+            </div>
+          `
+        });
+        
+        const marker = new google.maps.Marker({
+          position: { lat: panel.buildings.latitude, lng: panel.buildings.longitude },
+          map: mapRef.current,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: panel.status === 'online' ? '#10B981' : '#F59E0B', // green or amber
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: '#ffffff',
+          },
+          title: panel.buildings.nome
+        });
+        
+        marker.addListener('click', () => {
+          // Close any open info windows
+          markersRef.current.forEach(m => {
+            google.maps.event.clearListeners(m, 'closeclick');
+          });
+          
+          infoWindow.open(mapRef.current, marker);
+          
+          // Add event listener to the "Add to Cart" button inside the info window
+          google.maps.event.addListenerOnce(infoWindow, 'domready', () => {
+            const button = document.getElementById(`add-to-cart-${panel.id}`);
+            if (button) {
+              button.addEventListener('click', () => {
+                if (onAddToCart) onAddToCart(panel);
+                infoWindow.close();
+              });
+            }
+          });
+        });
+        
+        markersRef.current.push(marker);
+      }
+    });
+    
+    // Fit bounds if there are markers and no selected location
+    if (markersRef.current.length > 0 && !selectedLocation) {
+      const bounds = new google.maps.LatLngBounds();
+      markersRef.current.forEach(marker => {
+        bounds.extend(marker.getPosition() as google.maps.LatLng);
+      });
+      mapRef.current.fitBounds(bounds);
+      
+      // Don't zoom in too far
+      const listener = google.maps.event.addListener(mapRef.current, 'idle', () => {
+        if (mapRef.current && mapRef.current.getZoom() as number > 15) {
+          mapRef.current.setZoom(15);
+        }
+        google.maps.event.removeListener(listener);
+      });
+    }
+  };
+  
+  // Add marker for selected location
+  const addSelectedLocationMarker = () => {
+    if (!mapRef.current || !selectedLocation) return;
+    
+    const marker = new google.maps.Marker({
+      position: { lat: selectedLocation.lat, lng: selectedLocation.lng },
+      map: mapRef.current,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 12,
+        fillColor: '#7C3AED', // purple
+        fillOpacity: 0.7,
+        strokeWeight: 2,
+        strokeColor: '#ffffff',
+      },
+      title: 'Localização selecionada',
+      zIndex: 1000 // Keep on top
+    });
+    
+    // Add ripple animation
+    const cityCircle = new google.maps.Circle({
+      strokeColor: '#00F894',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#00F894',
+      fillOpacity: 0.2,
+      map: mapRef.current,
+      center: { lat: selectedLocation.lat, lng: selectedLocation.lng },
+      radius: 300, // Meters
+    });
+    
+    // Center map on selected location
+    mapRef.current.setCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng });
+    mapRef.current.setZoom(14);
+    
+    markersRef.current.push(marker);
+  };
+  
+  // Update markers when panels or selected location changes
+  useEffect(() => {
+    if (mapRef.current) {
+      addMarkers();
+      
+      if (selectedLocation) {
+        addSelectedLocationMarker();
+      }
+    }
+  }, [panels, selectedLocation]);
+  
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
@@ -178,7 +256,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="max-w-sm">
-                <p>Clique nos marcadores para adicionar o painel ao carrinho. Em uma implementação real, este mapa usaria Google Maps ou Leaflet.</p>
+                <p>Clique nos marcadores para adicionar o painel ao carrinho.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -186,9 +264,11 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       </div>
       
       <div ref={mapContainerRef} className="w-full h-full">
-        <div className="flex items-center justify-center h-full">
-          <p>Carregando mapa...</p>
-        </div>
+        {!mapLoaded && (
+          <div className="flex items-center justify-center h-full">
+            <p>Carregando mapa...</p>
+          </div>
+        )}
       </div>
       
       {isFullscreen && (
