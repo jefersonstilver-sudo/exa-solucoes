@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Filter } from 'lucide-react';
 import { Panel } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
-import MiniMap from '@/components/panels/MiniMap';
 import PanelFilters from '@/components/panels/PanelFilters';
 import PanelList from '@/components/panels/PanelList';
 import ResultsHeader from '@/components/panels/ResultsHeader';
@@ -37,17 +36,8 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Filters and mini-map column */}
+      {/* Filters column */}
       <div className="lg:col-span-3 xl:col-span-3 space-y-6">
-        {/* Mini Map */}
-        <div className="hidden lg:block">
-          <MiniMap 
-            panels={panels || []} 
-            selectedLocation={selectedLocation}
-            onAddToCart={onAddToCart}
-          />
-        </div>
-        
         {/* Mobile Filter Trigger */}
         <div className="lg:hidden w-full">
           <Sheet>
