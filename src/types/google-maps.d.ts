@@ -4,8 +4,9 @@
 declare global {
   interface Window {
     google: typeof google;
-    initMap?: () => void;
-    mapsApiLoaded?: boolean;
+    initMap: () => void;
+    mapsApiLoaded: boolean;
+    googleMapsCallback?: () => void;
   }
 }
 

@@ -26,7 +26,7 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
       // após a animação do diálogo iniciar
       const timer = setTimeout(() => {
         setIsFullMapMounted(true);
-      }, 100);
+      }, 300);
       
       return () => clearTimeout(timer);
     } else {
