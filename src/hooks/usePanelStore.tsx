@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Panel } from '@/types/panel';
+import { Panel, Building } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -64,9 +64,13 @@ export const usePanelStore = (): UsePanelStoreReturn => {
           // Filter by location type if specified
           let filteredData = data || [];
           if (filters.locationType.length > 0 && filters.locationType.length < 2) {
-            filteredData = filteredData.filter(panel => 
-              filters.locationType.includes(panel.buildings?.location_type || 'residential')
-            );
+            filteredData = filteredData.filter(panel => {
+              // Safely access location_type on buildings object
+              const buildings = panel.buildings as any;
+              const locationType = buildings?.location_type || 'residential';
+              
+              return filters.locationType.includes(locationType);
+            });
           }
           
           return filteredData.map(panel => {
@@ -76,10 +80,13 @@ export const usePanelStore = (): UsePanelStoreReturn => {
             else if (panel.status === 'maintenance') validStatus = 'maintenance';
             else if (panel.status === 'installing') validStatus = 'installing';
             
+            // Cast buildings to Building type for TypeScript
+            const buildings = panel.buildings as unknown as Building;
+            
             return {
               ...panel,
               status: validStatus,
-              buildings: panel.buildings
+              buildings
             } as Panel;
           });
         }
@@ -91,7 +98,7 @@ export const usePanelStore = (): UsePanelStoreReturn => {
         try {
           // Try to get real data from Supabase
           const { data, error } = await supabase
-            .from('painels')
+            .from('paineis')
             .select(`
               *,
               buildings!inner (*)
@@ -104,7 +111,7 @@ export const usePanelStore = (): UsePanelStoreReturn => {
             console.log("Got real panels from Supabase:", data.length);
             filteredPanels = data.map(panel => ({
               ...panel,
-              buildings: panel.buildings
+              buildings: panel.buildings as Building
             }));
           } else {
             // Fallback to mock data
