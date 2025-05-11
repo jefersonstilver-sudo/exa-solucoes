@@ -10,14 +10,16 @@ import PanelList from '@/components/panels/PanelList';
 import PanelCart from '@/components/panels/PanelCart';
 import { Panel } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { getPanelsByLocation } from '@/services/supabase';
+import { getLocationCoordinates } from '@/services/geocoding';
 
 export default function PanelStore() {
   const { toast } = useToast();
   const [searchLocation, setSearchLocation] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [cartItems, setCartItems] = useState<{panel: Panel, duration: number}[]>([]);
   const [filters, setFilters] = useState<FilterOptions>({
@@ -47,7 +49,7 @@ export default function PanelStore() {
   }, [cartItems]);
 
   // Fetch panels based on filters
-  const { data: panels, isLoading, error } = useQuery({
+  const { data: panels, isLoading, error, refetch } = useQuery({
     queryKey: ['panels', filters, selectedLocation],
     queryFn: async () => {
       if (!selectedLocation) {
@@ -76,21 +78,30 @@ export default function PanelStore() {
           .limit(40);
           
         if (error) throw error;
+        
         // Properly map the data to ensure type compatibility
         if (Array.isArray(data)) {
-          return data as unknown as Panel[];
+          const mappedPanels = data.map(item => ({
+            ...item,
+            buildings: item.buildings as any // Cast to any first to avoid type issues
+          }));
+          console.log('Default panels loaded:', mappedPanels.length);
+          return mappedPanels as Panel[];
         } else {
+          console.log('No panels found in default query');
           return [] as Panel[];
         }
       }
       
       try {
         // Use our helper function that properly maps the types
-        return await getPanelsByLocation(
+        const locationPanels = await getPanelsByLocation(
           selectedLocation.lat, 
           selectedLocation.lng, 
           filters.radius
         );
+        console.log(`Found ${locationPanels.length} panels near selected location`);
+        return locationPanels;
       } catch (err) {
         console.error('Error fetching panels by location:', err);
         return [] as Panel[];
@@ -100,14 +111,41 @@ export default function PanelStore() {
   });
 
   const handleSearch = async (location: string) => {
+    if (!location.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Localização vazia",
+        description: "Por favor, digite um endereço ou bairro para buscar.",
+      });
+      return;
+    }
+    
+    setIsSearching(true);
+    
     try {
-      // Simulate geocoding (in real implementation, use a geocoding service)
-      // For demo purposes, use random coordinates around São Paulo
-      const randomLat = -23.5505 + (Math.random() - 0.5) * 0.1;
-      const randomLng = -46.6333 + (Math.random() - 0.5) * 0.1;
+      console.log('Searching for location:', location);
       
-      setSelectedLocation({ lat: randomLat, lng: randomLng });
+      // Get coordinates from address using our geocoding service
+      const coordinates = await getLocationCoordinates(location);
+      
+      if (!coordinates) {
+        toast({
+          variant: "destructive",
+          title: "Localização não encontrada",
+          description: `Não foi possível encontrar "${location}". Tente um endereço mais específico.`,
+        });
+        setIsSearching(false);
+        return;
+      }
+      
+      console.log('Found coordinates:', coordinates);
+      
+      // Update selected location and search text
+      setSelectedLocation(coordinates);
       setSearchLocation(location);
+      
+      // Refresh data query with new coordinates
+      await refetch();
       
       toast({
         title: "Localização encontrada",
@@ -120,6 +158,8 @@ export default function PanelStore() {
         title: "Erro na busca",
         description: "Não foi possível encontrar esta localização. Tente novamente.",
       });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -169,6 +209,15 @@ export default function PanelStore() {
     setFilters(prev => ({...prev, ...newFilters}));
   };
 
+  const handleClearLocation = () => {
+    setSelectedLocation(null);
+    setSearchLocation('');
+    toast({
+      title: "Busca limpa",
+      description: "Mostrando todos os painéis disponíveis",
+    });
+  };
+
   if (error) {
     return (
       <Layout>
@@ -207,7 +256,7 @@ export default function PanelStore() {
                   filters={filters} 
                   onFilterChange={handleFilterChange}
                   onSearch={handleSearch}
-                  loading={isLoading}
+                  loading={isLoading || isSearching}
                 />
               </SheetContent>
             </Sheet>
@@ -219,7 +268,7 @@ export default function PanelStore() {
               filters={filters} 
               onFilterChange={handleFilterChange}
               onSearch={handleSearch}
-              loading={isLoading}
+              loading={isLoading || isSearching}
             />
           </div>
           
@@ -238,22 +287,33 @@ export default function PanelStore() {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">
-                  {isLoading ? 'Buscando painéis...' : 
+                  {isLoading || isSearching ? 'Buscando painéis...' : 
                     panels && panels.length > 0
                       ? `${panels.length} painéis encontrados` 
                       : 'Nenhum painel encontrado'}
                 </h2>
                 {selectedLocation && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span className="truncate max-w-[200px]">{searchLocation}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      <span className="truncate max-w-[200px]">{searchLocation}</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleClearLocation}
+                      className="h-6 w-6 p-0 rounded-full"
+                    >
+                      <X className="h-3 w-3" />
+                      <span className="sr-only">Limpar localização</span>
+                    </Button>
                   </div>
                 )}
               </div>
               
               <PanelList 
                 panels={panels || []} 
-                isLoading={isLoading} 
+                isLoading={isLoading || isSearching} 
                 cartItems={cartItems}
                 onAddToCart={handleAddToCart}
               />

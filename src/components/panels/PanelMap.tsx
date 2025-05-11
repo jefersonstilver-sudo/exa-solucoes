@@ -34,6 +34,8 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       mapElement.className = 'relative w-full h-full bg-gray-100';
       container.appendChild(mapElement);
       
+      console.log(`Drawing map with ${panels.length} panels and location: ${selectedLocation ? `${selectedLocation.lat}, ${selectedLocation.lng}` : 'none'}`);
+      
       // Draw pins for all panels that have coordinates
       panels.forEach(panel => {
         if (panel.buildings?.latitude && panel.buildings?.longitude) {
@@ -107,6 +109,16 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         
         mapElement.appendChild(pulse);
         mapElement.appendChild(searchPin);
+        
+        // Add a "You are here" label
+        const label = document.createElement('div');
+        label.className = 'absolute bg-white px-2 py-1 rounded shadow-md text-xs font-medium z-20';
+        label.style.left = `${x}%`;
+        label.style.top = `${y - 4}%`;
+        label.style.transform = 'translate(-50%, -100%)';
+        label.textContent = 'Sua busca';
+        
+        mapElement.appendChild(label);
       }
     };
     

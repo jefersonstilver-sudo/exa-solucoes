@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Filter, X } from 'lucide-react';
 import { FilterOptions } from '@/types/filter';
@@ -135,9 +134,16 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
             className="absolute right-1 top-1 h-7 w-7 p-0" 
             disabled={!searchInput.trim() || loading}
           >
-            <Search className="h-4 w-4" />
+            {loading ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
             <span className="sr-only">Buscar</span>
           </Button>
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          Ex: Avenida Paulista, Vila Olímpia, Rua Augusta 1500
         </div>
       </form>
       
@@ -170,7 +176,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       <div className="mb-6">
         <Label className="block mb-2">Bairro</Label>
         <Select 
-          value={filters.neighborhood} 
+          value={filters.neighborhood || "all"} 
           onValueChange={(value) => onFilterChange({ neighborhood: value })}
         >
           <SelectTrigger className="w-full">
@@ -179,7 +185,6 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Bairros</SelectLabel>
-              {/* Fixed: Changed empty string value to "all" */}
               <SelectItem value="all">Todos os bairros</SelectItem>
               {neighborhoodOptions.map(neighborhood => (
                 <SelectItem key={neighborhood} value={neighborhood}>
