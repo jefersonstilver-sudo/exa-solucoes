@@ -8,6 +8,8 @@ import MapControls from './MapControls';
 import FullscreenCloseButton from './FullscreenCloseButton';
 import { useToast } from '@/hooks/use-toast';
 import { fitMapToBounds } from '@/utils/mapUtils';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { ExternalLink } from 'lucide-react';
 
 interface PanelMapProps {
   panels: Panel[];
@@ -33,6 +35,7 @@ const PanelMap: React.FC<PanelMapProps> = ({
     mapContainerRef,
     mapLoaded,
     mapInitialized,
+    mapError,
     mountedRef
   } = useGoogleMaps({ miniMap, instanceId });
 
@@ -83,12 +86,41 @@ const PanelMap: React.FC<PanelMapProps> = ({
       />
       
       <div ref={mapContainerRef} className="w-full h-full">
-        {!mapLoaded && (
+        {!mapLoaded && !mapError && (
           <div className="flex items-center justify-center h-full bg-gray-50">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indexa-purple mb-2"></div>
               <p>Carregando mapa...</p>
             </div>
+          </div>
+        )}
+        
+        {mapError && (
+          <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-4">
+            <Alert variant="destructive" className="max-w-md">
+              <AlertTitle>Erro ao carregar o mapa</AlertTitle>
+              <AlertDescription>
+                <p className="mb-2">
+                  Não foi possível inicializar o Google Maps. Isso pode ocorrer devido a:
+                </p>
+                <ul className="list-disc list-inside ml-2 space-y-1 text-sm">
+                  <li>Chave de API inválida</li>
+                  <li>Domínio atual não está autorizado no Google Cloud Console</li>
+                  <li>Problemas de conexão com a internet</li>
+                </ul>
+                <p className="mt-3 text-sm">
+                  <a 
+                    href="https://console.cloud.google.com/apis/credentials" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center text-blue-600 hover:underline"
+                  >
+                    Verificar configurações no Google Cloud Console
+                    <ExternalLink className="ml-1 h-3 w-3" />
+                  </a>
+                </p>
+              </AlertDescription>
+            </Alert>
           </div>
         )}
       </div>

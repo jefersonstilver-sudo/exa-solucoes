@@ -16,6 +16,7 @@ interface UseMapLifecycleProps {
 export const useMapLifecycle = ({ miniMap, selectedLocation, instanceId }: UseMapLifecycleProps) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [mapError, setMapError] = useState<Error | null>(null);
   const mountedRef = useRef(true);
   const { toast } = useToast();
   
@@ -29,26 +30,35 @@ export const useMapLifecycle = ({ miniMap, selectedLocation, instanceId }: UseMa
     const setupMap = async () => {
       try {
         await initializeGoogleMapsAPI();
-        if (mountedRef.current && mapContainerRef.current) {
-          // Center on Brazil if no location is selected
-          const defaultCenter = selectedLocation ? 
-            { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
-            { lat: -15.793889, lng: -47.882778 }; // Default to Brasília
-          
-          const success = initializeMap(defaultCenter, selectedLocation ? 13 : 5);
-          
-          if (success && mountedRef.current) {
-            setMapLoaded(true);
-            setMapInitialized(true);
-          }
+        
+        if (!mountedRef.current || !mapContainerRef.current) {
+          return;
+        }
+        
+        // Center on Brazil if no location is selected
+        const defaultCenter = selectedLocation ? 
+          { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
+          { lat: -15.793889, lng: -47.882778 }; // Default to Brasília
+        
+        const success = initializeMap(defaultCenter, selectedLocation ? 13 : 5);
+        
+        if (success && mountedRef.current) {
+          setMapLoaded(true);
+          setMapInitialized(true);
+          setMapError(null);
         }
       } catch (error) {
         console.error('Error setting up map:', error);
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar o mapa",
-          description: "Não foi possível inicializar o Google Maps. Por favor, tente novamente."
-        });
+        
+        if (mountedRef.current) {
+          setMapError(error instanceof Error ? error : new Error('Unknown map error'));
+          
+          toast({
+            variant: "destructive",
+            title: "Erro ao carregar o mapa",
+            description: "Não foi possível inicializar o Google Maps. Por favor, verifique se o domínio está autorizado e tente novamente."
+          });
+        }
       }
     };
     
@@ -65,6 +75,7 @@ export const useMapLifecycle = ({ miniMap, selectedLocation, instanceId }: UseMa
     mapContainerRef,
     mapLoaded,
     mapInitialized,
+    mapError,
     setMapLoaded,
     mountedRef
   };

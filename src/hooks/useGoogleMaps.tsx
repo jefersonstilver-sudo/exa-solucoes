@@ -17,6 +17,7 @@ export const useGoogleMaps = ({ miniMap, instanceId }: UseGoogleMapsProps) => {
     mapContainerRef,
     mapLoaded,
     mapInitialized,
+    mapError,
     setMapLoaded,
     mountedRef
   } = useMapLifecycle({ miniMap, selectedLocation: null, instanceId });
@@ -27,6 +28,7 @@ export const useGoogleMaps = ({ miniMap, instanceId }: UseGoogleMapsProps) => {
     mapContainerRef,
     mapLoaded,
     mapInitialized,
+    mapError,
     // Include these methods for backwards compatibility with existing code
     initializeGoogleMaps: async () => {
       // This is now handled by useMapLifecycle
