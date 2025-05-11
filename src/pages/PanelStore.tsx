@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Filter, Search, Loader2, X, Building } from 'lucide-react';
@@ -6,7 +7,7 @@ import Layout from '@/components/layout/Layout';
 import MiniMap from '@/components/panels/MiniMap';
 import PanelFilters from '@/components/panels/PanelFilters';
 import PanelList from '@/components/panels/PanelList';
-import { Panel, Building as BuildingType } from '@/types/panel';
+import type { Panel, Building as BuildingType } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -305,13 +306,13 @@ export default function PanelStore() {
                 else if (panel.status === 'maintenance') validStatus = 'maintenance';
                 else if (panel.status === 'installing') validStatus = 'installing';
                 
-                // Convert the buildings JSON to our Building type
+                // Convert the buildings JSON to our BuildingType
                 const buildings = panel.buildings as any;
                 
                 return {
                   ...panel,
                   status: validStatus,
-                  buildings: buildings as Building
+                  buildings: buildings as BuildingType
                 } as Panel;
               });
             }

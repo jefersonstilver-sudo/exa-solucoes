@@ -1,6 +1,8 @@
+
+/// <reference types="@types/google.maps" />
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapPin, Info, Maximize, Minimize } from 'lucide-react';
-import { Panel } from '@/types/panel';
+import type { Panel } from '@/types/panel';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -9,6 +11,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from 'framer-motion';
+
+// Declare global interface for window with Google Maps
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
 
 interface PanelMapProps {
   panels: Panel[];
@@ -119,7 +128,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
         { lat: -15.793889, lng: -47.882778 }; // Default to Brasilia
       
-      const mapOptions = {
+      const mapOptions: google.maps.MapOptions = {
         center: defaultCenter,
         zoom: selectedLocation ? 13 : 5,
         mapTypeControl: false,
