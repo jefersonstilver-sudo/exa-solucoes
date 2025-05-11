@@ -3,10 +3,10 @@
 
 declare global {
   interface Window {
-    google: typeof google;
-    initMap: () => void;
-    gm_authFailure: () => void;
-    mapsApiLoaded: boolean;
+    google?: typeof google;
+    initMap?: () => void;
+    gm_authFailure?: () => void;
+    mapsApiLoaded?: boolean;
     googleMapsCallback?: () => void;
   }
 }

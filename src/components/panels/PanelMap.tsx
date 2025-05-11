@@ -54,32 +54,39 @@ const PanelMap: React.FC<PanelMapProps> = ({
     };
   }, []);
   
-  // Update markers when data changes
+  // Update markers when data changes, with more careful cleanup
   useEffect(() => {
     if (!mapInitialized || !mapRef.current || !componentMountedRef.current) return;
     
+    let markerTimer: NodeJS.Timeout | null = null;
+    
     // Add markers with delay to ensure map is ready
-    const timer = setTimeout(() => {
+    markerTimer = setTimeout(() => {
       if (!componentMountedRef.current || !mapRef.current) return;
+      
+      // Clear previous markers first
+      clearMarkersAndInfoWindows();
       
       // Add panel markers and get bounds
       const bounds = addPanelMarkers(mapRef.current, panels, mapInitialized);
       
       // Add selected location marker if available
-      if (selectedLocation) {
+      if (selectedLocation && componentMountedRef.current && mapRef.current) {
         addSelectedLocationMarker(mapRef.current, selectedLocation, mapInitialized);
       }
       // If no selected location but have markers, fit bounds
-      else if (bounds && !selectedLocation) {
+      else if (bounds && !selectedLocation && componentMountedRef.current && mapRef.current) {
         fitMapToBounds(mapRef.current, bounds);
       }
+      
+      markerTimer = null;
     }, 500);
     
     return () => {
-      clearTimeout(timer);
-      if (componentMountedRef.current) {
-        clearMarkersAndInfoWindows();
+      if (markerTimer) {
+        clearTimeout(markerTimer);
       }
+      clearMarkersAndInfoWindows();
     };
   }, [panels, selectedLocation, addPanelMarkers, addSelectedLocationMarker, mapInitialized, mapRef, clearMarkersAndInfoWindows]);
 

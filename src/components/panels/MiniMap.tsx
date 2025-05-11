@@ -18,16 +18,15 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
   const [fullMapKey] = useState(`full-${Math.random().toString(36).substring(2, 9)}`);
   const [shouldRenderFullMap, setShouldRenderFullMap] = useState(false);
   const componentMounted = useRef(true);
-  const dialogTransitionTimeoutRef = useRef<number | null>(null);
+  const dialogTransitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track component mounting status
   useEffect(() => {
     componentMounted.current = true;
     return () => {
       componentMounted.current = false;
-      // Limpar timeouts para evitar atualizações de estado em componentes desmontados
       if (dialogTransitionTimeoutRef.current !== null) {
-        window.clearTimeout(dialogTransitionTimeoutRef.current);
+        clearTimeout(dialogTransitionTimeoutRef.current);
         dialogTransitionTimeoutRef.current = null;
       }
     };
@@ -35,35 +34,34 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
   
   // Handle dialog state changes to prevent DOM manipulation conflicts
   useEffect(() => {
-    // Limpar qualquer timeout existente
+    // Clear any existing timeout safely
     if (dialogTransitionTimeoutRef.current !== null) {
-      window.clearTimeout(dialogTransitionTimeoutRef.current);
+      clearTimeout(dialogTransitionTimeoutRef.current);
       dialogTransitionTimeoutRef.current = null;
     }
     
     // When dialog opens, prepare to show full map
     if (open) {
       // Small delay to ensure dialog animation starts first
-      dialogTransitionTimeoutRef.current = window.setTimeout(() => {
+      dialogTransitionTimeoutRef.current = setTimeout(() => {
         if (componentMounted.current) {
           setShouldRenderFullMap(true);
-          dialogTransitionTimeoutRef.current = null;
         }
+        dialogTransitionTimeoutRef.current = null;
       }, 100);
     } else {
       // When dialog closes, wait for animation to complete before unmounting
-      dialogTransitionTimeoutRef.current = window.setTimeout(() => {
+      dialogTransitionTimeoutRef.current = setTimeout(() => {
         if (componentMounted.current) {
           setShouldRenderFullMap(false);
-          dialogTransitionTimeoutRef.current = null;
         }
+        dialogTransitionTimeoutRef.current = null;
       }, 300);
     }
     
-    // Cleanup on component unmount or effect change
     return () => {
       if (dialogTransitionTimeoutRef.current !== null) {
-        window.clearTimeout(dialogTransitionTimeoutRef.current);
+        clearTimeout(dialogTransitionTimeoutRef.current);
         dialogTransitionTimeoutRef.current = null;
       }
     };

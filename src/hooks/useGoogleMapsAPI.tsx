@@ -69,8 +69,15 @@ export const initializeGoogleMapsAPI = () => {
             <p class="text-red-600 font-medium">Erro de autenticação do Google Maps</p>
             <p class="text-sm text-gray-600 mt-1">Domínio não autorizado. Por favor, verifique as configurações da API no Google Cloud Console.</p>
           `;
-          container.innerHTML = '';
-          container.appendChild(errorDiv);
+          
+          // Make sure container is valid DOM element before manipulating
+          if (container instanceof HTMLElement && container.parentNode) {
+            // Clear safely - remove any children
+            while (container.firstChild) {
+              container.removeChild(container.firstChild);
+            }
+            container.appendChild(errorDiv);
+          }
         });
 
         reject(error);
@@ -101,7 +108,7 @@ export const initializeGoogleMapsAPI = () => {
       script.defer = true;
 
       // Definir timeout seguro
-      const timeoutId = window.setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (!window.google || !window.google.maps) {
           console.error('Google Maps API failed to load within timeout period');
           isLoadingScript = false;
@@ -113,6 +120,9 @@ export const initializeGoogleMapsAPI = () => {
               scriptElement.parentNode.removeChild(scriptElement);
             } catch (e) {
               console.error('Failed to remove script element:', e);
+              // If removeChild fails, try another way to detach the script safely
+              scriptElement.setAttribute('data-failed', 'true');
+              scriptElement.src = '';  
             }
           }
           
@@ -122,22 +132,26 @@ export const initializeGoogleMapsAPI = () => {
 
       // Limpar timeout ao carregar
       script.onload = () => {
-        window.clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
       };
 
       // Tratar erro de carregamento do script
       script.onerror = (e) => {
-        window.clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
         isLoadingScript = false;
         console.error('Failed to load Google Maps API:', e);
         
         // Tentar remover o script com segurança
         try {
+          // Important! Only remove if it's actually a child of its parent
           if (script.parentNode) {
             script.parentNode.removeChild(script);
           }
         } catch (removeError) {
           console.error('Error removing failed script:', removeError);
+          // If removeChild fails, try another way to detach the script safely
+          script.setAttribute('data-failed', 'true');
+          script.src = '';
         }
         
         reject(new Error('Failed to load Google Maps API. Check network connection and API key.'));
