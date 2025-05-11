@@ -21,28 +21,44 @@ const Header: React.FC<HeaderProps> = ({
   onChangeDuration = () => {} 
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
 
-  // Close menu when cart is opened
-  const handleCartOpen = (open: boolean) => {
-    setIsCartOpen(open);
-    if (open) setIsMenuOpen(false);
+  console.log("Header rendering - Menu:", isMenuOpen, "Desktop Cart:", isDesktopCartOpen, "Mobile Cart:", isMobileCartOpen);
+  
+  // Handle desktop cart separately
+  const handleDesktopCartOpen = (open: boolean) => {
+    console.log("Toggle desktop cart:", open);
+    setIsDesktopCartOpen(open);
+    
+    // Close menu when cart is opened
+    if (open) {
+      setIsMenuOpen(false);
+    }
   };
   
-  // Close cart when menu is opened
+  // Handle menu toggle
   const handleMenuOpen = () => {
-    setIsMenuOpen(!isMenuOpen);
-    if (!isMenuOpen) {
-      setIsCartOpen(false);
+    const newMenuState = !isMenuOpen;
+    console.log("Toggle menu:", newMenuState);
+    setIsMenuOpen(newMenuState);
+    
+    // Close carts when menu is opened
+    if (newMenuState) {
+      setIsDesktopCartOpen(false);
       setIsMobileCartOpen(false);
     }
   };
 
   // Handle mobile cart separately
   const handleMobileCartOpen = (open: boolean) => {
+    console.log("Toggle mobile cart:", open);
     setIsMobileCartOpen(open);
-    if (open) setIsMenuOpen(false);
+    
+    // Close menu when cart is opened
+    if (open) {
+      setIsMenuOpen(false);
+    }
   };
 
   return (
@@ -56,7 +72,6 @@ const Header: React.FC<HeaderProps> = ({
           />
         </Link>
         
-        {/* Increased spacing between logo and navigation items */}
         <div className="hidden md:flex gap-6 ml-12">
           <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
             Produtora
@@ -95,9 +110,9 @@ const Header: React.FC<HeaderProps> = ({
             </Avatar>
           </Button>
           
-          {/* Shopping cart moved to the right of the user icon */}
+          {/* Desktop Shopping cart */}
           {cartItems.length > 0 ? (
-            <Sheet open={isCartOpen} onOpenChange={handleCartOpen}>
+            <Sheet open={isDesktopCartOpen} onOpenChange={handleDesktopCartOpen}>
               <SheetTrigger asChild>
                 <Button 
                   variant="ghost" 
@@ -105,21 +120,21 @@ const Header: React.FC<HeaderProps> = ({
                   className="relative text-white hover:bg-white/20 rounded-full"
                 >
                   <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
-                  {cartItems.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {cartItems.length}
-                    </span>
-                  )}
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
-                <PanelCart 
-                  cartItems={cartItems} 
-                  onRemove={onRemoveFromCart} 
-                  onClear={onClearCart} 
-                  onChangeDuration={onChangeDuration} 
-                />
-              </SheetContent>
+              {isDesktopCartOpen && (
+                <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
+                  <PanelCart 
+                    cartItems={cartItems} 
+                    onRemove={onRemoveFromCart} 
+                    onClear={onClearCart} 
+                    onChangeDuration={onChangeDuration} 
+                  />
+                </SheetContent>
+              )}
             </Sheet>
           ) : (
             <Button 
@@ -133,7 +148,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
       
-      {/* Mobile menu button */}
+      {/* Mobile menu and cart buttons */}
       <div className="md:hidden flex items-center gap-3">
         {/* User icon first in mobile as well */}
         <Button 
@@ -148,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({
           </Avatar>
         </Button>
         
-        {/* Shopping cart moved to the right of the user icon in mobile */}
+        {/* Mobile Shopping cart */}
         {cartItems.length > 0 ? (
           <Sheet open={isMobileCartOpen} onOpenChange={handleMobileCartOpen}>
             <SheetTrigger asChild>
@@ -158,21 +173,21 @@ const Header: React.FC<HeaderProps> = ({
                 className="relative text-white hover:bg-white/20 rounded-full"
               >
                 <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
-                {cartItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartItems.length}
-                  </span>
-                )}
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItems.length}
+                </span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[85%] overflow-auto">
-              <PanelCart 
-                cartItems={cartItems} 
-                onRemove={onRemoveFromCart} 
-                onClear={onClearCart} 
-                onChangeDuration={onChangeDuration} 
-              />
-            </SheetContent>
+            {isMobileCartOpen && (
+              <SheetContent side="right" className="w-[85%] overflow-auto">
+                <PanelCart 
+                  cartItems={cartItems} 
+                  onRemove={onRemoveFromCart} 
+                  onClear={onClearCart} 
+                  onChangeDuration={onChangeDuration} 
+                />
+              </SheetContent>
+            )}
           </Sheet>
         ) : (
           <Button 
@@ -184,6 +199,7 @@ const Header: React.FC<HeaderProps> = ({
           </Button>
         )}
         
+        {/* Mobile menu button */}
         <Button 
           variant="ghost" 
           size="icon" 
@@ -194,7 +210,7 @@ const Header: React.FC<HeaderProps> = ({
         </Button>
       </div>
       
-      {/* Mobile menu */}
+      {/* Mobile menu with conditional rendering to avoid DOM manipulation issues */}
       {isMenuOpen && (
         <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-50 md:hidden">
           <div className="flex flex-col p-4 gap-4">

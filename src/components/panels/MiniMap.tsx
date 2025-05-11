@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MapPin, Maximize2, Minimize2, X } from 'lucide-react';
+import { MapPin, Maximize2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import PanelMap from './PanelMap';
@@ -14,6 +14,8 @@ interface MiniMapProps {
 
 const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart }) => {
   const [open, setOpen] = useState(false);
+  
+  console.log("MiniMap rendering - Dialog open:", open);
   
   return (
     <>
@@ -33,6 +35,7 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
           </Button>
         </div>
         <div className="h-[180px] relative">
+          {/* Sempre mantenha o mapa mini renderizado, não o destrua */}
           <PanelMap
             panels={panels}
             selectedLocation={selectedLocation}
@@ -47,6 +50,7 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
         </div>
       </div>
 
+      {/* Use Dialog para o mapa completo, que só renderiza quando aberto */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[800px] max-h-[80vh] p-0">
           <DialogHeader className="p-4 border-b">
@@ -63,12 +67,15 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
             </div>
           </DialogHeader>
           <div className="h-[500px]">
-            <PanelMap
-              panels={panels}
-              selectedLocation={selectedLocation}
-              onAddToCart={onAddToCart}
-              miniMap={false}
-            />
+            {/* Renderizar o mapa completo apenas quando o diálogo estiver aberto */}
+            {open && (
+              <PanelMap
+                panels={panels}
+                selectedLocation={selectedLocation}
+                onAddToCart={onAddToCart}
+                miniMap={false}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

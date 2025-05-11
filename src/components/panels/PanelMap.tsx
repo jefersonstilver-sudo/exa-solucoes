@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 declare global {
   interface Window {
     google: typeof google;
+    initMap?: () => void;
   }
 }
 
@@ -28,71 +29,25 @@ interface PanelMapProps {
 
 // Keep track of Google Maps script loading across component instances
 let googleMapsLoaded = false;
-let scriptElement: HTMLScriptElement | null = null;
 
 const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCart, miniMap = false }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const infoWindowsRef = useRef<google.maps.InfoWindow[]>([]);
-  const mapInitializedRef = useRef<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
+  const mapInstanceIdRef = useRef<string>(`map-${Math.random().toString(36).substr(2, 9)}`);
   
-  // Load Google Maps script safely
-  useEffect(() => {
-    const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
-        googleMapsLoaded = true;
-        initializeMap();
-        return;
-      }
-      
-      if (googleMapsLoaded || document.querySelector('script[src*="maps.googleapis.com/maps/api"]')) {
-        // Script is already loading, wait for it
-        const checkGoogleMapsLoaded = setInterval(() => {
-          if (window.google && window.google.maps) {
-            clearInterval(checkGoogleMapsLoaded);
-            initializeMap();
-          }
-        }, 100);
-        
-        // Safety cleanup after 10 seconds
-        setTimeout(() => clearInterval(checkGoogleMapsLoaded), 10000);
-        return;
-      }
-      
-      // Create and load the script
-      scriptElement = document.createElement('script');
-      scriptElement.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAVQPvo8asVwVVuWBxReck6ohF9vvDR_qM&libraries=places`;
-      scriptElement.async = true;
-      scriptElement.defer = true;
-      
-      scriptElement.onload = () => {
-        googleMapsLoaded = true;
-        initializeMap();
-      };
-      
-      scriptElement.onerror = () => {
-        console.error('Failed to load Google Maps script');
-      };
-      
-      document.head.appendChild(scriptElement);
-    };
-    
-    loadGoogleMaps();
-    
-    // Cleanup function
-    return () => {
-      // Clear all markers and info windows when component unmounts
-      clearMarkersAndInfoWindows();
-    };
-  }, []);
+  console.log(`PanelMap mounting - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
   
   // Clear all markers and info windows
   const clearMarkersAndInfoWindows = useCallback(() => {
+    console.log(`Clearing markers and infoWindows - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+    
     // Clear all markers
-    if (markersRef.current.length > 0) {
+    if (markersRef.current && markersRef.current.length > 0) {
       markersRef.current.forEach(marker => {
         if (marker) {
           // Remove event listeners
@@ -105,7 +60,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
     }
     
     // Close and clear all info windows
-    if (infoWindowsRef.current.length > 0) {
+    if (infoWindowsRef.current && infoWindowsRef.current.length > 0) {
       infoWindowsRef.current.forEach(infoWindow => {
         if (infoWindow) {
           infoWindow.close();
@@ -114,67 +69,25 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       });
       infoWindowsRef.current = [];
     }
-  }, []);
-  
-  // Initialize map
-  const initializeMap = useCallback(() => {
-    if (!mapContainerRef.current || !window.google || !window.google.maps || mapInitializedRef.current) {
-      return;
-    }
-    
-    try {
-      // Center on Brazil if no location is selected
-      const defaultCenter = selectedLocation ? 
-        { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
-        { lat: -15.793889, lng: -47.882778 }; // Default to Brasilia
-      
-      const mapOptions: google.maps.MapOptions = {
-        center: defaultCenter,
-        zoom: selectedLocation ? 13 : 5,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        zoomControlOptions: {
-          position: google.maps.ControlPosition.RIGHT_TOP
-        },
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }]
-          }
-        ]
-      };
-      
-      mapRef.current = new google.maps.Map(mapContainerRef.current, mapOptions);
-      mapInitializedRef.current = true;
-      setMapLoaded(true);
-      
-      // Add markers after map is initialized
-      if (panels.length > 0) {
-        addMarkers();
-      }
-      
-      // Add selected location marker if available
-      if (selectedLocation) {
-        addSelectedLocationMarker();
-      }
-    } catch (error) {
-      console.error('Error initializing map:', error);
-    }
-  }, [panels, selectedLocation]);
+  }, [miniMap]);
   
   // Add markers for all panels
   const addMarkers = useCallback(() => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !window.google || !mapInitialized) {
+      console.log(`Cannot add markers - map not ready - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+      return;
+    }
+    
+    console.log(`Adding markers - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
     
     // Clear existing markers first
     clearMarkersAndInfoWindows();
     
     // Add new markers for each panel
-    panels.forEach(panel => {
+    panels.forEach((panel, index) => {
       if (panel.buildings?.latitude && panel.buildings?.longitude) {
         try {
+          const panelId = panel.id || `panel-${index}`;
           const infoWindow = new google.maps.InfoWindow({
             content: `
               <div class="p-2 min-w-[220px]">
@@ -187,7 +100,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
                   <span>${panel.resolucao || '1080p'}</span>
                   <span>Visualizações: 1.2k/mês</span>
                 </div>
-                <button id="add-to-cart-${panel.id}" class="mt-2 text-xs bg-[#7C3AED] hover:bg-[#00F894] text-white px-2 py-1 rounded w-full transition-all hover:scale-105 duration-200">
+                <button id="add-to-cart-${panelId}" class="mt-2 text-xs bg-[#7C3AED] hover:bg-[#00F894] text-white px-2 py-1 rounded w-full transition-all hover:scale-105 duration-200">
                   Adicionar ao Carrinho
                 </button>
               </div>
@@ -221,7 +134,7 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
             
             // Add event listener to the "Add to Cart" button inside the info window
             google.maps.event.addListenerOnce(infoWindow, 'domready', () => {
-              const button = document.getElementById(`add-to-cart-${panel.id}`);
+              const button = document.getElementById(`add-to-cart-${panelId}`);
               if (button) {
                 button.addEventListener('click', () => {
                   if (onAddToCart) onAddToCart(panel);
@@ -262,11 +175,16 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         console.error('Error fitting bounds:', error);
       }
     }
-  }, [panels, selectedLocation, clearMarkersAndInfoWindows, onAddToCart]);
+  }, [panels, selectedLocation, clearMarkersAndInfoWindows, onAddToCart, miniMap, mapInitialized]);
   
   // Add marker for selected location
   const addSelectedLocationMarker = useCallback(() => {
-    if (!mapRef.current || !selectedLocation || !window.google) return;
+    if (!mapRef.current || !selectedLocation || !window.google || !mapInitialized) {
+      console.log(`Cannot add selected location marker - map not ready - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+      return;
+    }
+    
+    console.log(`Adding selected location marker - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
     
     try {
       const marker = new google.maps.Marker({
@@ -297,33 +215,173 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
       });
       
       // Center map on selected location
-      mapRef.current.setCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng });
-      mapRef.current.setZoom(14);
+      if (mapRef.current) {
+        mapRef.current.setCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng });
+        mapRef.current.setZoom(14);
+      }
       
       // Store for cleanup
       markersRef.current.push(marker);
     } catch (error) {
       console.error('Error adding selected location marker:', error);
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, miniMap, mapInitialized]);
+  
+  // Initialize map
+  const initializeMap = useCallback(() => {
+    if (!mapContainerRef.current || !window.google || !window.google.maps || mapInitialized) {
+      console.log(`Cannot initialize map - prerequisites not met - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+      return;
+    }
+    
+    console.log(`Initializing map - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+    
+    try {
+      // Center on Brazil if no location is selected
+      const defaultCenter = selectedLocation ? 
+        { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
+        { lat: -15.793889, lng: -47.882778 }; // Default to Brasilia
+      
+      const mapOptions: google.maps.MapOptions = {
+        center: defaultCenter,
+        zoom: selectedLocation ? 13 : 5,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        zoomControlOptions: {
+          position: google.maps.ControlPosition.RIGHT_TOP
+        },
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
+      };
+      
+      // Create new map instance
+      if (mapContainerRef.current) {
+        mapRef.current = new google.maps.Map(mapContainerRef.current, mapOptions);
+        setMapInitialized(true);
+        setMapLoaded(true);
+        
+        // Add markers after map is initialized
+        if (panels.length > 0) {
+          addMarkers();
+        }
+        
+        // Add selected location marker if available
+        if (selectedLocation) {
+          addSelectedLocationMarker();
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
+  }, [panels, selectedLocation, addMarkers, addSelectedLocationMarker, mapInitialized, miniMap]);
+  
+  // Load Google Maps script safely
+  useEffect(() => {
+    console.log(`Setting up Google Maps - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+    
+    const loadGoogleMaps = () => {
+      // Check if Google Maps is already available
+      if (window.google && window.google.maps) {
+        console.log(`Google Maps already loaded - initializing map - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+        googleMapsLoaded = true;
+        initializeMap();
+        return;
+      }
+      
+      // Check if script is already loading
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api"]');
+      if (googleMapsLoaded || existingScript) {
+        console.log(`Google Maps script already loading - waiting - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+        
+        // Create a callback function that will be called when Google Maps is loaded
+        window.initMap = () => {
+          console.log(`initMap callback executed - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+          googleMapsLoaded = true;
+          initializeMap();
+        };
+        
+        // Check periodically if Google Maps is loaded
+        const checkGoogleMapsInterval = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(checkGoogleMapsInterval);
+            console.log(`Google Maps loaded (interval check) - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+            initializeMap();
+          }
+        }, 100);
+        
+        // Safety cleanup after 10 seconds
+        setTimeout(() => {
+          clearInterval(checkGoogleMapsInterval);
+          console.log(`Clearing Google Maps check interval - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+        }, 10000);
+        
+        return;
+      }
+      
+      // Create and load the script with callback
+      console.log(`Creating new Google Maps script - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAVQPvo8asVwVVuWBxReck6ohF9vvDR_qM&libraries=places&loading=async&callback=initMap`;
+      script.async = true;
+      script.defer = true;
+      
+      // Define the callback function
+      window.initMap = () => {
+        console.log(`Google Maps loaded (callback) - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+        googleMapsLoaded = true;
+        initializeMap();
+      };
+      
+      script.onerror = () => {
+        console.error('Failed to load Google Maps script');
+      };
+      
+      document.head.appendChild(script);
+    };
+    
+    loadGoogleMaps();
+    
+    // Cleanup function
+    return () => {
+      console.log(`PanelMap unmounting - cleaning up - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+      
+      // Clear all markers and info windows when component unmounts
+      clearMarkersAndInfoWindows();
+      
+      // Clear map instance
+      if (mapRef.current) {
+        console.log(`Cleaning up map instance - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+        google.maps.event.clearInstanceListeners(mapRef.current);
+        mapRef.current = null;
+      }
+    };
+  }, [clearMarkersAndInfoWindows, initializeMap, miniMap]);
   
   // Update markers when panels or selected location changes
   useEffect(() => {
-    if (mapRef.current && mapInitializedRef.current && window.google) {
+    console.log(`Panels or location changed - updating markers - ${miniMap ? 'mini' : 'full'} - ID: ${mapInstanceIdRef.current}`);
+    
+    if (mapInitialized && mapRef.current && window.google) {
       addMarkers();
       
       if (selectedLocation) {
         addSelectedLocationMarker();
       }
     }
-  }, [panels, selectedLocation, addMarkers, addSelectedLocationMarker]);
+  }, [panels, selectedLocation, addMarkers, addSelectedLocationMarker, mapInitialized, miniMap]);
   
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
   return (
-    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'h-full'}`}>
+    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'h-full'}`} data-map-id={mapInstanceIdRef.current}>
       <div className="absolute top-2 right-2 z-10 flex gap-2">
         <TooltipProvider>
           <Tooltip>
