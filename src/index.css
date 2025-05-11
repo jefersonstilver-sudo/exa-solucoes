@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 100%; /* White background */
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -36,19 +36,12 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -97,14 +90,14 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-white text-foreground;
     font-family: 'Inter', sans-serif;
   }
 }
 
 /* Estilos específicos para o Indexa */
 .card-indexa {
-  @apply overflow-hidden shadow-lg transition-all duration-300;
+  @apply overflow-hidden shadow-sm border border-gray-200 transition-all duration-300;
 }
 
 .btn-indexa {

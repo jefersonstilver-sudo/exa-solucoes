@@ -5,17 +5,30 @@ import Footer from './Footer';
 
 interface LayoutProps {
   children: React.ReactNode;
+  cartItems?: {panel: any, duration: number}[];
+  onRemoveFromCart?: (id: string) => void;
+  onClearCart?: () => void;
+  onChangeDuration?: (id: string, duration: number) => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ 
+  children, 
+  cartItems = [], 
+  onRemoveFromCart = () => {}, 
+  onClearCart = () => {}, 
+  onChangeDuration = () => {} 
+}) => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-indexa-gradient flex-grow">
-        <Header />
-        <main className="container mx-auto px-6 py-8">
-          {children}
-        </main>
-      </div>
+    <div className="min-h-screen flex flex-col bg-white">
+      <Header 
+        cartItems={cartItems}
+        onRemoveFromCart={onRemoveFromCart}
+        onClearCart={onClearCart}
+        onChangeDuration={onChangeDuration}
+      />
+      <main className="flex-grow">
+        {children}
+      </main>
       <Footer />
     </div>
   );

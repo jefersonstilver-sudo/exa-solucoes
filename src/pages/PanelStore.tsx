@@ -1,14 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Filter, CheckCircle, X, Search, Loader2 } from 'lucide-react';
+import { MapPin, Filter, Search, Loader2, X, Building } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/layout/Layout';
-import PanelMap from '@/components/panels/PanelMap';
+import MiniMap from '@/components/panels/MiniMap';
 import PanelFilters from '@/components/panels/PanelFilters';
 import PanelList from '@/components/panels/PanelList';
-import PanelCart from '@/components/panels/PanelCart';
-import { Panel, Building } from '@/types/panel';
+import { Panel, Building as BuildingType } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -17,6 +15,21 @@ import { getPanelsByLocation } from '@/services/supabase';
 import { getLocationCoordinates } from '@/services/geocoding';
 import { motion } from 'framer-motion';
 
+// Mock buildings images (simulating generated images)
+const buildingImages = [
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  "https://images.unsplash.com/photo-1465804575741-338df8554e02?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2073&q=80",
+  "https://images.unsplash.com/photo-1554435493-93422e8d1a41?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  "https://images.unsplash.com/photo-1577760258779-e8b26808c42f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  "https://images.unsplash.com/photo-1613492636024-9430710a84f3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80",
+  "https://images.unsplash.com/photo-1510964430293-3e3096075e2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  "https://images.unsplash.com/photo-1624025308270-9323bf9a175d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  "https://images.unsplash.com/photo-1698075357677-673b9011f3e3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  "https://images.unsplash.com/photo-1427751840561-9852520f8ce8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2076&q=80",
+  "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+];
+
+// Mock panels data with assigned images
 const mockPanels = [
   {
     id: "1",
@@ -33,7 +46,8 @@ const mockPanels = [
       bairro: "Vila A",
       latitude: -25.5046,
       longitude: -54.5784,
-      status: "ativo"
+      status: "ativo",
+      imageUrl: buildingImages[0]
     }
   },
   {
@@ -198,7 +212,13 @@ const mockPanels = [
       status: "ativo"
     }
   }
-];
+].map((panel, index) => ({
+  ...panel,
+  buildings: {
+    ...(panel.buildings as BuildingType),
+    imageUrl: buildingImages[index % buildingImages.length]
+  }
+}));
 
 export default function PanelStore() {
   const { toast } = useToast();
@@ -444,16 +464,28 @@ export default function PanelStore() {
   }
 
   return (
-    <Layout>
+    <Layout 
+      cartItems={cartItems} 
+      onRemoveFromCart={handleRemoveFromCart} 
+      onClearCart={handleClearCart}
+      onChangeDuration={(panelId, duration) => {
+        setCartItems(prev => prev.map(item => 
+          item.panel.id === panelId 
+            ? {...item, duration} 
+            : item
+        ));
+      }}
+    >
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 py-8"
       >
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="p-4 border-b flex flex-col space-y-4">
-            <h1 className="text-2xl font-bold text-[#7C3AED]">
+        {/* Search section */}
+        <div className="bg-white rounded-lg shadow-sm mb-6 border border-gray-200">
+          <div className="p-4 border-b">
+            <h1 className="text-2xl font-bold text-indexa-purple mb-4">
               Encontre Painéis Digitais
             </h1>
             
@@ -465,7 +497,7 @@ export default function PanelStore() {
                     type="text"
                     value={searchLocation}
                     onChange={(e) => setSearchLocation(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-md focus:ring-[#7C3AED] focus:border-[#7C3AED] focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-md focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none"
                     placeholder="Bairro, endereço ou ponto de referência"
                     disabled={isSearching}
                   />
@@ -480,7 +512,7 @@ export default function PanelStore() {
                   <button
                     onClick={() => handleSearch(searchLocation)}
                     disabled={isSearching || !searchLocation}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-[#7C3AED] p-1 rounded-md hover:bg-[#6A1888] disabled:bg-gray-300"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-indexa-purple p-1 rounded-md hover:bg-indexa-purple-dark disabled:bg-gray-300"
                   >
                     {isSearching ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -495,14 +527,14 @@ export default function PanelStore() {
                 <label className="block text-sm mb-1 text-gray-500">Data de início</label>
                 <input
                   type="date"
-                  className="w-full px-4 py-2 border rounded-md focus:ring-[#7C3AED] focus:border-[#7C3AED] focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-md focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none"
                 />
               </div>
               
               <div>
                 <label className="block text-sm mb-1 text-gray-500">Período</label>
                 <select
-                  className="w-full px-4 py-2 border rounded-md focus:ring-[#7C3AED] focus:border-[#7C3AED] focus:outline-none appearance-none"
+                  className="w-full px-4 py-2 border rounded-md focus:ring-indexa-purple focus:border-indexa-purple focus:outline-none appearance-none"
                   defaultValue="30"
                 >
                   <option value="30">30 dias</option>
@@ -515,8 +547,8 @@ export default function PanelStore() {
             {selectedLocation && (
               <div className="flex justify-between items-center mt-2">
                 <div className="flex items-center text-sm">
-                  <MapPin className="w-4 h-4 mr-1 text-[#7C3AED]" />
-                  <span className="text-[#7C3AED]">{searchLocation}</span>
+                  <MapPin className="w-4 h-4 mr-1 text-indexa-purple" />
+                  <span className="text-indexa-purple">{searchLocation}</span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-sm text-gray-500 mr-2">
@@ -537,45 +569,44 @@ export default function PanelStore() {
               </div>
             )}
           </div>
-          
-          {/* Map container */}
-          <div className="p-4 bg-gray-50">
-            <div className="h-[280px] rounded-lg overflow-hidden border">
-              <PanelMap 
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Filters and mini-map column */}
+          <div className="lg:col-span-3 xl:col-span-3 space-y-6">
+            {/* Mini Map */}
+            <div className="hidden lg:block">
+              <MiniMap 
                 panels={panels || []} 
                 selectedLocation={selectedLocation}
                 onAddToCart={handleAddToCart}
               />
             </div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Mobile Filter Trigger */}
-          <div className="lg:hidden w-full mb-4">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="w-full border-[#7C3AED] text-[#7C3AED]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filtrar por
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[85%] sm:w-[350px] overflow-y-auto">
-                <PanelFilters 
-                  filters={filters} 
-                  onFilterChange={handleFilterChange}
-                  onSearch={handleSearch}
-                  loading={isLoading || isSearching}
-                />
-              </SheetContent>
-            </Sheet>
-          </div>
-          
-          {/* Desktop Filter Sidebar */}
-          <div className="hidden lg:block lg:col-span-3 xl:col-span-3">
-            <div className="sticky top-24">
-              <div className="bg-white p-4 rounded-lg shadow-md">
-                <h2 className="font-bold text-lg mb-4">Filtrar por</h2>
+            
+            {/* Mobile Filter Trigger */}
+            <div className="lg:hidden w-full">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="w-full border-indexa-purple text-indexa-purple">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtrar por
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[85%] sm:w-[350px] overflow-y-auto">
+                  <PanelFilters 
+                    filters={filters} 
+                    onFilterChange={handleFilterChange}
+                    onSearch={handleSearch}
+                    loading={isLoading || isSearching}
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
+            
+            {/* Desktop Filter Sidebar */}
+            <div className="hidden lg:block">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 sticky top-24">
+                <h2 className="font-bold text-lg mb-4 text-gray-800">Filtrar por</h2>
                 <PanelFilters 
                   filters={filters} 
                   onFilterChange={handleFilterChange}
@@ -587,10 +618,10 @@ export default function PanelStore() {
           </div>
           
           {/* Panel Results */}
-          <div className="lg:col-span-6 xl:col-span-6">
+          <div className="lg:col-span-9 xl:col-span-9">
             {/* Loading and result count */}
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-[#7C3AED]">
+              <h2 className="text-xl font-semibold text-indexa-purple">
                 {isLoading || isSearching ? (
                   <div className="flex items-center">
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -603,7 +634,8 @@ export default function PanelStore() {
                 )}
               </h2>
               <div className="flex items-center gap-2">
-                <select className="px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-[#7C3AED]">
+                <select className="px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indexa-purple">
+                  <option>Ordenar por: Relevância</option>
                   <option>Ordenar por: Maior Preço</option>
                   <option>Ordenar por: Menor Preço</option>
                   <option>Ordenar por: Mais visualizações</option>
@@ -611,31 +643,135 @@ export default function PanelStore() {
               </div>
             </div>
             
-            {/* Panel list */}
-            <PanelList 
-              panels={panels || []} 
-              isLoading={isLoading || isSearching} 
-              cartItems={cartItems}
-              onAddToCart={handleAddToCart}
-            />
-          </div>
-          
-          {/* Cart Sidebar */}
-          <div className="lg:col-span-3 xl:col-span-3">
-            <div className="sticky top-24">
-              <PanelCart 
-                cartItems={cartItems} 
-                onRemove={handleRemoveFromCart} 
-                onClear={handleClearCart}
-                onChangeDuration={(panelId, duration) => {
-                  setCartItems(prev => prev.map(item => 
-                    item.panel.id === panelId 
-                      ? {...item, duration} 
-                      : item
-                  ));
-                }}
-              />
-            </div>
+            {/* Custom Panel List in vertical layout */}
+            {isLoading || isSearching ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 animate-pulse">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="h-40 bg-gray-200 rounded-lg"></div>
+                      <div className="md:col-span-2 space-y-4">
+                        <div className="h-6 bg-gray-200 rounded w-2/3"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-10 bg-gray-200 rounded w-1/3 mt-6"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : panels && panels.length > 0 ? (
+              <div className="space-y-5">
+                {panels.map((panel) => (
+                  <motion.div
+                    key={panel.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="h-48 md:h-full relative">
+                        <img 
+                          src={(panel.buildings as any).imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'}
+                          alt={panel.buildings?.nome}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-semibold shadow-sm">
+                          {panel.status === 'online' 
+                            ? <span className="text-green-600 flex items-center"><span className="w-2 h-2 bg-green-500 rounded-full mr-1 inline-block"></span>Online</span>
+                            : <span className="text-orange-600 flex items-center"><span className="w-2 h-2 bg-orange-500 rounded-full mr-1 inline-block"></span>Instalando</span>
+                          }
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 md:col-span-2 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">{panel.buildings?.nome}</h3>
+                            <div className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm font-medium">
+                              ID: {panel.code}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center text-gray-600 mb-2">
+                            <MapPin className="w-4 h-4 mr-2 text-indexa-purple" />
+                            <span>{panel.buildings?.endereco}, {panel.buildings?.bairro}</span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                            <div className="flex items-center text-sm">
+                              <Building className="w-4 h-4 mr-1 text-gray-500" />
+                              <span>Modo: {panel.modo}</span>
+                            </div>
+                            
+                            <div className="flex items-center text-sm">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 text-gray-500"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+                              <span>Resolução: {panel.resolucao}</span>
+                            </div>
+                            
+                            {(panel as any).distance && (
+                              <div className="flex items-center text-sm">
+                                <MapPin className="w-4 h-4 mr-1 text-gray-500" />
+                                <span>Distância: {Math.round((panel as any).distance)} m</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col md:flex-row md:items-center gap-3 mt-2">
+                          <div className="flex items-center gap-2">
+                            <select 
+                              className="px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-indexa-purple"
+                              defaultValue="30"
+                              onChange={(e) => {
+                                // Update duration in cart if already added
+                                const item = cartItems.find(item => item.panel.id === panel.id);
+                                if (item) {
+                                  setCartItems(cartItems.map(item => 
+                                    item.panel.id === panel.id 
+                                      ? {...item, duration: Number(e.target.value)} 
+                                      : item
+                                  ));
+                                }
+                              }}
+                            >
+                              <option value="30">30 dias</option>
+                              <option value="60">60 dias</option>
+                              <option value="90">90 dias</option>
+                            </select>
+                            
+                            <Button 
+                              className="bg-indexa-mint text-indexa-purple hover:bg-indexa-mint/80"
+                              onClick={() => handleAddToCart(panel, 30)}
+                            >
+                              {cartItems.some(item => item.panel.id === panel.id) ? 'Atualizar no carrinho' : 'Adicionar ao carrinho'}
+                            </Button>
+                          </div>
+                          
+                          <div className="text-sm ml-auto">
+                            <div className="font-medium">Preço diário estimado</div>
+                            <div className="text-lg font-bold text-indexa-purple">R$ {(Math.random() * (70 - 30) + 30).toFixed(2)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Search className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium">Nenhum painel encontrado</h3>
+                  <p className="text-gray-500 max-w-md">
+                    Não encontramos painéis com os filtros atuais. Tente ajustar os filtros ou buscar em outra localização.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
