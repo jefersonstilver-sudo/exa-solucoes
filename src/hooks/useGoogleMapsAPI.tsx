@@ -5,6 +5,10 @@ import { useToast } from './use-toast';
 // 🔐 API key do Google Maps
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAVQPvo8asVwVVuWBxReck6ohF9vvDR_qM';
 
+// Variável de controle para rastrear o estado de carregamento do script
+let isLoadingScript = false;
+let isScriptLoaded = false;
+
 /**
  * Inicializa a API do Google Maps com tratamento de erro seguro e gerenciamento idempotente do script
  */
@@ -13,14 +17,37 @@ export const initializeGoogleMapsAPI = () => {
     // Early resolve if API is already loaded
     if (window.google && window.google.maps) {
       console.log('Google Maps API already loaded');
+      isScriptLoaded = true;
       resolve();
       return;
     }
+    
+    // Se já estamos carregando o script, não tente novamente
+    if (isLoadingScript) {
+      console.log('Google Maps script is already loading');
+      // Adicionar um ouvinte para resolver quando o carregamento atual terminar
+      const checkLoaded = setInterval(() => {
+        if (window.google && window.google.maps) {
+          clearInterval(checkLoaded);
+          resolve();
+        }
+      }, 100);
+      
+      // Timeout para não ficar verificando indefinidamente
+      setTimeout(() => {
+        clearInterval(checkLoaded);
+        reject(new Error('Timeout waiting for existing script load'));
+      }, 10000);
+      
+      return;
+    }
 
-    // Check if initialization handlers are already set
+    // Definir manipuladores de inicialização apenas uma vez
     if (!window.initMap) {
       window.initMap = () => {
         console.log('Google Maps API loaded successfully');
+        isLoadingScript = false;
+        isScriptLoaded = true;
         resolve();
       };
     }
@@ -32,6 +59,7 @@ export const initializeGoogleMapsAPI = () => {
           'Please ensure that your current domain is whitelisted in the Google Cloud Console.'
         );
         console.error(error);
+        isLoadingScript = false;
 
         const mapContainers = document.querySelectorAll('[data-map-id]');
         mapContainers.forEach(container => {
@@ -49,70 +77,76 @@ export const initializeGoogleMapsAPI = () => {
       };
     }
 
-    // Check if script is already in the DOM
-    const existingScript = document.getElementById('google-maps-script');
-    if (existingScript) {
-      console.log('Google Maps script is already loading');
-      return; // Let the existing script's callbacks handle resolution
-    }
-
     try {
+      // Validar a chave da API
       if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY.length < 20) {
         throw new Error('Invalid Google Maps API key format. Please check your configuration.');
       }
 
       console.log('Loading Google Maps API script');
+      isLoadingScript = true;
 
-      // Create script element
+      // Verificar se o script já existe no DOM
+      const existingScript = document.getElementById('google-maps-script');
+      if (existingScript) {
+        console.log('Script já existente, aguardando carregamento');
+        return; // O callback initMap vai lidar com a resolução
+      }
+
+      // Criar o elemento script
       const script = document.createElement('script');
       script.id = 'google-maps-script';
       script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
       script.async = true;
       script.defer = true;
 
-      // Handle timeout safely
-      let timeoutId: number | null = window.setTimeout(() => {
-        timeoutId = null;
+      // Definir timeout seguro
+      const timeoutId = window.setTimeout(() => {
         if (!window.google || !window.google.maps) {
           console.error('Google Maps API failed to load within timeout period');
+          isLoadingScript = false;
           
-          // Safely remove the script element
+          // Verificação segura para remoção do script
           const scriptElement = document.getElementById('google-maps-script');
           if (scriptElement && scriptElement.parentNode) {
             try {
               scriptElement.parentNode.removeChild(scriptElement);
             } catch (e) {
               console.error('Failed to remove script element:', e);
-              // Just continue - don't reject here as we might have race conditions
             }
           }
           
-          // Reject if promise hasn't been resolved/rejected yet
           reject(new Error('Google Maps API failed to load within timeout period'));
         }
       }, 10000);
 
-      // Clear timeout on load
+      // Limpar timeout ao carregar
       script.onload = () => {
-        if (timeoutId !== null) {
-          window.clearTimeout(timeoutId);
-          timeoutId = null;
-        }
+        window.clearTimeout(timeoutId);
       };
 
-      // Handle script load error
+      // Tratar erro de carregamento do script
       script.onerror = (e) => {
-        if (timeoutId !== null) {
-          window.clearTimeout(timeoutId);
-          timeoutId = null;
-        }
+        window.clearTimeout(timeoutId);
+        isLoadingScript = false;
         console.error('Failed to load Google Maps API:', e);
+        
+        // Tentar remover o script com segurança
+        try {
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        } catch (removeError) {
+          console.error('Error removing failed script:', removeError);
+        }
+        
         reject(new Error('Failed to load Google Maps API. Check network connection and API key.'));
       };
 
-      // Append script to document head
+      // Adicionar o script ao documento
       document.head.appendChild(script);
     } catch (error) {
+      isLoadingScript = false;
       console.error('Error initializing Google Maps:', error);
       reject(error);
     }

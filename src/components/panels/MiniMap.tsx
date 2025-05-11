@@ -18,35 +18,55 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
   const [fullMapKey] = useState(`full-${Math.random().toString(36).substring(2, 9)}`);
   const [shouldRenderFullMap, setShouldRenderFullMap] = useState(false);
   const componentMounted = useRef(true);
+  const dialogTransitionTimeoutRef = useRef<number | null>(null);
   
   // Track component mounting status
   useEffect(() => {
     componentMounted.current = true;
     return () => {
       componentMounted.current = false;
+      // Limpar timeouts para evitar atualizações de estado em componentes desmontados
+      if (dialogTransitionTimeoutRef.current !== null) {
+        window.clearTimeout(dialogTransitionTimeoutRef.current);
+        dialogTransitionTimeoutRef.current = null;
+      }
     };
   }, []);
   
   // Handle dialog state changes to prevent DOM manipulation conflicts
   useEffect(() => {
+    // Limpar qualquer timeout existente
+    if (dialogTransitionTimeoutRef.current !== null) {
+      window.clearTimeout(dialogTransitionTimeoutRef.current);
+      dialogTransitionTimeoutRef.current = null;
+    }
+    
     // When dialog opens, prepare to show full map
     if (open) {
       // Small delay to ensure dialog animation starts first
-      const timer = setTimeout(() => {
+      dialogTransitionTimeoutRef.current = window.setTimeout(() => {
         if (componentMounted.current) {
           setShouldRenderFullMap(true);
+          dialogTransitionTimeoutRef.current = null;
         }
       }, 100);
-      return () => clearTimeout(timer);
     } else {
       // When dialog closes, wait for animation to complete before unmounting
-      const timer = setTimeout(() => {
+      dialogTransitionTimeoutRef.current = window.setTimeout(() => {
         if (componentMounted.current) {
           setShouldRenderFullMap(false);
+          dialogTransitionTimeoutRef.current = null;
         }
       }, 300);
-      return () => clearTimeout(timer);
     }
+    
+    // Cleanup on component unmount or effect change
+    return () => {
+      if (dialogTransitionTimeoutRef.current !== null) {
+        window.clearTimeout(dialogTransitionTimeoutRef.current);
+        dialogTransitionTimeoutRef.current = null;
+      }
+    };
   }, [open]);
   
   // Dialog open handler with safety
@@ -112,7 +132,7 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
           </DialogHeader>
           <div className="h-[500px]">
             {/* Only render full map with unique key when dialog is open */}
-            {open && shouldRenderFullMap && (
+            {shouldRenderFullMap && (
               <div className="h-full w-full">
                 <PanelMap
                   panels={panels}
