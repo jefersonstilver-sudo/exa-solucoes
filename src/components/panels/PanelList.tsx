@@ -72,7 +72,7 @@ const PanelList: React.FC<PanelListProps> = ({
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center"
+        className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center"
       >
         <div className="mx-auto h-12 w-12 text-gray-400 mb-3">🏙️</div>
         <h3 className="text-lg font-semibold mb-1">Nenhum painel encontrado</h3>

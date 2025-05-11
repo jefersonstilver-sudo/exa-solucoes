@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { ShoppingCart, Trash, Building, Calendar, X, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Trash, Building, Calendar, X, Check, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Panel } from '@/types/panel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
+import { useToast } from '@/hooks/use-toast';
 
 interface PanelCartProps {
   cartItems: {panel: Panel, duration: number}[];
@@ -16,14 +17,15 @@ interface PanelCartProps {
   onChangeDuration: (panelId: string, duration: number) => void;
 }
 
-const durationOptions = [30, 90, 180, 365];
+const durationOptions = [30, 60, 90, 180, 365];
 
 const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onChangeDuration }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [animateCart, setAnimateCart] = useState(false);
+  const { toast } = useToast();
   
   // Calculate price based on panel info and duration
   const calculatePrice = (panel: Panel, days: number) => {
-    // In a real implementation, this would come from the backend
     const basePrice = 100; // Base daily rate
     const locationFactor = panel.buildings?.bairro === 'Vila A' ? 1.5 : 
                           panel.buildings?.bairro === 'Centro' ? 1.3 : 1;
@@ -33,6 +35,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     if (days >= 365) discount = 0.25;
     else if (days >= 180) discount = 0.15;
     else if (days >= 90) discount = 0.10;
+    else if (days >= 60) discount = 0.05;
     
     const rawPrice = basePrice * locationFactor * days;
     return Math.round(rawPrice * (1 - discount));
@@ -70,6 +73,14 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     }).format(value);
   };
 
+  // Trigger cart bubble animation when items are added
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      setAnimateCart(true);
+      setTimeout(() => setAnimateCart(false), 600);
+    }
+  }, [cartItems.length]);
+
   // Handle checkout simulation
   const handleCheckout = () => {
     setIsSubmitting(true);
@@ -78,7 +89,10 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     setTimeout(() => {
       setIsSubmitting(false);
       onClear();
-      alert('Compra finalizada com sucesso! Em um ambiente real, você seria redirecionado para o checkout.');
+      toast({
+        title: "Compra finalizada com sucesso!",
+        description: "Você receberá um email com os detalhes do seu pedido.",
+      });
     }, 1500);
   };
 
@@ -112,7 +126,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start">
-                    <Building className="h-4 w-4 mt-1 mr-2 text-[#7C3AED] flex-shrink-0" />
+                    <Building className="h-4 w-4 mt-1 mr-2 text-indexa-purple flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-sm">{panel.buildings?.nome}</h4>
                       <p className="text-xs text-muted-foreground">{panel.buildings?.bairro}</p>
@@ -131,7 +145,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                   <div className="flex items-center text-sm flex-1">
                     <span className="mr-2">Duração:</span>
                     <select 
-                      className="border rounded px-2 py-1 text-xs border-[#7C3AED] focus:outline-[#00F894]"
+                      className="border rounded px-2 py-1 text-xs border-indexa-purple focus:outline-indexa-mint"
                       value={duration}
                       onChange={(e) => onChangeDuration(panel.id, parseInt(e.target.value))}
                     >
@@ -181,25 +195,29 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
       <div className="lg:hidden fixed bottom-4 right-4 z-30">
         <Drawer>
           <DrawerTrigger asChild>
-            <Button className="rounded-full h-14 w-14 shadow-lg bg-[#7C3AED] hover:bg-[#00F894] transition-all duration-200 relative">
+            <motion.button
+              className="rounded-full h-14 w-14 shadow-lg bg-indexa-purple text-white hover:bg-indexa-mint hover:text-gray-800 transition-all duration-200 relative flex items-center justify-center"
+              animate={animateCart ? { scale: [1, 1.2, 1] } : {}}
+              transition={{ duration: 0.6 }}
+            >
               <ShoppingCart className="h-6 w-6" />
               {cartItems.length > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-[#00F894] text-white">
+                <Badge className="absolute -top-2 -right-2 bg-indexa-mint text-gray-800 border-2 border-white">
                   {cartItems.length}
                 </Badge>
               )}
-            </Button>
+            </motion.button>
           </DrawerTrigger>
           <DrawerContent>
             <div className="p-4 max-h-[80vh] overflow-y-auto">
               <CardHeader className="px-0 pt-0 pb-3">
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center">
-                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    <ShoppingCart className="mr-2 h-5 w-5 text-indexa-purple" />
                     Seu Carrinho
                   </span>
                   {cartItems.length > 0 && (
-                    <Badge variant="outline" className="ml-2">
+                    <Badge variant="outline" className="ml-2 border-indexa-purple text-indexa-purple">
                       {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'}
                     </Badge>
                   )}
@@ -211,7 +229,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
               {cartItems.length > 0 && (
                 <CardFooter className="flex-col space-y-2 px-0">
                   <Button 
-                    className="w-full bg-[#7C3AED] hover:bg-[#00F894] transition-all hover:scale-105 duration-200"
+                    className="w-full bg-indexa-mint hover:bg-indexa-mint-dark text-gray-800 transition-all hover:scale-105 duration-200"
                     onClick={handleCheckout}
                     disabled={isSubmitting}
                   >
@@ -222,7 +240,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                       </>
                     ) : (
                       <>
-                        Finalizar Compra
+                        Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
                   </Button>
@@ -255,11 +273,11 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center">
-              <ShoppingCart className="mr-2 h-5 w-5 text-[#7C3AED]" />
+              <ShoppingCart className="mr-2 h-5 w-5 text-indexa-purple" />
               Seu Carrinho
             </span>
             {cartItems.length > 0 && (
-              <Badge variant="outline" className="ml-2">
+              <Badge variant="outline" className={`ml-2 border-indexa-purple text-indexa-purple ${animateCart ? 'animate-cart-bubble' : ''}`}>
                 {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'}
               </Badge>
             )}
@@ -271,7 +289,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
         {cartItems.length > 0 && (
           <CardFooter className="flex-col space-y-2">
             <Button 
-              className="w-full bg-[#7C3AED] hover:bg-[#00F894] transition-all hover:scale-105 duration-200"
+              className="w-full bg-indexa-mint hover:bg-indexa-mint-dark text-gray-800 transition-all hover:scale-105 duration-200"
               onClick={handleCheckout}
               disabled={isSubmitting}
             >
@@ -282,7 +300,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                 </>
               ) : (
                 <>
-                  Finalizar Compra
+                  Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>

@@ -97,11 +97,19 @@
 
 /* Estilos específicos para o Indexa */
 .card-indexa {
-  @apply overflow-hidden shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg;
+  @apply overflow-hidden shadow-enhanced border border-gray-200 transition-all duration-300 hover:shadow-enhanced-hover rounded-2xl;
 }
 
 .btn-indexa {
   @apply rounded-full px-4 py-2 font-medium transition-all duration-200 flex items-center justify-center gap-2;
+}
+
+.btn-indexa-primary {
+  @apply bg-indexa-purple text-white hover:bg-indexa-purple-dark;
+}
+
+.btn-indexa-secondary {
+  @apply bg-indexa-mint text-gray-800 hover:bg-indexa-mint-dark;
 }
 
 .bg-indexa-gradient {
@@ -126,32 +134,66 @@
   z-index: 1;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-
 /* Enhanced shadows for search and filter panels */
 .shadow-enhanced {
-  box-shadow: 0 10px 25px -5px rgba(74, 9, 104, 0.1), 0 8px 10px -6px rgba(74, 9, 104, 0.1);
+  box-shadow: 0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 15px -6px rgba(74, 9, 104, 0.1);
   transition: all 0.3s ease;
 }
 
 .shadow-enhanced:hover {
-  box-shadow: 0 20px 25px -5px rgba(74, 9, 104, 0.15), 0 10px 10px -5px rgba(74, 9, 104, 0.1);
+  box-shadow: 0 20px 35px -5px rgba(74, 9, 104, 0.2), 0 10px 20px -5px rgba(74, 9, 104, 0.15);
 }
 
 .filter-panel {
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   background-color: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 15px -1px rgba(74, 9, 104, 0.1), 0 2px 10px -1px rgba(74, 9, 104, 0.06);
   transition: box-shadow 0.3s ease;
 }
 
 .filter-panel:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 20px -3px rgba(74, 9, 104, 0.15), 0 4px 10px -2px rgba(74, 9, 104, 0.1);
+}
+
+/* Animation for cart bubble */
+.animate-cart-bubble {
+  animation: cartBubble 0.6s ease-out;
+}
+
+@keyframes cartBubble {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Custom inputs styling */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 2px rgba(74, 9, 104, 0.2);
+  border-color: #4A0968;
+}
+
+/* Improve hover states */
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Improved rounded corners for all elements */
+.rounded-2xl {
+  border-radius: 1rem;
+}
+
+/* Enhanced card hover effect */
+.card-hover-effect {
+  transition: all 0.3s ease;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(74, 9, 104, 0.15), 0 10px 10px -5px rgba(74, 9, 104, 0.1);
 }

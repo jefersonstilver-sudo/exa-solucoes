@@ -8,6 +8,15 @@ export interface Panel {
   resolucao?: string;
   modo?: string;
   buildings?: Building;
+  // Additional fields (some will be mocked in the UI)
+  installDate?: Date;
+  lastMaintenance?: Date;
+  lastVideoDisplayed?: string;
+  syncStatus?: string;
+  connectivityType?: string;
+  installationType?: string;
+  videoSpecs?: string;
+  uuid?: string;
 }
 
 export interface Building {
@@ -19,6 +28,9 @@ export interface Building {
   longitude: number;
   status: string;
   imageUrl?: string;
+  condominiumProfile?: 'residential' | 'commercial' | 'mixed';
+  city?: string;
+  comodities?: string[];
 }
 
 export interface PanelWithDistance extends Panel {

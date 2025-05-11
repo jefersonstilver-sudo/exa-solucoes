@@ -63,23 +63,26 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Cores específicas do Indexa
+				// Cores específicas do Indexa - updated with more vibrant colors
 				indexa: {
 					purple: '#4A0968',
 					'purple-dark': '#38064F',
 					'purple-light': '#6A1888',
 					mint: '#58E3AB',
+					'mint-dark': '#4AD399',
+					'mint-light': '#7EEAC0',
 					white: '#FFFFFF'
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				'2xl': '1rem' // Added 2xl border radius
 			},
 			boxShadow: {
-				'enhanced': '0 10px 25px -5px rgba(74, 9, 104, 0.1), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
-				'enhanced-hover': '0 20px 25px -5px rgba(74, 9, 104, 0.15), 0 10px 10px -5px rgba(74, 9, 104, 0.1)',
+				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
+				'enhanced-hover': '0 20px 35px -5px rgba(74, 9, 104, 0.2), 0 10px 15px -5px rgba(74, 9, 104, 0.15)',
 				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)'
 			},
 			keyframes: {
@@ -118,13 +121,43 @@ export default {
 						transform: 'translateY(0)',
 						opacity: '1'
 					}
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0)'
+					},
+					'50%': {
+						transform: 'translateY(-10px)'
+					}
+				},
+				'pulse-soft': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '0.7'
+					}
+				},
+				'cart-bubble': {
+					'0%': {
+						transform: 'scale(1)',
+					},
+					'50%': {
+						transform: 'scale(1.2)',
+					},
+					'100%': {
+						transform: 'scale(1)',
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.4s ease-out',
-				'slide-in': 'slide-in 0.5s ease-out'
+				'slide-in': 'slide-in 0.5s ease-out',
+				'float': 'float 3s ease-in-out infinite',
+				'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+				'cart-bubble': 'cart-bubble 0.6s ease-out'
 			}
 		}
 	},

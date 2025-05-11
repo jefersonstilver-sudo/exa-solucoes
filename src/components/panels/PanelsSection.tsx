@@ -42,7 +42,7 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
         <div className="lg:hidden w-full">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" className="w-full border-indexa-purple text-indexa-purple">
+              <Button variant="outline" className="w-full border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10 hover:text-indexa-purple-dark">
                 <Filter className="mr-2 h-4 w-4" />
                 Filtrar por
               </Button>
@@ -60,8 +60,8 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
         
         {/* Desktop Filter Sidebar */}
         <div className="hidden lg:block">
-          <div className="bg-white p-5 rounded-lg shadow-lg border border-gray-200 sticky top-24 hover:shadow-xl transition-shadow duration-300">
-            <h2 className="font-bold text-lg mb-5 text-gray-800">Filtrar por</h2>
+          <div className="bg-white p-5 rounded-2xl shadow-enhanced border border-gray-200 sticky top-24 hover:shadow-enhanced-hover transition-all duration-300">
+            <h2 className="font-bold text-lg mb-5 text-indexa-purple">Filtrar por</h2>
             <PanelFilters 
               filters={filters} 
               onFilterChange={handleFilterChange}
