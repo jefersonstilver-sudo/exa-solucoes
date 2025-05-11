@@ -29,7 +29,7 @@ const Header: React.FC<HeaderProps> = ({
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
             alt="Indexa Logo" 
-            className="h-12 w-auto object-contain" // Increased logo size
+            className="h-14 w-auto object-contain" // Increased logo size even more
           />
         </Link>
         
@@ -55,15 +55,29 @@ const Header: React.FC<HeaderProps> = ({
           Loja Online
         </Button>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-3">
+          {/* User icon first */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/20 rounded-full"
+          >
+            <Avatar className="h-9 w-9 bg-indexa-purple-light border-2 border-indexa-mint">
+              <AvatarFallback className="bg-indexa-purple-light text-white">
+                <User className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+          
+          {/* Shopping cart moved to the right of the user icon */}
           <Sheet>
             <SheetTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative text-white hover:bg-white/20"
+                className="relative text-white hover:bg-white/20 rounded-full"
               >
-                <ShoppingBag className="h-6 w-6" />
+                <ShoppingBag className="h-6 w-6 text-indexa-mint" /> {/* More elegant shopping bag with mint color */}
                 {cartItems.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {cartItems.length}
@@ -80,31 +94,33 @@ const Header: React.FC<HeaderProps> = ({
               />
             </SheetContent>
           </Sheet>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-white hover:bg-white/20 rounded-full"
-          >
-            <Avatar className="h-9 w-9 bg-indexa-purple-light border-2 border-indexa-mint">
-              <AvatarFallback className="bg-indexa-purple-light text-white">
-                <User className="h-5 w-5" />
-              </AvatarFallback>
-            </Avatar>
-          </Button>
         </div>
       </div>
       
       {/* Mobile menu button */}
       <div className="md:hidden flex items-center gap-3">
+        {/* User icon first in mobile as well */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white hover:bg-white/20 rounded-full"
+        >
+          <Avatar className="h-8 w-8 bg-indexa-purple-light border-2 border-indexa-mint">
+            <AvatarFallback className="bg-indexa-purple-light text-white">
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+        
+        {/* Shopping cart moved to the right of the user icon in mobile */}
         <Sheet>
           <SheetTrigger asChild>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="relative text-white hover:bg-white/20"
+              className="relative text-white hover:bg-white/20 rounded-full"
             >
-              <ShoppingBag className="h-6 w-6" />
+              <ShoppingBag className="h-6 w-6 text-indexa-mint" /> {/* More elegant shopping bag with mint color */}
               {cartItems.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItems.length}
@@ -145,20 +161,6 @@ const Header: React.FC<HeaderProps> = ({
             <Link to="/paineis-digitais" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
               Painéis Digitais
             </Link>
-            <div className="flex items-center justify-between p-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/20 rounded-full" 
-              >
-                <Avatar className="h-8 w-8 bg-indexa-purple-light border-2 border-indexa-mint">
-                  <AvatarFallback className="bg-indexa-purple-light text-white">
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-              <span className="text-white/90 font-medium">Acesso</span>
-            </div>
           </div>
         </div>
       )}
