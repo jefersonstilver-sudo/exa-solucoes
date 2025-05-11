@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { MapPin, Search, Loader2, X } from 'lucide-react';
+import { MapPin, Search, Loader2, X, Building, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FilterOptions } from '@/types/filter';
 import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
 
 interface SearchSectionProps {
   searchLocation: string;
@@ -28,6 +29,27 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   handleFilterChange,
   panelsCount
 }) => {
+  // Check if specific location types are selected
+  const isResidentialOnly = filters.locationType.includes('residential') && !filters.locationType.includes('commercial');
+  const isCommercialOnly = filters.locationType.includes('commercial') && !filters.locationType.includes('residential');
+  const isBothTypes = filters.locationType.includes('residential') && filters.locationType.includes('commercial');
+
+  // Toggle location type filter
+  const toggleLocationType = (type: string) => {
+    let newLocationTypes: string[] = [...filters.locationType];
+    
+    if (newLocationTypes.includes(type)) {
+      // If removing a type, ensure we don't remove all types
+      if (newLocationTypes.length > 1) {
+        newLocationTypes = newLocationTypes.filter(t => t !== type);
+      }
+    } else {
+      newLocationTypes.push(type);
+    }
+    
+    handleFilterChange({ locationType: newLocationTypes });
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: -10 }}
@@ -93,6 +115,42 @@ const SearchSection: React.FC<SearchSectionProps> = ({
               <option value="90">90 dias</option>
             </select>
           </div>
+        </div>
+        
+        {/* Location type filters */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex items-center justify-center">
+            <span className="text-sm text-gray-600 mr-2 font-medium">Tipo de local:</span>
+          </div>
+          
+          <Button
+            variant={isBothTypes ? "default" : "outline"}
+            size="sm"
+            onClick={() => handleFilterChange({ locationType: ['residential', 'commercial'] })}
+            className={`rounded-full ${isBothTypes ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
+          >
+            Todos
+          </Button>
+          
+          <Button
+            variant={isResidentialOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleLocationType('residential')}
+            className={`rounded-full ${isResidentialOnly ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
+          >
+            <Users className="w-4 h-4 mr-1" />
+            Residencial
+          </Button>
+          
+          <Button
+            variant={isCommercialOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleLocationType('commercial')}
+            className={`rounded-full ${isCommercialOnly ? 'bg-[#00F894] hover:bg-[#00E085] text-gray-900' : 'border-[#00F894] text-[#00F894] hover:bg-[#00F894]/10'}`}
+          >
+            <Building className="w-4 h-4 mr-1" />
+            Comercial
+          </Button>
         </div>
         
         {selectedLocation && (

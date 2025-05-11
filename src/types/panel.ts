@@ -31,6 +31,12 @@ export interface Building {
   condominiumProfile?: 'residential' | 'commercial' | 'mixed';
   city?: string;
   comodities?: string[];
+  // New commercial-specific fields
+  location_type?: 'residential' | 'commercial';
+  venue_type?: string;
+  monthly_traffic?: number;
+  audience_profile?: string[];
+  peak_hours?: string;
 }
 
 export interface PanelWithDistance extends Panel {

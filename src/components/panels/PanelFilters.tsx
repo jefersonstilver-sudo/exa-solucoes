@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Filter, X, ChevronDown } from 'lucide-react';
 import { FilterOptions } from '@/types/filter';
@@ -28,7 +27,8 @@ interface PanelFiltersProps {
 
 const neighborhoodOptions = [
   'Vila A', 'Vila B', 'Vila C', 'Centro', 'Jardim das Flores', 
-  'Morumbi', 'Porto Meira', 'Jardim Jupira', 'KLP', 'Três Lagoas'
+  'Morumbi', 'Porto Meira', 'Jardim Jupira', 'KLP', 'Três Lagoas',
+  'Parque Presidente', 'Vila Yolanda'
 ];
 
 const facilityOptions = [
@@ -54,6 +54,11 @@ const radiusOptions = [
   { value: 10000, label: '10km' }
 ];
 
+const locationTypeOptions = [
+  { id: 'residential', label: 'Residencial' },
+  { id: 'commercial', label: 'Comercial' }
+];
+
 const PanelFilters: React.FC<PanelFiltersProps> = ({ 
   filters, 
   onFilterChange, 
@@ -65,6 +70,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
     radius: true,
     neighborhood: true,
     status: true,
+    locationType: true,
     buildingProfile: false,
     facilities: false,
     views: false
@@ -107,6 +113,14 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       
     onFilterChange({ status: newStatus });
   };
+
+  const handleLocationTypeChange = (locationType: string, checked: boolean) => {
+    const newLocationTypes = checked 
+      ? [...filters.locationType, locationType]
+      : filters.locationType.filter(lt => lt !== locationType);
+      
+    onFilterChange({ locationType: newLocationTypes });
+  };
   
   const resetFilters = () => {
     onFilterChange({
@@ -115,7 +129,8 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       status: ['online'],
       buildingProfile: [],
       facilities: [],
-      minMonthlyViews: 0
+      minMonthlyViews: 0,
+      locationType: ['residential', 'commercial']
     });
     setSearchInput('');
   };
@@ -176,6 +191,50 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       </form>
       
       <Separator className="my-4" />
+      
+      {/* Location Type filter - new section */}
+      <div className="mb-2">
+        <div 
+          className="flex justify-between items-center cursor-pointer" 
+          onClick={() => toggleSection('locationType')}
+        >
+          <Label className="font-medium text-[#7C3AED] flex items-center">
+            Tipo de Local
+          </Label>
+          <ChevronDown 
+            className={`h-4 w-4 transition-transform ${expandedSections.locationType ? 'rotate-180' : ''}`} 
+          />
+        </div>
+        
+        <motion.div
+          variants={sectionVariants}
+          animate={expandedSections.locationType ? 'open' : 'closed'}
+          initial="open"
+          transition={{ duration: 0.2 }}
+          className="overflow-hidden"
+        >
+          <div className="space-y-2 mt-2">
+            {locationTypeOptions.map(option => (
+              <div key={option.id} className="flex items-center">
+                <Checkbox 
+                  id={`location-${option.id}`}
+                  checked={filters.locationType.includes(option.id)}
+                  onCheckedChange={(checked) => 
+                    handleLocationTypeChange(option.id, checked as boolean)
+                  }
+                  className="border-[#7C3AED] data-[state=checked]:bg-[#7C3AED]"
+                />
+                <label 
+                  htmlFor={`location-${option.id}`}
+                  className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {option.label}
+                </label>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
       
       {/* Radius selection */}
       <div className="mb-2">

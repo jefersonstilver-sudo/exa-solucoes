@@ -6,35 +6,38 @@ interface ResultsHeaderProps {
   isLoading: boolean;
   isSearching: boolean;
   panelsCount: number;
+  locationTypeLabel?: string;
 }
 
 const ResultsHeader: React.FC<ResultsHeaderProps> = ({ 
   isLoading, 
   isSearching, 
-  panelsCount 
+  panelsCount,
+  locationTypeLabel = 'todos os locais' 
 }) => {
+  if (isLoading || isSearching) {
+    return (
+      <div className="mb-6 flex items-center justify-center text-indexa-purple">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+        <span className="font-medium">Carregando painéis...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex justify-between items-center mb-4">
+    <div className="mb-6 flex justify-between items-center">
       <h2 className="text-xl font-semibold text-indexa-purple">
-        {isLoading || isSearching ? (
-          <div className="flex items-center">
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Buscando painéis...
-          </div>
-        ) : panelsCount > 0 ? (
-          <>Painéis disponíveis</>
+        {panelsCount > 0 ? (
+          <>
+            {panelsCount} {panelsCount === 1 ? 'painel encontrado' : 'painéis encontrados'}
+            <span className="font-normal text-base ml-1.5 text-gray-600">
+              em {locationTypeLabel}
+            </span>
+          </>
         ) : (
-          <>Nenhum painel encontrado</>
+          'Nenhum resultado encontrado'
         )}
       </h2>
-      <div className="flex items-center gap-2">
-        <select className="px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indexa-purple">
-          <option>Ordenar por: Relevância</option>
-          <option>Ordenar por: Maior Preço</option>
-          <option>Ordenar por: Menor Preço</option>
-          <option>Ordenar por: Mais visualizações</option>
-        </select>
-      </div>
     </div>
   );
 };

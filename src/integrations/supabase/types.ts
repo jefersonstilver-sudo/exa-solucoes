@@ -11,34 +11,52 @@ export type Database = {
     Tables: {
       buildings: {
         Row: {
+          audience_profile: string[] | null
           bairro: string
           created_at: string | null
           endereco: string
           id: string
+          imageurl: string | null
           latitude: number | null
+          location_type: string
           longitude: number | null
+          monthly_traffic: number | null
           nome: string
+          peak_hours: string | null
           status: string
+          venue_type: string | null
         }
         Insert: {
+          audience_profile?: string[] | null
           bairro: string
           created_at?: string | null
           endereco: string
           id?: string
+          imageurl?: string | null
           latitude?: number | null
+          location_type?: string
           longitude?: number | null
+          monthly_traffic?: number | null
           nome: string
+          peak_hours?: string | null
           status?: string
+          venue_type?: string | null
         }
         Update: {
+          audience_profile?: string[] | null
           bairro?: string
           created_at?: string | null
           endereco?: string
           id?: string
+          imageurl?: string | null
           latitude?: number | null
+          location_type?: string
           longitude?: number | null
+          monthly_traffic?: number | null
           nome?: string
+          peak_hours?: string | null
           status?: string
+          venue_type?: string | null
         }
         Relationships: []
       }
