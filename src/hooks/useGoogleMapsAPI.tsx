@@ -2,15 +2,6 @@
 import { useCallback } from 'react';
 import { useToast } from './use-toast';
 
-// ✅ Declaração global para propriedades customizadas do window
-declare global {
-  interface Window {
-    initMap?: () => void;
-    gm_authFailure?: () => void;
-    google?: typeof google;
-  }
-}
-
 // 🔐 API key do Google Maps
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAVQPvo8asVwVVuWBxReck6ohF9vvDR_qM';
 
