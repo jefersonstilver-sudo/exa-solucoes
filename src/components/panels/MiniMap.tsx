@@ -14,44 +14,52 @@ interface MiniMapProps {
 
 const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart }) => {
   const [open, setOpen] = useState(false);
-  const [isMiniMapVisible, setIsMiniMapVisible] = useState(true);
-  const [isFullMapVisible, setIsFullMapVisible] = useState(false);
-  const [uniqueId] = useState(`minimap-${Math.random().toString(36).substring(2, 9)}`);
+  const [miniMapKey, setMiniMapKey] = useState(`mini-${Math.random().toString(36).substring(2, 9)}`);
+  const [fullMapKey, setFullMapKey] = useState(`full-${Math.random().toString(36).substring(2, 9)}`);
+  const [shouldRenderMiniMap, setShouldRenderMiniMap] = useState(true);
+  const [shouldRenderFullMap, setShouldRenderFullMap] = useState(false);
   
-  console.log(`MiniMap renderizando com id ${uniqueId} - Dialog open:`, open);
-  
-  // Handle dialog state changes with improved safety
+  // Handle dialog state changes to prevent DOM manipulation conflicts
   useEffect(() => {
-    let miniMapTimer: ReturnType<typeof setTimeout>;
-    let fullMapTimer: ReturnType<typeof setTimeout>;
-    
+    // When dialog opens, prepare to show full map
     if (open) {
-      // Delay mounting the full map until dialog animation starts
-      fullMapTimer = setTimeout(() => {
-        setIsFullMapVisible(true);
-      }, 300);
+      // Small delay to ensure dialog animation starts first
+      const timer = setTimeout(() => {
+        setShouldRenderFullMap(true);
+      }, 100);
+      return () => clearTimeout(timer);
     } else {
-      // Delay unmounting the full map until dialog animation completes
-      fullMapTimer = setTimeout(() => {
-        setIsFullMapVisible(false);
+      // When dialog closes, wait for animation to complete before unmounting
+      const timer = setTimeout(() => {
+        setShouldRenderFullMap(false);
+        // Generate new key for full map when closed to ensure clean remount
+        setFullMapKey(`full-${Math.random().toString(36).substring(2, 9)}`);
       }, 300);
+      return () => clearTimeout(timer);
     }
+  }, [open]);
+
+  // Regenerate mini map on component remount
+  useEffect(() => {
+    // Generate fresh IDs on mount to avoid stale references
+    setMiniMapKey(`mini-${Math.random().toString(36).substring(2, 9)}`);
+    setFullMapKey(`full-${Math.random().toString(36).substring(2, 9)}`);
     
     return () => {
-      // Clean up timers to prevent memory leaks
-      clearTimeout(miniMapTimer);
-      clearTimeout(fullMapTimer);
+      // Ensure maps are unmounted during component cleanup
+      setShouldRenderMiniMap(false);
+      setShouldRenderFullMap(false);
     };
-  }, [open]);
+  }, []);
   
-  // Dialog open handler with safety checks
+  // Dialog open handler with safety
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
   };
   
   return (
     <>
-      <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden" data-component-id={uniqueId}>
+      <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="bg-gray-50 p-3 flex justify-between items-center border-b">
           <div className="flex items-center text-gray-700">
             <MapPin className="w-4 h-4 mr-2 text-indexa-purple" />
@@ -67,16 +75,16 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
           </Button>
         </div>
         <div className="h-[180px] relative">
-          {/* Only render mini map when needed */}
-          {isMiniMapVisible && (
+          {/* Only render mini map when needed with unique key */}
+          {shouldRenderMiniMap && (
             <div className="h-full w-full">
               <PanelMap
                 panels={panels}
                 selectedLocation={selectedLocation}
                 onAddToCart={onAddToCart}
                 miniMap={true}
-                instanceId={`mini-${uniqueId}`}
-                key={`mini-map-${uniqueId}`}
+                instanceId={miniMapKey}
+                key={miniMapKey}
               />
             </div>
           )}
@@ -89,7 +97,7 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
         </div>
       </div>
 
-      {/* Full map dialog with improved mounting/unmounting safety */}
+      {/* Full map dialog with safer mounting/unmounting strategy */}
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[800px] max-h-[80vh] p-0">
           <DialogHeader className="p-4 border-b">
@@ -106,16 +114,16 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
             </div>
           </DialogHeader>
           <div className="h-[500px]">
-            {/* Only render full map when dialog is open AND component is mounted */}
-            {open && isFullMapVisible && (
+            {/* Only render full map with unique key when dialog is open */}
+            {open && shouldRenderFullMap && (
               <div className="h-full w-full">
                 <PanelMap
                   panels={panels}
                   selectedLocation={selectedLocation}
                   onAddToCart={onAddToCart}
                   miniMap={false}
-                  instanceId={`full-${uniqueId}`}
-                  key={`full-map-${uniqueId}`}
+                  instanceId={fullMapKey}
+                  key={fullMapKey}
                 />
               </div>
             )}
