@@ -121,8 +121,10 @@ export const initializeGoogleMapsAPI = () => {
             } catch (e) {
               console.error('Failed to remove script element:', e);
               // If removeChild fails, try another way to detach the script safely
-              scriptElement.setAttribute('data-failed', 'true');
-              scriptElement.src = '';  
+              if (scriptElement instanceof HTMLScriptElement) {
+                scriptElement.setAttribute('data-failed', 'true');
+                scriptElement.src = '';  // Fix TypeScript error - cast to HTMLScriptElement
+              }
             }
           }
           
