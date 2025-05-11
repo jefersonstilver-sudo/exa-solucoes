@@ -18,13 +18,14 @@ export interface Building {
   latitude: number;
   longitude: number;
   status: string;
+  imageUrl?: string;
 }
 
 export interface PanelWithDistance extends Panel {
   distance?: number;
 }
 
-// Type for the response from get_panels_by_location RPC
+// Tipo para a resposta de get_panels_by_location RPC
 export interface GetPanelsByLocationResponse {
   data: Panel[] | null;
   error: Error | null;
