@@ -16,26 +16,32 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
   const [open, setOpen] = useState(false);
   const [isMiniMapVisible, setIsMiniMapVisible] = useState(true);
   const [isFullMapVisible, setIsFullMapVisible] = useState(false);
+  const [uniqueId] = useState(`minimap-${Math.random().toString(36).substring(2, 9)}`);
   
-  console.log("MiniMap renderizando - Dialog open:", open);
+  console.log(`MiniMap renderizando com id ${uniqueId} - Dialog open:`, open);
   
-  // Handle dialog state changes
+  // Handle dialog state changes with improved safety
   useEffect(() => {
+    let miniMapTimer: ReturnType<typeof setTimeout>;
+    let fullMapTimer: ReturnType<typeof setTimeout>;
+    
     if (open) {
       // Delay mounting the full map until dialog animation starts
-      const timer = setTimeout(() => {
+      fullMapTimer = setTimeout(() => {
         setIsFullMapVisible(true);
       }, 300);
-      
-      return () => clearTimeout(timer);
     } else {
       // Delay unmounting the full map until dialog animation completes
-      const timer = setTimeout(() => {
+      fullMapTimer = setTimeout(() => {
         setIsFullMapVisible(false);
       }, 300);
-      
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      // Clean up timers to prevent memory leaks
+      clearTimeout(miniMapTimer);
+      clearTimeout(fullMapTimer);
+    };
   }, [open]);
   
   // Dialog open handler with safety checks
@@ -45,7 +51,7 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
   
   return (
     <>
-      <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden" data-component-id={uniqueId}>
         <div className="bg-gray-50 p-3 flex justify-between items-center border-b">
           <div className="flex items-center text-gray-700">
             <MapPin className="w-4 h-4 mr-2 text-indexa-purple" />
@@ -69,7 +75,8 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
                 selectedLocation={selectedLocation}
                 onAddToCart={onAddToCart}
                 miniMap={true}
-                key="mini-map-instance"
+                instanceId={`mini-${uniqueId}`}
+                key={`mini-map-${uniqueId}`}
               />
             </div>
           )}
@@ -82,7 +89,7 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
         </div>
       </div>
 
-      {/* Full map dialog */}
+      {/* Full map dialog with improved mounting/unmounting safety */}
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[800px] max-h-[80vh] p-0">
           <DialogHeader className="p-4 border-b">
@@ -107,7 +114,8 @@ const MiniMap: React.FC<MiniMapProps> = ({ panels, selectedLocation, onAddToCart
                   selectedLocation={selectedLocation}
                   onAddToCart={onAddToCart}
                   miniMap={false}
-                  key="full-map-instance"
+                  instanceId={`full-${uniqueId}`}
+                  key={`full-map-${uniqueId}`}
                 />
               </div>
             )}
