@@ -1,4 +1,3 @@
-
 /// <reference types="@types/google.maps" />
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapPin, Info, Maximize, Minimize } from 'lucide-react';
@@ -359,15 +358,18 @@ const PanelMap: React.FC<PanelMapProps> = ({ panels, selectedLocation, onAddToCa
         };
       }
       
-      // Adicionar styles apenas se estiver disponível
-      if (google.maps.MapTypeStyleFeatureType) {
+      // Aplicar estilos de mapa de forma segura, sem verificar o tipo MapTypeStyleFeatureType
+      try {
+        // Aplicar estilos diretamente sem verificação de tipo
         mapOptions.styles = [
           {
-            featureType: "poi",
+            featureType: "poi", // Pontos de interesse
             elementType: "labels",
             stylers: [{ visibility: "off" }]
           }
         ];
+      } catch (error) {
+        console.log('Falha ao aplicar estilos de mapa:', error);
       }
       
       // Criar nova instância de mapa
