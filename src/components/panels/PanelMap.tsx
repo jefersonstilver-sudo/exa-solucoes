@@ -7,6 +7,7 @@ import { useMapMarkers } from '@/hooks/useMapMarkers';
 import MapControls from './MapControls';
 import FullscreenCloseButton from './FullscreenCloseButton';
 import { useToast } from '@/hooks/use-toast';
+import { fitMapToBounds } from '@/utils/mapUtils';
 
 interface PanelMapProps {
   panels: Panel[];
@@ -32,9 +33,6 @@ const PanelMap: React.FC<PanelMapProps> = ({
     mapContainerRef,
     mapLoaded,
     mapInitialized,
-    initializeGoogleMaps,
-    initializeMap,
-    setMapLoaded,
     mountedRef
   } = useGoogleMaps({ miniMap, instanceId });
 
@@ -43,36 +41,6 @@ const PanelMap: React.FC<PanelMapProps> = ({
     addPanelMarkers,
     addSelectedLocationMarker
   } = useMapMarkers({ onAddToCart, instanceId });
-
-  // Initialize map setup and API loading
-  useEffect(() => {
-    const setupMap = async () => {
-      try {
-        await initializeGoogleMaps();
-        if (mountedRef.current && mapContainerRef.current) {
-          // Center on Brazil if no location is selected
-          const defaultCenter = selectedLocation ? 
-            { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
-            { lat: -15.793889, lng: -47.882778 }; // Default to Brasília
-          
-          initializeMap(defaultCenter, selectedLocation ? 13 : 5);
-        }
-      } catch (error) {
-        console.error('Error setting up map:', error);
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar o mapa",
-          description: "Não foi possível inicializar o Google Maps. Por favor, tente novamente."
-        });
-      }
-    };
-    
-    setupMap();
-    
-    return () => {
-      clearMarkersAndInfoWindows();
-    };
-  }, [initializeGoogleMaps, initializeMap, selectedLocation, clearMarkersAndInfoWindows, toast, mountedRef]);
   
   // Update markers when data changes
   useEffect(() => {
@@ -89,22 +57,18 @@ const PanelMap: React.FC<PanelMapProps> = ({
           }
           // If no selected location but have markers, fit bounds
           else if (bounds && !selectedLocation) {
-            mapRef.current.fitBounds(bounds);
-            
-            // Don't zoom in too far
-            const zoomChangeListener = google.maps.event.addListener(mapRef.current, 'idle', () => {
-              if (mapRef.current && mapRef.current.getZoom() as number > 15) {
-                mapRef.current.setZoom(15);
-              }
-              google.maps.event.removeListener(zoomChangeListener);
-            });
+            fitMapToBounds(mapRef.current, bounds);
           }
         }
       }, 500);
       
       return () => clearTimeout(timer);
     }
-  }, [panels, selectedLocation, addPanelMarkers, addSelectedLocationMarker, mapInitialized, mapRef, mountedRef]);
+    
+    return () => {
+      clearMarkersAndInfoWindows();
+    };
+  }, [panels, selectedLocation, addPanelMarkers, addSelectedLocationMarker, mapInitialized, mapRef, mountedRef, clearMarkersAndInfoWindows]);
 
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
