@@ -124,7 +124,7 @@ export default function OrderConfirmation() {
                 id: panelData.id,
                 nome: panelData.buildings.nome || 'Painel Digital',
                 endereco: panelData.buildings.endereco || 'Endereço não disponível',
-                imageUrl: panelData.buildings.imageurl // Note the lowercase 'imageurl'
+                imageUrl: panelData.buildings.imageurl // This maps the database column 'imageurl' to our interface property 'imageUrl'
               });
             } else {
               // Fallback if building data is not available
