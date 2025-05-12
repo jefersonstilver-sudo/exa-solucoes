@@ -98,18 +98,31 @@ export default function OrderConfirmation() {
         // Fetch panel details
         const panelDetails = [];
         for (const panelId of orderData.lista_paineis) {
-          const { data: panelData } = await supabase
+          const { data: panelData, error: panelError } = await supabase
             .from('painels')
             .select('id, buildings:building_id(nome, endereco, imageUrl)')
             .eq('id', panelId)
             .single();
             
-          if (panelData) {
+          if (panelError) {
+            console.error('Error fetching panel data:', panelError);
+            continue;
+          }
+            
+          if (panelData && panelData.buildings) {
             panelDetails.push({
               id: panelData.id,
-              nome: panelData.buildings?.nome || 'Painel Digital',
-              endereco: panelData.buildings?.endereco || 'Endereço não disponível',
-              imageUrl: panelData.buildings?.imageUrl
+              nome: panelData.buildings.nome || 'Painel Digital',
+              endereco: panelData.buildings.endereco || 'Endereço não disponível',
+              imageUrl: panelData.buildings.imageUrl
+            });
+          } else {
+            // Fallback if building data is not available
+            panelDetails.push({
+              id: panelId,
+              nome: 'Painel Digital',
+              endereco: 'Endereço não disponível',
+              imageUrl: undefined
             });
           }
         }
@@ -182,7 +195,7 @@ export default function OrderConfirmation() {
               Pedido Confirmado!
             </h1>
             <p className="text-xl text-gray-600 mt-2">
-              Seu pedido #{orderId.substring(0, 8)} foi processado com sucesso
+              Seu pedido #{orderId ? orderId.substring(0, 8) : ''} foi processado com sucesso
             </p>
           </motion.div>
           
@@ -200,7 +213,7 @@ export default function OrderConfirmation() {
                   </h2>
                   
                   <div className="space-y-6">
-                    {orderDetails.panelDetails.map((panel, index) => (
+                    {orderDetails?.panelDetails.map((panel, index) => (
                       <motion.div 
                         key={panel.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -227,11 +240,11 @@ export default function OrderConfirmation() {
                           <p className="text-sm text-gray-500 mt-1">{panel.endereco}</p>
                           <div className="mt-2 text-sm">
                             <span className="text-[#1E1B4B] font-semibold">
-                              {orderDetails.plano_meses} {orderDetails.plano_meses === 1 ? 'mês' : 'meses'}
+                              {orderDetails?.plano_meses} {orderDetails?.plano_meses === 1 ? 'mês' : 'meses'}
                             </span>
                             <span className="text-gray-500"> • </span>
                             <span className="text-gray-600">
-                              {new Date(orderDetails.data_inicio).toLocaleDateString('pt-BR')} até {new Date(orderDetails.data_fim).toLocaleDateString('pt-BR')}
+                              {orderDetails?.data_inicio && new Date(orderDetails.data_inicio).toLocaleDateString('pt-BR')} até {orderDetails?.data_fim && new Date(orderDetails.data_fim).toLocaleDateString('pt-BR')}
                             </span>
                           </div>
                         </div>
@@ -243,7 +256,7 @@ export default function OrderConfirmation() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Total:</span>
                       <span className="text-xl font-bold text-[#1E1B4B]">
-                        {formatCurrency(orderDetails.valor_total)}
+                        {orderDetails && formatCurrency(orderDetails.valor_total)}
                       </span>
                     </div>
                   </div>
