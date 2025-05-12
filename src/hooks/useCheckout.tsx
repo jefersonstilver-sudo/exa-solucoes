@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { createPaymentPreference } from '@/services/mercadoPago';
-import { calculatePriceWithDiscount, ensureSpreadable } from '@/utils/priceUtils';
+import { createPaymentPreference, initMercadoPagoCheckout } from '@/services/mercadoPago';
+import { calculatePriceWithDiscount, ensureSpreadable, calculateMonthlyPrice, getPlanBenefits, getPlanDiscountPercentage } from '@/utils/priceUtils';
 import { useCartManager } from '@/hooks/useCartManager';
 
 // Checkout steps
@@ -16,10 +17,30 @@ export const STEPS = {
 
 // Plan configuration
 export const PLANS = {
-  1: { months: 1, pricePerMonth: 250, discount: 0, extras: [] },
-  3: { months: 3, pricePerMonth: 220, discount: 12, extras: ['🎥 1 vídeo por mês produzido pela Indexa'] },
-  6: { months: 6, pricePerMonth: 200, discount: 20, extras: ['🎥 1 vídeo por mês produzido pela Indexa'] },
-  12: { months: 12, pricePerMonth: 180, discount: 28, extras: ['🎥 1 vídeo por mês produzido pela Indexa', '🎬 Vídeo institucional', '🎞️ Bônus de exibição ininterrupta de 30s'] }
+  1: {
+    months: 1,
+    pricePerMonth: 250,
+    discount: 0,
+    extras: []
+  },
+  3: {
+    months: 3,
+    pricePerMonth: 220,
+    discount: 12,
+    extras: ['🎥 1 vídeo por mês produzido pela Indexa']
+  },
+  6: {
+    months: 6,
+    pricePerMonth: 200,
+    discount: 20,
+    extras: ['🎥 1 vídeo por mês produzido pela Indexa']
+  },
+  12: {
+    months: 12,
+    pricePerMonth: 180,
+    discount: 28,
+    extras: ['🎥 1 vídeo por mês produzido pela Indexa', '🎬 Vídeo institucional', '🎞️ Bônus de exibição ininterrupta de 30s']
+  }
 };
 
 export const useCheckout = () => {
@@ -116,20 +137,28 @@ export const useCheckout = () => {
           setCouponDiscount(result.desconto_percentual);
           setCouponId(result.id);
           setCouponValid(true);
-          setCouponMessage(result.message);
+          setCouponMessage(result.message || 'Cupom aplicado com sucesso!');
           
           toast({
             title: "Cupom aplicado",
-            description: result.message,
+            description: `Desconto de ${result.desconto_percentual}% aplicado ao seu pedido!`,
+            duration: 3000,
           });
         } else {
-          setCouponMessage(result.message);
+          setCouponMessage(result.message || 'Este cupom não é válido para a sua compra.');
           toast({
             variant: "destructive",
             title: "Cupom inválido",
-            description: result.message,
+            description: result.message || 'Este cupom não é válido para a sua compra.',
           });
         }
+      } else {
+        setCouponMessage('Cupom não encontrado');
+        toast({
+          variant: "destructive",
+          title: "Cupom não encontrado",
+          description: "O código informado não corresponde a nenhum cupom ativo.",
+        });
       }
     } catch (error: any) {
       console.error('Error validating coupon:', error);
@@ -195,12 +224,13 @@ export const useCheckout = () => {
 
   // Calculate total price
   const calculateTotalPrice = () => {
-    const basePricePerMonth = PLANS[selectedPlan].pricePerMonth;
+    // Set the proper monthly price based on the selected plan
+    const pricePerMonth = PLANS[selectedPlan].pricePerMonth;
     const totalMonths = PLANS[selectedPlan].months;
     const panelCount = cartItems.length;
     
     // Base price calculation
-    let totalPrice = basePricePerMonth * totalMonths * panelCount;
+    let totalPrice = pricePerMonth * totalMonths * panelCount;
     
     // Apply coupon discount if valid
     if (couponValid && couponDiscount > 0) {
@@ -301,8 +331,6 @@ export const useCheckout = () => {
         pending: `${window.location.origin}/checkout/pendente?id=${pedido.id}`
       };
       
-      // In a real environment, this would call the Mercado Pago API
-      // For now, we'll simulate this process
       try {
         const preference = await createPaymentPreference(items, backUrls, {
           external_reference: pedido.id,
@@ -320,8 +348,10 @@ export const useCheckout = () => {
           })
           .eq('id', pedido.id);
         
-        // Redirect to Mercado Pago checkout
-        // For demo purposes, we'll simulate a successful payment
+        // For production, redirect to Mercado Pago checkout
+        initMercadoPagoCheckout(preference.preferenceId);
+        
+        // For demo purposes only (remove this in production)
         setTimeout(() => {
           // Simulate successful payment
           handlePaymentSuccess(pedido.id);
@@ -339,7 +369,6 @@ export const useCheckout = () => {
         title: "Erro ao processar pagamento",
         description: error.message,
       });
-    } finally {
       setIsCreatingPayment(false);
     }
   };
@@ -356,7 +385,6 @@ export const useCheckout = () => {
         .eq('id', pedidoId);
       
       // Create campaigns for each panel
-      // For each panel in the order, create a campaign
       for (const item of cartItems) {
         await supabase
           .from('campanhas')
@@ -364,9 +392,7 @@ export const useCheckout = () => {
             {
               client_id: sessionUser.id,
               painel_id: item.panel.id,
-              // In a real implementation, we would use the user's active video
-              // For demo purposes, we'll set a placeholder
-              video_id: '00000000-0000-0000-0000-000000000000', // This would be replaced with a real video ID
+              video_id: '00000000-0000-0000-0000-000000000000', // Placeholder - in production get user's active video
               data_inicio: startDate.toISOString().split('T')[0],
               data_fim: endDate.toISOString().split('T')[0],
               status: 'pendente',
@@ -389,6 +415,12 @@ export const useCheckout = () => {
       
     } catch (error: any) {
       console.error('Error handling payment success:', error);
+      setIsCreatingPayment(false);
+      toast({
+        variant: "destructive",
+        title: "Erro ao processar confirmação",
+        description: error.message,
+      });
     }
   };
 

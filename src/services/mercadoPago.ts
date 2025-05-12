@@ -4,6 +4,7 @@ import { NextApiRequest } from 'next';
 // MercadoPago configuration - using import.meta.env instead of process.env
 const MP_ACCESS_TOKEN = import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = import.meta.env.VITE_MERCADO_PAGO_WEBHOOK_SECRET || '';
+const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || '';
 
 // Common MercadoPago types
 export interface PaymentInfo {
@@ -150,3 +151,30 @@ export const getPaymentInfo = async (paymentId: string): Promise<PaymentInfo | n
     return null;
   }
 };
+
+/**
+ * Initializes MercadoPago checkout
+ * @param preferenceId The preference ID from MercadoPago
+ * @returns void
+ */
+export const initMercadoPagoCheckout = (preferenceId: string): void => {
+  // In a real implementation, you'd use the MercadoPago.js SDK
+  // Example:
+  /*
+  const script = document.createElement('script');
+  script.src = 'https://secure.mlstatic.com/sdk/javascript/v1/mercadopago.js';
+  script.onload = () => {
+    window.Mercadopago.setPublishableKey(MP_PUBLIC_KEY);
+    window.Mercadopago.createCheckoutButton({
+      preference: { id: preferenceId },
+      autoOpen: true,
+    });
+  };
+  document.body.appendChild(script);
+  */
+  
+  // Redirect to MercadoPago checkout URL (simplified version)
+  window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+};
+
+export { MP_PUBLIC_KEY };
