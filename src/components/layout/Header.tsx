@@ -97,7 +97,7 @@ const Header: React.FC<HeaderProps> = ({
         </Link>
 
         <div className="flex items-center gap-3">
-          {/* Replaced with UserMenu component */}
+          {/* Using the enhanced UserMenu component */}
           <UserMenu />
           
           {/* Desktop Shopping cart */}
@@ -140,7 +140,7 @@ const Header: React.FC<HeaderProps> = ({
       
       {/* Mobile menu and cart buttons */}
       <div className="md:hidden flex items-center gap-3">
-        {/* Replaced with UserMenu component for mobile */}
+        {/* Using the enhanced UserMenu component for mobile */}
         <UserMenu />
         
         {/* Mobile Shopping cart */}

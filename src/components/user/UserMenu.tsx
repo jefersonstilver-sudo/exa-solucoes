@@ -1,7 +1,18 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, LogIn, LogOut, Settings, Package, Film, ShoppingBag, UserIcon, ChevronDown } from 'lucide-react';
+import { 
+  ClipboardList, 
+  ListOrdered, 
+  Settings, 
+  Lock, 
+  LogOut, 
+  LogIn, 
+  UserPlus, 
+  User as UserIcon, 
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,10 +23,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage, AvatarGlow } from '@/components/ui/avatar';
 import { useUserSession } from '@/hooks/useUserSession';
 import { ClientOnly } from '@/components/ui/client-only';
-import { motion } from 'framer-motion';
 
 const UserMenu = () => {
   const [open, setOpen] = useState(false);
@@ -25,6 +35,7 @@ const UserMenu = () => {
   const handleLogout = async () => {
     await logout();
     setOpen(false);
+    toast.success('Sessão encerrada com sucesso!');
   };
 
   // Generate avatar initials from name or email
@@ -46,6 +57,33 @@ const UserMenu = () => {
     return "?";
   };
 
+  // Animation variants for dropdown content
+  const dropdownVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: -10,
+      scale: 0.95
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.2,
+        ease: "easeOut"
+      }
+    },
+    exit: {
+      opacity: 0,
+      y: -5,
+      scale: 0.95,
+      transition: {
+        duration: 0.15,
+        ease: "easeIn"
+      }
+    }
+  };
+
   return (
     <ClientOnly fallback={<div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>}>
       {isLoading ? (
@@ -55,94 +93,141 @@ const UserMenu = () => {
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className={`relative p-0 overflow-hidden ${isLoggedIn ? 'border-0' : 'border-0'}`} 
+              className="relative p-0 overflow-hidden border-0" 
               aria-label="Menu do usuário"
             >
-              <motion.div 
-                className={`rounded-full ${isLoggedIn ? 'ring-[3px] ring-indexa-mint' : 'ring-[1px] ring-gray-300'}`}
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage 
-                    src={user?.avatar_url || ''} 
-                    alt={user?.name || user?.email || "Usuário"}
-                  />
-                  <AvatarFallback 
-                    className={`${isLoggedIn ? 'bg-indexa-purple text-white' : 'bg-gray-100 text-gray-600'}`}
-                  >
-                    {isLoggedIn ? getInitials() : <UserIcon className="h-5 w-5" />}
-                  </AvatarFallback>
-                </Avatar>
-              </motion.div>
+              <AvatarGlow active={isLoggedIn}>
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 400, 
+                    damping: 15 
+                  }}
+                >
+                  <Avatar className="h-10 w-10 ring-2 ring-white/20">
+                    <AvatarImage 
+                      src={user?.avatar_url || ''} 
+                      alt={user?.name || user?.email || "Usuário"}
+                    />
+                    <AvatarFallback 
+                      className={isLoggedIn 
+                        ? "bg-gradient-to-br from-[#3e1c85] to-[#4f28a1] text-white" 
+                        : "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700"
+                      }
+                    >
+                      {isLoggedIn ? getInitials() : <UserIcon className="h-5 w-5" />}
+                    </AvatarFallback>
+                  </Avatar>
+                </motion.div>
+              </AvatarGlow>
             </Button>
           </DropdownMenuTrigger>
           
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            {isLoggedIn ? (
-              <>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name || "Usuário"}</p>
-                    <p className="text-xs leading-none text-muted-foreground truncate">
-                      {user?.email}
-                    </p>
+          <AnimatePresence>
+            {open && (
+              <DropdownMenuContent 
+                className="w-[250px] sm:w-[300px] p-0 overflow-hidden rounded-2xl shadow-lg"
+                align="end" 
+                forceMount
+                asChild
+              >
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  variants={dropdownVariants}
+                >
+                  <div className="bg-gradient-to-br from-[#2a0d5c] via-[#3e1c85] to-[#4f28a1] text-white">
+                    {isLoggedIn ? (
+                      <>
+                        <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-bold leading-none">{user?.name || "Usuário"}</p>
+                            <p className="text-xs text-white/70 leading-none truncate">
+                              {user?.email}
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                        
+                        <DropdownMenuGroup className="p-2">
+                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                            <Link to="/minhas-campanhas" className="flex items-center">
+                              <ClipboardList className="mr-3 h-5 w-5" />
+                              <span className="font-medium">Minhas Campanhas</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                            <Link to="/meus-pedidos" className="flex items-center">
+                              <ListOrdered className="mr-3 h-5 w-5" />
+                              <span className="font-medium">Meus Pedidos</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuSeparator className="my-2 bg-white/10" />
+                          
+                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                            <Link to="/configuracoes" className="flex items-center">
+                              <Settings className="mr-3 h-5 w-5" />
+                              <span className="font-medium">Configurações da Conta</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                            <Link to="/alterar-senha" className="flex items-center">
+                              <Lock className="mr-3 h-5 w-5" />
+                              <span className="font-medium">Alterar Senha</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuSeparator className="my-2 bg-white/10" />
+                          
+                          <DropdownMenuItem 
+                            onClick={handleLogout} 
+                            className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
+                          >
+                            <LogOut className="mr-3 h-5 w-5" />
+                            <span className="font-medium">Sair</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
+                          <div className="text-center space-y-1">
+                            <p className="text-lg font-bold">Bem-vindo à Indexa</p>
+                            <p className="text-xs text-white/70">
+                              Entre para acessar todos os recursos
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                        
+                        <div className="p-3 space-y-2">
+                          <Link 
+                            to="/login" 
+                            className="flex items-center justify-center p-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors w-full"
+                          >
+                            <LogIn className="mr-2 h-5 w-5" />
+                            <span>Entrar</span>
+                          </Link>
+                          
+                          <Link 
+                            to="/cadastro" 
+                            className="flex items-center justify-center p-3 bg-indexa-mint hover:bg-indexa-mint-dark text-indexa-purple font-medium rounded-lg transition-colors w-full"
+                          >
+                            <UserPlus className="mr-2 h-5 w-5" />
+                            <span>Criar Conta</span>
+                          </Link>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem asChild>
-                    <Link to="/paineis-digitais/loja" className="flex items-center cursor-pointer">
-                      <ShoppingBag className="mr-2 h-4 w-4" />
-                      <span>Loja</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/meus-pedidos" className="flex items-center cursor-pointer">
-                      <Package className="mr-2 h-4 w-4" />
-                      <span>Meus Pedidos</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/minhas-campanhas" className="flex items-center cursor-pointer">
-                      <Film className="mr-2 h-4 w-4" />
-                      <span>Minhas Campanhas</span>
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/configuracoes" className="flex items-center cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configurações</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
-              </>
-            ) : (
-              <>
-                <DropdownMenuLabel className="font-normal">
-                  <p className="text-sm text-center">Faça login para continuar</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link to="/login" className="flex items-center justify-center">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    <span>Entrar</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link to="/cadastro" className="flex items-center justify-center">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Criar Conta</span>
-                  </Link>
-                </DropdownMenuItem>
-              </>
+                </motion.div>
+              </DropdownMenuContent>
             )}
-          </DropdownMenuContent>
+          </AnimatePresence>
         </DropdownMenu>
       )}
     </ClientOnly>

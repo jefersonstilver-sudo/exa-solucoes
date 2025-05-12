@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
@@ -45,4 +46,23 @@ const AvatarFallback = React.forwardRef<
 ))
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 
-export { Avatar, AvatarImage, AvatarFallback }
+// New component that adds a glowing effect to the avatar
+const AvatarGlow = React.forwardRef<
+  React.ElementRef<typeof React.Fragment>,
+  React.HTMLAttributes<HTMLDivElement> & { active?: boolean }
+>(({ className, active = false, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "relative rounded-full",
+      active && "before:absolute before:-inset-[3px] before:rounded-full before:bg-indexa-mint before:opacity-90 before:blur-[2px] before:content-['']",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </div>
+))
+AvatarGlow.displayName = "AvatarGlow"
+
+export { Avatar, AvatarImage, AvatarFallback, AvatarGlow }
