@@ -42,8 +42,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <>
-      <div className="md:hidden flex items-center gap-3 z-20">
-        {/* Loja Online na versão móvel */}
+      <div className="md:hidden flex items-center gap-3 z-10">
         <Link to="/paineis-digitais/loja" className="mr-1">
           <Button 
             variant="ghost" 
@@ -80,7 +79,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
       
       {/* Mobile menu with conditional rendering */}
       {isMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-50 md:hidden">
+        <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-40 md:hidden">
           <HeaderMenu isMobile={true} onLinkClick={() => setIsMenuOpen(false)} />
         </div>
       )}
