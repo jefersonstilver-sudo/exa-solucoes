@@ -42,7 +42,8 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <>
-      <div className="md:hidden flex items-center gap-3 z-10">
+      {/* Mobile menu button and cart */}
+      <div className="absolute right-4 top-4 md:hidden flex items-center gap-3 z-10">
         <Link to="/paineis-digitais/loja" className="mr-1">
           <Button 
             variant="ghost" 
