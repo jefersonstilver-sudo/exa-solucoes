@@ -8,7 +8,10 @@ import Index from "./pages/Index";
 import PanelStore from "./pages/PanelStore";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import Login from "./pages/Login";
+import Cadastro from "./pages/Cadastro";
 import NotFound from "./pages/NotFound";
+import Forbidden from "./pages/Forbidden";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +26,10 @@ const App = () => (
           <Route path="/paineis-digitais" element={<Index />} />
           <Route path="/paineis-digitais/loja" element={<PanelStore />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
+          <Route path="/403" element={<Forbidden />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
