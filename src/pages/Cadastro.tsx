@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -103,24 +102,6 @@ export default function Cadastro() {
       if (error) throw error;
       
       if (data.user) {
-        // Create a profile entry in the profiles table (if it exists)
-        try {
-          await supabase
-            .from('profiles')
-            .insert([
-              { 
-                id: data.user.id,
-                nome: name,
-                email: email,
-                tipo_documento: documentType,
-                documento: document.replace(/\D/g, '')
-              }
-            ]);
-        } catch (profileError) {
-          console.error("Error creating profile:", profileError);
-          // Continue with signup process even if profile creation fails
-        }
-        
         toast({
           title: "Conta criada com sucesso",
           description: "Bem-vindo(a) à Indexa!"

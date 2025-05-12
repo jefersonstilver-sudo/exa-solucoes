@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -66,16 +65,7 @@ export default function Login() {
       
       // Special case for timing issues with new accounts
       if (error.message.includes("Invalid login credentials")) {
-        // Check if user exists but might not be fully activated yet
-        const { data: userData } = await supabase.auth.admin.listUsers({ 
-          filter: { email }
-        }).catch(() => ({ data: null }));
-        
-        if (userData && userData.users && userData.users.some(u => u.email === email && u.created_at > Date.now() - 10000)) {
-          setError("Conta recém-criada. Aguarde alguns instantes e tente novamente.");
-        } else {
-          setError("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
-        }
+        setError("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
       } else {
         setError(error.message || "Erro ao fazer login. Verifique suas credenciais.");
       }

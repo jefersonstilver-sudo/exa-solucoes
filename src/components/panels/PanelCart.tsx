@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Trash, Building, Calendar, X, Check, ArrowRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -85,19 +84,9 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
       if (data.session?.user) {
         setUser(data.session.user);
         
-        // Fetch user profile information if available
-        try {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.session.user.id)
-            .single();
-            
-          if (profileData) {
-            setUserProfile(profileData);
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
+        // Fetch user metadata directly from the auth session
+        if (data.session.user.user_metadata) {
+          setUserProfile(data.session.user.user_metadata);
         }
       }
     };
@@ -108,6 +97,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
         setUser(session?.user || null);
+        setUserProfile(session?.user?.user_metadata || null);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setUserProfile(null);
