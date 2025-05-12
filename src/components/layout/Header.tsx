@@ -23,8 +23,6 @@ const Header: React.FC<HeaderProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
-
-  console.log("Header rendering - Menu:", isMenuOpen, "Desktop Cart:", isDesktopCartOpen, "Mobile Cart:", isMobileCartOpen);
   
   // Handle desktop cart separately
   const handleDesktopCartOpen = (open: boolean) => {
@@ -86,16 +84,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
       
       <div className="hidden md:flex items-center gap-4">
-        <Link to="/paineis-digitais/loja">
-          <Button 
-            variant="outline" 
-            className="bg-indexa-mint text-indexa-purple-dark rounded-full border-none hover:bg-opacity-90 text-base font-medium"
-          >
-            <ShoppingBag className="mr-2 h-5 w-5" />
-            Loja Online
-          </Button>
-        </Link>
-
+        {/* Removido o botão de Loja Online que estava duplicado */}
         <div className="flex items-center gap-3">
           {/* User icon first */}
           <Button 

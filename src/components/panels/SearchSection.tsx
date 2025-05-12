@@ -34,32 +34,22 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   const isCommercialOnly = filters.locationType.includes('commercial') && !filters.locationType.includes('residential');
   const isBothTypes = filters.locationType.includes('residential') && filters.locationType.includes('commercial');
 
-  // Toggle location type filter - FIXED LOGIC
+  // Toggle location type filter - Correção da lógica
   const toggleLocationType = (type: string) => {
     let newLocationTypes: string[] = [...filters.locationType];
     
-    // If clicking on a selected type
+    // Se clicou em um tipo já selecionado
     if (newLocationTypes.includes(type)) {
-      // We should enable the other type (to avoid having none selected)
-      newLocationTypes = type === 'residential' 
-        ? ['commercial'] 
-        : ['residential'];
-    } else {
-      // If adding a type that wasn't selected
-      if (newLocationTypes.length === 2) {
-        // If both were selected before, we want to select only the one clicked
-        newLocationTypes = [type];
-      } else {
-        // If only one was selected, we check if we're adding the other one
-        const otherType = type === 'residential' ? 'commercial' : 'residential';
-        if (newLocationTypes.includes(otherType)) {
-          // Both types will be selected
-          newLocationTypes = ['residential', 'commercial'];
-        } else {
-          // Only the clicked type will be selected
-          newLocationTypes = [type];
-        }
+      // Se apenas este tipo está selecionado, não fazemos nada 
+      // (para evitar ficar sem nenhum tipo selecionado)
+      if (newLocationTypes.length === 1) {
+        return; // Mantém pelo menos um tipo selecionado
       }
+      // Se ambos estão selecionados, mantém apenas o outro
+      newLocationTypes = newLocationTypes.filter(t => t !== type);
+    } else {
+      // Se clicou em um tipo não selecionado, adicionamos ele
+      newLocationTypes.push(type);
     }
     
     handleFilterChange({ locationType: newLocationTypes });
