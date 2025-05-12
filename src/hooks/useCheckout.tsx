@@ -86,9 +86,9 @@ export const useCheckout = () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session?.user) {
         toast({
-          variant: "destructive",
           title: "Acesso restrito",
           description: "Você precisa estar logado para finalizar a compra.",
+          variant: "destructive"
         });
         navigate('/login?redirect=/checkout');
       } else {
@@ -126,6 +126,7 @@ export const useCheckout = () => {
       toast({
         title: "Carrinho vazio",
         description: "Adicione itens ao carrinho antes de finalizar a compra.",
+        variant: "destructive"
       });
       navigate('/paineis-digitais/loja');
     }

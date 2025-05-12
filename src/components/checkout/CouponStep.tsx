@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface CouponStepProps {
   couponCode: string;
@@ -27,23 +28,44 @@ const CouponStep: React.FC<CouponStepProps> = ({
     validateCoupon();
   };
   
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 }
+  };
+  
   return (
     <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
       className="space-y-6"
     >
-      <div className="space-y-2">
+      <motion.div variants={itemVariants} className="space-y-2">
         <h2 className="text-xl font-semibold flex items-center">
-          <span className="mr-2">🏷️</span>
+          <span className="mr-2 text-2xl">🏷️</span>
           Cupom de Desconto
         </h2>
         <p className="text-sm text-muted-foreground">
           Se você possui um cupom promocional, insira o código abaixo
         </p>
-      </div>
+      </motion.div>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <motion.form 
+        variants={itemVariants}
+        onSubmit={handleSubmit} 
+        className="space-y-4"
+      >
         <div className="flex gap-2">
           <Input 
             type="text" 
@@ -56,7 +78,7 @@ const CouponStep: React.FC<CouponStepProps> = ({
           <Button 
             type="submit" 
             disabled={!couponCode || isValidatingCoupon || couponValid}
-            className="min-w-[80px] bg-indexa-purple hover:bg-indexa-purple-dark"
+            className="min-w-[90px] bg-indexa-purple hover:bg-indexa-purple-dark transition-colors"
           >
             {isValidatingCoupon ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -72,8 +94,9 @@ const CouponStep: React.FC<CouponStepProps> = ({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
+            transition={{ duration: 0.3 }}
             className={`
-              p-3 rounded-md text-sm flex items-start gap-2
+              p-4 rounded-xl text-sm flex items-start gap-2
               ${couponValid 
                 ? 'bg-green-50 text-green-800 border border-green-200' 
                 : 'bg-red-50 text-red-800 border border-red-200'
@@ -88,25 +111,29 @@ const CouponStep: React.FC<CouponStepProps> = ({
             <span>{couponMessage}</span>
           </motion.div>
         )}
-      </form>
+      </motion.form>
       
-      <div className="bg-gray-50 p-4 rounded-lg mt-6">
-        <h3 className="text-sm font-medium mb-2">Como conseguir cupons</h3>
-        <ul className="space-y-2 text-sm text-gray-600">
-          <li className="flex items-start">
-            <span className="mr-2">📱</span>
-            <span>Siga-nos nas redes sociais para cupons exclusivos</span>
-          </li>
-          <li className="flex items-start">
-            <span className="mr-2">📧</span>
-            <span>Inscreva-se em nossa newsletter para receber promoções</span>
-          </li>
-          <li className="flex items-start">
-            <span className="mr-2">🎁</span>
-            <span>Participe de eventos e campanhas promocionais</span>
-          </li>
-        </ul>
-      </div>
+      <motion.div variants={itemVariants}>
+        <Card className="overflow-hidden shadow-sm border-none bg-gradient-to-br from-[#1E1B4B]/10 to-[#1E1B4B]/5 rounded-2xl">
+          <CardContent className="p-5">
+            <h3 className="text-sm font-medium mb-3">Como conseguir cupons</h3>
+            <ul className="space-y-3 text-sm text-gray-600">
+              <li className="flex items-start">
+                <span className="mr-2 text-lg">📱</span>
+                <span>Siga-nos nas redes sociais para cupons exclusivos</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-lg">📧</span>
+                <span>Inscreva-se em nossa newsletter para receber promoções</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 text-lg">🎁</span>
+                <span>Participe de eventos e campanhas promocionais</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </motion.div>
     </motion.div>
   );
 };

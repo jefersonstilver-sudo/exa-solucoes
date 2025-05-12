@@ -44,7 +44,9 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   const calculateSubtotal = (): number => {
     const pricePerMonth = plans[selectedPlan].pricePerMonth;
     const totalMonths = plans[selectedPlan].months;
-    return pricePerMonth * totalMonths * cartItems.length;
+    const panelCount = cartItems.length;
+    
+    return pricePerMonth * totalMonths * panelCount;
   };
   
   // Calculate plan discount
@@ -78,17 +80,21 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   };
   
   return (
-    <Card className="sticky top-8">
-      <CardHeader className="bg-gray-50 border-b border-gray-100">
-        <CardTitle className="flex items-center">
+    <Card className="sticky top-8 rounded-2xl shadow-md overflow-hidden border border-gray-200">
+      <CardHeader className="bg-gradient-to-r from-[#1E1B4B] to-[#2D2A6B] border-b border-gray-100 p-4">
+        <CardTitle className="flex items-center text-white">
           <PackageCheck className="mr-2 h-5 w-5" /> Resumo do pedido
         </CardTitle>
       </CardHeader>
       
       <CardContent className="p-5 space-y-4">
-        <div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
           <h3 className="text-sm font-medium mb-2">Detalhes</h3>
-          <div className="text-sm space-y-2">
+          <div className="text-sm space-y-2 bg-gray-50 p-3 rounded-xl">
             <div className="flex justify-between">
               <span className="text-gray-600">Qtde. painéis:</span>
               <span className="font-medium">{cartItems.length}</span>
@@ -103,16 +109,20 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
         
-        <div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+        >
           <h3 className="text-sm font-medium mb-2">Período</h3>
           <div className="text-sm space-y-2">
             <div className="flex items-center text-gray-600 text-xs mb-1">
               <Calendar className="h-3.5 w-3.5 mr-1" /> Exibição
             </div>
-            <div className="bg-gray-50 p-2 rounded border border-gray-100 text-xs">
-              <div className="flex justify-between mb-1">
+            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs">
+              <div className="flex justify-between mb-2">
                 <span>Início:</span>
                 <span className="font-medium">{formatDate(startDate)}</span>
               </div>
@@ -122,11 +132,15 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
         
-        <Separator />
+        <Separator className="my-3" />
         
-        <div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+        >
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Subtotal:</span>
             <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
@@ -146,7 +160,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
             </div>
           )}
           
-          <div className="flex justify-between mt-3 text-indexa-purple">
+          <div className="flex justify-between mt-4 text-indexa-purple">
             <span className="font-semibold">Total:</span>
             <motion.span 
               className="font-bold text-lg"
@@ -158,7 +172,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
               {formatCurrency(calculateTotal())}
             </motion.span>
           </div>
-        </div>
+        </motion.div>
       </CardContent>
       
       <CardFooter className="bg-gray-50 p-4 text-xs text-gray-500 border-t border-gray-100">

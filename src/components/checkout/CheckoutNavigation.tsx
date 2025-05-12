@@ -31,7 +31,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       <Button 
         variant="ghost" 
         onClick={onBack}
-        className="gap-2"
+        className="gap-2 hover:bg-gray-100 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         {isBackToStore ? (
@@ -47,7 +47,11 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       <Button 
         onClick={onNext}
         disabled={!isNextEnabled || isCreatingPayment}
-        className={`gap-2 ${isPaymentStep ? 'bg-green-600 hover:bg-green-700' : 'bg-indexa-purple hover:bg-indexa-purple-dark'}`}
+        className={`gap-2 transition-colors rounded-xl shadow-sm ${
+          isPaymentStep 
+            ? 'bg-green-600 hover:bg-green-700' 
+            : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'
+        }`}
       >
         {isCreatingPayment ? (
           <>

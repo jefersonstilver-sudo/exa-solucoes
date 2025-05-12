@@ -40,7 +40,7 @@ export default function Checkout() {
     PLANS
   } = useCheckout();
   
-  const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
+  const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   const navigate = useNavigate();
   
   // Check if user is logged in
@@ -88,13 +88,19 @@ export default function Checkout() {
             transition={{ duration: 0.4 }}
           >
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold flex items-center">
-                <span className="mr-2">⏱️</span>
-                Escolha seu plano
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Selecione o período de veiculação da sua campanha
-              </p>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h2 className="text-xl font-semibold flex items-center">
+                  <span className="mr-2 text-2xl">⏱️</span>
+                  Escolha seu plano
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Selecione o período de veiculação da sua campanha
+                </p>
+              </motion.div>
               <PlanSelector 
                 selectedPlan={selectedPlan}
                 onSelectPlan={setSelectedPlan}
@@ -152,7 +158,7 @@ export default function Checkout() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12 flex items-center justify-center">
-          <div className="h-10 w-10 border-4 border-indexa-purple border-t-transparent rounded-full animate-spin"></div>
+          <div className="h-10 w-10 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
@@ -165,15 +171,15 @@ export default function Checkout() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="container mx-auto px-4 py-8 max-w-4xl"
+          className="container mx-auto px-4 py-8 max-w-5xl"
         >
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="mb-8 text-center"
+            className="mb-10 text-center"
           >
-            <h1 className="text-3xl font-bold text-indexa-purple">
+            <h1 className="text-3xl font-bold text-[#1E1B4B]">
               🎬 Sua campanha está prestes a estrear
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -192,17 +198,17 @@ export default function Checkout() {
               
               {/* Trust indicators */}
               <motion.div 
-                className="mt-8 p-4 border rounded-lg bg-opacity-50 bg-indigo-50 flex items-center justify-center space-x-3"
+                className="mt-8 p-4 border border-[#1E1B4B]/10 rounded-2xl bg-opacity-50 bg-indigo-50 flex items-center justify-center space-x-5"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8, duration: 0.5 }}
               >
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <span>🔒</span>
+                  <span role="img" aria-label="secure" className="text-lg">🔒</span>
                   <span className="font-medium">Compra 100% Segura com Mercado Pago</span>
                 </div>
-                <div className="h-4 border-r border-gray-300"></div>
-                <div className="text-sm text-gray-600">
+                <div className="h-4 border-r border-gray-300 hidden sm:block"></div>
+                <div className="text-sm text-gray-600 hidden sm:block">
                   <span>Mais de 1.200 anunciantes atendidos</span>
                 </div>
               </motion.div>

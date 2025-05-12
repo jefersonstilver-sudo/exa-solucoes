@@ -13,23 +13,45 @@ interface ReviewStepProps {
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels }) => {
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold flex items-center">
-          <span className="mr-2">📋</span>
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="space-y-2"
+      >
+        <h2 className="text-xl font-semibold flex items-center text-gray-900">
+          <span className="mr-2 text-2xl">📋</span>
           Revisão do Pedido
         </h2>
         <p className="text-sm text-muted-foreground">
           Confira os painéis selecionados para sua campanha
         </p>
-      </div>
+      </motion.div>
       
       {unavailablePanels.length > 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-orange-50 p-4 border border-orange-200 rounded-md"
+          transition={{ duration: 0.3 }}
+          className="bg-orange-50 p-4 border border-orange-200 rounded-xl shadow-sm"
         >
           <div className="flex items-start">
             <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
@@ -48,21 +70,25 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels })
         </motion.div>
       )}
       
-      <div className="space-y-4">
+      <motion.div 
+        className="space-y-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {cartItems.map((item, index) => {
           const isPanelUnavailable = unavailablePanels.includes(item.panel.id);
           
           return (
             <motion.div
               key={item.panel.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.4 }}
+              variants={itemVariants}
+              transition={{ duration: 0.4 }}
             >
-              <Card className={isPanelUnavailable ? 'border-orange-300' : undefined}>
+              <Card className={`overflow-hidden ${isPanelUnavailable ? 'border-orange-300' : 'hover:shadow-md transition-shadow'}`}>
                 <CardContent className="p-4">
                   <div className="flex gap-4">
-                    <div className="flex-shrink-0 w-20 h-20 overflow-hidden rounded-md bg-gray-100">
+                    <div className="flex-shrink-0 w-20 h-20 overflow-hidden rounded-xl bg-gray-100">
                       {item.panel.buildings?.imageUrl ? (
                         <img 
                           src={item.panel.buildings.imageUrl} 
@@ -121,7 +147,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels })
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
     </div>
   );
 };

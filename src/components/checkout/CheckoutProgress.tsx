@@ -17,7 +17,7 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between">
+      <div className="flex justify-between mb-1">
         {steps.map((step, index) => (
           <div 
             key={step.name} 
@@ -25,24 +25,28 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
           >
             <motion.div 
               className={`
-                flex items-center justify-center w-10 h-10 rounded-full 
+                flex items-center justify-center w-12 h-12 rounded-full shadow-sm
                 ${currentStep > index 
-                  ? 'bg-green-100 text-green-600' // Completed
+                  ? 'bg-[#00FFAB]/20 text-[#00FFAB]' // Completed
                   : currentStep === index 
-                    ? 'bg-indexa-purple text-white' // Current
+                    ? 'bg-[#1E1B4B] text-white' // Current
                     : 'bg-gray-100 text-gray-400' // Upcoming
                 }
               `}
-              initial={{ scale: 0.8 }}
+              initial={{ scale: 0.8, opacity: 0 }}
               animate={{ 
                 scale: currentStep === index ? 1 : 0.9,
+                opacity: 1,
                 backgroundColor: currentStep > index 
-                  ? '#DCFCE7' // green-100
+                  ? 'rgba(0, 255, 171, 0.2)' // #00FFAB with 20% opacity
                   : currentStep === index 
-                    ? '#4E00E8' // indexa-purple
-                    : '#F3F4F6' // gray-100
+                    ? '#1E1B4B' 
+                    : '#F3F4F6',
+                transition: {
+                  duration: 0.3,
+                  delay: index * 0.1
+                }
               }}
-              transition={{ duration: 0.3 }}
             >
               {currentStep > index ? (
                 <Check className="w-5 h-5" />
@@ -59,10 +63,15 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
                   : 'text-gray-400'
                 }
               `}
+              initial={{ opacity: 0 }}
               animate={{ 
-                color: currentStep >= index ? '#374151' : '#9CA3AF' 
+                opacity: 1,
+                color: currentStep >= index ? '#374151' : '#9CA3AF',
+                transition: {
+                  duration: 0.3,
+                  delay: index * 0.1 + 0.1
+                }
               }}
-              transition={{ duration: 0.3 }}
             >
               {step.name}
             </motion.span>
@@ -70,13 +79,13 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
         ))}
       </div>
       
-      <div className="relative flex items-center justify-between mt-3 px-5">
+      <div className="relative flex items-center justify-between mt-3 px-6">
         {/* Background bar */}
-        <div className="absolute w-full h-1 bg-gray-200 rounded"></div>
+        <div className="absolute w-full h-1.5 bg-gray-200 rounded-full"></div>
         
         {/* Progress bar */}
         <motion.div 
-          className="absolute h-1 bg-indexa-purple rounded"
+          className="absolute h-1.5 bg-gradient-to-r from-[#1E1B4B] to-[#00FFAB] rounded-full"
           initial={{ width: '0%' }}
           animate={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
