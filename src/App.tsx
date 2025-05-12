@@ -8,6 +8,7 @@ import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
+import Confirmacao from "./pages/Confirmacao";
 import NotFound from "./pages/NotFound";
 import Forbidden from "./pages/Forbidden";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -26,6 +27,7 @@ const App = () => (
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/confirmacao" element={<Confirmacao />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         <Route path="/403" element={<Forbidden />} />
         {/* Rotas adicionadas para o menu do usuário */}
