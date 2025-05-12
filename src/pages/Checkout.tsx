@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -16,7 +15,7 @@ import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import PlanSelector from '@/components/checkout/PlanSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { createPaymentPreference } from '@/services/mercadoPago';
-import { calculatePriceWithDiscount } from '@/utils/priceUtils';
+import { calculatePriceWithDiscount, ensureSpreadable } from '@/utils/priceUtils';
 
 // Plan configuration
 export const PLANS = {
@@ -309,7 +308,7 @@ export default function Checkout() {
           .from('pedidos')
           .update({
             log_pagamento: {
-              ...pedido.log_pagamento,
+              ...(pedido.log_pagamento ? ensureSpreadable(pedido.log_pagamento) : {}),
               payment_preference_id: preference.preferenceId
             }
           })

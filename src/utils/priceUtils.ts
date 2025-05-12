@@ -47,3 +47,14 @@ export const calculatePanelPrice = (
   
   return price;
 };
+
+/**
+ * Ensure an object is safe to spread
+ * This utility function ensures that a value is an object that can be safely spread
+ */
+export const ensureSpreadable = (value: any): Record<string, any> => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value;
+  }
+  return {};
+};
