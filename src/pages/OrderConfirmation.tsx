@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
@@ -100,12 +99,20 @@ export default function OrderConfirmation() {
         for (const panelId of orderData.lista_paineis) {
           const { data: panelData, error: panelError } = await supabase
             .from('painels')
-            .select('id, buildings:building_id(nome, endereco, imageUrl)')
+            .select(`
+              id, 
+              buildings (
+                nome, 
+                endereco, 
+                imageUrl
+              )
+            `)
             .eq('id', panelId)
             .single();
             
           if (panelError) {
             console.error('Error fetching panel data:', panelError);
+            // Continue to the next panel if there's an error with this one
             continue;
           }
             
