@@ -35,7 +35,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   }
 
   return (
-    <div className="hidden md:flex gap-6 ml-12">
+    <div className="flex gap-6">
       {menuItems.map((item) => (
         <Link 
           key={item.name}
