@@ -146,7 +146,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             variant={isCommercialOnly ? "default" : "outline"}
             size="sm"
             onClick={() => toggleLocationType('commercial')}
-            className={`rounded-full ${isCommercialOnly ? 'bg-[#00F894] hover:bg-[#00E085] text-gray-900' : 'border-[#00F894] text-[#00F894] hover:bg-[#00F894]/10'}`}
+            className={`rounded-full ${isCommercialOnly ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
           >
             <Building className="w-4 h-4 mr-1" />
             Comercial
