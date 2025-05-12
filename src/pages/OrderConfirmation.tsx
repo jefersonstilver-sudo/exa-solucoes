@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
@@ -97,35 +98,46 @@ export default function OrderConfirmation() {
         // Fetch panel details
         const panelDetails = [];
         for (const panelId of orderData.lista_paineis) {
-          const { data: panelData, error: panelError } = await supabase
-            .from('painels')
-            .select(`
-              id, 
-              buildings (
-                nome, 
-                endereco, 
-                imageurl
-              )
-            `)
-            .eq('id', panelId)
-            .single();
-            
-          if (panelError) {
-            console.error('Error fetching panel data:', panelError);
-            // Continue to the next panel if there's an error with this one
-            continue;
-          }
-            
-          // Make sure panelData exists and buildings object exists before accessing properties
-          if (panelData && panelData.buildings) {
-            panelDetails.push({
-              id: panelData.id,
-              nome: panelData.buildings.nome || 'Painel Digital',
-              endereco: panelData.buildings.endereco || 'Endereço não disponível',
-              imageUrl: panelData.buildings.imageurl // Note the lowercase 'imageurl'
-            });
-          } else {
-            // Fallback if building data is not available
+          try {
+            const { data: panelData, error: panelError } = await supabase
+              .from('painels')
+              .select(`
+                id, 
+                buildings (
+                  nome, 
+                  endereco, 
+                  imageurl
+                )
+              `)
+              .eq('id', panelId)
+              .single();
+              
+            if (panelError) {
+              console.error('Error fetching panel data:', panelError);
+              // Continue to the next panel if there's an error with this one
+              continue;
+            }
+              
+            // Make sure panelData exists and buildings object exists before accessing properties
+            if (panelData && panelData.buildings) {
+              panelDetails.push({
+                id: panelData.id,
+                nome: panelData.buildings.nome || 'Painel Digital',
+                endereco: panelData.buildings.endereco || 'Endereço não disponível',
+                imageUrl: panelData.buildings.imageurl // Note the lowercase 'imageurl'
+              });
+            } else {
+              // Fallback if building data is not available
+              panelDetails.push({
+                id: panelId,
+                nome: 'Painel Digital',
+                endereco: 'Endereço não disponível',
+                imageUrl: undefined
+              });
+            }
+          } catch (panelError) {
+            console.error('Error processing panel data:', panelError);
+            // Add fallback panel info
             panelDetails.push({
               id: panelId,
               nome: 'Painel Digital',
