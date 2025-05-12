@@ -30,13 +30,6 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
             {item.name}
           </Link>
         ))}
-        <Link 
-          to="/paineis-digitais/loja" 
-          className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md bg-indexa-mint/20"
-          onClick={onLinkClick}
-        >
-          Loja Online
-        </Link>
       </div>
     );
   }
@@ -52,12 +45,6 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
           {item.name}
         </Link>
       ))}
-      <Link 
-        to="/paineis-digitais/loja" 
-        className="text-white/90 font-medium hover:text-white transition-colors text-indexa-mint"
-      >
-        Loja Online
-      </Link>
     </div>
   );
 };

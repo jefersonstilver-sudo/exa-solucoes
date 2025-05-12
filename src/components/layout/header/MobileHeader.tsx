@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Store } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import CartButton from './CartButton';
 import UserButton from './UserButton';
@@ -42,6 +43,17 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   return (
     <>
       <div className="md:hidden flex items-center gap-3">
+        {/* Loja Online na versão móvel */}
+        <Link to="/paineis-digitais/loja">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-indexa-mint hover:bg-white/20 rounded-full"
+          >
+            <Store className="h-5 w-5" />
+          </Button>
+        </Link>
+        
         <UserButton isMobile={true} />
         
         <CartButton

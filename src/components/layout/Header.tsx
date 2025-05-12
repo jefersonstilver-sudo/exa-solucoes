@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Store } from 'lucide-react';
 import CartButton from './header/CartButton';
 import UserButton from './header/UserButton';
 import HeaderMenu from './header/HeaderMenu';
 import MobileHeader from './header/MobileHeader';
+import { Button } from '@/components/ui/button';
 
 interface HeaderProps {
   cartItems?: {panel: any, duration: number}[];
@@ -41,6 +43,17 @@ const Header: React.FC<HeaderProps> = ({
       {/* Desktop Cart and User buttons */}
       <div className="hidden md:flex items-center gap-4">
         <div className="flex items-center gap-3">
+          {/* Loja Online Link/Button */}
+          <Link to="/paineis-digitais/loja">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-indexa-mint hover:bg-white/20 rounded-full"
+            >
+              <Store className="h-5 w-5" />
+            </Button>
+          </Link>
+          
           <UserButton />
           
           {/* Desktop Shopping cart */}
