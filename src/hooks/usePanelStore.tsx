@@ -98,7 +98,7 @@ export const usePanelStore = (): UsePanelStoreReturn => {
         try {
           // Try to get real data from Supabase
           const { data, error } = await supabase
-            .from('paineis')
+            .from('painels')
             .select(`
               *,
               buildings!inner (*)

@@ -1,4 +1,3 @@
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import { checkRole } from '../../../lib/auth';
 import { withEmergencyCheck } from '../../../middleware/emergencyModeMiddleware';
@@ -52,7 +51,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     console.error('Error fetching fallback status:', error);
     return res.status(500).json({ error: 'Error fetching fallback status' });
   }
-}
 
 // Apply emergency check middleware
 export default withEmergencyCheck(handler);
