@@ -34,17 +34,32 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   const isCommercialOnly = filters.locationType.includes('commercial') && !filters.locationType.includes('residential');
   const isBothTypes = filters.locationType.includes('residential') && filters.locationType.includes('commercial');
 
-  // Toggle location type filter
+  // Toggle location type filter - FIXED LOGIC
   const toggleLocationType = (type: string) => {
     let newLocationTypes: string[] = [...filters.locationType];
     
+    // If clicking on a selected type
     if (newLocationTypes.includes(type)) {
-      // If removing a type, ensure we don't remove all types
-      if (newLocationTypes.length > 1) {
-        newLocationTypes = newLocationTypes.filter(t => t !== type);
-      }
+      // We should enable the other type (to avoid having none selected)
+      newLocationTypes = type === 'residential' 
+        ? ['commercial'] 
+        : ['residential'];
     } else {
-      newLocationTypes.push(type);
+      // If adding a type that wasn't selected
+      if (newLocationTypes.length === 2) {
+        // If both were selected before, we want to select only the one clicked
+        newLocationTypes = [type];
+      } else {
+        // If only one was selected, we check if we're adding the other one
+        const otherType = type === 'residential' ? 'commercial' : 'residential';
+        if (newLocationTypes.includes(otherType)) {
+          // Both types will be selected
+          newLocationTypes = ['residential', 'commercial'];
+        } else {
+          // Only the clicked type will be selected
+          newLocationTypes = [type];
+        }
+      }
     }
     
     handleFilterChange({ locationType: newLocationTypes });
