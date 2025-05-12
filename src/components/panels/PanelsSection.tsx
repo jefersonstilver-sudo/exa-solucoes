@@ -8,6 +8,8 @@ import { FilterOptions } from '@/types/filter';
 import PanelFilters from '@/components/panels/PanelFilters';
 import PanelList from '@/components/panels/PanelList';
 import ResultsHeader from '@/components/panels/ResultsHeader';
+import LoadingPanels from '@/components/panels/LoadingPanels';
+import EmptyResults from '@/components/panels/EmptyResults';
 
 interface PanelsSectionProps {
   panels: Panel[] | undefined;
@@ -32,18 +34,6 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
   cartItems,
   onAddToCart
 }) => {
-  // Check if we're displaying only specific location types
-  const locationTypeLabel = () => {
-    if (filters.locationType.length === 0 || filters.locationType.length === 2) {
-      return "todos os locais";
-    } else if (filters.locationType.includes('residential')) {
-      return "paineis residenciais";
-    } else if (filters.locationType.includes('commercial')) {
-      return "paineis comerciais";
-    }
-    return "todos os locais";
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Filters column */}
@@ -89,16 +79,21 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
           isLoading={isLoading} 
           isSearching={isSearching} 
           panelsCount={panels?.length || 0} 
-          locationTypeLabel={locationTypeLabel()}
         />
         
-        {/* Panel list */}
-        <PanelList 
-          panels={panels || []} 
-          isLoading={isLoading || isSearching}
-          cartItems={cartItems}
-          onAddToCart={onAddToCart}
-        />
+        {/* Panel list with loading and empty states */}
+        {isLoading || isSearching ? (
+          <LoadingPanels />
+        ) : panels && panels.length > 0 ? (
+          <PanelList 
+            panels={panels} 
+            isLoading={false}
+            cartItems={cartItems}
+            onAddToCart={onAddToCart}
+          />
+        ) : (
+          <EmptyResults />
+        )}
       </div>
     </div>
   );

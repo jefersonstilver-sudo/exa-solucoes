@@ -1,10 +1,17 @@
 
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
-import { usePanelSearch } from './panels/usePanelSearch';
-import { usePanelFilters } from './panels/usePanelFilters';
-import { fetchPanels } from '@/services/panelService';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  getMockPanels, 
+  filterPanelsByLocation, 
+  filterPanelsByStatus, 
+  filterPanelsByNeighborhood 
+} from '@/services/mockPanelService';
+import { getLocationCoordinates } from '@/services/geocoding';
 
 interface UsePanelStoreReturn {
   panels: Panel[] | undefined;
@@ -22,31 +29,169 @@ interface UsePanelStoreReturn {
 }
 
 export const usePanelStore = (): UsePanelStoreReturn => {
-  // Use our custom hooks for filters
-  const { filters, handleFilterChange } = usePanelFilters();
+  const { toast } = useToast();
+  const [searchLocation, setSearchLocation] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [filters, setFilters] = useState<FilterOptions>({
+    radius: 5000, // 5km default
+    neighborhood: 'all',
+    status: ['online'],
+    buildingProfile: [],
+    facilities: [],
+    minMonthlyViews: 0
+  });
   
-  // Get search functionality and state
-  const searchHook = usePanelSearch(() => refetch());
-  const { selectedLocation } = searchHook;
-  
-  // Set up the panels data query
-  const { 
-    data: panels, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
+  // Fetch panels based on filters
+  const { data: panels, isLoading, error, refetch } = useQuery({
     queryKey: ['panels', filters, selectedLocation],
-    queryFn: () => fetchPanels(filters, selectedLocation),
+    queryFn: async () => {
+      try {
+        // For demo purposes, we'll use the mock panels
+        console.log("Using mock data instead of actual API calls");
+        
+        // Get base mock data
+        let filteredPanels = getMockPanels();
+        
+        // Filter by status
+        filteredPanels = filterPanelsByStatus(filteredPanels, filters.status);
+        
+        // Filter by neighborhood
+        filteredPanels = filterPanelsByNeighborhood(filteredPanels, filters.neighborhood);
+        
+        // If we have a selected location, simulate proximity filtering
+        if (selectedLocation) {
+          console.log(`Filtering panels near selected location: ${selectedLocation.lat}, ${selectedLocation.lng}`);
+          
+          try {
+            // In a real application, we would use the Supabase RPC function
+            // For now, let's simulate the distance calculation
+            if (process.env.NODE_ENV === 'production') {
+              // This would be the real implementation using Supabase
+              const result = await supabase.rpc('get_panels_by_location', {
+                lat: selectedLocation.lat,
+                lng: selectedLocation.lng,
+                radius_meters: filters.radius
+              });
+              
+              if (result.error) {
+                throw result.error;
+              }
+
+              // Map the API response to match our Panel type
+              return (result.data || []).map(panel => {
+                // Ensure status is one of the allowed values
+                let validStatus: 'online' | 'offline' | 'maintenance' | 'installing' = 'offline';
+                if (panel.status === 'online') validStatus = 'online';
+                else if (panel.status === 'maintenance') validStatus = 'maintenance';
+                else if (panel.status === 'installing') validStatus = 'installing';
+                
+                // Convert the buildings JSON to our BuildingType
+                const buildings = panel.buildings as any;
+                
+                return {
+                  ...panel,
+                  status: validStatus,
+                  buildings: buildings
+                } as Panel;
+              });
+            }
+          } catch (error) {
+            console.error("Error fetching panels from API:", error);
+            // Fall back to mock data with distance calculation
+          }
+          
+          // Filter by location/distance
+          filteredPanels = filterPanelsByLocation(filteredPanels, selectedLocation, filters.radius);
+        }
+        
+        return filteredPanels;
+      } catch (err) {
+        console.error('Error fetching panels:', err);
+        return [] as Panel[];
+      }
+    },
     enabled: true
   });
+
+  const handleSearch = async (location: string) => {
+    if (!location.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Localização vazia",
+        description: "Por favor, digite um endereço ou bairro para buscar.",
+      });
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    try {
+      console.log('Searching for location:', location);
+      
+      // Get coordinates from address using our geocoding service
+      const coordinates = await getLocationCoordinates(location);
+      
+      if (!coordinates) {
+        toast({
+          variant: "destructive",
+          title: "Localização não encontrada",
+          description: `Não foi possível encontrar "${location}". Tente um endereço mais específico.`,
+        });
+        setIsSearching(false);
+        return;
+      }
+      
+      console.log('Found coordinates:', coordinates);
+      
+      // Update selected location and search text
+      setSelectedLocation(coordinates);
+      setSearchLocation(location);
+      
+      // Refresh data query with new coordinates
+      await refetch();
+      
+      toast({
+        title: "Localização encontrada",
+        description: `Mostrando resultados próximos a "${location}"`,
+      });
+    } catch (error) {
+      console.error("Erro ao buscar localização:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro na busca",
+        description: "Não foi possível encontrar esta localização. Tente novamente.",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleFilterChange = (newFilters: Partial<FilterOptions>) => {
+    setFilters(prev => ({...prev, ...newFilters}));
+  };
+
+  const handleClearLocation = () => {
+    setSelectedLocation(null);
+    setSearchLocation('');
+    toast({
+      title: "Busca limpa",
+      description: "Mostrando todos os painéis disponíveis",
+    });
+  };
 
   return {
     panels,
     isLoading,
     error,
-    ...searchHook,
+    searchLocation,
+    setSearchLocation,
+    selectedLocation,
+    setSelectedLocation,
+    isSearching,
     filters,
-    handleFilterChange
+    handleFilterChange,
+    handleSearch,
+    handleClearLocation
   };
 };

@@ -1,12 +1,11 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Store } from 'lucide-react';
-import CartButton from './header/CartButton';
-import UserButton from './header/UserButton';
-import HeaderMenu from './header/HeaderMenu';
-import MobileHeader from './header/MobileHeader';
 import { Button } from '@/components/ui/button';
+import { ShoppingBag, User, Menu, X } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import PanelCart from '@/components/panels/PanelCart';
 
 interface HeaderProps {
   cartItems?: {panel: any, duration: number}[];
@@ -25,11 +24,47 @@ const Header: React.FC<HeaderProps> = ({
   const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
 
+  console.log("Header rendering - Menu:", isMenuOpen, "Desktop Cart:", isDesktopCartOpen, "Mobile Cart:", isMobileCartOpen);
+  
+  // Handle desktop cart separately
+  const handleDesktopCartOpen = (open: boolean) => {
+    console.log("Toggle desktop cart:", open);
+    setIsDesktopCartOpen(open);
+    
+    // Close menu when cart is opened
+    if (open) {
+      setIsMenuOpen(false);
+    }
+  };
+  
+  // Handle menu toggle
+  const handleMenuOpen = () => {
+    const newMenuState = !isMenuOpen;
+    console.log("Toggle menu:", newMenuState);
+    setIsMenuOpen(newMenuState);
+    
+    // Close carts when menu is opened
+    if (newMenuState) {
+      setIsDesktopCartOpen(false);
+      setIsMobileCartOpen(false);
+    }
+  };
+
+  // Handle mobile cart separately
+  const handleMobileCartOpen = (open: boolean) => {
+    console.log("Toggle mobile cart:", open);
+    setIsMobileCartOpen(open);
+    
+    // Close menu when cart is opened
+    if (open) {
+      setIsMenuOpen(false);
+    }
+  };
+
   return (
-    <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30 relative">
-      {/* Logo container com z-index extremamente alto para garantir visibilidade máxima */}
-      <div className="flex items-center z-[250] relative">
-        <Link to="/" className="block text-white text-lg font-semibold transition-colors">
+    <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">
+      <div className="flex items-center">
+        <Link to="/" className="text-white text-lg font-semibold transition-colors">
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
             alt="Indexa Logo" 
@@ -37,51 +72,163 @@ const Header: React.FC<HeaderProps> = ({
           />
         </Link>
         
-        {/* Navegação Desktop */}
-        <div className="ml-8 hidden md:block">
-          <HeaderMenu />
+        <div className="hidden md:flex gap-6 ml-12">
+          <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
+            Produtora
+          </Link>
+          <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
+            Marketing
+          </Link>
+          <Link to="/paineis-digitais" className="text-white/90 font-medium hover:text-white transition-colors">
+            Painéis Digitais
+          </Link>
         </div>
       </div>
       
-      {/* Botões de carrinho e usuário no Desktop */}
       <div className="hidden md:flex items-center gap-4">
+        <Link to="/paineis-digitais/loja">
+          <Button 
+            variant="outline" 
+            className="bg-indexa-mint text-indexa-purple-dark rounded-full border-none hover:bg-opacity-90 text-base font-medium"
+          >
+            <ShoppingBag className="mr-2 h-5 w-5" />
+            Loja Online
+          </Button>
+        </Link>
+
         <div className="flex items-center gap-3">
-          {/* Link para Loja Online */}
-          <Link to="/paineis-digitais/loja">
+          {/* User icon first */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/20 rounded-full"
+          >
+            <Avatar className="h-9 w-9 bg-indexa-purple-light border-2 border-indexa-mint">
+              <AvatarFallback className="bg-indexa-purple-light text-white">
+                <User className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+          
+          {/* Desktop Shopping cart */}
+          {cartItems.length > 0 ? (
+            <Sheet open={isDesktopCartOpen} onOpenChange={handleDesktopCartOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="relative text-white hover:bg-white/20 rounded-full"
+                >
+                  <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                </Button>
+              </SheetTrigger>
+              {isDesktopCartOpen && (
+                <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
+                  <PanelCart 
+                    cartItems={cartItems} 
+                    onRemove={onRemoveFromCart} 
+                    onClear={onClearCart} 
+                    onChangeDuration={onChangeDuration} 
+                  />
+                </SheetContent>
+              )}
+            </Sheet>
+          ) : (
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-indexa-mint hover:bg-white/20 rounded-full"
+              className="relative text-white hover:bg-white/20 rounded-full"
             >
-              <Store className="h-5 w-5" />
+              <ShoppingBag className="h-6 w-6 text-indexa-mint" />
             </Button>
-          </Link>
-          
-          <UserButton />
-          
-          {/* Carrinho Desktop */}
-          <CartButton
-            cartItems={cartItems}
-            onRemoveFromCart={onRemoveFromCart}
-            onClearCart={onClearCart}
-            onChangeDuration={onChangeDuration}
-            isDesktopCartOpen={isDesktopCartOpen}
-            setIsDesktopCartOpen={setIsDesktopCartOpen}
-          />
+          )}
         </div>
       </div>
       
-      {/* Mobile menu e botões do carrinho - Agora completamente fora do fluxo do cabeçalho principal */}
-      <MobileHeader 
-        cartItems={cartItems}
-        onRemoveFromCart={onRemoveFromCart}
-        onClearCart={onClearCart}
-        onChangeDuration={onChangeDuration}
-        isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
-        isMobileCartOpen={isMobileCartOpen}
-        setIsMobileCartOpen={setIsMobileCartOpen}
-      />
+      {/* Mobile menu and cart buttons */}
+      <div className="md:hidden flex items-center gap-3">
+        {/* User icon first in mobile as well */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white hover:bg-white/20 rounded-full"
+        >
+          <Avatar className="h-8 w-8 bg-indexa-purple-light border-2 border-indexa-mint">
+            <AvatarFallback className="bg-indexa-purple-light text-white">
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+        
+        {/* Mobile Shopping cart */}
+        {cartItems.length > 0 ? (
+          <Sheet open={isMobileCartOpen} onOpenChange={handleMobileCartOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative text-white hover:bg-white/20 rounded-full"
+              >
+                <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItems.length}
+                </span>
+              </Button>
+            </SheetTrigger>
+            {isMobileCartOpen && (
+              <SheetContent side="right" className="w-[85%] overflow-auto">
+                <PanelCart 
+                  cartItems={cartItems} 
+                  onRemove={onRemoveFromCart} 
+                  onClear={onClearCart} 
+                  onChangeDuration={onChangeDuration} 
+                />
+              </SheetContent>
+            )}
+          </Sheet>
+        ) : (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative text-white hover:bg-white/20 rounded-full"
+          >
+            <ShoppingBag className="h-6 w-6 text-indexa-mint" />
+          </Button>
+        )}
+        
+        {/* Mobile menu button */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleMenuOpen} 
+          className="text-white hover:bg-white/20"
+        >
+          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </Button>
+      </div>
+      
+      {/* Mobile menu with conditional rendering to avoid DOM manipulation issues */}
+      {isMenuOpen && (
+        <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-50 md:hidden">
+          <div className="flex flex-col p-4 gap-4">
+            <Link to="/" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
+              Produtora
+            </Link>
+            <Link to="/" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
+              Marketing
+            </Link>
+            <Link to="/paineis-digitais" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
+              Painéis Digitais
+            </Link>
+            <Link to="/paineis-digitais/loja" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md bg-indexa-mint/20" onClick={() => setIsMenuOpen(false)}>
+              Loja Online
+            </Link>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

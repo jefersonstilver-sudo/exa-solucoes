@@ -6,7 +6,7 @@ import { Panel } from '@/types/panel';
 import { AmenityList } from './AmenityList';
 import { PanelStats } from './PanelStats';
 import { PriceSection } from './PriceSection';
-import { Clock, Monitor, ArrowUp, Users, Eye, Tag, Building } from 'lucide-react';
+import { Clock, Monitor, ArrowUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,26 +18,12 @@ interface PanelCardProps {
 }
 
 export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart }) => {
-  const isCommercial = panel.buildings?.location_type === 'commercial';
-  
   // Simulate pricing based on panel info
   const calculatePrice = (panel: Panel, days: number) => {
     // Base price calculation
-    const basePrice = isCommercial ? 150 : 100; // Higher base price for commercial
-    
-    // Location factor varies by type and location
-    let locationFactor = 1;
-    
-    if (isCommercial) {
-      // Commercial pricing based on venue type and traffic
-      const trafficVolume = panel.buildings?.monthly_traffic || 30000;
-      locationFactor = trafficVolume > 50000 ? 1.8 : 
-                       trafficVolume > 20000 ? 1.5 : 1.3;
-    } else {
-      // Residential pricing based on neighborhood
-      locationFactor = panel.buildings?.bairro === 'Vila A' ? 1.5 : 
-                      panel.buildings?.bairro === 'Centro' ? 1.3 : 1;
-    }
+    const basePrice = 100; // Base daily rate
+    const locationFactor = panel.buildings?.bairro === 'Vila A' ? 1.5 : 
+                          panel.buildings?.bairro === 'Centro' ? 1.3 : 1;
     
     // Apply discount based on duration
     let discount = 0;
@@ -49,14 +35,8 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
   };
   
   // Generate data for panel display
-  const monthlyViews = isCommercial 
-    ? (panel.buildings?.monthly_traffic || Math.floor(Math.random() * 50000) + 30000)
-    : (Math.floor(Math.random() * 50000) + 10000);
-    
-  const estimatedResidents = isCommercial 
-    ? 0 // No residents for commercial
-    : (Math.floor(Math.random() * 800) + 200);
-    
+  const monthlyViews = Math.floor(Math.random() * 50000) + 10000;
+  const estimatedResidents = Math.floor(Math.random() * 800) + 200;
   const price = calculatePrice(panel, 30);
   const price60 = calculatePrice(panel, 60);
   const price90 = calculatePrice(panel, 90);
@@ -73,45 +53,10 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
     show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
 
-  // Generate venue type tag (for commercial locations)
-  const getVenueTypeTag = () => {
-    if (!isCommercial || !panel.buildings?.venue_type) return null;
-    
-    return (
-      <Badge variant="secondary" className="bg-[#00F894]/10 text-[#00F894] border border-[#00F894]/20">
-        {panel.buildings.venue_type}
-      </Badge>
-    );
-  };
-
-  // Format audience profile for display
-  const formatAudienceProfile = () => {
-    if (!isCommercial || !panel.buildings?.audience_profile?.length) return null;
-    
-    return panel.buildings.audience_profile.join(', ');
-  };
-
   return (
     <motion.div variants={itemVariants} className="w-full">
-      <Card className={`overflow-hidden border ${isCommercial ? 'border-[#00F894]' : 'border-gray-200'} hover:shadow-enhanced transition-all duration-300`}>
+      <Card className="overflow-hidden border border-gray-200 hover:shadow-enhanced transition-all duration-300">
         <CardContent className="p-0">
-          {/* Type indicator - top left */}
-          <div className="absolute top-4 left-4 z-10">
-            <Badge variant="secondary" className={isCommercial 
-              ? "bg-[#00F894] text-gray-900 shadow-md"
-              : "bg-[#7C3AED] text-white shadow-md"
-            }>
-              <div className="flex items-center gap-1.5">
-                {isCommercial ? (
-                  <Building className="h-3.5 w-3.5 mr-1" />
-                ) : (
-                  <Users className="h-3.5 w-3.5 mr-1" />
-                )}
-                {isCommercial ? 'Comercial' : 'Residencial'}
-              </div>
-            </Badge>
-          </div>
-          
           {/* Building image - full width */}
           <div className="relative h-64 w-full">
             <img 
@@ -119,13 +64,6 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               alt={panel.buildings?.nome || 'Building image'}
               className="h-full w-full object-cover"
             />
-            
-            {/* Venue type tag (for commercial) */}
-            {getVenueTypeTag() && (
-              <div className="absolute top-14 left-4">
-                {getVenueTypeTag()}
-              </div>
-            )}
             
             {/* Status indicator - top right */}
             <div className="absolute top-4 right-4 bg-white rounded-full shadow-md px-3 py-1.5 flex items-center gap-1.5">
@@ -175,23 +113,6 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               </div>
             </div>
             
-            {/* Commercial-specific data */}
-            {isCommercial && panel.buildings?.peak_hours && (
-              <div className="mb-4 bg-gray-50 p-3 rounded-md">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="font-medium text-gray-700 text-xs">Horário de pico:</span>
-                    <div className="text-sm">{panel.buildings.peak_hours}</div>
-                  </div>
-                  
-                  <div>
-                    <span className="font-medium text-gray-700 text-xs">Público alvo:</span>
-                    <div className="text-sm">{formatAudienceProfile() || 'Geral'}</div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             {/* Technical data - panel ID etc */}
             <div className="bg-gray-50 p-3 rounded-md mb-4 text-xs">
               <div className="grid grid-cols-2 gap-2">
@@ -210,15 +131,10 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               </div>
             </div>
             
-            {/* Amenities for residential or features for commercial */}
+            {/* Amenities row with horizontal scroll */}
             <div className="mb-6">
-              <p className="text-sm font-medium text-gray-700 mb-1.5">
-                {isCommercial ? 'Categorias de Interesse:' : 'Comodidades do condomínio:'}
-              </p>
-              <AmenityList 
-                randomCount={Math.floor(Math.random() * 4) + 2} 
-                isCommercial={isCommercial}
-              />
+              <p className="text-sm font-medium text-gray-700 mb-1.5">Comodidades do condomínio:</p>
+              <AmenityList randomCount={Math.floor(Math.random() * 6) + 2} />
             </div>
             
             {/* Stats section */}
@@ -228,8 +144,6 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               screenCount={screenCount}
               resolution={resolution}
               mode={mode}
-              isCommercial={isCommercial}
-              peakHours={panel.buildings?.peak_hours}
             />
             
             {/* Price and CTA section */}
