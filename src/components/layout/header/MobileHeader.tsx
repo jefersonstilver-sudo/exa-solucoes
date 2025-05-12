@@ -42,9 +42,9 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <>
-      <div className="md:hidden flex items-center gap-3">
+      <div className="md:hidden flex items-center gap-2 z-10">
         {/* Loja Online na versão móvel */}
-        <Link to="/paineis-digitais/loja">
+        <Link to="/paineis-digitais/loja" className="mr-1">
           <Button 
             variant="ghost" 
             size="icon" 
