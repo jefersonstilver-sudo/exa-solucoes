@@ -9,6 +9,8 @@ import { Panel } from '@/types/panel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PanelCartProps {
   cartItems: {panel: Panel, duration: number}[];
@@ -23,6 +25,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Calculate price based on panel info and duration
   const calculatePrice = (panel: Panel, days: number) => {
@@ -81,19 +84,44 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     }
   }, [cartItems.length]);
 
-  // Handle checkout simulation
-  const handleCheckout = () => {
+  // Handle checkout properly with authentication check and navigation
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Carrinho vazio",
+        description: "Adicione itens ao carrinho para continuar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onClear();
+    try {
+      // Check if user is authenticated
+      const { data } = await supabase.auth.getSession();
+      
+      if (!data.session?.user) {
+        // Redirect to login with return path
+        toast({
+          title: "Login necessário",
+          description: "Faça login para continuar com a compra.",
+        });
+        navigate('/login', { state: { returnTo: '/checkout' } });
+      } else {
+        // User is authenticated, redirect to checkout
+        navigate('/checkout');
+      }
+    } catch (error) {
+      console.error("Error during checkout:", error);
       toast({
-        title: "Compra finalizada com sucesso!",
-        description: "Você receberá um email com os detalhes do seu pedido.",
+        title: "Erro ao processar",
+        description: "Ocorreu um erro ao processar seu pedido. Tente novamente.",
+        variant: "destructive"
       });
-    }, 1500);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const CartContent = () => {
