@@ -1,340 +1,404 @@
 
-import React, { useEffect, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, formatDate } from '@/utils/formatters';
-import { CheckCircle, ArrowRight, FileText, Calendar, Building, Play } from 'lucide-react';
+import { CheckCircle, Calendar, Building, ArrowRight, Home, Clock, PanelRight, Share2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import confetti from 'canvas-confetti';
 
-const OrderConfirmation = () => {
-  const [orderData, setOrderData] = useState<any>(null);
+export default function OrderConfirmation() {
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('id');
+  const [orderDetails, setOrderDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const location = useLocation();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { 
-        staggerChildren: 0.2,
-        delayChildren: 0.5
+  // Launch confetti effect on page load
+  useEffect(() => {
+    const launchConfetti = () => {
+      // Launch 2 confetti cannons
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6, x: 0.3 }
+      });
+      
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6, x: 0.7 }
+        });
+      }, 250);
+    };
+    
+    // Attempt to load the canvas-confetti library dynamically
+    if (typeof window !== 'undefined') {
+      try {
+        launchConfetti();
+      } catch (err) {
+        console.error("Could not load confetti effect:", err);
       }
     }
-  };
-  
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.6 } }
-  };
+  }, []);
 
+  // Fetch order details
   useEffect(() => {
-    const fetchOrderData = async () => {
+    const fetchOrderDetails = async () => {
+      if (!orderId) {
+        setError("Nenhum ID de pedido fornecido");
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       
       try {
-        // Get order ID from URL params
-        const params = new URLSearchParams(location.search);
-        const orderId = params.get('id');
-        
-        if (!orderId) {
-          setError('ID do pedido não encontrado na URL');
-          toast({
-            variant: "destructive",
-            title: "Erro",
-            description: "ID do pedido não encontrado",
-          });
-          setIsLoading(false);
-          return;
-        }
-        
-        // Get order data from Supabase
-        const { data: pedido, error: pedidoError } = await supabase
+        // Get pedido details
+        const { data: pedidoData, error: pedidoError } = await supabase
           .from('pedidos')
           .select('*, campanhas(*)')
           .eq('id', orderId)
           .single();
+          
+        if (pedidoError) throw pedidoError;
         
-        if (pedidoError) {
-          throw pedidoError;
+        if (!pedidoData) {
+          setError("Pedido não encontrado");
+          setIsLoading(false);
+          return;
         }
         
-        if (!pedido) {
-          setError('Pedido não encontrado');
-          toast({
-            variant: "destructive",
-            title: "Erro",
-            description: "Pedido não encontrado",
-          });
+        // Get panel details for each item in the order
+        const panelIds = pedidoData.lista_paineis || [];
+        
+        if (panelIds.length > 0) {
+          const { data: painelData, error: painelError } = await supabase
+            .from('paineis')
+            .select('*, buildings(*)')
+            .in('id', panelIds);
+            
+          if (painelError) throw painelError;
+          
+          if (painelData) {
+            setOrderDetails({
+              ...pedidoData,
+              paineis: painelData
+            });
+          } else {
+            setOrderDetails(pedidoData);
+          }
         } else {
-          setOrderData(pedido);
+          setOrderDetails(pedidoData);
         }
+        
+        setIsLoading(false);
       } catch (error: any) {
-        console.error('Error fetching order:', error);
-        setError(error.message || 'Erro ao buscar dados do pedido');
+        console.error("Error fetching order details:", error);
+        setError(error.message || "Erro ao buscar detalhes do pedido");
+        setIsLoading(false);
+        
         toast({
           variant: "destructive",
-          title: "Erro",
-          description: error.message || 'Erro ao buscar dados do pedido',
+          title: "Erro ao carregar pedido",
+          description: "Não foi possível carregar os detalhes do seu pedido. Por favor, tente novamente."
         });
-      } finally {
-        setIsLoading(false);
       }
     };
     
-    fetchOrderData();
-  }, [location.search, toast]);
+    fetchOrderDetails();
+  }, [orderId, toast]);
+
+  // Format date to Brazilian format
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  };
   
-  // Render loading state
+  // Format currency to Brazilian format
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+  
+  // Get plan text from months
+  const getPlanText = (months: number) => {
+    switch (months) {
+      case 1: return "Mensal";
+      case 3: return "Trimestral";
+      case 6: return "Semestral";
+      case 12: return "Anual";
+      default: return `${months} meses`;
+    }
+  };
+  
   if (isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12 flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center">
-            <div className="h-16 w-16 rounded-full border-4 border-indexa-purple border-t-transparent animate-spin mb-4"></div>
-            <h2 className="text-xl font-semibold mb-2">Carregando informações do pedido</h2>
-            <p className="text-muted-foreground">Aguarde um momento...</p>
+        <div className="container mx-auto px-4 py-12 max-w-4xl">
+          <div className="text-center space-y-4">
+            <div className="h-20 w-20 rounded-full border-4 border-r-transparent border-indexa-purple animate-spin mx-auto"></div>
+            <h2 className="text-2xl font-semibold">Carregando detalhes do pedido...</h2>
+            <p className="text-gray-500">Aguarde enquanto buscamos as informações do seu pedido.</p>
           </div>
         </div>
       </Layout>
     );
   }
-  
-  // Render error state
-  if (error) {
+
+  if (error || !orderDetails) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 py-12 max-w-4xl">
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-red-100 p-3 mb-4">
-                <svg className="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Erro ao carregar pedido</h2>
-              <p className="text-muted-foreground mb-6">{error}</p>
-              <Button asChild>
-                <Link to="/paineis-digitais/loja">Voltar para loja</Link>
-              </Button>
+            <CardHeader>
+              <CardTitle className="text-red-600 flex items-center">
+                <span className="rounded-full bg-red-100 p-2 mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="text-red-600">
+                    <path d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                </span>
+                Erro ao carregar pedido
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{error || "Não foi possível carregar os detalhes do pedido. Tente novamente ou entre em contato com o suporte."}</p>
             </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline" onClick={() => navigate('/paineis-digitais/loja')}>
+                Voltar para a loja
+              </Button>
+              <Button onClick={() => window.location.reload()}>
+                Tentar novamente
+              </Button>
+            </CardFooter>
           </Card>
         </div>
       </Layout>
     );
   }
-  
-  // Render confirmation page
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Success animation */}
-        <motion.div 
-          className="flex flex-col items-center mb-10"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container mx-auto px-4 py-8 max-w-4xl"
+      >
+        {/* Success Header */}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="text-center mb-10"
         >
-          <motion.div
-            className="rounded-full bg-green-100 p-6 mb-4 border-4 border-green-200"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ 
-              type: "spring",
-              stiffness: 260,
-              damping: 20,
-              delay: 0.2
-            }}
-          >
-            <CheckCircle className="h-16 w-16 text-green-500" />
-          </motion.div>
+          <div className="rounded-full bg-green-100 p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+            <CheckCircle className="h-12 w-12 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Pedido Confirmado!</h1>
+          <p className="text-xl text-gray-600">
+            Seu pagamento foi aprovado e suas campanhas estão sendo preparadas.
+          </p>
           
-          <motion.h1 
-            className="text-3xl md:text-4xl font-bold text-center mb-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            Pedido confirmado!
-          </motion.h1>
-          
-          <motion.p 
-            className="text-lg text-muted-foreground text-center max-w-md"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            Sua campanha foi agendada e estará no ar em breve.
-          </motion.p>
+          <div className="mt-4 bg-indexa-purple/5 py-2 px-4 rounded-full inline-flex items-center">
+            <span className="text-sm font-medium text-indexa-purple">Código do pedido: {orderId}</span>
+          </div>
         </motion.div>
         
-        {orderData && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Order details */}
-            <motion.div 
-              className="md:col-span-2 space-y-6"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <motion.div variants={itemVariants}>
-                <h2 className="text-xl font-semibold flex items-center mb-4">
-                  <FileText className="mr-2 h-5 w-5 text-indexa-purple" />
-                  Detalhes do Pedido
-                </h2>
-                
-                <Card>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Número do pedido</p>
-                        <p className="font-medium">{orderData.id.slice(0, 8).toUpperCase()}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-muted-foreground">Data</p>
-                        <p className="font-medium">{new Date(orderData.created_at).toLocaleDateString('pt-BR')}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor total</p>
-                        <p className="font-medium">{formatCurrency(orderData.valor_total)}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <p className="font-medium flex items-center">
-                          <span className="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
-                          {orderData.status === 'pago' ? 'Pago' : orderData.status}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-muted-foreground">Período</p>
-                        <p className="font-medium flex items-center">
-                          <Calendar className="h-3.5 w-3.5 mr-1.5 text-indexa-purple" />
-                          {formatDate(new Date(orderData.data_inicio))} a {formatDate(new Date(orderData.data_fim))}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-muted-foreground">Plano</p>
-                        <p className="font-medium">{orderData.plano_meses} {orderData.plano_meses === 1 ? 'mês' : 'meses'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+        {/* Order Summary Card */}
+        <Card className="mb-8 overflow-hidden border-green-200 shadow-lg">
+          <CardHeader className="bg-green-50 border-b border-green-100">
+            <CardTitle className="text-xl text-green-800 flex items-center">
+              <CheckCircle className="mr-2 h-5 w-5 text-green-600" /> 
+              Resumo do Pedido
+            </CardTitle>
+            <CardDescription>
+              Pedido realizado em {formatDate(orderDetails.created_at)}
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="p-6 space-y-6">
+            {/* Campaign Details */}
+            <div>
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Calendar className="mr-2 h-5 w-5 text-indexa-purple" />
+                Detalhes da Campanha
+              </h3>
               
-              <motion.div variants={itemVariants}>
-                <h2 className="text-xl font-semibold flex items-center mb-4">
-                  <Building className="mr-2 h-5 w-5 text-indexa-purple" />
-                  Painéis Contratados
-                </h2>
-                
-                <div className="space-y-4">
-                  {Array.isArray(orderData.lista_paineis) && orderData.lista_paineis.map((panelId: string, index: number) => (
-                    <Card key={panelId}>
-                      <CardContent className="p-5">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-medium">Painel #{index + 1}</h3>
-                            <p className="text-sm text-muted-foreground">ID: {panelId.slice(0, 8).toUpperCase()}</p>
-                          </div>
-                          
-                          <div className="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full flex items-center">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Confirmado
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </motion.div>
-              
-              <motion.div variants={itemVariants}>
-                <div className="flex justify-between items-center space-x-4 mt-8">
-                  <Button variant="outline" asChild>
-                    <Link to="/paineis-digitais/loja">
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                      Voltar para loja
-                    </Link>
-                  </Button>
-                  
-                  <Button className="bg-indexa-purple hover:bg-indexa-purple-dark" asChild>
-                    <Link to="/dashboard/campanhas">
-                      <Play className="mr-2 h-4 w-4" />
-                      Ver minhas campanhas
-                    </Link>
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-            
-            {/* Right sidebar */}
-            <motion.div 
-              className="md:col-span-1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
-            >
-              <Card className="bg-gradient-to-br from-indexa-purple/10 to-indexa-mint/5">
-                <CardContent className="p-6 space-y-5">
-                  <div className="bg-white rounded-lg p-4 border border-indexa-purple/10 shadow-sm">
-                    <h3 className="font-medium mb-3 flex items-center">
-                      <Calendar className="h-4 w-4 mr-1.5 text-indexa-purple" />
-                      Próximos passos
-                    </h3>
-                    
-                    <ul className="space-y-3">
-                      <li className="flex items-start">
-                        <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">
-                          <span className="text-green-700 text-sm font-medium">1</span>
-                        </div>
-                        <p className="text-sm"><span className="font-medium">Análise de arte:</span> Nossa equipe analisará seu vídeo em até 24h úteis</p>
-                      </li>
-                      
-                      <li className="flex items-start">
-                        <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">
-                          <span className="text-blue-700 text-sm font-medium">2</span>
-                        </div>
-                        <p className="text-sm"><span className="font-medium">Agendamento:</span> Confirmaremos a data de início da sua campanha</p>
-                      </li>
-                      
-                      <li className="flex items-start">
-                        <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">
-                          <span className="text-indigo-700 text-sm font-medium">3</span>
-                        </div>
-                        <p className="text-sm"><span className="font-medium">Início da exibição:</span> Sua campanha estará no ar conforme cronograma</p>
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-4 border border-indexa-purple/10 shadow-sm">
-                    <h3 className="font-medium mb-3">Precisa de ajuda?</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Nossa equipe está disponível para tirar qualquer dúvida sobre sua campanha
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Plano</p>
+                    <p className="font-medium">
+                      {getPlanText(orderDetails.plano_meses)}
+                      <Badge className="ml-2 bg-indexa-purple">
+                        {orderDetails.plano_meses} {orderDetails.plano_meses === 1 ? 'mês' : 'meses'}
+                      </Badge>
                     </p>
-                    <Button className="w-full bg-indexa-mint text-gray-800 hover:bg-indexa-mint-dark">
-                      Falar com um especialista
-                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        )}
-      </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Valor Total</p>
+                    <p className="font-medium text-lg text-indexa-purple">
+                      {formatCurrency(orderDetails.valor_total || 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Início da Exibição</p>
+                    <p className="font-medium">{formatDate(orderDetails.data_inicio)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Término da Exibição</p>
+                    <p className="font-medium">{formatDate(orderDetails.data_fim)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Panels List */}
+            <div>
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Building className="mr-2 h-5 w-5 text-indexa-purple" />
+                Painéis Contratados ({orderDetails.paineis?.length || 0})
+              </h3>
+              
+              <div className="space-y-3">
+                {orderDetails.paineis?.map((panel: any, index: number) => (
+                  <motion.div 
+                    key={panel.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * (index + 1), duration: 0.3 }}
+                    className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium">{panel.buildings?.nome || 'Painel Digital'}</h4>
+                        <p className="text-sm text-gray-600">{panel.buildings?.endereco || 'Endereço não disponível'}</p>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {panel.modo || 'indoor'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {panel.resolucao || 'HD'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Badge className={`${panel.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                        {panel.status === 'online' ? 'Ativo' : 'Em preparação'}
+                      </Badge>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Next Steps */}
+            <div className="bg-blue-50 p-5 rounded-lg border border-blue-100">
+              <h3 className="text-lg font-medium mb-4 text-blue-800 flex items-center">
+                <Clock className="mr-2 h-5 w-5" />
+                Próximos Passos
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex">
+                  <div className="flex-shrink-0 bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center text-blue-600 mr-3">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-blue-800">Preparação dos materiais</h4>
+                    <p className="text-sm text-blue-700">
+                      Nossa equipe está preparando seus materiais visuais. 
+                      {orderDetails.plano_meses >= 3 && 
+                        " Como parte do seu plano, você receberá vídeos profissionais."}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex">
+                  <div className="flex-shrink-0 bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center text-blue-600 mr-3">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-blue-800">Configuração dos painéis</h4>
+                    <p className="text-sm text-blue-700">
+                      Os painéis serão configurados e seus anúncios entrarão em exibição 
+                      conforme a data de início contratada.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex">
+                  <div className="flex-shrink-0 bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center text-blue-600 mr-3">
+                    3
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-blue-800">Acompanhamento de performance</h4>
+                    <p className="text-sm text-blue-700">
+                      Você receberá relatórios periódicos sobre o desempenho de suas campanhas 
+                      e poderá acompanhar os resultados no painel do cliente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          
+          <CardFooter className="bg-gray-50 p-6 flex flex-col space-y-4">
+            <div className="w-full flex flex-col sm:flex-row gap-3">
+              <Button 
+                className="bg-indexa-purple hover:bg-indexa-purple-dark flex-1"
+                onClick={() => navigate('/painel-do-cliente')}
+              >
+                <PanelRight className="mr-2 h-4 w-4" />
+                Acessar Painel do Cliente
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => navigate('/paineis-digitais/loja')}
+              >
+                <Home className="mr-2 h-4 w-4" />
+                Voltar para a Loja
+              </Button>
+            </div>
+            
+            <Separator />
+            
+            <div className="text-center">
+              <Button variant="ghost" className="flex items-center">
+                <Share2 className="mr-2 h-4 w-4" />
+                Compartilhar pedido
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+        
+        {/* Additional Info */}
+        <div className="text-center text-sm text-gray-500">
+          <p>
+            Uma cópia da confirmação de pedido foi enviada para seu email.
+            Em caso de dúvidas, entre em contato com nosso suporte.
+          </p>
+        </div>
+      </motion.div>
     </Layout>
   );
-};
-
-export default OrderConfirmation;
+}

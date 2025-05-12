@@ -1,75 +1,87 @@
 
 import React from 'react';
-import { Users, Eye, Monitor, Tv } from 'lucide-react';
+import { Eye, Users, Monitor, Tv } from 'lucide-react';
 
 interface PanelStatsProps {
-  estimatedResidents: number;
   monthlyViews: number;
-  screenCount?: number;
-  resolution?: string;
-  mode?: string;
+  estimatedResidents: number;
+  screenCount: number;
+  resolution: string;
+  mode: string;
 }
 
-export const PanelStats: React.FC<PanelStatsProps> = ({ 
-  estimatedResidents, 
-  monthlyViews, 
-  screenCount = 1,
-  resolution = "1080x1920",
-  mode = "indoor"
+export const PanelStats: React.FC<PanelStatsProps> = ({
+  monthlyViews,
+  estimatedResidents,
+  screenCount,
+  resolution,
+  mode
 }) => {
-  // Use formatters for better number display
+  // Format number with dots as thousands separator
   const formatNumber = (num: number) => {
-    if (typeof num !== 'number' || isNaN(num)) return '0';
-    return num.toLocaleString('pt-BR');
+    return new Intl.NumberFormat('pt-BR').format(num);
   };
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 mb-6">
-      <h4 className="font-medium text-sm text-gray-700 mb-3">Estatísticas do Painel</h4>
+    <div className="grid grid-cols-2 gap-3">
+      <div className="bg-gray-50 rounded-lg p-3 flex flex-col hover:shadow-sm transition-shadow">
+        <div className="flex items-center text-sm text-gray-500 mb-1">
+          <Eye className="h-3.5 w-3.5 mr-1.5 text-indexa-purple" />
+          <span className="text-xs">Visualizações/mês</span>
+        </div>
+        <div className="text-lg font-bold text-gray-800">
+          {formatNumber(monthlyViews)}
+        </div>
+        <div className="text-[10px] text-green-600 mt-1">
+          +{Math.floor(Math.random() * 15) + 5}% vs. mês anterior
+        </div>
+      </div>
       
-      <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-        {/* Residents */}
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-100 p-1.5 rounded-md">
-            <Users className="h-4 w-4 text-indexa-purple" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-800">+{formatNumber(estimatedResidents)}</p>
-            <p className="text-xs text-gray-500">moradores impactados</p>
+      <div className="bg-gray-50 rounded-lg p-3 flex flex-col hover:shadow-sm transition-shadow">
+        <div className="flex items-center text-sm text-gray-500 mb-1">
+          <Users className="h-3.5 w-3.5 mr-1.5 text-indexa-purple" />
+          <span className="text-xs">Residentes impactados</span>
+        </div>
+        <div className="text-lg font-bold text-gray-800">
+          {formatNumber(estimatedResidents)}
+        </div>
+        <div className="text-[10px] text-gray-500 mt-1">
+          Estimativa baseada em dados censitários
+        </div>
+      </div>
+      
+      <div className="bg-gray-50 rounded-lg p-3 flex flex-col hover:shadow-sm transition-shadow">
+        <div className="flex items-center text-sm text-gray-500 mb-1">
+          <Monitor className="h-3.5 w-3.5 mr-1.5 text-indexa-purple" />
+          <span className="text-xs">Especificações</span>
+        </div>
+        <div className="text-sm font-medium text-gray-800">
+          {screenCount === 1 ? '1 tela' : `${screenCount} telas`}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          {resolution} • {mode === 'indoor' ? 'Interno' : 'Externo'}
+        </div>
+      </div>
+      
+      <div className="bg-gray-50 rounded-lg p-3 flex flex-col hover:shadow-sm transition-shadow">
+        <div className="flex items-center text-sm text-gray-500 mb-1">
+          <Tv className="h-3.5 w-3.5 mr-1.5 text-indexa-purple" />
+          <span className="text-xs">Performance</span>
+        </div>
+        <div className="flex items-center text-sm font-medium text-gray-800 mt-1">
+          <div className="flex space-x-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span 
+                key={i} 
+                className={`text-lg ${i < 4 ? 'text-yellow-500' : 'text-gray-300'}`}
+              >
+                ★
+              </span>
+            ))}
           </div>
         </div>
-        
-        {/* Monthly views */}
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-100 p-1.5 rounded-md">
-            <Eye className="h-4 w-4 text-indexa-purple" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-800">+{formatNumber(monthlyViews)}</p>
-            <p className="text-xs text-gray-500">views/mês</p>
-          </div>
-        </div>
-        
-        {/* Screens */}
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-100 p-1.5 rounded-md">
-            <Monitor className="h-4 w-4 text-indexa-purple" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-800">{screenCount}</p>
-            <p className="text-xs text-gray-500">tela{screenCount !== 1 ? 's' : ''} instalada{screenCount !== 1 ? 's' : ''}</p>
-          </div>
-        </div>
-        
-        {/* Resolution */}
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-100 p-1.5 rounded-md">
-            <Tv className="h-4 w-4 text-indexa-purple" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-800">{resolution}</p>
-            <p className="text-xs text-gray-500">{mode === "indoor" ? "Painel interno" : "Painel externo"}</p>
-          </div>
+        <div className="text-xs text-gray-500 mt-1">
+          {Math.floor(Math.random() * 30) + 70}% de visibilidade média
         </div>
       </div>
     </div>

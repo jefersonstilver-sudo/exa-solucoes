@@ -1,118 +1,101 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, UserPlus } from 'lucide-react';
+import { AlertTriangle, UserPlus, ArrowRight, Mail, Key, UserCheck, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-
-// Input masking function for CPF/CNPJ
-const formatDocument = (value: string, type: 'cpf' | 'cnpj'): string => {
-  if (!value) return '';
-  
-  // Remove non-digits
-  const digits = value.replace(/\D/g, '');
-  
-  if (type === 'cpf') {
-    // Format as CPF (e.g., 123.456.789-10)
-    return digits
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
-      .substring(0, 14);
-  } else {
-    // Format as CNPJ (e.g., 12.345.678/0001-90)
-    return digits
-      .replace(/(\d{2})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1/$2')
-      .replace(/(\d{4})(\d{1,2})$/, '$1-$2')
-      .substring(0, 18);
-  }
-};
-
-// Form schema validation
-const signupSchema = z.object({
-  fullName: z.string().min(3, "Nome completo deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  documentType: z.enum(['cpf', 'cnpj']),
-  document: z.string().refine(val => {
-    // Simple validation - just checking if we have the right number of digits
-    const digits = val.replace(/\D/g, '');
-    return digits.length === 11 || digits.length === 14;
-  }, {
-    message: "Documento inválido"
-  })
-});
-
-type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function Cadastro() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [document, setDocument] = useState('');
+  const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>('cpf');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const location = useLocation();
   
-  // Initialize form
-  const form = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      fullName: '',
-      email: '',
-      password: '',
-      documentType: 'cpf',
-      document: ''
-    }
-  });
-  
-  // Handle document input with masking
-  const [documentValue, setDocumentValue] = useState('');
-  const documentType = form.watch('documentType');
-  
-  useEffect(() => {
-    // Reset document value when type changes
-    setDocumentValue('');
-    form.setValue('document', '');
-  }, [documentType, form]);
-  
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        // User is already logged in, redirect
-        navigate('/paineis-digitais/loja');
-      }
-    };
+  // Get the redirect path from query params
+  const searchParams = new URLSearchParams(location.search);
+  const redirectPath = searchParams.get('redirect') || '/paineis-digitais/loja';
+
+  // Format document input with mask
+  const formatDocument = (value: string): string => {
+    const digits = value.replace(/\D/g, '');
     
-    checkSession();
-  }, [navigate]);
+    if (documentType === 'cpf') {
+      // Format: 000.000.000-00
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+      if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+      return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+    } else {
+      // Format: 00.000.000/0000-00
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+      if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+      if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+      return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+    }
+  };
+
+  const handleChangeDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatDocument(e.target.value);
+    setDocument(formattedValue);
+  };
   
-  const handleSignup = async (values: SignupFormValues) => {
+  const validateDocument = (): boolean => {
+    const digits = document.replace(/\D/g, '');
+    
+    if (documentType === 'cpf') {
+      return digits.length === 11;
+    } else {
+      return digits.length === 14;
+    }
+  };
+  
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    
+    if (!validateDocument()) {
+      setError(`${documentType.toUpperCase()} inválido. Verifique se digitou corretamente.`);
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
     try {
       // Sign up with Supabase
       const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
+        email,
+        password,
         options: {
           data: {
-            full_name: values.fullName,
-            document_type: values.documentType,
-            document: values.document.replace(/\D/g, '') // Store without formatting
+            name,
+            document_type: documentType,
+            document: document.replace(/\D/g, '')
           }
         }
       });
@@ -120,13 +103,45 @@ export default function Cadastro() {
       if (error) throw error;
       
       if (data.user) {
+        // Create a profile entry in the profiles table (if it exists)
+        try {
+          await supabase
+            .from('profiles')
+            .insert([
+              { 
+                id: data.user.id,
+                nome: name,
+                email: email,
+                tipo_documento: documentType,
+                documento: document.replace(/\D/g, '')
+              }
+            ]);
+        } catch (profileError) {
+          console.error("Error creating profile:", profileError);
+          // Continue with signup process even if profile creation fails
+        }
+        
         toast({
-          title: "Conta criada com sucesso!",
-          description: "Bem-vindo à Indexa! Por favor, verifique seu email para confirmar sua conta."
+          title: "Conta criada com sucesso",
+          description: "Bem-vindo(a) à Indexa!"
         });
         
-        // Redirect to client panel
-        navigate('/paineis-digitais/loja');
+        // In real production, would need to verify email before login
+        // For better UX in this implementation, we'll log them in right away
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (signInError) {
+          console.error("Auto-login error:", signInError);
+          // If auto-login fails, redirect to login page
+          navigate(`/login?redirect=${encodeURIComponent(redirectPath)}`);
+          return;
+        }
+        
+        // Redirect to the intended page
+        navigate(redirectPath);
       }
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -134,7 +149,7 @@ export default function Cadastro() {
       toast({
         variant: "destructive",
         title: "Erro ao criar conta",
-        description: error.message || "Verifique seus dados e tente novamente."
+        description: error.message || "Verifique os dados e tente novamente."
       });
     } finally {
       setIsLoading(false);
@@ -147,121 +162,122 @@ export default function Cadastro() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-center min-h-[80vh] px-4 py-10"
+        className="flex items-center justify-center min-h-[80vh] px-4 py-8"
       >
-        <Card className="w-full max-w-lg shadow-lg">
+        <Card className="w-full max-w-md shadow-lg border-indexa-purple/10">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold text-indexa-purple flex items-center justify-center gap-2">
-              <UserPlus size={24} /> Crie sua conta
-            </CardTitle>
-            <CardDescription>
-              Preencha os dados abaixo para criar sua conta na Indexa
-            </CardDescription>
+            <motion.div
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+            >
+              <CardTitle className="text-2xl font-bold text-indexa-purple flex items-center justify-center gap-2">
+                <UserPlus size={24} /> Crie sua conta
+              </CardTitle>
+              <CardDescription>
+                Preencha os dados abaixo para começar a usar a plataforma
+              </CardDescription>
+            </motion.div>
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4 flex items-start">
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 border border-red-200 rounded-md p-3 mb-4 flex items-start"
+              >
                 <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-800">{error}</p>
-              </div>
+              </motion.div>
             )}
             
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSignup)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="João da Silva" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="flex items-center text-gray-700">
+                  <UserCheck className="h-4 w-4 mr-2 text-indexa-purple" /> Nome completo
+                </Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Seu nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="border-indexa-purple/20 focus:border-indexa-purple"
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="seu@email.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center text-gray-700">
+                  <Mail className="h-4 w-4 mr-2 text-indexa-purple" /> Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="border-indexa-purple/20 focus:border-indexa-purple"
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="flex items-center text-gray-700">
+                  <Key className="h-4 w-4 mr-2 text-indexa-purple" /> Senha
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="border-indexa-purple/20 focus:border-indexa-purple"
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="documentType"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Tipo de documento</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex space-x-4"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="cpf" id="cpf" />
-                            <Label htmlFor="cpf">CPF</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="cnpj" id="cnpj" />
-                            <Label htmlFor="cnpj">CNPJ</Label>
-                          </div>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                <p className="text-xs text-muted-foreground">
+                  A senha deve ter pelo menos 6 caracteres
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="documentType" className="flex items-center text-gray-700">
+                  <FileText className="h-4 w-4 mr-2 text-indexa-purple" /> Tipo de documento
+                </Label>
+                <Select value={documentType} onValueChange={(value) => setDocumentType(value as 'cpf' | 'cnpj')}>
+                  <SelectTrigger className="border-indexa-purple/20 focus:border-indexa-purple">
+                    <SelectValue placeholder="Selecione o tipo de documento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cpf">CPF</SelectItem>
+                    <SelectItem value="cnpj">CNPJ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="document" className="flex items-center text-gray-700">
+                  <FileText className="h-4 w-4 mr-2 text-indexa-purple" /> {documentType.toUpperCase()}
+                </Label>
+                <Input
+                  id="document"
+                  type="text"
+                  placeholder={documentType === 'cpf' ? "000.000.000-00" : "00.000.000/0000-00"}
+                  value={document}
+                  onChange={handleChangeDocument}
+                  required
+                  className="border-indexa-purple/20 focus:border-indexa-purple"
+                  maxLength={documentType === 'cpf' ? 14 : 18}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="document"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{documentType === 'cpf' ? 'CPF' : 'CNPJ'}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={documentType === 'cpf' ? '000.000.000-00' : '00.000.000/0000-00'}
-                          value={documentValue}
-                          onChange={(e) => {
-                            const formatted = formatDocument(e.target.value, documentType);
-                            setDocumentValue(formatted);
-                            field.onChange(formatted);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+              </div>
+              
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 <Button 
                   type="submit" 
-                  className="w-full bg-indexa-purple hover:bg-indexa-purple-dark"
+                  className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-all duration-200"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -270,25 +286,27 @@ export default function Cadastro() {
                       Criando conta...
                     </>
                   ) : (
-                    "Criar conta"
+                    <>
+                      Criar conta <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
                   )}
                 </Button>
-              </form>
-            </Form>
+              </motion.div>
+            </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4 pt-0">
             <div className="text-center text-sm">
               <span className="text-muted-foreground">Já tem uma conta?</span>{' '}
               <Link 
-                to="/login" 
-                className="font-medium text-indexa-purple hover:underline"
+                to={`/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
+                className="font-medium text-indexa-purple hover:text-indexa-purple-dark hover:underline transition-colors"
               >
-                Entre agora
+                Faça login
               </Link>
             </div>
             
             <div className="text-center text-xs text-muted-foreground">
-              <p>Ao criar sua conta, você concorda com os nossos <a href="#" className="underline">termos de uso</a> e <a href="#" className="underline">política de privacidade</a>.</p>
+              <p>Ao criar uma conta, você concorda com os nossos <a href="#" className="underline hover:text-indexa-purple transition-colors">termos de uso</a> e <a href="#" className="underline hover:text-indexa-purple transition-colors">política de privacidade</a>.</p>
             </div>
           </CardFooter>
         </Card>

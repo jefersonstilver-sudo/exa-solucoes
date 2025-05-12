@@ -16,10 +16,7 @@ export const calculatePriceWithDiscount = (price: number, discountPercentage: nu
  * @param planDuration Duration in months (1, 3, 6, or 12)
  * @returns Price per month for the selected plan
  */
-export const calculateMonthlyPrice = (
-  basePricePerMonth: number,
-  planDuration: number
-): number => {
+export const calculateMonthlyPrice = (planDuration: number): number => {
   switch (planDuration) {
     case 3:
       return 220; // 3 months plan: R$220/month
@@ -81,4 +78,50 @@ export const ensureSpreadable = (value: any): Record<string, any> => {
     return value;
   }
   return {};
+};
+
+/**
+ * Calculates the final order price with all discounts applied
+ * @param panelCount Number of panels in the order
+ * @param planMonths Duration of the plan in months
+ * @param couponDiscount Discount percentage from coupon (0-100)
+ * @returns Final price with all discounts applied
+ */
+export const calculateFinalOrderPrice = (
+  panelCount: number,
+  planMonths: 1 | 3 | 6 | 12,
+  couponDiscount: number = 0
+): number => {
+  // Get base monthly price based on plan
+  const monthlyPrice = calculateMonthlyPrice(planMonths);
+  
+  // Calculate base total
+  const baseTotal = monthlyPrice * planMonths * panelCount;
+  
+  // Apply plan discount
+  const planDiscountPercentage = getPlanDiscountPercentage(planMonths);
+  let discountedPrice = baseTotal;
+  
+  if (planDiscountPercentage > 0) {
+    discountedPrice = calculatePriceWithDiscount(baseTotal, planDiscountPercentage);
+  }
+  
+  // Apply coupon discount if available
+  if (couponDiscount > 0) {
+    discountedPrice = calculatePriceWithDiscount(discountedPrice, couponDiscount);
+  }
+  
+  return Math.round(discountedPrice); // Round to nearest integer
+};
+
+/**
+ * Format price to Brazilian currency format
+ * @param price Price in number format
+ * @returns Formatted price string
+ */
+export const formatCurrency = (price: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(price);
 };

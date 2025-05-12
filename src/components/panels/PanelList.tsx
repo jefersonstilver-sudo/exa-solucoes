@@ -91,7 +91,7 @@ const PanelList: React.FC<PanelListProps> = ({
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="space-y-6"
+      className="space-y-6 max-w-3xl mx-auto"
     >
       {panels.map(panel => (
         <PanelCard

@@ -1,72 +1,72 @@
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ShoppingCart, Package, Tag, CreditCard, Check } from 'lucide-react';
+import { CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface CheckoutProgressProps {
   currentStep: number;
 }
 
-const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
+const CheckoutProgress = ({ currentStep }: CheckoutProgressProps) => {
   const steps = [
-    { icon: <ShoppingCart className="h-5 w-5" />, label: "Revisão" },
-    { icon: <Package className="h-5 w-5" />, label: "Plano" },
-    { icon: <Tag className="h-5 w-5" />, label: "Cupom" },
-    { icon: <CreditCard className="h-5 w-5" />, label: "Pagamento" }
+    { name: "Revisão", description: "Revisar itens" },
+    { name: "Plano", description: "Escolher plano" },
+    { name: "Cupom", description: "Aplicar cupom" },
+    { name: "Pagamento", description: "Finalizar compra" },
   ];
 
-  // Animation variants
-  const progressVariants = {
-    initial: (i: number) => ({
-      width: i === 0 ? '0%' : i === 1 ? '33%' : i === 2 ? '66%' : '100%'
-    }),
-    animate: (i: number) => ({
-      width: i === 0 ? '0%' : i === 1 ? '33%' : i === 2 ? '66%' : '100%',
-      transition: { duration: 0.5, ease: "easeInOut" }
-    })
-  };
-
   return (
-    <div className="mb-8">
-      {/* Progress bar */}
-      <div className="relative h-1 w-full bg-gray-200 mb-4 rounded-full overflow-hidden">
-        <motion.div 
-          className="absolute h-full bg-gradient-to-r from-indexa-purple to-indexa-mint"
-          initial="initial"
-          animate="animate"
-          custom={currentStep}
-          variants={progressVariants}
-        />
-      </div>
-      
-      <div className="flex justify-between items-center w-full relative">
-        <div className="absolute top-1/2 h-0.5 w-full bg-gray-200 -z-10"></div>
-        
-        {steps.map((step, i) => (
-          <div key={i} className="flex flex-col items-center">
-            <motion.div 
-              className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-300
-                ${i === currentStep 
-                  ? 'bg-indexa-purple text-white shadow-md shadow-indexa-purple/20' 
-                  : i < currentStep 
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 text-gray-500'}`}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: i * 0.1, duration: 0.3 }}
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-6">
+        {steps.map((step, index) => (
+          <div key={index} className="relative flex flex-col items-center">
+            {/* Circle with step number or check icon */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0.5 }}
+              animate={{ 
+                scale: currentStep >= index ? 1 : 0.8,
+                opacity: currentStep >= index ? 1 : 0.5
+              }}
+              transition={{ duration: 0.3 }}
+              className={`flex items-center justify-center rounded-full border-2 h-10 w-10 
+                ${currentStep > index 
+                  ? "bg-indexa-purple text-white border-indexa-purple" 
+                  : currentStep === index 
+                    ? "bg-white text-indexa-purple border-indexa-purple" 
+                    : "bg-white text-gray-300 border-gray-300"}`}
             >
-              {i < currentStep ? <Check className="h-5 w-5" /> : step.icon}
+              {currentStep > index ? (
+                <CheckCircle className="h-6 w-6" />
+              ) : (
+                <span className="text-sm font-medium">{index + 1}</span>
+              )}
             </motion.div>
-            <motion.span 
-              className={`text-xs mt-1.5 font-medium ${
-                i === currentStep ? 'text-indexa-purple' : i < currentStep ? 'text-green-500' : 'text-gray-500'
-              }`}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + i * 0.1, duration: 0.3 }}
-            >
-              {step.label}
-            </motion.span>
+            
+            {/* Step name */}
+            <div className="mt-2 text-center">
+              <p className={`text-sm font-medium mb-0.5 
+                ${currentStep >= index ? "text-indexa-purple" : "text-gray-400"}`}>
+                {step.name}
+              </p>
+              <p className={`text-[11px] 
+                ${currentStep >= index ? "text-gray-600" : "text-gray-400"}`}>
+                {step.description}
+              </p>
+            </div>
+            
+            {/* Connector line */}
+            {index < steps.length - 1 && (
+              <div className="hidden sm:block absolute top-5 left-10 w-full h-[2px] -z-10">
+                <motion.div
+                  initial={{ width: "0%" }}
+                  animate={{ 
+                    width: currentStep > index ? "100%" : "0%",
+                    backgroundColor: currentStep > index ? "#4A0968" : "#E5E7EB"
+                  }}
+                  className="h-full bg-gray-300"
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>

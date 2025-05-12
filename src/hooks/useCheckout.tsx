@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { createPaymentPreference, initMercadoPagoCheckout } from '@/services/mercadoPago';
-import { calculatePriceWithDiscount, ensureSpreadable, calculateMonthlyPrice, getPlanBenefits, getPlanDiscountPercentage } from '@/utils/priceUtils';
+import { calculatePriceWithDiscount, ensureSpreadable } from '@/utils/priceUtils';
 import { useCartManager } from '@/hooks/useCartManager';
 
 // Checkout steps
@@ -14,7 +15,7 @@ export const STEPS = {
   PAYMENT: 3
 };
 
-// Plan configuration
+// Plan configuration with updated pricing and benefits
 export const PLANS = {
   1: {
     months: 1,
@@ -62,6 +63,8 @@ export const useCheckout = () => {
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [unavailablePanels, setUnavailablePanels] = useState<string[]>([]);
   const [sessionUser, setSessionUser] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('id');
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -77,13 +80,27 @@ export const useCheckout = () => {
           title: "Acesso restrito",
           description: "Você precisa estar logado para finalizar a compra.",
         });
-        navigate('/login', { state: { returnTo: '/checkout' } });
+        navigate('/login?redirect=/checkout');
       } else {
         setSessionUser(data.session.user);
       }
     };
     
     checkAuth();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        setSessionUser(session?.user || null);
+      } else if (event === 'SIGNED_OUT') {
+        setSessionUser(null);
+        navigate('/login?redirect=/checkout');
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate, toast]);
   
   // Update end date when plan changes
@@ -231,6 +248,11 @@ export const useCheckout = () => {
     // Base price calculation
     let totalPrice = pricePerMonth * totalMonths * panelCount;
     
+    // Apply plan discount
+    if (PLANS[selectedPlan].discount > 0) {
+      totalPrice = calculatePriceWithDiscount(totalPrice, PLANS[selectedPlan].discount);
+    }
+    
     // Apply coupon discount if valid
     if (couponValid && couponDiscount > 0) {
       totalPrice = calculatePriceWithDiscount(totalPrice, couponDiscount);
@@ -265,7 +287,7 @@ export const useCheckout = () => {
         title: "Acesso restrito",
         description: "Você precisa estar logado para finalizar a compra.",
       });
-      navigate('/login', { state: { returnTo: '/checkout' } });
+      navigate('/login?redirect=/checkout');
       return;
     }
     
@@ -294,7 +316,8 @@ export const useCheckout = () => {
               plan_details: PLANS[selectedPlan],
               coupon_applied: couponCode,
               coupon_discount: couponDiscount,
-              panels_count: cartItems.length
+              panels_count: cartItems.length,
+              user_name: sessionUser.user_metadata?.name || sessionUser.email
             }
           }
         ])
@@ -348,11 +371,11 @@ export const useCheckout = () => {
           .eq('id', pedido.id);
         
         // For production, redirect to Mercado Pago checkout
-        initMercadoPagoCheckout(preference.preferenceId);
+        // initMercadoPagoCheckout(preference.preferenceId);
         
         // For demo purposes only (remove this in production)
+        // Simulate successful payment after a short delay
         setTimeout(() => {
-          // Simulate successful payment
           handlePaymentSuccess(pedido.id);
         }, 2000);
         
@@ -372,7 +395,7 @@ export const useCheckout = () => {
     }
   };
   
-  // Function to handle payment success (simulated for demo)
+  // Function to handle payment success
   const handlePaymentSuccess = async (pedidoId: string) => {
     try {
       // Update pedido status
@@ -395,7 +418,9 @@ export const useCheckout = () => {
               data_inicio: startDate.toISOString().split('T')[0],
               data_fim: endDate.toISOString().split('T')[0],
               status: 'pendente',
-              obs: `Criado automaticamente do pedido ${pedidoId}`
+              obs: `Criado automaticamente do pedido ${pedidoId}`,
+              plano_meses: selectedPlan,
+              valor_total: calculateTotalPrice() / cartItems.length // Distribute price equally among panels
             }
           ]);
       }
@@ -467,6 +492,7 @@ export const useCheckout = () => {
     handlePrevStep,
     isNextEnabled,
     PLANS,
-    calculateTotalPrice
+    calculateTotalPrice,
+    orderId
   };
 };

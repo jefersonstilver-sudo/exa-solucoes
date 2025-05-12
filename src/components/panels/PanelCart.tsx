@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Trash, Building, Calendar, X, Check, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Trash, Building, Calendar, X, Check, ArrowRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -24,6 +24,8 @@ const durationOptions = [30, 60, 90, 180, 365];
 const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onChangeDuration }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -76,6 +78,47 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     }).format(value);
   };
 
+  // Check if user is logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user) {
+        setUser(data.session.user);
+        
+        // Fetch user profile information if available
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.session.user.id)
+            .single();
+            
+          if (profileData) {
+            setUserProfile(profileData);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      }
+    };
+    
+    checkUser();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user || null);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setUserProfile(null);
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   // Trigger cart bubble animation when items are added
   useEffect(() => {
     if (cartItems.length > 0) {
@@ -84,7 +127,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     }
   }, [cartItems.length]);
 
-  // Handle checkout properly with authentication check and navigation
+  // Handle checkout with authentication check and navigation
   const handleCheckout = async () => {
     if (cartItems.length === 0) {
       toast({
@@ -107,11 +150,12 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
           title: "Login necessário",
           description: "Faça login para continuar com a compra.",
         });
-        navigate('/login', { state: { returnTo: '/checkout' } });
-      } else {
-        // User is authenticated, redirect to checkout
-        navigate('/checkout');
+        navigate('/login?redirect=/checkout');
+        return;
       }
+      
+      // User is authenticated, redirect to checkout
+      navigate('/checkout');
     } catch (error) {
       console.error("Error during checkout:", error);
       toast({
@@ -128,19 +172,49 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     if (cartItems.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="mb-4 rounded-full bg-muted p-3">
+          <motion.div 
+            className="mb-4 rounded-full bg-muted p-3"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 100 }}
+          >
             <ShoppingCart className="h-6 w-6 text-muted-foreground" />
-          </div>
+          </motion.div>
           <h3 className="mb-1 text-lg font-semibold">Seu carrinho está vazio</h3>
           <p className="mb-4 text-sm text-muted-foreground px-6">
             Explore os painéis disponíveis e adicione-os ao carrinho para continuar.
           </p>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/paineis-digitais/loja')}
+            className="bg-indexa-purple/5 border-indexa-purple/20 text-indexa-purple hover:bg-indexa-purple/10"
+          >
+            Explorar painéis
+          </Button>
         </div>
       );
     }
 
     return (
       <>
+        {/* User info if logged in */}
+        {user && (
+          <div className="bg-indexa-purple/5 rounded-lg p-3 mb-4 flex items-center">
+            <div className="rounded-full bg-indexa-purple h-8 w-8 flex items-center justify-center text-white mr-3">
+              {user.user_metadata?.name ? user.user_metadata.name.charAt(0).toUpperCase() : 
+               user.email ? user.email.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                {user.user_metadata?.name || user.email}
+              </p>
+              <p className="text-xs text-gray-500">
+                {userProfile?.documento || user.email}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-5">
           <AnimatePresence>
             {cartItems.map(({ panel, duration }) => (
@@ -227,6 +301,8 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
               className="rounded-full h-14 w-14 shadow-lg bg-indexa-purple text-white hover:bg-indexa-mint hover:text-gray-800 transition-all duration-200 relative flex items-center justify-center"
               animate={animateCart ? { scale: [1, 1.2, 1] } : {}}
               transition={{ duration: 0.6 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <ShoppingCart className="h-6 w-6" />
               {cartItems.length > 0 && (
@@ -256,25 +332,31 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
               </CardContent>
               {cartItems.length > 0 && (
                 <CardFooter className="flex-col space-y-2 px-0">
-                  <Button 
-                    className="w-full bg-indexa-mint hover:bg-indexa-mint-dark text-gray-800 transition-all hover:scale-105 duration-200"
-                    onClick={handleCheckout}
-                    disabled={isSubmitting}
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        Processando...
-                      </>
-                    ) : (
-                      <>
-                        Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
+                    <Button 
+                      className="w-full bg-indexa-mint hover:bg-indexa-mint-dark text-gray-800 transition-all duration-200"
+                      onClick={handleCheckout}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          Processando...
+                        </>
+                      ) : (
+                        <>
+                          Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
                   <Button 
                     variant="outline" 
-                    className="w-full" 
+                    className="w-full hover:border-red-500 hover:text-red-500 transition-all" 
                     onClick={onClear}
                     disabled={isSubmitting}
                   >
@@ -297,7 +379,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
       <MobileCart />
       
       {/* Desktop Cart */}
-      <Card className="sticky top-4 hidden lg:block">
+      <Card className="sticky top-4 hidden lg:block hover:shadow-lg transition-shadow duration-300">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center">
@@ -316,22 +398,28 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
         </CardContent>
         {cartItems.length > 0 && (
           <CardFooter className="flex-col space-y-2">
-            <Button 
-              className="w-full bg-indexa-mint hover:bg-indexa-mint-dark text-gray-800 transition-all hover:scale-105 duration-200"
-              onClick={handleCheckout}
-              disabled={isSubmitting}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full"
             >
-              {isSubmitting ? (
-                <>
-                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
+              <Button 
+                className="w-full bg-indexa-mint hover:bg-indexa-mint-dark text-gray-800 transition-all duration-200"
+                onClick={handleCheckout}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </motion.div>
             <Button 
               variant="outline" 
               className="w-full hover:border-red-500 hover:text-red-500 transition-all" 
