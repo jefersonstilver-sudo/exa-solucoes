@@ -532,6 +532,9 @@ export default function Checkout() {
             </div>
           </div>
         );
+        
+      default:
+        return null;
     }
   };
   
