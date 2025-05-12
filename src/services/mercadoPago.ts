@@ -1,9 +1,9 @@
 
 import { NextApiRequest } from 'next';
 
-// MercadoPago configuration
-const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
-const MP_WEBHOOK_SECRET = process.env.MERCADO_PAGO_WEBHOOK_SECRET || '';
+// MercadoPago configuration - using import.meta.env instead of process.env
+const MP_ACCESS_TOKEN = import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN || '';
+const MP_WEBHOOK_SECRET = import.meta.env.VITE_MERCADO_PAGO_WEBHOOK_SECRET || '';
 
 // Common MercadoPago types
 export interface PaymentInfo {
