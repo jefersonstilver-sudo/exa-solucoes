@@ -31,7 +31,7 @@ export const AmenityList: React.FC<AmenityListProps> = ({ randomCount }) => {
       <h4 className="text-sm font-medium text-gray-500 mb-2">Comodidades do condomínio:</h4>
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
         {displayAmenities.map((amenity, idx) => (
-          <TooltipProvider key={idx}>
+          <TooltipProvider key={idx} delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge 

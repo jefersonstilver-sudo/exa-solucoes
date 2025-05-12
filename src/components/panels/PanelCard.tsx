@@ -69,7 +69,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
             />
             
             {/* Status indicator - top right */}
-            <TooltipProvider>
+            <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="absolute top-4 right-4 bg-white rounded-full shadow-md px-3 py-1.5 flex items-center gap-1.5 cursor-help">
