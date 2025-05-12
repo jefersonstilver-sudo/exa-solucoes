@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { createPaymentPreference, initMercadoPagoCheckout } from '@/services/mercadoPago';
 import { calculatePriceWithDiscount, ensureSpreadable } from '@/utils/priceUtils';
 import { useCartManager } from '@/hooks/useCartManager';
+import { useMercadoPago } from '@/hooks/useMercadoPago';
 
 // Checkout steps
 export const STEPS = {
@@ -43,6 +45,9 @@ export const PLANS = {
   }
 };
 
+// MercadoPago test credentials
+const MP_PUBLIC_KEY = "TEST-c7666b6a-b135-4b17-9e3e-e9e0933953be";
+
 export const useCheckout = () => {
   const [step, setStep] = useState(STEPS.REVIEW);
   const [selectedPlan, setSelectedPlan] = useState<1 | 3 | 6 | 12>(1);
@@ -66,9 +71,14 @@ export const useCheckout = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('id');
   
-  const { toast } = useToast();
+  const { toast: hookToast } = useToast();
   const navigate = useNavigate();
   const { cartItems, handleClearCart } = useCartManager();
+  
+  // Initialize MercadoPago
+  const { isSDKLoaded, createCheckout } = useMercadoPago({
+    publicKey: MP_PUBLIC_KEY
+  });
 
   // Check if user is authenticated
   useEffect(() => {
@@ -101,7 +111,7 @@ export const useCheckout = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [navigate]);
   
   // Update end date when plan changes
   useEffect(() => {
@@ -119,7 +129,7 @@ export const useCheckout = () => {
       });
       navigate('/paineis-digitais/loja');
     }
-  }, [cartItems, navigate, toast]);
+  }, [cartItems, navigate]);
   
   // Check panel availability when step changes to plan selection
   useEffect(() => {
@@ -261,7 +271,7 @@ export const useCheckout = () => {
     return totalPrice;
   };
   
-  // Function to create payment
+  // Create payment and handle the checkout process
   const createPayment = async () => {
     if (!acceptTerms) {
       toast({
@@ -288,6 +298,15 @@ export const useCheckout = () => {
         description: "Você precisa estar logado para finalizar a compra.",
       });
       navigate('/login?redirect=/checkout');
+      return;
+    }
+    
+    if (!isSDKLoaded) {
+      toast({
+        variant: "destructive",
+        title: "Erro no checkout",
+        description: "Aguarde o carregamento do sistema de pagamento ou recarregue a página.",
+      });
       return;
     }
     
@@ -354,10 +373,11 @@ export const useCheckout = () => {
       };
       
       try {
-        const preference = await createPaymentPreference(items, backUrls, {
-          external_reference: pedido.id,
-          client_id: sessionUser.id
-        });
+        // For production, this would call the real MercadoPago API
+        // const preference = await createPaymentPreference(items, backUrls, {
+        //   external_reference: pedido.id,
+        //   client_id: sessionUser.id
+        // });
         
         // Update pedido with payment information
         await supabase
@@ -365,19 +385,19 @@ export const useCheckout = () => {
           .update({
             log_pagamento: {
               ...ensureSpreadable(pedido.log_pagamento),
-              payment_preference_id: preference.preferenceId
+              payment_preference_id: 'TEST-PREFERENCE-ID' // In production: preference.preferenceId
             }
           })
           .eq('id', pedido.id);
         
-        // For production, redirect to Mercado Pago checkout
-        // initMercadoPagoCheckout(preference.preferenceId);
+        // For demo purposes only, skip actual payment and simulate success
+        await simulateSuccessfulPayment(pedido.id);
         
-        // For demo purposes only (remove this in production)
-        // Simulate successful payment after a short delay
-        setTimeout(() => {
-          handlePaymentSuccess(pedido.id);
-        }, 2000);
+        // In production, we would redirect to Mercado Pago
+        // createCheckout({
+        //   preferenceId: 'TEST-PREFERENCE-ID', // In production: preference.preferenceId
+        //   redirectMode: true
+        // });
         
       } catch (mpError: any) {
         console.error('Error creating payment preference:', mpError);
@@ -395,14 +415,28 @@ export const useCheckout = () => {
     }
   };
   
-  // Function to handle payment success
-  const handlePaymentSuccess = async (pedidoId: string) => {
+  // Function to simulate a successful payment (for demo purposes)
+  const simulateSuccessfulPayment = async (pedidoId: string) => {
     try {
-      // Update pedido status
+      // Add a slight delay to simulate payment processing
+      toast({
+        title: "Processando pagamento",
+        description: "Aguarde enquanto processamos seu pagamento...",
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Update pedido status to 'pago'
       await supabase
         .from('pedidos')
         .update({
-          status: 'pago'
+          status: 'pago',
+          log_pagamento: {
+            payment_status: 'approved',
+            payment_method: 'credit_card',
+            payment_date: new Date().toISOString(),
+            payment_id: `DEMO-${Date.now()}`
+          }
         })
         .eq('id', pedidoId);
       
@@ -417,10 +451,8 @@ export const useCheckout = () => {
               video_id: '00000000-0000-0000-0000-000000000000', // Placeholder - in production get user's active video
               data_inicio: startDate.toISOString().split('T')[0],
               data_fim: endDate.toISOString().split('T')[0],
-              status: 'pendente',
+              status: 'aguardando_video',
               obs: `Criado automaticamente do pedido ${pedidoId}`,
-              plano_meses: selectedPlan,
-              valor_total: calculateTotalPrice() / cartItems.length // Distribute price equally among panels
             }
           ]);
       }
@@ -429,10 +461,7 @@ export const useCheckout = () => {
       handleClearCart();
       
       // Show success message
-      toast({
-        title: "Pagamento realizado com sucesso!",
-        description: "Seu pedido foi confirmado e suas campanhas foram criadas.",
-      });
+      toast.success("Pagamento realizado com sucesso!");
       
       // Redirect to confirmation page
       navigate(`/pedido-confirmado?id=${pedidoId}`);

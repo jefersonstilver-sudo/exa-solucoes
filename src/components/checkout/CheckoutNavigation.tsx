@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, ShoppingCart, Check, CreditCard, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, ShoppingCart, CreditCard } from 'lucide-react';
 
 interface CheckoutNavigationProps {
   onBack: () => void;
@@ -22,77 +22,54 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isPaymentStep
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row justify-between mt-10 gap-4">
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
+    <motion.div 
+      className="flex flex-col sm:flex-row gap-3 justify-between mt-10"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5, duration: 0.4 }}
+    >
+      <Button 
+        variant="ghost" 
+        onClick={onBack}
+        className="gap-2"
       >
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="w-full sm:w-auto"
-        >
-          {isBackToStore ? (
-            <>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Voltar para loja
-            </>
-          ) : (
-            <>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </>
-          )}
-        </Button>
-      </motion.div>
-      
-      <motion.div
-        initial={{ opacity: 0, x: 10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-        whileTap={{ scale: isNextEnabled ? 0.95 : 1 }}
-      >
-        <Button 
-          onClick={onNext}
-          disabled={!isNextEnabled || isCreatingPayment}
-          className={`w-full sm:w-auto transition-all duration-300 ${
-            isPaymentStep 
-              ? 'bg-green-500 hover:bg-green-600 text-white' 
-              : 'bg-indexa-mint hover:bg-indexa-mint-dark text-gray-800'
-          }`}
-        >
-          {isCreatingPayment ? (
-            <>
-              <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              Processando...
-            </>
-          ) : isPaymentStep ? (
-            <>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Pagar com Mercado Pago
-            </>
-          ) : (
-            <>
-              Continuar
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
-        
-        {isPaymentStep && (
-          <motion.div 
-            className="text-xs text-center mt-2 text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-          >
-            <Lock className="inline h-3 w-3 mr-1" />
-            Pagamento processado em ambiente seguro
-          </motion.div>
+        <ArrowLeft className="h-4 w-4" />
+        {isBackToStore ? (
+          <>
+            <ShoppingCart className="h-4 w-4" />
+            <span>Voltar para Loja</span>
+          </>
+        ) : (
+          <span>Voltar</span>
         )}
-      </motion.div>
-    </div>
+      </Button>
+      
+      <Button 
+        onClick={onNext}
+        disabled={!isNextEnabled || isCreatingPayment}
+        className={`gap-2 ${isPaymentStep ? 'bg-green-600 hover:bg-green-700' : 'bg-indexa-purple hover:bg-indexa-purple-dark'}`}
+      >
+        {isCreatingPayment ? (
+          <>
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processando...
+          </>
+        ) : isPaymentStep ? (
+          <>
+            <CreditCard className="h-4 w-4" />
+            <span>Finalizar Pagamento</span>
+          </>
+        ) : (
+          <>
+            <span>Continuar</span>
+            <ArrowRight className="h-4 w-4" />
+          </>
+        )}
+      </Button>
+    </motion.div>
   );
 };
 

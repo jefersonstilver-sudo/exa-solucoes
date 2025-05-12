@@ -1,122 +1,79 @@
 
 /**
- * Calculate price with discount
+ * Calculates the price per month based on plan duration
+ * @param months Number of months for the plan
+ * @returns Price per month in BRL
+ */
+export const getPricePerMonth = (months: number): number => {
+  if (months >= 12) return 180;
+  if (months >= 6) return 200;
+  if (months >= 3) return 220;
+  return 250; // Default 1 month price
+};
+
+/**
+ * Gets the benefits associated with a specific plan duration
+ * @param months Number of months for the plan
+ * @returns Array of benefit descriptions
+ */
+export const getPlanBenefits = (months: number): string[] => {
+  if (months >= 12) {
+    return [
+      '🎥 1 vídeo por mês produzido pela Indexa',
+      '🎬 Vídeo institucional gratuito',
+      '🎞️ Bônus de exibição ininterrupta de 30s'
+    ];
+  }
+  if (months >= 6) {
+    return ['🎥 1 vídeo por mês produzido pela Indexa'];
+  }
+  if (months >= 3) {
+    return ['🎥 1 vídeo por mês produzido pela Indexa'];
+  }
+  return [];
+};
+
+/**
+ * Calculates the total price for a plan
+ * @param months Number of months
+ * @param quantity Number of panels
+ * @returns Total price in BRL
+ */
+export const calculatePlanPrice = (months: number, quantity: number = 1): number => {
+  const pricePerMonth = getPricePerMonth(months);
+  return pricePerMonth * months * quantity;
+};
+
+/**
+ * Calculates price with a percentage discount applied
  * @param price Original price
- * @param discountPercentage Discount percentage (0-100)
- * @returns Price after discount
+ * @param discountPercentage Percentage discount to apply
+ * @returns Discounted price
  */
 export const calculatePriceWithDiscount = (price: number, discountPercentage: number): number => {
-  if (discountPercentage <= 0 || discountPercentage > 100) return price;
+  if (discountPercentage <= 0 || discountPercentage >= 100) {
+    return price;
+  }
+  
   return price * (1 - discountPercentage / 100);
 };
 
 /**
- * Calculate monthly price based on plan duration
- * @param basePricePerMonth Base monthly price (R$250)
- * @param planDuration Duration in months (1, 3, 6, or 12)
- * @returns Price per month for the selected plan
+ * Ensures an object can be spread
+ * Useful when dealing with potentially null/undefined JSON objects from database
+ * @param obj Object to check
+ * @returns Safe object for spreading
  */
-export const calculateMonthlyPrice = (planDuration: number): number => {
-  switch (planDuration) {
-    case 3:
-      return 220; // 3 months plan: R$220/month
-    case 6:
-      return 200; // 6 months plan: R$200/month
-    case 12:
-      return 180; // 12 months plan: R$180/month
-    default:
-      return 250; // Default 1 month plan: R$250/month
-  }
-};
-
-/**
- * Get plan benefits based on duration
- * @param planDuration Duration in months (1, 3, 6, or 12)
- * @returns Array of benefits for the selected plan
- */
-export const getPlanBenefits = (planDuration: number): string[] => {
-  switch (planDuration) {
-    case 3:
-    case 6:
-      return ['🎥 1 vídeo por mês produzido pela Indexa'];
-    case 12:
-      return [
-        '🎥 1 vídeo por mês produzido pela Indexa',
-        '🎬 Vídeo institucional',
-        '🎞️ Bônus de exibição ininterrupta de 30s'
-      ];
-    default:
-      return [];
-  }
-};
-
-/**
- * Calculate discount percentage based on plan duration
- * @param planDuration Duration in months (1, 3, 6, or 12)
- * @returns Discount percentage for the selected plan
- */
-export const getPlanDiscountPercentage = (planDuration: number): number => {
-  switch (planDuration) {
-    case 3:
-      return 12; // 12% discount
-    case 6:
-      return 20; // 20% discount
-    case 12:
-      return 28; // 28% discount
-    default:
-      return 0; // No discount for 1 month
-  }
-};
-
-/**
- * Ensures that a value can be safely spread in an object
- * @param value The value to check
- * @returns A safe object to spread
- */
-export const ensureSpreadable = (value: any): Record<string, any> => {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value;
+export const ensureSpreadable = (obj: any): Record<string, any> => {
+  if (obj && typeof obj === 'object') {
+    return obj;
   }
   return {};
 };
 
 /**
- * Calculates the final order price with all discounts applied
- * @param panelCount Number of panels in the order
- * @param planMonths Duration of the plan in months
- * @param couponDiscount Discount percentage from coupon (0-100)
- * @returns Final price with all discounts applied
- */
-export const calculateFinalOrderPrice = (
-  panelCount: number,
-  planMonths: 1 | 3 | 6 | 12,
-  couponDiscount: number = 0
-): number => {
-  // Get base monthly price based on plan
-  const monthlyPrice = calculateMonthlyPrice(planMonths);
-  
-  // Calculate base total
-  const baseTotal = monthlyPrice * planMonths * panelCount;
-  
-  // Apply plan discount
-  const planDiscountPercentage = getPlanDiscountPercentage(planMonths);
-  let discountedPrice = baseTotal;
-  
-  if (planDiscountPercentage > 0) {
-    discountedPrice = calculatePriceWithDiscount(baseTotal, planDiscountPercentage);
-  }
-  
-  // Apply coupon discount if available
-  if (couponDiscount > 0) {
-    discountedPrice = calculatePriceWithDiscount(discountedPrice, couponDiscount);
-  }
-  
-  return Math.round(discountedPrice); // Round to nearest integer
-};
-
-/**
  * Format price to Brazilian currency format
- * @param price Price in number format
+ * @param price Price to format
  * @returns Formatted price string
  */
 export const formatCurrency = (price: number): string => {
@@ -124,4 +81,22 @@ export const formatCurrency = (price: number): string => {
     style: 'currency',
     currency: 'BRL'
   }).format(price);
+};
+
+/**
+ * Convert days to months (approximate)
+ * @param days Number of days
+ * @returns Approximate number of months
+ */
+export const daysToMonths = (days: number): number => {
+  return Math.round(days / 30);
+};
+
+/**
+ * Convert months to days
+ * @param months Number of months
+ * @returns Equivalent days
+ */
+export const monthsToDays = (months: number): number => {
+  return months * 30;
 };

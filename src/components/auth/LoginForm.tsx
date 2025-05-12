@@ -1,14 +1,13 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Key, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { AlertTriangle } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 
 interface LoginFormProps {
   redirectPath: string;
@@ -21,12 +20,12 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { toast } = useToast();
-
+  const location = useLocation();
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
+    setIsLoading(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -35,61 +34,49 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
       });
       
       if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          setError("Por favor, confirme seu email antes de continuar. Verifique sua caixa de entrada.");
+        if (error.message.includes('Invalid login') || error.message.includes('Email not confirmed')) {
+          setError('Email ou senha inválidos. Verifique suas credenciais.');
         } else {
-          throw error;
+          setError(error.message);
         }
+        console.error('Login error:', error);
         return;
       }
       
-      if (data.user) {
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Bem-vindo de volta!"
-        });
+      if (data.session) {
+        toast.success('Login realizado com sucesso!');
         
-        // Redirect to the intended page
-        navigate(redirectPath);
+        // Get redirect path from URL if present
+        const searchParams = new URLSearchParams(location.search);
+        const redirectTo = searchParams.get('redirect') || redirectPath;
+        
+        // Redirect to specified path
+        console.log('Redirecting to:', redirectTo);
+        navigate(redirectTo);
       }
-    } catch (error: any) {
-      console.error("Login error:", error);
-      
-      // Special case for timing issues with new accounts
-      if (error.message.includes("Invalid login credentials")) {
-        setError("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
-      } else {
-        setError(error.message || "Erro ao fazer login. Verifique suas credenciais.");
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "Erro ao fazer login",
-        description: error.message || "Verifique suas credenciais e tente novamente."
-      });
+    } catch (err) {
+      console.error('Unexpected error during login:', err);
+      setError('Ocorreu um erro inesperado. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       {error && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 rounded-md p-3 mb-4 flex items-start"
-        >
-          <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-800">{error}</p>
-        </motion.div>
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-3 mb-4 text-sm">
+          <p>{error}</p>
+        </div>
       )}
       
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email" className="flex items-center text-gray-700">
-            <Mail className="h-4 w-4 mr-2 text-indexa-purple" /> Email
-          </Label>
+          <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
@@ -97,22 +84,22 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="border-indexa-purple/20 focus:border-indexa-purple"
+            autoComplete="email"
+            disabled={isLoading}
           />
         </div>
-        
         <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label htmlFor="password" className="flex items-center text-gray-700">
-              <Key className="h-4 w-4 mr-2 text-indexa-purple" /> Senha
-            </Label>
-            <button 
-              type="button" 
-              onClick={() => setIsResetMode(true)} 
-              className="text-sm text-indexa-purple hover:text-indexa-purple-dark hover:underline transition-colors"
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Senha</Label>
+            <Button
+              variant="link"
+              type="button"
+              className="text-xs text-indexa-purple p-0 h-auto font-normal"
+              onClick={() => setIsResetMode(true)}
+              disabled={isLoading}
             >
               Esqueceu a senha?
-            </button>
+            </Button>
           </div>
           <Input
             id="password"
@@ -121,32 +108,31 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="border-indexa-purple/20 focus:border-indexa-purple"
+            autoComplete="current-password"
+            disabled={isLoading}
           />
         </div>
         
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <Button
+          type="submit"
+          className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-colors"
+          disabled={isLoading}
         >
-          <Button 
-            type="submit" 
-            className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-all duration-200"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Entrando...
-              </>
-            ) : (
-              <>
-                Entrar <ArrowRight className="ml-2 h-4 w-4" />
-              </>
-            )}
-          </Button>
-        </motion.div>
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Entrando...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <LogIn size={18} /> Entrar
+            </span>
+          )}
+        </Button>
       </form>
-    </>
+    </motion.div>
   );
 };

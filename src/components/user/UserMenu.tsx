@@ -1,200 +1,150 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  User, FileText, Target, Settings, 
-  Lock, LogOut, LogIn, UserPlus 
-} from 'lucide-react';
-import { useUserSession } from '@/hooks/useUserSession';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, LogIn, LogOut, Settings, Package, Film, ShoppingBag, UserIcon, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUserSession } from '@/hooks/useUserSession';
 import { ClientOnly } from '@/components/ui/client-only';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 
-const UserMenu: React.FC = () => {
-  const { user, isLoggedIn, logout } = useUserSession();
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  
-  // Fechar o menu ao clicar fora dele
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    
-    // Fechar o menu ao pressionar Esc
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscKey);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, [isOpen]);
-
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+const UserMenu = () => {
+  const [open, setOpen] = useState(false);
+  const { user, isLoading, isLoggedIn, logout } = useUserSession();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
-    setIsOpen(false);
     await logout();
-    toast.success('Logout realizado com sucesso');
+    setOpen(false);
   };
 
-  const menuAnimation = {
-    hidden: { opacity: 0, y: -10, scale: 0.95 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2 } },
-    exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.15 } }
+  // Generate avatar initials from name or email
+  const getInitials = () => {
+    if (!user) return "?";
+    
+    if (user.name) {
+      const parts = user.name.split(' ');
+      if (parts.length > 1) {
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      }
+      return user.name.substring(0, 2).toUpperCase();
+    }
+    
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    
+    return "?";
   };
 
   return (
-    <ClientOnly>
-      <div className="relative" ref={menuRef}>
-        <motion.button 
-          onClick={toggleMenu}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          aria-haspopup="true"
-          aria-expanded={isOpen}
-          className="focus:outline-none"
-        >
-          <Avatar 
-            className={`h-9 w-9 bg-indexa-purple-light transition-all duration-300
-              ${isLoggedIn 
-                ? 'border-2 border-indexa-mint shadow-[0_0_10px_rgba(0,255,171,0.5)]' 
-                : 'border-2 border-gray-500/50'}`}
-          >
-            {user?.avatar_url ? (
-              <AvatarImage src={user.avatar_url} alt={user.name || user.email || "User"} />
-            ) : null}
-            <AvatarFallback className="bg-indexa-purple-light text-white">
-              {user?.name?.[0] || user?.email?.[0] || <User className="h-5 w-5" />}
-            </AvatarFallback>
-          </Avatar>
-        </motion.button>
-
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div 
-              variants={menuAnimation}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="absolute right-0 mt-2 w-64 origin-top-right bg-white rounded-xl shadow-xl p-4 z-50"
+    <ClientOnly fallback={<div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>}>
+      {isLoading ? (
+        <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+      ) : (
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className={`relative p-0 overflow-hidden ${isLoggedIn ? 'border-0' : 'border-0'}`} 
+              aria-label="Menu do usuário"
             >
-              {isLoggedIn ? (
-                <>
-                  <div className="border-b border-gray-100 pb-3 mb-2">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Avatar className="h-10 w-10 bg-indexa-purple-dark">
-                        {user?.avatar_url ? (
-                          <AvatarImage src={user.avatar_url} alt={user.name || user.email || "User"} />
-                        ) : null}
-                        <AvatarFallback>{user?.name?.[0] || user?.email?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-neutral-900 text-sm truncate max-w-[150px]">
-                          {user?.name || user?.email}
-                        </p>
-                        {user?.name && (
-                          <p className="text-neutral-500 text-xs truncate max-w-[150px]">
-                            {user?.email}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+              <motion.div 
+                className={`rounded-full ${isLoggedIn ? 'ring-[3px] ring-indexa-mint' : 'ring-[1px] ring-gray-300'}`}
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage 
+                    src={user?.avatar_url || ''} 
+                    alt={user?.name || user?.email || "Usuário"}
+                  />
+                  <AvatarFallback 
+                    className={`${isLoggedIn ? 'bg-indexa-purple text-white' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    {isLoggedIn ? getInitials() : <UserIcon className="h-5 w-5" />}
+                  </AvatarFallback>
+                </Avatar>
+              </motion.div>
+            </Button>
+          </DropdownMenuTrigger>
+          
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            {isLoggedIn ? (
+              <>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name || "Usuário"}</p>
+                    <p className="text-xs leading-none text-muted-foreground truncate">
+                      {user?.email}
+                    </p>
                   </div>
-
-                  <div className="space-y-1 py-1">
-                    <Link 
-                      to="/pedidos" 
-                      className="flex items-center gap-2 w-full text-sm p-2 text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      Meus Pedidos
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link to="/paineis-digitais/loja" className="flex items-center cursor-pointer">
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      <span>Loja</span>
                     </Link>
-                    
-                    <Link 
-                      to="/campanhas" 
-                      className="flex items-center gap-2 w-full text-sm p-2 text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <Target className="h-4 w-4" />
-                      Minhas Campanhas
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/meus-pedidos" className="flex items-center cursor-pointer">
+                      <Package className="mr-2 h-4 w-4" />
+                      <span>Meus Pedidos</span>
                     </Link>
-                    
-                    <Link 
-                      to="/configuracoes" 
-                      className="flex items-center gap-2 w-full text-sm p-2 text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      Configurações da Conta
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/minhas-campanhas" className="flex items-center cursor-pointer">
+                      <Film className="mr-2 h-4 w-4" />
+                      <span>Minhas Campanhas</span>
                     </Link>
-                    
-                    <Link 
-                      to="/alterar-senha" 
-                      className="flex items-center gap-2 w-full text-sm p-2 text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <Lock className="h-4 w-4" />
-                      Alterar Senha
-                    </Link>
-                    
-                    <div className="pt-2 mt-2 border-t border-gray-100">
-                      <button 
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 w-full text-sm p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sair
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="border-b border-gray-100 pb-3 mb-2">
-                    <p className="text-sm text-neutral-900">👋 Bem-vindo! Faça login para continuar.</p>
-                  </div>
-                  
-                  <div className="space-y-2 py-2">
-                    <Link 
-                      to="/login" 
-                      className="flex items-center justify-center gap-2 w-full p-2 bg-indexa-purple text-white rounded-md hover:bg-indexa-purple-dark transition-colors text-sm font-medium"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <LogIn className="h-4 w-4" />
-                      Entrar
-                    </Link>
-                    
-                    <Link 
-                      to="/cadastro" 
-                      className="flex items-center justify-center gap-2 w-full p-2 border border-indexa-purple text-indexa-purple rounded-md hover:bg-indexa-purple/5 transition-colors text-sm font-medium"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      Cadastrar-se
-                    </Link>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/configuracoes" className="flex items-center cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configurações</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <>
+                <DropdownMenuLabel className="font-normal">
+                  <p className="text-sm text-center">Faça login para continuar</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link to="/login" className="flex items-center justify-center">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    <span>Entrar</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link to="/cadastro" className="flex items-center justify-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Criar Conta</span>
+                  </Link>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </ClientOnly>
   );
 };
