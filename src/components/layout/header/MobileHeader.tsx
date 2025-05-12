@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import CartButton from './CartButton';
 import UserButton from './UserButton';
 import HeaderMenu from './HeaderMenu';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileHeaderProps {
   cartItems: {panel: any, duration: number}[];
@@ -42,8 +43,8 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <>
-      {/* Mobile menu button and cart - Positioned absolutely in the top-right corner */}
-      <div className="absolute right-4 top-4 md:hidden flex items-center gap-3 z-20">
+      {/* Mobile menu button and cart - Positioned fixed in the top-right corner */}
+      <div className="fixed right-4 top-4 md:hidden flex items-center gap-3 z-50">
         <Link to="/paineis-digitais/loja" className="mr-1">
           <Button 
             variant="ghost" 
@@ -78,9 +79,9 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         </Button>
       </div>
       
-      {/* Mobile menu with conditional rendering - moved to a lower z-index */}
+      {/* Mobile menu with conditional rendering */}
       {isMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-10 md:hidden">
+        <div className="fixed top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-40 md:hidden">
           <HeaderMenu isMobile={true} onLinkClick={() => setIsMenuOpen(false)} />
         </div>
       )}
