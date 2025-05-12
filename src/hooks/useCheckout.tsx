@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -315,7 +314,7 @@ export const useCheckout = () => {
           .from('pedidos')
           .update({
             log_pagamento: {
-              ...(pedido.log_pagamento ? ensureSpreadable(pedido.log_pagamento) : {}),
+              ...ensureSpreadable(pedido.log_pagamento),
               payment_preference_id: preference.preferenceId
             }
           })
