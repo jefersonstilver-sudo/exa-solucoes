@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 
 export default function Confirmacao() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Confirmando seu email...');
 
@@ -59,8 +60,12 @@ export default function Confirmacao() {
         setMessage('Email confirmado com sucesso!');
         toast.success('Email confirmado com sucesso!');
         
+        // Check if there's a redirect parameter in the URL
+        const redirectParam = new URLSearchParams(location.search).get('redirect');
+        const redirectTo = redirectParam || '/login';
+        
         // Redirect after a short delay
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate(redirectTo), 3000);
       } catch (error: any) {
         console.error('Email confirmation failed:', error);
         setStatus('error');
@@ -70,7 +75,7 @@ export default function Confirmacao() {
     };
 
     confirmUser();
-  }, [navigate]);
+  }, [navigate, location]);
 
   return (
     <Layout>

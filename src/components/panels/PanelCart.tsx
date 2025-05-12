@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Trash, Building, Calendar, X, Check, ArrowRight, User } from 'lucide-react';
+import { ShoppingCart, Trash, Building, Calendar, X, Check, ArrowRight, User, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -10,6 +10,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { ClientOnly } from '@/components/ui/client-only';
 
 interface PanelCartProps {
   cartItems: {panel: Panel, duration: number}[];
@@ -188,22 +189,59 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     return (
       <>
         {/* User info if logged in */}
-        {user && (
-          <div className="bg-indexa-purple/5 rounded-lg p-3 mb-4 flex items-center">
-            <div className="rounded-full bg-indexa-purple h-8 w-8 flex items-center justify-center text-white mr-3">
-              {user.user_metadata?.name ? user.user_metadata.name.charAt(0).toUpperCase() : 
-               user.email ? user.email.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+        <ClientOnly>
+          {user ? (
+            <div className="bg-indexa-purple/5 rounded-lg p-3 mb-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-indexa-purple h-8 w-8 flex items-center justify-center text-white mr-3">
+                  {user.user_metadata?.name ? user.user_metadata.name.charAt(0).toUpperCase() : 
+                  user.email ? user.email.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium flex items-center">
+                    Olá, {user.user_metadata?.name || user.email.split('@')[0]} 👋
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {userProfile?.documento || user.email}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium">
-                {user.user_metadata?.name || user.email}
-              </p>
-              <p className="text-xs text-gray-500">
-                {userProfile?.documento || user.email}
-              </p>
+          ) : (
+            <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 mb-4">
+              <div className="flex items-center">
+                <div className="text-orange-500 mr-3">
+                  <LogIn className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    Faça login para finalizar sua compra
+                  </p>
+                  <p className="text-xs text-orange-600">
+                    Crie uma conta ou acesse para continuar
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-xs border-orange-300 text-orange-700 hover:bg-orange-100 flex-1"
+                  onClick={() => navigate('/login?redirect=/checkout')}
+                >
+                  Entrar
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="text-xs bg-indexa-purple hover:bg-indexa-purple-dark flex-1"
+                  onClick={() => navigate('/cadastro?redirect=/checkout')}
+                >
+                  Criar conta
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </ClientOnly>
 
         <div className="space-y-5">
           <AnimatePresence>
