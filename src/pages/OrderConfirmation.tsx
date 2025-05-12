@@ -104,7 +104,7 @@ export default function OrderConfirmation() {
               buildings (
                 nome, 
                 endereco, 
-                imageUrl
+                imageurl
               )
             `)
             .eq('id', panelId)
@@ -116,12 +116,13 @@ export default function OrderConfirmation() {
             continue;
           }
             
+          // Make sure panelData exists and buildings object exists before accessing properties
           if (panelData && panelData.buildings) {
             panelDetails.push({
               id: panelData.id,
               nome: panelData.buildings.nome || 'Painel Digital',
               endereco: panelData.buildings.endereco || 'Endereço não disponível',
-              imageUrl: panelData.buildings.imageUrl
+              imageUrl: panelData.buildings.imageurl // Note the lowercase 'imageurl'
             });
           } else {
             // Fallback if building data is not available
