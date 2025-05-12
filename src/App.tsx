@@ -16,7 +16,6 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    {/* Remove TooltipProvider from App.tsx since we'll use it in individual components */}
     <Toaster />
     <Sonner />
     <BrowserRouter>
@@ -29,6 +28,11 @@ const App = () => (
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         <Route path="/403" element={<Forbidden />} />
+        {/* Rotas adicionadas para o menu do usuário */}
+        <Route path="/pedidos" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}
+        <Route path="/campanhas" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}
+        <Route path="/configuracoes" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}
+        <Route path="/alterar-senha" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, Menu, X } from 'lucide-react';
+import { ShoppingCart, Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import PanelCart from '@/components/panels/PanelCart';
+import UserMenu from '@/components/user/UserMenu';
 
 interface HeaderProps {
   cartItems?: {panel: any, duration: number}[];
@@ -97,18 +97,8 @@ const Header: React.FC<HeaderProps> = ({
         </Link>
 
         <div className="flex items-center gap-3">
-          {/* User icon first */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-white hover:bg-white/20 rounded-full"
-          >
-            <Avatar className="h-9 w-9 bg-indexa-purple-light border-2 border-indexa-mint">
-              <AvatarFallback className="bg-indexa-purple-light text-white">
-                <User className="h-5 w-5" />
-              </AvatarFallback>
-            </Avatar>
-          </Button>
+          {/* Replaced with UserMenu component */}
+          <UserMenu />
           
           {/* Desktop Shopping cart */}
           {cartItems.length > 0 ? (
@@ -150,18 +140,8 @@ const Header: React.FC<HeaderProps> = ({
       
       {/* Mobile menu and cart buttons */}
       <div className="md:hidden flex items-center gap-3">
-        {/* User icon first in mobile as well */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-white hover:bg-white/20 rounded-full"
-        >
-          <Avatar className="h-8 w-8 bg-indexa-purple-light border-2 border-indexa-mint">
-            <AvatarFallback className="bg-indexa-purple-light text-white">
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
-        </Button>
+        {/* Replaced with UserMenu component for mobile */}
+        <UserMenu />
         
         {/* Mobile Shopping cart */}
         {cartItems.length > 0 ? (
