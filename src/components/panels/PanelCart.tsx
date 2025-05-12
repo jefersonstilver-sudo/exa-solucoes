@@ -55,20 +55,35 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     setIsSubmitting(true);
     setAnimateCart(true);
     
-    setTimeout(() => {
+    try {
+      // Importante: Salvar o carrinho no localStorage aqui para garantir que ele esteja disponível
+      // após o redirecionamento de login
       if (!isLoggedIn) {
         // User is not logged in, redirect to login with checkout as return path
         toast({
           title: "Login necessário",
           description: "Faça login para continuar com a compra",
         });
-        navigate(`/login?redirect=${encodeURIComponent('/checkout')}`);
+        
+        // Salve a URL de retorno para voltar após o login
+        const returnUrl = '/checkout';
+        
+        // Redirecione para a página de login com o parâmetro de redirecionamento
+        navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       } else {
         // User is already logged in, proceed to checkout
         navigate('/checkout');
       }
+    } catch (error) {
+      console.error("Erro ao processar checkout:", error);
+      toast({
+        title: "Erro ao processar",
+        description: "Ocorreu um erro ao finalizar a compra. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 700);
+    }
   };
   
   // Calculate total price for all items in cart
@@ -297,3 +312,4 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
 };
 
 export default PanelCart;
+

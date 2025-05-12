@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Menu, X } from 'lucide-react';
@@ -60,6 +59,19 @@ const Header: React.FC<HeaderProps> = ({
       setIsMenuOpen(false);
     }
   };
+
+  // Adicionar efeito para verificar o localStorage quando o componente for montado
+  useEffect(() => {
+    const handleStorageChange = () => {
+      console.log("Storage changed, checking for cart updates");
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   return (
     <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">

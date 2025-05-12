@@ -14,19 +14,30 @@ export const useCartManager = () => {
   
   // Load cart from localStorage on component mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('panelCart');
-    if (savedCart) {
+    const loadCart = () => {
       try {
-        setCartItems(JSON.parse(savedCart));
+        const savedCart = localStorage.getItem('panelCart');
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart);
+          setCartItems(parsedCart);
+          console.log("Carrinho carregado do localStorage:", parsedCart.length, "itens");
+        }
       } catch (e) {
-        console.error('Failed to load cart from localStorage', e);
+        console.error('Falha ao carregar o carrinho do localStorage', e);
       }
-    }
+    };
+    
+    loadCart();
   }, []);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('panelCart', JSON.stringify(cartItems));
+    try {
+      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      console.log("Carrinho salvo no localStorage:", cartItems.length, "itens");
+    } catch (e) {
+      console.error('Falha ao salvar o carrinho no localStorage', e);
+    }
   }, [cartItems]);
 
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
