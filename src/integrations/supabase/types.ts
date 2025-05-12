@@ -142,6 +142,84 @@ export type Database = {
         }
         Relationships: []
       }
+      cupom_usos: {
+        Row: {
+          created_at: string
+          cupom_id: string
+          id: string
+          pedido_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cupom_id: string
+          id?: string
+          pedido_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cupom_id?: string
+          id?: string
+          pedido_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cupom_usos_cupom_id_fkey"
+            columns: ["cupom_id"]
+            isOneToOne: false
+            referencedRelation: "cupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cupom_usos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cupons: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          created_by: string | null
+          desconto_percentual: number
+          expira_em: string | null
+          id: string
+          max_usos: number
+          min_meses: number
+          usos_atuais: number
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          created_by?: string | null
+          desconto_percentual: number
+          expira_em?: string | null
+          id?: string
+          max_usos?: number
+          min_meses?: number
+          usos_atuais?: number
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          created_by?: string | null
+          desconto_percentual?: number
+          expira_em?: string | null
+          id?: string
+          max_usos?: number
+          min_meses?: number
+          usos_atuais?: number
+        }
+        Relationships: []
+      }
       log_eventos_sistema: {
         Row: {
           created_at: string | null
@@ -252,31 +330,46 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string | null
+          cupom_id: string | null
+          data_fim: string | null
+          data_inicio: string | null
           duracao: number
           id: string
           lista_paineis: string[]
           log_pagamento: Json | null
+          plano_meses: number
           status: string
+          termos_aceitos: boolean | null
           valor_total: number
         }
         Insert: {
           client_id: string
           created_at?: string | null
+          cupom_id?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
           duracao: number
           id?: string
           lista_paineis: string[]
           log_pagamento?: Json | null
+          plano_meses?: number
           status?: string
+          termos_aceitos?: boolean | null
           valor_total: number
         }
         Update: {
           client_id?: string
           created_at?: string | null
+          cupom_id?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
           duracao?: number
           id?: string
           lista_paineis?: string[]
           log_pagamento?: Json | null
+          plano_meses?: number
           status?: string
+          termos_aceitos?: boolean | null
           valor_total?: number
         }
         Relationships: [
@@ -285,6 +378,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_cupom_id_fkey"
+            columns: ["cupom_id"]
+            isOneToOne: false
+            referencedRelation: "cupons"
             referencedColumns: ["id"]
           },
         ]
@@ -415,6 +515,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_panel_availability: {
+        Args: { p_panel_id: string; p_start_date: string; p_end_date: string }
+        Returns: boolean
+      }
       get_panels_by_location: {
         Args: { lat: number; lng: number; radius_meters: number }
         Returns: {
@@ -435,6 +539,16 @@ export type Database = {
       is_emergency_mode: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      validate_cupom: {
+        Args: { p_codigo: string; p_meses: number }
+        Returns: {
+          id: string
+          codigo: string
+          desconto_percentual: number
+          valid: boolean
+          message: string
+        }[]
       }
     }
     Enums: {

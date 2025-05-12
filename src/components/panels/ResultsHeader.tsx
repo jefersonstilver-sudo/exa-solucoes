@@ -1,17 +1,22 @@
 
 import React from 'react';
-import { Loader2, ShoppingCart } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ResultsHeaderProps {
   isLoading: boolean;
   isSearching: boolean;
   panelsCount: number;
+  onSortChange?: (value: string) => void;
+  sortOption?: string;
 }
 
 const ResultsHeader: React.FC<ResultsHeaderProps> = ({ 
   isLoading, 
   isSearching, 
-  panelsCount 
+  panelsCount,
+  onSortChange = () => {},
+  sortOption = 'relevance'
 }) => {
   return (
     <div className="flex justify-between items-center mb-4">
@@ -28,12 +33,17 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
         )}
       </h2>
       <div className="flex items-center gap-2">
-        <select className="px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indexa-purple">
-          <option>Ordenar por: Relevância</option>
-          <option>Ordenar por: Maior Preço</option>
-          <option>Ordenar por: Menor Preço</option>
-          <option>Ordenar por: Mais visualizações</option>
-        </select>
+        <Select defaultValue={sortOption} onValueChange={onSortChange}>
+          <SelectTrigger className="w-[180px] text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indexa-purple">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="relevance">Ordenar por: Relevância</SelectItem>
+            <SelectItem value="price_high">Ordenar por: Maior Preço</SelectItem>
+            <SelectItem value="price_low">Ordenar por: Menor Preço</SelectItem>
+            <SelectItem value="views">Ordenar por: Mais visualizações</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
