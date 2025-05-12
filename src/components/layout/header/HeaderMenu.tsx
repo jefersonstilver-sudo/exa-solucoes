@@ -52,6 +52,12 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
           {item.name}
         </Link>
       ))}
+      <Link 
+        to="/paineis-digitais/loja" 
+        className="text-white/90 font-medium hover:text-white transition-colors text-indexa-mint"
+      >
+        Loja Online
+      </Link>
     </div>
   );
 };

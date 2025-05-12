@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { FilterOptions } from '@/types/filter';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Toggle } from '@/components/ui/toggle';
 
 interface SearchSectionProps {
   searchLocation: string;
@@ -34,25 +36,33 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   const isCommercialOnly = filters.locationType.includes('commercial') && !filters.locationType.includes('residential');
   const isBothTypes = filters.locationType.includes('residential') && filters.locationType.includes('commercial');
 
-  // Toggle location type filter - Correção da lógica
+  // Toggle location type filter - Lógica melhorada
   const toggleLocationType = (type: string) => {
-    let newLocationTypes: string[] = [...filters.locationType];
+    // Clone atual da lista de tipos
+    let newLocationTypes = [...filters.locationType];
     
-    // Se clicou em um tipo já selecionado
+    // Verifica se o tipo atual já está selecionado
     if (newLocationTypes.includes(type)) {
-      // Se apenas este tipo está selecionado, não fazemos nada 
-      // (para evitar ficar sem nenhum tipo selecionado)
+      // Se só temos um tipo selecionado (e é este), não permitimos desmarcá-lo
       if (newLocationTypes.length === 1) {
+        console.log("Não é possível desmarcar todos os tipos");
         return; // Mantém pelo menos um tipo selecionado
       }
-      // Se ambos estão selecionados, mantém apenas o outro
+      
+      // Remove o tipo clicado
       newLocationTypes = newLocationTypes.filter(t => t !== type);
     } else {
-      // Se clicou em um tipo não selecionado, adicionamos ele
+      // Adiciona o tipo clicado
       newLocationTypes.push(type);
     }
     
+    console.log("Novos tipos selecionados:", newLocationTypes);
     handleFilterChange({ locationType: newLocationTypes });
+  };
+
+  // Função para selecionar ambos os tipos
+  const selectAllTypes = () => {
+    handleFilterChange({ locationType: ['residential', 'commercial'] });
   };
 
   return (
@@ -122,7 +132,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           </div>
         </div>
         
-        {/* Location type filters */}
+        {/* Location type filters - Interface melhorada */}
         <div className="flex flex-wrap gap-2 mt-4">
           <div className="flex items-center justify-center">
             <span className="text-sm text-gray-600 mr-2 font-medium">Tipo de local:</span>
@@ -131,8 +141,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           <Button
             variant={isBothTypes ? "default" : "outline"}
             size="sm"
-            onClick={() => handleFilterChange({ locationType: ['residential', 'commercial'] })}
+            onClick={selectAllTypes}
             className={`rounded-full ${isBothTypes ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
+            data-testid="all-types-button"
           >
             Todos
           </Button>
@@ -142,6 +153,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             size="sm"
             onClick={() => toggleLocationType('residential')}
             className={`rounded-full ${isResidentialOnly ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
+            data-testid="residential-button"
           >
             <Users className="w-4 h-4 mr-1" />
             Residencial
@@ -152,6 +164,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             size="sm"
             onClick={() => toggleLocationType('commercial')}
             className={`rounded-full ${isCommercialOnly ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
+            data-testid="commercial-button"
           >
             <Building className="w-4 h-4 mr-1" />
             Comercial
