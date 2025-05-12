@@ -132,45 +132,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           </div>
         </div>
         
-        {/* Location type filters - Interface melhorada */}
-        <div className="flex flex-wrap gap-2 mt-4">
-          <div className="flex items-center justify-center">
-            <span className="text-sm text-gray-600 mr-2 font-medium">Tipo de local:</span>
-          </div>
-          
-          <Button
-            variant={isBothTypes ? "default" : "outline"}
-            size="sm"
-            onClick={selectAllTypes}
-            className={`rounded-full ${isBothTypes ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
-            data-testid="all-types-button"
-          >
-            Todos
-          </Button>
-          
-          <Button
-            variant={isResidentialOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => toggleLocationType('residential')}
-            className={`rounded-full ${isResidentialOnly ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
-            data-testid="residential-button"
-          >
-            <Users className="w-4 h-4 mr-1" />
-            Residencial
-          </Button>
-          
-          <Button
-            variant={isCommercialOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => toggleLocationType('commercial')}
-            className={`rounded-full ${isCommercialOnly ? 'bg-[#7C3AED] hover:bg-[#6D28D9]' : 'border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'}`}
-            data-testid="commercial-button"
-          >
-            <Building className="w-4 h-4 mr-1" />
-            Comercial
-          </Button>
-        </div>
-        
+        {/* Location type filters - Movidos para a barra lateral */}
         {selectedLocation && (
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 pt-3 border-t border-gray-100">
             <div className="flex items-center text-sm mb-3 sm:mb-0">
