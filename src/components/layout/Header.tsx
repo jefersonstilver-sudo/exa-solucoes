@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, User, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import PanelCart from '@/components/panels/PanelCart';
@@ -91,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({
             variant="outline" 
             className="bg-indexa-mint text-indexa-purple-dark rounded-full border-none hover:bg-opacity-90 text-base font-medium"
           >
-            <ShoppingBag className="mr-2 h-5 w-5" />
+            <ShoppingCart className="mr-2 h-5 w-5" />
             Loja Online
           </Button>
         </Link>
@@ -119,8 +119,8 @@ const Header: React.FC<HeaderProps> = ({
                   size="icon" 
                   className="relative text-white hover:bg-white/20 rounded-full"
                 >
-                  <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  <ShoppingCart className="h-6 w-6 text-indexa-mint" /> 
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse-soft">
                     {cartItems.length}
                   </span>
                 </Button>
@@ -142,7 +142,7 @@ const Header: React.FC<HeaderProps> = ({
               size="icon" 
               className="relative text-white hover:bg-white/20 rounded-full"
             >
-              <ShoppingBag className="h-6 w-6 text-indexa-mint" />
+              <ShoppingCart className="h-6 w-6 text-indexa-mint" />
             </Button>
           )}
         </div>
@@ -172,8 +172,8 @@ const Header: React.FC<HeaderProps> = ({
                 size="icon" 
                 className="relative text-white hover:bg-white/20 rounded-full"
               >
-                <ShoppingBag className="h-6 w-6 text-indexa-mint" /> 
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <ShoppingCart className="h-6 w-6 text-indexa-mint" /> 
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse-soft">
                   {cartItems.length}
                 </span>
               </Button>
@@ -195,7 +195,7 @@ const Header: React.FC<HeaderProps> = ({
             size="icon" 
             className="relative text-white hover:bg-white/20 rounded-full"
           >
-            <ShoppingBag className="h-6 w-6 text-indexa-mint" />
+            <ShoppingCart className="h-6 w-6 text-indexa-mint" />
           </Button>
         )}
         
