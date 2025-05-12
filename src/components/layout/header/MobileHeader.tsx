@@ -42,8 +42,8 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <>
-      {/* Mobile controls - Positioned with fixed position and high z-index */}
-      <div className="fixed right-4 top-4 md:hidden flex items-center gap-3 z-[100]">
+      {/* Controles móveis com posição fixa e z-index muito elevado */}
+      <div className="fixed right-4 top-4 md:hidden flex items-center gap-3 z-[200]">
         <Link to="/paineis-digitais/loja" className="mr-1">
           <Button 
             variant="ghost" 
@@ -78,9 +78,9 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         </Button>
       </div>
       
-      {/* Mobile menu with fixed positioning and z-index lower than controls but higher than content */}
+      {/* Menu móvel com posicionamento fixo e z-index abaixo dos controles mas ainda alto */}
       {isMenuOpen && (
-        <div className="fixed top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-[90] md:hidden">
+        <div className="fixed top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-[150] md:hidden">
           <HeaderMenu isMobile={true} onLinkClick={() => setIsMenuOpen(false)} />
         </div>
       )}
