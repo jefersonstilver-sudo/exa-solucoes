@@ -27,8 +27,8 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30 relative">
-      {/* Logo container with highest z-index to ensure it's always visible */}
-      <div className="flex items-center z-50 relative">
+      {/* Logo container com z-index máximo para garantir visibilidade */}
+      <div className="flex items-center z-[200] relative">
         <Link to="/" className="block text-white text-lg font-semibold transition-colors">
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
@@ -37,16 +37,16 @@ const Header: React.FC<HeaderProps> = ({
           />
         </Link>
         
-        {/* Desktop navigation */}
+        {/* Navegação Desktop */}
         <div className="ml-8 hidden md:block">
           <HeaderMenu />
         </div>
       </div>
       
-      {/* Desktop Cart and User buttons */}
+      {/* Botões de carrinho e usuário no Desktop */}
       <div className="hidden md:flex items-center gap-4">
         <div className="flex items-center gap-3">
-          {/* Loja Online Link/Button */}
+          {/* Link para Loja Online */}
           <Link to="/paineis-digitais/loja">
             <Button 
               variant="ghost" 
@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({
           
           <UserButton />
           
-          {/* Desktop Shopping cart */}
+          {/* Carrinho Desktop */}
           <CartButton
             cartItems={cartItems}
             onRemoveFromCart={onRemoveFromCart}
@@ -71,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
       
-      {/* Mobile menu and cart buttons - Now moved completely out of the main header flow */}
+      {/* Mobile menu e botões do carrinho - Agora completamente fora do fluxo do cabeçalho principal */}
       <MobileHeader 
         cartItems={cartItems}
         onRemoveFromCart={onRemoveFromCart}

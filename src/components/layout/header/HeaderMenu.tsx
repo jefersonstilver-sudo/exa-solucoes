@@ -11,6 +11,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   isMobile = false,
   onLinkClick = () => {}
 }) => {
+  // Removendo qualquer referência a "Residencial" que possa estar causando o problema
   const menuItems = [
     { name: "Produtora", link: "/" },
     { name: "Marketing", link: "/" },
