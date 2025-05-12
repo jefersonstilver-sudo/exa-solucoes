@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { createPaymentPreference, initMercadoPagoCheckout } from '@/services/mercadoPago';
 import { calculatePriceWithDiscount, ensureSpreadable } from '@/utils/priceUtils';
@@ -71,7 +71,7 @@ export const useCheckout = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('id');
   
-  const { toast: hookToast } = useToast();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const { cartItems, handleClearCart } = useCartManager();
   
@@ -168,7 +168,6 @@ export const useCheckout = () => {
           toast({
             title: "Cupom aplicado",
             description: `Desconto de ${result.desconto_percentual}% aplicado ao seu pedido!`,
-            duration: 3000,
           });
         } else {
           setCouponMessage(result.message || 'Este cupom não é válido para a sua compra.');
@@ -461,7 +460,7 @@ export const useCheckout = () => {
       handleClearCart();
       
       // Show success message
-      toast.success("Pagamento realizado com sucesso!");
+      sonnerToast.success("Pagamento realizado com sucesso!");
       
       // Redirect to confirmation page
       navigate(`/pedido-confirmado?id=${pedidoId}`);

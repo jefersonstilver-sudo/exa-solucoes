@@ -118,9 +118,9 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                     <CardContent className="p-3">
                       <div className="flex gap-3">
                         <div className="flex-shrink-0 w-20 h-20 overflow-hidden rounded-md bg-gray-100">
-                          {item.panel.buildings?.imageurl ? (
+                          {item.panel.buildings?.imageUrl ? (
                             <img 
-                              src={item.panel.buildings.imageurl} 
+                              src={item.panel.buildings.imageUrl} 
                               alt={item.panel.buildings?.nome || 'Building image'}
                               className="w-full h-full object-cover"
                             />
