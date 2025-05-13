@@ -1,16 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Trash, Building, Calendar, X, Check, ArrowRight, User, LogIn } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShoppingCart, Trash, X, Check, ArrowRight, User, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Panel } from '@/types/panel';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { ClientOnly } from '@/components/ui/client-only';
 import { useUserSession } from '@/hooks/useUserSession';
 
@@ -25,7 +23,6 @@ const durationOptions = [30, 60, 90, 180, 365];
 
 const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onChangeDuration }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [animateCart, setAnimateCart] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, isLoading: isSessionLoading, isLoggedIn } = useUserSession();
@@ -53,7 +50,6 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
   
   const handleCheckout = () => {
     setIsSubmitting(true);
-    setAnimateCart(true);
     
     try {
       if (!isLoggedIn) {
@@ -96,22 +92,24 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     <div className="h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-[#2B0A3D]">
             <ShoppingCart className="mr-2 h-5 w-5" /> Carrinho
-            <Badge variant="outline" className="ml-2">
+            <Badge variant="outline" className="ml-2 bg-[#2B0A3D]/10 text-[#2B0A3D] border-none">
               {cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'}
             </Badge>
           </CardTitle>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            disabled={cartItems.length === 0 || isSubmitting}
-            onClick={onClear}
-            className="h-8 text-gray-500 hover:text-red-600"
-            title="Limpar carrinho"
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          {cartItems.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              disabled={isSubmitting}
+              onClick={onClear}
+              className="h-8 text-gray-500 hover:text-red-600"
+              title="Limpar carrinho"
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       
@@ -124,30 +122,23 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                   key={item.panel.id}
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.3 }}
-                  className={`${animateCart ? 'animate-cart-slide' : ''}`}
                 >
-                  <Card className="border shadow-sm bg-white">
+                  <Card className="border shadow-sm bg-white rounded-xl">
                     <CardContent className="p-3">
                       <div className="flex gap-3">
                         <div className="flex-shrink-0 w-20 h-20 overflow-hidden rounded-md bg-gray-100">
-                          {item.panel.buildings?.imageUrl ? (
-                            <img 
-                              src={item.panel.buildings.imageUrl} 
-                              alt={item.panel.buildings?.nome || 'Building image'}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                              <Building className="h-8 w-8 text-gray-400" />
-                            </div>
-                          )}
+                          <img 
+                            src={item.panel.buildings?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'} 
+                            alt={item.panel.buildings?.nome || 'Building image'}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         
                         <div className="flex-grow">
                           <div className="flex justify-between">
-                            <h4 className="font-semibold text-sm">
+                            <h4 className="font-semibold text-sm text-[#2B0A3D]">
                               {item.panel.buildings?.nome || 'Painel Digital'}
                             </h4>
                             <Button
@@ -164,25 +155,13 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                             {item.panel.buildings?.endereco || 'Endereço não disponível'}
                           </p>
                           
-                          {/* Panel specs */}
-                          <div className="flex gap-1 mt-1">
-                            <Badge variant="outline" className="text-xs px-1 py-0 h-5">
-                              {item.panel.modo || 'indoor'}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs px-1 py-0 h-5">
-                              {item.panel.resolucao || 'HD'}
-                            </Badge>
-                          </div>
-                          
                           {/* Duration selector */}
                           <div className="mt-2 flex items-center gap-2">
-                            <span className="text-xs text-gray-500 flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" /> Duração:
-                            </span>
+                            <span className="text-xs text-gray-600">Duração:</span>
                             <select
                               value={item.duration}
                               onChange={(e) => onChangeDuration(item.panel.id, parseInt(e.target.value))}
-                              className="text-xs border rounded px-1 py-0.5 bg-white"
+                              className="text-xs border rounded px-2 py-1 bg-white text-[#2B0A3D]"
                             >
                               {durationOptions.map((days) => (
                                 <option key={days} value={days}>
@@ -196,14 +175,11 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                       
                       {/* Price info */}
                       <div className="mt-2 text-right">
-                        <p className="text-sm font-semibold text-indexa-purple">
+                        <p className="text-sm font-semibold text-[#2B0A3D]">
                           R$ {calculatePrice(item.panel, item.duration).toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {Math.floor(item.duration / 30)} {Math.floor(item.duration / 30) === 1 ? 'mês' : 'meses'} de exibição
                         </p>
                       </div>
                     </CardContent>
@@ -212,11 +188,13 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
               ))}
             </AnimatePresence>
             
+            <Separator />
+            
             {/* User information if logged in */}
             <ClientOnly>
-              <div className="mt-4 pt-3 border-t">
+              <div className="mt-4">
                 {isLoggedIn && user ? (
-                  <div className="flex items-center gap-2 bg-green-50 p-2 rounded-md">
+                  <div className="flex items-center gap-2 bg-green-50 p-3 rounded-xl mb-4">
                     <div className="bg-green-100 rounded-full p-1">
                       <User className="h-4 w-4 text-green-600" />
                     </div>
@@ -231,7 +209,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 bg-amber-50 p-2 rounded-md">
+                  <div className="flex items-center gap-2 bg-amber-50 p-3 rounded-xl mb-4">
                     <div className="bg-amber-100 rounded-full p-1">
                       <LogIn className="h-4 w-4 text-amber-600" />
                     </div>
@@ -240,7 +218,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                         Faça login para finalizar
                       </p>
                       <p className="text-xs text-gray-500">
-                        Você será redirecionado após clicar em finalizar compra
+                        Você será redirecionado após clicar em finalizar
                       </p>
                     </div>
                   </div>
@@ -249,10 +227,10 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
             </ClientOnly>
             
             {/* Total and checkout */}
-            <div className="bg-gray-50 p-3 rounded-md">
+            <div className="bg-gray-50 p-4 rounded-xl">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-500">Subtotal</span>
-                <span className="text-base font-semibold">
+                <span className="text-sm text-gray-600">Subtotal ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'})</span>
+                <span className="text-lg font-semibold text-[#2B0A3D]">
                   R$ {calculateTotal().toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -261,7 +239,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
               </div>
               
               <Button
-                className="w-full mt-2 bg-indexa-purple hover:bg-indexa-purple-dark"
+                className="w-full mt-3 bg-[#2B0A3D] hover:bg-gradient-to-r hover:from-[#2B0A3D] hover:to-[#3B1A4D] text-white rounded-xl py-6"
                 disabled={isSubmitting}
                 onClick={handleCheckout}
               >
@@ -274,8 +252,8 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                     Processando...
                   </span>
                 ) : (
-                  <span className="flex items-center">
-                    Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
+                  <span className="flex items-center font-medium">
+                    Finalizar Compra <ArrowRight className="ml-2 h-5 w-5" />
                   </span>
                 )}
               </Button>
@@ -283,17 +261,17 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full py-8">
-            <div className="bg-gray-100 rounded-full p-4 mb-4">
+            <div className="bg-gray-100 rounded-full p-6 mb-4">
               <ShoppingCart className="h-10 w-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-700">Carrinho vazio</h3>
-            <p className="text-sm text-gray-500 text-center mt-2 mb-4">
+            <h3 className="text-lg font-medium text-[#2B0A3D]">Carrinho vazio</h3>
+            <p className="text-sm text-gray-500 text-center mt-2 mb-4 max-w-xs">
               Adicione painéis ao seu carrinho para iniciar sua campanha
             </p>
             <Button 
               variant="outline" 
               onClick={() => navigate('/paineis-digitais/loja')}
-              className="mt-2"
+              className="mt-2 border-[#2B0A3D] text-[#2B0A3D] hover:bg-[#2B0A3D] hover:text-white"
             >
               Explorar Painéis
             </Button>

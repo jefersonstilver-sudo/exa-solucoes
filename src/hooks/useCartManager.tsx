@@ -11,6 +11,7 @@ interface CartItem {
 export const useCartManager = () => {
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
   
   // Load cart from localStorage on component mount
   useEffect(() => {
@@ -56,6 +57,9 @@ export const useCartManager = () => {
         return [...prev, { panel, duration }];
       }
     });
+    
+    // Abra o carrinho automaticamente quando um item for adicionado
+    setCartOpen(true);
     
     toast({
       title: "Painel adicionado ao carrinho",
@@ -123,8 +127,16 @@ export const useCartManager = () => {
     return false;
   };
 
+  // Toggle cart open/close
+  const toggleCart = () => {
+    setCartOpen(prev => !prev);
+  };
+
   return {
     cartItems,
+    cartOpen,
+    setCartOpen,
+    toggleCart,
     handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { PanelCard } from './PanelCard';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PanelListProps {
   panels: Panel[];
@@ -39,21 +40,17 @@ const PanelList: React.FC<PanelListProps> = ({
     return (
       <div className="space-y-6">
         {[1, 2, 3].map(i => (
-          <Card key={i} className="overflow-hidden border border-gray-200">
+          <Card key={i} className="overflow-hidden border border-gray-200 rounded-2xl">
             <CardContent className="p-0">
               <div className="h-64 bg-gray-200 animate-pulse"></div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 space-y-4">
                 <Skeleton className="h-7 w-2/3" />
                 <Skeleton className="h-5 w-full" />
-                <div className="flex gap-2 overflow-x-auto py-2">
-                  {[1, 2, 3, 4].map(a => (
-                    <Skeleton key={a} className="h-8 w-20 flex-shrink-0" />
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <Skeleton className="h-6" />
-                  <Skeleton className="h-6" />
-                  <Skeleton className="h-6" />
+                <Skeleton className="h-6 w-24" />
+                <div className="grid grid-cols-3 gap-3">
+                  <Skeleton className="h-16" />
+                  <Skeleton className="h-16" />
+                  <Skeleton className="h-16" />
                 </div>
                 <div className="flex justify-between items-center">
                   <Skeleton className="h-8 w-32" />
@@ -75,7 +72,7 @@ const PanelList: React.FC<PanelListProps> = ({
         className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center"
       >
         <div className="mx-auto h-12 w-12 text-gray-400 mb-3">🏙️</div>
-        <h3 className="text-lg font-semibold mb-1">Nenhum painel encontrado</h3>
+        <h3 className="text-lg font-semibold mb-1 text-[#2B0A3D]">Nenhum painel encontrado</h3>
         <p className="text-muted-foreground mb-4">
           Tente ajustar seus filtros ou buscar em outra localização.
         </p>
@@ -87,21 +84,38 @@ const PanelList: React.FC<PanelListProps> = ({
   }
 
   return (
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-      className="space-y-6 max-w-3xl mx-auto"
-    >
-      {panels.map(panel => (
-        <PanelCard
-          key={panel.id}
-          panel={panel}
-          inCart={isPanelInCart(panel.id)}
-          onAddToCart={onAddToCart}
-        />
-      ))}
-    </motion.div>
+    <div className="space-y-4 mb-6">
+      {/* Sort selector */}
+      <div className="flex justify-end mb-4">
+        <Select defaultValue="price-asc">
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="price-asc">Preço: menor para maior</SelectItem>
+            <SelectItem value="price-desc">Preço: maior para menor</SelectItem>
+            <SelectItem value="views-desc">Mais visualizações</SelectItem>
+            <SelectItem value="popular">Mais populares</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
+      >
+        {panels.map(panel => (
+          <PanelCard
+            key={panel.id}
+            panel={panel}
+            inCart={isPanelInCart(panel.id)}
+            onAddToCart={onAddToCart}
+          />
+        ))}
+      </motion.div>
+    </div>
   );
 };
 

@@ -65,8 +65,8 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
     radius: true,
     neighborhood: true,
     status: true,
-    buildingProfile: false,
-    facilities: false,
+    buildingProfile: true,
+    facilities: true,
     views: false
   });
   
@@ -131,17 +131,15 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white p-4 rounded-lg border shadow-md"
+      className="bg-white rounded-2xl p-5 border shadow-md"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold flex items-center text-[#7C3AED]">
-          <Filter className="mr-2 h-5 w-5" /> Filtros
-        </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-semibold text-[#2B0A3D]">Filtros</h2>
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={resetFilters}
-          className="text-sm text-muted-foreground hover:text-[#00F894]"
+          className="text-sm text-gray-500 hover:text-[#00FFAB]"
         >
           Limpar
         </Button>
@@ -153,13 +151,13 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
             placeholder="Digite endereço ou bairro..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="pr-10 border-[#7C3AED] focus-visible:ring-[#00F894]"
+            className="pr-10 border-[#2B0A3D] focus-visible:ring-[#00FFAB] rounded-lg"
             disabled={loading}
           />
           <Button 
             type="submit" 
             size="sm" 
-            className="absolute right-1 top-1 h-7 w-7 p-0 bg-[#7C3AED] hover:bg-[#00F894] transition-all" 
+            className="absolute right-1 top-1 h-7 w-7 p-0 bg-[#2B0A3D] hover:bg-[#00FFAB] transition-all rounded-md" 
             disabled={!searchInput.trim() || loading}
           >
             {loading ? (
@@ -170,7 +168,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
             <span className="sr-only">Buscar</span>
           </Button>
         </div>
-        <div className="mt-2 text-xs text-muted-foreground">
+        <div className="mt-2 text-xs text-gray-500">
           Ex: Avenida Paraná, Vila A, Rua Jorge Sanwais 1500
         </div>
       </form>
@@ -178,12 +176,12 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       <Separator className="my-4" />
       
       {/* Radius selection */}
-      <div className="mb-2">
+      <div className="mb-5">
         <div 
           className="flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('radius')}
         >
-          <Label className="font-medium text-[#7C3AED] flex items-center">
+          <Label className="font-medium text-[#2B0A3D] flex items-center">
             Raio de busca
           </Label>
           <ChevronDown 
@@ -202,7 +200,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
             value={filters.radius.toString()} 
             onValueChange={(value) => onFilterChange({ radius: parseInt(value) })}
           >
-            <SelectTrigger className="w-full mt-2">
+            <SelectTrigger className="w-full mt-3 rounded-lg">
               <SelectValue placeholder="Selecionar raio" />
             </SelectTrigger>
             <SelectContent>
@@ -220,12 +218,12 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       </div>
       
       {/* Neighborhood selection */}
-      <div className="mb-2">
+      <div className="mb-5">
         <div 
           className="flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('neighborhood')}
         >
-          <Label className="font-medium text-[#7C3AED] flex items-center">
+          <Label className="font-medium text-[#2B0A3D] flex items-center">
             Bairro
           </Label>
           <ChevronDown 
@@ -244,7 +242,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
             value={filters.neighborhood || "all"} 
             onValueChange={(value) => onFilterChange({ neighborhood: value })}
           >
-            <SelectTrigger className="w-full mt-2">
+            <SelectTrigger className="w-full mt-3 rounded-lg">
               <SelectValue placeholder="Selecionar bairro" />
             </SelectTrigger>
             <SelectContent>
@@ -263,12 +261,12 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       </div>
       
       {/* Status filters */}
-      <div className="mb-2">
+      <div className="mb-5">
         <div 
           className="flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('status')}
         >
-          <Label className="font-medium text-[#7C3AED] flex items-center">
+          <Label className="font-medium text-[#2B0A3D] flex items-center">
             Status do painel
           </Label>
           <ChevronDown 
@@ -283,7 +281,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
           transition={{ duration: 0.2 }}
           className="overflow-hidden"
         >
-          <div className="space-y-2 mt-2">
+          <div className="space-y-3 mt-3">
             <div className="flex items-center">
               <Checkbox 
                 id="status-online"
@@ -291,11 +289,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
                 onCheckedChange={(checked) => 
                   handleStatusChange('online', checked as boolean)
                 }
-                className="border-[#7C3AED] data-[state=checked]:bg-[#7C3AED]"
+                className="border-[#2B0A3D] data-[state=checked]:bg-[#2B0A3D]"
               />
               <label 
                 htmlFor="status-online"
-                className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="ml-2 text-sm font-medium leading-none"
               >
                 Ativos
               </label>
@@ -307,11 +305,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
                 onCheckedChange={(checked) => 
                   handleStatusChange('installing', checked as boolean)
                 }
-                className="border-[#7C3AED] data-[state=checked]:bg-[#7C3AED]"
+                className="border-[#2B0A3D] data-[state=checked]:bg-[#2B0A3D]"
               />
               <label 
                 htmlFor="status-installing"
-                className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="ml-2 text-sm font-medium leading-none"
               >
                 Em instalação
               </label>
@@ -323,12 +321,12 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       <Separator className="my-4" />
       
       {/* Building profile */}
-      <div className="mb-2">
+      <div className="mb-5">
         <div 
           className="flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('buildingProfile')}
         >
-          <Label className="font-medium text-[#7C3AED] flex items-center">
+          <Label className="font-medium text-[#2B0A3D] flex items-center">
             Perfil do prédio
           </Label>
           <ChevronDown 
@@ -339,11 +337,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
         <motion.div
           variants={sectionVariants}
           animate={expandedSections.buildingProfile ? 'open' : 'closed'}
-          initial="closed"
+          initial="open"
           transition={{ duration: 0.2 }}
           className="overflow-hidden"
         >
-          <div className="space-y-2 mt-2">
+          <div className="space-y-3 mt-3">
             {profileOptions.map(profile => (
               <div key={profile.id} className="flex items-center">
                 <Checkbox 
@@ -352,11 +350,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
                   onCheckedChange={(checked) => 
                     handleProfileChange(profile.id, checked as boolean)
                   }
-                  className="border-[#7C3AED] data-[state=checked]:bg-[#7C3AED]"
+                  className="border-[#2B0A3D] data-[state=checked]:bg-[#2B0A3D]"
                 />
                 <label 
                   htmlFor={`profile-${profile.id}`}
-                  className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="ml-2 text-sm font-medium leading-none"
                 >
                   {profile.label}
                 </label>
@@ -367,12 +365,12 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       </div>
       
       {/* Facilities */}
-      <div className="mb-2">
+      <div className="mb-5">
         <div 
           className="flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('facilities')}
         >
-          <Label className="font-medium text-[#7C3AED] flex items-center">
+          <Label className="font-medium text-[#2B0A3D] flex items-center">
             Comodidades
           </Label>
           <ChevronDown 
@@ -383,11 +381,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
         <motion.div
           variants={sectionVariants}
           animate={expandedSections.facilities ? 'open' : 'closed'}
-          initial="closed"
+          initial="open"
           transition={{ duration: 0.2 }}
           className="overflow-hidden"
         >
-          <div className="grid grid-cols-2 gap-2 mt-2">
+          <div className="grid grid-cols-1 gap-3 mt-3">
             {facilityOptions.map(facility => (
               <div key={facility.id} className="flex items-center">
                 <Checkbox 
@@ -396,11 +394,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
                   onCheckedChange={(checked) => 
                     handleFacilityChange(facility.id, checked as boolean)
                   }
-                  className="border-[#7C3AED] data-[state=checked]:bg-[#7C3AED]"
+                  className="border-[#2B0A3D] data-[state=checked]:bg-[#2B0A3D]"
                 />
                 <label 
                   htmlFor={`facility-${facility.id}`}
-                  className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="ml-2 text-sm font-medium leading-none"
                 >
                   {facility.label}
                 </label>
@@ -411,12 +409,12 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       </div>
       
       {/* Minimum monthly views */}
-      <div className="mb-4">
+      <div className="mb-5">
         <div 
           className="flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('views')}
         >
-          <Label className="font-medium text-[#7C3AED] flex items-center">
+          <Label className="font-medium text-[#2B0A3D] flex items-center">
             Visualizações mensais mínimas
           </Label>
           <ChevronDown 
@@ -427,11 +425,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
         <motion.div
           variants={sectionVariants}
           animate={expandedSections.views ? 'open' : 'closed'}
-          initial="closed"
+          initial="open"
           transition={{ duration: 0.2 }}
           className="overflow-hidden"
         >
-          <div className="mt-2">
+          <div className="mt-3">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold">
                 {filters.minMonthlyViews > 0 
@@ -447,11 +445,11 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
               onValueChange={(values) => {
                 onFilterChange({ minMonthlyViews: values[0] });
               }}
-              className="[&>span]:bg-[#7C3AED]"
+              className="[&>span]:bg-[#2B0A3D]"
             />
             <div className="flex justify-between mt-1">
-              <span className="text-xs text-muted-foreground">0</span>
-              <span className="text-xs text-muted-foreground">10.000+</span>
+              <span className="text-xs text-gray-500">0</span>
+              <span className="text-xs text-gray-500">10.000+</span>
             </div>
           </div>
         </motion.div>
@@ -460,7 +458,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       <Button 
         onClick={resetFilters}
         variant="outline"
-        className="w-full hover:border-[#00F894] hover:text-[#00F894] transition-all"
+        className="w-full hover:border-[#00FFAB] hover:text-[#00FFAB] transition-all mt-2"
       >
         <X className="mr-2 h-4 w-4" />
         Limpar Filtros
