@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Menu, X } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '@/components/ui/drawer';
 import PanelCart from '@/components/panels/PanelCart';
 import UserMenu from '@/components/user/UserMenu';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
   cartItems?: {panel: any, duration: number}[];
@@ -20,58 +22,38 @@ const Header: React.FC<HeaderProps> = ({
   onChangeDuration = () => {} 
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(false);
-  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartAnimating, setCartAnimating] = useState(false);
 
-  console.log("Header rendering - Menu:", isMenuOpen, "Desktop Cart:", isDesktopCartOpen, "Mobile Cart:", isMobileCartOpen);
-  
-  // Handle desktop cart separately
-  const handleDesktopCartOpen = (open: boolean) => {
-    console.log("Toggle desktop cart:", open);
-    setIsDesktopCartOpen(open);
-    
-    // Close menu when cart is opened
-    if (open) {
-      setIsMenuOpen(false);
+  // Add animation when cart items change
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      setCartAnimating(true);
+      const timer = setTimeout(() => setCartAnimating(false), 800);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [cartItems.length]);
   
   // Handle menu toggle
   const handleMenuOpen = () => {
     const newMenuState = !isMenuOpen;
-    console.log("Toggle menu:", newMenuState);
     setIsMenuOpen(newMenuState);
     
-    // Close carts when menu is opened
+    // Close cart when menu is opened
     if (newMenuState) {
-      setIsDesktopCartOpen(false);
-      setIsMobileCartOpen(false);
+      setIsCartOpen(false);
     }
   };
 
-  // Handle mobile cart separately
-  const handleMobileCartOpen = (open: boolean) => {
-    console.log("Toggle mobile cart:", open);
-    setIsMobileCartOpen(open);
+  // Handle cart open/close
+  const handleCartOpen = (open: boolean) => {
+    setIsCartOpen(open);
     
     // Close menu when cart is opened
     if (open) {
       setIsMenuOpen(false);
     }
   };
-
-  // Adicionar efeito para verificar o localStorage quando o componente for montado
-  useEffect(() => {
-    const handleStorageChange = () => {
-      console.log("Storage changed, checking for cart updates");
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
 
   return (
     <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">
@@ -97,8 +79,8 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
       
-      <div className="hidden md:flex items-center gap-4">
-        <Link to="/paineis-digitais/loja">
+      <div className="flex items-center gap-4">
+        <Link to="/paineis-digitais/loja" className="hidden md:block">
           <Button 
             variant="outline" 
             className="bg-indexa-mint text-indexa-purple-dark rounded-full border-none hover:bg-opacity-90 text-base font-medium"
@@ -109,100 +91,61 @@ const Header: React.FC<HeaderProps> = ({
         </Link>
 
         <div className="flex items-center gap-3">
-          {/* Using the enhanced UserMenu component */}
+          {/* User profile menu */}
           <UserMenu />
           
-          {/* Desktop Shopping cart */}
-          {cartItems.length > 0 ? (
-            <Sheet open={isDesktopCartOpen} onOpenChange={handleDesktopCartOpen}>
-              <SheetTrigger asChild>
+          {/* Shopping cart drawer */}
+          <Drawer open={isCartOpen} onOpenChange={handleCartOpen}>
+            <DrawerTrigger asChild>
+              <motion.div
+                animate={cartAnimating ? { scale: [1, 1.2, 1] } : {}}
+                transition={{ duration: 0.6 }}
+              >
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   className="relative text-white hover:bg-white/20 rounded-full"
                 >
                   <ShoppingCart className="h-6 w-6 text-indexa-mint" /> 
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse-soft">
-                    {cartItems.length}
-                  </span>
+                  <AnimatePresence>
+                    {cartItems.length > 0 && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                      >
+                        {cartItems.length}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </Button>
-              </SheetTrigger>
-              {isDesktopCartOpen && (
-                <SheetContent side="right" className="w-[350px] md:w-[450px] overflow-auto">
-                  <PanelCart 
-                    cartItems={cartItems} 
-                    onRemove={onRemoveFromCart} 
-                    onClear={onClearCart} 
-                    onChangeDuration={onChangeDuration} 
-                  />
-                </SheetContent>
-              )}
-            </Sheet>
-          ) : (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative text-white hover:bg-white/20 rounded-full"
-            >
-              <ShoppingCart className="h-6 w-6 text-indexa-mint" />
-            </Button>
-          )}
+              </motion.div>
+            </DrawerTrigger>
+            <DrawerContent>
+              <PanelCart 
+                cartItems={cartItems} 
+                onRemove={onRemoveFromCart} 
+                onClear={onClearCart} 
+                onChangeDuration={onChangeDuration} 
+              />
+              <DrawerClose className="sr-only">Close</DrawerClose>
+            </DrawerContent>
+          </Drawer>
         </div>
-      </div>
-      
-      {/* Mobile menu and cart buttons */}
-      <div className="md:hidden flex items-center gap-3">
-        {/* Using the enhanced UserMenu component for mobile */}
-        <UserMenu />
-        
-        {/* Mobile Shopping cart */}
-        {cartItems.length > 0 ? (
-          <Sheet open={isMobileCartOpen} onOpenChange={handleMobileCartOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="relative text-white hover:bg-white/20 rounded-full"
-              >
-                <ShoppingCart className="h-6 w-6 text-indexa-mint" /> 
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse-soft">
-                  {cartItems.length}
-                </span>
-              </Button>
-            </SheetTrigger>
-            {isMobileCartOpen && (
-              <SheetContent side="right" className="w-[85%] overflow-auto">
-                <PanelCart 
-                  cartItems={cartItems} 
-                  onRemove={onRemoveFromCart} 
-                  onClear={onClearCart} 
-                  onChangeDuration={onChangeDuration} 
-                />
-              </SheetContent>
-            )}
-          </Sheet>
-        ) : (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative text-white hover:bg-white/20 rounded-full"
-          >
-            <ShoppingCart className="h-6 w-6 text-indexa-mint" />
-          </Button>
-        )}
         
         {/* Mobile menu button */}
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={handleMenuOpen} 
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-white/20 md:hidden"
         >
           {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
       </div>
       
-      {/* Mobile menu with conditional rendering to avoid DOM manipulation issues */}
+      {/* Mobile menu with conditional rendering */}
       {isMenuOpen && (
         <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-50 md:hidden">
           <div className="flex flex-col p-4 gap-4">
