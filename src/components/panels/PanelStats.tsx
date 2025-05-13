@@ -27,7 +27,7 @@ export const PanelStats: React.FC<PanelStatsProps> = ({
       <div className="bg-gray-50 rounded-lg p-3 flex flex-col hover:shadow-sm transition-shadow">
         <div className="flex items-center text-sm text-gray-500 mb-1">
           <Eye className="h-3.5 w-3.5 mr-1.5 text-indexa-purple" />
-          <span className="text-xs">Visualizações/mês</span>
+          <span className="text-xs">Exibições em um mês</span>
         </div>
         <div className="text-lg font-bold text-gray-800">
           {formatNumber(monthlyViews)}
