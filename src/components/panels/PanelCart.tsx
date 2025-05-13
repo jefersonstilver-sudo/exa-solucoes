@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { ClientOnly } from '@/components/ui/client-only';
 import { useUserSession } from '@/hooks/useUserSession';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PanelCartProps {
   cartItems: {panel: Panel, duration: number}[];
@@ -27,24 +28,26 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
   const navigate = useNavigate();
   const { user, isLoading: isSessionLoading, isLoggedIn } = useUserSession();
   
-  // Calculate price based on panel info and duration
+  // Calculate price for a single panel based on duration
   const calculatePrice = (panel: Panel, days: number) => {
     // Base monthly price
-    let pricePerMonth = 250; // Default price for 1 month
+    let pricePerMonth = 280; // Default price for 1 month
     
-    // Calculate price based on total months
-    const months = Math.round(days / 30);
+    // Add slight variation based on panel ID
+    const priceVariation = parseInt(panel.id.slice(-2), 16) % 40; // 0-39 variation
+    pricePerMonth += priceVariation;
     
     // Apply discount based on months
+    const months = Math.round(days / 30);
+    
     if (months >= 12) {
-      pricePerMonth = 180;
+      return pricePerMonth * months * 0.85; // 15% discount
     } else if (months >= 6) {
-      pricePerMonth = 200;
+      return pricePerMonth * months * 0.9; // 10% discount
     } else if (months >= 3) {
-      pricePerMonth = 220;
+      return pricePerMonth * months * 0.95; // 5% discount
     }
     
-    // Calculate total price for the entire duration
     return pricePerMonth * months;
   };
   
@@ -59,10 +62,10 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
           description: "Faça login para continuar com a compra",
         });
         
-        // Salve a URL de retorno para voltar após o login
+        // Save the return URL to get back after login
         const returnUrl = '/checkout';
         
-        // Redirecione para a página de login com o parâmetro de redirecionamento
+        // Redirect to login page with return parameter
         navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       } else {
         // User is already logged in, proceed to checkout
@@ -76,7 +79,6 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
         variant: "destructive"
       });
     } finally {
-      // Importante: Não limpe o carrinho em caso de erro ou redirecionamento
       setIsSubmitting(false);
     }
   };
@@ -92,9 +94,9 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     <div className="h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center text-[#2B0A3D]">
+          <CardTitle className="flex items-center text-[#3C1361]">
             <ShoppingCart className="mr-2 h-5 w-5" /> Carrinho
-            <Badge variant="outline" className="ml-2 bg-[#2B0A3D]/10 text-[#2B0A3D] border-none">
+            <Badge variant="outline" className="ml-2 bg-[#3C1361]/10 text-[#3C1361] border-none">
               {cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'}
             </Badge>
           </CardTitle>
@@ -138,7 +140,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                         
                         <div className="flex-grow">
                           <div className="flex justify-between">
-                            <h4 className="font-semibold text-sm text-[#2B0A3D]">
+                            <h4 className="font-semibold text-sm text-[#3C1361]">
                               {item.panel.buildings?.nome || 'Painel Digital'}
                             </h4>
                             <Button
@@ -155,27 +157,31 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                             {item.panel.buildings?.endereco || 'Endereço não disponível'}
                           </p>
                           
-                          {/* Duration selector */}
+                          {/* Duration selector - only in cart */}
                           <div className="mt-2 flex items-center gap-2">
                             <span className="text-xs text-gray-600">Duração:</span>
-                            <select
-                              value={item.duration}
-                              onChange={(e) => onChangeDuration(item.panel.id, parseInt(e.target.value))}
-                              className="text-xs border rounded px-2 py-1 bg-white text-[#2B0A3D]"
+                            <Select
+                              value={item.duration.toString()}
+                              onValueChange={(value) => onChangeDuration(item.panel.id, parseInt(value))}
                             >
-                              {durationOptions.map((days) => (
-                                <option key={days} value={days}>
-                                  {Math.floor(days / 30)} {Math.floor(days / 30) === 1 ? 'mês' : 'meses'}
-                                </option>
-                              ))}
-                            </select>
+                              <SelectTrigger className="h-7 w-[100px] text-xs bg-white">
+                                <SelectValue placeholder="30 dias" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {durationOptions.map((days) => (
+                                  <SelectItem key={days} value={days.toString()}>
+                                    {Math.floor(days / 30)} {Math.floor(days / 30) === 1 ? 'mês' : 'meses'}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </div>
                       
                       {/* Price info */}
                       <div className="mt-2 text-right">
-                        <p className="text-sm font-semibold text-[#2B0A3D]">
+                        <p className="text-sm font-semibold text-[#3C1361]">
                           R$ {calculatePrice(item.panel, item.duration).toLocaleString('pt-BR', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
@@ -230,7 +236,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
             <div className="bg-gray-50 p-4 rounded-xl">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-gray-600">Subtotal ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'})</span>
-                <span className="text-lg font-semibold text-[#2B0A3D]">
+                <span className="text-lg font-semibold text-[#3C1361]">
                   R$ {calculateTotal().toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -239,7 +245,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
               </div>
               
               <Button
-                className="w-full mt-3 bg-[#2B0A3D] hover:bg-gradient-to-r hover:from-[#2B0A3D] hover:to-[#3B1A4D] text-white rounded-xl py-6"
+                className="w-full mt-3 bg-[#3C1361] hover:bg-[#3C1361]/90 text-white rounded-xl py-6"
                 disabled={isSubmitting}
                 onClick={handleCheckout}
               >
@@ -264,14 +270,14 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
             <div className="bg-gray-100 rounded-full p-6 mb-4">
               <ShoppingCart className="h-10 w-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-[#2B0A3D]">Carrinho vazio</h3>
+            <h3 className="text-lg font-medium text-[#3C1361]">Carrinho vazio</h3>
             <p className="text-sm text-gray-500 text-center mt-2 mb-4 max-w-xs">
               Adicione painéis ao seu carrinho para iniciar sua campanha
             </p>
             <Button 
               variant="outline" 
               onClick={() => navigate('/paineis-digitais/loja')}
-              className="mt-2 border-[#2B0A3D] text-[#2B0A3D] hover:bg-[#2B0A3D] hover:text-white"
+              className="mt-2 border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361] hover:text-white"
             >
               Explorar Painéis
             </Button>

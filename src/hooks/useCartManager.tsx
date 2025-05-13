@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +11,7 @@ export const useCartManager = () => {
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartAnimation, setCartAnimation] = useState(false);
   
   // Load cart from localStorage on component mount
   useEffect(() => {
@@ -34,14 +34,26 @@ export const useCartManager = () => {
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     try {
-      if (cartItems.length > 0) {
-        localStorage.setItem('panelCart', JSON.stringify(cartItems));
-        console.log("Carrinho salvo no localStorage:", cartItems.length, "itens");
-      }
+      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      console.log("Carrinho salvo no localStorage:", cartItems.length, "itens");
     } catch (e) {
       console.error('Falha ao salvar o carrinho no localStorage', e);
     }
   }, [cartItems]);
+
+  // Keep cart open when items are added
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      setCartOpen(true);
+      document.body.classList.add('drawer-open');
+    } else {
+      document.body.classList.remove('drawer-open');
+    }
+
+    return () => {
+      document.body.classList.remove('drawer-open');
+    };
+  }, [cartItems.length]);
 
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
     setCartItems(prev => {
@@ -54,16 +66,20 @@ export const useCartManager = () => {
             : item
         );
       } else {
+        // Trigger cart icon animation
+        setCartAnimation(true);
+        setTimeout(() => setCartAnimation(false), 800);
+        
         return [...prev, { panel, duration }];
       }
     });
     
-    // Abra o carrinho automaticamente quando um item for adicionado
+    // Automatically open the cart when an item is added
     setCartOpen(true);
     
     toast({
-      title: "Painel adicionado ao carrinho",
-      description: `${panel.buildings?.nome} adicionado com duração de ${duration} dias`,
+      title: "Painel adicionado",
+      description: `${panel.buildings?.nome} adicionado com sucesso`,
     });
   };
 
@@ -77,7 +93,7 @@ export const useCartManager = () => {
   };
 
   const handleClearCart = () => {
-    // Salvar o carrinho temporariamente antes de limpar (caso o usuário queira desfazer)
+    // Save the cart temporarily before clearing (in case the user wants to undo)
     try {
       const currentCart = JSON.stringify(cartItems);
       if (cartItems.length > 0) {
@@ -87,7 +103,7 @@ export const useCartManager = () => {
       console.error('Falha ao salvar backup do carrinho', e);
     }
 
-    // Limpar o carrinho
+    // Clear the cart
     setCartItems([]);
     localStorage.removeItem('panelCart');
 
@@ -105,14 +121,14 @@ export const useCartManager = () => {
     ));
   };
 
-  // Restaurar carrinho se necessário (caso tenha sido limpo por engano)
+  // Restore cart if needed (if it was cleared by mistake)
   const handleRestoreCart = () => {
     try {
       const lastCart = sessionStorage.getItem('lastCart');
       if (lastCart) {
         const parsedCart = JSON.parse(lastCart);
         setCartItems(parsedCart);
-        sessionStorage.removeItem('lastCart'); // Limpa o backup após restaurar
+        sessionStorage.removeItem('lastCart'); // Clear the backup after restoring
         
         toast({
           title: "Carrinho restaurado",
@@ -141,6 +157,7 @@ export const useCartManager = () => {
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
-    handleRestoreCart
+    handleRestoreCart,
+    cartAnimation
   };
 };

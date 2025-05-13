@@ -42,17 +42,16 @@ const PanelList: React.FC<PanelListProps> = ({
         {[1, 2, 3].map(i => (
           <Card key={i} className="overflow-hidden border border-gray-200 rounded-2xl">
             <CardContent className="p-0">
-              <div className="h-64 bg-gray-200 animate-pulse"></div>
-              <div className="p-4 space-y-4">
+              <div className="h-56 bg-gray-200 animate-pulse"></div>
+              <div className="p-6 space-y-4">
                 <Skeleton className="h-7 w-2/3" />
                 <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-6 w-24" />
                 <div className="grid grid-cols-3 gap-3">
                   <Skeleton className="h-16" />
                   <Skeleton className="h-16" />
                   <Skeleton className="h-16" />
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center pt-3">
                   <Skeleton className="h-8 w-32" />
                   <Skeleton className="h-10 w-36" />
                 </div>
@@ -72,7 +71,7 @@ const PanelList: React.FC<PanelListProps> = ({
         className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center"
       >
         <div className="mx-auto h-12 w-12 text-gray-400 mb-3">🏙️</div>
-        <h3 className="text-lg font-semibold mb-1 text-[#2B0A3D]">Nenhum painel encontrado</h3>
+        <h3 className="text-lg font-semibold mb-1 text-[#3C1361]">Nenhum painel encontrado</h3>
         <p className="text-muted-foreground mb-4">
           Tente ajustar seus filtros ou buscar em outra localização.
         </p>
@@ -88,7 +87,7 @@ const PanelList: React.FC<PanelListProps> = ({
       {/* Sort selector */}
       <div className="flex justify-end mb-4">
         <Select defaultValue="price-asc">
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] bg-white">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>

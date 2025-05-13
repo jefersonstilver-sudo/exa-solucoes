@@ -3,13 +3,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Panel } from '@/types/panel';
-import { AmenityList } from './AmenityList';
-import { PanelStats } from './PanelStats';
-import { PriceSection } from './PriceSection';
-import { Info, BarChart3 } from 'lucide-react';
-import { PanelImage } from './PanelImage';
-import { BuildingInfo } from './BuildingInfo';
-import { TechnicalData } from './TechnicalData';
+import { Button } from '@/components/ui/button';
+import { ShoppingCart, Users, Eye, Monitor } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface PanelCardProps {
   panel: Panel;
@@ -18,111 +14,145 @@ interface PanelCardProps {
 }
 
 export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart }) => {
-  // Simulate pricing based on panel info
-  const calculatePrice = (panel: Panel, days: number) => {
-    // Base price calculation
-    const basePrice = 100; // Base daily rate
-    const locationFactor = panel.buildings?.bairro === 'Vila A' ? 1.5 : 
-                          panel.buildings?.bairro === 'Centro' ? 1.3 : 1;
-    
-    // Apply discount based on duration
-    let discount = 0;
-    if (days >= 90) discount = 0.15;
-    else if (days >= 60) discount = 0.10;
-    else if (days >= 30) discount = 0.05;
-    
-    return Math.round(basePrice * locationFactor * days * (1 - discount));
+  // Calculate price for 30 days (base price)
+  const calculatePrice = () => {
+    // Base price range between R$250 - R$380
+    const basePrice = panel.buildings?.condominiumProfile === 'commercial' ? 350 : 280;
+    // Add slight variation based on panel ID to make prices look unique
+    const priceVariation = parseInt(panel.id.slice(-2), 16) % 40; // 0-39 variation
+    return basePrice + priceVariation;
   };
   
   // Generate data for panel display
+  const price = calculatePrice();
   const monthlyViews = Math.floor(Math.random() * 50000) + 10000;
   const estimatedResidents = Math.floor(Math.random() * 800) + 200;
-  const price = calculatePrice(panel, 30);
-  const price60 = calculatePrice(panel, 60);
-  const price90 = calculatePrice(panel, 90);
-  const installDate = new Date(2024, Math.floor(Math.random() * 5), Math.floor(Math.random() * 28) + 1);
-  const lastSync = panel.ultima_sync ? new Date(panel.ultima_sync) : new Date();
   const screenCount = Math.floor(Math.random() * 2) + 1;
-  const resolution = panel.resolucao || '1080x1920';
-  const mode = panel.modo || 'indoor';
-  const impactScore = Math.floor(Math.random() * 50) + 50; // 50-100 scale
-  const visualRating = Math.floor(Math.random() * 2) + 3; // 3-5 scale
   
   // Animation variants
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  const containerVariants = {
+    hover: { 
+      y: -5,
+      boxShadow: "0 20px 25px -5px rgba(60, 19, 97, 0.2), 0 10px 10px -5px rgba(60, 19, 97, 0.1)",
+      transition: { duration: 0.3 }
+    }
+  };
+
+  const buttonVariants = {
+    hover: { scale: 1.03, transition: { duration: 0.2 } },
+    tap: { scale: 0.97, transition: { duration: 0.1 } }
+  };
+
+  // Handle add to cart with animation
+  const handleAddToCart = () => {
+    if (!inCart) {
+      onAddToCart(panel, 30); // Default to 30 days
+    }
   };
 
   return (
-    <motion.div variants={itemVariants} className="w-full">
-      <Card className="overflow-hidden border border-gray-200 hover:shadow-enhanced transition-all duration-300 hover:border-indexa-purple">
+    <motion.div 
+      variants={containerVariants}
+      whileHover="hover"
+      className="w-full"
+    >
+      <Card className="overflow-hidden border border-gray-200 hover:border-[#3C1361]/50 rounded-2xl">
         <CardContent className="p-0">
           {/* Building image - full width */}
-          <PanelImage 
-            imageUrl={(panel.buildings as any)?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'}
-            altText={panel.buildings?.nome || 'Building image'} 
-            status={panel.status}
-            lastSync={lastSync}
-            mode={mode}
-            resolution={resolution}
-            screenCount={screenCount}
-          />
+          <div className="relative w-full h-56 overflow-hidden">
+            <img 
+              src={(panel.buildings as any)?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'}
+              alt={panel.buildings?.nome || 'Building image'} 
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Building profile badge */}
+            <div className="absolute top-4 right-4">
+              <Badge 
+                className="bg-[#3C1361]/90 text-white py-1 px-3 text-xs font-medium rounded-full"
+              >
+                {panel.buildings?.condominiumProfile === 'commercial' ? 'Comercial' : 'Residencial'}
+              </Badge>
+            </div>
+          </div>
           
           <div className="p-6">
-            {/* Building info */}
-            <BuildingInfo 
-              buildingName={panel.buildings?.nome || ''}
-              address={panel.buildings?.endereco || ''}
-              bairro={panel.buildings?.bairro || ''}
-              impactScore={impactScore}
-              mode={mode}
-              installDate={installDate}
-              lastSync={lastSync}
-              estimatedResidents={estimatedResidents}
-              visualRating={visualRating}
-            />
+            {/* Building name and address */}
+            <h3 className="text-xl font-bold text-gray-800 mb-1">
+              {panel.buildings?.nome || 'Edifício Sem Nome'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {panel.buildings?.endereco || ''}, {panel.buildings?.bairro || ''}
+            </p>
             
-            {/* Amenities row with horizontal scroll */}
-            <div className="mb-6 border-b pb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                <Info className="h-4 w-4 mr-1.5 text-indexa-purple" />
-                Comodidades do condomínio:
-              </p>
-              <AmenityList randomCount={Math.floor(Math.random() * 6) + 5} />
+            {/* Metrics section - 3 columns */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-3 px-2">
+                <div className="flex items-center justify-center text-[#3C1361] mb-1">
+                  <Users className="h-4 w-4" />
+                </div>
+                <p className="text-gray-900 font-semibold text-lg">{estimatedResidents}</p>
+                <p className="text-gray-500 text-xs text-center">moradores impactados</p>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-3 px-2">
+                <div className="flex items-center justify-center text-[#3C1361] mb-1">
+                  <Eye className="h-4 w-4" />
+                </div>
+                <p className="text-gray-900 font-semibold text-lg">
+                  {(monthlyViews / 1000).toFixed(1)}k
+                </p>
+                <p className="text-gray-500 text-xs text-center">exibições/mês</p>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-3 px-2">
+                <div className="flex items-center justify-center text-[#3C1361] mb-1">
+                  <Monitor className="h-4 w-4" />
+                </div>
+                <p className="text-gray-900 font-semibold text-lg">{screenCount}</p>
+                <p className="text-gray-500 text-xs text-center">
+                  {screenCount === 1 ? 'tela' : 'telas'}
+                </p>
+              </div>
             </div>
-            
-            {/* Stats section */}
-            <div className="mb-6 border-b pb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                <BarChart3 className="h-4 w-4 mr-1.5 text-indexa-purple" />
-                Métricas de audiência:
-              </p>
-              <PanelStats 
-                estimatedResidents={estimatedResidents} 
-                monthlyViews={monthlyViews}
-                screenCount={screenCount}
-                resolution={resolution}
-                mode={mode}
-              />
-            </div>
-            
-            {/* Technical data - panel ID etc */}
-            <TechnicalData 
-              panelId={panel.id}
-              code={panel.code}
-              buildingId={panel.building_id}
-            />
             
             {/* Price and CTA section */}
-            <PriceSection 
-              price={price}
-              price60={price60}
-              price90={price90}
-              inCart={inCart} 
-              panel={panel} 
-              onAddToCart={onAddToCart} 
-            />
+            <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+              <div>
+                <p className="text-sm text-gray-500">Preço para 30 dias</p>
+                <p className="text-xl font-bold text-[#3C1361]">
+                  R$ {price.toLocaleString('pt-BR')}
+                </p>
+              </div>
+              
+              <motion.div
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <Button 
+                  className={`px-5 py-5 rounded-xl flex gap-2 ${
+                    inCart 
+                      ? 'bg-green-100 text-green-700 hover:bg-green-100' 
+                      : 'bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#3C1361]'
+                  }`}
+                  onClick={handleAddToCart}
+                  disabled={inCart}
+                >
+                  {inCart ? (
+                    <>
+                      <ShoppingCart className="h-5 w-5" />
+                      Adicionado
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-5 w-5" />
+                      Adicionar ao carrinho
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            </div>
           </div>
         </CardContent>
       </Card>
