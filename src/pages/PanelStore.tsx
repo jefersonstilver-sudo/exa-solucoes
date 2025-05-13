@@ -6,11 +6,10 @@ import SearchSection from '@/components/panels/SearchSection';
 import PanelsSection from '@/components/panels/PanelsSection';
 import { usePanelStore } from '@/hooks/usePanelStore';
 import { useCartManager } from '@/hooks/useCartManager';
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-import { ShoppingCart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { DrawerContent } from '@/components/ui/drawer';
 import PanelCart from '@/components/panels/PanelCart';
 import { useUserSession } from '@/hooks/useUserSession';
+import { Button } from '@/components/ui/button';
 
 export default function PanelStore() {
   // Use our custom hooks for state management
@@ -70,7 +69,12 @@ export default function PanelStore() {
   }
 
   return (
-    <Layout>
+    <Layout 
+      cartItems={cartItems}
+      onRemoveFromCart={handleRemoveFromCart}
+      onClearCart={handleClearCart}
+      onChangeDuration={handleChangeDuration}
+    >
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -114,41 +118,6 @@ export default function PanelStore() {
           handleFilterChange={handleFilterChange}
           panelsCount={panels?.length || 0}
         />
-        
-        {/* Cart drawer - fixed at right side */}
-        <Drawer open={cartOpen} onOpenChange={setCartOpen}>
-          <DrawerTrigger asChild>
-            <motion.div 
-              className="fixed bottom-6 right-6 z-50"
-              animate={cartAnimation ? { scale: [1, 1.2, 1] } : {}}
-              transition={{ duration: 0.6 }}
-            >
-              <Button 
-                className="w-14 h-14 rounded-full shadow-lg bg-[#3C1361] hover:bg-[#3C1361]/90"
-                style={{ display: cartOpen ? 'none' : 'flex' }}
-              >
-                <div className="relative">
-                  <ShoppingCart className="h-6 w-6 text-white" />
-                  {cartItems.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-[#00FFAB] text-[#3C1361] text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                      {cartItems.length}
-                    </span>
-                  )}
-                </div>
-              </Button>
-            </motion.div>
-          </DrawerTrigger>
-          <DrawerContent className="drawer-side-right h-[90vh] mt-[10vh] rounded-t-3xl border-t border-x border-gray-200 shadow-xl">
-            <div className="h-full px-4">
-              <PanelCart 
-                cartItems={cartItems}
-                onRemove={handleRemoveFromCart}
-                onClear={handleClearCart}
-                onChangeDuration={handleChangeDuration}
-              />
-            </div>
-          </DrawerContent>
-        </Drawer>
         
         {/* Panels grid with filters and results */}
         <PanelsSection 
