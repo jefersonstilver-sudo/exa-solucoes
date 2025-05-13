@@ -33,8 +33,10 @@ export const useCartManager = () => {
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem('panelCart', JSON.stringify(cartItems));
-      console.log("Carrinho salvo no localStorage:", cartItems.length, "itens");
+      if (cartItems.length > 0) {
+        localStorage.setItem('panelCart', JSON.stringify(cartItems));
+        console.log("Carrinho salvo no localStorage:", cartItems.length, "itens");
+      }
     } catch (e) {
       console.error('Falha ao salvar o carrinho no localStorage', e);
     }
@@ -71,7 +73,20 @@ export const useCartManager = () => {
   };
 
   const handleClearCart = () => {
+    // Salvar o carrinho temporariamente antes de limpar (caso o usuário queira desfazer)
+    try {
+      const currentCart = JSON.stringify(cartItems);
+      if (cartItems.length > 0) {
+        sessionStorage.setItem('lastCart', currentCart);
+      }
+    } catch (e) {
+      console.error('Falha ao salvar backup do carrinho', e);
+    }
+
+    // Limpar o carrinho
     setCartItems([]);
+    localStorage.removeItem('panelCart');
+
     toast({
       title: "Carrinho limpo",
       description: "Todos os itens foram removidos do carrinho",
@@ -86,11 +101,34 @@ export const useCartManager = () => {
     ));
   };
 
+  // Restaurar carrinho se necessário (caso tenha sido limpo por engano)
+  const handleRestoreCart = () => {
+    try {
+      const lastCart = sessionStorage.getItem('lastCart');
+      if (lastCart) {
+        const parsedCart = JSON.parse(lastCart);
+        setCartItems(parsedCart);
+        sessionStorage.removeItem('lastCart'); // Limpa o backup após restaurar
+        
+        toast({
+          title: "Carrinho restaurado",
+          description: "Os itens foram restaurados com sucesso",
+        });
+        
+        return true;
+      }
+    } catch (e) {
+      console.error('Falha ao restaurar o carrinho', e);
+    }
+    return false;
+  };
+
   return {
     cartItems,
     handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,
-    handleChangeDuration
+    handleChangeDuration,
+    handleRestoreCart
   };
 };

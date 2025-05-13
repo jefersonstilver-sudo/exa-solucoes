@@ -56,8 +56,6 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
     setAnimateCart(true);
     
     try {
-      // Importante: Salvar o carrinho no localStorage aqui para garantir que ele esteja disponível
-      // após o redirecionamento de login
       if (!isLoggedIn) {
         // User is not logged in, redirect to login with checkout as return path
         toast({
@@ -82,6 +80,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
         variant: "destructive"
       });
     } finally {
+      // Importante: Não limpe o carrinho em caso de erro ou redirecionamento
       setIsSubmitting(false);
     }
   };
@@ -312,4 +311,3 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
 };
 
 export default PanelCart;
-

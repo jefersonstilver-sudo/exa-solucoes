@@ -56,6 +56,7 @@ export const usePaymentProcessor = () => {
         title: "Termos e condições",
         description: "Você precisa aceitar os termos e condições para continuar.",
       });
+      setIsCreatingPayment(false);
       return;
     }
     
@@ -65,6 +66,7 @@ export const usePaymentProcessor = () => {
         title: "Painéis indisponíveis",
         description: "Alguns painéis não estão disponíveis para o período selecionado.",
       });
+      setIsCreatingPayment(false);
       return;
     }
     
@@ -75,6 +77,7 @@ export const usePaymentProcessor = () => {
         description: "Você precisa estar logado para finalizar a compra.",
       });
       navigate('/login?redirect=/checkout');
+      setIsCreatingPayment(false);
       return;
     }
     
@@ -84,19 +87,33 @@ export const usePaymentProcessor = () => {
         title: "Erro no checkout",
         description: "Aguarde o carregamento do sistema de pagamento ou recarregue a página.",
       });
+      setIsCreatingPayment(false);
+      return;
+    }
+
+    // Verificar se existem itens no carrinho
+    if (cartItems.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Carrinho vazio",
+        description: "Adicione painéis ao seu carrinho para finalizar a compra.",
+      });
+      navigate('/paineis-digitais/loja');
+      setIsCreatingPayment(false);
       return;
     }
     
-    setIsCreatingPayment(true);
-    
     try {
+      // Criar uma cópia local do carrinho para evitar problemas se o carrinho for limpo
+      const cartItemsCopy = [...cartItems];
+      
       // Create pedido in database
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .insert([
           {
             client_id: sessionUser.id,
-            lista_paineis: cartItems.map(item => item.panel.id),
+            lista_paineis: cartItemsCopy.map(item => item.panel.id),
             duracao: selectedPlan * 30, // Convert months to days
             plano_meses: selectedPlan,
             valor_total: totalPrice,
@@ -108,7 +125,7 @@ export const usePaymentProcessor = () => {
             log_pagamento: {
               plan_details: { months: selectedPlan },
               coupon_applied: couponId ? true : false,
-              panels_count: cartItems.length,
+              panels_count: cartItemsCopy.length,
               user_name: sessionUser.user_metadata?.name || sessionUser.email
             }
           }
@@ -143,14 +160,14 @@ export const usePaymentProcessor = () => {
         .eq('id', pedido.id);
       
       // For demo purposes only, simulate success payment
-      await simulateSuccessfulPayment(pedido.id, cartItems, sessionUser, startDate, endDate, handleClearCart);
+      await simulateSuccessfulPayment(pedido.id, cartItemsCopy, sessionUser, startDate, endDate, handleClearCart);
       
     } catch (error: any) {
       console.error('Error creating payment:', error);
       toast({
         variant: "destructive",
         title: "Erro ao processar pagamento",
-        description: error.message,
+        description: error.message || "Houve um problema ao processar o pagamento.",
       });
       setIsCreatingPayment(false);
     }
@@ -205,7 +222,7 @@ export const usePaymentProcessor = () => {
           ]);
       }
       
-      // Clear cart
+      // Só limpa o carrinho depois que todas as campanhas foram criadas com sucesso
       handleClearCart();
       
       // Show success message
@@ -220,7 +237,7 @@ export const usePaymentProcessor = () => {
       toast({
         variant: "destructive",
         title: "Erro ao processar confirmação",
-        description: error.message,
+        description: error.message || "Houve um problema ao finalizar o pedido.",
       });
     }
   };
