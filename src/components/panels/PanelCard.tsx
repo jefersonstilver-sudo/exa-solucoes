@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Panel } from '@/types/panel';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Users, Eye, Monitor } from 'lucide-react';
+import { ShoppingCart, Users, Eye, Monitor, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface PanelCardProps {
@@ -28,6 +28,13 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
   const monthlyViews = Math.floor(Math.random() * 50000) + 10000;
   const estimatedResidents = Math.floor(Math.random() * 800) + 200;
   const screenCount = Math.floor(Math.random() * 2) + 1;
+  
+  // Building details
+  const towers = Math.floor(Math.random() * 3) + 1;
+  const apartments = Math.floor(Math.random() * 150) + 50;
+  
+  // Distance display (mock data for now)
+  const displayDistance = panel.distance ? `${(panel.distance / 1000).toFixed(1)}km` : null;
   
   // Animation variants
   const containerVariants = {
@@ -67,13 +74,24 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
             />
             
             {/* Building profile badge */}
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 left-4">
               <Badge 
                 className="bg-[#3C1361]/90 text-white py-1 px-3 text-xs font-medium rounded-full"
               >
                 {panel.buildings?.condominiumProfile === 'commercial' ? 'Comercial' : 'Residencial'}
               </Badge>
             </div>
+
+            {/* Distance badge if available */}
+            {displayDistance && (
+              <div className="absolute top-4 right-4">
+                <Badge 
+                  className="bg-[#00FFAB]/90 text-[#3C1361] py-1 px-3 text-xs font-medium rounded-full"
+                >
+                  A {displayDistance} do local
+                </Badge>
+              </div>
+            )}
           </div>
           
           <div className="p-6">
@@ -85,6 +103,18 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               {panel.buildings?.endereco || ''}, {panel.buildings?.bairro || ''}
             </p>
             
+            {/* Building details - number of towers and apartments */}
+            <div className="flex items-center gap-3 mb-4 text-sm text-gray-600">
+              <div className="flex items-center">
+                <Building className="h-4 w-4 mr-1 text-[#3C1361]" />
+                <span>{towers} {towers === 1 ? 'torre' : 'torres'}</span>
+              </div>
+              <div className="h-4 w-px bg-gray-300"></div>
+              <div>
+                <span>{apartments} apartamentos</span>
+              </div>
+            </div>
+            
             {/* Metrics section - 3 columns */}
             <div className="grid grid-cols-3 gap-3 mb-5">
               <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-3 px-2">
@@ -92,7 +122,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
                   <Users className="h-4 w-4" />
                 </div>
                 <p className="text-gray-900 font-semibold text-lg">{estimatedResidents}</p>
-                <p className="text-gray-500 text-xs text-center">moradores impactados</p>
+                <p className="text-gray-500 text-xs text-center">moradores</p>
               </div>
               
               <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-3 px-2">
@@ -102,7 +132,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
                 <p className="text-gray-900 font-semibold text-lg">
                   {(monthlyViews / 1000).toFixed(1)}k
                 </p>
-                <p className="text-gray-500 text-xs text-center">exibições/mês</p>
+                <p className="text-gray-500 text-xs text-center">visualizações/mês</p>
               </div>
               
               <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-3 px-2">

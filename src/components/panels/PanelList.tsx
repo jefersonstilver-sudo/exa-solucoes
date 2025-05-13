@@ -20,6 +20,9 @@ const PanelList: React.FC<PanelListProps> = ({
   cartItems, 
   onAddToCart 
 }) => {
+  // Sort state
+  const [sortOption, setSortOption] = React.useState('distance');
+
   // Calculate if a panel is in cart
   const isPanelInCart = (panelId: string) => {
     return cartItems.some(item => item.panel.id === panelId);
@@ -81,20 +84,47 @@ const PanelList: React.FC<PanelListProps> = ({
       </motion.div>
     );
   }
+  
+  // Sort panels based on selected option
+  const sortedPanels = [...panels].sort((a, b) => {
+    if (sortOption === 'distance' && a.distance && b.distance) {
+      return a.distance - b.distance;
+    } else if (sortOption === 'price-asc') {
+      // Mock price calculation - could be moved to a utility function
+      const priceA = 280 + (parseInt(a.id.slice(-2), 16) % 40);
+      const priceB = 280 + (parseInt(b.id.slice(-2), 16) % 40);
+      return priceA - priceB;
+    } else if (sortOption === 'price-desc') {
+      const priceA = 280 + (parseInt(a.id.slice(-2), 16) % 40);
+      const priceB = 280 + (parseInt(b.id.slice(-2), 16) % 40);
+      return priceB - priceA;
+    } else if (sortOption === 'views-desc') {
+      // Mock view count sorting
+      return Math.random() - 0.5; // Random for mock data
+    }
+    return 0;
+  });
 
   return (
     <div className="space-y-4 mb-6">
       {/* Sort selector */}
-      <div className="flex justify-end mb-4">
-        <Select defaultValue="price-asc">
-          <SelectTrigger className="w-[200px] bg-white">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-semibold text-[#3C1361]">
+          {panels.length} painel(is) encontrado(s)
+        </h3>
+        <Select 
+          defaultValue="distance"
+          value={sortOption}
+          onValueChange={setSortOption}
+        >
+          <SelectTrigger className="w-[220px] bg-white">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="distance">Mais próximos</SelectItem>
             <SelectItem value="price-asc">Preço: menor para maior</SelectItem>
             <SelectItem value="price-desc">Preço: maior para menor</SelectItem>
             <SelectItem value="views-desc">Mais visualizações</SelectItem>
-            <SelectItem value="popular">Mais populares</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -105,7 +135,7 @@ const PanelList: React.FC<PanelListProps> = ({
         animate="show"
         className="space-y-6"
       >
-        {panels.map(panel => (
+        {sortedPanels.map(panel => (
           <PanelCard
             key={panel.id}
             panel={panel}

@@ -8,6 +8,7 @@ export interface Panel {
   resolucao?: string;
   modo?: string;
   buildings?: Building;
+  distance?: number; // Distance from the search location in meters
   // Additional fields (some will be mocked in the UI)
   installDate?: Date;
   lastMaintenance?: Date;
@@ -31,6 +32,9 @@ export interface Building {
   condominiumProfile?: 'residential' | 'commercial' | 'mixed';
   city?: string;
   comodities?: string[];
+  towers?: number;
+  apartments?: number;
+  buildingAge?: number;
 }
 
 export interface PanelWithDistance extends Panel {

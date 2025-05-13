@@ -6,4 +6,6 @@ export interface FilterOptions {
   buildingProfile: string[];
   facilities: string[];
   minMonthlyViews: number;
+  buildingAge?: 'all' | 'new' | 'medium' | 'old';
+  buildingType?: 'all' | 'residential' | 'commercial' | 'shopping';
 }

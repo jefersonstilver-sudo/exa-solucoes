@@ -39,7 +39,9 @@ export const usePanelStore = (): UsePanelStoreReturn => {
     status: ['online'],
     buildingProfile: [],
     facilities: [],
-    minMonthlyViews: 0
+    minMonthlyViews: 0,
+    buildingAge: 'all', // ALASKA: Added building age filter
+    buildingType: 'all' // ALASKA: Added building type filter
   });
   
   // Fetch panels based on filters
@@ -58,6 +60,18 @@ export const usePanelStore = (): UsePanelStoreReturn => {
         
         // Filter by neighborhood
         filteredPanels = filterPanelsByNeighborhood(filteredPanels, filters.neighborhood);
+        
+        // ALASKA: Filter by building type if specified
+        if (filters.buildingType !== 'all') {
+          filteredPanels = filteredPanels.filter(panel => {
+            if (filters.buildingType === 'residential') {
+              return panel.buildings?.condominiumProfile === 'residential';
+            } else if (filters.buildingType === 'commercial') {
+              return panel.buildings?.condominiumProfile === 'commercial';
+            }
+            return true;
+          });
+        }
         
         // If we have a selected location, simulate proximity filtering
         if (selectedLocation) {
@@ -101,8 +115,38 @@ export const usePanelStore = (): UsePanelStoreReturn => {
             // Fall back to mock data with distance calculation
           }
           
-          // Filter by location/distance
-          filteredPanels = filterPanelsByLocation(filteredPanels, selectedLocation, filters.radius);
+          // Filter by location/distance and add distance property to panels
+          filteredPanels = filterPanelsByLocation(filteredPanels, selectedLocation, filters.radius)
+            .map(panel => {
+              // Calculate a realistic distance based on the latitude/longitude
+              // This is a simplified version for mock purposes
+              if (panel.buildings && panel.buildings.latitude && panel.buildings.longitude) {
+                const lat1 = selectedLocation.lat;
+                const lon1 = selectedLocation.lng;
+                const lat2 = panel.buildings.latitude;
+                const lon2 = panel.buildings.longitude;
+                
+                // Haversine formula to calculate distance between two points
+                const R = 6371e3; // metres
+                const φ1 = lat1 * Math.PI/180;
+                const φ2 = lat2 * Math.PI/180;
+                const Δφ = (lat2-lat1) * Math.PI/180;
+                const Δλ = (lon2-lon1) * Math.PI/180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                          Math.cos(φ1) * Math.cos(φ2) *
+                          Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                const distance = R * c; // in metres
+                
+                return {
+                  ...panel,
+                  distance: distance
+                };
+              }
+              return panel;
+            });
         }
         
         return filteredPanels;

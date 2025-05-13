@@ -66,6 +66,24 @@ export default function PanelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 py-8"
       >
+        {/* Promotional Banner - ALASKA Implementation */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-8 bg-gradient-to-r from-[#3C1361] to-[#3C1361]/90 rounded-xl p-4 text-white shadow-lg"
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="mb-4 md:mb-0">
+              <h3 className="text-lg font-medium mb-1">Ainda não tem vitrines?</h3>
+              <p className="text-sm opacity-90">Contrate agora a partir de R$ 39,90 mensais</p>
+            </div>
+            <Button className="bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#3C1361] font-medium py-2 px-4 rounded-lg">
+              Saiba mais
+            </Button>
+          </div>
+        </motion.div>
+        
         {/* Search section */}
         <SearchSection 
           searchLocation={searchLocation}
