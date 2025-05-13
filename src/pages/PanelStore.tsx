@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import SearchSection from '@/components/panels/SearchSection';
@@ -10,6 +10,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PanelCart from '@/components/panels/PanelCart';
+import { useUserSession } from '@/hooks/useUserSession';
 
 export default function PanelStore() {
   // Use our custom hooks for state management
@@ -39,6 +40,16 @@ export default function PanelStore() {
     cartAnimation
   } = useCartManager();
 
+  const { isLoggedIn } = useUserSession();
+  const [showPromotion, setShowPromotion] = useState(true);
+
+  // Effect to hide promotion when user logs in or adds items to cart
+  useEffect(() => {
+    if (isLoggedIn || cartItems.length > 0) {
+      setShowPromotion(false);
+    }
+  }, [isLoggedIn, cartItems]);
+
   if (error) {
     return (
       <Layout>
@@ -66,23 +77,30 @@ export default function PanelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 py-8"
       >
-        {/* Promotional Banner - ALASKA Implementation */}
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-8 bg-gradient-to-r from-[#3C1361] to-[#3C1361]/90 rounded-xl p-4 text-white shadow-lg"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="mb-4 md:mb-0">
-              <h3 className="text-lg font-medium mb-1">Ainda não tem vitrines?</h3>
-              <p className="text-sm opacity-90">Contrate agora a partir de R$ 39,90 mensais</p>
-            </div>
-            <Button className="bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#3C1361] font-medium py-2 px-4 rounded-lg">
-              Saiba mais
-            </Button>
-          </div>
-        </motion.div>
+        {/* Promotional Welcome Balloon - ALASKA Implementation */}
+        <AnimatePresence>
+          {showPromotion && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="mb-8 bg-[#3C1361] rounded-xl p-5 text-white shadow-lg"
+            >
+              <div className="flex flex-col md:flex-row items-center justify-between">
+                <div className="mb-4 md:mb-0">
+                  <h3 className="text-lg font-medium mb-1">É novo por aqui? Ganhe um bônus de estreia na sua primeira campanha!</h3>
+                </div>
+                <Button 
+                  className="bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#3C1361] font-medium py-2 px-6 rounded-lg transition-transform hover:scale-105 duration-200"
+                  onClick={() => setShowPromotion(false)}
+                >
+                  Ver promoção
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* Search section */}
         <SearchSection 
