@@ -31,7 +31,7 @@ export const usePanelStore = (): UsePanelStoreReturn => {
     isSearching,
     selectedLocation,
     setSelectedLocation,
-    handleSearch: searchLocation as handleSearchLocation,
+    handleSearch: handleSearchLocation,
     handleClearLocation
   } = useLocationSearch();
 
