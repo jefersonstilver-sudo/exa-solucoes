@@ -46,7 +46,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
   };
   
   const handleCheckout = () => {
-    console.log("PanelCart: handleCheckout chamado");
+    console.log("PanelCart: handleCheckout chamado - iniciando checkout");
     setIsSubmitting(true);
     
     // Chamar a função de checkout que foi passada como prop

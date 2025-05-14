@@ -62,6 +62,7 @@ export const useCartManager = () => {
     handleRestoreCart,
     
     // Checkout
-    handleProceedToCheckout
+    handleProceedToCheckout,
+    isNavigating
   };
 };

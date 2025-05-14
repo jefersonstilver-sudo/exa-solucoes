@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
@@ -13,6 +13,8 @@ const PlanSelection = () => {
   const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [hasCart, setHasCart] = useState(false);
   const {
     selectedPlan, 
     setSelectedPlan,
@@ -24,12 +26,18 @@ const PlanSelection = () => {
   useEffect(() => {
     try {
       console.log("PlanSelection: Verificando carrinho no localStorage");
+      setIsPageLoading(true);
+      
       const savedCart = localStorage.getItem('panelCart');
+      console.log("PlanSelection: Carrinho encontrado:", savedCart ? "Sim" : "Não");
+      
       if (savedCart) {
         const parsedCart = JSON.parse(savedCart);
         console.log("PlanSelection: Carrinho carregado, itens:", parsedCart.length);
         
-        if (parsedCart.length === 0) {
+        if (parsedCart.length > 0) {
+          setHasCart(true);
+        } else {
           toast({
             title: "Carrinho vazio",
             description: "Adicione itens ao carrinho antes de selecionar um plano.",
@@ -55,6 +63,8 @@ const PlanSelection = () => {
         variant: "destructive"
       });
       navigate('/paineis-digitais/loja');
+    } finally {
+      setIsPageLoading(false);
     }
   }, [navigate, toast]);
   
@@ -62,24 +72,69 @@ const PlanSelection = () => {
   const handleProceed = () => {
     console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
     
+    if (!selectedPlan) {
+      toast({
+        title: "Selecione um plano",
+        description: "Escolha um plano antes de prosseguir.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Save selected plan in localStorage
     try {
       localStorage.setItem('selectedPlan', String(selectedPlan));
       console.log("PlanSelection: Plano salvo no localStorage:", selectedPlan);
     } catch (e) {
       console.error("Erro ao salvar plano:", e);
+      toast({
+        title: "Erro ao salvar plano",
+        description: "Ocorreu um erro ao salvar sua seleção. Tente novamente.",
+        variant: "destructive"
+      });
+      return;
     }
     
     // Navigate to checkout page
     navigate('/checkout');
   };
   
-  // Loading screen while checking session
-  if (isSessionLoading) {
+  // Loading screen while checking session or cart
+  if (isSessionLoading || isPageLoading) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12 flex items-center justify-center">
           <div className="h-10 w-10 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // If cart exists but user is not logged in, redirect to login
+  if (hasCart && !isLoggedIn) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-2xl mx-auto">
+            <h2 className="text-lg font-semibold text-yellow-800 mb-2">Login necessário</h2>
+            <p className="text-yellow-700 mb-4">
+              Para prosseguir com sua compra, é necessário fazer login ou criar uma conta.
+            </p>
+            <div className="flex space-x-4">
+              <button 
+                onClick={() => navigate('/login?redirect=/selecionar-plano')}
+                className="px-4 py-2 bg-[#3C1361] text-white rounded-md hover:bg-[#3C1361]/90"
+              >
+                Fazer login
+              </button>
+              <button 
+                onClick={() => navigate('/cadastro?redirect=/selecionar-plano')}
+                className="px-4 py-2 border border-[#3C1361] text-[#3C1361] rounded-md hover:bg-[#3C1361]/10"
+              >
+                Criar conta
+              </button>
+            </div>
+          </div>
         </div>
       </Layout>
     );

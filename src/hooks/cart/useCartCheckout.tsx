@@ -20,7 +20,7 @@ export const useCartCheckout = ({
 
   // Procedimento de checkout para redirecionar para seleção de plano
   const handleProceedToCheckout = useCallback(() => {
-    console.log("Iniciando processo de checkout");
+    console.log("Iniciando processo de checkout com", cartItems.length, "itens");
     
     if (cartItems.length === 0) {
       toast({
@@ -37,6 +37,12 @@ export const useCartCheckout = ({
       console.log("Carrinho salvo para checkout:", cartItems.length, "itens");
     } catch (e) {
       console.error('Falha ao salvar o carrinho para checkout', e);
+      toast({
+        title: "Erro ao processar o carrinho",
+        description: "Ocorreu um erro ao finalizar a compra. Tente novamente.",
+        variant: "destructive"
+      });
+      return;
     }
     
     // Marca que estamos navegando para evitar problemas com o drawer
@@ -45,13 +51,10 @@ export const useCartCheckout = ({
     // Fecha o drawer antes da navegação
     setCartOpen(false);
     
-    console.log("Preparando navegação para seleção de plano, carrinho fechado, itens:", cartItems.length);
+    console.log("Navegando para seleção de plano...");
     
-    // Navegação para seleção de plano com pequeno delay para garantir que o drawer seja fechado
-    setTimeout(() => {
-      console.log("Executando navegação para /selecionar-plano com", cartItems.length, "itens");
-      navigate('/selecionar-plano');
-    }, 300);
+    // Navegação direta para evitar problemas com o timer
+    navigate('/selecionar-plano');
   }, [cartItems, navigate, toast, setIsNavigating, setCartOpen]);
 
   return {
