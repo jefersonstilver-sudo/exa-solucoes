@@ -14,20 +14,28 @@ export default function Checkout() {
   
   // Verificação de autenticação - redireciona para login se necessário
   useEffect(() => {
+    console.log("Checkout: Verificando autenticação, isLoggedIn:", isLoggedIn, "isSessionLoading:", isSessionLoading);
     if (!isSessionLoading && !isLoggedIn) {
+      toast({
+        title: "Login necessário",
+        description: "Faça login para continuar com a compra",
+        variant: "destructive"
+      });
       navigate('/login?redirect=/selecionar-plano');
     }
-  }, [isLoggedIn, isSessionLoading, navigate]);
+  }, [isLoggedIn, isSessionLoading, navigate, toast]);
   
   // Verificar se o carrinho existe no localStorage
   useEffect(() => {
     try {
+      console.log("Checkout: Verificando carrinho no localStorage");
       const savedCart = localStorage.getItem('panelCart');
       if (savedCart) {
         const parsedCart = JSON.parse(savedCart);
         console.log("Checkout: Carrinho carregado do localStorage:", parsedCart.length, "itens");
         
         if (parsedCart.length === 0) {
+          console.log("Checkout: Carrinho vazio, redirecionando para loja");
           toast({
             title: "Carrinho vazio",
             description: "Adicione itens ao carrinho antes de finalizar a compra.",
@@ -37,6 +45,7 @@ export default function Checkout() {
         }
       } else {
         // Se não houver carrinho no localStorage
+        console.log("Checkout: Carrinho não encontrado no localStorage");
         toast({
           title: "Carrinho vazio",
           description: "Adicione itens ao carrinho antes de finalizar a compra.",
@@ -58,7 +67,9 @@ export default function Checkout() {
   // Verificar se o plano foi selecionado
   useEffect(() => {
     try {
+      console.log("Checkout: Verificando plano selecionado no localStorage");
       const selectedPlan = localStorage.getItem('selectedPlan');
+      console.log("Checkout: Plano carregado:", selectedPlan);
       if (!selectedPlan) {
         console.log("Checkout: Plano não selecionado, redirecionando para seleção de plano");
         toast({

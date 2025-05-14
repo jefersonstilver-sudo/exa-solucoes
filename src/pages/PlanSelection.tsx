@@ -23,9 +23,11 @@ const PlanSelection = () => {
   // Check for cart in localStorage
   useEffect(() => {
     try {
+      console.log("PlanSelection: Verificando carrinho no localStorage");
       const savedCart = localStorage.getItem('panelCart');
       if (savedCart) {
         const parsedCart = JSON.parse(savedCart);
+        console.log("PlanSelection: Carrinho carregado, itens:", parsedCart.length);
         
         if (parsedCart.length === 0) {
           toast({
@@ -37,6 +39,7 @@ const PlanSelection = () => {
         }
       } else {
         // No cart in localStorage
+        console.log("PlanSelection: Carrinho não encontrado no localStorage");
         toast({
           title: "Carrinho vazio",
           description: "Adicione itens ao carrinho antes de selecionar um plano.",
@@ -57,14 +60,17 @@ const PlanSelection = () => {
   
   // Proceed to next step after plan selection
   const handleProceed = () => {
+    console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
+    
     // Save selected plan in localStorage
     try {
       localStorage.setItem('selectedPlan', String(selectedPlan));
+      console.log("PlanSelection: Plano salvo no localStorage:", selectedPlan);
     } catch (e) {
       console.error("Erro ao salvar plano:", e);
     }
     
-    // Navigate to review page
+    // Navigate to checkout page
     navigate('/checkout');
   };
   

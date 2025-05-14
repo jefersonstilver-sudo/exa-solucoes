@@ -1,183 +1,100 @@
 
-import React, { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
-import { Panel } from '@/types/panel';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { useUserSession } from '@/hooks/useUserSession';
-import { AnimatePresence, motion } from 'framer-motion';
-import { formatCurrency } from '@/utils/formatters';
-
-// Import components
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import CartHeader from '@/components/cart/CartHeader';
-import CartUserStatus from '@/components/cart/CartUserStatus';
 import CartItem from '@/components/cart/CartItem';
-import CartSummary from '@/components/cart/CartSummary';
 import EmptyCart from '@/components/cart/EmptyCart';
-import { useCouponValidator } from '@/hooks/useCouponValidator';
+import CartSummary from '@/components/cart/CartSummary';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { getPanelPrice } from '@/utils/checkoutUtils';
+import { Panel } from '@/types/panel';
 
 interface PanelCartProps {
-  cartItems: {panel: Panel, duration: number}[];
-  onRemove: (panelId: string) => void;
+  cartItems: { panel: Panel; duration: number }[];
+  onRemove: (id: string) => void;
   onClear: () => void;
-  onChangeDuration: (panelId: string, duration: number) => void;
+  onChangeDuration: (id: string, duration: number) => void;
   onProceedToCheckout: () => void;
 }
 
-const PanelCart: React.FC<PanelCartProps> = ({ 
-  cartItems, 
-  onRemove, 
-  onClear, 
+const PanelCart: React.FC<PanelCartProps> = ({
+  cartItems,
+  onRemove,
+  onClear,
   onChangeDuration,
   onProceedToCheckout
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const { user, isLoggedIn } = useUserSession();
-  const { couponDiscount, couponValid } = useCouponValidator();
   
-  // Calculate price for a single panel based on duration
-  const calculatePrice = (panel: Panel, days: number) => {
-    // Base monthly price
-    let pricePerMonth = 280; // Default price for 1 month
-    
-    // Add slight variation based on panel ID
-    const priceVariation = parseInt(panel.id.slice(-2), 16) % 40; // 0-39 variation
-    pricePerMonth += priceVariation;
-    
-    // Calculate total price based on months
-    const months = Math.round(days / 30);
-    
-    // Apply discount based on months
-    if (months >= 6) {
-      return pricePerMonth * months * 0.85; // 15% discount
-    } else if (months >= 3) {
-      return pricePerMonth * months * 0.9; // 10% discount
-    } else if (months >= 2) {
-      return pricePerMonth * months * 0.95; // 5% discount
-    }
-    
-    return pricePerMonth * months;
-  };
+  const isEmpty = cartItems.length === 0;
   
-  // Calculate total price for all items in cart
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => {
-      return total + calculatePrice(item.panel, item.duration);
+  // Calculate subtotal, discount and total
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((acc, item) => {
+      return acc + getPanelPrice(item.panel) * (item.duration / 30);
     }, 0);
-  };
-
-  // Calculate potential quantity discount amount
-  const calculateQuantityDiscount = () => {
-    if (cartItems.length >= 3) {
-      return calculateTotal() * 0.05; // 5% discount for 3+ items
-    }
-    return 0;
-  };
-
-  // Calculate coupon discount amount
-  const calculateCouponDiscount = () => {
-    if (couponValid && couponDiscount > 0) {
-      const afterQuantityDiscount = calculateTotal() - calculateQuantityDiscount();
-      return afterQuantityDiscount * (couponDiscount / 100);
-    }
-    return 0;
-  };
-
-  // Calculate final price after all discounts
-  const calculateFinalPrice = () => {
-    return calculateTotal() - calculateQuantityDiscount() - calculateCouponDiscount();
-  };
+  }, [cartItems]);
+  
+  // Todo: Implement actual discount calculation
+  const discount = 0;
+  
+  const total = subtotal - discount;
   
   const handleCheckout = () => {
     console.log("PanelCart: handleCheckout chamado");
     setIsSubmitting(true);
     
-    try {
-      if (!isLoggedIn) {
-        toast({
-          title: "Login necessário",
-          description: "Faça login para continuar com a compra",
-        });
-        
-        // Salvar URL de retorno para voltar após o login
-        const returnUrl = '/checkout';
-        navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
-      } else {
-        // Usar a função de checkout revisada passada via props
-        console.log("PanelCart: Chamando onProceedToCheckout");
-        onProceedToCheckout();
-      }
-    } catch (error) {
-      console.error("Erro ao processar checkout:", error);
-      toast({
-        title: "Erro ao processar",
-        description: "Ocorreu um erro ao finalizar a compra. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Chamar a função de checkout que foi passada como prop
+    onProceedToCheckout();
+    
+    // Resetar o estado de envio após um tempo curto
+    setTimeout(() => setIsSubmitting(false), 1000);
   };
-
+  
   return (
-    <motion.div 
-      className="flex flex-col h-full"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="flex flex-col h-full">
       <CartHeader itemCount={cartItems.length} onClear={onClear} />
       
-      <div className="flex-grow overflow-auto pb-4 pt-1">
-        <AnimatePresence mode="wait">
-          {cartItems.length > 0 ? (
-            <motion.div 
-              key="cart-items"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <CartUserStatus isLoggedIn={isLoggedIn} user={user} />
-              
-              {/* Cart items */}
-              <div className="space-y-1 px-5 sm:px-6">
-                {cartItems.map((item) => (
-                  <CartItem 
+      {isEmpty ? (
+        <EmptyCart />
+      ) : (
+        <div className="flex flex-col h-full">
+          {/* Cart Items */}
+          <ScrollArea className="flex-grow">
+            <AnimatePresence initial={false}>
+              <div className="px-4">
+                {cartItems.map(item => (
+                  <motion.div
                     key={item.panel.id}
-                    item={item}
-                    onRemove={onRemove}
-                    onChangeDuration={onChangeDuration}
-                    calculatePrice={calculatePrice}
-                  />
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="py-2"
+                  >
+                    <CartItem 
+                      item={item}
+                      onRemove={onRemove}
+                      onChangeDuration={onChangeDuration}
+                    />
+                  </motion.div>
                 ))}
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty-cart"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <EmptyCart />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      
-      {cartItems.length > 0 && (
-        <CartSummary 
-          subtotal={calculateTotal()}
-          discount={calculateQuantityDiscount()}
-          total={calculateFinalPrice()}
-          onCheckout={handleCheckout}
-          isSubmitting={isSubmitting}
-          isEmpty={cartItems.length === 0}
-        />
+            </AnimatePresence>
+          </ScrollArea>
+          
+          {/* Cart Summary */}
+          <CartSummary
+            subtotal={subtotal}
+            discount={discount}
+            total={total}
+            onCheckout={handleCheckout}
+            isSubmitting={isSubmitting}
+            isEmpty={isEmpty}
+          />
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

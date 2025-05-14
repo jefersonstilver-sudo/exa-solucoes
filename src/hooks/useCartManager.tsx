@@ -3,6 +3,7 @@ import { useCartState } from '@/hooks/cart/useCartState';
 import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
 import { Panel } from '@/types/panel';
+import { CartItem as CartItemType } from './cart/useCartState';
 
 export interface CartItem {
   panel: Panel;
