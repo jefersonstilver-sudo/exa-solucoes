@@ -7,7 +7,7 @@ interface CartItemProps {
   item: { panel: Panel; duration: number };
   onRemove: (panelId: string) => void;
   onChangeDuration: (panelId: string, duration: number) => void;
-  calculatePrice: (panel: Panel, days: number) => number;
+  calculatePrice: (panel: Panel, duration: number) => number;
 }
 
 const CartItem: React.FC<CartItemProps> = ({ 

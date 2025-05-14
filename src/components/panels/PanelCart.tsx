@@ -31,7 +31,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
   // Calculate subtotal, discount and total
   const subtotal = useMemo(() => {
     return cartItems.reduce((acc, item) => {
-      return acc + getPanelPrice(item.panel) * (item.duration / 30);
+      return acc + getPanelPrice(item.panel, item.duration);
     }, 0);
   }, [cartItems]);
   
@@ -39,6 +39,11 @@ const PanelCart: React.FC<PanelCartProps> = ({
   const discount = 0;
   
   const total = subtotal - discount;
+
+  // Function to calculate price for a specific panel and duration
+  const calculateItemPrice = (panel: Panel, duration: number) => {
+    return getPanelPrice(panel, duration);
+  };
   
   const handleCheckout = () => {
     console.log("PanelCart: handleCheckout chamado");
@@ -76,6 +81,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
                       item={item}
                       onRemove={onRemove}
                       onChangeDuration={onChangeDuration}
+                      calculatePrice={calculateItemPrice}
                     />
                   </motion.div>
                 ))}
