@@ -43,3 +43,13 @@ export const formatPercent = (value: number): string => {
     maximumFractionDigits: 0
   }).format(value / 100);
 };
+
+/**
+ * Format a location from Panel data
+ */
+export const formatLocation = (panel: any): string => {
+  if (panel.buildings) {
+    return `${panel.buildings.bairro || ''}, ${panel.city || panel.buildings.city || ''}`;
+  }
+  return 'Local não especificado';
+};
