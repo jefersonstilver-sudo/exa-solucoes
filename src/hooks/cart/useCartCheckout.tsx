@@ -35,27 +35,41 @@ export const useCartCheckout = ({
     }
   }, [cartItems.length, isCheckoutProcessed]);
   
-  // Função de navegação segura (memoizada)
-  const safeNavigate = useCallback((url: string, method: 'hook' | 'location' | 'direct') => {
+  // Função de navegação segura mais simples e robusta
+  const safeNavigate = useCallback((url: string) => {
     try {
-      // Registrar tentativa para auditoria
-      logNavigation(url, method, true);
+      // Log navigation attempt
+      logNavigationEvent(url, 'direct');
       
-      if (method === 'hook') {
-        navigate(url, { replace: true });
-      } else if (method === 'direct') {
-        window.location.href = url;
-      } else if (method === 'location') {
-        // Simulação de navegação direta que preserva o histórico
-        window.location.href = url;
-      }
+      // Direct navigation - most reliable method
+      window.location.href = url;
       return true;
     } catch (error) {
-      logNavigation(url, method, false, String(error));
-      console.error(`Erro ao navegar para ${url} via ${method}:`, error);
+      logNavigationError(url, String(error));
       return false;
     }
-  }, [navigate]);
+  }, []);
+
+  // Helper functions for logging
+  const logNavigationEvent = (url: string, method: string) => {
+    logNavigation(url, method, true);
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      `Navegação para ${url} via ${method}`,
+      { url, method }
+    );
+  };
+  
+  const logNavigationError = (url: string, errorMsg: string) => {
+    logNavigation(url, 'error', false, errorMsg);
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_ERROR,
+      LogLevel.ERROR,
+      `Falha na navegação para ${url}`,
+      { error: errorMsg }
+    );
+  };
   
   // Função segura para salvar carrinho
   const saveCartToStorage = useCallback((items: CartItem[]) => {
@@ -110,7 +124,7 @@ export const useCartCheckout = ({
       CheckoutEvent.AUDIT,
       LogLevel.INFO,
       "Início do processo de checkout",
-      { cartItems: cartItems.length, isProcessed: isCheckoutProcessed, attempts: navigationAttempts }
+      { cartItems: cartItems.length, isProcessed: isCheckoutProcessed }
     );
     
     // Verificar se já está processando o checkout para evitar cliques duplos
@@ -166,101 +180,16 @@ export const useCartCheckout = ({
       // 3. Fechar o carrinho (se estiver aberto)
       setCartOpen(false);
       
-      // 4. Estratégia robusta de navegação com múltiplas tentativas
-      const navigateToPlanSelection = () => {
-        setNavigationAttempts(prev => prev + 1);
-        const attemptNumber = navigationAttempts + 1;
-        
-        logCheckoutEvent(
-          CheckoutEvent.NAVIGATE_TO_PLAN, 
-          LogLevel.INFO, 
-          `Tentativa de navegação #${attemptNumber} para seleção de plano`,
-          { route: '/selecionar-plano' }
-        );
-        
-        // Primeiro método: react-router hook
-        if (attemptNumber === 1) {
-          if (safeNavigate('/selecionar-plano', 'hook')) {
-            // Verificar se a navegação funcionou após um pequeno delay
-            setTimeout(() => {
-              const currentPath = window.location.pathname;
-              if (currentPath.includes('/paineis-digitais/loja')) {
-                logCheckoutEvent(
-                  CheckoutEvent.NAVIGATION_ERROR,
-                  LogLevel.WARNING,
-                  "Navegação via hook falhou, usando window.location"
-                );
-                
-                // Segundo método: window.location
-                safeNavigate('/selecionar-plano', 'location');
-              }
-            }, 300);
-          } else {
-            // Fallback imediato se o hook falhar
-            safeNavigate('/selecionar-plano', 'direct');
-          }
-        } 
-        // Segunda tentativa com método mais direto
-        else if (attemptNumber === 2) {
-          safeNavigate('/selecionar-plano', 'direct');
-        }
-        // Terceira tentativa com diálogo de fallback
-        else if (attemptNumber === 3) {
-          // Mostrar mensagem de alerta
-          toast({
-            title: "Dificuldade na navegação",
-            description: "Redirecionando para seleção de plano...",
-            variant: "default",
-          });
-          
-          // Usar uma abordagem mais forte para redirecionar
-          setTimeout(() => {
-            document.location.href = '/selecionar-plano';
-          }, 500);
-        }
-      };
+      // 4. Navegação simplificada e direta - usando apenas window.location
+      // que provou ser o método mais confiável
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATE_TO_PLAN, 
+        LogLevel.INFO, 
+        `Navegação para seleção de plano iniciada`
+      );
       
-      // Executar a primeira tentativa de navegação
-      navigateToPlanSelection();
-      
-      // Configurar um timer para uma segunda tentativa se necessário
-      setTimeout(() => {
-        if (window.location.pathname.includes('/paineis-digitais/loja') && navigationAttempts < 2) {
-          logCheckoutEvent(
-            CheckoutEvent.NAVIGATE_TO_PLAN, 
-            LogLevel.WARNING, 
-            "Primeira navegação falhou, tentando novamente"
-          );
-          
-          // Disparar uma mensagem visual para o usuário
-          toast({
-            title: "Redirecionando",
-            description: "Redirecionando para seleção de plano...",
-            variant: "default",
-          });
-          
-          // Forçar navegação direta
-          navigateToPlanSelection();
-        }
-      }, 800);
-      
-      // Configurar um timer para uma terceira tentativa final
-      setTimeout(() => {
-        if (window.location.pathname.includes('/paineis-digitais/loja') && navigationAttempts < 3) {
-          logCheckoutEvent(
-            CheckoutEvent.NAVIGATION_ERROR, 
-            LogLevel.ERROR, 
-            "Múltiplas tentativas de navegação falharam, tentativa final"
-          );
-          
-          toast({
-            title: "Dificuldade ao navegar",
-            description: "Tentativa final de redirecionamento...",
-            variant: "destructive",
-          });
-          navigateToPlanSelection();
-        }
-      }, 1500);
+      // Navegação direta - método mais confiável
+      safeNavigate('/selecionar-plano');
       
     } catch (error) {
       console.error('Erro durante checkout:', error);
@@ -283,7 +212,7 @@ export const useCartCheckout = ({
       setIsNavigating(false);
       setIsCheckoutProcessed(false);
     }
-  }, [cartItems, isCheckoutProcessed, navigationAttempts, setCartOpen, setIsNavigating, saveCartToStorage, safeNavigate, toast]);
+  }, [cartItems, isCheckoutProcessed, setCartOpen, setIsNavigating, saveCartToStorage, safeNavigate, toast]);
 
   return {
     handleProceedToCheckout,

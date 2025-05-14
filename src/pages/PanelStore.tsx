@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
@@ -54,7 +53,7 @@ export default function PanelStore() {
   const [showDebugger, setShowDebugger] = useState(false);
   const [debugModalOpen, setDebugModalOpen] = useState(false);
 
-  // Backup navigation function
+  // Backup navigation function - simplified for reliability
   const directGoToCheckout = (e: React.MouseEvent) => {
     e.preventDefault();
     
@@ -65,7 +64,7 @@ export default function PanelStore() {
     logCheckoutEvent(
       CheckoutEvent.NAVIGATE_TO_PLAN,
       LogLevel.INFO,
-      "Tentando navegar diretamente para seleção de plano"
+      "Navegação direta para seleção de plano"
     );
     
     try {
@@ -75,33 +74,11 @@ export default function PanelStore() {
       // Registrar na auditoria
       logNavigation('/selecionar-plano', 'direct', true);
       
-      // Tentar navegar
-      navigate('/selecionar-plano');
-      
-      // Fallback para window.location se necessário
-      setTimeout(() => {
-        if (window.location.pathname.includes('/paineis-digitais/loja')) {
-          logCheckoutEvent(
-            CheckoutEvent.NAVIGATE_TO_PLAN, 
-            LogLevel.WARNING, 
-            "Navegação com hook falhou, usando window.location"
-          );
-          logNavigation('/selecionar-plano', 'location', false, 'Navegação com hook falhou');
-          window.location.href = '/selecionar-plano';
-        }
-      }, 300);
+      // Navegação direta - método mais confiável
+      window.location.href = '/selecionar-plano';
     } catch (error) {
       console.error("Erro na navegação direta:", error);
       logNavigation('/selecionar-plano', 'direct', false, String(error));
-      logCheckoutEvent(
-        CheckoutEvent.NAVIGATION_ERROR,
-        LogLevel.ERROR,
-        "Erro na navegação direta",
-        { error }
-      );
-      
-      // Último recurso
-      window.location.href = '/selecionar-plano';
     }
   };
 
@@ -278,4 +255,3 @@ export default function PanelStore() {
     </Layout>
   );
 }
-
