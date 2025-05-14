@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ArrowRight, VideoIcon, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,12 +7,13 @@ import { formatCurrency } from '@/utils/formatters';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface CartSummaryProps {
   subtotal: number;
   discount: number;
   total: number;
-  onCheckout: () => void;
+  onCheckout: (e: React.MouseEvent) => void;
   isSubmitting: boolean;
   isEmpty: boolean;
 }
@@ -52,13 +54,18 @@ const CartSummary: React.FC<CartSummaryProps> = ({
 
   const handleCheckoutClick = (e: React.MouseEvent) => {
     console.log("CartSummary: Botão de checkout clicado");
+    logCheckoutEvent(
+      CheckoutEvent.PROCEED_TO_CHECKOUT, 
+      LogLevel.INFO, 
+      "Botão de checkout clicado no sumário do carrinho"
+    );
     
     // Garantir que o evento não se propague e não cause problemas no drawer
     e.preventDefault();
     e.stopPropagation();
     
-    // Chamar a função de checkout
-    onCheckout();
+    // Chamar a função de checkout passando o evento
+    onCheckout(e);
   };
 
   return (

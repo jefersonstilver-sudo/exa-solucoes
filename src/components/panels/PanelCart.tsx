@@ -8,6 +8,7 @@ import CartSummary from '@/components/cart/CartSummary';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getPanelPrice } from '@/utils/checkoutUtils';
 import { Panel } from '@/types/panel';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PanelCartProps {
   cartItems: { panel: Panel; duration: number }[];
@@ -45,15 +46,63 @@ const PanelCart: React.FC<PanelCartProps> = ({
     return getPanelPrice(panel, duration);
   };
   
-  const handleCheckout = () => {
+  const handleCheckout = (e: React.MouseEvent) => {
+    // Importante: Prevenir comportamento padrão e propagação para evitar conflitos
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Log detalhado para diagnóstico
     console.log("PanelCart: handleCheckout chamado - iniciando checkout");
+    logCheckoutEvent(
+      CheckoutEvent.PROCEED_TO_CHECKOUT, 
+      LogLevel.INFO, 
+      `Iniciando checkout com ${cartItems.length} itens`, 
+      { total, cartItems: cartItems.length }
+    );
+    
+    // Verificar se há itens no carrinho
+    if (isEmpty) {
+      console.log("PanelCart: Checkout cancelado - carrinho vazio");
+      logCheckoutEvent(
+        CheckoutEvent.PROCEED_TO_CHECKOUT, 
+        LogLevel.ERROR, 
+        "Tentativa de checkout com carrinho vazio"
+      );
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // Chamar a função de checkout que foi passada como prop
-    onProceedToCheckout();
-    
-    // Resetar o estado de envio após um tempo curto
-    setTimeout(() => setIsSubmitting(false), 1000);
+    try {
+      // Salvar carrinho manualmente no localStorage para garantir persistência
+      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.SUCCESS, 
+        "Carrinho salvo no localStorage antes do checkout", 
+        { items: cartItems.length }
+      );
+      
+      // Chamar a função de checkout que foi passada como prop
+      onProceedToCheckout();
+      
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATE_TO_PLAN, 
+        LogLevel.INFO, 
+        "Navegando para seleção de plano após checkout"
+      );
+    } catch (error) {
+      console.error("PanelCart: Erro durante checkout", error);
+      logCheckoutEvent(
+        CheckoutEvent.PROCEED_TO_CHECKOUT, 
+        LogLevel.ERROR, 
+        "Erro durante processo de checkout", 
+        { error }
+      );
+    } finally {
+      // Resetar o estado de envio após um tempo curto
+      setTimeout(() => setIsSubmitting(false), 1000);
+    }
   };
   
   return (
