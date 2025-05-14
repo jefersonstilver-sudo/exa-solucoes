@@ -3,15 +3,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { 
-  logCheckoutInitiation, 
-  logEmptyCartAttempt,
-  logCheckoutStart,
-  logPlanSelectionNavigation,
-  logCheckoutError,
-  logMultipleCheckoutAttempt
-} from '@/services/checkoutLogService';
-import { useSafeNavigation } from '@/services/navigationService';
+  logCheckoutEvent, 
+  LogLevel, 
+  CheckoutEvent 
+} from '@/services/checkoutDebugService';
 import { saveCartToStorage } from '@/services/cartStorageService';
+import { useNavigate } from 'react-router-dom';
 
 interface CartItem {
   panel: Panel;
@@ -32,7 +29,7 @@ export const useCartCheckout = ({
   const { toast } = useToast();
   const [isCheckoutProcessed, setIsCheckoutProcessed] = useState(false);
   const [navigationAttempts, setNavigationAttempts] = useState(0);
-  const { navigateToRoute } = useSafeNavigation();
+  const navigate = useNavigate();
   
   // Reset checkout processed status when cart items change
   useEffect(() => {
@@ -44,19 +41,25 @@ export const useCartCheckout = ({
   
   const handleProceedToCheckout = useCallback(() => {
     // Log audit of process start
-    logCheckoutInitiation(cartItems.length, isCheckoutProcessed);
+    logCheckoutEvent(
+      CheckoutEvent.CHECKOUT_INITIATION,
+      LogLevel.INFO,
+      `Iniciando checkout com ${cartItems.length} itens`,
+      { cartItemCount: cartItems.length }
+    );
     
     // Prevent double-clicks with checkout processing flag
     if (isCheckoutProcessed) {
-      logMultipleCheckoutAttempt();
+      logCheckoutEvent(
+        CheckoutEvent.MULTIPLE_CHECKOUT_ATTEMPT,
+        LogLevel.WARNING,
+        "Tentativa múltipla de checkout detectada"
+      );
       return;
     }
     
     setIsCheckoutProcessed(true);
     setIsNavigating(true);
-    
-    // Log checkout start
-    logCheckoutStart(cartItems.length);
     
     try {
       // 1. Check if cart has items
@@ -67,20 +70,41 @@ export const useCartCheckout = ({
           variant: "destructive",
         });
         
-        logEmptyCartAttempt();
+        logCheckoutEvent(
+          CheckoutEvent.EMPTY_CART_ATTEMPT,
+          LogLevel.WARNING,
+          "Tentativa de checkout com carrinho vazio"
+        );
         
         setIsNavigating(false);
         setIsCheckoutProcessed(false);
         return;
       }
       
-      // 2. Save cart to localStorage securely
-      const saveSuccess = saveCartToStorage(cartItems);
-      
-      if (!saveSuccess) {
-        // Try a second time with a small delay
+      // 2. Save cart to localStorage securely - tentativas múltiplas para garantir persistência
+      try {
+        localStorage.setItem('panelCart', JSON.stringify(cartItems));
+        console.log("Carrinho salvo no localStorage:", cartItems.length, "itens");
+        
+        // Verificação adicional após o salvamento
+        const savedCart = localStorage.getItem('panelCart');
+        if (!savedCart) {
+          throw new Error("Falha ao verificar carrinho salvo");
+        }
+        
+        // Tenta JSON.parse para confirmar que é válido
+        JSON.parse(savedCart);
+      } catch (storageError) {
+        console.error("Erro ao salvar carrinho:", storageError);
+        
+        // Tenta novamente com um pequeno delay
         setTimeout(() => {
-          saveCartToStorage(cartItems);
+          try {
+            localStorage.setItem('panelCart', JSON.stringify(cartItems));
+            console.log("Carrinho salvo na segunda tentativa");
+          } catch (retryError) {
+            console.error("Falha na segunda tentativa de salvar carrinho:", retryError);
+          }
         }, 100);
       }
       
@@ -88,15 +112,27 @@ export const useCartCheckout = ({
       setCartOpen(false);
       
       // 4. Log navigation attempt
-      logPlanSelectionNavigation();
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        "Navegando para seleção de plano"
+      );
       
-      // 5. Navigate using React Router (prevents flash)
-      navigateToRoute('/selecionar-plano');
+      // 5. Navigate to plan selection
+      setTimeout(() => {
+        navigate('/selecionar-plano');
+        setIsNavigating(false);
+      }, 100);
       
     } catch (error) {
       console.error('Erro durante checkout:', error);
       
-      logCheckoutError(error);
+      logCheckoutEvent(
+        CheckoutEvent.CHECKOUT_ERROR,
+        LogLevel.ERROR,
+        "Erro ao processar checkout",
+        { error: String(error) }
+      );
       
       // Show error message
       toast({
@@ -109,7 +145,7 @@ export const useCartCheckout = ({
       setIsNavigating(false);
       setIsCheckoutProcessed(false);
     }
-  }, [cartItems, isCheckoutProcessed, setCartOpen, setIsNavigating, toast, navigateToRoute]);
+  }, [cartItems, isCheckoutProcessed, setCartOpen, setIsNavigating, toast, navigate]);
 
   return {
     handleProceedToCheckout,

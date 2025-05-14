@@ -1,11 +1,11 @@
+
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { calculateTotalPrice } from '@/utils/checkoutUtils';
-
-// The rest of the original imports would be kept
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface UseCheckoutNavigationProps {
   step: number;
@@ -44,31 +44,53 @@ export const useCheckoutNavigation = ({
   const { toast } = useToast();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const isNextEnabled = (() => {
-    if (step === 1) {
+  // Melhorada a lógica de validação para cada etapa
+  const isNextEnabled = useCallback(() => {
+    if (step === 0) { // PLAN step
       return selectedPlan !== null && cartItems.length > 0;
     }
-    if (step === 2) {
-      return true;
+    if (step === 1) { // REVIEW step
+      return cartItems.length > 0 && unavailablePanels.length === 0;
     }
-    if (step === 3) {
+    if (step === 2) { // COUPON step
+      return true; // Coupons são opcionais
+    }
+    if (step === 3) { // PAYMENT step
       return acceptTerms === true;
     }
     return false;
-  })();
+  }, [step, selectedPlan, cartItems, unavailablePanels, acceptTerms]);
 
-  const calculateOrderTotal = () => {
+  const calculateOrderTotal = useCallback(() => {
     return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  };
+  }, [selectedPlan, cartItems, couponDiscount, couponValid]);
 
   const handleNextStep = useCallback(async () => {
-    if (isNavigating) return;
+    if (isNavigating) {
+      console.log("Navegação já em andamento, ignorando novo pedido");
+      return;
+    }
+
+    // Adicionar log detalhado para diagnóstico
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      `Tentando avançar do passo ${step} para o próximo passo`,
+      { currentStep: step, cartItems: cartItems.length }
+    );
+
+    // Verificar se o botão deveria estar habilitado
+    if (!isNextEnabled()) {
+      console.log("Botão desabilitado, mas clicado de alguma forma");
+      return;
+    }
 
     setIsNavigating(true);
 
     try {
       if (step === 3) {
-        // Payment Step
+        // Passo de pagamento
+        console.log("Iniciando processamento de pagamento", { cartItems, selectedPlan });
         const orderTotal = calculateOrderTotal();
 
         if (orderTotal <= 0) {
@@ -77,6 +99,18 @@ export const useCheckoutNavigation = ({
             description: "O valor total do pedido deve ser maior que zero para prosseguir com o pagamento.",
             variant: "destructive",
           });
+          setIsNavigating(false);
+          return;
+        }
+
+        if (!sessionUser) {
+          toast({
+            title: "Erro",
+            description: "Você precisa estar logado para finalizar o pagamento.",
+            variant: "destructive",
+          });
+          navigate('/login?redirect=/checkout');
+          setIsNavigating(false);
           return;
         }
 
@@ -92,14 +126,26 @@ export const useCheckoutNavigation = ({
           }))
         };
 
+        console.log("Params de pagamento:", paymentParams);
+
         try {
-          await createPayment(paymentParams);
-          toast({
-            title: "Sucesso",
-            description: "Pagamento criado com sucesso!",
+          const result = await createPayment({
+            totalPrice: orderTotal,
+            selectedPlan,
+            cartItems,
+            startDate,
+            endDate,
+            couponId,
+            acceptTerms,
+            unavailablePanels,
+            sessionUser,
+            handleClearCart
           });
-          handleClearCart();
-          navigate('/painel/pedidos');
+          
+          console.log("Resultado do pagamento:", result);
+          
+          // Note: A navegação para a página de sucesso é feita dentro de createPayment
+          // Esta função apenas retorna, sem tentar navegar novamente
         } catch (paymentError) {
           console.error("Erro ao criar pagamento:", paymentError);
           toast({
@@ -109,21 +155,65 @@ export const useCheckoutNavigation = ({
           });
         }
       } else {
-        // Move to the next step
+        // Avança para o próximo passo
+        console.log(`Avançando para o passo ${step + 1}`);
         setStep(step + 1);
       }
+    } catch (error) {
+      console.error("Erro inesperado na navegação:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsNavigating(false);
     }
-  }, [step, setStep, selectedPlan, cartItems, couponDiscount, couponValid, acceptTerms, couponId, startDate, endDate, sessionUser, handleClearCart, createPayment, navigate, toast]);
+  }, [
+    step, 
+    setStep, 
+    selectedPlan, 
+    cartItems, 
+    couponDiscount, 
+    couponValid, 
+    acceptTerms, 
+    couponId, 
+    startDate, 
+    endDate, 
+    sessionUser, 
+    handleClearCart, 
+    createPayment, 
+    navigate, 
+    toast, 
+    isNavigating, 
+    isNextEnabled, 
+    unavailablePanels,
+    calculateOrderTotal
+  ]);
 
-  const handlePrevStep = () => {
-    setStep(step - 1);
-  };
+  const handlePrevStep = useCallback(() => {
+    if (step > 0) {
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        `Retornando do passo ${step} para o passo ${step - 1}`
+      );
+      setStep(step - 1);
+    } else {
+      // Se estiver no primeiro passo, volta para a loja
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        "Retornando para a loja a partir do primeiro passo"
+      );
+      navigate('/paineis-digitais/loja');
+    }
+  }, [step, setStep, navigate]);
 
   return {
     handleNextStep,
     handlePrevStep,
-    isNextEnabled
+    isNextEnabled: isNextEnabled(),
+    isNavigating
   };
 };

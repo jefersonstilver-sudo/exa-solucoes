@@ -1,221 +1,141 @@
 
-/**
- * Serviço para ajudar a debugar o fluxo de checkout
- * Rastreia e registra cada etapa do processo de checkout
- */
+import { format } from 'date-fns';
 
-// Níveis de log para facilitar a filtragem
 export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARNING = 'WARNING',
-  ERROR = 'ERROR',
-  SUCCESS = 'SUCCESS'
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  SUCCESS = 'success',
+  DEBUG = 'debug'
 }
 
-// Eventos de checkout que estamos rastreando
 export enum CheckoutEvent {
-  CART_UPDATED = 'Atualização do carrinho',
-  ADD_TO_CART = 'Adição ao carrinho',
-  REMOVE_FROM_CART = 'Remoção do carrinho',
-  CLEAR_CART = 'Limpeza do carrinho',
-  SAVE_CART = 'Salvamento do carrinho',
-  RESTORE_CART = 'Restauração do carrinho',
-  PROCEED_TO_CHECKOUT = 'Prosseguir para checkout',
-  APPLY_COUPON = 'Aplicação de cupom',
-  NAVIGATE_TO_PLAN = 'Navegação para seleção de plano',
-  LOAD_PLAN = 'Carregamento do plano',
-  NAVIGATE_TO_CHECKOUT = 'Navegação para checkout',
-  COMPLETE_PURCHASE = 'Finalização da compra',
-  NAVIGATION_ERROR = 'Erro de navegação',
-  NAVIGATION_EVENT = 'Evento de navegação',
-  DEBUG = 'Informação de Debug',
-  AUDIT = 'Auditoria do sistema'
+  AUDIT = 'audit',
+  SAVE_CART = 'save_cart',
+  LOAD_CART = 'load_cart',
+  PROCEED_TO_CHECKOUT = 'proceed_to_checkout',
+  NAVIGATE_TO_PLAN = 'navigate_to_plan',
+  NAVIGATION_EVENT = 'navigation_event',
+  NAVIGATION_ERROR = 'navigation_error',
+  CHECKOUT_INITIATION = 'checkout_initiation',
+  CHECKOUT_START = 'checkout_start',
+  CHECKOUT_ERROR = 'checkout_error',
+  EMPTY_CART_ATTEMPT = 'empty_cart_attempt',
+  MULTIPLE_CHECKOUT_ATTEMPT = 'multiple_checkout_attempt',
+  PAYMENT_PROCESSING = 'payment_processing',
+  PAYMENT_SUCCESS = 'payment_success',
+  PAYMENT_ERROR = 'payment_error'
 }
 
-// Interface para o log de eventos
-export interface CheckoutEventLog {
-  timestamp: number;
-  event: CheckoutEvent;
+interface CheckoutLog {
+  timestamp: string;
   level: LogLevel;
+  event: CheckoutEvent;
   message: string;
-  data?: any;
+  details?: any;
 }
 
-// Armazenar logs em memória e localStorage
+// Armazenar logs em localStorage para persistência entre refreshes
+const STORAGE_KEY = 'checkout_debug_logs';
 const MAX_LOGS = 100;
-let checkoutLogs: CheckoutEventLog[] = [];
 
-// Função para serializar logs de forma segura (evita erros de circular reference)
-const safeStringify = (obj: any): string => {
+// Carregar logs existentes
+const loadLogs = (): CheckoutLog[] => {
   try {
-    // Substitui referências circulares e DOM elements com versões seguras
-    const getCircularReplacer = () => {
-      const seen = new WeakSet();
-      return (key: string, value: any) => {
-        // Ignora elementos DOM que causam erros de serialização
-        if (value instanceof Node) return '[DOM Element]';
-        if (value instanceof Event) return '[DOM Event]';
-        if (typeof value === 'function') return '[Function]';
-        
-        // Ignora completamente objetos window e document
-        if (value === window) return '[Window]';
-        if (value === document) return '[Document]';
-        
-        // Detecta referências circulares para objetos normais
-        if (typeof value === 'object' && value !== null) {
-          if (seen.has(value)) {
-            return '[Circular Reference]';
-          }
-          seen.add(value);
-        }
-        return value;
-      };
-    };
-    
-    return JSON.stringify(obj, getCircularReplacer());
-  } catch (error) {
-    console.error('Erro ao serializar objeto:', error);
-    return JSON.stringify({ error: 'Erro ao serializar objeto', simpleData: typeof obj });
-  }
-};
-
-// Salvar logs no localStorage
-const saveLogsToStorage = () => {
-  try {
-    // Limitar o número máximo de logs armazenados
-    const logsToSave = checkoutLogs.slice(-MAX_LOGS);
-    
-    // Usar a função de serialização segura
-    localStorage.setItem('checkout_debug_logs', safeStringify(logsToSave));
-  } catch (error) {
-    console.error('Falha ao salvar logs no localStorage', error);
-  }
-};
-
-// Carregar logs do localStorage
-const loadLogsFromStorage = (): CheckoutEventLog[] => {
-  try {
-    const savedLogs = localStorage.getItem('checkout_debug_logs');
-    if (savedLogs) {
-      const parsedLogs = JSON.parse(savedLogs);
-      console.log(`Carregados ${parsedLogs.length} logs de checkout do localStorage`);
-      return parsedLogs;
+    const storedLogs = localStorage.getItem(STORAGE_KEY);
+    if (storedLogs) {
+      const parsedLogs = JSON.parse(storedLogs);
+      if (Array.isArray(parsedLogs)) {
+        console.log(`Carregados ${parsedLogs.length} logs de checkout do localStorage`);
+        return parsedLogs;
+      }
     }
   } catch (error) {
-    console.error('Falha ao carregar logs do localStorage', error);
+    console.error('Erro ao carregar logs de checkout:', error);
   }
   return [];
 };
 
-// Função principal para registro de eventos
+// Array de logs do checkout
+let checkoutLogs: CheckoutLog[] = loadLogs();
+
+// Salvar logs no localStorage
+const saveLogs = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(checkoutLogs));
+  } catch (error) {
+    console.error('Erro ao salvar logs de checkout:', error);
+  }
+};
+
+// Registrar evento de checkout
 export const logCheckoutEvent = (
   event: CheckoutEvent,
-  level: LogLevel = LogLevel.INFO,
+  level: LogLevel,
   message: string,
-  data?: any
+  details?: any
 ) => {
-  // Processar dados antes de logar para evitar circular references
-  let safeData = data;
-  if (data) {
-    // Se for um objeto complexo, tente uma serialização segura
-    try {
-      if (typeof data === 'object') {
-        // Criar uma versão simplificada do objeto apenas com propriedades seguras
-        safeData = JSON.parse(safeStringify(data));
-      }
-    } catch (e) {
-      safeData = { error: 'Dados não serializáveis', type: typeof data };
-    }
-  }
+  const timestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss.SSS');
   
-  // Criar log de evento
-  const log: CheckoutEventLog = {
-    timestamp: Date.now(),
-    event,
+  // Criar novo log
+  const log: CheckoutLog = {
+    timestamp,
     level,
+    event,
     message,
-    data: safeData
+    details
   };
   
-  // Adicionar ao array de logs
-  checkoutLogs.push(log);
+  // Adicionar ao início do array para que os mais recentes fiquem no topo
+  checkoutLogs.unshift(log);
+  
+  // Limitar o número de logs armazenados
+  while (checkoutLogs.length > MAX_LOGS) {
+    checkoutLogs.pop();
+  }
   
   // Salvar no localStorage
-  saveLogsToStorage();
+  saveLogs();
   
-  // Console log com formatação diferente baseada no nível
-  let consoleMethod: 'log' | 'info' | 'warn' | 'error' = 'log';
-  let style = '';
+  // Log no console para diagnóstico imediato
+  const levelColors = {
+    [LogLevel.INFO]: 'color: #3498db',
+    [LogLevel.WARNING]: 'color: #f39c12',
+    [LogLevel.ERROR]: 'color: #e74c3c',
+    [LogLevel.SUCCESS]: 'color: #2ecc71',
+    [LogLevel.DEBUG]: 'color: #9b59b6'
+  };
   
-  switch (level) {
-    case LogLevel.DEBUG:
-      consoleMethod = 'log';
-      break;
-    case LogLevel.INFO:
-      consoleMethod = 'info';
-      break;
-    case LogLevel.WARNING:
-      consoleMethod = 'warn';
-      break;
-    case LogLevel.ERROR:
-      consoleMethod = 'error';
-      break;
-    case LogLevel.SUCCESS:
-      consoleMethod = 'info';
-      style = 'color: green';
-      break;
-  }
+  console.log(
+    `%c[${log.level.toUpperCase()}] [${log.event}] ${log.message}`,
+    levelColors[log.level],
+    details || ''
+  );
   
-  // Formatar a mensagem para o console
-  const consoleMessage = `[CHECKOUT] [${level}] ${event}: ${message}`;
-  
-  if (style) {
-    console[consoleMethod](`%c${consoleMessage}`, style, safeData ? safeData : '');
-  } else {
-    console[consoleMethod](consoleMessage, safeData ? safeData : '');
-  }
-  
-  // Retornar o log para possível uso posterior
   return log;
 };
 
-// Função para obter um resumo dos logs para auditoria
-export const getCheckoutAuditSummary = (): any => {
-  const eventCounts: Record<string, number> = {};
-  const errorEvents: CheckoutEventLog[] = [];
-  
-  // Analisar logs
-  checkoutLogs.forEach(log => {
-    // Contar ocorrências de eventos
-    if (!eventCounts[log.event]) {
-      eventCounts[log.event] = 0;
-    }
-    eventCounts[log.event]++;
-    
-    // Coletar logs de erro
-    if (log.level === LogLevel.ERROR) {
-      errorEvents.push(log);
-    }
-  });
-  
-  // Calcular métricas
-  return {
-    totalLogs: checkoutLogs.length,
-    eventCounts,
-    errorCount: errorEvents.length,
-    recentErrors: errorEvents.slice(-5),
-    recentLogs: checkoutLogs.slice(-10)
-  };
+// Obter todos os logs
+export const getAllCheckoutLogs = () => {
+  return [...checkoutLogs];
 };
 
-// Inicializar carregando logs do localStorage
-try {
-  checkoutLogs = loadLogsFromStorage();
-} catch (e) {
-  console.error('Erro ao inicializar logs de checkout:', e);
-}
+// Limpar todos os logs
+export const clearCheckoutLogs = () => {
+  checkoutLogs = [];
+  saveLogs();
+};
 
-// Exportar funções e tipos
-export { checkoutLogs };
-
+// Função para extrair resumo dos logs de um fluxo de checkout
+export const getCheckoutFlowSummary = () => {
+  const flowEvents = checkoutLogs.filter(log => 
+    log.event === CheckoutEvent.CHECKOUT_INITIATION ||
+    log.event === CheckoutEvent.NAVIGATION_EVENT ||
+    log.event === CheckoutEvent.CHECKOUT_ERROR ||
+    log.event === CheckoutEvent.PAYMENT_PROCESSING ||
+    log.event === CheckoutEvent.PAYMENT_SUCCESS ||
+    log.event === CheckoutEvent.PAYMENT_ERROR
+  );
+  
+  return flowEvents;
+};

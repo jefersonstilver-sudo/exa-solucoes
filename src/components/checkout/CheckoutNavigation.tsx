@@ -13,6 +13,7 @@ interface CheckoutNavigationProps {
   isCreatingPayment: boolean;
   isPaymentStep: boolean;
   totalPrice?: number;
+  isNavigating?: boolean; // Nova propriedade para controle de navegação
 }
 
 const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
@@ -22,8 +23,23 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isNextEnabled,
   isCreatingPayment,
   isPaymentStep,
-  totalPrice = 0
+  totalPrice = 0,
+  isNavigating = false // Valor padrão
 }) => {
+  // Valor combinado para determinar se o botão deve estar desabilitado
+  const isDisabled = !isNextEnabled || isCreatingPayment || isNavigating;
+  
+  // Texto para o botão "Próximo" com base no estado atual
+  const getNextButtonText = () => {
+    if (isCreatingPayment || isNavigating) {
+      return "Processando...";
+    }
+    if (isPaymentStep) {
+      return `Confirmar e pagar ${formatCurrency(totalPrice)}`;
+    }
+    return "Continuar";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -36,6 +52,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
         size="lg"
         onClick={onBack}
         className="flex items-center space-x-2 py-6"
+        disabled={isCreatingPayment || isNavigating}
       >
         <ChevronLeft className="h-4 w-4" />
         <span>
@@ -45,27 +62,24 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
 
       <Button
         onClick={onNext}
-        disabled={!isNextEnabled || isCreatingPayment}
+        disabled={isDisabled}
         size="lg"
         className={`
           py-6 px-8 flex items-center space-x-2
           ${isPaymentStep 
             ? 'bg-green-600 hover:bg-green-700' 
             : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'}
+          ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}
         `}
       >
-        {isCreatingPayment ? (
+        {isCreatingPayment || isNavigating ? (
           <>
-            <Loader className="h-4 w-4 animate-spin" />
+            <Loader className="h-4 w-4 animate-spin mr-2" />
             <span>Processando...</span>
           </>
         ) : (
           <>
-            <span>
-              {isPaymentStep 
-                ? `Confirmar e pagar ${formatCurrency(totalPrice)}` 
-                : 'Continuar'}
-            </span>
+            <span>{getNextButtonText()}</span>
             {isPaymentStep && <CheckCircle className="h-4 w-4 ml-2" />}
           </>
         )}

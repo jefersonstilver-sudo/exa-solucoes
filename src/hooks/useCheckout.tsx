@@ -84,7 +84,12 @@ export const useCheckout = () => {
   };
 
   // Usa o hook de navegação
-  const { handleNextStep, handlePrevStep, isNextEnabled } = useCheckoutNavigation({
+  const { 
+    handleNextStep, 
+    handlePrevStep, 
+    isNextEnabled,
+    isNavigating // Nova propriedade
+  } = useCheckoutNavigation({
     step,
     setStep,
     selectedPlan,
@@ -131,6 +136,7 @@ export const useCheckout = () => {
     startDate,
     endDate,
     isCreatingPayment,
+    isNavigating, // Nova propriedade
     unavailablePanels,
     cartItems,
     validateCoupon: handleValidateCoupon,

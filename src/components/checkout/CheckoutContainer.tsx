@@ -30,6 +30,7 @@ const CheckoutContainer: React.FC = () => {
     startDate,
     endDate,
     isCreatingPayment,
+    isNavigating, // Nova propriedade
     unavailablePanels,
     cartItems,
     validateCoupon,
@@ -116,6 +117,7 @@ const CheckoutContainer: React.FC = () => {
         isBackToStore={step === STEPS.PLAN}
         isNextEnabled={isNextEnabled}
         isCreatingPayment={isCreatingPayment}
+        isNavigating={isNavigating} // Nova propriedade
         isPaymentStep={step === STEPS.PAYMENT}
         totalPrice={totalPrice}
       />
