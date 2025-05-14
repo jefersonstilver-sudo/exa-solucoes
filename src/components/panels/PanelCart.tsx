@@ -89,6 +89,17 @@ const PanelCart: React.FC<PanelCartProps> = ({
   };
   
   const handleCheckout = () => {
+    console.log("Checkout iniciado, usuário logado:", isLoggedIn);
+    
+    if (cartItems.length === 0) {
+      toast({
+        title: "Carrinho vazio",
+        description: "Adicione painéis ao seu carrinho para finalizar a compra",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -98,13 +109,15 @@ const PanelCart: React.FC<PanelCartProps> = ({
           description: "Faça login para continuar com a compra",
         });
         
-        // Save the return URL to get back after login
+        // Salvar URL de retorno para voltar após o login
         const returnUrl = '/checkout';
         navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       } else {
-        // User is already logged in, proceed directly to checkout
-        // IMPORTANTE: DON'T clear the cart here - isso estava causando o problema
-        navigate('/checkout');
+        // CORREÇÃO IMPORTANTE: Garante navegação direta para checkout mesmo estando logado
+        console.log("Usuário já logado, redirecionando para /checkout");
+        setTimeout(() => {
+          navigate('/checkout');
+        }, 100);
       }
     } catch (error) {
       console.error("Erro ao processar checkout:", error);

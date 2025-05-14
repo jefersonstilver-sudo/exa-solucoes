@@ -52,8 +52,11 @@ export const useCheckout = () => {
 
   // Check if user is authenticated
   useEffect(() => {
+    console.log("useCheckout: Verificando autenticação do usuário");
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
+      console.log("useCheckout: Sessão verificada", data.session ? "Usuário logado" : "Usuário não logado");
+      
       if (!data.session?.user) {
         toast({
           title: "Acesso restrito",
@@ -70,6 +73,7 @@ export const useCheckout = () => {
     
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("useCheckout: Auth state mudou:", event);
       if (event === 'SIGNED_IN') {
         setSessionUser(session?.user || null);
       } else if (event === 'SIGNED_OUT') {
@@ -81,7 +85,7 @@ export const useCheckout = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, toast]);
   
   // Update end date when plan changes
   useEffect(() => {
@@ -92,6 +96,7 @@ export const useCheckout = () => {
   
   // Check if cart is empty
   useEffect(() => {
+    console.log("useCheckout: Verificando carrinho", cartItems.length);
     if (cartItems.length === 0) {
       toast({
         title: "Carrinho vazio",
@@ -100,14 +105,14 @@ export const useCheckout = () => {
       });
       navigate('/paineis-digitais/loja');
     }
-  }, [cartItems, navigate]);
+  }, [cartItems, navigate, toast]);
   
   // Check panel availability when step changes to plan selection
   useEffect(() => {
     if (step === STEPS.PLAN) {
       checkPanelAvailability(cartItems, startDate, endDate);
     }
-  }, [step, startDate, endDate]);
+  }, [step, startDate, endDate, cartItems, checkPanelAvailability]);
 
   // Handle validateCoupon to adapt to the new structure
   const handleValidateCoupon = () => {
