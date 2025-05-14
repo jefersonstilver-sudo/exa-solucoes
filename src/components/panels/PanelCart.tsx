@@ -103,6 +103,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
         navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       } else {
         // User is already logged in, proceed to checkout
+        // Important: DON'T clear the cart here
         navigate('/checkout');
       }
     } catch (error) {
