@@ -110,28 +110,34 @@ async function createCampaignsFromPedido(pedido: any) {
       .order('created_at', { ascending: false })
       .limit(1);
       
-    if (videosError || !videos || videos.length === 0) {
-      console.log('No active video found for client:', pedido.client_id);
-      return;
+    if (videosError) {
+      throw videosError;
     }
     
-    const video = videos[0];
+    // Determine video status
+    const videoId = videos && videos.length > 0 ? videos[0].id : null;
+    const campaignStatus = videoId ? 'pendente' : 'aguardando_video';
     
-    // Calculate campaign dates
-    const startDate = new Date().toISOString().split('T')[0]; // today
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + pedido.duracao);
-    const endDateStr = endDate.toISOString().split('T')[0];
+    // Ensure all panel IDs are valid UUIDs
+    const validPanelIds = pedido.lista_paineis.filter((id: string) => 
+      id && typeof id === 'string' && id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+    );
+    
+    if (validPanelIds.length === 0) {
+      throw new Error('No valid panel IDs found in pedido');
+    }
     
     // Create a campaign for each painel in the pedido
-    const campaignInserts = pedido.lista_paineis.map((painelId: string) => ({
+    const campaignInserts = validPanelIds.map((painelId: string) => ({
       client_id: pedido.client_id,
-      video_id: video.id,
+      video_id: videoId,
       painel_id: painelId,
-      data_inicio: startDate,
-      data_fim: endDateStr,
-      obs: `Created from pedido ${pedido.id}`,
-      status: 'pendente'
+      data_inicio: pedido.data_inicio,
+      data_fim: pedido.data_fim,
+      status: campaignStatus,
+      obs: `Criado a partir do pedido ${pedido.id}`,
+      proveniencia_video: 'cliente',
+      ultima_atualizacao: new Date().toISOString()
     }));
     
     const { data: campaigns, error: campaignsError } = await supabase
@@ -153,7 +159,9 @@ async function createCampaignsFromPedido(pedido: any) {
       }
     );
     
+    return campaigns;
   } catch (error) {
     console.error('Error creating campaigns from pedido:', error);
+    throw error;
   }
 }

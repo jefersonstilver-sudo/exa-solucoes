@@ -6,12 +6,10 @@ import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { 
   CreditCard,
-  Landmark,
-  Banknote,
-  AlertTriangle,
   Lock,
   Check,
   CreditCardIcon,
+  AlertTriangle,
 } from "lucide-react";
 
 interface PaymentStepProps {
@@ -22,7 +20,7 @@ interface PaymentStepProps {
 const PaymentStep = ({ acceptTerms, setAcceptTerms }: PaymentStepProps) => {
   const [selectedMethod, setSelectedMethod] = useState<string>("credit_card");
 
-  // Payment method options
+  // Payment method options - removing boleto and bank transfer
   const paymentMethods = [
     { 
       id: "credit_card", 
@@ -43,20 +41,6 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms }: PaymentStepProps) => {
         <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
       </svg>,
       installments: false  
-    },
-    { 
-      id: "bank_transfer", 
-      name: "Transferência bancária", 
-      description: "Pagamento com TED/DOC", 
-      icon: <Landmark className="h-5 w-5" />,
-      installments: false
-    },
-    { 
-      id: "boleto", 
-      name: "Boleto bancário", 
-      description: "Prazo de compensação de até 3 dias úteis", 
-      icon: <Banknote className="h-5 w-5" />,
-      installments: false
     }
   ];
 

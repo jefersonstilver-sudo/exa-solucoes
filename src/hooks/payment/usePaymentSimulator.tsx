@@ -1,9 +1,7 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useOrderCreation } from './useOrderCreation';
 import { Panel } from '@/types/panel';
 
 interface CartItem {
@@ -13,10 +11,12 @@ interface CartItem {
 
 export const usePaymentSimulator = () => {
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  const { createCampaignsAfterPayment } = useOrderCreation();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  // Função para simular um pagamento bem-sucedido (apenas para demonstração)
+  /**
+   * Simula um pagamento bem-sucedido para testes
+   */
   const simulateSuccessfulPayment = async (
     pedidoId: string,
     cartItems: CartItem[],
@@ -26,65 +26,35 @@ export const usePaymentSimulator = () => {
     handleClearCart: () => void
   ) => {
     try {
-      // Adiciona um pequeno atraso para simular o processamento do pagamento
-      toast({
-        title: "Processando pagamento",
-        description: "Aguarde enquanto processamos seu pagamento...",
-      });
+      console.log("Simulando pagamento bem-sucedido para o pedido:", pedidoId);
       
+      // Simula o tempo de processamento do pagamento
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Atualiza o status do pedido para 'pago'
-      await supabase
-        .from('pedidos')
-        .update({
-          status: 'pago',
-          log_pagamento: {
-            payment_status: 'approved',
-            payment_method: 'credit_card',
-            payment_date: new Date().toISOString(),
-            payment_id: `DEMO-${Date.now()}`
-          }
-        })
-        .eq('id', pedidoId);
+      // Criar campanhas e atualizar o status do pedido
+      const result = await createCampaignsAfterPayment(pedidoId, sessionUser.id);
       
-      // Cria campanhas para cada painel
-      for (const item of cartItems) {
-        await supabase
-          .from('campanhas')
-          .insert([
-            {
-              client_id: sessionUser.id,
-              painel_id: item.panel.id,
-              video_id: '00000000-0000-0000-0000-000000000000', // Placeholder
-              data_inicio: startDate.toISOString().split('T')[0],
-              data_fim: endDate.toISOString().split('T')[0],
-              status: 'aguardando_video',
-              obs: `Criado automaticamente do pedido ${pedidoId}`,
-            }
-          ]);
+      if (!result.success) {
+        throw new Error('Erro ao processar pós-pagamento');
       }
       
-      // Só limpa o carrinho depois que todas as campanhas foram criadas com sucesso
+      // Limpar o carrinho
       handleClearCart();
       
-      // Exibe mensagem de sucesso
-      sonnerToast.success("Pagamento realizado com sucesso!");
+      toast({
+        title: "Pagamento realizado com sucesso!",
+        description: "Seu pedido foi confirmado e suas campanhas foram criadas.",
+      });
       
-      // Redireciona para a página de confirmação
-      navigate(`/pedido-confirmado?id=${pedidoId}`);
-      
-      // Reinicia o estado
-      setIsCreatingPayment(false);
-      
+      return true;
     } catch (error: any) {
-      console.error('Erro ao processar confirmação de pagamento:', error);
-      setIsCreatingPayment(false);
+      console.error("Erro ao simular pagamento:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao processar confirmação",
-        description: error.message || "Houve um problema ao finalizar o pedido.",
+        title: "Erro ao processar pagamento",
+        description: error.message || "Ocorreu um erro durante o processamento do pagamento.",
       });
+      return false;
     }
   };
 

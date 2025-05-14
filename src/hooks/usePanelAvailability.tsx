@@ -29,13 +29,22 @@ export const usePanelAvailability = () => {
       
       // Check availability for each panel
       for (const item of cartItems) {
+        // Make sure panel.id is a valid UUID string
+        if (!item.panel.id || typeof item.panel.id !== 'string' || !item.panel.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+          console.error('Invalid panel ID format:', item.panel.id);
+          continue;
+        }
+        
         const { data, error } = await supabase.rpc('check_panel_availability', {
           p_panel_id: item.panel.id,
           p_start_date: startDateStr,
           p_end_date: endDateStr
         });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error checking panel availability:', error);
+          throw error;
+        }
         
         if (data === false) {
           unavailable.push(item.panel.id);

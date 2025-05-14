@@ -28,12 +28,21 @@ export const useOrderCreation = () => {
     startDate,
     endDate
   }: OrderCreationOptions) => {
+    // Validate panel IDs are proper UUIDs
+    const validPanelIds = cartItems
+      .filter(item => 
+        item.panel.id && 
+        typeof item.panel.id === 'string' && 
+        item.panel.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+      )
+      .map(item => item.panel.id);
+    
+    if (validPanelIds.length !== cartItems.length) {
+      throw new Error('Alguns painéis possuem identificadores inválidos');
+    }
+    
     // Cria uma cópia dos itens do carrinho para evitar problemas se o carrinho for limpo
     const cartItemsCopy = [...cartItems];
-    
-    // O problema de recursão infinita ocorre quando tentamos fazer uma consulta à 
-    // tabela users dentro de uma função RLS da mesma tabela.
-    // Para evitar isso, vamos criar o pedido diretamente com o user_id do session
     
     // Cria pedido no banco de dados
     const { data: pedido, error: pedidoError } = await supabase
@@ -41,7 +50,7 @@ export const useOrderCreation = () => {
       .insert([
         {
           client_id: sessionUser.id,
-          lista_paineis: cartItemsCopy.map(item => item.panel.id),
+          lista_paineis: validPanelIds,
           duracao: selectedPlan * 30, // Converte meses para dias
           plano_meses: selectedPlan,
           valor_total: totalPrice,
@@ -54,14 +63,18 @@ export const useOrderCreation = () => {
             plan_details: { months: selectedPlan },
             coupon_applied: couponId ? true : false,
             panels_count: cartItemsCopy.length,
-            user_name: sessionUser.user_metadata?.name || sessionUser.email
+            user_name: sessionUser.user_metadata?.name || sessionUser.email,
+            payment_method: 'mercado_pago'
           }
         }
       ])
       .select()
       .single();
     
-    if (pedidoError) throw pedidoError;
+    if (pedidoError) {
+      console.error('Erro ao criar pedido:', pedidoError);
+      throw pedidoError;
+    }
     
     // Se um cupom foi aplicado, registra seu uso
     if (couponId) {
@@ -101,6 +114,72 @@ export const useOrderCreation = () => {
       
     return pedido;
   };
+  
+  // Função para criar campanhas após pagamento confirmado
+  const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
+    try {
+      // Buscar detalhes do pedido
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('id', pedidoId)
+        .single();
+      
+      if (pedidoError) {
+        console.error('Erro ao buscar detalhes do pedido:', pedidoError);
+        throw pedidoError;
+      }
+      
+      // Atualizar status do pedido para 'pago'
+      await supabase
+        .from('pedidos')
+        .update({ status: 'pago' })
+        .eq('id', pedidoId);
+      
+      // Buscar vídeo ativo do cliente (se houver)
+      const { data: videos, error: videoError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('client_id', userId)
+        .eq('status', 'ativo')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      // Determinar se o cliente tem um vídeo ou precisa cadastrar um
+      const videoId = videos && videos.length > 0 ? videos[0].id : null;
+      
+      // Criar campanhas para cada painel do pedido
+      const campanhasInsert = pedido.lista_paineis.map((painelId: string) => ({
+        client_id: userId,
+        video_id: videoId,
+        painel_id: painelId,
+        data_inicio: pedido.data_inicio,
+        data_fim: pedido.data_fim,
+        status: videoId ? 'pendente' : 'aguardando_video',
+        obs: `Criado a partir do pedido ${pedidoId}`
+      }));
+      
+      // Inserir campanhas no banco de dados
+      if (campanhasInsert.length > 0) {
+        const { error: campanhasError } = await supabase
+          .from('campanhas')
+          .insert(campanhasInsert);
+        
+        if (campanhasError) {
+          console.error('Erro ao criar campanhas:', campanhasError);
+          throw campanhasError;
+        }
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao processar pós-pagamento:', error);
+      return { success: false, error };
+    }
+  };
 
-  return { createOrder };
+  return { 
+    createOrder,
+    createCampaignsAfterPayment
+  };
 };

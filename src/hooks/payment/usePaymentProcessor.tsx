@@ -70,6 +70,23 @@ export const usePaymentProcessor = () => {
         return;
       }
       
+      // Validar IDs de painéis
+      const invalidPanelIds = cartItems.filter(item => 
+        !item.panel.id || 
+        typeof item.panel.id !== 'string' || 
+        !item.panel.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+      );
+      
+      if (invalidPanelIds.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Painéis inválidos",
+          description: "Alguns painéis possuem identificadores inválidos. Por favor, atualize seu carrinho.",
+        });
+        setIsCreatingPayment(false);
+        return;
+      }
+      
       // Cria pedido no banco de dados
       const pedido = await createOrder({
         sessionUser,

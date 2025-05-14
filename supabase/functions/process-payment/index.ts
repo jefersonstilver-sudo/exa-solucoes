@@ -36,6 +36,11 @@ serve(async (req) => {
     // Obter dados do request
     const { pedidoId, cartItems, totals, userId, returnUrl } = await req.json();
     
+    // Validar pedidoId (deve ser um UUID válido)
+    if (!pedidoId || typeof pedidoId !== 'string' || !pedidoId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+      throw new Error(`ID de pedido inválido: ${pedidoId}`);
+    }
+    
     // Buscar dados do usuário para incluir no pagamento
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -44,20 +49,36 @@ serve(async (req) => {
       .single();
       
     if (userError) {
-      throw new Error(`Error fetching user data: ${userError.message}`);
+      throw new Error(`Erro ao buscar dados do usuário: ${userError.message}`);
     }
     
-    // Preparar itens para MercadoPago
-    const items = cartItems.map(item => ({
-      id: item.panel.id,
-      title: `Painel em ${item.panel.buildings?.nome || 'Localização'}`,
-      quantity: 1,
-      unit_price: totals.totalPrice / cartItems.length, // Dividir valor total pelos itens
-      currency_id: 'BRL',
-      description: `Veiculação por ${totals.duration} dias`,
-      category_id: "digital_goods",
-      picture_url: item.panel.buildings?.imageUrl || 'https://via.placeholder.com/150'
-    }));
+    // Verificar se existem painéis válidos
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      throw new Error("Nenhum painel válido encontrado no carrinho");
+    }
+    
+    // Preparar itens para MercadoPago, garantindo que todos os painéis tenham IDs válidos
+    const items = cartItems
+      .filter(item => 
+        item.panel && 
+        item.panel.id && 
+        typeof item.panel.id === 'string' &&
+        item.panel.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+      )
+      .map(item => ({
+        id: item.panel.id,
+        title: `Painel em ${item.panel.buildings?.nome || 'Localização'}`,
+        quantity: 1,
+        unit_price: totals.totalPrice / cartItems.length, // Dividir valor total pelos itens
+        currency_id: 'BRL',
+        description: `Veiculação por ${totals.duration} dias`,
+        category_id: "digital_goods",
+        picture_url: item.panel.buildings?.imageUrl || 'https://via.placeholder.com/150'
+      }));
+      
+    if (items.length === 0) {
+      throw new Error("Nenhum item válido para processamento");
+    }
     
     // Criar preferência de pagamento
     const preference = {
@@ -103,7 +124,7 @@ serve(async (req) => {
       .eq('id', pedidoId);
       
     if (updateError) {
-      throw new Error(`Error updating order: ${updateError.message}`);
+      throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
     }
     
     // Retornar dados da preferência
@@ -123,7 +144,7 @@ serve(async (req) => {
     );
     
   } catch (error) {
-    console.error('Error processing payment:', error);
+    console.error('Erro ao processar pagamento:', error);
     
     return new Response(
       JSON.stringify({
