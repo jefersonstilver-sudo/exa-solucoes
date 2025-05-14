@@ -1,4 +1,3 @@
-
 /**
  * Serviço para ajudar a debugar o fluxo de checkout
  * Rastreia e registra cada etapa do processo de checkout
@@ -26,7 +25,8 @@ export enum CheckoutEvent {
   LOAD_PLAN = 'Carregamento do plano',
   NAVIGATE_TO_CHECKOUT = 'Navegação para checkout',
   COMPLETE_PURCHASE = 'Finalização da compra',
-  NAVIGATION_ERROR = 'Erro de navegação'
+  NAVIGATION_ERROR = 'Erro de navegação',
+  DEBUG = 'Informação de Debug' // Added DEBUG event type
 }
 
 // Interface para o log de eventos
