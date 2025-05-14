@@ -5,7 +5,8 @@ import { Building, AlertTriangle } from 'lucide-react';
 import { Panel } from '@/types/panel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, daysToMonths } from '@/utils/priceUtils';
+import { formatCurrency } from '@/utils/priceUtils';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 
 interface ReviewStepProps {
   cartItems: { panel: Panel; duration: number }[];
@@ -27,6 +28,11 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels })
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
+  };
+
+  // Função para calcular o preço de exibição do painel
+  const calculatePanelDisplayPrice = (panel: Panel, duration: number) => {
+    return getPanelPrice(panel, duration);
   };
 
   return (
@@ -78,6 +84,8 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels })
       >
         {cartItems.map((item, index) => {
           const isPanelUnavailable = unavailablePanels.includes(item.panel.id);
+          const panelPrice = calculatePanelDisplayPrice(item.panel, item.duration);
+          const months = Math.round(item.duration / 30);
           
           return (
             <motion.div
@@ -110,10 +118,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels })
                         
                         <div className="text-right">
                           <span className="text-indexa-purple font-semibold">
-                            {formatCurrency(250 * daysToMonths(item.duration))}
+                            {formatCurrency(panelPrice)}
                           </span>
                           <p className="text-xs text-gray-500">
-                            {daysToMonths(item.duration)} {daysToMonths(item.duration) === 1 ? 'mês' : 'meses'}
+                            {months} {months === 1 ? 'mês' : 'meses'}
                           </p>
                         </div>
                       </div>

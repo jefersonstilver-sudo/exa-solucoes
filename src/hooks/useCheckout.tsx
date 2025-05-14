@@ -1,10 +1,11 @@
+
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
 import { usePanelAvailability } from '@/hooks/usePanelAvailability';
 import { usePaymentProcessor } from '@/hooks/payment/usePaymentProcessor';
-import { calculateTotalPrice } from '@/utils/checkoutUtils';
+import { calculateTotalPrice, calculateCartSubtotal } from '@/utils/checkoutUtils';
 import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
 import { useCheckoutState } from '@/hooks/checkout/useCheckoutState';
 import { useCheckoutAuth } from '@/hooks/checkout/useCheckoutAuth';
@@ -85,6 +86,15 @@ export const useCheckout = () => {
     createPayment
   });
 
+  // Log para diagnóstico dos cálculos
+  useEffect(() => {
+    console.log("Dados do carrinho no useCheckout:", cartItems);
+    if (cartItems.length > 0) {
+      console.log("Subtotal calculado:", calculateCartSubtotal(cartItems));
+      console.log("Total calculado:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
+    }
+  }, [cartItems, selectedPlan, couponDiscount, couponValid]);
+
   return {
     step,
     STEPS,
@@ -108,7 +118,8 @@ export const useCheckout = () => {
     handlePrevStep,
     isNextEnabled,
     PLANS,
-    calculateTotalPrice: () => calculateTotalPrice(selectedPlan, cartItems.length, couponDiscount, couponValid),
+    calculateTotalPrice: () => calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid),
+    calculateCartSubtotal: () => calculateCartSubtotal(cartItems),
     orderId
   };
 };

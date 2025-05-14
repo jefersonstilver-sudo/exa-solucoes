@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '@/utils/priceUtils';
@@ -33,13 +34,22 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     }).format(date);
   };
   
-  // Calcula subtotal
+  // Função para calcular o preço de um painel individual considerando sua duração
+  const getPanelPrice = (panel: Panel, duration: number): number => {
+    // Usa o preço do painel quando disponível ou o preço base de 250 por mês
+    const monthlyPrice = panel.preco_mensal || 250;
+    const months = duration / 30;
+    return monthlyPrice * months;
+  };
+  
+  // Calcula subtotal somando o preço de cada painel
   const calculateSubtotal = (): number => {
-    const pricePerMonth = plans[selectedPlan].pricePerMonth;
-    const totalMonths = plans[selectedPlan].months;
-    const panelCount = cartItems.length;
-    
-    return pricePerMonth * totalMonths * panelCount;
+    // Soma o preço de cada painel com base na duração
+    return cartItems.reduce((total, item) => {
+      const panelPrice = getPanelPrice(item.panel, item.duration);
+      console.log(`Painel ${item.panel.buildings?.nome}: R$ ${panelPrice}`);
+      return total + panelPrice;
+    }, 0);
   };
   
   // Calcula desconto do plano
@@ -71,6 +81,11 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     
     return subtotal - planDiscountAmount - couponDiscountAmount;
   };
+
+  // Para debugging
+  console.log("Carrinho no CheckoutSummary:", cartItems);
+  console.log("Subtotal calculado:", calculateSubtotal());
+  console.log("Total após descontos:", calculateTotal());
   
   return (
     <Card className="sticky top-8 rounded-2xl shadow-md overflow-hidden border border-gray-200">
