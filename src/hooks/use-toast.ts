@@ -1,8 +1,6 @@
 
-// This file should now implement toast hooks correctly for use throughout the application
-// based on the shadcn/ui toast pattern
-
-import { Toast, ToasterToast } from "@/components/ui/toast";
+import { useState } from "react";
+import type { Toast, ToasterToast } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000000;
@@ -16,10 +14,11 @@ function genId() {
   return count.toString();
 }
 
+// Create a store to hold the toasts
 const toasts: ToasterToast[] = [];
 
 type UseToastReturn = {
-  toast: ({ ...props }: Toast) => {
+  toast: (props: Toast) => {
     id: string;
     dismiss: () => void;
     update: (props: ToasterToastProps) => void;
@@ -42,7 +41,7 @@ export const useToast = (): UseToastReturn => {
     }
   };
 
-  const toast = ({ ...props }: Toast) => {
+  const toast = (props: Toast) => {
     const id = genId();
 
     const update = (props: ToasterToastProps) => {
@@ -79,4 +78,8 @@ export const useToast = (): UseToastReturn => {
   };
 };
 
-export { toast } from "@/components/ui/use-toast";
+// Standalone toast function
+export const toast = (props: Toast) => {
+  const { toast: toastFn } = useToast();
+  return toastFn(props);
+};
