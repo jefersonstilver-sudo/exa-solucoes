@@ -102,8 +102,8 @@ const PanelCart: React.FC<PanelCartProps> = ({
         const returnUrl = '/checkout';
         navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       } else {
-        // User is already logged in, proceed to checkout
-        // Important: DON'T clear the cart here
+        // User is already logged in, proceed directly to checkout
+        // IMPORTANTE: DON'T clear the cart here - isso estava causando o problema
         navigate('/checkout');
       }
     } catch (error) {
