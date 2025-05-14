@@ -92,7 +92,7 @@ const CheckoutContainer: React.FC = () => {
         onBack={step === STEPS.REVIEW ? () => window.location.href = '/paineis-digitais/loja' : handlePrevStep}
         onNext={handleNextStep}
         isBackToStore={step === STEPS.REVIEW}
-        isNextEnabled={isNextEnabled()}
+        isNextEnabled={isNextEnabled}
         isCreatingPayment={isCreatingPayment}
         isPaymentStep={step === STEPS.PAYMENT}
       />

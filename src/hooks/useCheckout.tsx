@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
 import { usePanelAvailability } from '@/hooks/usePanelAvailability';
-import { usePaymentProcessor } from '@/hooks/usePaymentProcessor';
+import { usePaymentProcessor } from '@/hooks/payment/usePaymentProcessor';
 import { calculateTotalPrice } from '@/utils/checkoutUtils';
 import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
 import { useCheckoutState } from '@/hooks/checkout/useCheckoutState';

@@ -61,12 +61,12 @@ export const useCheckoutNavigation = ({
       });
       return;
     }
-    setStep(prev => prev + 1);
+    setStep(step + 1);
   };
   
   // Previous step handler
   const handlePrevStep = () => {
-    setStep(prev => prev - 1);
+    setStep(step - 1);
   };
   
   // Determine whether the next button should be enabled
