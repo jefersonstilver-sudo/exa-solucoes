@@ -1,5 +1,6 @@
 
 import { Panel } from '@/types/panel';
+import { FilterOptions } from '@/types/filter';
 import { 
   filterPanelsByLocation, 
   filterPanelsByStatus, 
@@ -11,13 +12,7 @@ import {
  */
 export const applyAllFilters = (
   panels: Panel[],
-  filters: {
-    status: string[],
-    neighborhood: string,
-    buildingType: string,
-    buildingAge?: string,
-    radius: number
-  },
+  filters: FilterOptions,
   selectedLocation: {lat: number, lng: number} | null
 ): Panel[] => {
   let filteredPanels = [...panels];
@@ -29,7 +24,7 @@ export const applyAllFilters = (
   filteredPanels = filterPanelsByNeighborhood(filteredPanels, filters.neighborhood);
   
   // Filter by building type if specified
-  if (filters.buildingType !== 'all') {
+  if (filters.buildingType && filters.buildingType !== 'all') {
     filteredPanels = filteredPanels.filter(panel => {
       if (filters.buildingType === 'residential') {
         return panel.buildings?.condominiumProfile === 'residential';
