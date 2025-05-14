@@ -8,6 +8,17 @@ export interface Plan {
   mostPopular: boolean;
   pricePerMonth: number;
   extras: string[];
+  
+  // New fields needed for PlanSelector and CheckoutSummary
+  color?: string;
+  tag?: string;
+  videosPerMonth?: number;
+  productionIncluded?: boolean;
+  studioUse?: boolean;
+  additionalProduction?: {
+    available: boolean;
+    price: number;
+  };
 }
 
 export type PlanKey = 1 | 3 | 6 | 12;

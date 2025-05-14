@@ -10,7 +10,20 @@ export interface Building {
   latitude: number;
   longitude: number;
   imageUrl?: string;
-  basePrice?: number; // Added this property to fix TypeScript errors
+  basePrice?: number;
+  
+  // Additional properties used in the codebase
+  condominiumProfile?: {
+    type: string;
+    standard: string;
+  };
+  audience_profile?: {
+    income: string;
+    age: string;
+  };
+  tags?: string[];
+  towers?: number;
+  apartments?: number;
 }
 
 export interface Panel {
@@ -22,4 +35,13 @@ export interface Panel {
   resolucao?: string;
   modo?: string;
   buildings?: Building;
+  distance?: number;
+}
+
+export interface GetPanelsByLocationResponse {
+  panels: Panel[];
+}
+
+export interface PanelWithDistance extends Panel {
+  distance: number;
 }

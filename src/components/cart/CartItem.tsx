@@ -21,7 +21,7 @@ const CartItem: React.FC<CartItemProps> = ({
   // Function to format the location using buildings data
   const formatPanelLocation = (panel: Panel) => {
     if (panel.buildings) {
-      return `${panel.buildings.bairro}, ${panel.buildings?.city || ''}`;
+      return `${panel.buildings.bairro}, ${panel.buildings?.cidade || ''}`;
     }
     return 'Local não especificado';
   };
