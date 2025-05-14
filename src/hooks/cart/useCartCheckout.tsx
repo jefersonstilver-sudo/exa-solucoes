@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { toast } from 'sonner';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
@@ -65,7 +64,7 @@ export const useCartCheckout = ({
       const cartItemsSimplified = items.map(item => ({
         panel: {
           id: item.panel.id,
-          // Fix: Use optional chaining and access the nome property from buildings
+          // Use optional chaining and access the nome property from buildings
           nome: item.panel.buildings?.nome || 'Painel sem nome',
           buildings: item.panel.buildings ? {
             id: item.panel.buildings.id,
@@ -234,7 +233,11 @@ export const useCartCheckout = ({
           );
           
           // Disparar uma mensagem visual para o usuário
-          toast.info("Redirecionando para seleção de plano...");
+          toast({
+            title: "Redirecionando",
+            description: "Redirecionando para seleção de plano...",
+            variant: "default",
+          });
           
           // Forçar navegação direta
           navigateToPlanSelection();
@@ -250,7 +253,11 @@ export const useCartCheckout = ({
             "Múltiplas tentativas de navegação falharam, tentativa final"
           );
           
-          toast.error("Dificuldade ao navegar, tentativa final...");
+          toast({
+            title: "Dificuldade ao navegar",
+            description: "Tentativa final de redirecionamento...",
+            variant: "destructive",
+          });
           navigateToPlanSelection();
         }
       }, 1500);
@@ -284,4 +291,3 @@ export const useCartCheckout = ({
     navigationAttempts
   };
 };
-
