@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
+import { Check, Trash2 } from 'lucide-react';
 
 interface CartItem {
   panel: Panel;
@@ -78,17 +80,31 @@ export const useCartManager = () => {
     setCartOpen(true);
     
     toast({
-      title: "Painel adicionado",
-      description: `${panel.buildings?.nome} adicionado com sucesso`,
+      title: "✅ Painel adicionado",
+      description: `${panel.buildings?.nome || 'Painel'} adicionado ao carrinho`,
+      action: (
+        <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+          <Check className="h-3 w-3 text-green-600" />
+        </div>
+      )
     });
   };
 
   const handleRemoveFromCart = (panelId: string) => {
+    // Get panel name before removing
+    const panelToRemove = cartItems.find(item => item.panel.id === panelId);
+    const panelName = panelToRemove?.panel.buildings?.nome || 'Painel';
+    
     setCartItems(prev => prev.filter(item => item.panel.id !== panelId));
     
     toast({
-      title: "Painel removido",
-      description: "Item removido do carrinho com sucesso",
+      title: "🗑️ Painel removido",
+      description: `${panelName} removido do carrinho`,
+      action: (
+        <div className="h-5 w-5 rounded-full bg-red-100 flex items-center justify-center">
+          <Trash2 className="h-3 w-3 text-red-600" />
+        </div>
+      )
     });
   };
 
@@ -110,6 +126,7 @@ export const useCartManager = () => {
     toast({
       title: "Carrinho limpo",
       description: "Todos os itens foram removidos do carrinho",
+      variant: "default"
     });
   };
 

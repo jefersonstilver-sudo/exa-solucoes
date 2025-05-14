@@ -5,10 +5,10 @@ import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { formatCurrency } from '@/utils/formatters';
 
-// Import new components
+// Import components
 import CartHeader from '@/components/cart/CartHeader';
 import CartUserStatus from '@/components/cart/CartUserStatus';
 import CartItem from '@/components/cart/CartItem';
@@ -22,7 +22,12 @@ interface PanelCartProps {
   onChangeDuration: (panelId: string, duration: number) => void;
 }
 
-const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onChangeDuration }) => {
+const PanelCart: React.FC<PanelCartProps> = ({ 
+  cartItems, 
+  onRemove, 
+  onClear, 
+  onChangeDuration 
+}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -101,17 +106,27 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <motion.div 
+      className="flex flex-col h-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <CartHeader itemCount={cartItems.length} onClear={onClear} />
       
-      <div className="flex-grow overflow-auto px-4 sm:px-6 pb-4 pt-2">
-        <AnimatePresence>
+      <div className="flex-grow overflow-auto pb-4 pt-1">
+        <AnimatePresence mode="wait">
           {cartItems.length > 0 ? (
-            <>
+            <motion.div 
+              key="cart-items"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
               <CartUserStatus isLoggedIn={isLoggedIn} user={user} />
               
               {/* Cart items */}
-              <div className="space-y-4 mt-2">
+              <div className="space-y-1 px-5 sm:px-6">
                 {cartItems.map((item) => (
                   <CartItem 
                     key={item.panel.id}
@@ -122,9 +137,16 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
                   />
                 ))}
               </div>
-            </>
+            </motion.div>
           ) : (
-            <EmptyCart />
+            <motion.div
+              key="empty-cart"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <EmptyCart />
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -139,7 +161,7 @@ const PanelCart: React.FC<PanelCartProps> = ({ cartItems, onRemove, onClear, onC
           isEmpty={cartItems.length === 0}
         />
       )}
-    </div>
+    </motion.div>
   );
 };
 

@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, VideoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/utils/formatters';
+import { motion } from 'framer-motion';
 
 interface CartSummaryProps {
   subtotal: number;
@@ -23,9 +24,9 @@ const CartSummary: React.FC<CartSummaryProps> = ({
   isEmpty
 }) => {
   return (
-    <div className="border-t p-4 sm:p-6 bg-gray-50">
+    <div className="border-t p-5 sm:p-6 bg-gradient-to-b from-gray-50/50 to-gray-50/80">
       <div className="space-y-2 mb-4">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">Subtotal</span>
           <span className="text-sm font-medium">
             {formatCurrency(subtotal)}
@@ -33,7 +34,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
         </div>
         
         {discount > 0 && (
-          <div className="flex justify-between text-green-600">
+          <div className="flex justify-between text-green-600 items-center">
             <span className="text-sm">Desconto</span>
             <span className="text-sm font-medium">
               - {formatCurrency(discount)}
@@ -41,18 +42,34 @@ const CartSummary: React.FC<CartSummaryProps> = ({
           </div>
         )}
         
-        <Separator className="my-2" />
+        <Separator className="my-3" />
         
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <span className="font-medium">Total</span>
-          <span className="text-lg font-bold text-[#3C1361]">
+          <motion.span 
+            className="text-lg font-bold text-[#3C1361]"
+            initial={{ scale: 1 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             {formatCurrency(total)}
-          </span>
+          </motion.span>
         </div>
       </div>
       
+      <div className="bg-[#3C1361]/5 rounded-lg p-3 mb-4 flex items-center">
+        <VideoIcon className="text-[#3C1361] h-4 w-4 mr-2 flex-shrink-0" />
+        <p className="text-xs text-[#3C1361]/80">
+          <span className="font-medium">Ganhe 1 vídeo por mês</span> com a Indexa Produtora!
+        </p>
+      </div>
+      
       <Button
-        className="w-full bg-[#3C1361] hover:bg-[#3C1361]/90 text-white rounded-lg py-6 transition-transform hover:scale-[1.02]"
+        className={`w-full rounded-lg py-6 transition-all duration-300 ${
+          isEmpty 
+            ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
+            : 'bg-[#3C1361] hover:bg-[#00FFAB] hover:text-[#3C1361] text-white'
+        }`}
         disabled={isSubmitting || isEmpty}
         onClick={onCheckout}
       >
@@ -72,7 +89,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
       </Button>
       
       <p className="text-xs text-center text-muted-foreground mt-3">
-        Preços mostrados incluem impostos e taxas de processamento.
+        *Preços incluem taxas e impostos.
       </p>
     </div>
   );

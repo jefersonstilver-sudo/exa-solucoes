@@ -98,16 +98,21 @@ const Header: React.FC<HeaderProps> = ({
           <Drawer open={isCartOpen} onOpenChange={handleCartOpen}>
             <DrawerTrigger asChild>
               <motion.div
-                animate={cartAnimating ? { scale: [1, 1.2, 1] } : {}}
+                animate={cartAnimating ? { 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 15, -15, 0],
+                  filter: ["brightness(1)", "brightness(1.5)", "brightness(1)"]
+                } : {}}
                 transition={{ duration: 0.6 }}
                 aria-label={`Abrir carrinho com ${cartItems.length} itens`}
+                className="relative"
               >
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="relative text-white hover:bg-white/20 rounded-full"
+                  className="relative text-white hover:bg-white/20 rounded-full group"
                 >
-                  <ShoppingCart className="h-6 w-6 text-indexa-mint" /> 
+                  <ShoppingCart className="h-6 w-6 text-indexa-mint group-hover:text-[#00FFAB] transition-colors" /> 
                   <AnimatePresence>
                     {cartItems.length > 0 && (
                       <motion.span
@@ -123,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({
                 </Button>
               </motion.div>
             </DrawerTrigger>
-            <DrawerContent>
+            <DrawerContent className="h-full">
               <PanelCart 
                 cartItems={cartItems} 
                 onRemove={onRemoveFromCart} 
