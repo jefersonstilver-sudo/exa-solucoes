@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, CheckCircle, Loader } from 'lucide-react';
 import { formatCurrency } from '@/utils/priceUtils';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface CheckoutNavigationProps {
   onBack: () => void;
@@ -13,7 +14,7 @@ interface CheckoutNavigationProps {
   isCreatingPayment: boolean;
   isPaymentStep: boolean;
   totalPrice?: number;
-  isNavigating?: boolean; // Nova propriedade para controle de navegação
+  isNavigating?: boolean;
 }
 
 const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
@@ -24,7 +25,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isCreatingPayment,
   isPaymentStep,
   totalPrice = 0,
-  isNavigating = false // Valor padrão
+  isNavigating = false
 }) => {
   // Valor combinado para determinar se o botão deve estar desabilitado
   const isDisabled = !isNextEnabled || isCreatingPayment || isNavigating;
@@ -40,6 +41,58 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
     return "Continuar";
   };
 
+  // Função segura para lidar com o clique no botão próximo
+  const handleNextClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Se estiver desabilitado, não fazer nada
+    if (isDisabled) {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.WARNING,
+        "Clique em botão desabilitado ignorado",
+        { isNavigating, isCreatingPayment, isNextEnabled }
+      );
+      return;
+    }
+    
+    // Registrar o evento
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      `Botão de próximo passo clicado ${isPaymentStep ? '(pagamento)' : ''}`,
+      { isPaymentStep, totalPrice }
+    );
+    
+    // Chamar o manipulador de evento
+    onNext();
+  };
+
+  // Função segura para lidar com o clique no botão voltar
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (isCreatingPayment || isNavigating) {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.WARNING,
+        "Clique em botão voltar bloqueado durante processamento",
+        { isNavigating, isCreatingPayment }
+      );
+      return;
+    }
+    
+    // Registrar o evento
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      `Botão de voltar clicado ${isBackToStore ? '(para loja)' : '(passo anterior)'}`
+    );
+    
+    // Chamar o manipulador de evento
+    onBack();
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -50,9 +103,10 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       <Button
         variant="outline"
         size="lg"
-        onClick={onBack}
+        onClick={handleBackClick}
         className="flex items-center space-x-2 py-6"
         disabled={isCreatingPayment || isNavigating}
+        type="button"
       >
         <ChevronLeft className="h-4 w-4" />
         <span>
@@ -61,7 +115,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       </Button>
 
       <Button
-        onClick={onNext}
+        onClick={handleNextClick}
         disabled={isDisabled}
         size="lg"
         className={`
@@ -71,6 +125,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
             : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'}
           ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}
         `}
+        type="button"
       >
         {isCreatingPayment || isNavigating ? (
           <>

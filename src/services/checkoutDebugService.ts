@@ -25,7 +25,7 @@ export enum CheckoutEvent {
   PAYMENT_PROCESSING = 'payment_processing',
   PAYMENT_SUCCESS = 'payment_success',
   PAYMENT_ERROR = 'payment_error',
-  DEBUG_EVENT = 'debug_event'  // Adding debug event type
+  DEBUG_EVENT = 'debug_event'  // Debug event type
 }
 
 interface CheckoutLog {
@@ -141,7 +141,7 @@ export const getCheckoutFlowSummary = () => {
   return flowEvents;
 };
 
-// Nova função para obtter resumo de auditoria de checkout
+// Função para obter resumo de auditoria de checkout
 export const getCheckoutAuditSummary = () => {
   // Contabilizar todos os errors recentes
   const recentErrors = checkoutLogs

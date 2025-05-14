@@ -1,92 +1,110 @@
 
-// Serviço de auditoria de navegação para depurar problemas de redirecionamento
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-// Interface para o registro de navegação
-interface NavigationLog {
-  timestamp: number;
-  route: string;
-  method: string;
-  success: boolean;
-  error?: string;
-  info?: any;
-}
-
-// Armazenar logs de navegação
-const navigationLogs: NavigationLog[] = [];
+// Configuração
+const STORAGE_KEY = 'navigation_audit_logs';
 const MAX_LOGS = 50;
 
-// Função para registrar tentativas de navegação
-export const logNavigation = (
-  route: string, 
-  method: string, 
-  success: boolean,
-  error?: string,
-  info?: any
-) => {
-  // Criar novo log de navegação
-  const log: NavigationLog = {
-    timestamp: Date.now(),
-    route,
-    method,
-    success,
-    error,
-    info
-  };
-  
-  // Adicionar ao array de logs
-  navigationLogs.push(log);
-  
-  // Limitar o número de logs armazenados
-  while (navigationLogs.length > MAX_LOGS) {
-    navigationLogs.shift();
+// Interface para logs de navegação
+interface NavigationLog {
+  timestamp: number;
+  from: string | null;
+  to: string;
+  method: 'navigate' | 'direct' | 'history' | 'reload';
+  success: boolean;
+  error?: string;
+}
+
+// Carregar logs de navegação
+const loadNavigationLogs = (): NavigationLog[] => {
+  try {
+    const storedLogs = localStorage.getItem(STORAGE_KEY);
+    return storedLogs ? JSON.parse(storedLogs) : [];
+  } catch (error) {
+    console.error('Erro ao carregar logs de navegação:', error);
+    return [];
   }
-  
-  // Registrar no sistema de logs de checkout
+};
+
+// Array de logs
+let navigationLogs: NavigationLog[] = loadNavigationLogs();
+
+// Salvar logs
+const saveNavigationLogs = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(navigationLogs));
+  } catch (error) {
+    console.error('Erro ao salvar logs de navegação:', error);
+  }
+};
+
+// Registrar evento de navegação
+export const logNavigation = (
+  to: string,
+  method: 'navigate' | 'direct' | 'history' | 'reload' = 'navigate',
+  success: boolean = true,
+  error?: string
+) => {
+  // Registrar no checkout debug também
   logCheckoutEvent(
-    CheckoutEvent.NAVIGATION_EVENT,
+    success ? CheckoutEvent.NAVIGATION_EVENT : CheckoutEvent.NAVIGATION_ERROR,
     success ? LogLevel.INFO : LogLevel.ERROR,
-    `Navegação ${success ? 'bem-sucedida' : 'falhou'} para ${route} via ${method}`,
-    { route, method, error, info }
+    `Navegação para ${to} via ${method} ${success ? 'bem-sucedida' : 'falhou'}`,
+    error ? { error } : undefined
   );
   
-  // Registrar no console para depuração imediata
-  if (success) {
-    console.info(`✅ Navegação via ${method} para ${route} iniciada`);
-  } else {
-    console.error(`❌ Navegação via ${method} para ${route} falhou: ${error || 'Erro desconhecido'}`);
+  const log: NavigationLog = {
+    timestamp: Date.now(),
+    from: typeof window !== 'undefined' ? window.location.pathname : null,
+    to,
+    method,
+    success,
+    error
+  };
+  
+  // Adicionar ao início do array
+  navigationLogs.unshift(log);
+  
+  // Limitar número de logs
+  while (navigationLogs.length > MAX_LOGS) {
+    navigationLogs.pop();
   }
   
-  return log;
+  // Salvar logs
+  saveNavigationLogs();
 };
 
-// Função para obter o último log de navegação
-export const getLastNavigationLog = () => {
-  return navigationLogs.length > 0 ? navigationLogs[navigationLogs.length - 1] : null;
+// Verificar saúde da navegação
+export const checkNavigationHealth = () => {
+  // Obter últimos 10 logs
+  const recentLogs = navigationLogs.slice(0, 10);
+  
+  // Contar falhas recentes
+  const recentFailures = recentLogs.filter(log => !log.success).length;
+  
+  // Verificar padrões de navegação problemáticos (ex: muitas tentativas de checkout falhas)
+  const checkoutAttempts = recentLogs.filter(
+    log => log.to.includes('/checkout') || log.to.includes('/selecionar-plano')
+  );
+  
+  const hasCheckoutIssues = checkoutAttempts.length >= 3 && 
+    checkoutAttempts.filter(log => !log.success).length >= 2;
+  
+  return {
+    status: recentFailures > 2 || hasCheckoutIssues ? 'issues' : 'healthy',
+    recentFailures,
+    hasCheckoutIssues,
+    checkoutAttempts: checkoutAttempts.length
+  };
 };
 
-// Função para obter todos os logs de navegação
+// Obter todos os logs
 export const getAllNavigationLogs = () => {
   return [...navigationLogs];
 };
 
-// Função para verificar a saúde da navegação
-export const checkNavigationHealth = () => {
-  // Verificar se houve falhas recentes
-  const recentLogs = navigationLogs.slice(-5);
-  const failedLogs = recentLogs.filter(log => !log.success);
-  
-  return {
-    status: failedLogs.length === 0 ? 'healthy' : 'issues',
-    recentFailures: failedLogs.length,
-    totalLogs: navigationLogs.length,
-    lastLog: navigationLogs.length > 0 ? navigationLogs[navigationLogs.length - 1] : null
-  };
-};
-
-// Função para limpar logs
+// Limpar logs
 export const clearNavigationLogs = () => {
-  navigationLogs.length = 0;
-  console.info('Logs de navegação limpos');
+  navigationLogs = [];
+  saveNavigationLogs();
 };
-

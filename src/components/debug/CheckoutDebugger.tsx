@@ -159,16 +159,16 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
                   <Info className="h-3 w-3 mr-1" /> Eventos recentes
                 </h4>
                 <div className="bg-gray-50 p-2 rounded-md text-xs max-h-40 overflow-auto">
-                  {auditData.recentLogs.length > 0 ? (
+                  {auditData.recentLogs && auditData.recentLogs.length > 0 ? (
                     auditData.recentLogs.map((log: any, index: number) => (
                       <div key={index} className="mb-1 pb-1 border-b border-gray-100">
                         <div className="flex">
                           <span className={`font-mono ${
-                            log.level === 'ERROR' ? 'text-red-500' : 
-                            log.level === 'WARNING' ? 'text-amber-500' : 
-                            log.level === 'SUCCESS' ? 'text-green-500' : 'text-gray-500'
+                            log.level === 'ERROR' || log.level === 'error' ? 'text-red-500' : 
+                            log.level === 'WARNING' || log.level === 'warning' ? 'text-amber-500' : 
+                            log.level === 'SUCCESS' || log.level === 'success' ? 'text-green-500' : 'text-gray-500'
                           }`}>
-                            [{new Date(log.timestamp).toISOString().substr(11, 8)}]
+                            [{log.timestamp ? new Date(log.timestamp).toISOString().substr(11, 8) : 'N/A'}]
                           </span>
                           <span className="ml-1">{log.message}</span>
                         </div>
@@ -181,7 +181,7 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
               </div>
               
               {/* Erros recentes */}
-              {auditData.errorCount > 0 && (
+              {auditData.errorCount > 0 && auditData.recentErrors && (
                 <div>
                   <h4 className="text-xs font-medium mb-1 flex items-center text-red-500">
                     <AlertTriangle className="h-3 w-3 mr-1" /> Erros recentes
