@@ -1,10 +1,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { logNavigation } from '@/services/navigationAuditService';
+import { 
+  logCheckoutInitiation, 
+  logEmptyCartAttempt,
+  logCheckoutStart,
+  logPlanSelectionNavigation,
+  logCheckoutError,
+  logMultipleCheckoutAttempt
+} from '@/services/checkoutLogService';
+import { navigateSafely } from '@/services/navigationService';
+import { saveCartToStorage } from '@/services/cartStorageService';
 
 interface CartItem {
   panel: Panel;
@@ -22,12 +29,11 @@ export const useCartCheckout = ({
   setIsNavigating,
   setCartOpen
 }: UseCartCheckoutOptions) => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [isCheckoutProcessed, setIsCheckoutProcessed] = useState(false);
   const [navigationAttempts, setNavigationAttempts] = useState(0);
   
-  // Resetar status de checkout processado ao mudar itens do carrinho
+  // Reset checkout processed status when cart items change
   useEffect(() => {
     if (isCheckoutProcessed && cartItems.length > 0) {
       setIsCheckoutProcessed(false);
@@ -35,120 +41,24 @@ export const useCartCheckout = ({
     }
   }, [cartItems.length, isCheckoutProcessed]);
   
-  // Função de navegação segura mais simples e robusta
-  const safeNavigate = useCallback((url: string) => {
-    try {
-      // Log navigation attempt
-      logNavigationEvent(url, 'direct');
-      
-      // Direct navigation - most reliable method
-      window.location.href = url;
-      return true;
-    } catch (error) {
-      logNavigationError(url, String(error));
-      return false;
-    }
-  }, []);
-
-  // Helper functions for logging
-  const logNavigationEvent = (url: string, method: string) => {
-    logNavigation(url, method, true);
-    logCheckoutEvent(
-      CheckoutEvent.NAVIGATION_EVENT,
-      LogLevel.INFO,
-      `Navegação para ${url} via ${method}`,
-      { url, method }
-    );
-  };
-  
-  const logNavigationError = (url: string, errorMsg: string) => {
-    logNavigation(url, 'error', false, errorMsg);
-    logCheckoutEvent(
-      CheckoutEvent.NAVIGATION_ERROR,
-      LogLevel.ERROR,
-      `Falha na navegação para ${url}`,
-      { error: errorMsg }
-    );
-  };
-  
-  // Função segura para salvar carrinho
-  const saveCartToStorage = useCallback((items: CartItem[]) => {
-    try {
-      // Criar cópia simplificada dos itens do carrinho para evitar problemas de serialização
-      const cartItemsSimplified = items.map(item => ({
-        panel: {
-          id: item.panel.id,
-          // Use optional chaining and access the nome property from buildings
-          nome: item.panel.buildings?.nome || 'Painel sem nome',
-          buildings: item.panel.buildings ? {
-            id: item.panel.buildings.id,
-            nome: item.panel.buildings.nome,
-            imageUrl: item.panel.buildings.imageUrl,
-            endereco: item.panel.buildings.endereco,
-            bairro: item.panel.buildings.bairro
-          } : null,
-          modo: item.panel.modo,
-          resolucao: item.panel.resolucao
-        },
-        duration: item.duration
-      }));
-      
-      // Salvar no localStorage
-      localStorage.setItem('panelCart', JSON.stringify(cartItemsSimplified));
-      
-      logCheckoutEvent(
-        CheckoutEvent.SAVE_CART, 
-        LogLevel.SUCCESS, 
-        "Carrinho salvo no localStorage com sucesso", 
-        { items: items.length }
-      );
-      
-      return true;
-    } catch (storageError) {
-      console.error('Erro ao salvar carrinho:', storageError);
-      
-      logCheckoutEvent(
-        CheckoutEvent.SAVE_CART, 
-        LogLevel.ERROR, 
-        "Erro ao salvar carrinho no localStorage", 
-        { error: String(storageError) }
-      );
-      
-      return false;
-    }
-  }, []);
-  
   const handleProceedToCheckout = useCallback(() => {
-    // Registrar log de auditoria do início do processo
-    logCheckoutEvent(
-      CheckoutEvent.AUDIT,
-      LogLevel.INFO,
-      "Início do processo de checkout",
-      { cartItems: cartItems.length, isProcessed: isCheckoutProcessed }
-    );
+    // Log audit of process start
+    logCheckoutInitiation(cartItems.length, isCheckoutProcessed);
     
-    // Verificar se já está processando o checkout para evitar cliques duplos
+    // Prevent double-clicks with checkout processing flag
     if (isCheckoutProcessed) {
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG,
-        LogLevel.WARNING,
-        "Tentativa de checkout múltiplo bloqueada"
-      );
+      logMultipleCheckoutAttempt();
       return;
     }
     
     setIsCheckoutProcessed(true);
     setIsNavigating(true);
     
-    // Registrar início do checkout
-    logCheckoutEvent(
-      CheckoutEvent.PROCEED_TO_CHECKOUT, 
-      LogLevel.INFO, 
-      `Iniciando checkout com ${cartItems.length} itens`
-    );
+    // Log checkout start
+    logCheckoutStart(cartItems.length);
     
     try {
-      // 1. Verificar se há itens no carrinho
+      // 1. Check if cart has items
       if (cartItems.length === 0) {
         toast({
           title: "Carrinho vazio",
@@ -156,63 +66,49 @@ export const useCartCheckout = ({
           variant: "destructive",
         });
         
-        logCheckoutEvent(
-          CheckoutEvent.PROCEED_TO_CHECKOUT, 
-          LogLevel.ERROR, 
-          "Tentativa de checkout com carrinho vazio"
-        );
+        logEmptyCartAttempt();
         
         setIsNavigating(false);
         setIsCheckoutProcessed(false);
         return;
       }
       
-      // 2. Salvar carrinho no localStorage de forma segura
+      // 2. Save cart to localStorage securely
       const saveSuccess = saveCartToStorage(cartItems);
       
       if (!saveSuccess) {
-        // Tentar uma segunda vez com um pequeno atraso
+        // Try a second time with a small delay
         setTimeout(() => {
           saveCartToStorage(cartItems);
         }, 100);
       }
       
-      // 3. Fechar o carrinho (se estiver aberto)
+      // 3. Close the cart (if open)
       setCartOpen(false);
       
-      // 4. Navegação simplificada e direta - usando apenas window.location
-      // que provou ser o método mais confiável
-      logCheckoutEvent(
-        CheckoutEvent.NAVIGATE_TO_PLAN, 
-        LogLevel.INFO, 
-        `Navegação para seleção de plano iniciada`
-      );
+      // 4. Log navigation attempt
+      logPlanSelectionNavigation();
       
-      // Navegação direta - método mais confiável
-      safeNavigate('/selecionar-plano');
+      // 5. Direct navigation using the most reliable method
+      navigateSafely('/selecionar-plano');
       
     } catch (error) {
       console.error('Erro durante checkout:', error);
       
-      logCheckoutEvent(
-        CheckoutEvent.PROCEED_TO_CHECKOUT, 
-        LogLevel.ERROR, 
-        "Erro durante processo de checkout", 
-        { error: String(error) }
-      );
+      logCheckoutError(error);
       
-      // Mostrar mensagem de erro
+      // Show error message
       toast({
         title: "Erro ao processar checkout",
         description: "Ocorreu um problema ao processar seu pedido. Tente novamente.",
         variant: "destructive",
       });
       
-      // Resetar estados
+      // Reset states
       setIsNavigating(false);
       setIsCheckoutProcessed(false);
     }
-  }, [cartItems, isCheckoutProcessed, setCartOpen, setIsNavigating, saveCartToStorage, safeNavigate, toast]);
+  }, [cartItems, isCheckoutProcessed, setCartOpen, setIsNavigating, toast]);
 
   return {
     handleProceedToCheckout,
