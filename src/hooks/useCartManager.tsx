@@ -1,8 +1,8 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
 import { Check, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CartItem {
   panel: Panel;
@@ -11,9 +11,11 @@ interface CartItem {
 
 export const useCartManager = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartAnimation, setCartAnimation] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   
   // Load cart from localStorage on component mount
   useEffect(() => {
@@ -45,17 +47,17 @@ export const useCartManager = () => {
 
   // Keep cart open when items are added
   useEffect(() => {
-    if (cartItems.length > 0) {
+    if (cartItems.length > 0 && !isNavigating) {
       setCartOpen(true);
       document.body.classList.add('drawer-open');
-    } else {
+    } else if (cartItems.length === 0) {
       document.body.classList.remove('drawer-open');
     }
 
     return () => {
       document.body.classList.remove('drawer-open');
     };
-  }, [cartItems.length]);
+  }, [cartItems.length, isNavigating]);
 
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
     setCartItems(prev => {
@@ -183,6 +185,33 @@ export const useCartManager = () => {
     setCartOpen(prev => !prev);
   };
 
+  // Procedimento de checkout completamente revisado
+  const handleProceedToCheckout = useCallback(() => {
+    console.log("Iniciando processo de checkout (revisado)");
+    
+    if (cartItems.length === 0) {
+      toast({
+        title: "Carrinho vazio",
+        description: "Adicione painéis ao seu carrinho para finalizar a compra",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Marca que estamos navegando para evitar problemas com o drawer
+    setIsNavigating(true);
+    
+    // Fecha o drawer para evitar problemas visuais
+    setCartOpen(false);
+    
+    // Navegação direta para checkout com delay suficiente para garantir que
+    // o drawer seja fechado antes da navegação
+    setTimeout(() => {
+      console.log("Navegando para /checkout");
+      navigate('/checkout');
+    }, 200);
+  }, [cartItems.length, navigate, toast]);
+
   return {
     cartItems,
     cartOpen,
@@ -193,6 +222,7 @@ export const useCartManager = () => {
     handleClearCart,
     handleChangeDuration,
     handleRestoreCart,
-    cartAnimation
+    cartAnimation,
+    handleProceedToCheckout
   };
 };

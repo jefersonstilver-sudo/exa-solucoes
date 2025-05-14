@@ -37,7 +37,8 @@ export default function PanelStore() {
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
-    cartAnimation
+    cartAnimation,
+    handleProceedToCheckout
   } = useCartManager();
 
   const { isLoggedIn, user } = useUserSession();
@@ -77,6 +78,7 @@ export default function PanelStore() {
       onRemoveFromCart={handleRemoveFromCart}
       onClearCart={handleClearCart}
       onChangeDuration={handleChangeDuration}
+      onProceedToCheckout={handleProceedToCheckout}
     >
       <motion.div 
         initial={{ opacity: 0 }}

@@ -21,13 +21,15 @@ interface PanelCartProps {
   onRemove: (panelId: string) => void;
   onClear: () => void;
   onChangeDuration: (panelId: string, duration: number) => void;
+  onProceedToCheckout: () => void;
 }
 
 const PanelCart: React.FC<PanelCartProps> = ({ 
   cartItems, 
   onRemove, 
   onClear, 
-  onChangeDuration 
+  onChangeDuration,
+  onProceedToCheckout
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -89,17 +91,6 @@ const PanelCart: React.FC<PanelCartProps> = ({
   };
   
   const handleCheckout = () => {
-    console.log("Checkout iniciado, usuário logado:", isLoggedIn);
-    
-    if (cartItems.length === 0) {
-      toast({
-        title: "Carrinho vazio",
-        description: "Adicione painéis ao seu carrinho para finalizar a compra",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setIsSubmitting(true);
     
     try {
@@ -113,11 +104,8 @@ const PanelCart: React.FC<PanelCartProps> = ({
         const returnUrl = '/checkout';
         navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       } else {
-        // CORREÇÃO IMPORTANTE: Garante navegação direta para checkout mesmo estando logado
-        console.log("Usuário já logado, redirecionando para /checkout");
-        setTimeout(() => {
-          navigate('/checkout');
-        }, 100);
+        // Usar a nova função de checkout revisada
+        onProceedToCheckout();
       }
     } catch (error) {
       console.error("Erro ao processar checkout:", error);
