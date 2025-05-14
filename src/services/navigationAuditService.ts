@@ -10,7 +10,7 @@ interface NavigationLog {
   timestamp: number;
   from: string | null;
   to: string;
-  method: 'navigate' | 'direct' | 'history' | 'reload';
+  method: 'navigate' | 'direct' | 'history' | 'reload' | 'location' | 'error';
   success: boolean;
   error?: string;
 }
@@ -41,7 +41,7 @@ const saveNavigationLogs = () => {
 // Registrar evento de navegação
 export const logNavigation = (
   to: string,
-  method: 'navigate' | 'direct' | 'history' | 'reload' = 'navigate',
+  method: 'navigate' | 'direct' | 'history' | 'reload' | 'location' | 'error' = 'navigate',
   success: boolean = true,
   error?: string
 ) => {

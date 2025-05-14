@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 export const navigateSafely = (url: string): boolean => {
   try {
     // Log navigation attempt
-    logNavigationEvent(url, 'safe-navigation');
+    logNavigationEvent(url, 'direct');
     
     // Use React Router's navigate function if available via hook
     // This function should be called within a component that has access to React Router context
@@ -33,7 +33,7 @@ export const useSafeNavigation = () => {
   
   const navigateToRoute = (route: string) => {
     try {
-      logNavigationEvent(route, 'react-router');
+      logNavigationEvent(route, 'navigate');
       navigate(route);
       return true;
     } catch (error) {
@@ -57,7 +57,7 @@ export const useSafeNavigation = () => {
 /**
  * Log a navigation event with consistent formatting
  */
-export const logNavigationEvent = (url: string, method: string) => {
+export const logNavigationEvent = (url: string, method: 'navigate' | 'direct' | 'history' | 'reload' | 'location') => {
   logNavigation(url, method, true);
   logCheckoutEvent(
     CheckoutEvent.NAVIGATION_EVENT,
