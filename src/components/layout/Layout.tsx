@@ -14,6 +14,7 @@ interface LayoutProps {
   onClearCart?: () => void;
   onChangeDuration?: (panelId: string, duration: number) => void;
   onProceedToCheckout?: () => void;
+  useGradientBackground?: boolean;
 }
 
 const Layout: React.FC<LayoutProps> = ({
@@ -22,15 +23,21 @@ const Layout: React.FC<LayoutProps> = ({
   onRemoveFromCart = () => {},
   onClearCart = () => {},
   onChangeDuration = () => {},
-  onProceedToCheckout = () => {}
+  onProceedToCheckout = () => {},
+  useGradientBackground = false
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col ${useGradientBackground ? 'bg-gradient-to-b from-gray-50 to-gray-100' : ''}`}>
       <Header 
+        cartItems={cartItems}
         cartItemCount={cartItems?.length || 0}
-        setDrawerOpen={setIsDrawerOpen} 
+        setDrawerOpen={setIsDrawerOpen}
+        onRemoveFromCart={onRemoveFromCart}
+        onClearCart={onClearCart}
+        onChangeDuration={onChangeDuration}
+        onProceedToCheckout={onProceedToCheckout}
       />
       
       <main className="flex-grow">

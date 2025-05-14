@@ -51,6 +51,17 @@ const CartSummary: React.FC<CartSummaryProps> = ({
     await validateCoupon(1);
   };
 
+  const handleCheckoutClick = (e: React.MouseEvent) => {
+    console.log("CartSummary: Botão de checkout clicado");
+    
+    // Garantir que o evento não se propague e não cause problemas no drawer
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Chamar a função de checkout
+    onCheckout();
+  };
+
   return (
     <div className="border-t p-5 sm:p-6 bg-gradient-to-b from-gray-50/50 to-gray-50/80">
       {/* Coupon input section */}
@@ -154,7 +165,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
             : 'bg-[#3C1361] hover:bg-[#00FFAB] hover:text-[#3C1361] text-white'
         }`}
         disabled={isSubmitting || isEmpty}
-        onClick={onCheckout}
+        onClick={handleCheckoutClick}
       >
         {isSubmitting ? (
           <span className="flex items-center">

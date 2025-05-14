@@ -13,13 +13,19 @@ interface HeaderProps {
   onRemoveFromCart?: (id: string) => void;
   onClearCart?: () => void;
   onChangeDuration?: (id: string, duration: number) => void;
+  onProceedToCheckout?: () => void;
+  cartItemCount?: number;
+  setDrawerOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   cartItems = [], 
   onRemoveFromCart = () => {}, 
   onClearCart = () => {}, 
-  onChangeDuration = () => {} 
+  onChangeDuration = () => {},
+  onProceedToCheckout = () => {},
+  cartItemCount,
+  setDrawerOpen
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -42,12 +48,16 @@ const Header: React.FC<HeaderProps> = ({
     // Close cart when menu is opened
     if (newMenuState) {
       setIsCartOpen(false);
+      if (setDrawerOpen) setDrawerOpen(false);
     }
   };
 
   // Handle cart open/close
   const handleCartOpen = (open: boolean) => {
     setIsCartOpen(open);
+    
+    // Sync with parent drawer state if provided
+    if (setDrawerOpen) setDrawerOpen(open);
     
     // Close menu when cart is opened
     if (open) {
@@ -104,7 +114,7 @@ const Header: React.FC<HeaderProps> = ({
                   filter: ["brightness(1)", "brightness(1.5)", "brightness(1)"]
                 } : {}}
                 transition={{ duration: 0.6 }}
-                aria-label={`Abrir carrinho com ${cartItems.length} itens`}
+                aria-label={`Abrir carrinho com ${cartItemCount || cartItems.length} itens`}
                 className="relative"
               >
                 <Button 
@@ -114,14 +124,14 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   <ShoppingCart className="h-6 w-6 text-indexa-mint group-hover:text-[#00FFAB] transition-colors" /> 
                   <AnimatePresence>
-                    {cartItems.length > 0 && (
+                    {(cartItemCount || cartItems.length) > 0 && (
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         exit={{ scale: 0 }}
                         className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
                       >
-                        {cartItems.length}
+                        {cartItemCount || cartItems.length}
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -133,7 +143,8 @@ const Header: React.FC<HeaderProps> = ({
                 cartItems={cartItems} 
                 onRemove={onRemoveFromCart} 
                 onClear={onClearCart} 
-                onChangeDuration={onChangeDuration} 
+                onChangeDuration={onChangeDuration}
+                onProceedToCheckout={onProceedToCheckout}
               />
               <DrawerClose className="sr-only">Close</DrawerClose>
             </DrawerContent>

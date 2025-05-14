@@ -91,6 +91,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
   };
   
   const handleCheckout = () => {
+    console.log("PanelCart: handleCheckout chamado");
     setIsSubmitting(true);
     
     try {
@@ -104,7 +105,8 @@ const PanelCart: React.FC<PanelCartProps> = ({
         const returnUrl = '/checkout';
         navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
       } else {
-        // Usar a nova função de checkout revisada
+        // Usar a função de checkout revisada passada via props
+        console.log("PanelCart: Chamando onProceedToCheckout");
         onProceedToCheckout();
       }
     } catch (error) {

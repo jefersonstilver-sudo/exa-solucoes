@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
@@ -185,9 +186,9 @@ export const useCartManager = () => {
     setCartOpen(prev => !prev);
   };
 
-  // Procedimento de checkout completamente revisado
+  // Procedimento de checkout completamente revisado e corrigido
   const handleProceedToCheckout = useCallback(() => {
-    console.log("Iniciando processo de checkout (revisado)");
+    console.log("Iniciando processo de checkout (corrigido)");
     
     if (cartItems.length === 0) {
       toast({
@@ -204,12 +205,25 @@ export const useCartManager = () => {
     // Fecha o drawer para evitar problemas visuais
     setCartOpen(false);
     
-    // Navegação direta para checkout com delay suficiente para garantir que
-    // o drawer seja fechado antes da navegação
+    // Adicionando logs adicionais para diagnóstico
+    console.log("Preparando navegação para checkout, carrinho fechado, status do navegador:", isNavigating);
+    
+    // Navegação direta para checkout com delay maior para garantir que 
+    // o drawer seja completamente fechado antes da navegação
     setTimeout(() => {
-      console.log("Navegando para /checkout");
-      navigate('/checkout');
-    }, 200);
+      console.log("Executando navegação para /checkout");
+      
+      // Garantir que a navegação aconteça mesmo se houver problemas com o estado anterior
+      try {
+        navigate('/checkout');
+        console.log("Navegação para /checkout realizada com sucesso");
+      } catch (error) {
+        console.error("Erro na navegação:", error);
+        
+        // Solução alternativa se a navegação falhar
+        window.location.href = '/checkout';
+      }
+    }, 300); // Aumento do delay para 300ms garantir fechamento completo do drawer
   }, [cartItems.length, navigate, toast]);
 
   return {
