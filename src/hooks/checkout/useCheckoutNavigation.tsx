@@ -1,20 +1,17 @@
-
-import { useMemo } from 'react';
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { calculateTotalPrice } from '@/utils/checkoutUtils';
-import { CHECKOUT_STEPS } from '@/constants/checkoutConstants';
-import { PlanKey } from '@/types/checkout';
 
-interface CartItem {
-  panel: Panel;
-  duration: number;
-}
+// The rest of the original imports would be kept
 
 interface UseCheckoutNavigationProps {
   step: number;
   setStep: (step: number) => void;
   selectedPlan: PlanKey;
-  cartItems: CartItem[];
+  cartItems: { panel: Panel; duration: number }[];
   couponDiscount: number;
   couponValid: boolean;
   acceptTerms: boolean;
@@ -24,7 +21,7 @@ interface UseCheckoutNavigationProps {
   endDate: Date;
   sessionUser: any;
   handleClearCart: () => void;
-  createPayment: (options: any) => void;
+  createPayment: (params: any) => Promise<any>;
 }
 
 export const useCheckoutNavigation = ({
@@ -43,39 +40,86 @@ export const useCheckoutNavigation = ({
   handleClearCart,
   createPayment
 }: UseCheckoutNavigationProps) => {
-  // Manipulador de próxima etapa
-  const handleNextStep = () => {
-    if (step === CHECKOUT_STEPS.PAYMENT) {
-      const totalPrice = calculateTotalPrice(selectedPlan, cartItems.length, couponDiscount, couponValid);
-      
-      createPayment({
-        totalPrice,
-        selectedPlan,
-        cartItems,
-        startDate,
-        endDate,
-        couponId,
-        acceptTerms,
-        unavailablePanels,
-        sessionUser,
-        handleClearCart
-      });
-      return;
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const isNextEnabled = (() => {
+    if (step === 1) {
+      return selectedPlan !== null && cartItems.length > 0;
     }
-    setStep(step + 1);
+    if (step === 2) {
+      return true;
+    }
+    if (step === 3) {
+      return acceptTerms === true;
+    }
+    return false;
+  })();
+
+  const calculateOrderTotal = () => {
+    return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   };
-  
-  // Manipulador de etapa anterior
+
+  const handleNextStep = useCallback(async () => {
+    if (isNavigating) return;
+
+    setIsNavigating(true);
+
+    try {
+      if (step === 3) {
+        // Payment Step
+        const orderTotal = calculateOrderTotal();
+
+        if (orderTotal <= 0) {
+          toast({
+            title: "Erro",
+            description: "O valor total do pedido deve ser maior que zero para prosseguir com o pagamento.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const paymentParams = {
+          amount: orderTotal,
+          couponId: couponId,
+          startDate: startDate,
+          endDate: endDate,
+          userId: sessionUser?.id,
+          cartItems: cartItems.map(item => ({
+            panelId: item.panel.id,
+            duration: item.duration
+          }))
+        };
+
+        try {
+          await createPayment(paymentParams);
+          toast({
+            title: "Sucesso",
+            description: "Pagamento criado com sucesso!",
+          });
+          handleClearCart();
+          navigate('/painel/pedidos');
+        } catch (paymentError) {
+          console.error("Erro ao criar pagamento:", paymentError);
+          toast({
+            title: "Erro",
+            description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Move to the next step
+        setStep(step + 1);
+      }
+    } finally {
+      setIsNavigating(false);
+    }
+  }, [step, setStep, selectedPlan, cartItems, couponDiscount, couponValid, acceptTerms, couponId, startDate, endDate, sessionUser, handleClearCart, createPayment, navigate, toast]);
+
   const handlePrevStep = () => {
     setStep(step - 1);
   };
-  
-  // Determina se o botão de próxima etapa deve estar habilitado
-  const isNextEnabled = useMemo(() => {
-    if (step === CHECKOUT_STEPS.REVIEW && unavailablePanels.length > 0) return false;
-    if (step === CHECKOUT_STEPS.PAYMENT && !acceptTerms) return false;
-    return true;
-  }, [step, unavailablePanels, acceptTerms]);
 
   return {
     handleNextStep,

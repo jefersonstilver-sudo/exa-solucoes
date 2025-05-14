@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '@/utils/priceUtils';
@@ -7,6 +6,7 @@ import { Plan, PlanKey } from '@/types/checkout';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, PackageCheck } from 'lucide-react';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 
 interface CheckoutSummaryProps {
   cartItems: { panel: Panel; duration: number }[];
@@ -32,14 +32,6 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       month: 'long',
       year: 'numeric'
     }).format(date);
-  };
-  
-  // Função para calcular o preço de um painel individual considerando sua duração
-  const getPanelPrice = (panel: Panel, duration: number): number => {
-    // Usa o preço do painel quando disponível ou o preço base de 250 por mês
-    const monthlyPrice = panel.preco_mensal || 250;
-    const months = duration / 30;
-    return monthlyPrice * months;
   };
   
   // Calcula subtotal somando o preço de cada painel
