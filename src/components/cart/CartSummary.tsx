@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ArrowRight, VideoIcon, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,34 +51,22 @@ const CartSummary: React.FC<CartSummaryProps> = ({
     await validateCoupon(1);
   };
 
+  // Função aprimorada para lidar com clique no botão
   const handleCheckoutClick = (e: React.MouseEvent) => {
-    console.log("CartSummary: Botão de checkout clicado");
+    // Prevenir comportamento padrão
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Log simples para diagnóstico
     logCheckoutEvent(
       CheckoutEvent.PROCEED_TO_CHECKOUT, 
       LogLevel.INFO, 
       "Botão de checkout clicado no sumário do carrinho"
     );
     
-    // Log button click to help debug navigation issues
+    // Chamada direta da função de checkout sem passar o evento complexo
     try {
-      // Log the event object to see if it's working properly
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG, 
-        LogLevel.DEBUG, 
-        "Event object details", 
-        {
-          type: e.type,
-          target: e.target,
-          currentTarget: e.currentTarget,
-          preventDefault: typeof e.preventDefault === 'function'
-        }
-      );
-      
-      // Prevenir comportamento padrão para garantir que nossa lógica de navegação funcione
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Chamar a função de checkout passando o evento
+      // Chamar a função de checkout de forma simples
       onCheckout(e);
     } catch (error) {
       console.error("Erro ao processar clique de checkout:", error);
@@ -87,7 +74,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
         CheckoutEvent.NAVIGATION_ERROR,
         LogLevel.ERROR,
         "Erro ao processar clique de checkout",
-        { error }
+        { error: String(error) }
       );
     }
   };
@@ -188,6 +175,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
         </p>
       </div>
       
+      {/* Botão de finalizar compra com melhor tratamento de eventos */}
       <Button
         type="button"
         className={`w-full rounded-lg py-6 transition-all duration-300 ${

@@ -44,12 +44,43 @@ export interface CheckoutEventLog {
 const MAX_LOGS = 100;
 let checkoutLogs: CheckoutEventLog[] = [];
 
+// Função para serializar logs de forma segura (evita erros de circular reference)
+const safeStringify = (obj: any): string => {
+  try {
+    // Substitui referências circulares e DOM elements com versões seguras
+    const getCircularReplacer = () => {
+      const seen = new WeakSet();
+      return (key: string, value: any) => {
+        // Ignora elementos DOM que causam erros de serialização
+        if (value instanceof Node) return '[DOM Element]';
+        if (value instanceof Event) return '[DOM Event]';
+        
+        // Detecta referências circulares para objetos normais
+        if (typeof value === 'object' && value !== null) {
+          if (seen.has(value)) {
+            return '[Circular Reference]';
+          }
+          seen.add(value);
+        }
+        return value;
+      };
+    };
+    
+    return JSON.stringify(obj, getCircularReplacer());
+  } catch (error) {
+    console.error('Erro ao serializar objeto:', error);
+    return JSON.stringify({ error: 'Erro ao serializar objeto', simpleData: typeof obj });
+  }
+};
+
 // Salvar logs no localStorage
 const saveLogsToStorage = () => {
   try {
     // Limitar o número máximo de logs armazenados
     const logsToSave = checkoutLogs.slice(-MAX_LOGS);
-    localStorage.setItem('checkout_debug_logs', JSON.stringify(logsToSave));
+    
+    // Usar a função de serialização segura
+    localStorage.setItem('checkout_debug_logs', safeStringify(logsToSave));
   } catch (error) {
     console.error('Falha ao salvar logs no localStorage', error);
   }
@@ -77,13 +108,27 @@ export const logCheckoutEvent = (
   message: string,
   data?: any
 ) => {
+  // Processar dados antes de logar para evitar circular references
+  let safeData = data;
+  if (data) {
+    // Se for um objeto complexo, tente uma serialização segura
+    try {
+      if (typeof data === 'object') {
+        // Criar uma versão simplificada do objeto apenas com propriedades seguras
+        safeData = JSON.parse(safeStringify(data));
+      }
+    } catch (e) {
+      safeData = { error: 'Dados não serializáveis', type: typeof data };
+    }
+  }
+  
   // Criar log de evento
   const log: CheckoutEventLog = {
     timestamp: Date.now(),
     event,
     level,
     message,
-    data
+    data: safeData
   };
   
   // Adicionar ao array de logs
@@ -119,9 +164,9 @@ export const logCheckoutEvent = (
   const consoleMessage = `[CHECKOUT] [${level}] ${event}: ${message}`;
   
   if (style) {
-    console[consoleMethod](`%c${consoleMessage}`, style, data ? data : '');
+    console[consoleMethod](`%c${consoleMessage}`, style, safeData ? safeData : '');
   } else {
-    console[consoleMethod](consoleMessage, data ? data : '');
+    console[consoleMethod](consoleMessage, safeData ? safeData : '');
   }
   
   // Retornar o log para possível uso posterior
