@@ -91,7 +91,10 @@ const PanelMap: React.FC<PanelMapProps> = ({
     // Add markers for each panel
     panels.forEach(panel => {
       if (panel.buildings && panel.buildings.latitude && panel.buildings.longitude) {
-        const isCommercial = panel.buildings.condominiumProfile === 'commercial';
+        // Check if condominiumProfile is string or object and extract profile type
+        const isCommercial = typeof panel.buildings?.condominiumProfile === 'string' 
+          ? panel.buildings.condominiumProfile === 'commercial'
+          : panel.buildings?.condominiumProfile?.type === 'commercial';
         
         // Create custom marker with different color based on profile
         const markerIcon = {

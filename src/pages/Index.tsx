@@ -1,7 +1,6 @@
-
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import { ServiceCard } from '@/components/ui/service-card';
+import ServiceCard from '@/components/ui/service-card';
 
 const Index = () => {
   return (

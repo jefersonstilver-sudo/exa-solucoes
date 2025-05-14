@@ -1,4 +1,5 @@
 
+
 // Etapas do checkout (reordered to show PLAN first)
 export const CHECKOUT_STEPS = {
   PLAN: 0,
@@ -19,7 +20,10 @@ export const PLANS = {
     pricePerMonth: 300,
     extras: ['Nenhum vídeo incluso', 'Produção adicional disponível'],
     productionIncluded: false,
-    additionalProduction: 79.90,
+    additionalProduction: {
+      available: true,
+      price: 79.90
+    },
     color: 'gray'
   },
   3: {
@@ -75,3 +79,4 @@ export const MP_ACCESS_TOKEN = 'TEST-1284714739337536-091623-...'; // Truncado p
 
 // Constantes de duração
 export const DAYS_IN_MONTH = 30;
+

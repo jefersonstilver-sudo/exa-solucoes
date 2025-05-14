@@ -1,4 +1,5 @@
 
+
 export interface Plan {
   id: number;
   name: string;
@@ -19,6 +20,9 @@ export interface Plan {
     available: boolean;
     price: number;
   };
+  // For backward compatibility with existing code
+  extendedDisplay?: boolean;
+  corporateBonus?: boolean;
 }
 
 export type PlanKey = 1 | 3 | 6 | 12;
@@ -29,3 +33,4 @@ export interface CheckoutSteps {
   COUPON: number;
   PAYMENT: number;
 }
+

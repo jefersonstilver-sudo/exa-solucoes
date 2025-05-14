@@ -159,7 +159,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
                       </div>
                     ))}
                     
-                    {plan.id === 1 && (
+                    {plan.id === 1 && plan.additionalProduction && plan.additionalProduction.available && (
                       <div className="mt-4 pt-3 border-t border-gray-200">
                         <Button 
                           variant="outline" 
@@ -171,7 +171,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
                           }}
                         >
                           <Video className="h-3 w-3 mr-1" />
-                          Adicionar produção (+R$ {plan.additionalProduction.toFixed(2)})
+                          Adicionar produção (+R$ {plan.additionalProduction.price.toFixed(2)})
                         </Button>
                       </div>
                     )}

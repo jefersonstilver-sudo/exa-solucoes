@@ -12,18 +12,19 @@ export interface Building {
   imageUrl?: string;
   basePrice?: number;
   
-  // Additional properties used in the codebase
-  condominiumProfile?: {
+  // Updated condominiumProfile to be either an object or a string
+  condominiumProfile?: string | {
     type: string;
     standard: string;
   };
-  audience_profile?: {
+  audience_profile?: string[] | {
     income: string;
     age: string;
   };
   tags?: string[];
   towers?: number;
   apartments?: number;
+  status?: string;
 }
 
 export interface Panel {

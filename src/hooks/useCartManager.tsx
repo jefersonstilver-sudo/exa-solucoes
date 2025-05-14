@@ -1,5 +1,5 @@
 
-import { useCartState, CartItem } from '@/hooks/cart/useCartState';
+import { useCartState } from '@/hooks/cart/useCartState';
 import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
 import { Panel } from '@/types/panel';

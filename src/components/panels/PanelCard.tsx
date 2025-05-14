@@ -16,8 +16,13 @@ interface PanelCardProps {
 export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart }) => {
   // Calculate price for 30 days (base price)
   const calculatePrice = () => {
+    // Check if condominiumProfile is string or object and extract profile type
+    const isCommercial = typeof panel.buildings?.condominiumProfile === 'string' 
+      ? panel.buildings.condominiumProfile === 'commercial'
+      : panel.buildings?.condominiumProfile?.type === 'commercial';
+      
     // Base price range between R$250 - R$380
-    const basePrice = panel.buildings?.condominiumProfile === 'commercial' ? 350 : 280;
+    const basePrice = isCommercial ? 350 : 280;
     // Add slight variation based on panel ID to make prices look unique
     const priceVariation = parseInt(panel.id.slice(-2), 16) % 40; // 0-39 variation
     return basePrice + priceVariation;
@@ -35,6 +40,11 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
   
   // Distance display (mock data for now)
   const displayDistance = panel.distance ? `${(panel.distance / 1000).toFixed(1)}km` : null;
+  
+  // Check if condominiumProfile is string or object and extract profile type
+  const isCommercial = typeof panel.buildings?.condominiumProfile === 'string' 
+    ? panel.buildings.condominiumProfile === 'commercial'
+    : panel.buildings?.condominiumProfile?.type === 'commercial';
   
   // Animation variants
   const containerVariants = {
@@ -78,7 +88,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               <Badge 
                 className="bg-[#3C1361]/90 text-white py-1 px-3 text-xs font-medium rounded-full"
               >
-                {panel.buildings?.condominiumProfile === 'commercial' ? 'Comercial' : 'Residencial'}
+                {isCommercial ? 'Comercial' : 'Residencial'}
               </Badge>
             </div>
 
