@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import PanelStore from "./pages/PanelStore";
+import PlanSelection from "./pages/PlanSelection";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Login from "./pages/Login";
@@ -24,6 +25,7 @@ const App = () => (
         <Route path="/" element={<Index />} />
         <Route path="/paineis-digitais" element={<Index />} />
         <Route path="/paineis-digitais/loja" element={<PanelStore />} />
+        <Route path="/selecionar-plano" element={<PlanSelection />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />

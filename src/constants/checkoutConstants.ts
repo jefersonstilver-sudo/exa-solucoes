@@ -1,53 +1,71 @@
 
-// Etapas do checkout
+// Etapas do checkout (reordered to show PLAN first)
 export const CHECKOUT_STEPS = {
-  REVIEW: 0,
-  PLAN: 1,
+  PLAN: 0,
+  REVIEW: 1,
   COUPON: 2,
   PAYMENT: 3
 };
 
-// Planos disponíveis
+// Planos disponíveis with updated pricing and benefits
 export const PLANS = {
   1: {
     id: 1,
-    name: '1 mês',
-    description: 'Ideal para campanhas rápidas',
+    name: 'Plano Básico',
+    description: '1 mês',
     months: 1,
     discount: 0,
     mostPopular: false,
-    pricePerMonth: 250,
-    extras: ['Campanha de curta duração', 'Ideal para promoções relâmpago']
+    pricePerMonth: 300,
+    extras: ['Nenhum vídeo incluso', 'Produção adicional disponível'],
+    productionIncluded: false,
+    additionalProduction: 79.90,
+    color: 'gray'
   },
   3: {
     id: 3,
-    name: '3 meses',
-    description: 'Período de média duração',
+    name: 'Plano Popular',
+    description: '3 meses',
     months: 3,
     discount: 5,
     mostPopular: true,
-    pricePerMonth: 220,
-    extras: ['Economia de 5%', 'Maior visibilidade da marca', 'Ideal para lançamentos']
+    pricePerMonth: 230,
+    extras: ['1 vídeo por mês incluído', 'Economize R$70/mês', 'Maior visibilidade'],
+    productionIncluded: true,
+    videosPerMonth: 1,
+    color: 'green',
+    tag: '🔥 Mais vendido'
   },
   6: {
     id: 6,
-    name: '6 meses',
-    description: 'Semestral com desconto',
+    name: 'Plano Profissional',
+    description: '6 meses',
     months: 6,
     discount: 15,
     mostPopular: false,
-    pricePerMonth: 200,
-    extras: ['Economia de 15%', 'Presença contínua', 'Campanhas sazonais']
+    pricePerMonth: 199,
+    extras: ['1 vídeo por mês incluído', 'Uso mensal do Estúdio Indexa', 'Presença contínua'],
+    productionIncluded: true,
+    videosPerMonth: 1,
+    studioUse: true,
+    color: 'purple',
+    tag: '✨ Plano Profissional'
   },
   12: {
     id: 12,
-    name: '12 meses',
-    description: 'Melhor custo-benefício',
+    name: 'Plano Empresarial',
+    description: '12 meses',
     months: 12,
     discount: 35,
     mostPopular: false,
     pricePerMonth: 180,
-    extras: ['Economia de 35%', 'Máxima fidelização', 'Presença o ano inteiro']
+    extras: ['1 vídeo por mês incluído', 'Bônus institucional', 'Exibição estendida de 30s'],
+    productionIncluded: true,
+    videosPerMonth: 1,
+    extendedDisplay: true,
+    corporateBonus: true,
+    color: 'blue',
+    tag: '💎 Plano Empresarial'
   }
 };
 

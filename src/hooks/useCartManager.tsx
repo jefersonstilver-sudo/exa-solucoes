@@ -185,7 +185,7 @@ export const useCartManager = () => {
     setCartOpen(prev => !prev);
   };
 
-  // Procedimento de checkout corrigido para evitar limpar o carrinho antes da navegação
+  // Procedimento de checkout corrigido para redirecionar primeiro para seleção de plano
   const handleProceedToCheckout = useCallback(() => {
     console.log("Iniciando processo de checkout (corrigido)");
     
@@ -213,12 +213,12 @@ export const useCartManager = () => {
     setCartOpen(false);
     
     // Adicionando logs adicionais para diagnóstico
-    console.log("Preparando navegação para checkout, carrinho fechado, itens:", cartItems.length);
+    console.log("Preparando navegação para seleção de plano, carrinho fechado, itens:", cartItems.length);
     
-    // Navegação para checkout com pequeno delay para garantir que o drawer seja fechado
+    // Navegação para seleção de plano com pequeno delay para garantir que o drawer seja fechado
     setTimeout(() => {
-      console.log("Executando navegação para /checkout com", cartItems.length, "itens");
-      navigate('/checkout');
+      console.log("Executando navegação para /selecionar-plano com", cartItems.length, "itens");
+      navigate('/selecionar-plano');
     }, 300);
   }, [cartItems, navigate, toast]);
 

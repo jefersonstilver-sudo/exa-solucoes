@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
@@ -32,6 +32,21 @@ export const useCheckout = () => {
     STEPS
   } = useCheckoutState();
 
+  // Carrega plano selecionado do localStorage (vem da página PlanSelection)
+  useEffect(() => {
+    try {
+      const savedPlan = localStorage.getItem('selectedPlan');
+      if (savedPlan) {
+        const parsedPlan = parseInt(savedPlan);
+        if ([1, 3, 6, 12].includes(parsedPlan)) {
+          setSelectedPlan(parsedPlan as PlanKey);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar plano selecionado:', error);
+    }
+  }, [setSelectedPlan]);
+
   // Hook de autenticação
   useCheckoutAuth(setSessionUser);
   
@@ -56,12 +71,12 @@ export const useCheckout = () => {
     createPayment
   } = usePaymentProcessor();
   
-  // Verifica a disponibilidade dos painéis quando a etapa muda para seleção de plano
+  // Verifica a disponibilidade dos painéis quando a etapa muda para revisão
   useEffect(() => {
-    if (step === STEPS.PLAN) {
+    if (step === STEPS.REVIEW) {
       checkPanelAvailability(cartItems, startDate, endDate);
     }
-  }, [step, startDate, endDate, cartItems, checkPanelAvailability, STEPS.PLAN]);
+  }, [step, startDate, endDate, cartItems, checkPanelAvailability, STEPS.REVIEW]);
 
   // Adapta a função validateCoupon para a nova estrutura
   const handleValidateCoupon = () => {
@@ -95,6 +110,11 @@ export const useCheckout = () => {
     }
   }, [cartItems, selectedPlan, couponDiscount, couponValid]);
 
+  // Função para calcular o total do pedido (usado no PaymentStep)
+  const getOrderTotal = () => {
+    return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+  };
+
   return {
     step,
     STEPS,
@@ -118,7 +138,7 @@ export const useCheckout = () => {
     handlePrevStep,
     isNextEnabled,
     PLANS,
-    calculateTotalPrice: () => calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid),
+    calculateTotalPrice: getOrderTotal,
     calculateCartSubtotal: () => calculateCartSubtotal(cartItems),
     orderId
   };

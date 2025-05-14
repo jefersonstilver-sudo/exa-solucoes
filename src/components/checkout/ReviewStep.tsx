@@ -82,7 +82,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels })
         initial="hidden"
         animate="visible"
       >
-        {cartItems.map((item, index) => {
+        {cartItems.map((item) => {
           const isPanelUnavailable = unavailablePanels.includes(item.panel.id);
           const panelPrice = calculatePanelDisplayPrice(item.panel, item.duration);
           const months = Math.round(item.duration / 30);

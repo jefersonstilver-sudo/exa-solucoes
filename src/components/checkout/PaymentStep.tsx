@@ -15,24 +15,18 @@ import {
 interface PaymentStepProps {
   acceptTerms: boolean;
   setAcceptTerms: (value: boolean) => void;
+  totalPrice: number;
 }
 
-const PaymentStep = ({ acceptTerms, setAcceptTerms }: PaymentStepProps) => {
+const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepProps) => {
   const [selectedMethod, setSelectedMethod] = useState<string>("credit_card");
 
-  // Payment method options - removing boleto and bank transfer
+  // Payment method options - only PIX and credit card
   const paymentMethods = [
-    { 
-      id: "credit_card", 
-      name: "Cartão de crédito", 
-      description: "Visa, Mastercard, AMEX, ELO", 
-      icon: <CreditCard className="h-5 w-5" />,
-      installments: true
-    },
     { 
       id: "pix", 
       name: "PIX", 
-      description: "Pagamento instantâneo", 
+      description: "Pagamento instantâneo — necessário app bancário", 
       icon: <svg 
         viewBox="0 0 512 512" 
         className="h-5 w-5" 
@@ -41,11 +35,47 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms }: PaymentStepProps) => {
         <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
       </svg>,
       installments: false  
+    },
+    { 
+      id: "credit_card", 
+      name: "Cartão de crédito", 
+      description: "Visa, Mastercard, AMEX, ELO", 
+      icon: <CreditCard className="h-5 w-5" />,
+      installments: true
     }
   ];
 
   const [installments, setInstallments] = useState<number>(1);
   const installmentOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  // Calculate installment amount
+  const getInstallmentValue = (installment: number) => {
+    // Apply interest rates based on number of installments
+    const interestRates: Record<number, number> = {
+      1: 0,    // No interest for 1 installment
+      2: 0,    // No interest for 2 installments
+      3: 0,    // No interest for 3 installments
+      4: 0.01, // 1% for 4 installments
+      5: 0.01, // 1% for 5 installments
+      6: 0.015,// 1.5% for 6 installments
+      7: 0.02, // 2% for 7+ installments
+      8: 0.02,
+      9: 0.025,
+      10: 0.025,
+      11: 0.03,
+      12: 0.03
+    };
+
+    const rate = interestRates[installment] || 0.03;
+    
+    if (installment === 1) {
+      return totalPrice;
+    }
+    
+    // Apply compound interest formula: P(1 + r)^n
+    const finalAmount = totalPrice * Math.pow(1 + rate, installment);
+    return finalAmount / installment;
+  };
 
   return (
     <motion.div 
@@ -134,10 +164,21 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms }: PaymentStepProps) => {
                   >
                     {installmentOptions.map((num) => (
                       <option key={num} value={num}>
-                        {num}x {num === 1 ? "à vista" : `de R$ ${(5000 / num).toFixed(2)}`}
+                        {num}x {num === 1 ? "à vista" : `de R$ ${getInstallmentValue(num).toFixed(2)}`}
+                        {num > 3 && " (com juros)"}
                       </option>
                     ))}
                   </select>
+                  
+                  {installments > 1 && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-xs text-gray-500 mt-1"
+                    >
+                      Total com juros: R$ {(getInstallmentValue(installments) * installments).toFixed(2)}
+                    </motion.div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -145,38 +186,33 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms }: PaymentStepProps) => {
         ))}
       </div>
 
-      {/* Security badges */}
-      <div className="bg-gray-50 p-4 rounded-lg">
+      {/* Security badges and trust elements */}
+      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
         <div className="flex items-center mb-3">
           <Lock className="h-4 w-4 text-gray-500 mr-2" />
-          <span className="text-sm font-medium">Ambiente seguro</span>
+          <span className="text-sm font-medium">Ambiente 100% Seguro com Mercado Pago</span>
         </div>
-        <div className="flex flex-wrap gap-3 items-center">
-          <img 
-            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apache/apache-original.svg" 
-            alt="SSL Secure" 
-            className="h-8 grayscale opacity-60 hover:opacity-100 transition-opacity"
-          />
+        <div className="flex flex-wrap gap-3 items-center justify-center">
           <img 
             src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icon-1024.png" 
             alt="Mercado Pago" 
-            className="h-8 grayscale opacity-60 hover:opacity-100 transition-opacity"
+            className="h-8"
           />
           <div className="h-6 w-px bg-gray-300 mx-1"></div>
           <img 
             src="https://logosmarcas.net/wp-content/uploads/2020/09/Mastercard-Logo.png" 
             alt="Mastercard" 
-            className="h-6 grayscale opacity-60 hover:opacity-100 transition-opacity"
+            className="h-6"
           />
           <img 
             src="https://logodownload.org/wp-content/uploads/2016/10/visa-logo-1.png" 
             alt="Visa" 
-            className="h-6 grayscale opacity-60 hover:opacity-100 transition-opacity"
+            className="h-6"
           />
           <img 
             src="https://logosmarcas.net/wp-content/uploads/2020/09/American-Express-Logo.png" 
             alt="American Express" 
-            className="h-6 grayscale opacity-60 hover:opacity-100 transition-opacity"
+            className="h-6"
           />
         </div>
       </div>

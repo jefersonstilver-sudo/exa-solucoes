@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ShoppingCart, CreditCard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, CheckCircle, Loader } from 'lucide-react';
+import { formatCurrency } from '@/utils/priceUtils';
 
 interface CheckoutNavigationProps {
   onBack: () => void;
@@ -11,6 +12,7 @@ interface CheckoutNavigationProps {
   isNextEnabled: boolean;
   isCreatingPayment: boolean;
   isPaymentStep: boolean;
+  totalPrice?: number;
 }
 
 const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
@@ -19,57 +21,52 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isBackToStore,
   isNextEnabled,
   isCreatingPayment,
-  isPaymentStep
+  isPaymentStep,
+  totalPrice = 0
 }) => {
   return (
-    <motion.div 
-      className="flex flex-col sm:flex-row gap-3 justify-between mt-10"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5, duration: 0.4 }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.6, duration: 0.5 }}
+      className="mt-12 flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0"
     >
-      <Button 
-        variant="ghost" 
+      <Button
+        variant="outline"
+        size="lg"
         onClick={onBack}
-        className="gap-2 hover:bg-gray-100 transition-colors"
+        className="flex items-center space-x-2 py-6"
       >
-        <ArrowLeft className="h-4 w-4" />
-        {isBackToStore ? (
-          <>
-            <ShoppingCart className="h-4 w-4" />
-            <span>Voltar para Loja</span>
-          </>
-        ) : (
-          <span>Voltar</span>
-        )}
+        <ChevronLeft className="h-4 w-4" />
+        <span>
+          {isBackToStore ? 'Voltar para a loja' : 'Voltar'}
+        </span>
       </Button>
-      
-      <Button 
+
+      <Button
         onClick={onNext}
         disabled={!isNextEnabled || isCreatingPayment}
-        className={`gap-2 transition-colors rounded-xl shadow-sm ${
-          isPaymentStep 
+        size="lg"
+        className={`
+          py-6 px-8 flex items-center space-x-2
+          ${isPaymentStep 
             ? 'bg-green-600 hover:bg-green-700' 
-            : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'
-        }`}
+            : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'}
+        `}
       >
         {isCreatingPayment ? (
           <>
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processando...
-          </>
-        ) : isPaymentStep ? (
-          <>
-            <CreditCard className="h-4 w-4" />
-            <span>Finalizar Pagamento</span>
+            <Loader className="h-4 w-4 animate-spin" />
+            <span>Processando...</span>
           </>
         ) : (
           <>
-            <span>Continuar</span>
-            <ArrowRight className="h-4 w-4" />
+            <span>
+              {isPaymentStep 
+                ? `Confirmar e pagar ${formatCurrency(totalPrice)}` 
+                : 'Continuar'}
+            </span>
+            {isPaymentStep && <CheckCircle className="h-4 w-4 ml-2" />}
           </>
         )}
       </Button>

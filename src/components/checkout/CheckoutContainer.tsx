@@ -1,14 +1,19 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import CheckoutHeader from '@/components/checkout/CheckoutHeader';
 import CheckoutProgress from '@/components/checkout/CheckoutProgress';
 import StepRenderer from '@/components/checkout/StepRenderer';
 import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useToast } from '@/hooks/use-toast';
 
 const CheckoutContainer: React.FC = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const {
     step,
     STEPS,
@@ -31,8 +36,23 @@ const CheckoutContainer: React.FC = () => {
     handleNextStep,
     handlePrevStep,
     isNextEnabled,
-    PLANS
+    PLANS,
+    calculateTotalPrice
   } = useCheckout();
+
+  // Verify that we have a plan selected from the plan selection page
+  useEffect(() => {
+    if (selectedPlan === null || !selectedPlan) {
+      toast({
+        title: "Selecione um plano",
+        description: "É necessário selecionar um plano antes de prosseguir com o checkout.",
+        variant: "destructive"
+      });
+      navigate('/selecionar-plano');
+    }
+  }, [selectedPlan, navigate, toast]);
+
+  const totalPrice = calculateTotalPrice();
 
   return (
     <motion.div 
@@ -65,6 +85,7 @@ const CheckoutContainer: React.FC = () => {
             couponValid={couponValid}
             acceptTerms={acceptTerms}
             setAcceptTerms={setAcceptTerms}
+            totalPrice={totalPrice}
           />
         </div>
         
@@ -80,6 +101,7 @@ const CheckoutContainer: React.FC = () => {
               selectedPlan={selectedPlan}
               plans={PLANS}
               couponDiscount={couponValid ? couponDiscount : 0}
+              couponValid={couponValid}
               startDate={startDate}
               endDate={endDate}
             />
@@ -89,12 +111,13 @@ const CheckoutContainer: React.FC = () => {
       
       {/* Botões de navegação */}
       <CheckoutNavigation
-        onBack={step === STEPS.REVIEW ? () => window.location.href = '/paineis-digitais/loja' : handlePrevStep}
+        onBack={step === STEPS.PLAN ? () => window.location.href = '/paineis-digitais/loja' : handlePrevStep}
         onNext={handleNextStep}
-        isBackToStore={step === STEPS.REVIEW}
+        isBackToStore={step === STEPS.PLAN}
         isNextEnabled={isNextEnabled}
         isCreatingPayment={isCreatingPayment}
         isPaymentStep={step === STEPS.PAYMENT}
+        totalPrice={totalPrice}
       />
     </motion.div>
   );

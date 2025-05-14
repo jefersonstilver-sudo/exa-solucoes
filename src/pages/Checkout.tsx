@@ -15,7 +15,7 @@ export default function Checkout() {
   // Verificação de autenticação - redireciona para login se necessário
   useEffect(() => {
     if (!isSessionLoading && !isLoggedIn) {
-      navigate('/login?redirect=/checkout');
+      navigate('/login?redirect=/selecionar-plano');
     }
   }, [isLoggedIn, isSessionLoading, navigate]);
   
@@ -52,6 +52,24 @@ export default function Checkout() {
         variant: "destructive"
       });
       navigate('/paineis-digitais/loja');
+    }
+  }, [navigate, toast]);
+  
+  // Verificar se o plano foi selecionado
+  useEffect(() => {
+    try {
+      const selectedPlan = localStorage.getItem('selectedPlan');
+      if (!selectedPlan) {
+        console.log("Checkout: Plano não selecionado, redirecionando para seleção de plano");
+        toast({
+          title: "Selecione um plano",
+          description: "Escolha um plano antes de prosseguir com o checkout.",
+          variant: "destructive"
+        });
+        navigate('/selecionar-plano');
+      }
+    } catch (e) {
+      console.error("Erro ao verificar plano selecionado:", e);
     }
   }, [navigate, toast]);
   

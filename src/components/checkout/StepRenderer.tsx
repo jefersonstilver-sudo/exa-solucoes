@@ -30,6 +30,7 @@ interface StepRendererProps {
   couponValid: boolean;
   acceptTerms: boolean;
   setAcceptTerms: (value: boolean) => void;
+  totalPrice: number;
 }
 
 const StepRenderer: React.FC<StepRendererProps> = ({
@@ -46,7 +47,8 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   couponMessage,
   couponValid,
   acceptTerms,
-  setAcceptTerms
+  setAcceptTerms,
+  totalPrice
 }) => {
   // Variantes de animação para transições de página
   const pageVariants = {
@@ -56,24 +58,6 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   };
   
   switch (step) {
-    case STEPS.REVIEW:
-      return (
-        <motion.div
-          key="review"
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          variants={pageVariants}
-          transition={{ duration: 0.4 }}
-        >
-          <ReviewStep 
-            cartItems={cartItems} 
-            unavailablePanels={unavailablePanels} 
-          />
-          <TrustIndicators />
-        </motion.div>
-      );
-      
     case STEPS.PLAN:
       return (
         <motion.div
@@ -105,6 +89,24 @@ const StepRenderer: React.FC<StepRendererProps> = ({
               panelCount={cartItems.length}
             />
           </div>
+          <TrustIndicators />
+        </motion.div>
+      );
+      
+    case STEPS.REVIEW:
+      return (
+        <motion.div
+          key="review"
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={pageVariants}
+          transition={{ duration: 0.4 }}
+        >
+          <ReviewStep 
+            cartItems={cartItems} 
+            unavailablePanels={unavailablePanels} 
+          />
           <TrustIndicators />
         </motion.div>
       );
@@ -143,7 +145,8 @@ const StepRenderer: React.FC<StepRendererProps> = ({
         >
           <PaymentStep 
             acceptTerms={acceptTerms} 
-            setAcceptTerms={setAcceptTerms} 
+            setAcceptTerms={setAcceptTerms}
+            totalPrice={totalPrice}
           />
           <TrustIndicators />
         </motion.div>
