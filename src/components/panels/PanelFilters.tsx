@@ -24,6 +24,7 @@ interface PanelFiltersProps {
   onFilterChange: (filters: Partial<FilterOptions>) => void;
   onSearch: (location: string) => void;
   loading: boolean;
+  compact?: boolean; // Adicionando a propriedade compact como opcional
 }
 
 const neighborhoodOptions = [
@@ -58,7 +59,8 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
   filters, 
   onFilterChange, 
   onSearch,
-  loading
+  loading,
+  compact = false // Valor padrão é false
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [expandedSections, setExpandedSections] = useState({
@@ -131,10 +133,10 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-2xl p-5 border shadow-md"
+      className={`bg-white rounded-2xl p-5 border shadow-md ${compact ? 'text-sm' : ''}`}
     >
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-[#2B0A3D]">Filtros</h2>
+        <h2 className={`${compact ? 'text-base' : 'text-lg'} font-semibold text-[#2B0A3D]`}>Filtros</h2>
         <Button 
           variant="ghost" 
           size="sm" 

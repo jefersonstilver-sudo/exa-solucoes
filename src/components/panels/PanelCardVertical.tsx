@@ -52,6 +52,20 @@ const PanelCardVertical: React.FC<PanelCardVerticalProps> = ({ panel, inCart, on
     }
   };
 
+  // Get tags from audience_profile if available or fallback to tags
+  const getTags = () => {
+    if (panel.buildings?.audience_profile && Array.isArray(panel.buildings.audience_profile)) {
+      return panel.buildings.audience_profile;
+    }
+    
+    if (panel.buildings?.tags && Array.isArray(panel.buildings.tags)) {
+      return panel.buildings.tags;
+    }
+    
+    // Fallback to a default based on condominiumProfile
+    return panel.buildings?.condominiumProfile ? [panel.buildings.condominiumProfile === 'commercial' ? 'Comercial' : 'Residencial'] : ['Residencial'];
+  };
+
   return (
     <motion.div 
       variants={containerVariants}
@@ -112,9 +126,9 @@ const PanelCardVertical: React.FC<PanelCardVerticalProps> = ({ panel, inCart, on
                 </div>
               </div>
               
-              {/* Tags */}
+              {/* Tags - usando getTags() para obter tags de várias possíveis fontes */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {(panel.buildings?.tags || ['Residencial']).map((tag, index) => (
+                {getTags().map((tag, index) => (
                   <Badge key={index} variant="outline" className="bg-[#3C1361]/10 border-none text-[#3C1361] flex items-center gap-1">
                     <Tag className="h-3 w-3" />
                     {tag}
