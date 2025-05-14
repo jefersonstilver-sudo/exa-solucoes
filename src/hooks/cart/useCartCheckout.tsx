@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { CartItem } from './useCartState';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { toast as sonnerToast } from 'sonner';
 
 interface UseCartCheckoutProps {
   cartItems: CartItem[];
@@ -53,6 +54,9 @@ export const useCartCheckout = ({
         `Carrinho salvo para checkout: ${cartItems.length} itens`,
         { cartItems }
       );
+      
+      // Show feedback to user
+      sonnerToast.success("Carrinho salvo com sucesso!");
     } catch (e) {
       console.error('Falha ao salvar o carrinho para checkout', e);
       logCheckoutEvent(
@@ -70,24 +74,69 @@ export const useCartCheckout = ({
       return;
     }
     
+    // Force handle browser navigation directly
+    const goToCheckout = () => {
+      // Força a navegação diretamente usando window.location
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATE_TO_PLAN, 
+        LogLevel.SUCCESS, 
+        "Navegando para seleção de plano via window.location"
+      );
+      window.location.href = '/selecionar-plano';
+    };
+    
     // Marca que estamos navegando para evitar problemas com o drawer
     setIsNavigating(true);
     
     // Fecha o drawer antes da navegação
     setCartOpen(false);
     
-    console.log("Navegando para seleção de plano...");
+    // Primeiro log de tentativa
     logCheckoutEvent(
       CheckoutEvent.NAVIGATE_TO_PLAN, 
       LogLevel.INFO, 
-      "Navegando para seleção de plano"
+      "Navegando para seleção de plano (primeira tentativa)"
     );
     
-    // Pequeno delay para garantir que o estado foi atualizado antes da navegação
+    // Atraso maior para garantir que o estado foi atualizado antes da navegação
     setTimeout(() => {
-      // Navegação para a página de seleção de plano
-      navigate('/selecionar-plano');
-    }, 50);
+      try {
+        // Tenta navegar usando o hook
+        navigate('/selecionar-plano');
+        
+        // Segundo log de verificação
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATE_TO_PLAN, 
+          LogLevel.INFO, 
+          "Navigate hook chamado, verificando se a navegação ocorreu"
+        );
+        
+        // Adiciona um fallback para garantir a navegação
+        setTimeout(() => {
+          // Verifica se ainda estamos na mesma página
+          if (window.location.pathname.includes('/paineis-digitais/loja')) {
+            logCheckoutEvent(
+              CheckoutEvent.NAVIGATE_TO_PLAN, 
+              LogLevel.WARNING, 
+              "Navegação com hook falhou, tentando com window.location"
+            );
+            // Se ainda estivermos na loja, força a navegação
+            goToCheckout();
+          }
+        }, 500);
+      } catch (navigateError) {
+        console.error("Erro ao navegar:", navigateError);
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATE_TO_PLAN, 
+          LogLevel.ERROR, 
+          `Erro ao navegar: ${navigateError}`,
+          { error: navigateError }
+        );
+        
+        // Forçar navegação em caso de erro
+        goToCheckout();
+      }
+    }, 200); // Aumento do delay para 200ms
   }, [cartItems, navigate, toast, setIsNavigating, setCartOpen]);
 
   return {

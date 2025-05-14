@@ -11,6 +11,8 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { Button } from '@/components/ui/button';
 import PanelFilterSidebar from '@/components/panels/PanelFilterSidebar';
 import PanelCardList from '@/components/panels/PanelCardList';
+import { useNavigate } from 'react-router-dom';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
   // Use our custom hooks for state management
@@ -29,6 +31,8 @@ export default function PanelStore() {
     handleClearLocation
   } = usePanelStore();
 
+  const navigate = useNavigate();
+
   const {
     cartItems,
     cartOpen,
@@ -43,6 +47,52 @@ export default function PanelStore() {
 
   const { isLoggedIn, user } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
+
+  // Backup navigation function
+  const directGoToCheckout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (cartItems.length === 0) {
+      return;
+    }
+    
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATE_TO_PLAN,
+      LogLevel.INFO,
+      "Tentando navegar diretamente para seleção de plano"
+    );
+    
+    try {
+      // Salvar carrinho
+      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      
+      // Tentar navegar
+      navigate('/selecionar-plano');
+      
+      // Fallback para window.location se necessário
+      setTimeout(() => {
+        if (window.location.pathname.includes('/paineis-digitais/loja')) {
+          logCheckoutEvent(
+            CheckoutEvent.NAVIGATE_TO_PLAN, 
+            LogLevel.WARNING, 
+            "Navegação com hook falhou, usando window.location"
+          );
+          window.location.href = '/selecionar-plano';
+        }
+      }, 300);
+    } catch (error) {
+      console.error("Erro na navegação direta:", error);
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_ERROR,
+        LogLevel.ERROR,
+        "Erro na navegação direta",
+        { error }
+      );
+      
+      // Último recurso
+      window.location.href = '/selecionar-plano';
+    }
+  };
 
   // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
@@ -86,6 +136,46 @@ export default function PanelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 md:px-6 py-8"
       >
+        {/* Debug panel for developer testing */}
+        {cartItems.length > 0 && (
+          <div className="mb-4 p-3 rounded-md bg-gray-100 border border-gray-300">
+            <h3 className="text-sm font-semibold mb-2">Debug: Navegação para checkout</h3>
+            <div className="flex gap-2">
+              <Button 
+                size="sm"
+                variant="default"
+                onClick={handleProceedToCheckout}
+                className="text-xs"
+              >
+                Checkout normal
+              </Button>
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={directGoToCheckout}
+                className="text-xs"
+              >
+                Checkout direto
+              </Button>
+              <Button 
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  logCheckoutEvent(
+                    CheckoutEvent.NAVIGATE_TO_PLAN,
+                    LogLevel.DEBUG,
+                    "Navegação forçada via window.location"
+                  );
+                  window.location.href = '/selecionar-plano';
+                }}
+                className="text-xs"
+              >
+                Navegação forçada
+              </Button>
+            </div>
+          </div>
+        )}
+      
         {/* Promotional Welcome Balloon - Redesigned Premium Banner */}
         <AnimatePresence>
           {showPromotion && (

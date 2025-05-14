@@ -4,6 +4,7 @@ import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
 import { Panel } from '@/types/panel';
 import { CartItem as CartItemType } from './cart/useCartState';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export interface CartItem {
   panel: Panel;
@@ -43,6 +44,16 @@ export const useCartManager = () => {
     setIsNavigating,
     setCartOpen
   });
+
+  // Log cart state for debugging
+  if (cartItems.length > 0) {
+    logCheckoutEvent(
+      CheckoutEvent.SAVE_CART,
+      LogLevel.INFO,
+      `Cart state in useCartManager: ${cartItems.length} items`,
+      { cartItemsCount: cartItems.length }
+    );
+  }
 
   return {
     // Cart state

@@ -9,7 +9,8 @@ export enum LogLevel {
   INFO = 'INFO',
   WARNING = 'WARNING',
   ERROR = 'ERROR',
-  SUCCESS = 'SUCCESS'
+  SUCCESS = 'SUCCESS',
+  DEBUG = 'DEBUG'
 }
 
 // Eventos de checkout para rastrear
@@ -24,7 +25,8 @@ export enum CheckoutEvent {
   SAVE_PLAN = 'Salvamento do plano',
   LOAD_PLAN = 'Carregamento do plano',
   NAVIGATE_TO_CHECKOUT = 'Navegação para checkout',
-  COMPLETE_PURCHASE = 'Finalização da compra'
+  COMPLETE_PURCHASE = 'Finalização da compra',
+  NAVIGATION_ERROR = 'Erro de navegação'
 }
 
 // Interface para o log de eventos
@@ -38,6 +40,36 @@ interface CheckoutLog {
 
 // Armazena logs em memória
 const logs: CheckoutLog[] = [];
+
+// Log storage in localStorage for persistence across page reloads
+const saveLogsToStorage = () => {
+  try {
+    localStorage.setItem('checkoutDebugLogs', JSON.stringify(logs));
+  } catch (e) {
+    console.error('Falha ao salvar logs no localStorage', e);
+  }
+};
+
+// Load logs from localStorage on initialization
+const loadLogsFromStorage = () => {
+  try {
+    const savedLogs = localStorage.getItem('checkoutDebugLogs');
+    if (savedLogs) {
+      const parsedLogs = JSON.parse(savedLogs);
+      logs.push(...parsedLogs);
+      console.log(`Carregados ${parsedLogs.length} logs de checkout do localStorage`);
+    }
+  } catch (e) {
+    console.error('Falha ao carregar logs do localStorage', e);
+  }
+};
+
+// Try to load logs on initialization
+try {
+  loadLogsFromStorage();
+} catch (e) {
+  console.error('Erro ao inicializar logs', e);
+}
 
 // Exporta função para registrar eventos
 export const logCheckoutEvent = (
@@ -56,6 +88,9 @@ export const logCheckoutEvent = (
   
   logs.push(log);
   
+  // Save to localStorage for persistence
+  saveLogsToStorage();
+  
   // Format console log with colors
   const formatMessage = `[CHECKOUT] [${level}] ${event}: ${message}`;
   
@@ -68,6 +103,9 @@ export const logCheckoutEvent = (
       break;
     case LogLevel.SUCCESS:
       console.log(`%c${formatMessage}`, 'color: green', data || '');
+      break;
+    case LogLevel.DEBUG:
+      console.log(`%c${formatMessage}`, 'color: blue', data || '');
       break;
     default:
       console.log(formatMessage, data || '');
@@ -84,12 +122,20 @@ export const getCheckoutLogs = () => {
 // Exporta função para limpar todos os logs
 export const clearCheckoutLogs = () => {
   logs.length = 0;
+  localStorage.removeItem('checkoutDebugLogs');
+};
+
+// Exporta função para salvar logs no localStorage
+export const persistLogs = () => {
+  saveLogsToStorage();
+  return true;
 };
 
 export default {
   logCheckoutEvent,
   getCheckoutLogs,
   clearCheckoutLogs,
+  persistLogs,
   LogLevel,
   CheckoutEvent
 };

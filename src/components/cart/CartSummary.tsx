@@ -60,12 +60,36 @@ const CartSummary: React.FC<CartSummaryProps> = ({
       "Botão de checkout clicado no sumário do carrinho"
     );
     
-    // Garantir que o evento não se propague e não cause problemas no drawer
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Chamar a função de checkout passando o evento
-    onCheckout(e);
+    // Log button click to help debug navigation issues
+    try {
+      // Log the event object to see if it's working properly
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG, 
+        LogLevel.DEBUG, 
+        "Event object details", 
+        {
+          type: e.type,
+          target: e.target,
+          currentTarget: e.currentTarget,
+          preventDefault: typeof e.preventDefault === 'function'
+        }
+      );
+      
+      // Prevenir comportamento padrão para garantir que nossa lógica de navegação funcione
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Chamar a função de checkout passando o evento
+      onCheckout(e);
+    } catch (error) {
+      console.error("Erro ao processar clique de checkout:", error);
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_ERROR,
+        LogLevel.ERROR,
+        "Erro ao processar clique de checkout",
+        { error }
+      );
+    }
   };
 
   return (
@@ -165,6 +189,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
       </div>
       
       <Button
+        type="button"
         className={`w-full rounded-lg py-6 transition-all duration-300 ${
           isEmpty 
             ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
