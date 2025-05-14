@@ -20,7 +20,7 @@ export const useCartCheckout = ({
 
   // Procedimento de checkout para redirecionar para seleção de plano
   const handleProceedToCheckout = useCallback(() => {
-    console.log("Iniciando processo de checkout (corrigido)");
+    console.log("Iniciando processo de checkout");
     
     if (cartItems.length === 0) {
       toast({
@@ -45,7 +45,6 @@ export const useCartCheckout = ({
     // Fecha o drawer antes da navegação
     setCartOpen(false);
     
-    // Adicionando logs adicionais para diagnóstico
     console.log("Preparando navegação para seleção de plano, carrinho fechado, itens:", cartItems.length);
     
     // Navegação para seleção de plano com pequeno delay para garantir que o drawer seja fechado
