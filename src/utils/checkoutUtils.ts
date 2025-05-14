@@ -11,8 +11,9 @@ interface CartItem {
 
 // Get panel price considering its individual price (if available)
 export const getPanelPrice = (panel: Panel, duration: number): number => {
-  // Default base price if not available in the panel object
-  const monthlyPrice = panel.buildings?.preco_mensal || 250;
+  // Use a default price if the building price is not available
+  // Instead of accessing preco_mensal which doesn't exist in the Building type
+  const monthlyPrice = panel.buildings?.basePrice || 250;
   const months = duration / 30; // Convert days to months
   return monthlyPrice * months;
 };
