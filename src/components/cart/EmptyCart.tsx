@@ -15,7 +15,7 @@ const EmptyCart: React.FC = () => {
       className="flex flex-col items-center justify-center h-[400px] text-center px-6"
     >
       <div className="bg-gray-100 rounded-full p-6 mb-4">
-        <ShoppingCart className="h-10 w-10 text-gray-400" />
+        <ShoppingCart className="h-10 w-10 text-gray-400" aria-hidden="true" />
       </div>
       <h3 className="text-lg font-medium text-[#3C1361] mb-2">Seu carrinho está vazio</h3>
       <p className="text-sm text-gray-500 mb-6 max-w-xs">

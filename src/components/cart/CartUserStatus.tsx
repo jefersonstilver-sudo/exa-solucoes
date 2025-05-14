@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User, LogIn } from 'lucide-react';
+import { User, LogIn, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';

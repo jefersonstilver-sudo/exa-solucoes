@@ -100,6 +100,7 @@ const Header: React.FC<HeaderProps> = ({
               <motion.div
                 animate={cartAnimating ? { scale: [1, 1.2, 1] } : {}}
                 transition={{ duration: 0.6 }}
+                aria-label={`Abrir carrinho com ${cartItems.length} itens`}
               >
                 <Button 
                   variant="ghost" 
@@ -140,6 +141,8 @@ const Header: React.FC<HeaderProps> = ({
           size="icon" 
           onClick={handleMenuOpen} 
           className="text-white hover:bg-white/20 md:hidden"
+          aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+          aria-expanded={isMenuOpen}
         >
           {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>

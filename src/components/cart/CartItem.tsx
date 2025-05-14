@@ -39,6 +39,7 @@ const CartItem: React.FC<CartItemProps> = ({
                 src={item.panel.buildings?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'} 
                 alt={item.panel.buildings?.nome || 'Building image'}
                 className="w-full h-full object-cover"
+                aria-label="Imagem do prédio"
               />
             </div>
             <div className="p-3 flex-1">
@@ -74,6 +75,7 @@ const CartItem: React.FC<CartItemProps> = ({
                     size="icon"
                     className="h-6 w-6 text-gray-400 hover:text-red-600"
                     onClick={() => onRemove(item.panel.id)}
+                    aria-label="Remover item"
                   >
                     <X className="h-4 w-4" />
                   </Button>

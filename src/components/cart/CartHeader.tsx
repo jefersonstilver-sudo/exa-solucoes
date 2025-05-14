@@ -29,6 +29,7 @@ const CartHeader: React.FC<CartHeaderProps> = ({ itemCount, onClear }) => {
             onClick={onClear}
             className="h-8 text-gray-500 hover:text-red-600"
             title="Limpar carrinho"
+            aria-label="Limpar carrinho"
           >
             <Trash className="h-4 w-4" />
           </Button>
