@@ -5,10 +5,12 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useNavigate } from 'react-router-dom';
 import { ClientOnly } from '@/components/ui/client-only';
 import CheckoutContainer from '@/components/checkout/CheckoutContainer';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Checkout() {
   const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Verificação de autenticação - redireciona para login se necessário
   useEffect(() => {
@@ -16,6 +18,42 @@ export default function Checkout() {
       navigate('/login?redirect=/checkout');
     }
   }, [isLoggedIn, isSessionLoading, navigate]);
+  
+  // Verificar se o carrinho existe no localStorage
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem('panelCart');
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        console.log("Checkout: Carrinho carregado do localStorage:", parsedCart.length, "itens");
+        
+        if (parsedCart.length === 0) {
+          toast({
+            title: "Carrinho vazio",
+            description: "Adicione itens ao carrinho antes de finalizar a compra.",
+            variant: "destructive"
+          });
+          navigate('/paineis-digitais/loja');
+        }
+      } else {
+        // Se não houver carrinho no localStorage
+        toast({
+          title: "Carrinho vazio",
+          description: "Adicione itens ao carrinho antes de finalizar a compra.",
+          variant: "destructive"
+        });
+        navigate('/paineis-digitais/loja');
+      }
+    } catch (e) {
+      console.error("Erro ao carregar carrinho:", e);
+      toast({
+        title: "Erro ao carregar carrinho",
+        description: "Ocorreu um erro ao carregar seu carrinho. Tente novamente.",
+        variant: "destructive"
+      });
+      navigate('/paineis-digitais/loja');
+    }
+  }, [navigate, toast]);
   
   // Tela de carregamento enquanto verifica a sessão
   if (isSessionLoading) {

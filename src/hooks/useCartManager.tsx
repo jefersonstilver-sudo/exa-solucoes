@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
@@ -186,7 +185,7 @@ export const useCartManager = () => {
     setCartOpen(prev => !prev);
   };
 
-  // Procedimento de checkout completamente revisado e corrigido
+  // Procedimento de checkout corrigido para evitar limpar o carrinho antes da navegação
   const handleProceedToCheckout = useCallback(() => {
     console.log("Iniciando processo de checkout (corrigido)");
     
@@ -199,32 +198,29 @@ export const useCartManager = () => {
       return;
     }
     
+    // IMPORTANTE: Armazenar o carrinho em localStorage antes de navegar
+    try {
+      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      console.log("Carrinho salvo para checkout:", cartItems.length, "itens");
+    } catch (e) {
+      console.error('Falha ao salvar o carrinho para checkout', e);
+    }
+    
     // Marca que estamos navegando para evitar problemas com o drawer
     setIsNavigating(true);
     
-    // Fecha o drawer para evitar problemas visuais
+    // Fecha o drawer antes da navegação
     setCartOpen(false);
     
     // Adicionando logs adicionais para diagnóstico
-    console.log("Preparando navegação para checkout, carrinho fechado, status do navegador:", isNavigating);
+    console.log("Preparando navegação para checkout, carrinho fechado, itens:", cartItems.length);
     
-    // Navegação direta para checkout com delay maior para garantir que 
-    // o drawer seja completamente fechado antes da navegação
+    // Navegação para checkout com pequeno delay para garantir que o drawer seja fechado
     setTimeout(() => {
-      console.log("Executando navegação para /checkout");
-      
-      // Garantir que a navegação aconteça mesmo se houver problemas com o estado anterior
-      try {
-        navigate('/checkout');
-        console.log("Navegação para /checkout realizada com sucesso");
-      } catch (error) {
-        console.error("Erro na navegação:", error);
-        
-        // Solução alternativa se a navegação falhar
-        window.location.href = '/checkout';
-      }
-    }, 300); // Aumento do delay para 300ms garantir fechamento completo do drawer
-  }, [cartItems.length, navigate, toast]);
+      console.log("Executando navegação para /checkout com", cartItems.length, "itens");
+      navigate('/checkout');
+    }, 300);
+  }, [cartItems, navigate, toast]);
 
   return {
     cartItems,
