@@ -24,7 +24,8 @@ export enum CheckoutEvent {
   MULTIPLE_CHECKOUT_ATTEMPT = 'multiple_checkout_attempt',
   PAYMENT_PROCESSING = 'payment_processing',
   PAYMENT_SUCCESS = 'payment_success',
-  PAYMENT_ERROR = 'payment_error'
+  PAYMENT_ERROR = 'payment_error',
+  DEBUG_EVENT = 'debug_event'  // Adding debug event type
 }
 
 interface CheckoutLog {
@@ -138,4 +139,22 @@ export const getCheckoutFlowSummary = () => {
   );
   
   return flowEvents;
+};
+
+// Nova função para obtter resumo de auditoria de checkout
+export const getCheckoutAuditSummary = () => {
+  // Contabilizar todos os errors recentes
+  const recentErrors = checkoutLogs
+    .filter(log => log.level === LogLevel.ERROR)
+    .slice(0, 5);
+  
+  // Obter eventos recentes de qualquer tipo
+  const recentLogs = checkoutLogs.slice(0, 10);
+  
+  return {
+    totalLogs: checkoutLogs.length,
+    errorCount: checkoutLogs.filter(log => log.level === LogLevel.ERROR).length,
+    recentErrors,
+    recentLogs
+  };
 };

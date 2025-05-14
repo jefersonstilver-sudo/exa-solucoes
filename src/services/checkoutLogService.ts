@@ -63,7 +63,7 @@ export const logCheckoutError = (error: unknown) => {
  */
 export const logMultipleCheckoutAttempt = () => {
   logCheckoutEvent(
-    CheckoutEvent.DEBUG,
+    CheckoutEvent.DEBUG_EVENT,
     LogLevel.WARNING,
     "Tentativa de checkout múltiplo bloqueada"
   );
