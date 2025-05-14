@@ -57,7 +57,7 @@ export const useSafeNavigation = () => {
 /**
  * Log a navigation event with consistent formatting
  */
-export const logNavigationEvent = (url: string, method: 'navigate' | 'direct' | 'history' | 'reload' | 'location') => {
+export const logNavigationEvent = (url: string, method: 'navigate' | 'direct' | 'history' | 'reload' | 'location' | 'error') => {
   logNavigation(url, method, true);
   logCheckoutEvent(
     CheckoutEvent.NAVIGATION_EVENT,

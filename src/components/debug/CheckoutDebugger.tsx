@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, RefreshCw, Info, X } from 'lucide-react';
+import { DialogTitle } from '@/components/ui/dialog';
 
 interface CheckoutDebuggerProps {
   onClose?: () => void;
@@ -72,6 +73,7 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
           )}
           Diagnóstico de Checkout
         </CardTitle>
+        <DialogTitle className="sr-only">Diagnóstico de Checkout</DialogTitle>
         <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 
@@ -168,7 +170,7 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
                             log.level === 'WARNING' || log.level === 'warning' ? 'text-amber-500' : 
                             log.level === 'SUCCESS' || log.level === 'success' ? 'text-green-500' : 'text-gray-500'
                           }`}>
-                            [{log.timestamp ? new Date(log.timestamp).toISOString().substr(11, 8) : 'N/A'}]
+                            [{log.timestamp ? log.timestamp.substr(11, 8) : 'N/A'}]
                           </span>
                           <span className="ml-1">{log.message}</span>
                         </div>
@@ -192,9 +194,9 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
                         <div className="font-mono text-red-600">
                           [{error.event}] {error.message}
                         </div>
-                        {error.data && (
+                        {error.details && (
                           <div className="text-red-500 mt-1 pl-2">
-                            {JSON.stringify(error.data)}
+                            {JSON.stringify(error.details)}
                           </div>
                         )}
                       </div>
