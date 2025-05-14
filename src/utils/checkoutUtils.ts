@@ -1,10 +1,11 @@
 
 import { calculatePriceWithDiscount } from '@/utils/priceUtils';
 import { PLANS } from '@/constants/checkoutConstants';
+import { PlanKey } from '@/types/checkout';
 
 // Calculate total price for the whole order
 export const calculateTotalPrice = (
-  selectedPlan: 1 | 3 | 6 | 12, 
+  selectedPlan: PlanKey, 
   cartItemsCount: number, 
   couponDiscount: number, 
   couponValid: boolean

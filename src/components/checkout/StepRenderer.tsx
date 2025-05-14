@@ -8,6 +8,7 @@ import CouponStep from '@/components/checkout/CouponStep';
 import PaymentStep from '@/components/checkout/PaymentStep';
 import TrustIndicators from '@/components/checkout/TrustIndicators';
 import { Panel } from '@/types/panel';
+import { Plan, PlanKey } from '@/types/checkout';
 
 interface CartItem {
   panel: Panel;
@@ -18,9 +19,9 @@ interface StepRendererProps {
   step: number;
   cartItems: CartItem[];
   unavailablePanels: string[];
-  selectedPlan: 1 | 3 | 6 | 12;
-  setSelectedPlan: (plan: 1 | 3 | 6 | 12) => void;
-  PLANS: Record<number, any>;
+  selectedPlan: PlanKey;
+  setSelectedPlan: (plan: PlanKey) => void;
+  PLANS: Record<number, Plan>;
   couponCode: string;
   setCouponCode: (code: string) => void;
   validateCoupon: () => void;

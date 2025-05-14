@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { Panel } from '@/types/panel';
 import { calculateTotalPrice } from '@/utils/checkoutUtils';
 import { CHECKOUT_STEPS } from '@/constants/checkoutConstants';
+import { PlanKey } from '@/types/checkout';
 
 interface CartItem {
   panel: Panel;
@@ -12,7 +13,7 @@ interface CartItem {
 interface UseCheckoutNavigationProps {
   step: number;
   setStep: (step: number) => void;
-  selectedPlan: 1 | 3 | 6 | 12;
+  selectedPlan: PlanKey;
   cartItems: CartItem[];
   couponDiscount: number;
   couponValid: boolean;

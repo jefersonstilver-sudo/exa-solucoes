@@ -15,7 +15,9 @@ export const PLANS = {
     description: 'Ideal para campanhas rápidas',
     months: 1,
     discount: 0,
-    mostPopular: false
+    mostPopular: false,
+    pricePerMonth: 250,
+    extras: ['Campanha de curta duração', 'Ideal para promoções relâmpago']
   },
   3: {
     id: 3,
@@ -23,7 +25,9 @@ export const PLANS = {
     description: 'Período de média duração',
     months: 3,
     discount: 5,
-    mostPopular: true
+    mostPopular: true,
+    pricePerMonth: 220,
+    extras: ['Economia de 5%', 'Maior visibilidade da marca', 'Ideal para lançamentos']
   },
   6: {
     id: 6,
@@ -31,7 +35,9 @@ export const PLANS = {
     description: 'Semestral com desconto',
     months: 6,
     discount: 10,
-    mostPopular: false
+    mostPopular: false,
+    pricePerMonth: 200,
+    extras: ['Economia de 10%', 'Presença contínua', 'Campanhas sazonais']
   },
   12: {
     id: 12,
@@ -39,7 +45,9 @@ export const PLANS = {
     description: 'Melhor custo-benefício',
     months: 12,
     discount: 15,
-    mostPopular: false
+    mostPopular: false,
+    pricePerMonth: 180,
+    extras: ['Economia de 15%', 'Máxima fidelização', 'Presença o ano inteiro']
   }
 };
 

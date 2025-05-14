@@ -3,20 +3,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-
-interface Plan {
-  months: number;
-  pricePerMonth: number;
-  discount: number;
-  extras: string[];
-}
+import { Plan, PlanKey } from '@/types/checkout';
 
 interface PlanSelectorProps {
-  selectedPlan: 1 | 3 | 6 | 12;
-  onSelectPlan: (plan: 1 | 3 | 6 | 12) => void;
-  plans: {
-    [key: number]: Plan;
-  };
+  selectedPlan: PlanKey;
+  onSelectPlan: (plan: PlanKey) => void;
+  plans: Record<number, Plan>;
   panelCount: number;
 }
 
@@ -26,7 +18,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   plans,
   panelCount
 }) => {
-  const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<1 | 3 | 6 | 12>;
+  const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
   
   // Animation variants
   const containerVariants = {

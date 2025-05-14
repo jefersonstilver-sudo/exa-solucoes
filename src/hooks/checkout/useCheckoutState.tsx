@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
+import { PlanKey } from '@/types/checkout';
 
 export const useCheckoutState = () => {
   const [step, setStep] = useState(CHECKOUT_STEPS.REVIEW);
-  const [selectedPlan, setSelectedPlan] = useState<1 | 3 | 6 | 12>(1);
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(1);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(() => {

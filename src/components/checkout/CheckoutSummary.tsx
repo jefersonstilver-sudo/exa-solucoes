@@ -1,22 +1,15 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
+import { Plan, PlanKey } from '@/types/checkout';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, PackageCheck } from 'lucide-react';
 
-interface Plan {
-  months: number;
-  pricePerMonth: number;
-  discount: number;
-  extras: string[];
-}
-
 interface CheckoutSummaryProps {
   cartItems: { panel: Panel; duration: number }[];
-  selectedPlan: 1 | 3 | 6 | 12;
+  selectedPlan: PlanKey;
   plans: Record<number, Plan>;
   couponDiscount: number;
   startDate: Date;

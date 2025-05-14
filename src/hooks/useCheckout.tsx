@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
@@ -11,6 +10,7 @@ import { useCheckoutState } from '@/hooks/checkout/useCheckoutState';
 import { useCheckoutAuth } from '@/hooks/checkout/useCheckoutAuth';
 import { useCartValidation } from '@/hooks/checkout/useCartValidation';
 import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
+import { CheckoutSteps, Plan, PlanKey } from '@/types/checkout';
 
 export const STEPS = CHECKOUT_STEPS; // Re-exporta para compatibilidade
 export { PLANS }; // Re-exporta para compatibilidade
