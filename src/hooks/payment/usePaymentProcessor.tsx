@@ -6,6 +6,9 @@ import { usePaymentSimulator } from './usePaymentSimulator';
 import { useOrderCreation } from './useOrderCreation';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { MP_PUBLIC_KEY } from '@/constants/checkoutConstants';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
 
 interface CartItem {
   panel: Panel;
@@ -27,6 +30,7 @@ interface PaymentOptions {
 
 export const usePaymentProcessor = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { validatePaymentRequirements } = usePaymentValidation();
   const { isCreatingPayment, setIsCreatingPayment, simulateSuccessfulPayment } = usePaymentSimulator();
   const { createOrder } = useOrderCreation();
@@ -77,15 +81,73 @@ export const usePaymentProcessor = () => {
         endDate
       });
       
-      // Apenas para demonstração, simula pagamento bem-sucedido
-      await simulateSuccessfulPayment(
-        pedido.id, 
-        cartItems, 
-        sessionUser, 
-        startDate, 
-        endDate, 
-        handleClearCart
-      );
+      toast({
+        title: "Processando pagamento",
+        description: "Estamos preparando seu pagamento...",
+      });
+      
+      try {
+        // Obter a URL base da aplicação
+        const currentUrl = window.location.origin;
+        
+        // Calcular duration baseado no plano
+        const duration = selectedPlan * 30; // convertendo meses para dias
+        
+        // Preparar dados para a função Edge
+        const paymentData = {
+          pedidoId: pedido.id,
+          cartItems,
+          totals: {
+            totalPrice,
+            selectedPlan,
+            duration,
+            withCoupon: !!couponId,
+            couponDiscount: couponId ? 10 : 0, // valor de exemplo, deve vir do cupom real
+          },
+          userId: sessionUser.id,
+          returnUrl: currentUrl
+        };
+        
+        // Chamar função Edge para processar pagamento
+        const { data, error } = await supabase.functions.invoke('process-payment', {
+          body: paymentData
+        });
+        
+        if (error) {
+          throw new Error(`Erro ao processar pagamento: ${error.message}`);
+        }
+        
+        // Verificar se a resposta é válida
+        if (!data || !data.success) {
+          throw new Error('Resposta inválida do processador de pagamento');
+        }
+        
+        // Em um ambiente de produção, redirecionaríamos para o MercadoPago
+        // window.location.href = data.init_point;
+        
+        // Para fins de teste, simulamos um pagamento bem-sucedido
+        console.log("Simulando pagamento bem-sucedido para pedido:", pedido.id);
+        await simulateSuccessfulPayment(
+          pedido.id, 
+          cartItems, 
+          sessionUser, 
+          startDate, 
+          endDate, 
+          handleClearCart
+        );
+        
+        // Redirecionar para a página de confirmação
+        sonnerToast.success("Pagamento realizado com sucesso!");
+        navigate(`/pedido-confirmado?id=${pedido.id}`);
+        
+      } catch (paymentError: any) {
+        console.error('Erro ao processar pagamento:', paymentError);
+        toast({
+          variant: "destructive",
+          title: "Erro ao processar pagamento",
+          description: paymentError.message || "Houve um problema ao processar o pagamento.",
+        });
+      }
       
     } catch (error: any) {
       console.error('Erro ao criar pagamento:', error);
@@ -94,6 +156,7 @@ export const usePaymentProcessor = () => {
         title: "Erro ao processar pagamento",
         description: error.message || "Houve um problema ao processar o pagamento.",
       });
+    } finally {
       setIsCreatingPayment(false);
     }
   };
