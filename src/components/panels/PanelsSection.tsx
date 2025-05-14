@@ -2,7 +2,7 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Filter, Map } from 'lucide-react';
+import { Filter, Map, X } from 'lucide-react';
 import { Panel } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
 import PanelFilters from '@/components/panels/PanelFilters';
@@ -10,7 +10,8 @@ import PanelList from '@/components/panels/PanelList';
 import ResultsHeader from '@/components/panels/ResultsHeader';
 import LoadingPanels from '@/components/panels/LoadingPanels';
 import EmptyResults from '@/components/panels/EmptyResults';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import PanelMap from '@/components/panels/PanelMap';
 
 interface PanelsSectionProps {
   panels: Panel[] | undefined;
@@ -37,6 +38,20 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
 }) => {
   // Map toggle state
   const [mapOpen, setMapOpen] = React.useState(false);
+  
+  // Function to handle selecting a panel from the map
+  const handlePanelSelect = (panel: Panel) => {
+    // Scroll to the panel in the list
+    const panelElement = document.getElementById(`panel-${panel.id}`);
+    if (panelElement) {
+      panelElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Highlight the panel briefly
+      panelElement.classList.add('highlight-panel');
+      setTimeout(() => {
+        panelElement.classList.remove('highlight-panel');
+      }, 2000);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
@@ -51,26 +66,38 @@ const PanelsSection: React.FC<PanelsSectionProps> = ({
         >
           <Button
             variant="outline"
-            className="w-full border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361]/10 hover:text-[#3C1361] rounded-xl flex gap-2 justify-center items-center py-6"
+            className={`w-full border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361]/10 hover:text-[#3C1361] rounded-xl flex gap-2 justify-center items-center py-6 ${
+              mapOpen ? 'bg-[#3C1361]/10' : ''
+            }`}
             onClick={() => setMapOpen(!mapOpen)}
           >
             <Map className="h-5 w-5" />
             {mapOpen ? "Fechar mapa" : "Abrir mapa"}
+            {mapOpen && <X className="h-4 w-4 ml-2" />}
           </Button>
         </motion.div>
         
-        {/* Map Placeholder (will be implemented later) */}
-        {mapOpen && (
-          <motion.div 
-            className="w-full h-64 bg-gray-100 rounded-xl flex items-center justify-center mb-4"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 256 }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <p className="text-gray-500 text-sm">Mapa será implementado em breve</p>
-          </motion.div>
-        )}
+        {/* Map Component */}
+        <AnimatePresence>
+          {mapOpen && panels && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <PanelMap 
+                panels={panels}
+                selectedLocation={selectedLocation}
+                onSelectPanel={handlePanelSelect}
+              />
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Clique nos marcadores para ver detalhes dos painéis
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* Mobile Filter Trigger */}
         <div className="lg:hidden w-full">

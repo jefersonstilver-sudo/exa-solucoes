@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Panel } from '@/types/panel';
@@ -69,6 +70,7 @@ const PanelCardVertical: React.FC<PanelCardVerticalProps> = ({ panel, inCart, on
 
   return (
     <motion.div 
+      id={`panel-${panel.id}`} // Add ID for map selection targeting
       variants={containerVariants}
       whileHover="hover"
       className="w-full"
