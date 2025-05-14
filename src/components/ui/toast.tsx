@@ -115,16 +115,17 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 
-// Define the ToasterToast type
-export interface ToasterToast extends ToastProps {
-  id: string;
+// Define the Toast interface (for use with the hook)
+export interface Toast {
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  variant?: "default" | "destructive";
 }
 
-// Define the Toast type
-export interface Toast {
+// Define the ToasterToast interface (extends Toast with an id)
+export interface ToasterToast {
+  id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
