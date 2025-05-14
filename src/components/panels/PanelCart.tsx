@@ -71,6 +71,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
       return;
     }
     
+    // Definir o estado como processando para evitar cliques duplos
     setIsSubmitting(true);
     
     try {
@@ -83,8 +84,10 @@ const PanelCart: React.FC<PanelCartProps> = ({
         { items: cartItems.length }
       );
       
-      // Chamar a função de checkout que foi passada como prop
-      onProceedToCheckout();
+      // Chamar a função de checkout com um pequeno atraso para permitir que o estado de UI seja atualizado
+      setTimeout(() => {
+        onProceedToCheckout();
+      }, 100);
       
       logCheckoutEvent(
         CheckoutEvent.NAVIGATE_TO_PLAN, 
@@ -99,9 +102,9 @@ const PanelCart: React.FC<PanelCartProps> = ({
         "Erro durante processo de checkout", 
         { error }
       );
-    } finally {
-      // Resetar o estado de envio após um tempo curto
-      setTimeout(() => setIsSubmitting(false), 1000);
+      
+      // Resetar o estado de envio
+      setIsSubmitting(false);
     }
   };
   

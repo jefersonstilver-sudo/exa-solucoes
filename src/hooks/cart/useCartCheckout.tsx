@@ -10,7 +10,7 @@ import {
   logCheckoutError,
   logMultipleCheckoutAttempt
 } from '@/services/checkoutLogService';
-import { navigateSafely } from '@/services/navigationService';
+import { useSafeNavigation } from '@/services/navigationService';
 import { saveCartToStorage } from '@/services/cartStorageService';
 
 interface CartItem {
@@ -32,6 +32,7 @@ export const useCartCheckout = ({
   const { toast } = useToast();
   const [isCheckoutProcessed, setIsCheckoutProcessed] = useState(false);
   const [navigationAttempts, setNavigationAttempts] = useState(0);
+  const { navigateToRoute } = useSafeNavigation();
   
   // Reset checkout processed status when cart items change
   useEffect(() => {
@@ -89,8 +90,8 @@ export const useCartCheckout = ({
       // 4. Log navigation attempt
       logPlanSelectionNavigation();
       
-      // 5. Direct navigation using the most reliable method
-      navigateSafely('/selecionar-plano');
+      // 5. Navigate using React Router (prevents flash)
+      navigateToRoute('/selecionar-plano');
       
     } catch (error) {
       console.error('Erro durante checkout:', error);
@@ -108,7 +109,7 @@ export const useCartCheckout = ({
       setIsNavigating(false);
       setIsCheckoutProcessed(false);
     }
-  }, [cartItems, isCheckoutProcessed, setCartOpen, setIsNavigating, toast]);
+  }, [cartItems, isCheckoutProcessed, setCartOpen, setIsNavigating, toast, navigateToRoute]);
 
   return {
     handleProceedToCheckout,

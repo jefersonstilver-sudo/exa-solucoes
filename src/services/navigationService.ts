@@ -1,23 +1,57 @@
 
 import { logNavigation } from '@/services/navigationAuditService';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { useNavigate } from 'react-router-dom';
 
 /**
- * Navigate safely to a URL using the most reliable method (window.location).
- * This has proven to be more reliable than React Router's navigate in certain scenarios.
+ * Navigate safely to a URL using the most reliable method based on context.
+ * Falls back to window.location only when necessary.
  */
 export const navigateSafely = (url: string): boolean => {
   try {
     // Log navigation attempt
-    logNavigationEvent(url, 'direct');
+    logNavigationEvent(url, 'safe-navigation');
     
-    // Direct navigation - most reliable method
+    // Use React Router's navigate function if available via hook
+    // This function should be called within a component that has access to React Router context
+    
+    // Direct navigation - fallback method when React Router isn't accessible
     window.location.href = url;
     return true;
   } catch (error) {
     logNavigationError(url, String(error));
     return false;
   }
+};
+
+/**
+ * Hook to provide safe navigation functions
+ * Must be used within a component that has access to React Router context
+ */
+export const useSafeNavigation = () => {
+  const navigate = useNavigate();
+  
+  const navigateToRoute = (route: string) => {
+    try {
+      logNavigationEvent(route, 'react-router');
+      navigate(route);
+      return true;
+    } catch (error) {
+      console.error("Erro na navegação React Router:", error);
+      logNavigationError(route, String(error));
+      
+      // Fallback to direct navigation
+      try {
+        window.location.href = route;
+        return true;
+      } catch (fallbackError) {
+        logNavigationError(route, String(fallbackError));
+        return false;
+      }
+    }
+  };
+  
+  return { navigateToRoute };
 };
 
 /**
