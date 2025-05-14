@@ -16,7 +16,7 @@ export const usePaymentSimulator = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Function to simulate a successful payment (for demo purposes)
+  // Função para simular um pagamento bem-sucedido (apenas para demonstração)
   const simulateSuccessfulPayment = async (
     pedidoId: string,
     cartItems: CartItem[],
@@ -26,7 +26,7 @@ export const usePaymentSimulator = () => {
     handleClearCart: () => void
   ) => {
     try {
-      // Add a slight delay to simulate payment processing
+      // Adiciona um pequeno atraso para simular o processamento do pagamento
       toast({
         title: "Processando pagamento",
         description: "Aguarde enquanto processamos seu pagamento...",
@@ -34,7 +34,7 @@ export const usePaymentSimulator = () => {
       
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Update pedido status to 'pago'
+      // Atualiza o status do pedido para 'pago'
       await supabase
         .from('pedidos')
         .update({
@@ -48,7 +48,7 @@ export const usePaymentSimulator = () => {
         })
         .eq('id', pedidoId);
       
-      // Create campaigns for each panel
+      // Cria campanhas para cada painel
       for (const item of cartItems) {
         await supabase
           .from('campanhas')
@@ -68,17 +68,17 @@ export const usePaymentSimulator = () => {
       // Só limpa o carrinho depois que todas as campanhas foram criadas com sucesso
       handleClearCart();
       
-      // Show success message
+      // Exibe mensagem de sucesso
       sonnerToast.success("Pagamento realizado com sucesso!");
       
-      // Redirect to confirmation page
+      // Redireciona para a página de confirmação
       navigate(`/pedido-confirmado?id=${pedidoId}`);
       
-      // Reset state
+      // Reinicia o estado
       setIsCreatingPayment(false);
       
     } catch (error: any) {
-      console.error('Error handling payment success:', error);
+      console.error('Erro ao processar confirmação de pagamento:', error);
       setIsCreatingPayment(false);
       toast({
         variant: "destructive",

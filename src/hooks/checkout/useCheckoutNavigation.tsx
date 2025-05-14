@@ -42,7 +42,7 @@ export const useCheckoutNavigation = ({
   handleClearCart,
   createPayment
 }: UseCheckoutNavigationProps) => {
-  // Next step handler
+  // Manipulador de próxima etapa
   const handleNextStep = () => {
     if (step === CHECKOUT_STEPS.PAYMENT) {
       const totalPrice = calculateTotalPrice(selectedPlan, cartItems.length, couponDiscount, couponValid);
@@ -64,12 +64,12 @@ export const useCheckoutNavigation = ({
     setStep(step + 1);
   };
   
-  // Previous step handler
+  // Manipulador de etapa anterior
   const handlePrevStep = () => {
     setStep(step - 1);
   };
   
-  // Determine whether the next button should be enabled
+  // Determina se o botão de próxima etapa deve estar habilitado
   const isNextEnabled = useMemo(() => {
     if (step === CHECKOUT_STEPS.REVIEW && unavailablePanels.length > 0) return false;
     if (step === CHECKOUT_STEPS.PAYMENT && !acceptTerms) return false;

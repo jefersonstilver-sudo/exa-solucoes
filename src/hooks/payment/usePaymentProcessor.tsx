@@ -31,12 +31,12 @@ export const usePaymentProcessor = () => {
   const { isCreatingPayment, setIsCreatingPayment, simulateSuccessfulPayment } = usePaymentSimulator();
   const { createOrder } = useOrderCreation();
   
-  // Initialize MercadoPago
+  // Inicializa MercadoPago
   const { isSDKLoaded } = useMercadoPago({
     publicKey: MP_PUBLIC_KEY
   });
 
-  // Create payment and handle the checkout process
+  // Cria pagamento e gerencia o processo de checkout
   const createPayment = async ({
     totalPrice,
     selectedPlan,
@@ -52,7 +52,7 @@ export const usePaymentProcessor = () => {
     setIsCreatingPayment(true);
     
     try {
-      // Validate all requirements before proceeding
+      // Valida todos os requisitos antes de prosseguir
       const isValid = validatePaymentRequirements({
         acceptTerms, 
         unavailablePanels, 
@@ -66,7 +66,7 @@ export const usePaymentProcessor = () => {
         return;
       }
       
-      // Create order in database
+      // Cria pedido no banco de dados
       const pedido = await createOrder({
         sessionUser,
         cartItems,
@@ -77,7 +77,7 @@ export const usePaymentProcessor = () => {
         endDate
       });
       
-      // For demo purposes only, simulate success payment
+      // Apenas para demonstração, simula pagamento bem-sucedido
       await simulateSuccessfulPayment(
         pedido.id, 
         cartItems, 
@@ -88,7 +88,7 @@ export const usePaymentProcessor = () => {
       );
       
     } catch (error: any) {
-      console.error('Error creating payment:', error);
+      console.error('Erro ao criar pagamento:', error);
       toast({
         variant: "destructive",
         title: "Erro ao processar pagamento",

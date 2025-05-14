@@ -47,7 +47,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   acceptTerms,
   setAcceptTerms
 }) => {
-  // Animation variants for page transitions
+  // Variantes de animação para transições de página
   const pageVariants = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },

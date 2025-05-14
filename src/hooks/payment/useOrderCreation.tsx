@@ -28,17 +28,17 @@ export const useOrderCreation = () => {
     startDate,
     endDate
   }: OrderCreationOptions) => {
-    // Create a copy of cart items to avoid issues if cart is cleared
+    // Cria uma cópia dos itens do carrinho para evitar problemas se o carrinho for limpo
     const cartItemsCopy = [...cartItems];
     
-    // Create pedido in database
+    // Cria pedido no banco de dados
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .insert([
         {
           client_id: sessionUser.id,
           lista_paineis: cartItemsCopy.map(item => item.panel.id),
-          duracao: selectedPlan * 30, // Convert months to days
+          duracao: selectedPlan * 30, // Converte meses para dias
           plano_meses: selectedPlan,
           valor_total: totalPrice,
           cupom_id: couponId,
@@ -59,7 +59,7 @@ export const useOrderCreation = () => {
     
     if (pedidoError) throw pedidoError;
     
-    // If coupon was applied, record its usage
+    // Se um cupom foi aplicado, registra seu uso
     if (couponId) {
       await supabase
         .from('cupom_usos')
@@ -72,7 +72,7 @@ export const useOrderCreation = () => {
         ]);
     }
     
-    // Update pedido with payment information
+    // Atualiza o pedido com informações de pagamento
     await supabase
       .from('pedidos')
       .update({

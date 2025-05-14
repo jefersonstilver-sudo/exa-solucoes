@@ -13,7 +13,7 @@ export const useCartValidation = (cartItems: CartItem[]) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Check if cart is empty
+  // Verifica se o carrinho está vazio
   useEffect(() => {
     console.log("useCartValidation: Verificando carrinho", cartItems.length);
     if (cartItems.length === 0) {

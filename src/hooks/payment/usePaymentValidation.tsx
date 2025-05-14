@@ -27,6 +27,7 @@ export const usePaymentValidation = () => {
     isSDKLoaded,
     cartItems
   }: ValidationOptions): boolean => {
+    // Validar aceitação dos termos e condições
     if (!acceptTerms) {
       toast({
         variant: "destructive",
@@ -36,6 +37,7 @@ export const usePaymentValidation = () => {
       return false;
     }
     
+    // Validar disponibilidade dos painéis selecionados
     if (unavailablePanels.length > 0) {
       toast({
         variant: "destructive",
@@ -45,6 +47,7 @@ export const usePaymentValidation = () => {
       return false;
     }
     
+    // Validar autenticação do usuário
     if (!sessionUser) {
       toast({
         variant: "destructive",
@@ -55,6 +58,7 @@ export const usePaymentValidation = () => {
       return false;
     }
     
+    // Validar carregamento do SDK de pagamento
     if (!isSDKLoaded) {
       toast({
         variant: "destructive",

@@ -48,7 +48,7 @@ const CheckoutContainer: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Main content */}
+        {/* Conteúdo principal */}
         <div className="md:col-span-2 space-y-6">
           <StepRenderer 
             step={step}
@@ -68,7 +68,7 @@ const CheckoutContainer: React.FC = () => {
           />
         </div>
         
-        {/* Checkout summary */}
+        {/* Resumo do checkout */}
         <div className="md:col-span-1">
           <motion.div
             initial={{ x: 20, opacity: 0 }}
@@ -87,7 +87,7 @@ const CheckoutContainer: React.FC = () => {
         </div>
       </div>
       
-      {/* Navigation buttons */}
+      {/* Botões de navegação */}
       <CheckoutNavigation
         onBack={step === STEPS.REVIEW ? () => window.location.href = '/paineis-digitais/loja' : handlePrevStep}
         onNext={handleNextStep}

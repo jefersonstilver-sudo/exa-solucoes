@@ -12,14 +12,14 @@ import { useCheckoutAuth } from '@/hooks/checkout/useCheckoutAuth';
 import { useCartValidation } from '@/hooks/checkout/useCartValidation';
 import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
 
-export const STEPS = CHECKOUT_STEPS; // Re-export for backward compatibility
-export { PLANS }; // Re-export for backward compatibility
+export const STEPS = CHECKOUT_STEPS; // Re-exporta para compatibilidade
+export { PLANS }; // Re-exporta para compatibilidade
 
 export const useCheckout = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('id');
   
-  // Use the modularized hooks
+  // Usa os hooks modularizados
   const { cartItems, handleClearCart } = useCartManager();
   
   const {
@@ -31,10 +31,10 @@ export const useCheckout = () => {
     STEPS
   } = useCheckoutState();
 
-  // Authentication hook
+  // Hook de autenticação
   useCheckoutAuth(setSessionUser);
   
-  // Cart validation hook
+  // Hook de validação do carrinho
   useCartValidation(cartItems);
   
   const {
@@ -55,19 +55,19 @@ export const useCheckout = () => {
     createPayment
   } = usePaymentProcessor();
   
-  // Check panel availability when step changes to plan selection
+  // Verifica a disponibilidade dos painéis quando a etapa muda para seleção de plano
   useEffect(() => {
     if (step === STEPS.PLAN) {
       checkPanelAvailability(cartItems, startDate, endDate);
     }
   }, [step, startDate, endDate, cartItems, checkPanelAvailability, STEPS.PLAN]);
 
-  // Handle validateCoupon to adapt to the new structure
+  // Adapta a função validateCoupon para a nova estrutura
   const handleValidateCoupon = () => {
     validateCoupon(selectedPlan);
   };
 
-  // Use the navigation hook
+  // Usa o hook de navegação
   const { handleNextStep, handlePrevStep, isNextEnabled } = useCheckoutNavigation({
     step,
     setStep,

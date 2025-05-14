@@ -8,7 +8,7 @@ export const useCheckoutAuth = (setSessionUser: (user: any) => void) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Check if user is authenticated
+  // Verifica se o usuário está autenticado
   useEffect(() => {
     console.log("useCheckoutAuth: Verificando autenticação do usuário");
     const checkAuth = async () => {
@@ -29,7 +29,7 @@ export const useCheckoutAuth = (setSessionUser: (user: any) => void) => {
     
     checkAuth();
     
-    // Set up auth state change listener
+    // Configura o listener para mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("useCheckoutAuth: Auth state mudou:", event);
       if (event === 'SIGNED_IN') {

@@ -9,12 +9,12 @@ export const useCheckoutState = () => {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(() => {
     const date = new Date();
-    date.setDate(date.getDate() + 30); // Default to 30 days
+    date.setDate(date.getDate() + 30); // Padrão de 30 dias
     return date;
   });
   const [sessionUser, setSessionUser] = useState<any>(null);
   
-  // Update end date when plan changes
+  // Atualiza a data final quando o plano muda
   useEffect(() => {
     const date = new Date(startDate);
     date.setMonth(date.getMonth() + PLANS[selectedPlan].months);

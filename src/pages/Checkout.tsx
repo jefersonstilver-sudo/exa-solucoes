@@ -10,13 +10,14 @@ export default function Checkout() {
   const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
   const navigate = useNavigate();
   
-  // Check if user is logged in
+  // Verificação de autenticação - redireciona para login se necessário
   useEffect(() => {
     if (!isSessionLoading && !isLoggedIn) {
       navigate('/login?redirect=/checkout');
     }
   }, [isLoggedIn, isSessionLoading, navigate]);
   
+  // Tela de carregamento enquanto verifica a sessão
   if (isSessionLoading) {
     return (
       <Layout>

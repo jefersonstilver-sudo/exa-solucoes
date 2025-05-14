@@ -31,7 +31,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   startDate,
   endDate
 }) => {
-  // Format date to Brazilian format
+  // Formata data para o formato brasileiro
   const formatDate = (date: Date): string => {
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
@@ -40,7 +40,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     }).format(date);
   };
   
-  // Calculate subtotal
+  // Calcula subtotal
   const calculateSubtotal = (): number => {
     const pricePerMonth = plans[selectedPlan].pricePerMonth;
     const totalMonths = plans[selectedPlan].months;
@@ -49,7 +49,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     return pricePerMonth * totalMonths * panelCount;
   };
   
-  // Calculate plan discount
+  // Calcula desconto do plano
   const calculatePlanDiscount = (): number => {
     const planDiscount = plans[selectedPlan].discount;
     if (planDiscount <= 0) {
@@ -60,7 +60,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     return (subtotal * planDiscount) / 100;
   };
   
-  // Calculate coupon discount
+  // Calcula desconto do cupom
   const calculateCouponDiscount = (): number => {
     if (couponDiscount <= 0) {
       return 0;
@@ -70,7 +70,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
     return (subtotalAfterPlanDiscount * couponDiscount) / 100;
   };
   
-  // Calculate total
+  // Calcula total
   const calculateTotal = (): number => {
     const subtotal = calculateSubtotal();
     const planDiscountAmount = calculatePlanDiscount();
