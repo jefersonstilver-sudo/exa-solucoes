@@ -35,7 +35,8 @@ export interface Building {
   towers?: number;
   apartments?: number;
   buildingAge?: number;
-  tags?: string[]; // Adicionando a propriedade tags
+  tags?: string[]; // Tags para categorização adicional
+  audience_profile?: string[]; // Adicionando audience_profile como array de strings
 }
 
 export interface PanelWithDistance extends Panel {

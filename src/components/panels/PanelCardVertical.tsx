@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Panel } from '@/types/panel';
@@ -54,15 +53,17 @@ const PanelCardVertical: React.FC<PanelCardVerticalProps> = ({ panel, inCart, on
 
   // Get tags from audience_profile if available or fallback to tags
   const getTags = () => {
+    // Verificar se audience_profile existe e é um array
     if (panel.buildings?.audience_profile && Array.isArray(panel.buildings.audience_profile)) {
       return panel.buildings.audience_profile;
     }
     
+    // Fallback para tags se audience_profile não estiver disponível
     if (panel.buildings?.tags && Array.isArray(panel.buildings.tags)) {
       return panel.buildings.tags;
     }
     
-    // Fallback to a default based on condominiumProfile
+    // Fallback para um valor padrão baseado no condominiumProfile
     return panel.buildings?.condominiumProfile ? [panel.buildings.condominiumProfile === 'commercial' ? 'Comercial' : 'Residencial'] : ['Residencial'];
   };
 
