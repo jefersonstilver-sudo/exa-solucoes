@@ -34,20 +34,20 @@ export const PLANS = {
     name: '6 meses',
     description: 'Semestral com desconto',
     months: 6,
-    discount: 10,
+    discount: 15,
     mostPopular: false,
     pricePerMonth: 200,
-    extras: ['Economia de 10%', 'Presença contínua', 'Campanhas sazonais']
+    extras: ['Economia de 15%', 'Presença contínua', 'Campanhas sazonais']
   },
   12: {
     id: 12,
     name: '12 meses',
     description: 'Melhor custo-benefício',
     months: 12,
-    discount: 15,
+    discount: 35,
     mostPopular: false,
     pricePerMonth: 180,
-    extras: ['Economia de 15%', 'Máxima fidelização', 'Presença o ano inteiro']
+    extras: ['Economia de 35%', 'Máxima fidelização', 'Presença o ano inteiro']
   }
 };
 
