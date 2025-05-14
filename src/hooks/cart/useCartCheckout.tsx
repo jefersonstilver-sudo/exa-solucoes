@@ -81,7 +81,8 @@ export const useCartCheckout = ({
         const cartItemsSimplified = cartItems.map(item => ({
           panel: {
             id: item.panel.id,
-            nome: item.panel.nome,
+            // Fix: Use optional chaining and access the nome property from buildings
+            nome: item.panel.buildings?.nome || 'Painel sem nome',
             buildings: item.panel.buildings ? {
               id: item.panel.buildings.id,
               nome: item.panel.buildings.nome,
