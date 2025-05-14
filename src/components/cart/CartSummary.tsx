@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useCallback } from 'react';
 import { ArrowRight, VideoIcon, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -7,6 +8,7 @@ import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { logNavigation } from '@/services/navigationAuditService';
 
 interface CartSummaryProps {
   subtotal: number;
@@ -45,28 +47,53 @@ const CartSummary: React.FC<CartSummaryProps> = ({
     (total * (couponDiscount / 100)) : 
     0;
 
-  const handleApplyCoupon = async () => {
+  const handleApplyCoupon = useCallback(async () => {
     // For simplicity, we're using 1 as the plan duration
     // In a real scenario, you might want to pass the actual selected plan
     await validateCoupon(1);
-  };
+  }, [validateCoupon]);
 
-  // Função aprimorada para lidar com clique no botão
-  const handleCheckoutClick = (e: React.MouseEvent) => {
+  // Função aprimorada para lidar com clique no botão de forma segura
+  const handleCheckoutClick = useCallback((e: React.MouseEvent) => {
+    // Log para auditoria
+    logCheckoutEvent(
+      CheckoutEvent.AUDIT,
+      LogLevel.INFO,
+      "Botão de finalizar compra clicado",
+      { isEmpty, isSubmitting }
+    );
+    
     // Prevenir comportamento padrão
     e.preventDefault();
     e.stopPropagation();
+
+    if (isEmpty) {
+      logCheckoutEvent(
+        CheckoutEvent.PROCEED_TO_CHECKOUT, 
+        LogLevel.WARNING, 
+        "Tentativa de checkout com carrinho vazio bloqueada pelo botão"
+      );
+      return; // Não fazer nada se o carrinho estiver vazio
+    }
+
+    if (isSubmitting) {
+      logCheckoutEvent(
+        CheckoutEvent.PROCEED_TO_CHECKOUT, 
+        LogLevel.WARNING, 
+        "Tentativa de checkout enquanto já está processando"
+      );
+      return; // Não fazer nada se já estiver processando
+    }
     
-    // Log simples para diagnóstico
+    // Registrar tentativa de checkout
     logCheckoutEvent(
       CheckoutEvent.PROCEED_TO_CHECKOUT, 
       LogLevel.INFO, 
       "Botão de checkout clicado no sumário do carrinho"
     );
     
-    // Chamada direta da função de checkout sem passar o evento complexo
     try {
-      // Chamar a função de checkout de forma simples
+      // Chamar a função de checkout de forma segura
       onCheckout(e);
     } catch (error) {
       console.error("Erro ao processar clique de checkout:", error);
@@ -77,7 +104,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
         { error: String(error) }
       );
     }
-  };
+  }, [isEmpty, isSubmitting, onCheckout]);
 
   return (
     <div className="border-t p-5 sm:p-6 bg-gradient-to-b from-gray-50/50 to-gray-50/80">
@@ -209,3 +236,4 @@ const CartSummary: React.FC<CartSummaryProps> = ({
 };
 
 export default CartSummary;
+

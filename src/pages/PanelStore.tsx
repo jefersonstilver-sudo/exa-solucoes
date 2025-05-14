@@ -13,6 +13,10 @@ import PanelFilterSidebar from '@/components/panels/PanelFilterSidebar';
 import PanelCardList from '@/components/panels/PanelCardList';
 import { useNavigate } from 'react-router-dom';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { logNavigation } from '@/services/navigationAuditService';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import CheckoutDebugger from '@/components/debug/CheckoutDebugger';
+import { Bug, X } from 'lucide-react';
 
 export default function PanelStore() {
   // Use our custom hooks for state management
@@ -47,6 +51,8 @@ export default function PanelStore() {
 
   const { isLoggedIn, user } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
+  const [showDebugger, setShowDebugger] = useState(false);
+  const [debugModalOpen, setDebugModalOpen] = useState(false);
 
   // Backup navigation function
   const directGoToCheckout = (e: React.MouseEvent) => {
@@ -66,6 +72,9 @@ export default function PanelStore() {
       // Salvar carrinho
       localStorage.setItem('panelCart', JSON.stringify(cartItems));
       
+      // Registrar na auditoria
+      logNavigation('/selecionar-plano', 'direct', true);
+      
       // Tentar navegar
       navigate('/selecionar-plano');
       
@@ -77,11 +86,13 @@ export default function PanelStore() {
             LogLevel.WARNING, 
             "Navegação com hook falhou, usando window.location"
           );
+          logNavigation('/selecionar-plano', 'location', false, 'Navegação com hook falhou');
           window.location.href = '/selecionar-plano';
         }
       }, 300);
     } catch (error) {
       console.error("Erro na navegação direta:", error);
+      logNavigation('/selecionar-plano', 'direct', false, String(error));
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_ERROR,
         LogLevel.ERROR,
@@ -136,10 +147,22 @@ export default function PanelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 md:px-6 py-8"
       >
-        {/* Debug panel for developer testing */}
-        {cartItems.length > 0 && (
-          <div className="mb-4 p-3 rounded-md bg-gray-100 border border-gray-300">
-            <h3 className="text-sm font-semibold mb-2">Debug: Navegação para checkout</h3>
+        {/* Debug panel para diagnóstico */}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="text-xs text-gray-500 mr-1">v1.2</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDebugModalOpen(true)}
+              className="h-7 text-xs flex items-center"
+            >
+              <Bug className="h-3 w-3 mr-1" />
+              Diagnóstico
+            </Button>
+          </div>
+          
+          {cartItems.length > 0 && (
             <div className="flex gap-2">
               <Button 
                 size="sm"
@@ -147,7 +170,7 @@ export default function PanelStore() {
                 onClick={handleProceedToCheckout}
                 className="text-xs"
               >
-                Checkout normal
+                Checkout padrão
               </Button>
               <Button 
                 size="sm"
@@ -166,6 +189,7 @@ export default function PanelStore() {
                     LogLevel.DEBUG,
                     "Navegação forçada via window.location"
                   );
+                  logNavigation('/selecionar-plano', 'location', true);
                   window.location.href = '/selecionar-plano';
                 }}
                 className="text-xs"
@@ -173,8 +197,8 @@ export default function PanelStore() {
                 Navegação forçada
               </Button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       
         {/* Promotional Welcome Balloon - Redesigned Premium Banner */}
         <AnimatePresence>
@@ -244,6 +268,14 @@ export default function PanelStore() {
           </div>
         </div>
       </motion.div>
+      
+      {/* Modal de diagnóstico */}
+      <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
+        <DialogContent className="sm:max-w-md p-0">
+          <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
+

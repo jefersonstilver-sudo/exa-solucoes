@@ -1,9 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { logNavigation } from '@/services/navigationAuditService';
 
 interface CartItem {
   panel: Panel;
@@ -34,7 +36,84 @@ export const useCartCheckout = ({
     }
   }, [cartItems.length, isCheckoutProcessed]);
   
-  const handleProceedToCheckout = () => {
+  // Função de navegação segura (memoizada)
+  const safeNavigate = useCallback((url: string, method: 'hook' | 'location' | 'direct') => {
+    try {
+      // Registrar tentativa para auditoria
+      logNavigation(url, method, true);
+      
+      if (method === 'hook') {
+        navigate(url, { replace: true });
+      } else if (method === 'direct') {
+        window.location.href = url;
+      } else if (method === 'location') {
+        // Simulação de navegação direta que preserva o histórico
+        window.location.href = url;
+      }
+      return true;
+    } catch (error) {
+      logNavigation(url, method, false, String(error));
+      console.error(`Erro ao navegar para ${url} via ${method}:`, error);
+      return false;
+    }
+  }, [navigate]);
+  
+  // Função segura para salvar carrinho
+  const saveCartToStorage = useCallback((items: CartItem[]) => {
+    try {
+      // Criar cópia simplificada dos itens do carrinho para evitar problemas de serialização
+      const cartItemsSimplified = items.map(item => ({
+        panel: {
+          id: item.panel.id,
+          // Fix: Use optional chaining and access the nome property from buildings
+          nome: item.panel.buildings?.nome || 'Painel sem nome',
+          buildings: item.panel.buildings ? {
+            id: item.panel.buildings.id,
+            nome: item.panel.buildings.nome,
+            imageUrl: item.panel.buildings.imageUrl,
+            endereco: item.panel.buildings.endereco,
+            bairro: item.panel.buildings.bairro
+          } : null,
+          modo: item.panel.modo,
+          resolucao: item.panel.resolucao
+        },
+        duration: item.duration
+      }));
+      
+      // Salvar no localStorage
+      localStorage.setItem('panelCart', JSON.stringify(cartItemsSimplified));
+      
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.SUCCESS, 
+        "Carrinho salvo no localStorage com sucesso", 
+        { items: items.length }
+      );
+      
+      return true;
+    } catch (storageError) {
+      console.error('Erro ao salvar carrinho:', storageError);
+      
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.ERROR, 
+        "Erro ao salvar carrinho no localStorage", 
+        { error: String(storageError) }
+      );
+      
+      return false;
+    }
+  }, []);
+  
+  const handleProceedToCheckout = useCallback(() => {
+    // Registrar log de auditoria do início do processo
+    logCheckoutEvent(
+      CheckoutEvent.AUDIT,
+      LogLevel.INFO,
+      "Início do processo de checkout",
+      { cartItems: cartItems.length, isProcessed: isCheckoutProcessed, attempts: navigationAttempts }
+    );
+    
     // Verificar se já está processando o checkout para evitar cliques duplos
     if (isCheckoutProcessed) {
       logCheckoutEvent(
@@ -76,94 +155,74 @@ export const useCartCheckout = ({
       }
       
       // 2. Salvar carrinho no localStorage de forma segura
-      try {
-        // Criar cópia simplificada dos itens do carrinho para evitar problemas de serialização
-        const cartItemsSimplified = cartItems.map(item => ({
-          panel: {
-            id: item.panel.id,
-            // Fix: Use optional chaining and access the nome property from buildings
-            nome: item.panel.buildings?.nome || 'Painel sem nome',
-            buildings: item.panel.buildings ? {
-              id: item.panel.buildings.id,
-              nome: item.panel.buildings.nome,
-              imageUrl: item.panel.buildings.imageUrl,
-              endereco: item.panel.buildings.endereco,
-              bairro: item.panel.buildings.bairro
-            } : null,
-            modo: item.panel.modo,
-            resolucao: item.panel.resolucao
-          },
-          duration: item.duration
-        }));
-        
-        localStorage.setItem('panelCart', JSON.stringify(cartItemsSimplified));
-        
-        logCheckoutEvent(
-          CheckoutEvent.SAVE_CART, 
-          LogLevel.SUCCESS, 
-          "Carrinho salvo no localStorage antes do checkout", 
-          { items: cartItems.length }
-        );
-      } catch (storageError) {
-        console.error('Erro ao salvar carrinho:', storageError);
-        
-        logCheckoutEvent(
-          CheckoutEvent.SAVE_CART, 
-          LogLevel.ERROR, 
-          "Erro ao salvar carrinho no localStorage", 
-          { error: String(storageError) }
-        );
-        
-        // Continuar mesmo com erro de armazenamento
+      const saveSuccess = saveCartToStorage(cartItems);
+      
+      if (!saveSuccess) {
+        // Tentar uma segunda vez com um pequeno atraso
+        setTimeout(() => {
+          saveCartToStorage(cartItems);
+        }, 100);
       }
       
       // 3. Fechar o carrinho (se estiver aberto)
       setCartOpen(false);
       
-      // 4. Estratégia de navegação com múltiplas tentativas
-      const attemptNavigation = () => {
+      // 4. Estratégia robusta de navegação com múltiplas tentativas
+      const navigateToPlanSelection = () => {
         setNavigationAttempts(prev => prev + 1);
+        const attemptNumber = navigationAttempts + 1;
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATE_TO_PLAN, 
           LogLevel.INFO, 
-          `Tentativa de navegação #${navigationAttempts + 1} para seleção de plano`
+          `Tentativa de navegação #${attemptNumber} para seleção de plano`,
+          { route: '/selecionar-plano' }
         );
         
-        // Primeiro, tentar usar o hook de navegação do React Router
-        try {
-          navigate('/selecionar-plano', { replace: true });
+        // Primeiro método: react-router hook
+        if (attemptNumber === 1) {
+          if (safeNavigate('/selecionar-plano', 'hook')) {
+            // Verificar se a navegação funcionou após um pequeno delay
+            setTimeout(() => {
+              const currentPath = window.location.pathname;
+              if (currentPath.includes('/paineis-digitais/loja')) {
+                logCheckoutEvent(
+                  CheckoutEvent.NAVIGATION_ERROR,
+                  LogLevel.WARNING,
+                  "Navegação via hook falhou, usando window.location"
+                );
+                
+                // Segundo método: window.location
+                safeNavigate('/selecionar-plano', 'location');
+              }
+            }, 300);
+          } else {
+            // Fallback imediato se o hook falhar
+            safeNavigate('/selecionar-plano', 'direct');
+          }
+        } 
+        // Segunda tentativa com método mais direto
+        else if (attemptNumber === 2) {
+          safeNavigate('/selecionar-plano', 'direct');
+        }
+        // Terceira tentativa com diálogo de fallback
+        else if (attemptNumber === 3) {
+          // Mostrar mensagem de alerta
+          toast({
+            title: "Dificuldade na navegação",
+            description: "Redirecionando para seleção de plano...",
+            variant: "default",
+          });
           
-          // Verificar se a navegação funcionou após um pequeno delay
+          // Usar uma abordagem mais forte para redirecionar
           setTimeout(() => {
-            if (window.location.pathname.includes('/paineis-digitais/loja')) {
-              // Se ainda estivermos na página atual, usar window.location (fallback)
-              window.location.href = '/selecionar-plano';
-              
-              logCheckoutEvent(
-                CheckoutEvent.NAVIGATE_TO_PLAN, 
-                LogLevel.WARNING, 
-                "Navegação via hook falhou, redirecionando via window.location"
-              );
-            }
-          }, 200);
-        } catch (navError) {
-          console.error("Erro na navegação:", navError);
-          
-          logCheckoutEvent(
-            CheckoutEvent.NAVIGATION_ERROR, 
-            LogLevel.ERROR, 
-            "Erro na navegação via hook", 
-            { error: String(navError) }
-          );
-          
-          // Tentar navegação direta como último recurso
-          window.location.href = '/selecionar-plano';
+            document.location.href = '/selecionar-plano';
+          }, 500);
         }
       };
       
       // Executar a primeira tentativa de navegação
-      attemptNavigation();
+      navigateToPlanSelection();
       
       // Configurar um timer para uma segunda tentativa se necessário
       setTimeout(() => {
@@ -174,10 +233,27 @@ export const useCartCheckout = ({
             "Primeira navegação falhou, tentando novamente"
           );
           
+          // Disparar uma mensagem visual para o usuário
+          toast.info("Redirecionando para seleção de plano...");
+          
           // Forçar navegação direta
-          window.location.href = '/selecionar-plano';
+          navigateToPlanSelection();
         }
       }, 800);
+      
+      // Configurar um timer para uma terceira tentativa final
+      setTimeout(() => {
+        if (window.location.pathname.includes('/paineis-digitais/loja') && navigationAttempts < 3) {
+          logCheckoutEvent(
+            CheckoutEvent.NAVIGATION_ERROR, 
+            LogLevel.ERROR, 
+            "Múltiplas tentativas de navegação falharam, tentativa final"
+          );
+          
+          toast.error("Dificuldade ao navegar, tentativa final...");
+          navigateToPlanSelection();
+        }
+      }, 1500);
       
     } catch (error) {
       console.error('Erro durante checkout:', error);
@@ -200,7 +276,7 @@ export const useCartCheckout = ({
       setIsNavigating(false);
       setIsCheckoutProcessed(false);
     }
-  };
+  }, [cartItems, isCheckoutProcessed, navigationAttempts, setCartOpen, setIsNavigating, saveCartToStorage, safeNavigate, toast]);
 
   return {
     handleProceedToCheckout,
@@ -208,3 +284,4 @@ export const useCartCheckout = ({
     navigationAttempts
   };
 };
+

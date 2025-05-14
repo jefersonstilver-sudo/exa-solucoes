@@ -28,7 +28,9 @@ export enum CheckoutEvent {
   NAVIGATE_TO_CHECKOUT = 'Navegação para checkout',
   COMPLETE_PURCHASE = 'Finalização da compra',
   NAVIGATION_ERROR = 'Erro de navegação',
-  DEBUG = 'Informação de Debug'
+  NAVIGATION_EVENT = 'Evento de navegação',
+  DEBUG = 'Informação de Debug',
+  AUDIT = 'Auditoria do sistema'
 }
 
 // Interface para o log de eventos
@@ -54,6 +56,11 @@ const safeStringify = (obj: any): string => {
         // Ignora elementos DOM que causam erros de serialização
         if (value instanceof Node) return '[DOM Element]';
         if (value instanceof Event) return '[DOM Event]';
+        if (typeof value === 'function') return '[Function]';
+        
+        // Ignora completamente objetos window e document
+        if (value === window) return '[Window]';
+        if (value === document) return '[Document]';
         
         // Detecta referências circulares para objetos normais
         if (typeof value === 'object' && value !== null) {
@@ -173,6 +180,35 @@ export const logCheckoutEvent = (
   return log;
 };
 
+// Função para obter um resumo dos logs para auditoria
+export const getCheckoutAuditSummary = (): any => {
+  const eventCounts: Record<string, number> = {};
+  const errorEvents: CheckoutEventLog[] = [];
+  
+  // Analisar logs
+  checkoutLogs.forEach(log => {
+    // Contar ocorrências de eventos
+    if (!eventCounts[log.event]) {
+      eventCounts[log.event] = 0;
+    }
+    eventCounts[log.event]++;
+    
+    // Coletar logs de erro
+    if (log.level === LogLevel.ERROR) {
+      errorEvents.push(log);
+    }
+  });
+  
+  // Calcular métricas
+  return {
+    totalLogs: checkoutLogs.length,
+    eventCounts,
+    errorCount: errorEvents.length,
+    recentErrors: errorEvents.slice(-5),
+    recentLogs: checkoutLogs.slice(-10)
+  };
+};
+
 // Inicializar carregando logs do localStorage
 try {
   checkoutLogs = loadLogsFromStorage();
@@ -182,3 +218,4 @@ try {
 
 // Exportar funções e tipos
 export { checkoutLogs };
+
