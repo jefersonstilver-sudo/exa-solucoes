@@ -62,6 +62,7 @@ export const useCartManager = () => {
       // Check if panel is already in cart
       const exists = prev.some(item => item.panel.id === panel.id);
       if (exists) {
+        // Update the duration if panel already exists
         return prev.map(item => 
           item.panel.id === panel.id 
             ? {...item, duration} 
@@ -72,6 +73,7 @@ export const useCartManager = () => {
         setCartAnimation(true);
         setTimeout(() => setCartAnimation(false), 800);
         
+        // Add new panel to cart
         return [...prev, { panel, duration }];
       }
     });
@@ -131,11 +133,27 @@ export const useCartManager = () => {
   };
 
   const handleChangeDuration = (panelId: string, duration: number) => {
-    setCartItems(prev => prev.map(item => 
-      item.panel.id === panelId 
-        ? {...item, duration} 
-        : item
-    ));
+    setCartItems(prev => {
+      const updated = prev.map(item => 
+        item.panel.id === panelId 
+          ? {...item, duration} 
+          : item
+      );
+      
+      // Show toast notification about duration change
+      const panel = prev.find(item => item.panel.id === panelId);
+      const months = duration / 30;
+      const monthText = months === 1 ? 'mês' : 'meses';
+      
+      if (panel) {
+        toast({
+          title: "Duração atualizada",
+          description: `${panel.panel.buildings?.nome || 'Painel'}: ${months} ${monthText}`,
+        });
+      }
+      
+      return updated;
+    });
   };
 
   // Restore cart if needed (if it was cleared by mistake)

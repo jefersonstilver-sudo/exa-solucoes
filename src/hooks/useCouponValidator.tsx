@@ -23,6 +23,7 @@ export const useCouponValidator = () => {
     setCouponId(null);
     
     try {
+      // Call the Supabase RPC function to validate the coupon
       const { data, error } = await supabase.rpc('validate_cupom', {
         p_codigo: couponCode,
         p_meses: selectedPlan
@@ -72,6 +73,15 @@ export const useCouponValidator = () => {
     }
   };
 
+  // Reset the coupon
+  const resetCoupon = () => {
+    setCouponCode('');
+    setCouponDiscount(0);
+    setCouponId(null);
+    setCouponMessage('');
+    setCouponValid(false);
+  };
+
   return {
     couponCode,
     setCouponCode,
@@ -80,6 +90,7 @@ export const useCouponValidator = () => {
     isValidatingCoupon,
     couponMessage,
     couponValid,
-    validateCoupon
+    validateCoupon,
+    resetCoupon
   };
 };

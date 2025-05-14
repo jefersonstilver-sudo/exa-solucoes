@@ -16,7 +16,7 @@ interface CartItemProps {
   calculatePrice: (panel: Panel, days: number) => number;
 }
 
-const durationOptions = [30, 60, 90, 180, 365];
+const durationOptions = [30, 60, 90, 180]; // 1, 2, 3, 6 months
 
 const CartItem: React.FC<CartItemProps> = ({ 
   item, 
@@ -65,9 +65,12 @@ const CartItem: React.FC<CartItemProps> = ({
   
   const stats = getViewerStats(item.panel.id);
   const tags = getBuildingTags(item.panel.buildings?.nome);
-  const durationText = item.duration === 30 ? '1 mês' : 
-                        item.duration === 365 ? '1 ano' : 
-                        (item.duration / 30) + ' meses';
+  
+  // Format duration text based on number of days
+  const getDurationText = (days: number): string => {
+    const months = days / 30;
+    return months === 1 ? '1 mês' : `${months} meses`;
+  };
   
   return (
     <motion.div 
@@ -140,14 +143,12 @@ const CartItem: React.FC<CartItemProps> = ({
                     onValueChange={(value) => onChangeDuration(item.panel.id, parseInt(value))}
                   >
                     <SelectTrigger className="h-8 w-[130px] text-xs bg-gray-50 border-gray-100">
-                      <SelectValue placeholder={durationText} />
+                      <SelectValue placeholder={getDurationText(item.duration)} />
                     </SelectTrigger>
                     <SelectContent>
                       {durationOptions.map((days) => (
                         <SelectItem key={days} value={days.toString()}>
-                          {days === 30 ? '1 mês' : 
-                           days === 365 ? '1 ano' : 
-                           `${Math.floor(days/30)} meses`}
+                          {getDurationText(days)}
                         </SelectItem>
                       ))}
                     </SelectContent>

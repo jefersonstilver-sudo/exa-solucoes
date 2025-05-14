@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +14,7 @@ import CartUserStatus from '@/components/cart/CartUserStatus';
 import CartItem from '@/components/cart/CartItem';
 import CartSummary from '@/components/cart/CartSummary';
 import EmptyCart from '@/components/cart/EmptyCart';
+import { useCouponValidator } from '@/hooks/useCouponValidator';
 
 interface PanelCartProps {
   cartItems: {panel: Panel, duration: number}[];
@@ -32,6 +33,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, isLoggedIn } = useUserSession();
+  const { couponDiscount, couponValid } = useCouponValidator();
   
   // Calculate price for a single panel based on duration
   const calculatePrice = (panel: Panel, days: number) => {
@@ -42,14 +44,15 @@ const PanelCart: React.FC<PanelCartProps> = ({
     const priceVariation = parseInt(panel.id.slice(-2), 16) % 40; // 0-39 variation
     pricePerMonth += priceVariation;
     
-    // Apply discount based on months
+    // Calculate total price based on months
     const months = Math.round(days / 30);
     
-    if (months >= 12) {
+    // Apply discount based on months
+    if (months >= 6) {
       return pricePerMonth * months * 0.85; // 15% discount
-    } else if (months >= 6) {
-      return pricePerMonth * months * 0.9; // 10% discount
     } else if (months >= 3) {
+      return pricePerMonth * months * 0.9; // 10% discount
+    } else if (months >= 2) {
       return pricePerMonth * months * 0.95; // 5% discount
     }
     
@@ -63,17 +66,26 @@ const PanelCart: React.FC<PanelCartProps> = ({
     }, 0);
   };
 
-  // Calculate potential discount amount
-  const calculateDiscount = () => {
+  // Calculate potential quantity discount amount
+  const calculateQuantityDiscount = () => {
     if (cartItems.length >= 3) {
       return calculateTotal() * 0.05; // 5% discount for 3+ items
     }
     return 0;
   };
 
-  // Calculate final price after discounts
+  // Calculate coupon discount amount
+  const calculateCouponDiscount = () => {
+    if (couponValid && couponDiscount > 0) {
+      const afterQuantityDiscount = calculateTotal() - calculateQuantityDiscount();
+      return afterQuantityDiscount * (couponDiscount / 100);
+    }
+    return 0;
+  };
+
+  // Calculate final price after all discounts
   const calculateFinalPrice = () => {
-    return calculateTotal() - calculateDiscount();
+    return calculateTotal() - calculateQuantityDiscount() - calculateCouponDiscount();
   };
   
   const handleCheckout = () => {
@@ -154,7 +166,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
       {cartItems.length > 0 && (
         <CartSummary 
           subtotal={calculateTotal()}
-          discount={calculateDiscount()}
+          discount={calculateQuantityDiscount()}
           total={calculateFinalPrice()}
           onCheckout={handleCheckout}
           isSubmitting={isSubmitting}
