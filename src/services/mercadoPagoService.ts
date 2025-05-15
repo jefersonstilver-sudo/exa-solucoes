@@ -21,7 +21,7 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   console.log(`[MercadoPago] Starting redirection with method: ${normalizedPaymentMethod}, preferenceId: ${preferenceId}`);
   
   // Construct base URL
-  let url = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+  let url = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
   
   // Add payment method to URL if it's PIX 
   if (normalizedPaymentMethod === 'pix') {

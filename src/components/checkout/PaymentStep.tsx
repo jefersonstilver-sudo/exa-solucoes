@@ -94,11 +94,21 @@ const PaymentStep = ({
       <PaymentInfoBox 
         variant="warning" 
         icon={<AlertTriangle />} 
-        title="Ambiente de testes"
+        title="Ambiente de testes do Mercado Pago"
+        highlighted={true}
       >
         <p>
-          Este é um ambiente de demonstração. Nenhum pagamento real será processado.
-          Você pode testar a experiência de checkout completa.
+          Este é um ambiente de demonstração com o Mercado Pago em modo de teste. 
+          Você pode testar a experiência de checkout completa sem efetuar pagamentos reais.
+          As transações aparecerão na sua conta do Mercado Pago como testes.
+        </p>
+        <p className="mt-2 font-medium">
+          Para testar cartões, use:
+          <ul className="list-disc pl-5 mt-1">
+            <li>Mastercard: 5031 4332 1540 6351</li>
+            <li>Visa: 4235 6477 2802 5682</li>
+            <li>PIX: Qualquer dado gera um QR Code de teste</li>
+          </ul>
         </p>
       </PaymentInfoBox>
 

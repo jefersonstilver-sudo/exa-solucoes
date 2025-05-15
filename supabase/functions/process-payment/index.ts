@@ -30,7 +30,8 @@ serve(async (req) => {
     // Configurar MercadoPago
     const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
     MercadoPago.configure({
-      access_token: MP_ACCESS_TOKEN
+      access_token: MP_ACCESS_TOKEN,
+      sandbox: true
     });
     
     // Obter dados do request
@@ -105,7 +106,8 @@ serve(async (req) => {
       metadata: {
         pedido_id: pedidoId,
         user_id: userId,
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        test: true
       }
     };
     
@@ -141,7 +143,7 @@ serve(async (req) => {
         console.error("Error creating MercadoPago preference:", mpError);
         // Falhar de forma elegante com valores simulados
         preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
         if (paymentMethod === 'pix') {
           initPoint += '&payment_method_id=pix';
         }
@@ -149,7 +151,7 @@ serve(async (req) => {
     } else {
       // Modo simulado (para desenvolvimento)
       preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       if (paymentMethod === 'pix') {
         initPoint += '&payment_method_id=pix';
       }
@@ -165,7 +167,8 @@ serve(async (req) => {
           payment_init_point: initPoint,
           payment_status: 'pending',
           payment_method: paymentMethod,
-          items: items.length
+          items: items.length,
+          test: true
         }
       })
       .eq('id', pedidoId);
@@ -181,7 +184,8 @@ serve(async (req) => {
         preference_id: preferenceId,
         init_point: initPoint,
         pedido_id: pedidoId,
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        test: true
       }),
       {
         headers: {

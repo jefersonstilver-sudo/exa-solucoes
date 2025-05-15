@@ -126,7 +126,7 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     try {
       console.log(`[MercadoPago] Iniciando checkout com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
       
-      let checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+      let checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       
       // Adicionar payment_method_id para PIX
       if (paymentMethod === 'pix') {
