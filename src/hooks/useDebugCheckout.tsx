@@ -36,15 +36,20 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
         LogLevel.ERROR,
         "Attempt to direct checkout with empty cart"
       );
+      console.log("Direct checkout prevented: cart is empty");
       return;
     }
     
     try {
+      console.log("Starting direct checkout process");
+      
       // Ensure cart is saved to localStorage
       localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      console.log("Cart saved to localStorage with", cartItems.length, "items");
       
       // Set a default plan for testing
       localStorage.setItem('selectedPlan', '3');
+      console.log("Default plan (3) saved to localStorage");
       
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
@@ -56,15 +61,19 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
       // Register navigation
       logNavigation('/checkout', 'direct', true);
       
-      // Try React Router navigation first
-      try {
-        navigate('/checkout');
-      } catch (routerError) {
-        console.error("Error in direct navigation to checkout:", routerError);
-        
-        // If React Router fails, try forced navigation
-        forceNavigate('/checkout');
-      }
+      console.log("Executing navigation to /checkout");
+      
+      // First attempt with React Router
+      navigate('/checkout');
+      
+      // Backup with setTimeout for safety
+      setTimeout(() => {
+        console.log("Checking if navigation worked");
+        if (window.location.pathname !== '/checkout') {
+          console.log("Navigation failed, forcing navigation");
+          forceNavigate('/checkout');
+        }
+      }, 300);
     } catch (error) {
       console.error("Error in direct navigation to checkout:", error);
       logCheckoutEvent(
@@ -75,6 +84,7 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
       );
       
       // Last resort fallback to window.location
+      console.log("Error occurred, forcing navigation to /checkout");
       navigateSafely('/checkout');
     }
   };

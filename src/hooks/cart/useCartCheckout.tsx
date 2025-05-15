@@ -66,18 +66,17 @@ export const useCartCheckout = ({
         `Navigation to plan selection initiated`
       );
       
-      // Use React Router for navigation first
-      try {
-        // Register navigation and navigate to plan selection
-        logNavigation('/selecionar-plano', 'navigate', true);
+      console.log("Starting navigation to /selecionar-plano");
+      
+      // Register navigation and navigate to plan selection
+      logNavigation('/selecionar-plano', 'navigate', true);
+      
+      // Force navigation first to ensure consistent behavior
+      setTimeout(() => {
+        console.log("Executing navigation to plan selection");
         navigate('/selecionar-plano');
-      } catch (routerError) {
-        console.error("React Router navigation failed:", routerError);
-        
-        // Fallback to direct navigation
-        logNavigation('/selecionar-plano', 'direct', true);
-        window.location.href = '/selecionar-plano';
-      }
+      }, 100);
+
     } catch (error) {
       // Record error and notify user
       logCheckoutError(error);
@@ -94,6 +93,7 @@ export const useCartCheckout = ({
       setIsNavigating(false);
       
       // Last resort - force navigation
+      console.log("Forcing navigation after error");
       forceNavigate('/selecionar-plano');
     }
   };

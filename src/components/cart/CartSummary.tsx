@@ -36,6 +36,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
     
     // If button is already processing or cart is empty, do nothing
     if (isSubmitting || isEmpty) {
+      console.log("Checkout prevented: isSubmitting=", isSubmitting, "isEmpty=", isEmpty);
       return;
     }
     
@@ -45,6 +46,8 @@ const CartSummary: React.FC<CartSummaryProps> = ({
       LogLevel.INFO,
       "Checkout button clicked in cart summary"
     );
+    
+    console.log("Proceeding with checkout flow");
     
     // Call handler passed as prop
     onCheckout(e);

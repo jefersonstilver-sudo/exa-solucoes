@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,13 +78,14 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
     <div className="max-h-[85vh] overflow-hidden flex flex-col">
       <DialogHeader className="p-4 pb-2">
         <div className="flex items-center justify-between">
-          <DialogTitle>Checkout Diagnostics</DialogTitle>
+          {/* We don't need a DialogTitle here as it's already in the parent component */}
+          <h3 className="text-base font-semibold">Checkout Flow Analysis</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
         <DialogDescription>
-          Checkout flow analysis tools
+          Troubleshoot checkout and navigation issues
         </DialogDescription>
       </DialogHeader>
 

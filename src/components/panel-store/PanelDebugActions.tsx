@@ -10,20 +10,24 @@ interface PanelDebugActionsProps {
   cartItemsCount: number;
   onProceedToCheckout: () => void;
   directGoToCheckout: (e: React.MouseEvent) => void;
+  onOpenDebugger: () => void; // Added prop for opening debugger
 }
 
 const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
   cartItemsCount,
   onProceedToCheckout,
-  directGoToCheckout
+  directGoToCheckout,
+  onOpenDebugger // Added prop
 }) => {
-  // Added a handler for the debug button
+  // Updated handler for the debug button
   const handleOpenDebug = () => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
       "Diagnostic button clicked"
     );
+    // Call the provided function to open the debugger
+    onOpenDebugger();
   };
 
   // Specific handler for forced navigation

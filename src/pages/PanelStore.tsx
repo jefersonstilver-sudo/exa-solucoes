@@ -71,6 +71,12 @@ export default function PanelStore() {
     handleProceedToCheckout();
   };
 
+  // Handler to open debug modal
+  const handleOpenDebugger = () => {
+    console.log("Opening debug modal");
+    setDebugModalOpen(true);
+  };
+
   if (error) {
     return (
       <Layout>
@@ -109,6 +115,7 @@ export default function PanelStore() {
           cartItemsCount={cartItems.length}
           onProceedToCheckout={handleCheckoutStart}
           directGoToCheckout={directGoToCheckout}
+          onOpenDebugger={handleOpenDebugger}
         />
       
         {/* Promotional Welcome Banner */}
@@ -139,7 +146,7 @@ export default function PanelStore() {
       {/* Modal de diagnóstico */}
       <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
         <DialogContent className="sm:max-w-md p-0">
-          <DialogTitle className="sr-only">Diagnóstico de Checkout</DialogTitle>
+          <DialogTitle className="px-4 pt-4">Diagnóstico de Checkout</DialogTitle>
           <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
         </DialogContent>
       </Dialog>
