@@ -5,7 +5,7 @@ import Layout from '@/components/layout/Layout';
 import { usePanelStore } from '@/hooks/usePanelStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import CheckoutDebugger from '@/components/debug/CheckoutDebugger';
 import { useDebugCheckout } from '@/hooks/useDebugCheckout';
 import PanelDebugActions from '@/components/panel-store/PanelDebugActions';
@@ -66,7 +66,7 @@ export default function PanelStore() {
       CheckoutEvent.CHECKOUT_INITIATION,
       LogLevel.INFO,
       "Iniciando checkout a partir da loja",
-      { cartItemCount: cartItems.length }
+      { cartItemCount: cartItems.length, timestamp: Date.now() }
     );
     handleProceedToCheckout();
   };
@@ -143,10 +143,9 @@ export default function PanelStore() {
         />
       </motion.div>
       
-      {/* Modal de diagnóstico */}
+      {/* Modal de diagnóstico - Fixed with proper accessibility attributes */}
       <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
         <DialogContent className="sm:max-w-md p-0">
-          <DialogTitle className="px-4 pt-4">Diagnóstico de Checkout</DialogTitle>
           <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
         </DialogContent>
       </Dialog>

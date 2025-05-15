@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
-import { navigateSafely, forceNavigate } from '@/services/navigationService';
+import { navigateSafely, isCurrentPath } from '@/services/navigationService';
 
 interface CartItem {
   panel: Panel;
@@ -27,7 +27,7 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
       "Direct checkout button clicked",
-      { cartItemsCount: cartItems.length }
+      { cartItemsCount: cartItems.length, timestamp: Date.now() }
     );
     
     if (cartItems.length === 0) {
@@ -37,6 +37,17 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
         "Attempt to direct checkout with empty cart"
       );
       console.log("Direct checkout prevented: cart is empty");
+      return;
+    }
+    
+    // Don't navigate if already on the target page
+    if (isCurrentPath('/checkout')) {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        "User already on checkout page, not navigating",
+        { timestamp: Date.now() }
+      );
       return;
     }
     
@@ -55,23 +66,27 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
         "Direct navigation to checkout",
-        { url: '/checkout', cartItemsCount: cartItems.length }
+        { url: '/checkout', cartItemsCount: cartItems.length, timestamp: Date.now() }
       );
       
       // Register navigation
       logNavigation('/checkout', 'direct', true);
       
-      console.log("Executing navigation to /checkout");
+      console.log("Executing direct navigation to /checkout");
       
       // First attempt with React Router
       navigate('/checkout');
       
-      // Backup with setTimeout for safety
+      // Backup check in case React Router navigation didn't work
       setTimeout(() => {
-        console.log("Checking if navigation worked");
-        if (window.location.pathname !== '/checkout') {
-          console.log("Navigation failed, forcing navigation");
-          forceNavigate('/checkout');
+        if (!isCurrentPath('/checkout')) {
+          logCheckoutEvent(
+            CheckoutEvent.DEBUG_EVENT,
+            LogLevel.WARNING,
+            "React Router navigation didn't reach checkout, using direct navigation",
+            { timestamp: Date.now() }
+          );
+          navigateSafely('/checkout');
         }
       }, 300);
     } catch (error) {
@@ -80,11 +95,10 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
         CheckoutEvent.NAVIGATION_ERROR,
         LogLevel.ERROR,
         "Error in direct navigation to checkout",
-        { error: String(error) }
+        { error: String(error), timestamp: Date.now() }
       );
       
       // Last resort fallback to window.location
-      console.log("Error occurred, forcing navigation to /checkout");
       navigateSafely('/checkout');
     }
   };

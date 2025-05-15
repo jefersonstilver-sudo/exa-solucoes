@@ -22,6 +22,9 @@ const CartSummary: React.FC<CartSummaryProps> = ({
   isSubmitting,
   isEmpty
 }) => {
+  // Use a ref to track clicks to prevent double-clicking
+  const isProcessingRef = React.useRef(false);
+  
   const handleCheckoutClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -30,27 +33,36 @@ const CartSummary: React.FC<CartSummaryProps> = ({
     logCheckoutEvent(
       CheckoutEvent.AUDIT,
       LogLevel.INFO,
-      "Checkout button clicked",
-      { isEmpty, isSubmitting }
+      "Botão de finalizar compra clicado",
+      { isEmpty, isSubmitting, timestamp: Date.now() }
     );
     
-    // If button is already processing or cart is empty, do nothing
-    if (isSubmitting || isEmpty) {
-      console.log("Checkout prevented: isSubmitting=", isSubmitting, "isEmpty=", isEmpty);
+    // If button is already processing, cart is empty, or a previous click is being handled, do nothing
+    if (isSubmitting || isEmpty || isProcessingRef.current) {
+      console.log("Checkout prevented: isSubmitting=", isSubmitting, "isEmpty=", isEmpty, "isProcessingRef=", isProcessingRef.current);
       return;
     }
+    
+    // Set processing flag to prevent multiple rapid clicks
+    isProcessingRef.current = true;
     
     // Detailed log of checkout button click
     logCheckoutEvent(
       CheckoutEvent.PROCEED_TO_CHECKOUT,
       LogLevel.INFO,
-      "Checkout button clicked in cart summary"
+      "Botão de checkout clicado no sumário do carrinho",
+      { timestamp: Date.now() }
     );
     
     console.log("Proceeding with checkout flow");
     
     // Call handler passed as prop
     onCheckout(e);
+    
+    // Reset processing flag after a delay
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 1000);
   };
   
   return (
@@ -80,18 +92,18 @@ const CartSummary: React.FC<CartSummaryProps> = ({
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
+            Processando...
           </>
         ) : (
           <>
             <ShoppingCart className="mr-2 h-4 w-4" />
-            Complete purchase
+            Finalizar compra
           </>
         )}
       </Button>
       
       <p className="text-xs text-muted-foreground text-center mt-2">
-        By proceeding, you agree to our terms of use
+        Ao prosseguir, você concorda com nossos termos de uso
       </p>
     </div>
   );

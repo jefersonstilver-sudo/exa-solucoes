@@ -6,6 +6,7 @@ import { getAllCheckoutLogs, getCheckoutAuditSummary, LogLevel } from '@/service
 import { getAllNavigationLogs, checkNavigationHealth } from '@/services/navigationAuditService';
 import { Button } from '@/components/ui/button';
 import { X, AlertTriangle, Info, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { resetNavigationCooldown } from '@/services/navigationService';
 
 interface CheckoutDebuggerProps {
   onClose: () => void;
@@ -74,12 +75,17 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
     );
   };
   
+  // Function to reset navigation state
+  const handleResetNavigation = () => {
+    resetNavigationCooldown();
+    setHealthStatus({...healthStatus, status: 'reset'});
+  };
+  
   return (
     <div className="max-h-[85vh] overflow-hidden flex flex-col">
       <DialogHeader className="p-4 pb-2">
         <div className="flex items-center justify-between">
-          {/* We don't need a DialogTitle here as it's already in the parent component */}
-          <h3 className="text-base font-semibold">Checkout Flow Analysis</h3>
+          <DialogTitle>Checkout Flow Analysis</DialogTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -140,13 +146,26 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
         </TabsContent>
         
         <TabsContent value="navigation" className="p-4 mt-2 max-h-[70vh] overflow-y-auto">
-          <div className="flex items-center mb-3">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium">Logs of Navigation</h3>
-            <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
-              healthStatus.status === 'issues' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-            }`}>
-              {healthStatus.status === 'issues' ? 'With issues' : 'Healthy'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                healthStatus.status === 'issues' ? 'bg-red-100 text-red-700' : 
+                healthStatus.status === 'reset' ? 'bg-blue-100 text-blue-700' :
+                'bg-green-100 text-green-700'
+              }`}>
+                {healthStatus.status === 'issues' ? 'With issues' : 
+                 healthStatus.status === 'reset' ? 'Reset' : 'Healthy'}
+              </span>
+              <Button 
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                onClick={handleResetNavigation}
+              >
+                Reset
+              </Button>
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -200,9 +219,12 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
               <div className="flex justify-between mb-2">
                 <span>Status:</span>
                 <span className={`font-medium ${
-                  healthStatus.status === 'issues' ? 'text-red-600' : 'text-green-600'
+                  healthStatus.status === 'issues' ? 'text-red-600' : 
+                  healthStatus.status === 'reset' ? 'text-blue-600' :
+                  'text-green-600'
                 }`}>
-                  {healthStatus.status === 'issues' ? 'With issues' : 'Healthy'}
+                  {healthStatus.status === 'issues' ? 'With issues' : 
+                   healthStatus.status === 'reset' ? 'Reset' : 'Healthy'}
                 </span>
               </div>
               <div className="flex justify-between mb-2">
@@ -215,7 +237,16 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
               </div>
             </div>
             
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="w-full"
+                onClick={handleResetNavigation}
+              >
+                Reset Navigation State
+              </Button>
+              
               <Button 
                 variant="outline" 
                 size="sm"

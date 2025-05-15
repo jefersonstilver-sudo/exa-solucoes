@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
-import { navigateSafely, forceNavigate } from '@/services/navigationService';
+import { navigateSafely, isCurrentPath } from '@/services/navigationService';
 import { logCheckoutInitiation, logEmptyCartAttempt, logCheckoutStart, logCheckoutError, logMultipleCheckoutAttempt } from '@/services/checkoutLogService';
 
 interface UseCartCheckoutProps {
@@ -31,6 +31,11 @@ export const useCartCheckout = ({
     if (isCheckoutProcessed) {
       logMultipleCheckoutAttempt();
       console.log("Checkout is already being processed, ignoring new attempt");
+      toast({
+        title: "Processando",
+        description: "Seu checkout já está sendo processado, aguarde...",
+        variant: "default",
+      });
       return;
     }
     
@@ -38,9 +43,25 @@ export const useCartCheckout = ({
     if (cartItems.length === 0) {
       logEmptyCartAttempt();
       toast({
-        title: "Empty cart",
-        description: "Add panels to your cart to complete the purchase.",
+        title: "Carrinho vazio",
+        description: "Adicione painéis ao seu carrinho para completar a compra.",
         variant: "destructive",
+      });
+      return;
+    }
+    
+    // Don't navigate if already on the target page
+    if (isCurrentPath('/selecionar-plano')) {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        "User already on plan selection page, not navigating",
+        { timestamp: Date.now() }
+      );
+      toast({
+        title: "Você já está na página de seleção de plano",
+        description: "Continue o processo de checkout.",
+        variant: "default",
       });
       return;
     }
@@ -57,25 +78,63 @@ export const useCartCheckout = ({
       logCheckoutStart(cartItems.length);
       
       // Save cart to localStorage before navigating
-      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      try {
+        localStorage.setItem('panelCart', JSON.stringify(cartItems));
+        logCheckoutEvent(
+          CheckoutEvent.SAVE_CART, 
+          LogLevel.SUCCESS, 
+          "Carrinho salvo no localStorage com sucesso", 
+          { items: cartItems.length, timestamp: Date.now() }
+        );
+      } catch (storageError) {
+        logCheckoutEvent(
+          CheckoutEvent.SAVE_CART, 
+          LogLevel.ERROR, 
+          "Erro ao salvar carrinho no localStorage", 
+          { error: String(storageError), timestamp: Date.now() }
+        );
+        // Continue even if localStorage fails
+      }
       
       // Log navigation
       logCheckoutEvent(
         CheckoutEvent.NAVIGATE_TO_PLAN, 
         LogLevel.INFO, 
-        `Navigation to plan selection initiated`
+        `Tentativa de navegação #1 para seleção de plano`,
+        { timestamp: Date.now() }
       );
-      
-      console.log("Starting navigation to /selecionar-plano");
       
       // Register navigation and navigate to plan selection
       logNavigation('/selecionar-plano', 'navigate', true);
       
-      // Force navigation first to ensure consistent behavior
+      // Use navigate for the initial attempt
+      navigate('/selecionar-plano');
+      
+      // If for some reason navigate didn't throw but also didn't work,
+      // we'll use a direct navigation after a short delay
       setTimeout(() => {
-        console.log("Executing navigation to plan selection");
-        navigate('/selecionar-plano');
-      }, 100);
+        if (!isCurrentPath('/selecionar-plano')) {
+          logCheckoutEvent(
+            CheckoutEvent.DEBUG_EVENT,
+            LogLevel.WARNING,
+            "React Router navigation didn't redirect correctly, using direct navigation",
+            { timestamp: Date.now() }
+          );
+          navigateSafely('/selecionar-plano');
+        } else {
+          // Navigation was successful
+          logCheckoutEvent(
+            CheckoutEvent.DEBUG_EVENT,
+            LogLevel.SUCCESS,
+            "Navigation to plan selection completed successfully",
+            { timestamp: Date.now() }
+          );
+        }
+        
+        // Reset processing state in case we're still on this page
+        setIsCheckoutProcessed(false);
+        setIsNavigating(false);
+      }, 500);
 
     } catch (error) {
       // Record error and notify user
@@ -83,8 +142,8 @@ export const useCartCheckout = ({
       
       console.error("Error during checkout:", error);
       toast({
-        title: "Error",
-        description: "An error occurred while processing your order. Please try again.",
+        title: "Erro",
+        description: "Ocorreu um erro ao processar seu pedido. Por favor, tente novamente.",
         variant: "destructive",
       });
       
@@ -92,9 +151,8 @@ export const useCartCheckout = ({
       setIsCheckoutProcessed(false);
       setIsNavigating(false);
       
-      // Last resort - force navigation
-      console.log("Forcing navigation after error");
-      forceNavigate('/selecionar-plano');
+      // Last resort - direct navigation
+      navigateSafely('/selecionar-plano');
     }
   };
   

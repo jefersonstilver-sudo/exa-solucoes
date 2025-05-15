@@ -10,21 +10,22 @@ interface PanelDebugActionsProps {
   cartItemsCount: number;
   onProceedToCheckout: () => void;
   directGoToCheckout: (e: React.MouseEvent) => void;
-  onOpenDebugger: () => void; // Added prop for opening debugger
+  onOpenDebugger: () => void;
 }
 
 const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
   cartItemsCount,
   onProceedToCheckout,
   directGoToCheckout,
-  onOpenDebugger // Added prop
+  onOpenDebugger
 }) => {
   // Updated handler for the debug button
   const handleOpenDebug = () => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      "Diagnostic button clicked"
+      "Diagnostic button clicked",
+      { timestamp: Date.now() }
     );
     // Call the provided function to open the debugger
     onOpenDebugger();
@@ -35,7 +36,8 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
     logCheckoutEvent(
       CheckoutEvent.NAVIGATE_TO_PLAN,
       LogLevel.DEBUG,
-      "Forced navigation via window.location"
+      "Forced navigation via window.location",
+      { timestamp: Date.now() }
     );
     // Use 'location' as specific navigation type
     logNavigation('/selecionar-plano', 'location', true);
@@ -46,7 +48,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center">
-        <span className="text-xs text-gray-500 mr-1">v1.3</span>
+        <span className="text-xs text-gray-500 mr-1">v1.3.2</span>
         <Button
           size="sm"
           variant="outline"
@@ -54,7 +56,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
           className="h-7 text-xs flex items-center"
         >
           <Bug className="h-3 w-3 mr-1" />
-          Diagnostics
+          Diagnósticos
         </Button>
       </div>
       
@@ -66,7 +68,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
             onClick={onProceedToCheckout}
             className="text-xs"
           >
-            Standard Checkout
+            Checkout Padrão
           </Button>
           <Button 
             size="sm"
@@ -74,7 +76,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
             onClick={directGoToCheckout}
             className="text-xs"
           >
-            Direct Checkout
+            Checkout Direto
           </Button>
           <Button 
             size="sm"
@@ -82,7 +84,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
             onClick={handleForcedNavigation}
             className="text-xs"
           >
-            Forced Navigation
+            Navegação Forçada
           </Button>
         </div>
       )}
