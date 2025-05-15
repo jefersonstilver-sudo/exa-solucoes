@@ -13,7 +13,7 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 interface PanelCartProps {
   cartItems: { panel: Panel; duration: number }[];
   onRemove: (id: string) => void;
-  onClear: () => void;  // Added this prop to fix type issue
+  onClear: () => void;
   onChangeDuration: (id: string, duration: number) => void;
   onProceedToCheckout: () => void;
 }
@@ -87,6 +87,10 @@ const PanelCart: React.FC<PanelCartProps> = ({
       // Chamar a função de checkout com um pequeno atraso para permitir que o estado de UI seja atualizado
       setTimeout(() => {
         onProceedToCheckout();
+        // Reset isSubmitting após um tempo para permitir que o usuário tente novamente se necessário
+        setTimeout(() => {
+          setIsSubmitting(false);
+        }, 3000);
       }, 100);
       
       logCheckoutEvent(

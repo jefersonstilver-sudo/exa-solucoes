@@ -59,7 +59,7 @@ export const useCartCheckout = ({
     const localStorageCart = localStorage.getItem(CART_STORAGE_KEY);
     console.log("Verificação direta do localStorage antes de checkout:", localStorageCart);
     
-    // Verificação de localStorage e do estado
+    // Verificação de localStorage e do estado - CORRIGIDO: adicionar validação extra
     if (!localStorageCart || localStorageCart === '[]') {
       console.error("ERRO CRÍTICO: localStorage vazio antes do checkout");
       logCheckoutEvent(

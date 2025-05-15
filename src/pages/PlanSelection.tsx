@@ -21,6 +21,8 @@ const PlanSelection = () => {
   const { toast } = useToast();
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [hasCart, setHasCart] = useState(false);
+  // Adicionado initialLoadDone para prevenir redirecionamentos prematuros
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const {
     selectedPlan, 
     setSelectedPlan,
@@ -38,8 +40,8 @@ const PlanSelection = () => {
       const rawCart = localStorage.getItem(CART_STORAGE_KEY);
       console.log(`PlanSelection: Valor direto do localStorage [${CART_STORAGE_KEY}]:`, rawCart);
       
-      // Verificação robusta do carrinho
-      if (isCartEmpty()) {
+      // Verificação robusta do carrinho - Só redireciona depois que o carregamento inicial é concluído
+      if (isCartEmpty() && initialLoadDone) {
         console.log(`PlanSelection: Carrinho vazio ou inválido detectado [${CART_STORAGE_KEY}]`);
         
         logCheckoutEvent(
@@ -69,7 +71,7 @@ const PlanSelection = () => {
       console.log("PlanSelection: Carrinho carregado:", parsedCart);
       
       // Verificar explicitamente se temos itens no carrinho
-      if (parsedCart.length === 0) {
+      if (parsedCart.length === 0 && initialLoadDone) {
         logCheckoutEvent(
           CheckoutEvent.LOAD_CART, 
           LogLevel.WARNING, 
@@ -100,6 +102,9 @@ const PlanSelection = () => {
       );
       
       setHasCart(true);
+      setIsPageLoading(false);
+      // Marca como carregamento inicial concluído
+      setInitialLoadDone(true);
       
     } catch (e) {
       // Tratamento robusto de erro
@@ -122,7 +127,7 @@ const PlanSelection = () => {
     } finally {
       setIsPageLoading(false);
     }
-  }, [navigate, toast]);
+  }, [navigate, toast, initialLoadDone]);
   
   // Carregar plano salvo do localStorage
   useEffect(() => {

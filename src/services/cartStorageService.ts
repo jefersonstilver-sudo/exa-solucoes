@@ -1,68 +1,227 @@
 
+import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-// Constante para a chave do localStorage, evitando inconsistências
 export const CART_STORAGE_KEY = 'indexa_cart';
 
+export interface CartItem {
+  panel: Panel;
+  duration: number;
+}
+
 /**
- * Salva o carrinho no localStorage com verificações adicionais de segurança
+ * Carrega o carrinho do localStorage com tratamento robusto de erros
  */
-export const saveCartToStorage = (cartItems: any[]): boolean => {
+export const loadCartFromStorage = (): CartItem[] => {
   try {
-    // Verificação de segurança - não salvar carrinhos vazios
-    if (!Array.isArray(cartItems)) {
-      throw new Error("Tentativa de salvar um carrinho que não é array");
-    }
+    console.log(`Tentando carregar carrinho do localStorage com chave: ${CART_STORAGE_KEY}`);
     
-    // Verificar se todos os itens têm a estrutura esperada
-    const itemsValid = cartItems.every(item => 
+    // Obter conteúdo bruto do localStorage
+    const cartJSON = localStorage.getItem(CART_STORAGE_KEY);
+    console.log(`Carrinho bruto encontrado:`, cartJSON);
+    
+    if (!cartJSON) {
+      // Carrinho não existe
+      console.log(`Nenhum carrinho encontrado em: ${CART_STORAGE_KEY}`);
+      
+      logCheckoutEvent(
+        CheckoutEvent.LOAD_CART, 
+        LogLevel.INFO, 
+        `Nenhum carrinho encontrado em [${CART_STORAGE_KEY}], retornando array vazio`, 
+        { storageKey: CART_STORAGE_KEY }
+      );
+      
+      return [];
+    }
+
+    // Tentar parsejar o JSON
+    let parsedCart: CartItem[];
+    try {
+      parsedCart = JSON.parse(cartJSON);
+      console.log(`Carrinho carregado e parseado:`, parsedCart);
+    } catch (parseError) {
+      // Erro ao parsear JSON
+      console.error(`Erro ao parsear carrinho de [${CART_STORAGE_KEY}]:`, parseError);
+      
+      logCheckoutEvent(
+        CheckoutEvent.LOAD_CART, 
+        LogLevel.ERROR, 
+        `Erro ao parsear carrinho de [${CART_STORAGE_KEY}]`, 
+        { error: String(parseError), rawCart: cartJSON }
+      );
+      
+      return [];
+    }
+
+    // Verificar se é um array
+    if (!Array.isArray(parsedCart)) {
+      console.error(`Carrinho carregado não é um array: ${typeof parsedCart}`);
+      
+      logCheckoutEvent(
+        CheckoutEvent.LOAD_CART, 
+        LogLevel.ERROR, 
+        `Formato inválido de carrinho em [${CART_STORAGE_KEY}] - não é um array`, 
+        { type: typeof parsedCart }
+      );
+      
+      return [];
+    }
+
+    // Filtrar itens inválidos e verificar estrutura
+    const validatedCart = parsedCart.filter(item => 
       item && 
+      typeof item === 'object' &&
       item.panel && 
-      typeof item.panel === 'object' && 
+      typeof item.panel === 'object' &&
       item.panel.id && 
       typeof item.duration === 'number'
     );
     
-    if (!itemsValid && cartItems.length > 0) {
-      throw new Error("Estrutura inválida dos itens do carrinho");
+    // Se o tamanho do array filtrado for diferente, alguns itens eram inválidos
+    if (validatedCart.length !== parsedCart.length) {
+      console.warn(`${parsedCart.length - validatedCart.length} itens inválidos removidos do carrinho`);
+      
+      logCheckoutEvent(
+        CheckoutEvent.LOAD_CART, 
+        LogLevel.WARNING, 
+        `${parsedCart.length - validatedCart.length} itens inválidos removidos do carrinho [${CART_STORAGE_KEY}]`, 
+        { 
+          originalCount: parsedCart.length, 
+          validCount: validatedCart.length
+        }
+      );
     }
 
-    // Convertemos para string primeiro para capturar erros de serialização
-    const cartString = JSON.stringify(cartItems);
+    // Log de sucesso
+    console.log(`Carrinho carregado do localStorage com sucesso: ${validatedCart.length} itens`);
     
-    // Salvamos no localStorage
-    localStorage.setItem(CART_STORAGE_KEY, cartString);
-    
-    // Log detalhado do que foi salvo
-    console.log("Carrinho salvo no localStorage:", cartItems);
-    
-    // Verificamos se foi salvo corretamente
-    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-    if (!savedCart) {
-      throw new Error("Falha ao verificar salvamento do carrinho");
-    }
-    
-    // Verificamos se o JSON pode ser parseado novamente
-    const parsedCart = JSON.parse(savedCart);
-    if (!Array.isArray(parsedCart)) {
-      throw new Error("O carrinho salvo não é um array válido");
-    }
-    
-    // Verificamos se a quantidade de itens é a mesma
-    if (parsedCart.length !== cartItems.length) {
-      throw new Error(`Quantidade de itens divergente: ${parsedCart.length} vs ${cartItems.length}`);
-    }
-    
-    // Log do sucesso
-    console.log("Carrinho salvo no localStorage com sucesso:", parsedCart.length, "itens");
     logCheckoutEvent(
-      CheckoutEvent.SAVE_CART,
-      LogLevel.SUCCESS,
-      `Carrinho salvo com sucesso [${CART_STORAGE_KEY}]: ${cartItems.length} itens`,
+      CheckoutEvent.LOAD_CART, 
+      LogLevel.SUCCESS, 
+      `Carrinho carregado [${CART_STORAGE_KEY}] com sucesso: ${validatedCart.length} itens`, 
       { 
-        cartItemCount: cartItems.length,
+        cartItemCount: validatedCart.length,
+        isEmpty: validatedCart.length === 0,
         storageKey: CART_STORAGE_KEY,
-        items: cartItems.map(item => ({
+        items: validatedCart.map(item => ({
+          id: item.panel.id,
+          nome: item.panel.buildings?.nome || 'Desconhecido',
+          duration: item.duration
+        }))
+      }
+    );
+    
+    return validatedCart;
+    
+  } catch (error) {
+    // Erro geral
+    console.error(`Erro ao carregar carrinho de [${CART_STORAGE_KEY}]:`, error);
+    
+    logCheckoutEvent(
+      CheckoutEvent.LOAD_CART, 
+      LogLevel.ERROR, 
+      `Erro ao carregar carrinho de [${CART_STORAGE_KEY}]`, 
+      { error: String(error), storageKey: CART_STORAGE_KEY }
+    );
+    
+    return [];
+  }
+};
+
+/**
+ * Salva o carrinho no localStorage com verificações robustas
+ */
+export const saveCartToStorage = (cart: CartItem[]): boolean => {
+  try {
+    // Verificar se o carrinho é um array
+    if (!Array.isArray(cart)) {
+      console.error(`Tentativa de salvar carrinho inválido (não é array): ${typeof cart}`);
+      
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.ERROR, 
+        `Tentativa de salvar carrinho inválido em [${CART_STORAGE_KEY}] (não é array)`, 
+        { type: typeof cart }
+      );
+      
+      return false;
+    }
+    
+    // Filtrar itens inválidos
+    const validatedCart = cart.filter(item => 
+      item && 
+      item.panel && 
+      typeof item.panel === 'object' &&
+      item.panel.id && 
+      typeof item.duration === 'number'
+    );
+    
+    // Verificar se há itens válidos para salvar
+    if (validatedCart.length === 0 && cart.length > 0) {
+      console.error("Todos os itens do carrinho são inválidos, nada será salvo");
+      
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.ERROR, 
+        `Todos os itens do carrinho são inválidos para [${CART_STORAGE_KEY}], nada será salvo`, 
+        { originalCount: cart.length }
+      );
+      
+      return false;
+    }
+    
+    // Se o tamanho do array filtrado for diferente, alguns itens eram inválidos
+    if (validatedCart.length !== cart.length) {
+      console.warn(`${cart.length - validatedCart.length} itens inválidos removidos ao salvar`);
+      
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.WARNING, 
+        `${cart.length - validatedCart.length} itens inválidos removidos ao salvar em [${CART_STORAGE_KEY}]`, 
+        { 
+          originalCount: cart.length, 
+          savedCount: validatedCart.length
+        }
+      );
+    }
+    
+    // Converter para string JSON
+    const cartJSON = JSON.stringify(validatedCart);
+    
+    // Salvar no localStorage
+    localStorage.setItem(CART_STORAGE_KEY, cartJSON);
+    
+    // Verificar se foi salvo corretamente
+    const storedJSON = localStorage.getItem(CART_STORAGE_KEY);
+    if (storedJSON !== cartJSON) {
+      console.error("Falha na verificação após salvar carrinho - os valores não correspondem");
+      
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.ERROR, 
+        `Falha na verificação após salvar carrinho em [${CART_STORAGE_KEY}] - os valores não correspondem`, 
+        {}
+      );
+      
+      return false;
+    }
+    
+    // Log de sucesso
+    console.log(`Carrinho salvo no localStorage com sucesso: ${validatedCart.length} itens`);
+    
+    // Log com nível de detalhe dependendo do número de itens
+    const logLevel = validatedCart.length > 0 ? LogLevel.SUCCESS : LogLevel.WARNING;
+    const messagePrefix = validatedCart.length > 0 ? "Carrinho salvo" : "Carrinho vazio salvo";
+    
+    logCheckoutEvent(
+      CheckoutEvent.SAVE_CART, 
+      logLevel, 
+      `${messagePrefix} em [${CART_STORAGE_KEY}]: ${validatedCart.length} itens`, 
+      { 
+        cartItemCount: validatedCart.length,
+        isEmpty: validatedCart.length === 0,
+        storageKey: CART_STORAGE_KEY,
+        items: validatedCart.map(item => ({
           id: item.panel.id,
           nome: item.panel.buildings?.nome || 'Desconhecido',
           duration: item.duration
@@ -71,22 +230,16 @@ export const saveCartToStorage = (cartItems: any[]): boolean => {
     );
     
     return true;
+    
   } catch (error) {
-    // Log do erro
-    console.error("Erro ao salvar carrinho no localStorage:", error);
+    // Erro geral
+    console.error(`Erro ao salvar carrinho em [${CART_STORAGE_KEY}]:`, error);
+    
     logCheckoutEvent(
-      CheckoutEvent.SAVE_CART,
-      LogLevel.ERROR,
-      `Erro ao salvar carrinho [${CART_STORAGE_KEY}]: ${error}`,
-      { 
-        error: String(error),
-        cartState: JSON.stringify(cartItems),
-        storageKey: CART_STORAGE_KEY,
-        browserStorage: {
-          available: typeof localStorage !== 'undefined',
-          storageSize: typeof localStorage !== 'undefined' ? JSON.stringify(localStorage).length : 0
-        }
-      }
+      CheckoutEvent.SAVE_CART, 
+      LogLevel.ERROR, 
+      `Erro ao salvar carrinho em [${CART_STORAGE_KEY}]`, 
+      { error: String(error), storageKey: CART_STORAGE_KEY }
     );
     
     return false;
@@ -94,159 +247,49 @@ export const saveCartToStorage = (cartItems: any[]): boolean => {
 };
 
 /**
- * Carrega o carrinho do localStorage com verificações adicionais de segurança
- */
-export const loadCartFromStorage = () => {
-  try {
-    console.log("Tentando carregar carrinho do localStorage com chave:", CART_STORAGE_KEY);
-    
-    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-    console.log("Carrinho bruto encontrado:", savedCart);
-    
-    if (!savedCart) {
-      console.log("Nenhum carrinho encontrado no localStorage com chave:", CART_STORAGE_KEY);
-      
-      // Verificar se existe um carrinho na chave antiga para migração
-      const legacyCart = localStorage.getItem('panelCart');
-      if (legacyCart) {
-        console.log("Carrinho encontrado em chave legada 'panelCart', migrando...");
-        localStorage.setItem(CART_STORAGE_KEY, legacyCart);
-        return JSON.parse(legacyCart);
-      }
-      
-      logCheckoutEvent(
-        CheckoutEvent.LOAD_CART,
-        LogLevel.INFO,
-        `Nenhum carrinho encontrado no localStorage [${CART_STORAGE_KEY}] - criando novo carrinho vazio`,
-        { timestamp: Date.now(), storageKey: CART_STORAGE_KEY }
-      );
-      return [];
-    }
-    
-    const parsedCart = JSON.parse(savedCart);
-    console.log("Carrinho carregado e parseado:", parsedCart);
-    
-    if (!Array.isArray(parsedCart)) {
-      throw new Error(`O carrinho carregado [${CART_STORAGE_KEY}] não é um array válido`);
-    }
-    
-    // Validar estrutura dos itens
-    if (parsedCart.length > 0) {
-      const itemsValid = parsedCart.every(item => 
-        item && 
-        item.panel && 
-        typeof item.panel === 'object' && 
-        item.panel.id && 
-        typeof item.duration === 'number'
-      );
-      
-      if (!itemsValid) {
-        throw new Error(`Estrutura de carrinho inválida carregada do localStorage [${CART_STORAGE_KEY}]`);
-      }
-    }
-    
-    console.log("Carrinho carregado do localStorage com sucesso:", parsedCart.length, "itens");
-    const logLevel = parsedCart.length === 0 ? LogLevel.WARNING : LogLevel.SUCCESS;
-    
-    logCheckoutEvent(
-      CheckoutEvent.LOAD_CART,
-      logLevel,
-      `Carrinho carregado [${CART_STORAGE_KEY}] ${parsedCart.length === 0 ? '(vazio)' : 'com sucesso'}: ${parsedCart.length} itens`,
-      { 
-        cartItemCount: parsedCart.length,
-        isEmpty: parsedCart.length === 0,
-        storageKey: CART_STORAGE_KEY,
-        items: parsedCart.length > 0 ? parsedCart.map(item => ({
-          id: item.panel?.id || 'unknown',
-          nome: item.panel?.buildings?.nome || 'Desconhecido',
-          duration: item.duration
-        })) : []
-      }
-    );
-    
-    return parsedCart;
-  } catch (error) {
-    console.error("Erro ao carregar carrinho do localStorage:", error);
-    logCheckoutEvent(
-      CheckoutEvent.LOAD_CART,
-      LogLevel.ERROR,
-      `Erro ao carregar carrinho [${CART_STORAGE_KEY}]: ${error}`,
-      { 
-        error: String(error),
-        storageKey: CART_STORAGE_KEY,
-        localStorage: {
-          cartContent: localStorage.getItem(CART_STORAGE_KEY)
-        }
-      }
-    );
-    
-    // Em caso de erro, retornamos um array vazio
-    return [];
-  }
-};
-
-/**
- * Função para verificar se o carrinho está vazio
- * Realiza verificações de segurança adicionais
+ * Verifica se o carrinho está vazio (não existe ou é array vazio)
  */
 export const isCartEmpty = (): boolean => {
   try {
-    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-    console.log("Verificando se carrinho está vazio. Valor bruto:", savedCart);
+    const cartJSON = localStorage.getItem(CART_STORAGE_KEY);
+    if (!cartJSON) return true;
     
-    // Se não existir
-    if (!savedCart) return true;
-    
-    // Tenta fazer o parse
-    const parsedCart = JSON.parse(savedCart);
-    console.log("Carrinho parseado para verificação de vazio:", parsedCart);
-    
-    // Verifica se é um array e se tem itens
-    const isEmpty = !Array.isArray(parsedCart) || parsedCart.length === 0;
-    console.log("Resultado da verificação de carrinho vazio:", isEmpty);
-    return isEmpty;
+    try {
+      const cart = JSON.parse(cartJSON);
+      return !Array.isArray(cart) || cart.length === 0;
+    } catch (e) {
+      return true;
+    }
   } catch (e) {
-    // Em caso de erro, consideramos vazio para garantir segurança
-    console.error("Erro ao verificar se carrinho está vazio:", e);
     return true;
   }
 };
 
 /**
- * Limpa o carrinho e registra a ação 
+ * Limpa o carrinho do localStorage
  */
-export const clearCart = () => {
+export const clearCartStorage = (): boolean => {
   try {
     localStorage.removeItem(CART_STORAGE_KEY);
-    console.log("Carrinho removido do localStorage");
+    
     logCheckoutEvent(
-      CheckoutEvent.SAVE_CART,
-      LogLevel.INFO,
-      `Carrinho removido do localStorage [${CART_STORAGE_KEY}]`,
-      { action: 'clear', storageKey: CART_STORAGE_KEY }
+      CheckoutEvent.SAVE_CART, 
+      LogLevel.SUCCESS, 
+      `Carrinho removido de [${CART_STORAGE_KEY}]`, 
+      { storageKey: CART_STORAGE_KEY }
     );
+    
     return true;
   } catch (e) {
-    console.error("Erro ao limpar carrinho:", e);
+    console.error(`Erro ao limpar carrinho de [${CART_STORAGE_KEY}]:`, e);
+    
+    logCheckoutEvent(
+      CheckoutEvent.SAVE_CART, 
+      LogLevel.ERROR, 
+      `Erro ao limpar carrinho de [${CART_STORAGE_KEY}]`, 
+      { error: String(e), storageKey: CART_STORAGE_KEY }
+    );
+    
     return false;
-  }
-};
-
-/**
- * Função para contar itens no carrinho com segurança
- * Permite verificações rápidas sem precisar carregar todo o conteúdo
- */
-export const countCartItems = (): number => {
-  try {
-    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-    if (!savedCart) return 0;
-    
-    const parsedCart = JSON.parse(savedCart);
-    if (!Array.isArray(parsedCart)) return 0;
-    
-    return parsedCart.length;
-  } catch (e) {
-    console.error("Erro ao contar itens do carrinho:", e);
-    return 0;
   }
 };
