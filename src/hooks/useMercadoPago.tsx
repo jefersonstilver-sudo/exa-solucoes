@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast as sonnerToast } from 'sonner';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface MercadoPagoCheckoutOptions {
   preferenceId: string;
@@ -19,7 +20,7 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
   
   useEffect(() => {
     if (!publicKey) {
-      console.error('Public key não fornecida para o MercadoPago SDK');
+      console.error('[MercadoPago] Public key não fornecida');
       setIsError(true);
       return;
     }
@@ -32,6 +33,9 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       setMercadoPago(null);
     }
     
+    // Log carregamento do SDK
+    console.log('[MercadoPago] Iniciando carregamento do SDK');
+    
     // Create and load the script
     const script = document.createElement('script');
     script.id = 'mercadopago-script';
@@ -41,9 +45,24 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     // Add loading indicator
     sonnerToast.loading('Carregando MercadoPago SDK...');
     
+    // Timeouts para detectar problemas de carregamento
+    const timeoutId = setTimeout(() => {
+      if (!isSDKLoaded) {
+        console.warn('[MercadoPago] O carregamento do SDK está demorando mais que o esperado');
+        logCheckoutEvent(
+          CheckoutEvent.DEBUG_EVENT,
+          LogLevel.WARNING,
+          "O carregamento do SDK do MercadoPago está demorando mais que o esperado",
+          { publicKey: publicKey.substring(0, 10) + '...' }
+        );
+      }
+    }, 5000);
+    
     script.onload = () => {
-      console.log('MercadoPago SDK carregado com sucesso');
+      console.log('[MercadoPago] SDK carregado com sucesso');
+      clearTimeout(timeoutId);
       sonnerToast.dismiss();
+      
       try {
         // @ts-ignore - MercadoPago é carregado via script
         const mp = new window.MercadoPago(publicKey, {
@@ -52,41 +71,70 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
         
         setMercadoPago(mp);
         setIsSDKLoaded(true);
-        console.log('MercadoPago inicializado corretamente');
+        console.log('[MercadoPago] SDK inicializado corretamente');
+        
+        logCheckoutEvent(
+          CheckoutEvent.DEBUG_EVENT,
+          LogLevel.INFO,
+          "SDK do MercadoPago carregado com sucesso",
+          { publicKey: publicKey.substring(0, 10) + '...' }
+        );
       } catch (error) {
-        console.error('Erro ao inicializar MercadoPago:', error);
+        console.error('[MercadoPago] Erro ao inicializar:', error);
         sonnerToast.error('Erro ao inicializar MercadoPago');
         setIsError(true);
+        
+        logCheckoutEvent(
+          CheckoutEvent.DEBUG_EVENT,
+          LogLevel.ERROR,
+          `Erro ao inicializar SDK do MercadoPago: ${error}`,
+          { error: String(error) }
+        );
       }
     };
     
-    script.onerror = () => {
-      console.error('Erro ao carregar MercadoPago SDK');
+    script.onerror = (e) => {
+      console.error('[MercadoPago] Erro ao carregar SDK:', e);
+      clearTimeout(timeoutId);
       sonnerToast.error('Erro ao carregar MercadoPago SDK');
       setIsError(true);
+      
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.ERROR,
+        "Erro ao carregar o script do SDK do MercadoPago",
+        { publicKey: publicKey.substring(0, 10) + '...' }
+      );
     };
     
     document.body.appendChild(script);
     
     return () => {
+      clearTimeout(timeoutId);
       if (document.body.contains(script)) {
         document.body.removeChild(script);
       }
     };
   }, [publicKey]);
 
-  const createCheckout = ({ preferenceId, redirectMode = true, paymentMethod }: MercadoPagoCheckoutOptions) => {
+  const createCheckout = ({ preferenceId, redirectMode = true, paymentMethod = 'credit_card' }: MercadoPagoCheckoutOptions) => {
     if (!isSDKLoaded || !mercadoPago) {
-      console.error('MercadoPago SDK não carregado');
+      console.error('[MercadoPago] SDK não carregado');
       return { success: false, error: 'MercadoPago SDK não carregado' };
     }
     
     try {
-      console.log(`Iniciando checkout do MercadoPago com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
+      console.log(`[MercadoPago] Iniciando checkout com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
       
-      // Direct redirect approach - more reliable for all payment methods
-      const checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
-      console.log('Redirecionando para:', checkoutUrl);
+      let checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+      
+      // Adicionar payment_method_id para PIX
+      if (paymentMethod === 'pix') {
+        checkoutUrl += '&payment_method_id=pix';
+        console.log('[MercadoPago] URL para PIX:', checkoutUrl);
+      }
+      
+      console.log('[MercadoPago] URL de redirecionamento:', checkoutUrl);
       
       // Force page redirect with delay to ensure toast is visible
       sonnerToast.success('Redirecionando para Mercado Pago...');
@@ -97,7 +145,7 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       
       return { success: true };
     } catch (error) {
-      console.error('Erro ao criar checkout do MercadoPago:', error);
+      console.error('[MercadoPago] Erro ao criar checkout:', error);
       return { success: false, error };
     }
   };

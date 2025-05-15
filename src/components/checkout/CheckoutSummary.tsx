@@ -1,248 +1,162 @@
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { formatCurrency } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
-import { Plan, PlanKey } from '@/types/checkout';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Calendar, PackageCheck, Video, Award, Info } from 'lucide-react';
-import { getPanelPrice, calculateCartSubtotal, calculateTotalPrice } from '@/utils/checkoutUtils';
-import { Badge } from '@/components/ui/badge';
+import { PlanKey } from '@/types/checkout';
+
+interface CartItem {
+  panel: Panel;
+  duration: number;
+}
 
 interface CheckoutSummaryProps {
-  cartItems: { panel: Panel; duration: number }[];
+  cartItems: CartItem[];
   selectedPlan: PlanKey;
-  plans: Record<number, Plan>;
+  plans: Record<string, any>;
   couponDiscount: number;
   couponValid: boolean;
   startDate: Date;
   endDate: Date;
+  paymentMethod?: string;
 }
 
-const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
-  cartItems,
-  selectedPlan,
-  plans,
-  couponDiscount,
-  couponValid,
-  startDate,
-  endDate
-}) => {
-  // Formata data para o formato brasileiro
-  const formatDate = (date: Date): string => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    }).format(date);
-  };
-  
-  // Get subtotal and total prices
-  const subtotal = calculateCartSubtotal(cartItems);
-  const totalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  
-  // Calculate plan discount amount
-  const planDiscountAmount = plans[selectedPlan].discount > 0 
-    ? (subtotal * plans[selectedPlan].discount) / 100 
-    : 0;
-  
-  // Calculate coupon discount amount
-  const couponDiscountAmount = couponValid && couponDiscount > 0
-    ? ((subtotal - planDiscountAmount) * couponDiscount) / 100
-    : 0;
-  
-  // Get plan color for styling
-  const getPlanColorClass = () => {
-    const colorMap = {
-      'gray': 'border-gray-300 text-gray-700 bg-gray-50',
-      'green': 'border-green-300 text-green-700 bg-green-50',
-      'purple': 'border-purple-300 text-purple-700 bg-purple-50',
-      'blue': 'border-blue-300 text-blue-700 bg-blue-50'
-    };
-    
-    const color = plans[selectedPlan].color || 'gray';
-    return colorMap[color] || colorMap.gray;
+const CheckoutSummary = ({ 
+  cartItems, 
+  selectedPlan, 
+  plans, 
+  couponDiscount, 
+  couponValid, 
+  startDate, 
+  endDate,
+  paymentMethod = 'credit_card'
+}: CheckoutSummaryProps) => {
+  // Calcular subtotal (preço base)
+  const calculateSubtotal = () => {
+    const pricePerItem = 250; // Valor fixo por item para exemplo
+    return cartItems.length * pricePerItem;
   };
 
-  // For debugging - use console.log only
-  console.log("Dados do carrinho no CheckoutSummary:", cartItems);
-  console.log("Subtotal calculado:", subtotal);
-  console.log("Total após descontos:", totalPrice);
-  
+  // Calcular desconto
+  const calculateDiscount = () => {
+    if (!couponValid || couponDiscount <= 0) return 0;
+    return (calculateSubtotal() * couponDiscount) / 100;
+  };
+
+  // Calcular total
+  const calculateTotal = () => {
+    return calculateSubtotal() - calculateDiscount();
+  };
+
+  // Formatar data
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    }).format(date);
+  };
+
+  // Pegar ícone do método de pagamento
+  const getPaymentMethodIcon = () => {
+    if (paymentMethod === 'pix') {
+      return (
+        <svg 
+          viewBox="0 0 512 512" 
+          className="h-4 w-4" 
+          fill="currentColor"
+        >
+          <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
+        </svg>
+      );
+    }
+    
+    return <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>;
+  };
+
   return (
-    <Card className="sticky top-8 rounded-2xl shadow-md overflow-hidden border border-gray-200">
-      <CardHeader className="bg-gradient-to-r from-[#1E1B4B] to-[#2D2A6B] border-b border-gray-100 p-4">
-        <CardTitle className="flex items-center text-white">
-          <PackageCheck className="mr-2 h-5 w-5" /> Resumo do pedido
-        </CardTitle>
-      </CardHeader>
+    <div className="border border-gray-200 rounded-lg shadow-sm bg-white">
+      <div className="bg-indigo-900 text-white p-4 rounded-t-lg flex items-center gap-2">
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+        <h2 className="font-semibold">Resumo do pedido</h2>
+      </div>
       
-      <CardContent className="p-5 space-y-4">
-        {/* Selected Plan Section */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
-          className="mb-4"
-        >
-          <h3 className="text-sm font-medium mb-2">Plano Selecionado</h3>
-          <div className={`rounded-lg border p-3 ${getPlanColorClass()}`}>
-            <div className="flex justify-between items-center mb-1">
-              <span className="font-medium">{plans[selectedPlan].name}</span>
-              {plans[selectedPlan].mostPopular && (
-                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                  Mais vendido
-                </Badge>
-              )}
+      <div className="p-4 space-y-4">
+        {/* Plano Selecionado */}
+        <div className="bg-blue-50 p-3 rounded-md border border-blue-100">
+          <div className="font-medium text-blue-900">Plano Selecionado</div>
+          <div className="mt-1 flex items-start gap-2">
+            <div className="bg-blue-100 rounded-md p-1">
+              <svg className="h-4 w-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
-            <div className="text-sm space-y-1">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>{plans[selectedPlan].months} {plans[selectedPlan].months === 1 ? 'mês' : 'meses'}</span>
-              </div>
-              
-              {plans[selectedPlan].productionIncluded && (
-                <div className="flex items-center gap-1">
-                  <Video className="h-3 w-3" />
-                  <span>
-                    {plans[selectedPlan].videosPerMonth} vídeo{plans[selectedPlan].videosPerMonth > 1 ? 's' : ''} por mês
-                  </span>
-                </div>
-              )}
-              
-              {plans[selectedPlan].studioUse && (
-                <div className="flex items-center gap-1">
-                  <Award className="h-3 w-3" />
-                  <span>Uso do Estúdio Indexa</span>
-                </div>
-              )}
+            <div>
+              <div className="text-sm font-medium">{plans[selectedPlan]?.name || `Plano de ${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`}</div>
+              <div className="text-xs text-blue-700">{selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'}</div>
             </div>
           </div>
-        </motion.div>
-      
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
-        >
-          <h3 className="text-sm font-medium mb-2">Detalhes</h3>
-          <div className="text-sm space-y-2 bg-gray-50 p-3 rounded-xl">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Qtde. painéis:</span>
-              <span className="font-medium">{cartItems.length}</span>
+        </div>
+        
+        {/* Detalhes */}
+        <div>
+          <div className="font-medium mb-2">Detalhes</div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Qtde. painéis:</span>
+            <span className="font-medium">{cartItems.length}</span>
+          </div>
+        </div>
+        
+        {/* Período */}
+        <div>
+          <div className="font-medium mb-2">Período</div>
+          <div className="flex items-center text-sm mb-1">
+            <svg className="h-4 w-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <div>
+              <span>Início: </span>
+              <span className="font-medium">{formatDate(startDate)}</span>
             </div>
           </div>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-        >
-          <h3 className="text-sm font-medium mb-2">Período</h3>
-          <div className="text-sm space-y-2">
-            <div className="flex items-center text-gray-600 text-xs mb-1">
-              <Calendar className="h-3.5 w-3.5 mr-1" /> Exibição
-            </div>
-            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs">
-              <div className="flex justify-between mb-2">
-                <span>Início:</span>
-                <span className="font-medium">{formatDate(startDate)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Término:</span>
-                <span className="font-medium">{formatDate(endDate)}</span>
-              </div>
+          <div className="flex items-center text-sm">
+            <svg className="h-4 w-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <div>
+              <span>Término: </span>
+              <span className="font-medium">{formatDate(endDate)}</span>
             </div>
           </div>
-        </motion.div>
+        </div>
         
-        <Separator className="my-3" />
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Subtotal:</span>
-            <span className="font-medium">{formatCurrency(subtotal)}</span>
+        {/* Método de pagamento */}
+        <div>
+          <div className="font-medium mb-2">Método de pagamento</div>
+          <div className="flex items-center text-sm">
+            <span className="mr-2">{getPaymentMethodIcon()}</span>
+            <span>{paymentMethod === 'pix' ? 'PIX' : 'Cartão de crédito'}</span>
+          </div>
+        </div>
+
+        {/* Valores */}
+        <div className="border-t pt-3 mt-3">
+          <div className="flex justify-between mb-1">
+            <span className="text-sm">Subtotal:</span>
+            <span className="font-medium">R$ {calculateSubtotal().toFixed(2)}</span>
           </div>
           
-          {plans[selectedPlan].discount > 0 && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              className="flex justify-between text-sm mt-1"
-            >
-              <span className="text-green-600 flex items-center">
-                <Info className="h-3 w-3 mr-1" />
-                Desconto do plano ({plans[selectedPlan].discount}%):
-              </span>
-              <span className="text-green-600">-{formatCurrency(planDiscountAmount)}</span>
-            </motion.div>
+          {couponValid && (
+            <div className="flex justify-between mb-1 text-green-600">
+              <span className="text-sm">Desconto ({couponDiscount}%):</span>
+              <span className="font-medium">-R$ {calculateDiscount().toFixed(2)}</span>
+            </div>
           )}
           
-          {couponValid && couponDiscount > 0 && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              className="flex justify-between text-sm mt-1"
-            >
-              <span className="text-green-600">Cupom ({couponDiscount}%):</span>
-              <span className="text-green-600">-{formatCurrency(couponDiscountAmount)}</span>
-            </motion.div>
-          )}
-          
-          <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-            <div className="flex justify-between text-indexa-purple">
-              <span className="font-semibold">Total:</span>
-              <motion.span 
-                className="font-bold text-lg"
-                key={totalPrice.toString()}
-                initial={{ scale: 1.2 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                {formatCurrency(totalPrice)}
-              </motion.span>
-            </div>
-            {(planDiscountAmount > 0 || couponDiscountAmount > 0) && (
-              <div className="text-xs text-green-600 text-right mt-1">
-                Você economizou {formatCurrency(planDiscountAmount + couponDiscountAmount)}!
-              </div>
-            )}
+          <div className="flex justify-between font-semibold mt-2 text-lg">
+            <span>Total:</span>
+            <span className="text-indigo-900">R$ {calculateTotal().toFixed(2)}</span>
           </div>
-        </motion.div>
-        
-        {/* Benefits section */}
-        {plans[selectedPlan].productionIncluded && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="bg-[#1E1B4B]/5 p-3 rounded-lg border border-[#1E1B4B]/10 mt-4"
-          >
-            <div className="flex items-start gap-2">
-              <Video className="h-4 w-4 text-indexa-purple mt-0.5" />
-              <div className="text-xs text-[#1E1B4B]/80">
-                <span className="font-medium">Seu plano inclui {plans[selectedPlan].videosPerMonth} vídeo por mês</span> produzido pela Indexa Produtora!
-                {plans[selectedPlan].studioUse && (
-                  <span className="block mt-1">+ Acesso mensal ao Estúdio Indexa para gravações.</span>
-                )}
-              </div>
+          
+          {couponValid && (
+            <div className="text-xs text-green-600 mt-1 text-right">
+              Você economizou R$ {calculateDiscount().toFixed(2)}!
             </div>
-          </motion.div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="bg-gray-50 p-4 text-xs text-gray-500 border-t border-gray-100">
-        <p>
-          Os preços já incluem impostos e taxas de processamento. A campanha ficará ativa após confirmação do pagamento.
-        </p>
-      </CardFooter>
-    </Card>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -16,10 +16,10 @@ export const useMercadoPagoCheckout = () => {
 
   // Log MercadoPago SDK status for diagnostics
   useEffect(() => {
-    console.log("MercadoPago SDK status:", {
+    console.log("[MercadoPago] SDK status:", {
       isSDKLoaded,
       isError,
-      publicKey: MP_PUBLIC_KEY
+      publicKey: MP_PUBLIC_KEY ? MP_PUBLIC_KEY.substring(0, 10) + '...' : 'missing'
     });
   }, [isSDKLoaded, isError]);
 
@@ -29,43 +29,25 @@ export const useMercadoPagoCheckout = () => {
       throw new Error('Preference ID is required for MercadoPago redirect');
     }
     
+    // Registra evento de redirecionamento
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Redirecionando para Mercado Pago com método ${paymentMethod}`,
+      `Iniciando redirecionamento para Mercado Pago com método ${paymentMethod}`,
       { preferenceId, paymentMethod }
     );
     
+    console.log(`[MercadoPago] Redirecionando para pagamento com método: ${paymentMethod}`);
+    
+    // Mostra toast de confirmação antes do redirecionamento
     sonnerToast.dismiss();
     sonnerToast.success("Redirecionando para pagamento...");
     
-    try {
-      // Attempt to use SDK first
-      console.log('Iniciando checkout com preferenceId:', preferenceId, 'e método:', paymentMethod);
-      setTimeout(() => {
-        try {
-          const checkoutResult = createCheckout({ 
-            preferenceId: preferenceId,
-            redirectMode: true,
-            paymentMethod
-          });
-          
-          if (!checkoutResult.success) {
-            // Fallback to direct redirection if SDK fails
-            console.log('Fallback: redirecionamento direto para MercadoPago');
-            handleMercadoPagoRedirect(preferenceId, paymentMethod);
-          }
-        } catch (checkoutError) {
-          console.error('Erro ao iniciar checkout:', checkoutError);
-          // Fallback to direct redirection
-          handleMercadoPagoRedirect(preferenceId, paymentMethod);
-        }
-      }, 1000); // Delay for toast visibility
-    } catch (error) {
-      console.error('Erro ao redirecionar para MercadoPago:', error);
-      // Ultimate fallback
+    // Timeout pequeno para garantir que o toast seja exibido antes do redirecionamento
+    setTimeout(() => {
+      // Usa o serviço de redirecionamento unificado
       handleMercadoPagoRedirect(preferenceId, paymentMethod);
-    }
+    }, 800);
   };
 
   return {

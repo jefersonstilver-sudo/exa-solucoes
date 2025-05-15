@@ -12,6 +12,7 @@ import { useCheckoutAuth } from '@/hooks/checkout/useCheckoutAuth';
 import { useCartValidation } from '@/hooks/checkout/useCartValidation';
 import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
 import { CheckoutSteps, Plan, PlanKey } from '@/types/checkout';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export const STEPS = CHECKOUT_STEPS; // Re-exporta para compatibilidade
 export { PLANS }; // Re-exporta para compatibilidade
@@ -36,6 +37,8 @@ export const useCheckout = () => {
   useEffect(() => {
     try {
       const savedPlan = localStorage.getItem('selectedPlan');
+      console.log('[useCheckout] Plano carregado do localStorage:', savedPlan);
+      
       if (savedPlan) {
         const parsedPlan = parseInt(savedPlan);
         if ([1, 3, 6, 12].includes(parsedPlan)) {
@@ -43,7 +46,7 @@ export const useCheckout = () => {
         }
       }
     } catch (error) {
-      console.error('Erro ao carregar plano selecionado:', error);
+      console.error('[useCheckout] Erro ao carregar plano selecionado:', error);
     }
   }, [setSelectedPlan]);
 
@@ -87,7 +90,17 @@ export const useCheckout = () => {
 
   // Define handler for next step with optional payment method
   const handleNextStepWithPayment = (paymentMethod?: string) => {
+    console.log(`[useCheckout] handleNextStepWithPayment chamado com método: ${paymentMethod}`);
+    
     if (handleNavigation.handleNextStep && typeof handleNavigation.handleNextStep === 'function') {
+      // Log para diagnóstico
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `Chamando handleNextStep com método: ${paymentMethod || 'undefined'}`,
+        { paymentMethod }
+      );
+      
       handleNavigation.handleNextStep(paymentMethod);
     }
   };
@@ -114,10 +127,10 @@ export const useCheckout = () => {
 
   // Log para diagnóstico dos cálculos
   useEffect(() => {
-    console.log("Dados do carrinho no useCheckout:", cartItems);
+    console.log("[useCheckout] Dados do carrinho:", cartItems);
     if (cartItems.length > 0) {
-      console.log("Subtotal calculado:", calculateCartSubtotal(cartItems));
-      console.log("Total calculado:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
+      console.log("[useCheckout] Subtotal calculado:", calculateCartSubtotal(cartItems));
+      console.log("[useCheckout] Total calculado:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
     }
   }, [cartItems, selectedPlan, couponDiscount, couponValid]);
 

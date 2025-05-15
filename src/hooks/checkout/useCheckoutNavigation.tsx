@@ -80,7 +80,12 @@ export const useCheckoutNavigation = ({
 
   // Navigate to the next step or process payment
   const handleNextStep = (paymentMethod = 'credit_card') => {
+    // Importante: Log detalhado do que está acontecendo
+    console.log(`[useCheckoutNavigation] handleNextStep chamado com método: ${paymentMethod}, step: ${step}, isNavigating: ${isNavigating}`);
+    
     if (isNavigating) {
+      console.warn('[useCheckoutNavigation] Ignorando navegação - já existe uma em andamento');
+      
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.WARNING,
@@ -95,6 +100,8 @@ export const useCheckoutNavigation = ({
     try {
       // Verificar se pode avançar
       if (!isNextEnabled()) {
+        console.warn('[useCheckoutNavigation] Navegação bloqueada - isNextEnabled() retornou false');
+        
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT, 
           LogLevel.WARNING,
@@ -107,6 +114,8 @@ export const useCheckoutNavigation = ({
       
       if (step < 4) {
         // Avançar para o próximo passo (não é o último passo)
+        console.log(`[useCheckoutNavigation] Avançando para o passo ${step + 1}`);
+        
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
@@ -119,6 +128,8 @@ export const useCheckoutNavigation = ({
       } else {
         // Último passo: processar pagamento
         if (!acceptTerms) {
+          console.warn('[useCheckoutNavigation] Pagamento bloqueado - termos não aceitos');
+          
           logCheckoutEvent(
             CheckoutEvent.NAVIGATION_EVENT,
             LogLevel.WARNING,
@@ -129,17 +140,20 @@ export const useCheckoutNavigation = ({
           return;
         }
         
+        // Log detalhado da criação de pagamento
+        console.log(`[useCheckoutNavigation] Iniciando processamento de pagamento com método: ${paymentMethod}`);
+        
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
-          "Iniciando processamento de pagamento",
+          `Iniciando processamento de pagamento com método: ${paymentMethod}`,
           { currentStep: step, paymentMethod }
         );
         
         // Calcular preço considerando desconto de cupom
         const totalPrice = calculateTotalPrice();
         
-        // Tentativa de pagamento
+        // Tentativa de pagamento - passando explicitamente o método de pagamento
         createPayment({
           totalPrice,
           selectedPlan,
@@ -158,7 +172,8 @@ export const useCheckoutNavigation = ({
         });
       }
     } catch (error) {
-      console.error("Erro durante navegação:", error);
+      console.error("[useCheckoutNavigation] Erro durante navegação:", error);
+      
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.ERROR,
@@ -178,7 +193,7 @@ export const useCheckoutNavigation = ({
       return total + pricePerPanel;
     }, 0);
     
-    console.log("Subtotal calculado:", subtotal);
+    console.log("[useCheckoutNavigation] Subtotal calculado:", subtotal);
     
     // Aplicar desconto do cupom se válido
     let total = subtotal;
@@ -187,7 +202,7 @@ export const useCheckoutNavigation = ({
       total = subtotal - discount;
     }
     
-    console.log("Total após descontos:", total);
+    console.log("[useCheckoutNavigation] Total após descontos:", total);
     return total;
   };
 

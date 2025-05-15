@@ -56,6 +56,15 @@ export const usePaymentFlow = () => {
     handleClearCart,
     paymentMethod = 'credit_card'
   }: ProcessPaymentOptions) => {
+    // Validação do paymentMethod - assegura que é um valor válido
+    if (paymentMethod !== 'credit_card' && paymentMethod !== 'pix') {
+      console.warn(`Método de pagamento inválido: ${paymentMethod}, usando credit_card como fallback`);
+      paymentMethod = 'credit_card';
+    }
+    
+    // Log do método de pagamento selecionado
+    console.log(`[Payment Flow] Iniciando processamento com método: ${paymentMethod}`);
+    
     setIsCreatingPayment(true);
     
     try {
@@ -63,7 +72,7 @@ export const usePaymentFlow = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Iniciando processamento de pagamento no valor de ${totalPrice} com método ${paymentMethod}`,
+        `Iniciando processamento de pagamento: R$${totalPrice} | Método: ${paymentMethod}`,
         { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length, paymentMethod }
       );
       
@@ -74,7 +83,7 @@ export const usePaymentFlow = () => {
       // IMPORTANT: Ignoring unavailable panels validation to fix the bug
       const isValid = validatePaymentRequirements({
         acceptTerms, 
-        unavailablePanels: [], // Ignoring validation for bug fix 
+        unavailablePanels: [], // Ignorando validação para correção do bug
         sessionUser, 
         isSDKLoaded,
         cartItems
@@ -108,7 +117,7 @@ export const usePaymentFlow = () => {
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
         `Pedido criado com ID: ${pedido.id}`,
-        { pedidoId: pedido.id }
+        { pedidoId: pedido.id, paymentMethod }
       );
       
       toast({
@@ -131,11 +140,11 @@ export const usePaymentFlow = () => {
           selectedPlan,
           duration,
           withCoupon: !!couponId,
-          couponDiscount: couponId ? 10 : 0, // example value, should come from real coupon
+          couponDiscount: couponId ? 10 : 0, // example value
         },
         userId: sessionUser.id,
         returnUrl: currentUrl,
-        paymentMethod // Add payment method to the data sent to the Edge Function
+        paymentMethod // Enviando o método de pagamento explicitamente
       };
       
       logCheckoutEvent(
@@ -162,8 +171,18 @@ export const usePaymentFlow = () => {
       // Clear cart after successful order creation
       handleClearCart();
       
+      // Log success antes do redirecionamento
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_PROCESSING,
+        LogLevel.INFO,
+        `Redirecionando para checkout do MercadoPago com preferenceId: ${data.preference_id}`,
+        { preferenceId: data.preference_id, method: paymentMethod }
+      );
+      
       // Redirect to MercadoPago checkout with specific payment method
       redirectToMercadoPago(data.preference_id, paymentMethod);
+      
+      // Não definimos isCreatingPayment como false aqui porque o redirecionamento acontecerá
       
     } catch (error: any) {
       console.error('Erro ao criar pagamento:', error);

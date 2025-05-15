@@ -58,6 +58,8 @@ const CheckoutContainer: React.FC = () => {
   // Log payment method changes
   useEffect(() => {
     if (paymentMethod) {
+      console.log(`[CheckoutContainer] Método de pagamento definido: ${paymentMethod}, step: ${step}`);
+      
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
@@ -70,7 +72,9 @@ const CheckoutContainer: React.FC = () => {
   const totalPrice = calculateTotalPrice();
 
   const handleNextWithPaymentMethod = () => {
-    // If we're on the payment step, pass the payment method to the next handler
+    console.log(`[CheckoutContainer] Próximo passo com método ${paymentMethod}, step atual: ${step}`);
+    
+    // Se estiver no passo de pagamento, passar o método para o handler
     if (step === STEPS.PAYMENT) {
       return handleNextStep(paymentMethod);
     }
@@ -129,6 +133,7 @@ const CheckoutContainer: React.FC = () => {
               couponValid={couponValid}
               startDate={startDate}
               endDate={endDate}
+              paymentMethod={paymentMethod}
             />
           </motion.div>
         </div>
@@ -144,6 +149,7 @@ const CheckoutContainer: React.FC = () => {
         isNavigating={isNavigating}
         isPaymentStep={step === STEPS.PAYMENT}
         totalPrice={totalPrice}
+        paymentMethod={paymentMethod}
       />
     </motion.div>
   );
