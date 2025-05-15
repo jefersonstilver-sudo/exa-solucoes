@@ -9,6 +9,8 @@ import { MP_PUBLIC_KEY } from '@/constants/checkoutConstants';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { logNavigation } from '@/services/navigationAuditService';
 
 interface CartItem {
   panel: Panel;
@@ -56,6 +58,14 @@ export const usePaymentProcessor = () => {
     setIsCreatingPayment(true);
     
     try {
+      // Log para diagnósticos
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_PROCESSING,
+        LogLevel.INFO,
+        `Iniciando processamento de pagamento no valor de ${totalPrice}`,
+        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length }
+      );
+      
       // Valida todos os requisitos antes de prosseguir
       const isValid = validatePaymentRequirements({
         acceptTerms, 
@@ -67,6 +77,12 @@ export const usePaymentProcessor = () => {
       
       if (!isValid) {
         setIsCreatingPayment(false);
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.ERROR,
+          "Requisitos do pagamento não atendidos",
+          { acceptTerms, unavailablePanelsCount: unavailablePanels.length }
+        );
         return;
       }
       
@@ -83,6 +99,12 @@ export const usePaymentProcessor = () => {
           title: "Painéis inválidos",
           description: "Alguns painéis possuem identificadores inválidos. Por favor, atualize seu carrinho.",
         });
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.ERROR,
+          "IDs de painéis inválidos detectados",
+          { invalidCount: invalidPanelIds.length }
+        );
         setIsCreatingPayment(false);
         return;
       }
@@ -97,6 +119,13 @@ export const usePaymentProcessor = () => {
         startDate,
         endDate
       });
+      
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_PROCESSING,
+        LogLevel.INFO,
+        `Pedido criado com ID: ${pedido.id}`,
+        { pedidoId: pedido.id }
+      );
       
       toast({
         title: "Processando pagamento",
@@ -124,6 +153,13 @@ export const usePaymentProcessor = () => {
           userId: sessionUser.id,
           returnUrl: currentUrl
         };
+        
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_PROCESSING,
+          LogLevel.INFO,
+          "Enviando dados para processamento de pagamento",
+          { pedidoId: pedido.id }
+        );
         
         // Chamar função Edge para processar pagamento
         const { data, error } = await supabase.functions.invoke('process-payment', {
@@ -153,12 +189,29 @@ export const usePaymentProcessor = () => {
           handleClearCart
         );
         
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_SUCCESS,
+          LogLevel.SUCCESS,
+          "Pagamento realizado com sucesso",
+          { pedidoId: pedido.id, amount: totalPrice }
+        );
+        
         // Redirecionar para a página de confirmação
         sonnerToast.success("Pagamento realizado com sucesso!");
+        
+        // Registrar navegação e redirecionar
+        logNavigation(`/pedido-confirmado?id=${pedido.id}`, 'navigate', true);
         navigate(`/pedido-confirmado?id=${pedido.id}`);
         
       } catch (paymentError: any) {
         console.error('Erro ao processar pagamento:', paymentError);
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.ERROR,
+          `Erro ao processar pagamento: ${paymentError.message}`,
+          { error: paymentError.message }
+        );
+        
         toast({
           variant: "destructive",
           title: "Erro ao processar pagamento",
@@ -168,6 +221,13 @@ export const usePaymentProcessor = () => {
       
     } catch (error: any) {
       console.error('Erro ao criar pagamento:', error);
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        `Erro ao criar pagamento: ${error.message}`,
+        { error: error.message }
+      );
+      
       toast({
         variant: "destructive",
         title: "Erro ao processar pagamento",

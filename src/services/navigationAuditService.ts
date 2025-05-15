@@ -6,7 +6,7 @@ const STORAGE_KEY = 'navigation_audit_logs';
 const MAX_LOGS = 50;
 
 // Interface para logs de navegação
-interface NavigationLog {
+export interface NavigationLog {
   timestamp: number;
   from: string | null;
   to: string;

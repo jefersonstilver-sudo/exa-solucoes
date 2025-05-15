@@ -6,6 +6,7 @@ import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { calculateTotalPrice } from '@/utils/checkoutUtils';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { logNavigation } from '@/services/navigationAuditService';
 
 interface UseCheckoutNavigationProps {
   step: number;
@@ -109,45 +110,48 @@ export const useCheckoutNavigation = ({
             description: "Você precisa estar logado para finalizar o pagamento.",
             variant: "destructive",
           });
+          logNavigation('/login?redirect=/checkout', 'navigate', true);
           navigate('/login?redirect=/checkout');
           setIsNavigating(false);
           return;
         }
 
         const paymentParams = {
-          amount: orderTotal,
-          couponId: couponId,
-          startDate: startDate,
-          endDate: endDate,
-          userId: sessionUser?.id,
-          cartItems: cartItems.map(item => ({
-            panelId: item.panel.id,
-            duration: item.duration
-          }))
+          totalPrice: orderTotal,
+          selectedPlan,
+          cartItems,
+          startDate,
+          endDate,
+          couponId,
+          acceptTerms,
+          unavailablePanels,
+          sessionUser,
+          handleClearCart
         };
 
         console.log("Params de pagamento:", paymentParams);
 
         try {
-          const result = await createPayment({
-            totalPrice: orderTotal,
-            selectedPlan,
-            cartItems,
-            startDate,
-            endDate,
-            couponId,
-            acceptTerms,
-            unavailablePanels,
-            sessionUser,
-            handleClearCart
-          });
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_PROCESSING,
+            LogLevel.INFO,
+            "Iniciando processamento de pagamento",
+            { total: orderTotal, planMonths: selectedPlan }
+          );
           
-          console.log("Resultado do pagamento:", result);
+          await createPayment(paymentParams);
           
           // Note: A navegação para a página de sucesso é feita dentro de createPayment
           // Esta função apenas retorna, sem tentar navegar novamente
         } catch (paymentError) {
           console.error("Erro ao criar pagamento:", paymentError);
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_ERROR,
+            LogLevel.ERROR,
+            "Erro ao processar pagamento",
+            { error: String(paymentError) }
+          );
+          
           toast({
             title: "Erro",
             description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
@@ -161,6 +165,13 @@ export const useCheckoutNavigation = ({
       }
     } catch (error) {
       console.error("Erro inesperado na navegação:", error);
+      logCheckoutEvent(
+        CheckoutEvent.CHECKOUT_ERROR,
+        LogLevel.ERROR, 
+        "Erro inesperado durante o checkout",
+        { error: String(error) }
+      );
+      
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
@@ -206,6 +217,7 @@ export const useCheckoutNavigation = ({
         LogLevel.INFO,
         "Retornando para a loja a partir do primeiro passo"
       );
+      logNavigation('/paineis-digitais/loja', 'navigate', true);
       navigate('/paineis-digitais/loja');
     }
   }, [step, setStep, navigate]);
