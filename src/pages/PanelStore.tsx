@@ -1,138 +1,154 @@
 
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import StoreLayout from '@/components/panel-store/StoreLayout';
-import PanelList from '@/components/panels/PanelList';
-import PanelCart from '@/components/panels/PanelCart';
-import PanelFilterSidebar from '@/components/panels/PanelFilterSidebar';
-import { useCartManager } from '@/hooks/useCartManager';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Layout from '@/components/layout/Layout';
 import { usePanelStore } from '@/hooks/usePanelStore';
-import CartDebugger from '@/components/debug/CartDebugger';
-import { logDebugEvent } from '@/services/checkoutDebugService';
+import { useCartManager } from '@/hooks/useCartManager';
+import { useUserSession } from '@/hooks/useUserSession';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import CheckoutDebugger from '@/components/debug/CheckoutDebugger';
+import { useDebugCheckout } from '@/hooks/useDebugCheckout';
+import PanelDebugActions from '@/components/panel-store/PanelDebugActions';
+import PromotionBanner from '@/components/panel-store/PromotionBanner';
+import StoreLayout from '@/components/panel-store/StoreLayout';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
-  const { 
-    panels, 
-    isLoading, 
-    filteredPanels,
+  // Use our custom hooks for state management
+  const {
+    panels,
+    isLoading,
+    error,
+    searchLocation,
+    setSearchLocation,
+    selectedLocation,
+    isSearching,
     filters,
-    handleUpdateFilters,
+    handleFilterChange,
     handleSearch,
-    resetFilters,
-    searchTerm,
-    handleSearchChange
+    handleClearLocation
   } = usePanelStore();
 
-  const { 
+  const {
     cartItems,
     cartOpen,
-    toggleCart,
+    setCartOpen,
     handleAddToCart,
     handleRemoveFromCart,
+    handleClearCart,
     handleChangeDuration,
+    cartAnimation,
     handleProceedToCheckout
   } = useCartManager();
+
+  const { isLoggedIn } = useUserSession();
+  const [showPromotion, setShowPromotion] = useState(true);
   
-  const [isDebuggerOpen, setIsDebuggerOpen] = useState(false);
-  
-  // Monitorar estado do carrinho para diagnóstico
+  // Debug checkout hook
+  const { 
+    debugModalOpen, 
+    setDebugModalOpen, 
+    directGoToCheckout 
+  } = useDebugCheckout(cartItems);
+
+  // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
-    console.log("PanelStore: Cart state updated", cartItems);
-    
-    // Salvar último estado do carrinho para diagnóstico
-    try {
-      localStorage.setItem('debug_last_cart_state', JSON.stringify({
-        timestamp: new Date().toISOString(),
-        cartItems: cartItems
-      }));
-    } catch (e) {
-      console.error("Error saving debug cart state", e);
+    if (isLoggedIn || cartItems.length > 0) {
+      setShowPromotion(false);
+    } else {
+      setShowPromotion(true);
     }
-  }, [cartItems]);
-  
-  // Verificar integridade do carrinho ao montar o componente
-  useEffect(() => {
-    try {
-      const localStorageCart = localStorage.getItem('indexa_cart');
-      console.log("PanelStore: Cart from localStorage", localStorageCart);
-    } catch (e) {
-      console.error("Error checking localStorage cart", e);
-    }
-  }, []);
-  
-  // Função para abrir o debugger
-  const openDebugger = (e: React.MouseEvent) => {
-    e.preventDefault();
-    logDebugEvent("Diagnostic button clicked", { timestamp: Date.now() });
-    setIsDebuggerOpen(true);
-  };
-  
-  // Transições com Framer Motion
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { 
-        staggerChildren: 0.1,
-        when: "beforeChildren" 
-      }
-    }
+  }, [isLoggedIn, cartItems.length]);
+
+  // Log quando handleProceedToCheckout é chamado
+  const handleCheckoutStart = () => {
+    logCheckoutEvent(
+      CheckoutEvent.CHECKOUT_INITIATION,
+      LogLevel.INFO,
+      "Iniciando checkout a partir da loja",
+      { cartItemCount: cartItems.length, timestamp: Date.now() }
+    );
+    handleProceedToCheckout();
   };
 
-  return (
-    <StoreLayout>
-      <div className="container mx-auto px-4 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Sidebar com filtros */}
-          <motion.div 
-            className="lg:col-span-3 hidden lg:block" 
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+  // Handler to open debug modal
+  const handleOpenDebugger = () => {
+    console.log("Opening debug modal");
+    setDebugModalOpen(true);
+  };
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
+          <h2 className="text-2xl font-semibold text-red-500 mb-4">Erro ao carregar painéis</h2>
+          <p className="text-muted-foreground mb-6">
+            Ocorreu um problema ao buscar os painéis disponíveis. Por favor, tente novamente.
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-[#3C1361] text-white rounded-md hover:bg-[#3C1361]/80"
           >
-            <PanelFilterSidebar 
-              filters={filters}
-              onUpdateFilters={handleUpdateFilters}
-              onSearch={handleSearch}
-              onReset={resetFilters}
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-            />
-          </motion.div>
-          
-          {/* Lista de painéis */}
-          <motion.div 
-            className="lg:col-span-9"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <PanelList 
-              panels={filteredPanels} 
-              isLoading={isLoading} 
-              onAddToCart={handleAddToCart}
-              inCart={(panel) => cartItems.some(item => item.panel.id === panel.id)}
-              onOpenDebugger={openDebugger}
-            />
-          </motion.div>
+            Tentar novamente
+          </button>
         </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout 
+      cartItems={cartItems}
+      onRemoveFromCart={handleRemoveFromCart}
+      onClearCart={handleClearCart}
+      onChangeDuration={handleChangeDuration}
+      onProceedToCheckout={handleCheckoutStart}
+    >
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container mx-auto px-4 md:px-6 py-8"
+      >
+        {/* Debug panel for diagnostics */}
+        <PanelDebugActions 
+          cartItemsCount={cartItems.length}
+          onProceedToCheckout={handleCheckoutStart}
+          directGoToCheckout={directGoToCheckout}
+          onOpenDebugger={handleOpenDebugger}
+        />
+      
+        {/* Promotional Welcome Banner */}
+        <AnimatePresence>
+          <PromotionBanner 
+            showPromotion={showPromotion}
+            setShowPromotion={setShowPromotion}
+          />
+        </AnimatePresence>
         
-        {/* Cart sidebar */}
-        <PanelCart 
-          open={cartOpen}
-          onClose={() => toggleCart()}
+        {/* Store Layout - Search, Filter Sidebar, and Panel Cards */}
+        <StoreLayout 
+          panels={panels}
+          isLoading={isLoading}
+          isSearching={isSearching}
+          searchLocation={searchLocation}
+          setSearchLocation={setSearchLocation}
+          selectedLocation={selectedLocation}
+          filters={filters}
+          handleFilterChange={handleFilterChange}
+          handleSearch={handleSearch}
+          handleClearLocation={handleClearLocation}
           cartItems={cartItems}
-          onRemoveItem={handleRemoveFromCart}
-          onChangeDuration={handleChangeDuration}
-          onCheckout={handleProceedToCheckout}
+          onAddToCart={handleAddToCart}
         />
-        
-        {/* Debugger modal */}
-        <CartDebugger 
-          open={isDebuggerOpen}
-          onClose={() => setIsDebuggerOpen(false)}
-        />
-      </div>
-    </StoreLayout>
+      </motion.div>
+      
+      {/* Modal de diagnóstico - Fixed with proper accessibility attributes */}
+      <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
+        <DialogContent className="sm:max-w-md p-0">
+          <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
+    </Layout>
   );
 }

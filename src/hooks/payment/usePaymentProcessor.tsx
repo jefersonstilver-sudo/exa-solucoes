@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { usePaymentValidation } from './usePaymentValidation';
@@ -34,13 +33,12 @@ interface PaymentOptions {
 export const usePaymentProcessor = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   const { validatePaymentRequirements } = usePaymentValidation();
-  const { simulateSuccessfulPayment } = usePaymentSimulator();
+  const { isCreatingPayment, setIsCreatingPayment, simulateSuccessfulPayment } = usePaymentSimulator();
   const { createOrder } = useOrderCreation();
   
   // Inicializa MercadoPago
-  const { isSDKLoaded, isError, createCheckout } = useMercadoPago({
+  const { isSDKLoaded } = useMercadoPago({
     publicKey: MP_PUBLIC_KEY
   });
 
@@ -91,7 +89,8 @@ export const usePaymentProcessor = () => {
       // Validar IDs de painéis
       const invalidPanelIds = cartItems.filter(item => 
         !item.panel.id || 
-        typeof item.panel.id !== 'string'
+        typeof item.panel.id !== 'string' || 
+        !item.panel.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
       );
       
       if (invalidPanelIds.length > 0) {
@@ -176,36 +175,8 @@ export const usePaymentProcessor = () => {
           throw new Error('Resposta inválida do processador de pagamento');
         }
         
-        // No ambiente de produção, usar MercadoPago SDK
-        // Em um ambiente de produção, redirecionaríamos para o MercadoPago usando o SDK
-        if (data.preference_id) {
-          console.log("Redirecionando para checkout do MercadoPago", data.preference_id);
-          
-          // Salvar ID da preference para posterior verificação
-          localStorage.setItem('last_mercadopago_preference', data.preference_id);
-          localStorage.setItem('pending_order_id', pedido.id);
-          
-          // Usar o SDK do MercadoPago para checkout
-          if (isSDKLoaded && !isError) {
-            // Usar o método createCheckout do hook useMercadoPago
-            createCheckout({
-              preferenceId: data.preference_id,
-              redirectMode: true // use true para redirecionar, false para modal
-            });
-          } else {
-            // Fallback para redirecionamento direto
-            window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${data.preference_id}`;
-          }
-          
-          logCheckoutEvent(
-            CheckoutEvent.PAYMENT_REDIRECT,
-            LogLevel.INFO,
-            "Redirecionando para checkout do MercadoPago",
-            { preferenceId: data.preference_id, orderId: pedido.id }
-          );
-          
-          return;
-        }
+        // Em um ambiente de produção, redirecionaríamos para o MercadoPago
+        // window.location.href = data.init_point;
         
         // Para fins de teste, simulamos um pagamento bem-sucedido
         console.log("Simulando pagamento bem-sucedido para pedido:", pedido.id);
@@ -230,7 +201,7 @@ export const usePaymentProcessor = () => {
         
         // Registrar navegação e redirecionar
         logNavigation(`/pedido-confirmado?id=${pedido.id}`, 'navigate', true);
-        navigate(`/pedido-confirmado?id=${pedido.id}&status=approved`);
+        navigate(`/pedido-confirmado?id=${pedido.id}`);
         
       } catch (paymentError: any) {
         console.error('Erro ao processar pagamento:', paymentError);
