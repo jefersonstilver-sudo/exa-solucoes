@@ -2,7 +2,9 @@
 import React from 'react';
 import { XCircle, AlertTriangle, CheckCircle, Info, Clock } from 'lucide-react';
 
-export const getIconForLogLevel = (level: string) => {
+type LogLevelIcon = React.ReactNode;
+
+export const getIconForLogLevel = (level: string): LogLevelIcon => {
   switch(level) {
     case 'error':
       return <XCircle className="h-4 w-4 text-red-500" />;
