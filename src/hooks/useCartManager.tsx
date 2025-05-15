@@ -5,7 +5,11 @@ import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
 import { Panel } from '@/types/panel';
 import { CartItem as CartItemType } from './cart/useCartState';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { saveCartToStorage } from '@/services/cartStorageService';
+import { 
+  saveCartToStorage, 
+  loadCartFromStorage, 
+  CART_STORAGE_KEY 
+} from '@/services/cartStorageService';
 
 export interface CartItem {
   panel: Panel;
@@ -21,7 +25,8 @@ export const useCartManager = () => {
     cartAnimation,
     setCartAnimation,
     isNavigating,
-    setIsNavigating
+    setIsNavigating,
+    initialLoadDone
   } = useCartState();
   
   const {
@@ -47,7 +52,7 @@ export const useCartManager = () => {
   });
 
   // Log para diagnóstico do estado atual do carrinho
-  if (cartItems.length > 0) {
+  if (initialLoadDone && cartItems.length > 0) {
     // Verifica se o estado atual do carrinho é válido
     const cartValid = cartItems.every(item => 
       item && 
@@ -57,25 +62,58 @@ export const useCartManager = () => {
       typeof item.duration === 'number'
     );
     
+    // Verificação de consistência entre estado e localStorage
+    const localStorageCart = localStorage.getItem(CART_STORAGE_KEY);
+    const localStorageParsed = localStorageCart ? JSON.parse(localStorageCart) : [];
+    const storageCount = Array.isArray(localStorageParsed) ? localStorageParsed.length : 0;
+    
+    console.log("useCartManager: Verificação de integridade:", {
+      cartItemsCount: cartItems.length,
+      localStorageCount: storageCount,
+      match: cartItems.length === storageCount
+    });
+    
     // Se não for válido, registra um erro crítico
     if (!cartValid) {
       logCheckoutEvent(
         CheckoutEvent.SAVE_CART,
         LogLevel.ERROR,
-        `ESTADO CRÍTICO: Carrinho com estrutura inválida detectado em useCartManager`,
+        `ESTADO CRÍTICO: Carrinho com estrutura inválida detectado em useCartManager [${CART_STORAGE_KEY}]`,
         { 
           cartItems: JSON.stringify(cartItems),
-          cartItemsCount: cartItems.length 
+          cartItemsCount: cartItems.length,
+          storageKey: CART_STORAGE_KEY
+        }
+      );
+    } else if (cartItems.length !== storageCount) {
+      // Se houver discrepância entre estado e localStorage
+      console.error("DISCREPÂNCIA: Estado do carrinho e localStorage não coincidem", {
+        stateCount: cartItems.length,
+        storageCount
+      });
+      
+      // Forçar sincronização para resolver a discrepância
+      saveCartToStorage(cartItems);
+      
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART,
+        LogLevel.WARNING,
+        `DISCREPÂNCIA: Estado do carrinho e localStorage não coincidem [${CART_STORAGE_KEY}]. Sincronizando...`,
+        { 
+          stateCount: cartItems.length,
+          storageCount,
+          action: "forced_sync"
         }
       );
     } else {
       // Se for válido, registra o estado normal
       logCheckoutEvent(
-        CheckoutEvent.SAVE_CART,
+        CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
-        `Cart state in useCartManager: ${cartItems.length} items`,
+        `Estado do carrinho em useCartManager [${CART_STORAGE_KEY}]: ${cartItems.length} itens`,
         { 
           cartItemsCount: cartItems.length,
+          storageKey: CART_STORAGE_KEY,
           itemSummary: cartItems.map(item => ({
             id: item.panel.id,
             name: item.panel.buildings?.nome || 'Unknown',
@@ -83,9 +121,6 @@ export const useCartManager = () => {
           }))
         }
       );
-      
-      // Garantir que o carrinho está salvo no localStorage
-      saveCartToStorage(cartItems);
     }
   }
 
@@ -108,6 +143,13 @@ export const useCartManager = () => {
     
     // Checkout
     handleProceedToCheckout,
-    isNavigating
+    isNavigating,
+    
+    // Debugging and testing
+    reloadCartFromStorage: () => {
+      const loadedCart = loadCartFromStorage();
+      setCartItems(loadedCart);
+      return loadedCart;
+    }
   };
 };

@@ -13,7 +13,7 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { useToast } from '@/hooks/use-toast';
 import { ClientOnly } from '@/components/ui/client-only';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { isCartEmpty, loadCartFromStorage } from '@/services/cartStorageService';
+import { isCartEmpty, loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
 
 const PlanSelection = () => {
   const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
@@ -34,17 +34,22 @@ const PlanSelection = () => {
       console.log("PlanSelection: Verificando carrinho no localStorage");
       setIsPageLoading(true);
       
+      // Verificação direta do localStorage
+      const rawCart = localStorage.getItem(CART_STORAGE_KEY);
+      console.log(`PlanSelection: Valor direto do localStorage [${CART_STORAGE_KEY}]:`, rawCart);
+      
       // Verificação robusta do carrinho
       if (isCartEmpty()) {
-        console.log("PlanSelection: Carrinho vazio ou inválido detectado");
+        console.log(`PlanSelection: Carrinho vazio ou inválido detectado [${CART_STORAGE_KEY}]`);
         
         logCheckoutEvent(
           CheckoutEvent.LOAD_CART, 
           LogLevel.WARNING, 
-          "ALERTA: Carrinho vazio ou inválido detectado na página de seleção de plano - redirecionando", 
+          `ALERTA: Carrinho vazio ou inválido detectado [${CART_STORAGE_KEY}] na página de seleção de plano - redirecionando`, 
           { 
             timestamp: Date.now(),
-            localStorageValue: localStorage.getItem('panelCart')
+            storageKey: CART_STORAGE_KEY,
+            localStorageValue: rawCart
           }
         );
         
@@ -61,14 +66,15 @@ const PlanSelection = () => {
       
       // Carregar carrinho com função aprimorada
       const parsedCart = loadCartFromStorage();
+      console.log("PlanSelection: Carrinho carregado:", parsedCart);
       
       // Verificar explicitamente se temos itens no carrinho
       if (parsedCart.length === 0) {
         logCheckoutEvent(
           CheckoutEvent.LOAD_CART, 
           LogLevel.WARNING, 
-          "Carrinho vazio após carregamento - redirecionando para loja", 
-          { timestamp: Date.now() }
+          `Carrinho vazio após carregamento [${CART_STORAGE_KEY}] - redirecionando para loja`, 
+          { timestamp: Date.now(), storageKey: CART_STORAGE_KEY }
         );
         
         toast({
@@ -85,21 +91,25 @@ const PlanSelection = () => {
       logCheckoutEvent(
         CheckoutEvent.LOAD_CART, 
         LogLevel.SUCCESS, 
-        `Carrinho carregado com sucesso na página de seleção de plano: ${parsedCart.length} itens`, 
-        { itemCount: parsedCart.length, timestamp: Date.now() }
+        `Carrinho carregado com sucesso [${CART_STORAGE_KEY}] na página de seleção de plano: ${parsedCart.length} itens`, 
+        { 
+          itemCount: parsedCart.length, 
+          timestamp: Date.now(),
+          storageKey: CART_STORAGE_KEY
+        }
       );
       
       setHasCart(true);
       
     } catch (e) {
       // Tratamento robusto de erro
-      console.error("Erro crítico ao carregar carrinho:", e);
+      console.error(`Erro crítico ao carregar carrinho [${CART_STORAGE_KEY}]:`, e);
       
       logCheckoutEvent(
         CheckoutEvent.LOAD_CART, 
         LogLevel.ERROR, 
-        "ERRO CRÍTICO ao carregar carrinho na página de seleção de plano", 
-        { error: String(e), timestamp: Date.now() }
+        `ERRO CRÍTICO ao carregar carrinho [${CART_STORAGE_KEY}] na página de seleção de plano`, 
+        { error: String(e), timestamp: Date.now(), storageKey: CART_STORAGE_KEY }
       );
       
       toast({

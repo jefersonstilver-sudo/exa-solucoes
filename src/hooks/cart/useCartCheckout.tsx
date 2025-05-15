@@ -7,7 +7,7 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 import { logNavigation } from '@/services/navigationAuditService';
 import { navigateSafely, isCurrentPath } from '@/services/navigationService';
 import { logCheckoutInitiation, logEmptyCartAttempt, logCheckoutStart, logCheckoutError, logMultipleCheckoutAttempt } from '@/services/checkoutLogService';
-import { saveCartToStorage } from '@/services/cartStorageService';
+import { saveCartToStorage, loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
 
 interface UseCartCheckoutProps {
   cartItems: { panel: Panel; duration: number }[];
@@ -29,10 +29,12 @@ export const useCartCheckout = ({
     logCheckoutEvent(
       CheckoutEvent.CHECKOUT_INITIATION,
       LogLevel.INFO,
-      `Iniciando checkout [DETALHADO] - Total de itens: ${cartItems.length}, IDs: ${cartItems.map(item => item.panel.id).join(', ')}`,
+      `Iniciando checkout [DETALHADO] - Total de itens em estado: ${cartItems.length}`,
       { 
         itemCount: cartItems.length,
         isProcessed: isCheckoutProcessed,
+        currentPath: window.location.pathname,
+        storageKey: CART_STORAGE_KEY,
         items: cartItems.map(item => ({
           panelId: item.panel.id,
           building: item.panel.buildings?.nome || 'Desconhecido',
@@ -53,17 +55,61 @@ export const useCartCheckout = ({
       return;
     }
     
-    // VALIDAÇÃO RIGOROSA - Verificar se há itens no carrinho
+    // VERIFICAÇÃO ADICIONAL - Verificar o localStorage diretamente
+    const localStorageCart = localStorage.getItem(CART_STORAGE_KEY);
+    console.log("Verificação direta do localStorage antes de checkout:", localStorageCart);
+    
+    // Verificação de localStorage e do estado
+    if (!localStorageCart || localStorageCart === '[]') {
+      console.error("ERRO CRÍTICO: localStorage vazio antes do checkout");
+      logCheckoutEvent(
+        CheckoutEvent.EMPTY_CART_ATTEMPT,
+        LogLevel.ERROR,
+        `ERRO CRÍTICO: localStorage vazio [${CART_STORAGE_KEY}] antes do checkout`,
+        { 
+          timestamp: Date.now(),
+          storageKey: CART_STORAGE_KEY,
+          localStorageValue: localStorageCart
+        }
+      );
+      
+      // Tente recarregar do localStorage como último recurso
+      try {
+        const reloadedCart = loadCartFromStorage();
+        if (reloadedCart && reloadedCart.length > 0) {
+          console.log("Recuperação de emergência: carrinho recuperado do localStorage", reloadedCart);
+          // Continuar com o checkout usando os dados recuperados
+        } else {
+          toast({
+            title: "Carrinho vazio",
+            description: "Adicione painéis ao seu carrinho para completar a compra.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (e) {
+        console.error("Falha na recuperação de emergência do carrinho", e);
+        toast({
+          title: "Carrinho vazio",
+          description: "Adicione painéis ao seu carrinho para completar a compra.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // VERIFICAÇÃO DE ESTADO - Verificar se há itens no estado
     if (!cartItems || cartItems.length === 0) {
       // Log detalhado do erro
       logCheckoutEvent(
         CheckoutEvent.EMPTY_CART_ATTEMPT,
         LogLevel.ERROR,
-        "ERRO CRÍTICO: Tentativa de checkout com carrinho vazio",
+        `ERRO CRÍTICO: Tentativa de checkout com carrinho vazio (estado) [${CART_STORAGE_KEY}]`,
         { 
           timestamp: Date.now(),
+          storageKey: CART_STORAGE_KEY,
           cartState: JSON.stringify(cartItems),
-          localStorageState: localStorage.getItem('panelCart')
+          localStorageState: localStorage.getItem(CART_STORAGE_KEY)
         }
       );
       
@@ -102,19 +148,28 @@ export const useCartCheckout = ({
       // Log checkout start
       logCheckoutStart(cartItems.length);
       
-      // Salvar carrinho com método melhorado
+      // VERIFICAÇÃO FINAL - Salvar carrinho com validação rigorosa
+      console.log("Salvando carrinho final antes do checkout:", cartItems);
       const saveSuccess = saveCartToStorage(cartItems);
       
       if (!saveSuccess) {
         throw new Error("Falha ao salvar carrinho no localStorage");
       }
       
+      // Verificação extra do carrinho após salvar
+      const verificationCart = localStorage.getItem(CART_STORAGE_KEY);
+      console.log("Verificação após salvar antes do checkout:", verificationCart);
+      
+      if (!verificationCart || verificationCart === '[]') {
+        throw new Error("Falha crítica: carrinho ainda vazio após tentativa de salvar");
+      }
+      
       // Log navigation
       logCheckoutEvent(
         CheckoutEvent.NAVIGATE_TO_PLAN, 
         LogLevel.INFO, 
-        `Tentativa de navegação #1 para seleção de plano`,
-        { timestamp: Date.now() }
+        `Tentativa de navegação #1 para seleção de plano [${CART_STORAGE_KEY}]`,
+        { timestamp: Date.now(), storageKey: CART_STORAGE_KEY }
       );
       
       // Register navigation and navigate to plan selection

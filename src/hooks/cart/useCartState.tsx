@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
+import { loadCartFromStorage, saveCartToStorage } from '@/services/cartStorageService';
 
 export interface CartItem {
   panel: Panel;
@@ -11,34 +12,30 @@ export const useCartState = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartAnimation, setCartAnimation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   
-  // Load cart from localStorage on component mount
+  // Load cart from localStorage on component mount - garantindo apenas uma vez
   useEffect(() => {
-    const loadCart = () => {
-      try {
-        const savedCart = localStorage.getItem('panelCart');
-        if (savedCart) {
-          const parsedCart = JSON.parse(savedCart);
-          setCartItems(parsedCart);
-          console.log("Carrinho carregado do localStorage:", parsedCart.length, "itens");
-        }
-      } catch (e) {
-        console.error('Falha ao carregar o carrinho do localStorage', e);
-      }
-    };
+    if (initialLoadDone) return;
     
-    loadCart();
-  }, []);
+    console.log("useCartState: Carregando carrinho do localStorage (load inicial)");
+    const loadedCart = loadCartFromStorage();
+    setCartItems(loadedCart);
+    setInitialLoadDone(true);
+    
+    console.log("useCartState: Carrinho inicial carregado:", loadedCart);
+  }, [initialLoadDone]);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes using our improved service
   useEffect(() => {
-    try {
-      localStorage.setItem('panelCart', JSON.stringify(cartItems));
-      console.log("Carrinho salvo no localStorage:", cartItems.length, "itens");
-    } catch (e) {
-      console.error('Falha ao salvar o carrinho no localStorage', e);
+    if (!initialLoadDone) {
+      // Evita salvar antes do carregamento inicial
+      return;
     }
-  }, [cartItems]);
+    
+    console.log("useCartState: Salvando carrinho no localStorage devido à mudança no estado:", cartItems);
+    saveCartToStorage(cartItems);
+  }, [cartItems, initialLoadDone]);
 
   // Keep cart open when items are added
   useEffect(() => {
@@ -62,6 +59,7 @@ export const useCartState = () => {
     cartAnimation,
     setCartAnimation,
     isNavigating,
-    setIsNavigating
+    setIsNavigating,
+    initialLoadDone
   };
 };
