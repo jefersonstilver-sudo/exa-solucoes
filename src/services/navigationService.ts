@@ -3,6 +3,8 @@ import { logNavigation } from '@/services/navigationAuditService';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { useNavigate } from 'react-router-dom';
 
+type NavigationMethod = 'navigate' | 'direct' | 'history' | 'reload' | 'location' | 'error';
+
 /**
  * Navigate safely to a URL using the most reliable method based on context.
  * Falls back to window.location only when necessary.
@@ -57,7 +59,7 @@ export const useSafeNavigation = () => {
 /**
  * Log a navigation event with consistent formatting
  */
-export const logNavigationEvent = (url: string, method: 'navigate' | 'direct' | 'history' | 'reload' | 'location' | 'error') => {
+export const logNavigationEvent = (url: string, method: NavigationMethod) => {
   logNavigation(url, method, true);
   logCheckoutEvent(
     CheckoutEvent.NAVIGATION_EVENT,

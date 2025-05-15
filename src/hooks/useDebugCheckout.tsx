@@ -1,40 +1,77 @@
 
-import React from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
 
-export const useDebugCheckout = (cartItems: any[]) => {
-  const [debugModalOpen, setDebugModalOpen] = React.useState(false);
+interface CartItem {
+  panel: Panel;
+  duration: number;
+}
 
-  // Backup navigation function - simplified for reliability
+export const useDebugCheckout = (cartItems: CartItem[]) => {
+  const [debugModalOpen, setDebugModalOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  /**
+   * Função para navegar diretamente para o checkout sem passar pelos fluxos normais
+   */
   const directGoToCheckout = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Log para rastreamento e diagnóstico
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      "Botão de checkout direto clicado",
+      { cartItemsCount: cartItems.length }
+    );
     
     if (cartItems.length === 0) {
+      logCheckoutEvent(
+        CheckoutEvent.CHECKOUT_ERROR,
+        LogLevel.ERROR,
+        "Tentativa de checkout direto com carrinho vazio"
+      );
       return;
     }
     
-    logCheckoutEvent(
-      CheckoutEvent.NAVIGATE_TO_PLAN,
-      LogLevel.INFO,
-      "Navegação direta para seleção de plano"
-    );
-    
     try {
-      // Salvar carrinho
+      // Garantir que o carrinho está salvo no localStorage
       localStorage.setItem('panelCart', JSON.stringify(cartItems));
       
-      // Registrar na auditoria
-      logNavigation('/selecionar-plano', 'direct', true);
+      // Definir um plano padrão para teste
+      localStorage.setItem('selectedPlan', '3');
       
-      // Navegação direta - método mais confiável
-      window.location.href = '/selecionar-plano';
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        "Navegação direta para checkout",
+        { url: '/checkout', cartItemsCount: cartItems.length }
+      );
+      
+      // Registrar a navegação e navegar
+      logNavigation('/checkout', 'direct', true);
+      
+      // Usar navigate do React Router
+      navigate('/checkout');
     } catch (error) {
-      console.error("Erro na navegação direta:", error);
-      logNavigation('/selecionar-plano', 'direct', false, String(error));
+      console.error("Erro na navegação direta para checkout:", error);
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_ERROR,
+        LogLevel.ERROR,
+        "Erro na navegação direta para checkout",
+        { error: String(error) }
+      );
+      
+      // Fallback para navegação via window.location
+      logNavigation('/checkout', 'location', true);
+      window.location.href = '/checkout';
     }
   };
-
+  
   return {
     debugModalOpen,
     setDebugModalOpen,

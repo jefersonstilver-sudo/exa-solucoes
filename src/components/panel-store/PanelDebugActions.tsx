@@ -16,6 +16,28 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
   onProceedToCheckout,
   directGoToCheckout
 }) => {
+  // Adicionamos um handler para o botão de diagnóstico
+  const handleOpenDebug = () => {
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      "Botão de diagnóstico clicado"
+    );
+  };
+
+  // Handler específico para navegação forçada
+  const handleForcedNavigation = () => {
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATE_TO_PLAN,
+      LogLevel.DEBUG,
+      "Navegação forçada via window.location"
+    );
+    // Usamos 'location' como tipo específico de navegação
+    logNavigation('/selecionar-plano', 'location', true);
+    // Navegação forçada usando window.location
+    window.location.href = '/selecionar-plano';
+  };
+  
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center">
@@ -23,7 +45,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
         <Button
           size="sm"
           variant="outline"
-          onClick={() => {}}
+          onClick={handleOpenDebug}
           className="h-7 text-xs flex items-center"
         >
           <Bug className="h-3 w-3 mr-1" />
@@ -52,15 +74,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
           <Button 
             size="sm"
             variant="destructive"
-            onClick={() => {
-              logCheckoutEvent(
-                CheckoutEvent.NAVIGATE_TO_PLAN,
-                LogLevel.DEBUG,
-                "Navegação forçada via window.location"
-              );
-              logNavigation('/selecionar-plano', 'location', true);
-              window.location.href = '/selecionar-plano';
-            }}
+            onClick={handleForcedNavigation}
             className="text-xs"
           >
             Navegação forçada

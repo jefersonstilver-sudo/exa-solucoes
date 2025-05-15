@@ -5,12 +5,13 @@ import Layout from '@/components/layout/Layout';
 import { usePanelStore } from '@/hooks/usePanelStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import CheckoutDebugger from '@/components/debug/CheckoutDebugger';
 import { useDebugCheckout } from '@/hooks/useDebugCheckout';
 import PanelDebugActions from '@/components/panel-store/PanelDebugActions';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
   // Use our custom hooks for state management
@@ -59,6 +60,17 @@ export default function PanelStore() {
     }
   }, [isLoggedIn, cartItems.length]);
 
+  // Log quando handleProceedToCheckout é chamado
+  const handleCheckoutStart = () => {
+    logCheckoutEvent(
+      CheckoutEvent.CHECKOUT_INITIATION,
+      LogLevel.INFO,
+      "Iniciando checkout a partir da loja",
+      { cartItemCount: cartItems.length }
+    );
+    handleProceedToCheckout();
+  };
+
   if (error) {
     return (
       <Layout>
@@ -84,7 +96,7 @@ export default function PanelStore() {
       onRemoveFromCart={handleRemoveFromCart}
       onClearCart={handleClearCart}
       onChangeDuration={handleChangeDuration}
-      onProceedToCheckout={handleProceedToCheckout}
+      onProceedToCheckout={handleCheckoutStart}
     >
       <motion.div 
         initial={{ opacity: 0 }}
@@ -95,7 +107,7 @@ export default function PanelStore() {
         {/* Debug panel for diagnostics */}
         <PanelDebugActions 
           cartItemsCount={cartItems.length}
-          onProceedToCheckout={handleProceedToCheckout}
+          onProceedToCheckout={handleCheckoutStart}
           directGoToCheckout={directGoToCheckout}
         />
       
@@ -127,6 +139,7 @@ export default function PanelStore() {
       {/* Modal de diagnóstico */}
       <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
         <DialogContent className="sm:max-w-md p-0">
+          <DialogTitle className="sr-only">Diagnóstico de Checkout</DialogTitle>
           <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
         </DialogContent>
       </Dialog>

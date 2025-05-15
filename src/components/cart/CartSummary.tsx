@@ -23,6 +23,9 @@ const CartSummary: React.FC<CartSummaryProps> = ({
   isEmpty
 }) => {
   const handleCheckoutClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     // Log para diagnóstico
     logCheckoutEvent(
       CheckoutEvent.AUDIT,
