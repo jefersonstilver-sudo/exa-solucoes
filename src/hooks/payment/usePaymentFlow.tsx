@@ -56,13 +56,11 @@ export const usePaymentFlow = () => {
     handleClearCart,
     paymentMethod = 'credit_card'
   }: ProcessPaymentOptions) => {
-    // Normalize and validate payment method - ensure it's a valid value
-    const normalizedPaymentMethod = !paymentMethod || paymentMethod === 'undefined' 
-      ? 'credit_card' 
-      : (paymentMethod === 'pix' ? 'pix' : 'credit_card');
+    // Validate and normalize payment method for consistency
+    const paymentMethodNormalized = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
     // Log detailed payment method info for debugging
-    console.log(`[Payment Flow] Starting processing with method: ${normalizedPaymentMethod} (original: ${paymentMethod})`);
+    console.log(`[Payment Flow] Starting processing with method: ${paymentMethodNormalized} (original: ${paymentMethod})`);
     
     setIsCreatingPayment(true);
     
@@ -71,8 +69,8 @@ export const usePaymentFlow = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Starting payment processing: R$${totalPrice} | Method: ${normalizedPaymentMethod}`,
-        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length, paymentMethod: normalizedPaymentMethod }
+        `Starting payment processing: R$${totalPrice} | Method: ${paymentMethodNormalized}`,
+        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length, paymentMethod: paymentMethodNormalized }
       );
       
       // Display processing toast for better user feedback
@@ -92,12 +90,6 @@ export const usePaymentFlow = () => {
         setIsCreatingPayment(false);
         sonnerToast.dismiss();
         sonnerToast.error("Não foi possível processar o pagamento");
-        logCheckoutEvent(
-          CheckoutEvent.PAYMENT_ERROR,
-          LogLevel.ERROR,
-          "Payment requirements not met",
-          { acceptTerms }
-        );
         return;
       }
       
@@ -116,7 +108,7 @@ export const usePaymentFlow = () => {
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
         `Order created with ID: ${pedido.id}`,
-        { pedidoId: pedido.id, paymentMethod: normalizedPaymentMethod }
+        { pedidoId: pedido.id, paymentMethod: paymentMethodNormalized }
       );
       
       toast({
@@ -143,14 +135,14 @@ export const usePaymentFlow = () => {
         },
         userId: sessionUser.id,
         returnUrl: currentUrl,
-        paymentMethod: normalizedPaymentMethod // Send the normalized payment method explicitly
+        paymentMethod: paymentMethodNormalized // Send normalized value
       };
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
         "Sending data for payment processing",
-        { pedidoId: pedido.id, paymentMethod: normalizedPaymentMethod }
+        { pedidoId: pedido.id, paymentMethod: paymentMethodNormalized }
       );
       
       // Call Edge Function to process payment
@@ -174,12 +166,12 @@ export const usePaymentFlow = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Redirecting to MercadoPago checkout with preferenceId: ${data.preference_id}`,
-        { preferenceId: data.preference_id, method: normalizedPaymentMethod }
+        `Redirecting to MercadoPago checkout with preferenceId: ${data.preference_id} | Method: ${paymentMethodNormalized}`,
+        { preferenceId: data.preference_id, method: paymentMethodNormalized }
       );
       
       // Redirect to MercadoPago checkout with specific payment method
-      redirectToMercadoPago(data.preference_id, normalizedPaymentMethod);
+      redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
       
       // Don't set isCreatingPayment as false here because redirection will happen
       

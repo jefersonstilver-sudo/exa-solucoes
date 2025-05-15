@@ -30,30 +30,19 @@ export const useMercadoPagoCheckout = () => {
       throw new Error('Preference ID is required for MercadoPago redirect');
     }
     
-    // Normalize payment method to valid values only
-    const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
+    // Validate and log the payment method for debugging
+    console.log(`[MercadoPago] Redirecting with payment method: ${paymentMethod}`);
     
-    // Register redirection event with normalized payment method
+    // Log event with payment method for tracking
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Starting redirection to Mercado Pago with method ${normalizedPaymentMethod}`,
-      { preferenceId, paymentMethod: normalizedPaymentMethod }
+      `Starting redirection to Mercado Pago with method ${paymentMethod}`,
+      { preferenceId, paymentMethod }
     );
     
-    console.log(`[MercadoPago] Redirecting to payment with method: ${normalizedPaymentMethod}`);
-    
-    // Show confirmation toast before redirection
-    sonnerToast.dismiss();
-    sonnerToast.success(normalizedPaymentMethod === 'pix' 
-      ? "Redirecionando para pagamento PIX..." 
-      : "Redirecionando para pagamento...");
-    
-    // Small timeout to ensure the toast is displayed before redirection
-    setTimeout(() => {
-      // Use the unified redirection service with normalized payment method
-      handleMercadoPagoRedirect(preferenceId, normalizedPaymentMethod);
-    }, 800);
+    // Simplistic direct redirect - more reliable than using the SDK
+    handleMercadoPagoRedirect(preferenceId, paymentMethod);
   };
 
   return {
