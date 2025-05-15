@@ -23,6 +23,12 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
   // Map toggle state
   const [mapOpen, setMapOpen] = useState(false);
 
+  // Define a search function
+  const handleSearch = async (location: string) => {
+    // This is just a placeholder - the actual implementation will come from the parent
+    console.log("Search requested for:", location);
+  };
+
   return (
     <div className="space-y-6 sticky top-24">
       {/* Map Toggle Button */}
@@ -75,7 +81,7 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
             <PanelFilters 
               filters={filters} 
               onFilterChange={handleFilterChange}
-              onSearch={() => {}}
+              onSearch={handleSearch}
               loading={isLoading || isSearching}
             />
           </SheetContent>
@@ -93,7 +99,7 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
             <PanelFilters 
               filters={filters}
               onFilterChange={handleFilterChange}
-              onSearch={() => {}}
+              onSearch={handleSearch}
               loading={isLoading || isSearching}
               compact={true}
             />

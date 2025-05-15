@@ -1,23 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Panel } from '@/types/panel';
-import { Building } from '@/types/building';
+import { Building } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
 import { getPanelBasePrice } from '@/utils/priceUtils';
-
-interface FilterState {
-  location: {
-    enabled: boolean;
-    radius: number;
-  };
-  price: {
-    min: number | null;
-    max: number | null;
-  };
-  status: {
-    active: boolean;
-    inactive: boolean;
-  };
-}
+import { FilterOptions } from '@/types/filter';
 
 interface PanelDisplayInfo {
   id: string;
@@ -40,26 +26,35 @@ interface SearchLocation {
   };
 }
 
-const defaultFilters: FilterState = {
-  location: {
-    enabled: false,
-    radius: 5000,
-  },
-  price: {
-    min: null,
-    max: null,
-  },
-  status: {
-    active: true,
-    inactive: false,
-  },
+// Create a FilterState that matches FilterOptions structure
+const defaultFilters: FilterOptions = {
+  radius: 5000,
+  neighborhood: '',
+  status: [],
+  buildingProfile: [],
+  facilities: [],
+  minMonthlyViews: 0,
+  buildingAge: 'all',
+  buildingType: 'all'
 };
 
-export const usePanelStore = () => {
+export interface UsePanelStoreReturn {
+  panels: Panel[] | null;
+  isLoading: boolean;
+  isSearching: boolean;
+  filters: FilterOptions;
+  searchLocation: SearchLocation | null;
+  emptyReason: string | null;
+  handleFilterChange: (filters: Partial<FilterOptions>) => void;
+  searchByLocation: (location: string) => Promise<void>;
+  getPanelDisplayInfo: (panel: Panel) => PanelDisplayInfo;
+}
+
+export const usePanelStore = (): UsePanelStoreReturn => {
   const [panels, setPanels] = useState<Panel[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [filters, setFilters] = useState<FilterOptions>(defaultFilters);
   const [searchLocation, setSearchLocation] = useState<SearchLocation | null>(null);
   const [emptyReason, setEmptyReason] = useState<string | null>(null);
   const { toast } = useToast();
@@ -104,21 +99,6 @@ export const usePanelStore = () => {
     
     const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    
-    const sql = `
-      SELECT
-        p.*
-      FROM
-        painel p
-      JOIN
-        buildings b ON p.building_id = b.id
-      WHERE
-        ST_DWithin(
-          ST_MakePoint(b.longitude, b.latitude)::geography,
-          ST_MakePoint(${longitude}, ${latitude})::geography,
-          ${radius}
-        );
-    `;
     
     try {
       const response = await fetch(`${supabaseUrl}/rest/v1/rpc/nearby_panels`, {
@@ -221,11 +201,7 @@ export const usePanelStore = () => {
           // Update filter to show we're filtering by location
           setFilters(prev => ({
             ...prev,
-            location: {
-              ...prev.location,
-              enabled: true,
-              radius: 5000
-            }
+            radius: 5000
           }));
         } else {
           // No panels found at this location
@@ -253,7 +229,7 @@ export const usePanelStore = () => {
   };
   
   // Handle filter changes
-  const handleFilterChange = (newFilters: Partial<FilterState>) => {
+  const handleFilterChange = (newFilters: Partial<FilterOptions>): void => {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
@@ -274,7 +250,7 @@ export const usePanelStore = () => {
       address: buildingAddress,
       district: buildingDistrict,
       imageUrl: buildingImageUrl,
-      status: panel.status,
+      status: panel.status || 'unknown',
       resolution: panel.resolucao || '4K',
       mode: panel.modo || 'Interno',
       lastSync: panel.ultima_sync ? new Date(panel.ultima_sync) : null,

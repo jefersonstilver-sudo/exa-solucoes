@@ -14,8 +14,10 @@ export default function PanelStore() {
   const { 
     panels, 
     isLoading, 
+    isSearching,
     filters,
-    handleFilterChange
+    handleFilterChange,
+    searchByLocation
   } = usePanelStore();
 
   const { 
@@ -85,7 +87,7 @@ export default function PanelStore() {
   };
 
   return (
-    <StoreLayout>
+    <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Sidebar com filtros */}
@@ -99,6 +101,7 @@ export default function PanelStore() {
               filters={filters}
               handleFilterChange={handleFilterChange}
               isLoading={isLoading}
+              isSearching={isSearching}
             />
           </motion.div>
           
@@ -123,7 +126,7 @@ export default function PanelStore() {
           cartItems={cartItems}
           onRemove={handleRemoveFromCart}
           onChangeDuration={handleChangeDuration}
-          onCheckout={handleProceedToCheckout}
+          onProceedToCheckout={handleProceedToCheckout}
         />
         
         {/* Debugger modal */}
@@ -132,6 +135,6 @@ export default function PanelStore() {
           onClose={() => setIsDebuggerOpen(false)}
         />
       </div>
-    </StoreLayout>
+    </div>
   );
 }
