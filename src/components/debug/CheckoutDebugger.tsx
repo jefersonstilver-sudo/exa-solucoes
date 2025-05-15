@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,7 +17,7 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
   const [healthStatus, setHealthStatus] = useState<any>({});
   
   useEffect(() => {
-    // Carregar logs ao montar o componente
+    // Load logs when component mounts
     setCheckoutLogs(getAllCheckoutLogs());
     setNavigationLogs(getAllNavigationLogs());
     setHealthStatus(checkNavigationHealth());
@@ -45,11 +44,11 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
     return (
       <div className="bg-gray-50 rounded-md p-3 text-sm">
         <div className="flex justify-between mb-2">
-          <span>Total de logs:</span>
+          <span>Total logs:</span>
           <span className="font-medium">{summary.totalLogs}</span>
         </div>
         <div className="flex justify-between mb-4">
-          <span>Erros:</span>
+          <span>Errors:</span>
           <span className={`font-medium ${summary.errorCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
             {summary.errorCount}
           </span>
@@ -59,7 +58,7 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
           <div>
             <h4 className="font-medium mb-2 text-red-600 flex items-center">
               <AlertTriangle className="h-4 w-4 mr-1" />
-              Erros recentes
+              Recent errors
             </h4>
             <ul className="space-y-1">
               {summary.recentErrors.map((error: any, idx: number) => (
@@ -78,13 +77,13 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
     <div className="max-h-[85vh] overflow-hidden flex flex-col">
       <DialogHeader className="p-4 pb-2">
         <div className="flex items-center justify-between">
-          <DialogTitle>Diagnóstico de Checkout</DialogTitle>
+          <DialogTitle>Checkout Diagnostics</DialogTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
         <DialogDescription>
-          Ferramentas de análise do fluxo de checkout
+          Checkout flow analysis tools
         </DialogDescription>
       </DialogHeader>
 
@@ -97,13 +96,13 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
         <div className="px-4">
           <TabsList className="w-full">
             <TabsTrigger value="checkout" className="flex-1">Checkout</TabsTrigger>
-            <TabsTrigger value="navigation" className="flex-1">Navegação</TabsTrigger>
-            <TabsTrigger value="summary" className="flex-1">Resumo</TabsTrigger>
+            <TabsTrigger value="navigation" className="flex-1">Navigation</TabsTrigger>
+            <TabsTrigger value="summary" className="flex-1">Summary</TabsTrigger>
           </TabsList>
         </div>
         
         <TabsContent value="checkout" className="p-4 mt-2 max-h-[70vh] overflow-y-auto">
-          <h3 className="font-medium mb-3">Logs de Checkout</h3>
+          <h3 className="font-medium mb-3">Logs of Checkout</h3>
           <div className="space-y-2">
             {checkoutLogs.map((log, idx) => (
               <div 
@@ -132,7 +131,7 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
             
             {checkoutLogs.length === 0 && (
               <div className="text-center text-sm text-gray-500 p-4">
-                Nenhum log de checkout registrado
+                No checkout logs registered
               </div>
             )}
           </div>
@@ -140,11 +139,11 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
         
         <TabsContent value="navigation" className="p-4 mt-2 max-h-[70vh] overflow-y-auto">
           <div className="flex items-center mb-3">
-            <h3 className="font-medium">Logs de Navegação</h3>
+            <h3 className="font-medium">Logs of Navigation</h3>
             <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
               healthStatus.status === 'issues' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
             }`}>
-              {healthStatus.status === 'issues' ? 'Com problemas' : 'Saudável'}
+              {healthStatus.status === 'issues' ? 'With issues' : 'Healthy'}
             </span>
           </div>
           
@@ -167,11 +166,11 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
                   </span>
                 </div>
                 <div className="mt-1 flex items-center">
-                  <span className="text-gray-600">De:</span>
+                  <span className="text-gray-600">From:</span>
                   <span className="ml-1 font-mono">{log.from || '/'}</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-gray-600">Para:</span>
+                  <span className="text-gray-600">To:</span>
                   <span className="ml-1 font-mono">{log.to}</span>
                 </div>
                 {log.error && (
@@ -182,34 +181,34 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
             
             {navigationLogs.length === 0 && (
               <div className="text-center text-sm text-gray-500 p-4">
-                Nenhum log de navegação registrado
+                No navigation logs registered
               </div>
             )}
           </div>
         </TabsContent>
         
         <TabsContent value="summary" className="p-4 mt-2">
-          <h3 className="font-medium mb-3">Resumo do Sistema</h3>
+          <h3 className="font-medium mb-3">System Summary</h3>
           
           <div className="space-y-4">
             {getAuditSummary()}
             
             <div className="bg-gray-50 rounded-md p-3 text-sm">
-              <h4 className="font-medium mb-2">Navegação</h4>
+              <h4 className="font-medium mb-2">Navigation</h4>
               <div className="flex justify-between mb-2">
                 <span>Status:</span>
                 <span className={`font-medium ${
                   healthStatus.status === 'issues' ? 'text-red-600' : 'text-green-600'
                 }`}>
-                  {healthStatus.status === 'issues' ? 'Com problemas' : 'Saudável'}
+                  {healthStatus.status === 'issues' ? 'With issues' : 'Healthy'}
                 </span>
               </div>
               <div className="flex justify-between mb-2">
-                <span>Falhas recentes:</span>
+                <span>Recent failures:</span>
                 <span className="font-medium">{healthStatus.recentFailures || 0}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tentativas de checkout:</span>
+                <span>Checkout attempts:</span>
                 <span className="font-medium">{healthStatus.checkoutAttempts || 0}</span>
               </div>
             </div>
@@ -227,7 +226,7 @@ const CheckoutDebugger: React.FC<CheckoutDebuggerProps> = ({ onClose }) => {
                   setHealthStatus({ status: 'healthy', recentFailures: 0, checkoutAttempts: 0 });
                 }}
               >
-                Limpar todos os logs
+                Clear all logs
               </Button>
             </div>
           </div>

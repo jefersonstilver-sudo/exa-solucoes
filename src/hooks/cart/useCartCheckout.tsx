@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
+import { navigateSafely, forceNavigate } from '@/services/navigationService';
 import { logCheckoutInitiation, logEmptyCartAttempt, logCheckoutStart, logCheckoutError, logMultipleCheckoutAttempt } from '@/services/checkoutLogService';
 
 interface UseCartCheckoutProps {
@@ -23,65 +24,77 @@ export const useCartCheckout = ({
   const [isCheckoutProcessed, setIsCheckoutProcessed] = useState(false);
   
   const handleProceedToCheckout = () => {
-    // Log para auditoria - usado para diagnóstico
+    // Log for audit - used for diagnostics
     logCheckoutInitiation(cartItems.length, isCheckoutProcessed);
     
-    // Evitar múltiplos checkouts
+    // Prevent multiple checkouts
     if (isCheckoutProcessed) {
       logMultipleCheckoutAttempt();
-      console.log("Checkout já está sendo processado, ignorando nova tentativa");
+      console.log("Checkout is already being processed, ignoring new attempt");
       return;
     }
     
-    // Verificar se existem itens no carrinho
+    // Check if there are items in the cart
     if (cartItems.length === 0) {
       logEmptyCartAttempt();
       toast({
-        title: "Carrinho vazio",
-        description: "Adicione painéis ao seu carrinho para finalizar a compra.",
+        title: "Empty cart",
+        description: "Add panels to your cart to complete the purchase.",
         variant: "destructive",
       });
       return;
     }
     
     try {
-      // Marcar checkout como em processamento
+      // Mark checkout as in processing
       setIsCheckoutProcessed(true);
       setIsNavigating(true);
       
-      // Fechar carrinho
+      // Close cart
       setCartOpen(false);
       
-      // Log de início do checkout
+      // Log checkout start
       logCheckoutStart(cartItems.length);
       
-      // Salva carrinho no localStorage antes de navegar
+      // Save cart to localStorage before navigating
       localStorage.setItem('panelCart', JSON.stringify(cartItems));
       
-      // Log de navegação
+      // Log navigation
       logCheckoutEvent(
         CheckoutEvent.NAVIGATE_TO_PLAN, 
         LogLevel.INFO, 
-        `Navegação para seleção de plano iniciada`
+        `Navigation to plan selection initiated`
       );
       
-      // Registrar navegação e navegar para seleção de plano
-      logNavigation('/selecionar-plano', 'navigate', true);
-      navigate('/selecionar-plano');
+      // Use React Router for navigation first
+      try {
+        // Register navigation and navigate to plan selection
+        logNavigation('/selecionar-plano', 'navigate', true);
+        navigate('/selecionar-plano');
+      } catch (routerError) {
+        console.error("React Router navigation failed:", routerError);
+        
+        // Fallback to direct navigation
+        logNavigation('/selecionar-plano', 'direct', true);
+        window.location.href = '/selecionar-plano';
+      }
     } catch (error) {
-      // Registrar erro e notificar usuário
+      // Record error and notify user
       logCheckoutError(error);
       
-      console.error("Erro durante checkout:", error);
+      console.error("Error during checkout:", error);
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao processar seu pedido. Por favor, tente novamente.",
+        title: "Error",
+        description: "An error occurred while processing your order. Please try again.",
         variant: "destructive",
       });
       
-      // Resetar estado de processamento
+      // Reset processing state
       setIsCheckoutProcessed(false);
       setIsNavigating(false);
+      
+      // Last resort - force navigation
+      forceNavigate('/selecionar-plano');
     }
   };
   

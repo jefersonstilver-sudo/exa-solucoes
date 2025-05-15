@@ -14,10 +14,22 @@ export const navigateSafely = (url: string): boolean => {
     // Log navigation attempt
     logNavigationEvent(url, 'direct');
     
-    // Use React Router's navigate function if available via hook
-    // This function should be called within a component that has access to React Router context
-    
-    // Direct navigation - fallback method when React Router isn't accessible
+    // Direct navigation method
+    window.location.href = url;
+    return true;
+  } catch (error) {
+    logNavigationError(url, String(error));
+    return false;
+  }
+};
+
+/**
+ * Force navigation to URL using window.location
+ * Used when React Router navigation fails or isn't available
+ */
+export const forceNavigate = (url: string): boolean => {
+  try {
+    logNavigationEvent(url, 'location');
     window.location.href = url;
     return true;
   } catch (error) {
@@ -33,19 +45,18 @@ export const navigateSafely = (url: string): boolean => {
 export const useSafeNavigation = () => {
   const navigate = useNavigate();
   
-  const navigateToRoute = (route: string) => {
+  const navigateToRoute = (route: string): boolean => {
     try {
       logNavigationEvent(route, 'navigate');
       navigate(route);
       return true;
     } catch (error) {
-      console.error("Erro na navegação React Router:", error);
+      console.error("Error in React Router navigation:", error);
       logNavigationError(route, String(error));
       
       // Fallback to direct navigation
       try {
-        window.location.href = route;
-        return true;
+        return forceNavigate(route);
       } catch (fallbackError) {
         logNavigationError(route, String(fallbackError));
         return false;
@@ -64,7 +75,7 @@ export const logNavigationEvent = (url: string, method: NavigationMethod) => {
   logCheckoutEvent(
     CheckoutEvent.NAVIGATION_EVENT,
     LogLevel.INFO,
-    `Navegação para ${url} via ${method}`,
+    `Navigation to ${url} via ${method}`,
     { url, method }
   );
 };
@@ -77,7 +88,7 @@ export const logNavigationError = (url: string, errorMsg: string) => {
   logCheckoutEvent(
     CheckoutEvent.NAVIGATION_ERROR,
     LogLevel.ERROR,
-    `Falha na navegação para ${url}`,
+    `Navigation failure to ${url}`,
     { error: errorMsg }
   );
 };

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
+import { navigateSafely, forceNavigate } from '@/services/navigationService';
 
 interface CartItem {
   panel: Panel;
@@ -15,17 +16,17 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
   const navigate = useNavigate();
   
   /**
-   * Função para navegar diretamente para o checkout sem passar pelos fluxos normais
+   * Function to navigate directly to checkout without going through normal flows
    */
   const directGoToCheckout = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Log para rastreamento e diagnóstico
+    // Log for tracking and diagnostics
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      "Botão de checkout direto clicado",
+      "Direct checkout button clicked",
       { cartItemsCount: cartItems.length }
     );
     
@@ -33,42 +34,48 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
       logCheckoutEvent(
         CheckoutEvent.CHECKOUT_ERROR,
         LogLevel.ERROR,
-        "Tentativa de checkout direto com carrinho vazio"
+        "Attempt to direct checkout with empty cart"
       );
       return;
     }
     
     try {
-      // Garantir que o carrinho está salvo no localStorage
+      // Ensure cart is saved to localStorage
       localStorage.setItem('panelCart', JSON.stringify(cartItems));
       
-      // Definir um plano padrão para teste
+      // Set a default plan for testing
       localStorage.setItem('selectedPlan', '3');
       
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
-        "Navegação direta para checkout",
+        "Direct navigation to checkout",
         { url: '/checkout', cartItemsCount: cartItems.length }
       );
       
-      // Registrar a navegação e navegar
+      // Register navigation
       logNavigation('/checkout', 'direct', true);
       
-      // Usar navigate do React Router
-      navigate('/checkout');
+      // Try React Router navigation first
+      try {
+        navigate('/checkout');
+      } catch (routerError) {
+        console.error("Error in direct navigation to checkout:", routerError);
+        
+        // If React Router fails, try forced navigation
+        forceNavigate('/checkout');
+      }
     } catch (error) {
-      console.error("Erro na navegação direta para checkout:", error);
+      console.error("Error in direct navigation to checkout:", error);
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_ERROR,
         LogLevel.ERROR,
-        "Erro na navegação direta para checkout",
+        "Error in direct navigation to checkout",
         { error: String(error) }
       );
       
-      // Fallback para navegação via window.location
-      logNavigation('/checkout', 'location', true);
-      window.location.href = '/checkout';
+      // Last resort fallback to window.location
+      navigateSafely('/checkout');
     }
   };
   

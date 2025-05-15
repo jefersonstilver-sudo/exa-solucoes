@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Bug } from 'lucide-react';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
+import { forceNavigate } from '@/services/navigationService';
 
 interface PanelDebugActionsProps {
   cartItemsCount: number;
@@ -16,32 +17,32 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
   onProceedToCheckout,
   directGoToCheckout
 }) => {
-  // Adicionamos um handler para o botão de diagnóstico
+  // Added a handler for the debug button
   const handleOpenDebug = () => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      "Botão de diagnóstico clicado"
+      "Diagnostic button clicked"
     );
   };
 
-  // Handler específico para navegação forçada
+  // Specific handler for forced navigation
   const handleForcedNavigation = () => {
     logCheckoutEvent(
       CheckoutEvent.NAVIGATE_TO_PLAN,
       LogLevel.DEBUG,
-      "Navegação forçada via window.location"
+      "Forced navigation via window.location"
     );
-    // Usamos 'location' como tipo específico de navegação
+    // Use 'location' as specific navigation type
     logNavigation('/selecionar-plano', 'location', true);
-    // Navegação forçada usando window.location
-    window.location.href = '/selecionar-plano';
+    // Use the forceNavigate function for consistency
+    forceNavigate('/selecionar-plano');
   };
   
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center">
-        <span className="text-xs text-gray-500 mr-1">v1.2</span>
+        <span className="text-xs text-gray-500 mr-1">v1.3</span>
         <Button
           size="sm"
           variant="outline"
@@ -49,7 +50,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
           className="h-7 text-xs flex items-center"
         >
           <Bug className="h-3 w-3 mr-1" />
-          Diagnóstico
+          Diagnostics
         </Button>
       </div>
       
@@ -61,7 +62,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
             onClick={onProceedToCheckout}
             className="text-xs"
           >
-            Checkout padrão
+            Standard Checkout
           </Button>
           <Button 
             size="sm"
@@ -69,7 +70,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
             onClick={directGoToCheckout}
             className="text-xs"
           >
-            Checkout direto
+            Direct Checkout
           </Button>
           <Button 
             size="sm"
@@ -77,7 +78,7 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
             onClick={handleForcedNavigation}
             className="text-xs"
           >
-            Navegação forçada
+            Forced Navigation
           </Button>
         </div>
       )}

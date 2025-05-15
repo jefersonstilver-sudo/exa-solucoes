@@ -26,27 +26,27 @@ const CartSummary: React.FC<CartSummaryProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // Log para diagnóstico
+    // Log for diagnostics
     logCheckoutEvent(
       CheckoutEvent.AUDIT,
       LogLevel.INFO,
-      "Botão de finalizar compra clicado",
+      "Checkout button clicked",
       { isEmpty, isSubmitting }
     );
     
-    // Se botão já estiver sendo processado ou carrinho estiver vazio, não faz nada
+    // If button is already processing or cart is empty, do nothing
     if (isSubmitting || isEmpty) {
       return;
     }
     
-    // Log detalhado do clique no botão de checkout
+    // Detailed log of checkout button click
     logCheckoutEvent(
       CheckoutEvent.PROCEED_TO_CHECKOUT,
       LogLevel.INFO,
-      "Botão de checkout clicado no sumário do carrinho"
+      "Checkout button clicked in cart summary"
     );
     
-    // Chamar handler passado como prop
+    // Call handler passed as prop
     onCheckout(e);
   };
   
@@ -59,7 +59,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
         </div>
         {discount > 0 && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Desconto</span>
+            <span className="text-muted-foreground">Discount</span>
             <span className="text-green-600">-{formatCurrency(discount)}</span>
           </div>
         )}
@@ -77,18 +77,18 @@ const CartSummary: React.FC<CartSummaryProps> = ({
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processando...
+            Processing...
           </>
         ) : (
           <>
             <ShoppingCart className="mr-2 h-4 w-4" />
-            Finalizar compra
+            Complete purchase
           </>
         )}
       </Button>
       
       <p className="text-xs text-muted-foreground text-center mt-2">
-        Prosseguindo, você concorda com nossos termos de uso
+        By proceeding, you agree to our terms of use
       </p>
     </div>
   );
