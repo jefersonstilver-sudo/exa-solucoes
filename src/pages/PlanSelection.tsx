@@ -13,6 +13,7 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { useToast } from '@/hooks/use-toast';
 import { ClientOnly } from '@/components/ui/client-only';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { isCartEmpty, loadCartFromStorage } from '@/services/cartStorageService';
 
 const PlanSelection = () => {
   const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
@@ -27,73 +28,46 @@ const PlanSelection = () => {
     PLANS
   } = useCheckout();
   
-  // Check for cart in localStorage
+  // Verificação crítica - Carrinho vazio
   useEffect(() => {
     try {
       console.log("PlanSelection: Verificando carrinho no localStorage");
       setIsPageLoading(true);
       
-      // Load cart from localStorage
-      const savedCart = localStorage.getItem('panelCart');
-      console.log("PlanSelection: Carrinho encontrado:", savedCart ? "Sim" : "Não");
-      
-      // If we found the cart in localStorage
-      if (savedCart) {
-        try {
-          const parsedCart = JSON.parse(savedCart);
-          console.log("PlanSelection: Carrinho carregado, itens:", parsedCart.length);
-          
-          // Log the details for debugging
-          logCheckoutEvent(
-            CheckoutEvent.LOAD_CART, 
-            LogLevel.INFO, 
-            "Carrinho carregado na página de seleção de plano", 
-            { itemCount: parsedCart.length, timestamp: Date.now() }
-          );
-          
-          // Validate that we have a valid cart with items
-          if (Array.isArray(parsedCart) && parsedCart.length > 0) {
-            setHasCart(true);
-          } else {
-            // Empty array or invalid format
-            logCheckoutEvent(
-              CheckoutEvent.LOAD_CART, 
-              LogLevel.WARNING, 
-              "Carrinho vazio ou em formato inválido", 
-              { rawValue: savedCart, timestamp: Date.now() }
-            );
-            
-            toast({
-              title: "Carrinho vazio",
-              description: "Adicione itens ao carrinho antes de selecionar um plano.",
-              variant: "destructive"
-            });
-            navigate('/paineis-digitais/loja');
-          }
-        } catch (parseError) {
-          // JSON parsing error
-          logCheckoutEvent(
-            CheckoutEvent.LOAD_CART, 
-            LogLevel.ERROR, 
-            "Erro ao analisar dados do carrinho", 
-            { error: String(parseError), rawValue: savedCart, timestamp: Date.now() }
-          );
-          
-          toast({
-            title: "Erro no carrinho",
-            description: "Erro ao carregar o carrinho. Por favor, tente novamente.",
-            variant: "destructive"
-          });
-          navigate('/paineis-digitais/loja');
-        }
-      } else {
-        // No cart in localStorage
-        console.log("PlanSelection: Carrinho não encontrado no localStorage");
+      // Verificação robusta do carrinho
+      if (isCartEmpty()) {
+        console.log("PlanSelection: Carrinho vazio ou inválido detectado");
         
         logCheckoutEvent(
           CheckoutEvent.LOAD_CART, 
           LogLevel.WARNING, 
-          "Carrinho não encontrado no localStorage", 
+          "ALERTA: Carrinho vazio ou inválido detectado na página de seleção de plano - redirecionando", 
+          { 
+            timestamp: Date.now(),
+            localStorageValue: localStorage.getItem('panelCart')
+          }
+        );
+        
+        toast({
+          title: "Carrinho vazio",
+          description: "Adicione itens ao carrinho antes de selecionar um plano.",
+          variant: "destructive"
+        });
+        
+        // Redirecionamento imediato para a loja
+        navigate('/paineis-digitais/loja');
+        return;
+      }
+      
+      // Carregar carrinho com função aprimorada
+      const parsedCart = loadCartFromStorage();
+      
+      // Verificar explicitamente se temos itens no carrinho
+      if (parsedCart.length === 0) {
+        logCheckoutEvent(
+          CheckoutEvent.LOAD_CART, 
+          LogLevel.WARNING, 
+          "Carrinho vazio após carregamento - redirecionando para loja", 
           { timestamp: Date.now() }
         );
         
@@ -102,16 +76,29 @@ const PlanSelection = () => {
           description: "Adicione itens ao carrinho antes de selecionar um plano.",
           variant: "destructive"
         });
+        
         navigate('/paineis-digitais/loja');
+        return;
       }
+      
+      // Se chegamos aqui, temos um carrinho válido com itens
+      logCheckoutEvent(
+        CheckoutEvent.LOAD_CART, 
+        LogLevel.SUCCESS, 
+        `Carrinho carregado com sucesso na página de seleção de plano: ${parsedCart.length} itens`, 
+        { itemCount: parsedCart.length, timestamp: Date.now() }
+      );
+      
+      setHasCart(true);
+      
     } catch (e) {
-      // General error
-      console.error("Erro ao carregar carrinho:", e);
+      // Tratamento robusto de erro
+      console.error("Erro crítico ao carregar carrinho:", e);
       
       logCheckoutEvent(
         CheckoutEvent.LOAD_CART, 
         LogLevel.ERROR, 
-        "Erro ao carregar carrinho", 
+        "ERRO CRÍTICO ao carregar carrinho na página de seleção de plano", 
         { error: String(e), timestamp: Date.now() }
       );
       
@@ -120,11 +107,36 @@ const PlanSelection = () => {
         description: "Ocorreu um erro ao carregar seu carrinho. Tente novamente.",
         variant: "destructive"
       });
+      
       navigate('/paineis-digitais/loja');
     } finally {
       setIsPageLoading(false);
     }
   }, [navigate, toast]);
+  
+  // Carregar plano salvo do localStorage
+  useEffect(() => {
+    try {
+      const savedPlan = localStorage.getItem('selectedPlan');
+      console.log("PlanSelection: Plano carregado:", savedPlan);
+      
+      if (savedPlan) {
+        const parsedPlan = parseInt(savedPlan);
+        if ([1, 3, 6, 12].includes(parsedPlan)) {
+          setSelectedPlan(parsedPlan as any);
+          
+          logCheckoutEvent(
+            CheckoutEvent.DEBUG_EVENT, 
+            LogLevel.INFO, 
+            `Plano carregado do localStorage: ${parsedPlan}`, 
+            { plan: parsedPlan }
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar plano selecionado:', error);
+    }
+  }, [setSelectedPlan]);
   
   // Proceed to next step after plan selection
   const handleProceed = () => {

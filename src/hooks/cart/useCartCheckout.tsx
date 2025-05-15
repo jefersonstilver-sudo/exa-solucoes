@@ -7,6 +7,7 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 import { logNavigation } from '@/services/navigationAuditService';
 import { navigateSafely, isCurrentPath } from '@/services/navigationService';
 import { logCheckoutInitiation, logEmptyCartAttempt, logCheckoutStart, logCheckoutError, logMultipleCheckoutAttempt } from '@/services/checkoutLogService';
+import { saveCartToStorage } from '@/services/cartStorageService';
 
 interface UseCartCheckoutProps {
   cartItems: { panel: Panel; duration: number }[];
@@ -24,8 +25,21 @@ export const useCartCheckout = ({
   const [isCheckoutProcessed, setIsCheckoutProcessed] = useState(false);
   
   const handleProceedToCheckout = () => {
-    // Log for audit - used for diagnostics
-    logCheckoutInitiation(cartItems.length, isCheckoutProcessed);
+    // Validação criteriosa do carrinho - log detalhado
+    logCheckoutEvent(
+      CheckoutEvent.CHECKOUT_INITIATION,
+      LogLevel.INFO,
+      `Iniciando checkout [DETALHADO] - Total de itens: ${cartItems.length}, IDs: ${cartItems.map(item => item.panel.id).join(', ')}`,
+      { 
+        itemCount: cartItems.length,
+        isProcessed: isCheckoutProcessed,
+        items: cartItems.map(item => ({
+          panelId: item.panel.id,
+          building: item.panel.buildings?.nome || 'Desconhecido',
+          duration: item.duration
+        }))
+      }
+    );
     
     // Prevent multiple checkouts
     if (isCheckoutProcessed) {
@@ -39,9 +53,20 @@ export const useCartCheckout = ({
       return;
     }
     
-    // Check if there are items in the cart
-    if (cartItems.length === 0) {
-      logEmptyCartAttempt();
+    // VALIDAÇÃO RIGOROSA - Verificar se há itens no carrinho
+    if (!cartItems || cartItems.length === 0) {
+      // Log detalhado do erro
+      logCheckoutEvent(
+        CheckoutEvent.EMPTY_CART_ATTEMPT,
+        LogLevel.ERROR,
+        "ERRO CRÍTICO: Tentativa de checkout com carrinho vazio",
+        { 
+          timestamp: Date.now(),
+          cartState: JSON.stringify(cartItems),
+          localStorageState: localStorage.getItem('panelCart')
+        }
+      );
+      
       toast({
         title: "Carrinho vazio",
         description: "Adicione painéis ao seu carrinho para completar a compra.",
@@ -77,23 +102,11 @@ export const useCartCheckout = ({
       // Log checkout start
       logCheckoutStart(cartItems.length);
       
-      // Save cart to localStorage before navigating
-      try {
-        localStorage.setItem('panelCart', JSON.stringify(cartItems));
-        logCheckoutEvent(
-          CheckoutEvent.SAVE_CART, 
-          LogLevel.SUCCESS, 
-          "Carrinho salvo no localStorage com sucesso", 
-          { items: cartItems.length, timestamp: Date.now() }
-        );
-      } catch (storageError) {
-        logCheckoutEvent(
-          CheckoutEvent.SAVE_CART, 
-          LogLevel.ERROR, 
-          "Erro ao salvar carrinho no localStorage", 
-          { error: String(storageError), timestamp: Date.now() }
-        );
-        // Continue even if localStorage fails
+      // Salvar carrinho com método melhorado
+      const saveSuccess = saveCartToStorage(cartItems);
+      
+      if (!saveSuccess) {
+        throw new Error("Falha ao salvar carrinho no localStorage");
       }
       
       // Log navigation
@@ -110,8 +123,7 @@ export const useCartCheckout = ({
       // Use navigate for the initial attempt
       navigate('/selecionar-plano');
       
-      // If for some reason navigate didn't throw but also didn't work,
-      // we'll use a direct navigation after a short delay
+      // Se por algum motivo a navegação não funcionou, usamos uma navegação direta após um pequeno delay
       setTimeout(() => {
         if (!isCurrentPath('/selecionar-plano')) {
           logCheckoutEvent(
