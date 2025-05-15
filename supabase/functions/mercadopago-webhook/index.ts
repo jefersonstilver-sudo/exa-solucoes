@@ -25,12 +25,33 @@ serve(async (req) => {
     // Parse webhook data
     const data = await req.json();
     
-    // Log webhook for debugging
-    await logWebhook(supabase, data, 'mercadopago_webhook');
+    // Log webhook for debugging with more detail
+    await logWebhook(supabase, {
+      ...data,
+      headers: Object.fromEntries(req.headers.entries()),
+      url: req.url,
+      method: req.method,
+    }, 'mercadopago_webhook');
+    
+    // Verify webhook signature (in production, implement proper verification)
+    const isValidWebhook = verifyWebhook(req);
+    if (!isValidWebhook) {
+      console.error('Invalid webhook signature');
+      return new Response(
+        JSON.stringify({ error: 'Invalid signature' }),
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        }
+      );
+    }
     
     // Process payment notification if applicable
     if (data.action === 'payment.updated' || data.action === 'payment.created') {
-      await processPayment(supabase, data.data.id);
+      await processPayment(supabase, data.data.id, data);
     }
     
     return new Response(
@@ -58,7 +79,14 @@ serve(async (req) => {
   }
 });
 
-// Log webhook to database
+// Function to verify webhook authenticity (placeholder for now)
+function verifyWebhook(req: Request): boolean {
+  // In production, you would verify the signature using the Mercado Pago webhook secret
+  // For now, we'll accept all webhooks
+  return true;
+}
+
+// Log webhook to database with enhanced data
 async function logWebhook(supabase, payload, origem = 'mercadopago_webhook') {
   try {
     await supabase
@@ -67,26 +95,47 @@ async function logWebhook(supabase, payload, origem = 'mercadopago_webhook') {
         origem,
         status: 'received',
         payload,
-        recebido_em: new Date().toISOString()
+        recebido_em: new Date().toISOString(),
+        metadata: {
+          ip: payload.headers['x-forwarded-for'] || 'unknown',
+          user_agent: payload.headers['user-agent'] || 'unknown'
+        }
       });
   } catch (error) {
     console.error('Error logging webhook:', error);
   }
 }
 
-// Process payment
-async function processPayment(supabase, paymentId) {
+// Process payment with better error handling and logging
+async function processPayment(supabase, paymentId, webhookData) {
   try {
-    // Fetch the MP public access token to get payment details
+    console.log(`Processing payment ${paymentId}`);
+    
+    // Fetch the MP access token to get payment details
     const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
     
-    // Fetch payment details from MercadoPago (simulated for now)
-    const paymentStatus = 'approved'; // In production, would fetch actual status
-    const externalReference = 'test-reference'; // In production, would fetch actual external reference
+    // In production, fetch the payment details from Mercado Pago API
+    // For now, extract info from webhook data or use placeholders
+    let paymentStatus = 'approved'; // Default for testing
+    let externalReference = null;
+    
+    // Try to get external reference from the webhook data
+    if (webhookData?.data?.external_reference) {
+      externalReference = webhookData.data.external_reference;
+    } 
+    
+    // If no external reference in webhook data, try to get it from the payment details
+    if (!externalReference) {
+      // In a real implementation, you would call the Mercado Pago API to get payment details
+      // For now we'll use a placeholder or extract from metadata
+      externalReference = webhookData?.data?.metadata?.pedido_id || 'test-reference';
+    }
     
     if (!externalReference) {
       throw new Error('No external reference found in payment');
     }
+    
+    console.log(`Found external reference: ${externalReference}`);
     
     // Find the pedido using external reference (pedido ID)
     const { data: pedidos, error } = await supabase
@@ -105,6 +154,7 @@ async function processPayment(supabase, paymentId) {
     }
     
     const pedido = pedidos[0];
+    console.log(`Found pedido: ${pedido.id} with status ${pedido.status}`);
     
     // Update pedido status based on payment status
     let pedidoStatus = 'pendente';
@@ -114,7 +164,9 @@ async function processPayment(supabase, paymentId) {
       pedidoStatus = 'cancelado';
     }
     
-    // Update the pedido
+    console.log(`Updating pedido status to: ${pedidoStatus}`);
+    
+    // Update the pedido with more payment details
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
@@ -123,7 +175,13 @@ async function processPayment(supabase, paymentId) {
           ...pedido.log_pagamento,
           payment_id: paymentId,
           payment_status: paymentStatus,
-          payment_updated_at: new Date().toISOString()
+          payment_updated_at: new Date().toISOString(),
+          webhook_received: true,
+          webhook_data: {
+            id: webhookData?.id || null,
+            action: webhookData?.action || null,
+            date_created: webhookData?.date_created || new Date().toISOString()
+          }
         }
       })
       .eq('id', pedido.id);
@@ -134,6 +192,7 @@ async function processPayment(supabase, paymentId) {
     
     // If payment approved, create campaigns
     if (paymentStatus === 'approved') {
+      console.log(`Payment approved, creating campaigns for pedido: ${pedido.id}`);
       await createCampaignsFromPedido(supabase, pedido);
     }
     
@@ -148,6 +207,8 @@ async function processPayment(supabase, paymentId) {
         payment_status: paymentStatus
       }
     );
+    
+    console.log(`Payment ${paymentId} successfully processed`);
   } catch (error) {
     console.error('Error processing payment:', error);
     throw error;
@@ -183,6 +244,8 @@ async function createCampaignsFromPedido(supabase, pedido) {
       throw new Error('No valid panel IDs found in pedido');
     }
     
+    console.log(`Creating ${validPanelIds.length} campaigns for pedido ${pedido.id}`);
+    
     // Create a campaign for each painel in the pedido
     const campaignInserts = validPanelIds.map(painelId => ({
       client_id: pedido.client_id,
@@ -205,6 +268,8 @@ async function createCampaignsFromPedido(supabase, pedido) {
     if (campaignsError) {
       throw campaignsError;
     }
+    
+    console.log(`Successfully created ${campaigns.length} campaigns`);
     
     // Log the action
     await logUserAction(

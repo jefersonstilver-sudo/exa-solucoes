@@ -8,7 +8,7 @@ import PanelFilterSidebar from '@/components/panels/PanelFilterSidebar';
 import { useCartManager } from '@/hooks/useCartManager';
 import { usePanelStore } from '@/hooks/usePanelStore';
 import CartDebugger from '@/components/debug/CartDebugger';
-import { logDebugEvent } from '@/services/checkoutDebugService';
+import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
   const { 
@@ -58,7 +58,12 @@ export default function PanelStore() {
   // Função para abrir o debugger
   const openDebugger = (e: React.MouseEvent) => {
     e.preventDefault();
-    logDebugEvent("Diagnostic button clicked", { timestamp: Date.now() });
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_TOOL_OPENED,
+      LogLevel.INFO,
+      "Diagnostic button clicked", 
+      { timestamp: Date.now() }
+    );
     setIsDebuggerOpen(true);
   };
   
@@ -93,7 +98,7 @@ export default function PanelStore() {
             <PanelFilterSidebar 
               filters={filters}
               handleFilterChange={handleFilterChange}
-              loading={isLoading}
+              isLoading={isLoading}
             />
           </motion.div>
           
@@ -116,7 +121,7 @@ export default function PanelStore() {
         {/* Cart sidebar */}
         <PanelCart 
           cartItems={cartItems}
-          onRemoveItem={handleRemoveFromCart}
+          onRemove={handleRemoveFromCart}
           onChangeDuration={handleChangeDuration}
           onCheckout={handleProceedToCheckout}
         />

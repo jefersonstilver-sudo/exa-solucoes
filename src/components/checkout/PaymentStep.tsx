@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { MP_PUBLIC_KEY } from '@/services/mercadoPago';
+import TestCardDisplay from './TestCardDisplay';
 
 interface PaymentStepProps {
   acceptTerms: boolean;
@@ -244,6 +244,7 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepPro
         </div>
       </div>
 
+      {/* Test environment notice */}
       <div className="bg-orange-50 border border-orange-100 rounded-lg p-4">
         <div className="flex">
           <div className="flex-shrink-0">
@@ -258,6 +259,9 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepPro
                 Este é um ambiente de demonstração. Nenhum pagamento real será processado.
                 Você pode testar a experiência de checkout completa.
               </p>
+              <div className="mt-2">
+                <TestCardDisplay />
+              </div>
             </div>
           </div>
         </div>

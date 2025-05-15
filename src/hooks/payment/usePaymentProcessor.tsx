@@ -6,7 +6,7 @@ import { usePaymentValidation } from './usePaymentValidation';
 import { usePaymentSimulator } from './usePaymentSimulator';
 import { useOrderCreation } from './useOrderCreation';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
-import { MP_PUBLIC_KEY } from '@/constants/checkoutConstants';
+import { MP_PUBLIC_KEY } from '@/services/mercadoPago';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
@@ -185,6 +185,14 @@ export const usePaymentProcessor = () => {
           localStorage.setItem('last_mercadopago_preference', data.preference_id);
           localStorage.setItem('pending_order_id', pedido.id);
           
+          // Registrar evento de navegação para o checkout externo
+          logCheckoutEvent(
+            CheckoutEvent.NAVIGATION_EVENT,
+            LogLevel.INFO,
+            "Redirecionando para checkout do MercadoPago",
+            { preferenceId: data.preference_id, orderId: pedido.id }
+          );
+          
           // Usar o SDK do MercadoPago para checkout
           if (isSDKLoaded && !isError) {
             // Usar o método createCheckout do hook useMercadoPago
@@ -196,13 +204,6 @@ export const usePaymentProcessor = () => {
             // Fallback para redirecionamento direto
             window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${data.preference_id}`;
           }
-          
-          logCheckoutEvent(
-            CheckoutEvent.NAVIGATION_EVENT,
-            LogLevel.INFO,
-            "Redirecionando para checkout do MercadoPago",
-            { preferenceId: data.preference_id, orderId: pedido.id }
-          );
           
           return;
         }
