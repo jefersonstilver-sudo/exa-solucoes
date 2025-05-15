@@ -69,6 +69,16 @@ const saveLogs = () => {
   }
 };
 
+// Função para debug geral - mais simples
+export const logDebugEvent = (event: string, details?: any) => {
+  return logCheckoutEvent(
+    CheckoutEvent.DEBUG_EVENT, 
+    LogLevel.DEBUG, 
+    event,
+    details
+  );
+};
+
 // Registrar evento de checkout
 export const logCheckoutEvent = (
   event: CheckoutEvent,

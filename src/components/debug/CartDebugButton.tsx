@@ -23,7 +23,7 @@ const CartDebugButton = () => {
       
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md p-0">
-          <CartDebugger onClose={() => setIsOpen(false)} />
+          <CartDebugger open={isOpen} onClose={() => setIsOpen(false)} />
         </DialogContent>
       </Dialog>
     </>

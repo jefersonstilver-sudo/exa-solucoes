@@ -10,6 +10,7 @@ import { applyAllFilters } from '@/services/panelFilterService';
 
 interface UsePanelStoreReturn {
   panels: Panel[] | undefined;
+  filteredPanels: Panel[] | undefined;
   isLoading: boolean;
   error: unknown;
   searchLocation: string;
@@ -19,8 +20,12 @@ interface UsePanelStoreReturn {
   isSearching: boolean;
   filters: FilterOptions;
   handleFilterChange: (newFilters: Partial<FilterOptions>) => void;
+  handleUpdateFilters: (newFilters: Partial<FilterOptions>) => void;
+  searchTerm: string;
+  handleSearchChange: (term: string) => void;
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
+  resetFilters: () => void;
 }
 
 export const usePanelStore = (): UsePanelStoreReturn => {
@@ -34,6 +39,9 @@ export const usePanelStore = (): UsePanelStoreReturn => {
     handleSearch: handleSearchLocation,
     handleClearLocation
   } = useLocationSearch();
+
+  // Search term state
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Filter state
   const [filters, setFilters] = useState<FilterOptions>({
@@ -110,6 +118,11 @@ export const usePanelStore = (): UsePanelStoreReturn => {
     enabled: true
   });
 
+  // Handle search term change
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+  };
+
   // Adapted handleSearch to use our location hook
   const handleSearch = async (location: string) => {
     const coordinates = await handleSearchLocation(location);
@@ -122,8 +135,43 @@ export const usePanelStore = (): UsePanelStoreReturn => {
     setFilters(prev => ({...prev, ...newFilters}));
   };
 
+  // Alias para manter compatibilidade
+  const handleUpdateFilters = handleFilterChange;
+
+  // Reset filters to default
+  const resetFilters = () => {
+    setFilters({
+      radius: 5000,
+      neighborhood: 'all',
+      status: ['online'],
+      buildingProfile: [],
+      facilities: [],
+      minMonthlyViews: 0,
+      buildingAge: 'all',
+      buildingType: 'all'
+    });
+    setSearchTerm('');
+  };
+
+  // Apply search term filter to panels
+  const filteredPanels = panels?.filter(panel => {
+    if (!searchTerm) return true;
+    
+    const searchTermLower = searchTerm.toLowerCase();
+    const buildingName = panel.buildings?.name || '';
+    const buildingAddress = panel.buildings?.address || '';
+    const panelCode = panel.code || '';
+    
+    return (
+      buildingName.toLowerCase().includes(searchTermLower) ||
+      buildingAddress.toLowerCase().includes(searchTermLower) ||
+      panelCode.toLowerCase().includes(searchTermLower)
+    );
+  });
+
   return {
     panels,
+    filteredPanels,
     isLoading,
     error,
     searchLocation,
@@ -133,7 +181,11 @@ export const usePanelStore = (): UsePanelStoreReturn => {
     isSearching,
     filters,
     handleFilterChange,
+    handleUpdateFilters,
+    searchTerm,
+    handleSearchChange,
     handleSearch,
-    handleClearLocation
+    handleClearLocation,
+    resetFilters
   };
 };

@@ -198,7 +198,7 @@ export const usePaymentProcessor = () => {
           }
           
           logCheckoutEvent(
-            CheckoutEvent.PAYMENT_REDIRECT,
+            CheckoutEvent.NAVIGATION_EVENT,
             LogLevel.INFO,
             "Redirecionando para checkout do MercadoPago",
             { preferenceId: data.preference_id, orderId: pedido.id }

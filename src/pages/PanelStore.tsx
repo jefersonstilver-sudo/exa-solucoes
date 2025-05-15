@@ -14,13 +14,8 @@ export default function PanelStore() {
   const { 
     panels, 
     isLoading, 
-    filteredPanels,
     filters,
-    handleUpdateFilters,
-    handleSearch,
-    resetFilters,
-    searchTerm,
-    handleSearchChange
+    handleFilterChange
   } = usePanelStore();
 
   const { 
@@ -79,6 +74,11 @@ export default function PanelStore() {
     }
   };
 
+  // Verificar se o painel está no carrinho
+  const isPanelInCart = (panel: any) => {
+    return cartItems.some(item => item.panel.id === panel.id);
+  };
+
   return (
     <StoreLayout>
       <div className="container mx-auto px-4 lg:px-8 py-6">
@@ -92,11 +92,8 @@ export default function PanelStore() {
           >
             <PanelFilterSidebar 
               filters={filters}
-              onUpdateFilters={handleUpdateFilters}
-              onSearch={handleSearch}
-              onReset={resetFilters}
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
+              handleFilterChange={handleFilterChange}
+              loading={isLoading}
             />
           </motion.div>
           
@@ -108,19 +105,16 @@ export default function PanelStore() {
             animate="visible"
           >
             <PanelList 
-              panels={filteredPanels} 
+              panels={panels || []} 
               isLoading={isLoading} 
+              cartItems={cartItems} 
               onAddToCart={handleAddToCart}
-              inCart={(panel) => cartItems.some(item => item.panel.id === panel.id)}
-              onOpenDebugger={openDebugger}
             />
           </motion.div>
         </div>
         
         {/* Cart sidebar */}
         <PanelCart 
-          open={cartOpen}
-          onClose={() => toggleCart()}
           cartItems={cartItems}
           onRemoveItem={handleRemoveFromCart}
           onChangeDuration={handleChangeDuration}
