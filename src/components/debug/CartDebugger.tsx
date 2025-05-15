@@ -1,101 +1,139 @@
 
-import React, { useEffect, useState } from 'react';
-import { loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
+import React, { useState } from 'react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogTitle, 
+  DialogHeader,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { X, Check, AlertTriangle, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface CartDebuggerProps {
+  open: boolean;
   onClose: () => void;
 }
 
-const CartDebugger: React.FC<CartDebuggerProps> = ({ onClose }) => {
-  const [cartData, setCartData] = useState<any>(null);
-  const [rawCartData, setRawCartData] = useState<string | null>(null);
+const CartDebugger = ({ open, onClose }: CartDebuggerProps) => {
+  const { toast } = useToast();
+  const [cartContent, setCartContent] = useState<string>('');
   
-  // Carregar dados
-  useEffect(() => {
+  const loadCartData = () => {
     try {
-      // Carregar dados brutos
-      const rawData = localStorage.getItem(CART_STORAGE_KEY);
-      setRawCartData(rawData);
-      
-      // Carregar dados processados
-      const processedCart = loadCartFromStorage();
-      setCartData(processedCart);
-      
-      console.log("CartDebugger: Dados carregados", {
-        raw: rawData,
-        processed: processedCart
-      });
+      const localStorageCart = localStorage.getItem('indexa_cart');
+      setCartContent(localStorageCart || 'Cart is empty');
     } catch (e) {
-      console.error("Erro ao carregar dados para depuração:", e);
-    }
-  }, []);
-  
-  const handleForceReload = () => {
-    try {
-      // Recarregar dados
-      const rawData = localStorage.getItem(CART_STORAGE_KEY);
-      setRawCartData(rawData);
-      
-      const processedCart = loadCartFromStorage();
-      setCartData(processedCart);
-      
-      console.log("CartDebugger: Dados recarregados", {
-        raw: rawData,
-        processed: processedCart
-      });
-    } catch (e) {
-      console.error("Erro ao recarregar dados:", e);
+      setCartContent('Error loading cart: ' + String(e));
     }
   };
   
+  React.useEffect(() => {
+    if (open) {
+      loadCartData();
+    }
+  }, [open]);
+  
+  const clearCart = () => {
+    try {
+      localStorage.removeItem('indexa_cart');
+      setCartContent('Cart cleared');
+      toast({
+        title: "Carrinho limpo",
+        description: "O carrinho foi limpo com sucesso",
+        variant: "default",
+      });
+      loadCartData();
+    } catch (e) {
+      toast({
+        title: "Erro ao limpar carrinho",
+        description: String(e),
+        variant: "destructive", 
+      });
+    }
+  };
+  
+  const fixCart = () => {
+    try {
+      const emptyCart = JSON.stringify([]);
+      localStorage.setItem('indexa_cart', emptyCart);
+      setCartContent(emptyCart);
+      toast({
+        title: "Carrinho resetado",
+        description: "O carrinho foi resetado para um array vazio",
+        variant: "default", // Alterado de "success" para "default"
+      });
+      loadCartData();
+    } catch (e) {
+      toast({
+        title: "Erro ao resetar carrinho",
+        description: String(e),
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const refreshCart = () => {
+    loadCartData();
+    toast({
+      title: "Carrinho atualizado",
+      description: "Os dados do carrinho foram atualizados",
+      variant: "default",
+    });
+  };
+
   return (
-    <div className="p-5 max-h-[80vh] overflow-y-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Depuração do Carrinho</h2>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Fechar
-        </Button>
-      </div>
-      
-      <div className="mb-4">
-        <Badge variant={cartData && cartData.length > 0 ? "success" : "destructive"}>
-          {cartData && cartData.length > 0 ? 
-            `Carrinho com ${cartData.length} item(s)` : 
-            "Carrinho vazio"
-          }
-        </Badge>
-        <Badge variant="outline" className="ml-2">
-          Chave: {CART_STORAGE_KEY}
-        </Badge>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="p-3 bg-gray-50 rounded-md">
-          <h3 className="text-sm font-medium mb-1">Dados brutos (localStorage)</h3>
-          <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
-            {rawCartData || "null"}
-          </pre>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            Depurador de Carrinho
+            <Badge variant="outline" className="ml-2">
+              Debug
+            </Badge>
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Modo de depuração</AlertTitle>
+            <AlertDescription>
+              Esta ferramenta é destinada apenas para depuração. Manipular diretamente o localStorage 
+              pode causar comportamentos inesperados.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Conteúdo do carrinho (localStorage):</h3>
+            <div className="bg-gray-100 p-4 rounded-md overflow-auto max-h-64">
+              <pre className="text-xs whitespace-pre-wrap break-words">{cartContent}</pre>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={refreshCart}>
+              <Check className="mr-1 h-4 w-4" /> Atualizar
+            </Button>
+            <Button size="sm" variant="outline" onClick={fixCart}>
+              <Check className="mr-1 h-4 w-4" /> Resetar
+            </Button>
+            <Button size="sm" variant="destructive" onClick={clearCart}>
+              <Trash2 className="mr-1 h-4 w-4" /> Limpar
+            </Button>
+          </div>
         </div>
         
-        <div className="p-3 bg-gray-50 rounded-md">
-          <h3 className="text-sm font-medium mb-1">Dados processados ({cartData ? cartData.length : 0} itens)</h3>
-          <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
-            {cartData ? JSON.stringify(cartData, null, 2) : "null"}
-          </pre>
-        </div>
-      </div>
-      
-      <Separator className="my-4" />
-      
-      <div className="flex flex-col space-y-2">
-        <Button size="sm" onClick={handleForceReload}>
-          Recarregar dados
-        </Button>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            <X className="mr-1 h-4 w-4" /> Fechar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

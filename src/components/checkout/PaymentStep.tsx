@@ -10,7 +10,10 @@ import {
   Check,
   CreditCardIcon,
   AlertTriangle,
+  Coins,
 } from "lucide-react";
+import { useMercadoPago } from '@/hooks/useMercadoPago';
+import { MP_PUBLIC_KEY } from '@/services/mercadoPago';
 
 interface PaymentStepProps {
   acceptTerms: boolean;
@@ -20,6 +23,13 @@ interface PaymentStepProps {
 
 const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepProps) => {
   const [selectedMethod, setSelectedMethod] = useState<string>("credit_card");
+  const [installments, setInstallments] = useState<number>(1);
+  const installmentOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+  
+  // Inicializa Mercado Pago
+  const { isSDKLoaded, isError } = useMercadoPago({
+    publicKey: MP_PUBLIC_KEY
+  });
 
   // Payment method options - only PIX and credit card
   const paymentMethods = [
@@ -44,9 +54,6 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepPro
       installments: true
     }
   ];
-
-  const [installments, setInstallments] = useState<number>(1);
-  const installmentOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
   // Calculate installment amount
   const getInstallmentValue = (installment: number) => {
@@ -92,6 +99,26 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepPro
           Escolha como deseja pagar sua campanha
         </p>
       </div>
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">
+                Erro na integração de pagamento
+              </h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>
+                  Ocorreu um erro ao carregar o processador de pagamentos. Por favor, tente novamente.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {paymentMethods.map((method) => (
