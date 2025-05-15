@@ -10,6 +10,7 @@ import {
   Check,
   CreditCardIcon,
   AlertTriangle,
+  ExternalLink
 } from "lucide-react";
 
 interface PaymentStepProps {
@@ -184,6 +185,28 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepPro
             )}
           </div>
         ))}
+      </div>
+
+      {/* Redirect Information */}
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <ExternalLink className="h-5 w-5 text-blue-500" />
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-blue-800">
+              Redirecionamento para o Mercado Pago
+            </h3>
+            <div className="mt-2 text-sm text-blue-700">
+              <p>
+                Ao clicar em "Confirmar e pagar", você será redirecionado para a plataforma segura 
+                do Mercado Pago para finalizar seu pagamento. Após concluir, você retornará 
+                automaticamente para a página de confirmação do seu pedido, onde poderá fazer 
+                upload do seu vídeo.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Security badges and trust elements */}

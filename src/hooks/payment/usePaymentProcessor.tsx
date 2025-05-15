@@ -2,10 +2,9 @@
 import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { usePaymentValidation } from './usePaymentValidation';
-import { usePaymentSimulator } from './usePaymentSimulator';
 import { useOrderCreation } from './useOrderCreation';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
-import { MP_PUBLIC_KEY } from '@/constants/checkoutConstants';
+import { MP_PUBLIC_KEY } from '@/services/mercadoPago';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
@@ -34,11 +33,11 @@ export const usePaymentProcessor = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { validatePaymentRequirements } = usePaymentValidation();
-  const { isCreatingPayment, setIsCreatingPayment, simulateSuccessfulPayment } = usePaymentSimulator();
   const { createOrder } = useOrderCreation();
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   
   // Inicializa MercadoPago
-  const { isSDKLoaded } = useMercadoPago({
+  const { isSDKLoaded, createCheckout } = useMercadoPago({
     publicKey: MP_PUBLIC_KEY
   });
 
@@ -175,33 +174,27 @@ export const usePaymentProcessor = () => {
           throw new Error('Resposta inválida do processador de pagamento');
         }
         
-        // Em um ambiente de produção, redirecionaríamos para o MercadoPago
-        // window.location.href = data.init_point;
-        
-        // Para fins de teste, simulamos um pagamento bem-sucedido
-        console.log("Simulando pagamento bem-sucedido para pedido:", pedido.id);
-        await simulateSuccessfulPayment(
-          pedido.id, 
-          cartItems, 
-          sessionUser, 
-          startDate, 
-          endDate, 
-          handleClearCart
-        );
+        // Limpar carrinho após criar pedido com sucesso
+        handleClearCart();
         
         logCheckoutEvent(
-          CheckoutEvent.PAYMENT_SUCCESS,
-          LogLevel.SUCCESS,
-          "Pagamento realizado com sucesso",
-          { pedidoId: pedido.id, amount: totalPrice }
+          CheckoutEvent.PAYMENT_PROCESSING,
+          LogLevel.INFO,
+          "Redirecionando para Mercado Pago",
+          { initPoint: data.init_point }
         );
         
-        // Redirecionar para a página de confirmação
-        sonnerToast.success("Pagamento realizado com sucesso!");
+        // Usando o SDK do MercadoPago para checkout
+        const checkoutResult = createCheckout({ 
+          preferenceId: data.preference_id,
+          redirectMode: true
+        });
         
-        // Registrar navegação e redirecionar
-        logNavigation(`/pedido-confirmado?id=${pedido.id}`, 'navigate', true);
-        navigate(`/pedido-confirmado?id=${pedido.id}`);
+        if (!checkoutResult.success) {
+          throw new Error('Falha ao iniciar checkout do MercadoPago');
+        }
+        
+        // Note: O redirecionamento já foi feito pelo createCheckout
         
       } catch (paymentError: any) {
         console.error('Erro ao processar pagamento:', paymentError);
@@ -217,6 +210,10 @@ export const usePaymentProcessor = () => {
           title: "Erro ao processar pagamento",
           description: paymentError.message || "Houve um problema ao processar o pagamento.",
         });
+        
+        // Redirecionar para página de confirmação mesmo com erro
+        // para que o usuário possa tentar novamente
+        navigate(`/pedido-confirmado?id=${pedido.id}&status=error`);
       }
       
     } catch (error: any) {
@@ -233,7 +230,7 @@ export const usePaymentProcessor = () => {
         title: "Erro ao processar pagamento",
         description: error.message || "Houve um problema ao processar o pagamento.",
       });
-    } finally {
+      
       setIsCreatingPayment(false);
     }
   };

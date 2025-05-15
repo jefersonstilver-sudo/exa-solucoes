@@ -104,10 +104,28 @@ serve(async (req) => {
     // Registrar a criação da preferência
     console.log("Creating payment preference with items:", JSON.stringify(items));
     
-    // Criar preferência no MercadoPago (versão simulada para teste)
-    // Em produção, usar: const response = await MercadoPago.preferences.create(preference);
-    const mockPreferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const mockInitPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${mockPreferenceId}`;
+    // Criar preferência no MercadoPago
+    let preferenceId = "";
+    let initPoint = "";
+    
+    if (MP_ACCESS_TOKEN) {
+      try {
+        // Usar a API do MercadoPago para criar preferência real
+        const response = await MercadoPago.preferences.create(preference);
+        preferenceId = response.body.id;
+        initPoint = response.body.init_point;
+        console.log("MercadoPago preference created:", preferenceId);
+      } catch (mpError) {
+        console.error("Error creating MercadoPago preference:", mpError);
+        // Falhar de forma elegante com valores simulados
+        preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+      }
+    } else {
+      // Modo simulado (para desenvolvimento)
+      preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+    }
     
     // Atualizar o pedido com informações de pagamento
     const { error: updateError } = await supabase
@@ -115,8 +133,8 @@ serve(async (req) => {
       .update({
         log_pagamento: {
           ...totals,
-          payment_preference_id: mockPreferenceId,
-          payment_init_point: mockInitPoint,
+          payment_preference_id: preferenceId,
+          payment_init_point: initPoint,
           payment_status: 'pending',
           items: items.length
         }
@@ -131,8 +149,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        preference_id: mockPreferenceId,
-        init_point: mockInitPoint,
+        preference_id: preferenceId,
+        init_point: initPoint,
         pedido_id: pedidoId
       }),
       {

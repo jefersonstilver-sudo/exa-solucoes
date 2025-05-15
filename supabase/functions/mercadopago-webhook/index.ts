@@ -30,7 +30,7 @@ serve(async (req) => {
     
     // Process payment notification if applicable
     if (data.action === 'payment.updated' || data.action === 'payment.created') {
-      await processPayment(supabase, data.data.id);
+      await processPayment(supabase, data);
     }
     
     return new Response(
@@ -75,17 +75,54 @@ async function logWebhook(supabase, payload, origem = 'mercadopago_webhook') {
 }
 
 // Process payment
-async function processPayment(supabase, paymentId) {
+async function processPayment(supabase, webhookData) {
   try {
     // Fetch the MP public access token to get payment details
     const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
     
-    // Fetch payment details from MercadoPago (simulated for now)
-    const paymentStatus = 'approved'; // In production, would fetch actual status
-    const externalReference = 'test-reference'; // In production, would fetch actual external reference
+    // Extract data from webhook
+    const paymentId = webhookData.data?.id;
+    if (!paymentId) {
+      throw new Error('Payment ID not found in webhook data');
+    }
     
+    // In a real implementation, you'd fetch payment details from MercadoPago API
+    // For now, we'll simulate with data from the webhook
+    let paymentStatus = 'pending';
+    let externalReference = '';
+    
+    if (webhookData.data && webhookData.data.id) {
+      // Try to get external reference from webhook data or fetch from MP API
+      if (MP_ACCESS_TOKEN) {
+        // Here would be the code to fetch from MercadoPago API
+        // For simulation, we'll use values from webhook data if available
+        if (webhookData.metadata?.external_reference) {
+          externalReference = webhookData.metadata.external_reference;
+        }
+        
+        if (webhookData.status) {
+          paymentStatus = webhookData.status;
+        }
+      } else {
+        // Simulate for development
+        externalReference = `test-order-${Date.now()}`;
+        paymentStatus = 'approved'; // Default to approved for testing
+      }
+    }
+    
+    // If no external reference found, try to find the pedido by payment_preference_id
     if (!externalReference) {
-      throw new Error('No external reference found in payment');
+      const { data: pedidos, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .like('log_pagamento->payment_preference_id', `%${paymentId}%`)
+        .limit(1);
+        
+      if (!error && pedidos?.length > 0) {
+        externalReference = pedidos[0].id;
+      } else {
+        throw new Error('Unable to find related order for payment');
+      }
     }
     
     // Find the pedido using external reference (pedido ID)
@@ -100,8 +137,7 @@ async function processPayment(supabase, paymentId) {
     }
     
     if (!pedidos || pedidos.length === 0) {
-      console.log('No pedido found for external reference:', externalReference);
-      return;
+      throw new Error('No pedido found for external reference: ' + externalReference);
     }
     
     const pedido = pedidos[0];
@@ -114,18 +150,20 @@ async function processPayment(supabase, paymentId) {
       pedidoStatus = 'cancelado';
     }
     
-    // Update the pedido
+    // Update the pedido with payment details
+    const paymentUpdate = {
+      status: pedidoStatus,
+      log_pagamento: {
+        ...(pedido.log_pagamento || {}),
+        payment_id: paymentId,
+        payment_status: paymentStatus,
+        payment_updated_at: new Date().toISOString()
+      }
+    };
+    
     const { error: updateError } = await supabase
       .from('pedidos')
-      .update({
-        status: pedidoStatus,
-        log_pagamento: {
-          ...pedido.log_pagamento,
-          payment_id: paymentId,
-          payment_status: paymentStatus,
-          payment_updated_at: new Date().toISOString()
-        }
-      })
+      .update(paymentUpdate)
       .eq('id', pedido.id);
       
     if (updateError) {
@@ -148,6 +186,8 @@ async function processPayment(supabase, paymentId) {
         payment_status: paymentStatus
       }
     );
+    
+    return true;
   } catch (error) {
     console.error('Error processing payment:', error);
     throw error;

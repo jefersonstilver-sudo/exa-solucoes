@@ -19,7 +19,7 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     const script = document.createElement('script');
     script.src = 'https://sdk.mercadopago.com/js/v2';
     script.onload = () => {
-      console.log('MercadoPago SDK carregado');
+      console.log('MercadoPago SDK carregado com sucesso');
       try {
         // @ts-ignore - MercadoPago é carregado via script
         const mp = new window.MercadoPago(publicKey, {
@@ -40,7 +40,9 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     document.body.appendChild(script);
     
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, [publicKey]);
 
@@ -57,18 +59,13 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
         return { success: true };
       } else {
         // Modo modal - Abre o checkout do MercadoPago em um modal
-        // Nota: Isso requer que checkout.js seja carregado e um elemento contêiner
-        // const checkout = mercadoPago.checkout({
-        //   preference: {
-        //     id: preferenceId
-        //   },
-        //   autoOpen: true,
-        // });
-        // return { success: true, checkout };
-        
-        // Para simplificar, vamos redirecionar em ambos os casos
-        window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
-        return { success: true };
+        const checkout = mercadoPago.checkout({
+          preference: {
+            id: preferenceId
+          },
+          autoOpen: true,
+        });
+        return { success: true, checkout };
       }
     } catch (error) {
       console.error('Erro ao criar checkout do MercadoPago:', error);

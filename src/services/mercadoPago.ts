@@ -1,7 +1,7 @@
 
 import { NextApiRequest } from 'next';
 
-// MercadoPago configuration - using import.meta.env instead of process.env
+// MercadoPago configuration
 const MP_ACCESS_TOKEN = import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = import.meta.env.VITE_MERCADO_PAGO_WEBHOOK_SECRET || '';
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || '';
@@ -24,10 +24,6 @@ export interface PaymentInfo {
 
 /**
  * Creates a payment preference in MercadoPago
- * @param items Items to be purchased
- * @param backUrl URLs to redirect after payment process
- * @param metadata Additional data to store with the preference
- * @returns Payment preference ID and init point URL
  */
 export const createPaymentPreference = async (
   items: Array<{
@@ -35,6 +31,8 @@ export const createPaymentPreference = async (
     quantity: number;
     unit_price: number;
     currency_id: string;
+    description?: string;
+    picture_url?: string;
   }>,
   backUrl: {
     success: string;
@@ -44,9 +42,16 @@ export const createPaymentPreference = async (
   metadata: Record<string, any> = {}
 ): Promise<{ preferenceId: string; initPoint: string }> => {
   try {
-    // This is a placeholder. In a real implementation, you would use the MercadoPago SDK.
-    // For illustration purposes, showing the structure of what would be implemented:
+    // Simulated response for testing environment
+    if (!MP_ACCESS_TOKEN || process.env.NODE_ENV === 'development') {
+      // Return mock data for testing
+      return {
+        preferenceId: `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        initPoint: `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=TEST-${Date.now()}`
+      };
+    }
     
+    // This would be the actual implementation in production
     /*
     const mercadopago = require('mercadopago');
     mercadopago.configure({
@@ -69,8 +74,8 @@ export const createPaymentPreference = async (
     
     // Placeholder return for example
     return {
-      preferenceId: 'TEST-123456789',
-      initPoint: 'https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=TEST-123456789'
+      preferenceId: `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      initPoint: `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=TEST-${Date.now()}`
     };
   } catch (error) {
     console.error('Error creating payment preference:', error);
@@ -79,101 +84,19 @@ export const createPaymentPreference = async (
 };
 
 /**
- * Verifies a webhook signature from MercadoPago
- * @param req NextApiRequest containing the webhook payload
- * @returns Boolean indicating if the signature is valid
- */
-export const verifyWebhookSignature = (req: NextApiRequest): boolean => {
-  try {
-    // This is a placeholder. In a real implementation, you would verify the signature.
-    // For illustration purposes, showing what would be implemented:
-    
-    /*
-    const signature = req.headers['x-signature'] as string;
-    if (!signature) return false;
-    
-    // Example verification (implementation depends on MercadoPago's signature method)
-    const calculatedSignature = createHmac('sha256', MP_WEBHOOK_SECRET)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
-      
-    return signature === calculatedSignature;
-    */
-    
-    // Placeholder return for example
-    return true;
-  } catch (error) {
-    console.error('Error verifying webhook signature:', error);
-    return false;
-  }
-};
-
-/**
- * Gets payment information from MercadoPago API
- * @param paymentId ID of the payment to retrieve
- * @returns Payment information
- */
-export const getPaymentInfo = async (paymentId: string): Promise<PaymentInfo | null> => {
-  try {
-    // This is a placeholder. In a real implementation, you would use the MercadoPago SDK.
-    // For illustration purposes, showing what would be implemented:
-    
-    /*
-    const mercadopago = require('mercadopago');
-    mercadopago.configure({
-      access_token: MP_ACCESS_TOKEN
-    });
-    
-    const response = await mercadopago.payment.get(paymentId);
-    return response.body;
-    */
-    
-    // Placeholder return for example
-    return {
-      id: paymentId,
-      status: 'approved',
-      description: 'Test payment',
-      amount: 100,
-      payer: {
-        email: 'test@example.com',
-        identification: {
-          type: 'CPF',
-          number: '12345678909'
-        }
-      },
-      metadata: {
-        campaign_id: 'test-campaign',
-        client_id: 'test-client'
-      }
-    };
-  } catch (error) {
-    console.error('Error getting payment info:', error);
-    return null;
-  }
-};
-
-/**
  * Initializes MercadoPago checkout
  * @param preferenceId The preference ID from MercadoPago
  * @returns void
  */
-export const initMercadoPagoCheckout = (preferenceId: string): void => {
-  // In a real implementation, you'd use the MercadoPago.js SDK
-  // Example:
-  /*
-  const script = document.createElement('script');
-  script.src = 'https://secure.mlstatic.com/sdk/javascript/v1/mercadopago.js';
-  script.onload = () => {
-    window.Mercadopago.setPublishableKey(MP_PUBLIC_KEY);
-    window.Mercadopago.createCheckoutButton({
-      preference: { id: preferenceId },
-      autoOpen: true,
-    });
-  };
-  document.body.appendChild(script);
-  */
+export const initMercadoPagoCheckout = (preferenceId: string, redirectMode: boolean = false): void => {
+  if (redirectMode) {
+    // Redirect mode - navigate directly to MercadoPago checkout
+    window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+    return;
+  }
   
-  // Redirect to MercadoPago checkout URL (simplified version)
+  // In a real implementation with modal, you'd use the MercadoPago.js SDK
+  // For now, we'll just redirect as well
   window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
 };
 
