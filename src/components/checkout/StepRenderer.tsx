@@ -31,6 +31,8 @@ interface StepRendererProps {
   acceptTerms: boolean;
   setAcceptTerms: (value: boolean) => void;
   totalPrice: number;
+  paymentMethod?: string;
+  setPaymentMethod?: (method: string) => void;
 }
 
 const StepRenderer: React.FC<StepRendererProps> = ({
@@ -48,7 +50,9 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   couponValid,
   acceptTerms,
   setAcceptTerms,
-  totalPrice
+  totalPrice,
+  paymentMethod,
+  setPaymentMethod
 }) => {
   // Variantes de animação para transições de página
   const pageVariants = {
@@ -147,6 +151,8 @@ const StepRenderer: React.FC<StepRendererProps> = ({
             acceptTerms={acceptTerms} 
             setAcceptTerms={setAcceptTerms}
             totalPrice={totalPrice}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
           />
           <TrustIndicators />
         </motion.div>

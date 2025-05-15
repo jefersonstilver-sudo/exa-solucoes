@@ -5,6 +5,7 @@ import { toast as sonnerToast } from 'sonner';
 interface MercadoPagoCheckoutOptions {
   preferenceId: string;
   redirectMode?: boolean;
+  paymentMethod?: 'credit_card' | 'pix' | string;
 }
 
 interface UseMercadoPagoOptions {
@@ -74,38 +75,27 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     };
   }, [publicKey]);
 
-  const createCheckout = ({ preferenceId, redirectMode = true }: MercadoPagoCheckoutOptions) => {
+  const createCheckout = ({ preferenceId, redirectMode = true, paymentMethod }: MercadoPagoCheckoutOptions) => {
     if (!isSDKLoaded || !mercadoPago) {
       console.error('MercadoPago SDK não carregado');
       return { success: false, error: 'MercadoPago SDK não carregado' };
     }
     
     try {
-      console.log(`Iniciando checkout do MercadoPago com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}`);
+      console.log(`Iniciando checkout do MercadoPago com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
       
-      if (redirectMode) {
-        // Direct redirect approach - more reliable
-        const checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
-        console.log('Redirecionando para:', checkoutUrl);
-        
-        // Force page redirect with delay to ensure toast is visible
-        sonnerToast.success('Redirecionando para Mercado Pago...');
-        
-        setTimeout(() => {
-          window.location.href = checkoutUrl;
-        }, 800);
-        
-        return { success: true };
-      } else {
-        // Modal approach using SDK
-        const checkout = mercadoPago.checkout({
-          preference: {
-            id: preferenceId
-          },
-          autoOpen: true,
-        });
-        return { success: true, checkout };
-      }
+      // Direct redirect approach - more reliable for all payment methods
+      const checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+      console.log('Redirecionando para:', checkoutUrl);
+      
+      // Force page redirect with delay to ensure toast is visible
+      sonnerToast.success('Redirecionando para Mercado Pago...');
+      
+      setTimeout(() => {
+        window.location.href = checkoutUrl;
+      }, 800);
+      
+      return { success: true };
     } catch (error) {
       console.error('Erro ao criar checkout do MercadoPago:', error);
       return { success: false, error };

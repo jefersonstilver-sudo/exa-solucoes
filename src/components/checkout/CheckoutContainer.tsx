@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import CheckoutHeader from '@/components/checkout/CheckoutHeader';
@@ -9,10 +9,12 @@ import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
 import { useCheckout } from '@/hooks/useCheckout';
 import { useToast } from '@/hooks/use-toast';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 const CheckoutContainer: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [paymentMethod, setPaymentMethod] = useState<string>('credit_card');
   
   const {
     step,
@@ -30,7 +32,7 @@ const CheckoutContainer: React.FC = () => {
     startDate,
     endDate,
     isCreatingPayment,
-    isNavigating, // Nova propriedade
+    isNavigating,
     unavailablePanels,
     cartItems,
     validateCoupon,
@@ -53,7 +55,27 @@ const CheckoutContainer: React.FC = () => {
     }
   }, [selectedPlan, navigate, toast]);
 
+  // Log payment method changes
+  useEffect(() => {
+    if (paymentMethod) {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `Método de pagamento definido: ${paymentMethod}`,
+        { paymentMethod, step }
+      );
+    }
+  }, [paymentMethod, step]);
+
   const totalPrice = calculateTotalPrice();
+
+  const handleNextWithPaymentMethod = () => {
+    // If we're on the payment step, pass the payment method to the next handler
+    if (step === STEPS.PAYMENT) {
+      return handleNextStep(paymentMethod);
+    }
+    return handleNextStep();
+  };
 
   return (
     <motion.div 
@@ -87,6 +109,8 @@ const CheckoutContainer: React.FC = () => {
             acceptTerms={acceptTerms}
             setAcceptTerms={setAcceptTerms}
             totalPrice={totalPrice}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
           />
         </div>
         
@@ -113,11 +137,11 @@ const CheckoutContainer: React.FC = () => {
       {/* Botões de navegação */}
       <CheckoutNavigation
         onBack={step === STEPS.PLAN ? () => window.location.href = '/paineis-digitais/loja' : handlePrevStep}
-        onNext={handleNextStep}
+        onNext={handleNextWithPaymentMethod}
         isBackToStore={step === STEPS.PLAN}
         isNextEnabled={isNextEnabled}
         isCreatingPayment={isCreatingPayment}
-        isNavigating={isNavigating} // Nova propriedade
+        isNavigating={isNavigating}
         isPaymentStep={step === STEPS.PAYMENT}
         totalPrice={totalPrice}
       />

@@ -34,7 +34,9 @@ serve(async (req) => {
     });
     
     // Obter dados do request
-    const { pedidoId, cartItems, totals, userId, returnUrl } = await req.json();
+    const { pedidoId, cartItems, totals, userId, returnUrl, paymentMethod = 'credit_card' } = await req.json();
+    
+    console.log("Dados recebidos:", { pedidoId, totals, userId, paymentMethod });
     
     // Validar pedidoId (deve ser um UUID válido)
     if (!pedidoId || typeof pedidoId !== 'string' || !pedidoId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
@@ -95,14 +97,34 @@ serve(async (req) => {
       external_reference: pedidoId,
       notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
       statement_descriptor: "INDEXA MÍDIA",
+      payment_methods: {
+        excluded_payment_types: [],
+        installments: 12,
+        default_payment_method_id: paymentMethod
+      },
       metadata: {
         pedido_id: pedidoId,
-        user_id: userId
+        user_id: userId,
+        payment_method: paymentMethod
       }
     };
     
+    // Adicionar configurações específicas para PIX se for o método selecionado
+    if (paymentMethod === 'pix') {
+      preference.payment_methods = {
+        ...preference.payment_methods,
+        excluded_payment_types: [
+          { id: "credit_card" },
+          { id: "debit_card" },
+          { id: "ticket" }
+        ],
+        default_payment_method_id: "pix"
+      };
+    }
+    
     // Registrar a criação da preferência
     console.log("Creating payment preference with items:", JSON.stringify(items));
+    console.log("Payment method:", paymentMethod);
     
     // Criar preferência no MercadoPago
     let preferenceId = "";
@@ -120,11 +142,17 @@ serve(async (req) => {
         // Falhar de forma elegante com valores simulados
         preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+        if (paymentMethod === 'pix') {
+          initPoint += '&payment_method_id=pix';
+        }
       }
     } else {
       // Modo simulado (para desenvolvimento)
       preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+      if (paymentMethod === 'pix') {
+        initPoint += '&payment_method_id=pix';
+      }
     }
     
     // Atualizar o pedido com informações de pagamento
@@ -136,6 +164,7 @@ serve(async (req) => {
           payment_preference_id: preferenceId,
           payment_init_point: initPoint,
           payment_status: 'pending',
+          payment_method: paymentMethod,
           items: items.length
         }
       })
@@ -151,7 +180,8 @@ serve(async (req) => {
         success: true,
         preference_id: preferenceId,
         init_point: initPoint,
-        pedido_id: pedidoId
+        pedido_id: pedidoId,
+        payment_method: paymentMethod
       }),
       {
         headers: {

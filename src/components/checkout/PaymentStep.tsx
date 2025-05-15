@@ -12,15 +12,42 @@ import {
   AlertTriangle,
   ExternalLink
 } from "lucide-react";
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from "@/services/checkoutDebugService";
 
 interface PaymentStepProps {
   acceptTerms: boolean;
   setAcceptTerms: (value: boolean) => void;
   totalPrice: number;
+  paymentMethod?: string;
+  setPaymentMethod?: (method: string) => void;
 }
 
-const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepProps) => {
-  const [selectedMethod, setSelectedMethod] = useState<string>("credit_card");
+const PaymentStep = ({ 
+  acceptTerms, 
+  setAcceptTerms, 
+  totalPrice, 
+  paymentMethod: externalPaymentMethod, 
+  setPaymentMethod: externalSetPaymentMethod 
+}: PaymentStepProps) => {
+  const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>("credit_card");
+  
+  // Use either external or internal state for payment method
+  const selectedMethod = externalPaymentMethod || internalPaymentMethod;
+  const setSelectedMethod = (method: string) => {
+    if (externalSetPaymentMethod) {
+      externalSetPaymentMethod(method);
+    } else {
+      setInternalPaymentMethod(method);
+    }
+    
+    // Log payment method selection for debugging
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      `Método de pagamento selecionado: ${method}`,
+      { method, totalPrice }
+    );
+  };
 
   // Payment method options - only PIX and credit card
   const paymentMethods = [
@@ -112,6 +139,7 @@ const PaymentStep = ({ acceptTerms, setAcceptTerms, totalPrice }: PaymentStepPro
                 checked={selectedMethod === method.id}
                 onChange={() => setSelectedMethod(method.id)}
                 className="sr-only"
+                data-testid={`payment-method-${method.id}`}
               />
               <div className={`w-6 h-6 rounded-full border flex items-center justify-center mr-3
                 ${selectedMethod === method.id 

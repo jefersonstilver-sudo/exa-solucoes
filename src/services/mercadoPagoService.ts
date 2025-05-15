@@ -4,19 +4,26 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 /**
  * Handles direct redirection to MercadoPago with fallback strategies
  */
-export const handleMercadoPagoRedirect = (preferenceId: string): void => {
+export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 'credit_card'): void => {
   if (!preferenceId) {
     console.error('Preference ID is required for MercadoPago redirect');
     return;
   }
   
-  const url = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+  // Construct URL - for PIX we need to add payment_method_id parameter
+  let url = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+  
+  // Add payment method to URL if it's PIX
+  if (paymentMethod === 'pix') {
+    url += '&payment_method_id=pix';
+    console.log('Redirecionando para MercadoPago com PIX:', url);
+  }
   
   logCheckoutEvent(
     CheckoutEvent.PAYMENT_PROCESSING, 
     LogLevel.INFO,
     `Redirecionando para MercadoPago: ${url}`,
-    { preferenceId }
+    { preferenceId, paymentMethod }
   );
   
   try {

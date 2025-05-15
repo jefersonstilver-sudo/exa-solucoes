@@ -26,6 +26,7 @@ interface ProcessPaymentOptions {
   unavailablePanels: string[];
   sessionUser: any;
   handleClearCart: () => void;
+  paymentMethod?: string;
 }
 
 export const usePaymentFlow = () => {
@@ -52,7 +53,8 @@ export const usePaymentFlow = () => {
     acceptTerms,
     unavailablePanels,
     sessionUser,
-    handleClearCart
+    handleClearCart,
+    paymentMethod = 'credit_card'
   }: ProcessPaymentOptions) => {
     setIsCreatingPayment(true);
     
@@ -61,8 +63,8 @@ export const usePaymentFlow = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Iniciando processamento de pagamento no valor de ${totalPrice}`,
-        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length }
+        `Iniciando processamento de pagamento no valor de ${totalPrice} com método ${paymentMethod}`,
+        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length, paymentMethod }
       );
       
       // Display processing toast for better user feedback
@@ -132,14 +134,15 @@ export const usePaymentFlow = () => {
           couponDiscount: couponId ? 10 : 0, // example value, should come from real coupon
         },
         userId: sessionUser.id,
-        returnUrl: currentUrl
+        returnUrl: currentUrl,
+        paymentMethod // Add payment method to the data sent to the Edge Function
       };
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
         "Enviando dados para processamento de pagamento",
-        { pedidoId: pedido.id }
+        { pedidoId: pedido.id, paymentMethod }
       );
       
       // Call Edge Function to process payment
@@ -159,8 +162,8 @@ export const usePaymentFlow = () => {
       // Clear cart after successful order creation
       handleClearCart();
       
-      // Redirect to MercadoPago checkout
-      redirectToMercadoPago(data.preference_id);
+      // Redirect to MercadoPago checkout with specific payment method
+      redirectToMercadoPago(data.preference_id, paymentMethod);
       
     } catch (error: any) {
       console.error('Erro ao criar pagamento:', error);

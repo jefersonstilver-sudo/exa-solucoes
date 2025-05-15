@@ -24,7 +24,7 @@ export const useMercadoPagoCheckout = () => {
   }, [isSDKLoaded, isError]);
 
   // Handle redirection to MercadoPago checkout
-  const redirectToMercadoPago = (preferenceId: string) => {
+  const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
     if (!preferenceId) {
       throw new Error('Preference ID is required for MercadoPago redirect');
     }
@@ -32,8 +32,8 @@ export const useMercadoPagoCheckout = () => {
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      "Redirecionando para Mercado Pago",
-      { preferenceId }
+      `Redirecionando para Mercado Pago com método ${paymentMethod}`,
+      { preferenceId, paymentMethod }
     );
     
     sonnerToast.dismiss();
@@ -41,29 +41,30 @@ export const useMercadoPagoCheckout = () => {
     
     try {
       // Attempt to use SDK first
-      console.log('Iniciando checkout com preferenceId:', preferenceId);
+      console.log('Iniciando checkout com preferenceId:', preferenceId, 'e método:', paymentMethod);
       setTimeout(() => {
         try {
           const checkoutResult = createCheckout({ 
             preferenceId: preferenceId,
-            redirectMode: true
+            redirectMode: true,
+            paymentMethod
           });
           
           if (!checkoutResult.success) {
             // Fallback to direct redirection if SDK fails
             console.log('Fallback: redirecionamento direto para MercadoPago');
-            handleMercadoPagoRedirect(preferenceId);
+            handleMercadoPagoRedirect(preferenceId, paymentMethod);
           }
         } catch (checkoutError) {
           console.error('Erro ao iniciar checkout:', checkoutError);
           // Fallback to direct redirection
-          handleMercadoPagoRedirect(preferenceId);
+          handleMercadoPagoRedirect(preferenceId, paymentMethod);
         }
       }, 1000); // Delay for toast visibility
     } catch (error) {
       console.error('Erro ao redirecionar para MercadoPago:', error);
       // Ultimate fallback
-      handleMercadoPagoRedirect(preferenceId);
+      handleMercadoPagoRedirect(preferenceId, paymentMethod);
     }
   };
 

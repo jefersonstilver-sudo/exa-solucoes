@@ -1,19 +1,20 @@
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
 import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
-import { calculateTotalPrice } from '@/utils/checkoutUtils';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { logNavigation } from '@/services/navigationAuditService';
+
+interface CartItem {
+  panel: Panel;
+  duration: number;
+}
 
 interface UseCheckoutNavigationProps {
   step: number;
   setStep: (step: number) => void;
-  selectedPlan: PlanKey;
-  cartItems: { panel: Panel; duration: number }[];
+  selectedPlan: PlanKey | null;
+  cartItems: CartItem[];
   couponDiscount: number;
   couponValid: boolean;
   acceptTerms: boolean;
@@ -23,7 +24,7 @@ interface UseCheckoutNavigationProps {
   endDate: Date;
   sessionUser: any;
   handleClearCart: () => void;
-  createPayment: (params: any) => Promise<any>;
+  createPayment: (options: any) => Promise<void>;
 }
 
 export const useCheckoutNavigation = ({
@@ -43,183 +44,152 @@ export const useCheckoutNavigation = ({
   createPayment
 }: UseCheckoutNavigationProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Determine if the next button should be enabled
+  const isNextEnabled = () => {
+    switch (step) {
+      case 1: // PLAN step
+        return !!selectedPlan && selectedPlan > 0 && cartItems.length > 0;
+      case 2: // REVIEW step
+        return cartItems.length > 0;
+      case 3: // COUPON step
+        return true; // Always enabled as coupon is optional
+      case 4: // PAYMENT step
+        return acceptTerms;
+      default:
+        return false;
+    }
+  };
+  
+  // Navigate to the previous step
+  const handlePrevStep = () => {
+    if (step > 1) {
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        `Navegando para o passo anterior: ${step - 1}`,
+        { currentStep: step, nextStep: step - 1 }
+      );
+      setStep(step - 1);
+    } else {
+      // Primeiro passo, voltar para a loja
+      window.location.href = '/paineis-digitais/loja';
+    }
+  };
 
-  // Melhorada a lógica de validação para cada etapa
-  const isNextEnabled = useCallback(() => {
-    if (step === 0) { // PLAN step
-      return selectedPlan !== null && cartItems.length > 0;
-    }
-    if (step === 1) { // REVIEW step
-      return cartItems.length > 0;
-    }
-    if (step === 2) { // COUPON step
-      return true; // Coupons são opcionais
-    }
-    if (step === 3) { // PAYMENT step
-      return acceptTerms === true;
-    }
-    return false;
-  }, [step, selectedPlan, cartItems, acceptTerms]);
-
-  const calculateOrderTotal = useCallback(() => {
-    return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  }, [selectedPlan, cartItems, couponDiscount, couponValid]);
-
-  const handleNextStep = useCallback(async () => {
+  // Navigate to the next step or process payment
+  const handleNextStep = (paymentMethod = 'credit_card') => {
     if (isNavigating) {
-      console.log("Navegação já em andamento, ignorando novo pedido");
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.WARNING,
+        "Tentativa de navegação bloqueada: navegação já em andamento",
+        { currentStep: step }
+      );
       return;
     }
-
-    // Log detalhado para diagnóstico
-    logCheckoutEvent(
-      CheckoutEvent.NAVIGATION_EVENT,
-      LogLevel.INFO,
-      `Tentando avançar do passo ${step} para o próximo passo`,
-      { currentStep: step, cartItems: cartItems.length }
-    );
-
-    // Verificar se o botão deveria estar habilitado
-    if (!isNextEnabled()) {
-      console.log("Botão desabilitado, mas clicado de alguma forma");
-      return;
-    }
-
+    
     setIsNavigating(true);
-
+    
     try {
-      if (step === 3) {
-        // Passo de pagamento
-        console.log("Iniciando processamento de pagamento", { cartItems, selectedPlan });
-        const orderTotal = calculateOrderTotal();
-
-        if (orderTotal <= 0) {
-          toast({
-            title: "Erro",
-            description: "O valor total do pedido deve ser maior que zero para prosseguir com o pagamento.",
-            variant: "destructive",
-          });
+      // Verificar se pode avançar
+      if (!isNextEnabled()) {
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATION_EVENT, 
+          LogLevel.WARNING,
+          "Navegação bloqueada: botão próximo desabilitado",
+          { currentStep: step, isAcceptTerms: acceptTerms }
+        );
+        setIsNavigating(false);
+        return;
+      }
+      
+      if (step < 4) {
+        // Avançar para o próximo passo (não é o último passo)
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATION_EVENT,
+          LogLevel.INFO,
+          `Navegando para o próximo passo: ${step + 1}`,
+          { currentStep: step, nextStep: step + 1 }
+        );
+        
+        setStep(step + 1);
+        setIsNavigating(false);
+      } else {
+        // Último passo: processar pagamento
+        if (!acceptTerms) {
+          logCheckoutEvent(
+            CheckoutEvent.NAVIGATION_EVENT,
+            LogLevel.WARNING,
+            "Pagamento bloqueado: termos não aceitos",
+            { currentStep: step }
+          );
           setIsNavigating(false);
           return;
         }
-
-        if (!sessionUser) {
-          toast({
-            title: "Erro",
-            description: "Você precisa estar logado para finalizar o pagamento.",
-            variant: "destructive",
-          });
-          logNavigation('/login?redirect=/checkout', 'navigate', true);
-          navigate('/login?redirect=/checkout');
-          setIsNavigating(false);
-          return;
-        }
-
-        // Toast informativo melhorado
-        sonnerToast.loading("Processando seu pagamento...");
-
-        const paymentParams = {
-          totalPrice: orderTotal,
+        
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATION_EVENT,
+          LogLevel.INFO,
+          "Iniciando processamento de pagamento",
+          { currentStep: step, paymentMethod }
+        );
+        
+        // Calcular preço considerando desconto de cupom
+        const totalPrice = calculateTotalPrice();
+        
+        // Tentativa de pagamento
+        createPayment({
+          totalPrice,
           selectedPlan,
           cartItems,
           startDate,
           endDate,
           couponId,
           acceptTerms,
-          unavailablePanels: [], // Ignorando verificação de disponibilidade para correção do bug
+          unavailablePanels,
           sessionUser,
-          handleClearCart
-        };
-
-        console.log("Iniciando processamento de pagamento com params:", paymentParams);
-
-        try {
-          logCheckoutEvent(
-            CheckoutEvent.PAYMENT_PROCESSING,
-            LogLevel.INFO,
-            "Iniciando processamento de pagamento via usePaymentProcessor",
-            { total: orderTotal, planMonths: selectedPlan }
-          );
-          
-          // Chamar o processador de pagamento
-          await createPayment(paymentParams);
-          
-          // Note: A função createPayment já manipula o redirecionamento
-          // Não fazemos nada aqui após a chamada, pois o usuário será redirecionado
-        } catch (paymentError: any) {
-          console.error("Erro ao criar pagamento:", paymentError);
-          setIsNavigating(false);
-          sonnerToast.error("Não foi possível processar o pagamento");
-          
-          toast({
-            title: "Erro",
-            description: paymentError.message || "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        // Avança para o próximo passo
-        console.log(`Avançando para o passo ${step + 1}`);
-        setStep(step + 1);
-        setIsNavigating(false);
+          handleClearCart,
+          paymentMethod // Pass the payment method to the payment processor
+        }).finally(() => {
+          // A função não seta isNavigating aqui porque o redirect para o Mercado Pago
+          // vai acontecer e não queremos resetar o estado de navegação
+        });
       }
-    } catch (error: any) {
-      console.error("Erro inesperado na navegação:", error);
+    } catch (error) {
+      console.error("Erro durante navegação:", error);
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.ERROR,
+        `Erro durante navegação: ${error}`,
+        { currentStep: step, error: String(error) }
+      );
       setIsNavigating(false);
-      sonnerToast.error("Erro inesperado");
-      
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
-        variant: "destructive",
-      });
     }
-  }, [
-    step, 
-    setStep, 
-    selectedPlan, 
-    cartItems, 
-    couponDiscount, 
-    couponValid, 
-    acceptTerms, 
-    couponId, 
-    startDate, 
-    endDate, 
-    sessionUser, 
-    handleClearCart, 
-    createPayment, 
-    navigate, 
-    toast, 
-    isNavigating, 
-    isNextEnabled,
-    calculateOrderTotal
-  ]);
-
-  const handlePrevStep = useCallback(() => {
-    if (isNavigating) {
-      return; // Bloquear navegação enquanto está processando
+  };
+  
+  // Método para calcular o total com desconto
+  const calculateTotalPrice = () => {
+    // Cálculo base: subtotal
+    const subtotal = cartItems.reduce((total, item) => {
+      // Valores de exemplo para desenvolver
+      const pricePerPanel = 250; // R$ 250 por painel/mês
+      return total + pricePerPanel;
+    }, 0);
+    
+    console.log("Subtotal calculado:", subtotal);
+    
+    // Aplicar desconto do cupom se válido
+    let total = subtotal;
+    if (couponValid && couponDiscount > 0) {
+      const discount = (subtotal * couponDiscount) / 100;
+      total = subtotal - discount;
     }
     
-    if (step > 0) {
-      logCheckoutEvent(
-        CheckoutEvent.NAVIGATION_EVENT,
-        LogLevel.INFO,
-        `Retornando do passo ${step} para o passo ${step - 1}`
-      );
-      setStep(step - 1);
-    } else {
-      // Se estiver no primeiro passo, volta para a loja
-      logCheckoutEvent(
-        CheckoutEvent.NAVIGATION_EVENT,
-        LogLevel.INFO,
-        "Retornando para a loja a partir do primeiro passo"
-      );
-      logNavigation('/paineis-digitais/loja', 'navigate', true);
-      navigate('/paineis-digitais/loja');
-    }
-  }, [step, setStep, navigate, isNavigating]);
+    console.log("Total após descontos:", total);
+    return total;
+  };
 
   return {
     handleNextStep,

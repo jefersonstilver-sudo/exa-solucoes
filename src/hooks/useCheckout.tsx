@@ -68,7 +68,9 @@ export const useCheckout = () => {
   
   const {
     isCreatingPayment,
-    createPayment
+    createPayment,
+    paymentMethod,
+    setPaymentMethod
   } = usePaymentProcessor();
   
   // Verifica a disponibilidade dos painéis quando a etapa muda para revisão
@@ -83,13 +85,15 @@ export const useCheckout = () => {
     validateCoupon(selectedPlan);
   };
 
+  // Define handler for next step with optional payment method
+  const handleNextStepWithPayment = (paymentMethod?: string) => {
+    if (handleNavigation.handleNextStep && typeof handleNavigation.handleNextStep === 'function') {
+      handleNavigation.handleNextStep(paymentMethod);
+    }
+  };
+
   // Usa o hook de navegação
-  const { 
-    handleNextStep, 
-    handlePrevStep, 
-    isNextEnabled,
-    isNavigating // Nova propriedade
-  } = useCheckoutNavigation({
+  const handleNavigation = useCheckoutNavigation({
     step,
     setStep,
     selectedPlan,
@@ -105,6 +109,8 @@ export const useCheckout = () => {
     handleClearCart,
     createPayment
   });
+  
+  const { isNavigating } = handleNavigation;
 
   // Log para diagnóstico dos cálculos
   useEffect(() => {
@@ -136,16 +142,18 @@ export const useCheckout = () => {
     startDate,
     endDate,
     isCreatingPayment,
-    isNavigating, // Nova propriedade
+    isNavigating,
     unavailablePanels,
     cartItems,
     validateCoupon: handleValidateCoupon,
-    handleNextStep,
-    handlePrevStep,
-    isNextEnabled,
+    handleNextStep: handleNextStepWithPayment,
+    handlePrevStep: handleNavigation.handlePrevStep,
+    isNextEnabled: handleNavigation.isNextEnabled,
     PLANS,
     calculateTotalPrice: getOrderTotal,
     calculateCartSubtotal: () => calculateCartSubtotal(cartItems),
-    orderId
+    orderId,
+    paymentMethod,
+    setPaymentMethod
   };
 };
