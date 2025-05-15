@@ -1,11 +1,10 @@
 
 import React from 'react';
 import { LogLevel } from '@/services/checkoutDebugService';
-import { XCircle, AlertTriangle, CheckCircle, Info, Clock } from 'lucide-react';
 
 interface LogDisplayProps {
   logs: any[];
-  getIconForLogLevel: (level: string) => JSX.Element;
+  getIconForLogLevel: (level: string) => React.ReactElement;
 }
 
 const LogDisplay: React.FC<LogDisplayProps> = ({ logs, getIconForLogLevel }) => {
