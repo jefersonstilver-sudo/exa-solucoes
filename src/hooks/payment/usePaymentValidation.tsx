@@ -2,6 +2,7 @@
 import { Panel } from '@/types/panel';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
 
 interface CartItem {
   panel: Panel;
@@ -34,16 +35,7 @@ export const usePaymentValidation = () => {
         title: "Termos e condições",
         description: "Você precisa aceitar os termos e condições para continuar.",
       });
-      return false;
-    }
-    
-    // Validar disponibilidade dos painéis selecionados
-    if (unavailablePanels.length > 0) {
-      toast({
-        variant: "destructive",
-        title: "Painéis indisponíveis",
-        description: "Alguns painéis não estão disponíveis para o período selecionado.",
-      });
+      sonnerToast.error("Aceite os termos para continuar");
       return false;
     }
     

@@ -45,6 +45,15 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   const handleNextClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
+    // Logging para diagnóstico
+    console.log("Botão próximo clicado. Estado:", {
+      isDisabled,
+      isNextEnabled,
+      isCreatingPayment,
+      isNavigating,
+      isPaymentStep
+    });
+    
     // Se estiver desabilitado, não fazer nada
     if (isDisabled) {
       logCheckoutEvent(
@@ -64,8 +73,10 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       { isPaymentStep, totalPrice }
     );
     
-    // Chamar o manipulador de evento
-    onNext();
+    // Chamar o manipulador de evento com um pequeno delay para dar feedback visual
+    setTimeout(() => {
+      onNext();
+    }, 100);
   };
 
   // Função segura para lidar com o clique no botão voltar
@@ -121,11 +132,13 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
         className={`
           py-6 px-8 flex items-center space-x-2
           ${isPaymentStep 
-            ? 'bg-green-600 hover:bg-green-700' 
+            ? 'bg-green-600 hover:bg-green-700 focus:ring-green-600' 
             : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'}
           ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}
+          focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all
         `}
         type="button"
+        data-testid="checkout-next-button"
       >
         {isCreatingPayment || isNavigating ? (
           <>

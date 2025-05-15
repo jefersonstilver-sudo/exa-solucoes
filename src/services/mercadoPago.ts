@@ -4,7 +4,7 @@ import { NextApiRequest } from 'next';
 // MercadoPago configuration
 const MP_ACCESS_TOKEN = import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = import.meta.env.VITE_MERCADO_PAGO_WEBHOOK_SECRET || '';
-const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || '';
+const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || 'TEST-5cc34c66-9db9-49d7-9710-766b2c326f29'; // Chave pública de teste (só para desenvolvimento)
 
 // Common MercadoPago types
 export interface PaymentInfo {
@@ -44,6 +44,7 @@ export const createPaymentPreference = async (
   try {
     // Simulated response for testing environment
     if (!MP_ACCESS_TOKEN || process.env.NODE_ENV === 'development') {
+      console.log("MP_ACCESS_TOKEN não configurado ou ambiente de desenvolvimento. Usando dados simulados.");
       // Return mock data for testing
       return {
         preferenceId: `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,

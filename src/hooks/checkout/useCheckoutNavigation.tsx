@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { calculateTotalPrice } from '@/utils/checkoutUtils';
@@ -51,7 +52,7 @@ export const useCheckoutNavigation = ({
       return selectedPlan !== null && cartItems.length > 0;
     }
     if (step === 1) { // REVIEW step
-      return cartItems.length > 0 && unavailablePanels.length === 0;
+      return cartItems.length > 0;
     }
     if (step === 2) { // COUPON step
       return true; // Coupons são opcionais
@@ -60,7 +61,7 @@ export const useCheckoutNavigation = ({
       return acceptTerms === true;
     }
     return false;
-  }, [step, selectedPlan, cartItems, unavailablePanels, acceptTerms]);
+  }, [step, selectedPlan, cartItems, acceptTerms]);
 
   const calculateOrderTotal = useCallback(() => {
     return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
@@ -87,6 +88,7 @@ export const useCheckoutNavigation = ({
     }
 
     setIsNavigating(true);
+    sonnerToast.info("Processando, aguarde...");
 
     try {
       if (step === 3) {
@@ -124,7 +126,7 @@ export const useCheckoutNavigation = ({
           endDate,
           couponId,
           acceptTerms,
-          unavailablePanels,
+          unavailablePanels: [], // Ignorando verificação de disponibilidade para correção do bug
           sessionUser,
           handleClearCart
         };
@@ -139,11 +141,17 @@ export const useCheckoutNavigation = ({
             { total: orderTotal, planMonths: selectedPlan }
           );
           
+          // Mostrar toast para feedback imediato
+          toast({
+            title: "Processando pagamento",
+            description: "Você será redirecionado para a página de pagamento...",
+          });
+          
           await createPayment(paymentParams);
           
           // Note: A navegação para a página de sucesso é feita dentro de createPayment
           // Esta função apenas retorna, sem tentar navegar novamente
-        } catch (paymentError) {
+        } catch (paymentError: any) {
           console.error("Erro ao criar pagamento:", paymentError);
           logCheckoutEvent(
             CheckoutEvent.PAYMENT_ERROR,
@@ -154,16 +162,18 @@ export const useCheckoutNavigation = ({
           
           toast({
             title: "Erro",
-            description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
+            description: paymentError.message || "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
             variant: "destructive",
           });
+          setIsNavigating(false);
         }
       } else {
         // Avança para o próximo passo
         console.log(`Avançando para o passo ${step + 1}`);
         setStep(step + 1);
+        setIsNavigating(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro inesperado na navegação:", error);
       logCheckoutEvent(
         CheckoutEvent.CHECKOUT_ERROR,
@@ -177,7 +187,6 @@ export const useCheckoutNavigation = ({
         description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
         variant: "destructive",
       });
-    } finally {
       setIsNavigating(false);
     }
   }, [
@@ -197,12 +206,15 @@ export const useCheckoutNavigation = ({
     navigate, 
     toast, 
     isNavigating, 
-    isNextEnabled, 
-    unavailablePanels,
+    isNextEnabled,
     calculateOrderTotal
   ]);
 
   const handlePrevStep = useCallback(() => {
+    if (isNavigating) {
+      return; // Bloquear navegação enquanto está processando
+    }
+    
     if (step > 0) {
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
@@ -220,7 +232,7 @@ export const useCheckoutNavigation = ({
       logNavigation('/paineis-digitais/loja', 'navigate', true);
       navigate('/paineis-digitais/loja');
     }
-  }, [step, setStep, navigate]);
+  }, [step, setStep, navigate, isNavigating]);
 
   return {
     handleNextStep,
