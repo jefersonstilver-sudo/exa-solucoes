@@ -15,6 +15,7 @@ interface CheckoutNavigationProps {
   isPaymentStep: boolean;
   totalPrice?: number;
   isNavigating?: boolean;
+  paymentMethod?: string; // Added missing prop
 }
 
 const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
@@ -25,7 +26,8 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isCreatingPayment,
   isPaymentStep,
   totalPrice = 0,
-  isNavigating = false
+  isNavigating = false,
+  paymentMethod // Added missing prop
 }) => {
   // Valor combinado para determinar se o botão deve estar desabilitado
   const isDisabled = !isNextEnabled || isCreatingPayment || isNavigating;
@@ -51,7 +53,8 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       isNextEnabled,
       isCreatingPayment,
       isNavigating,
-      isPaymentStep
+      isPaymentStep,
+      paymentMethod // Log payment method for debugging
     });
     
     // Se estiver desabilitado, não fazer nada
@@ -70,7 +73,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
       `Botão de próximo passo clicado ${isPaymentStep ? '(pagamento)' : ''}`,
-      { isPaymentStep, totalPrice }
+      { isPaymentStep, totalPrice, paymentMethod } // Include payment method in log
     );
     
     // Chamar o manipulador de evento
