@@ -13,7 +13,7 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 interface PanelCartProps {
   cartItems: { panel: Panel; duration: number }[];
   onRemove: (id: string) => void;
-  onClear: () => void;
+  onClear: () => void;  // Added this prop to fix type issue
   onChangeDuration: (id: string, duration: number) => void;
   onProceedToCheckout: () => void;
 }
