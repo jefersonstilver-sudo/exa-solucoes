@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { toast as sonnerToast } from 'sonner';
 
 interface CartItem {
   panel: Panel;
@@ -68,7 +69,7 @@ export const useCheckoutNavigation = ({
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
-        `Navegando para o passo anterior: ${step - 1}`,
+        `Navigating to previous step: ${step - 1}`,
         { currentStep: step, nextStep: step - 1 }
       );
       setStep(step - 1);
@@ -81,15 +82,15 @@ export const useCheckoutNavigation = ({
   // Navigate to the next step or process payment
   const handleNextStep = (paymentMethod = 'credit_card') => {
     // Importante: Log detalhado do que está acontecendo
-    console.log(`[useCheckoutNavigation] handleNextStep chamado com método: ${paymentMethod}, step: ${step}, isNavigating: ${isNavigating}`);
+    console.log(`[useCheckoutNavigation] handleNextStep called with method: ${paymentMethod}, step: ${step}, isNavigating: ${isNavigating}`);
     
     if (isNavigating) {
-      console.warn('[useCheckoutNavigation] Ignorando navegação - já existe uma em andamento');
+      console.warn('[useCheckoutNavigation] Ignoring navigation - already in progress');
       
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.WARNING,
-        "Tentativa de navegação bloqueada: navegação já em andamento",
+        "Navigation attempt blocked: navigation already in progress",
         { currentStep: step }
       );
       return;
@@ -100,12 +101,12 @@ export const useCheckoutNavigation = ({
     try {
       // Verificar se pode avançar
       if (!isNextEnabled()) {
-        console.warn('[useCheckoutNavigation] Navegação bloqueada - isNextEnabled() retornou false');
+        console.warn('[useCheckoutNavigation] Navigation blocked - isNextEnabled() returned false');
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT, 
           LogLevel.WARNING,
-          "Navegação bloqueada: botão próximo desabilitado",
+          "Navigation blocked: next button disabled",
           { currentStep: step, isAcceptTerms: acceptTerms }
         );
         setIsNavigating(false);
@@ -114,12 +115,12 @@ export const useCheckoutNavigation = ({
       
       if (step < 4) {
         // Avançar para o próximo passo (não é o último passo)
-        console.log(`[useCheckoutNavigation] Avançando para o passo ${step + 1}`);
+        console.log(`[useCheckoutNavigation] Advancing to step ${step + 1}`);
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
-          `Navegando para o próximo passo: ${step + 1}`,
+          `Navigating to next step: ${step + 1}`,
           { currentStep: step, nextStep: step + 1 }
         );
         
@@ -128,26 +129,32 @@ export const useCheckoutNavigation = ({
       } else {
         // Último passo: processar pagamento
         if (!acceptTerms) {
-          console.warn('[useCheckoutNavigation] Pagamento bloqueado - termos não aceitos');
+          console.warn('[useCheckoutNavigation] Payment blocked - terms not accepted');
+          sonnerToast.error("Você precisa aceitar os termos para continuar");
           
           logCheckoutEvent(
             CheckoutEvent.NAVIGATION_EVENT,
             LogLevel.WARNING,
-            "Pagamento bloqueado: termos não aceitos",
+            "Payment blocked: terms not accepted",
             { currentStep: step }
           );
           setIsNavigating(false);
           return;
         }
         
+        // Important: Save and normalize paymentMethod
+        const normalizedPaymentMethod = !paymentMethod || paymentMethod === 'undefined' 
+          ? 'credit_card' 
+          : paymentMethod;
+        
         // Log detalhado da criação de pagamento
-        console.log(`[useCheckoutNavigation] Iniciando processamento de pagamento com método: ${paymentMethod}`);
+        console.log(`[useCheckoutNavigation] Starting payment processing with method: ${normalizedPaymentMethod}`);
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
-          `Iniciando processamento de pagamento com método: ${paymentMethod}`,
-          { currentStep: step, paymentMethod }
+          `Starting payment processing with method: ${normalizedPaymentMethod}`,
+          { currentStep: step, paymentMethod: normalizedPaymentMethod }
         );
         
         // Calcular preço considerando desconto de cupom
@@ -165,19 +172,20 @@ export const useCheckoutNavigation = ({
           unavailablePanels,
           sessionUser,
           handleClearCart,
-          paymentMethod // Pass the payment method to the payment processor
+          paymentMethod: normalizedPaymentMethod // Pass the normalized payment method
         }).finally(() => {
           // A função não seta isNavigating aqui porque o redirect para o Mercado Pago
           // vai acontecer e não queremos resetar o estado de navegação
         });
       }
     } catch (error) {
-      console.error("[useCheckoutNavigation] Erro durante navegação:", error);
+      console.error("[useCheckoutNavigation] Error during navigation:", error);
+      sonnerToast.error("Erro ao processar sua solicitação");
       
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.ERROR,
-        `Erro durante navegação: ${error}`,
+        `Error during navigation: ${error}`,
         { currentStep: step, error: String(error) }
       );
       setIsNavigating(false);
@@ -193,7 +201,7 @@ export const useCheckoutNavigation = ({
       return total + pricePerPanel;
     }, 0);
     
-    console.log("[useCheckoutNavigation] Subtotal calculado:", subtotal);
+    console.log("[useCheckoutNavigation] Calculated subtotal:", subtotal);
     
     // Aplicar desconto do cupom se válido
     let total = subtotal;
@@ -202,7 +210,7 @@ export const useCheckoutNavigation = ({
       total = subtotal - discount;
     }
     
-    console.log("[useCheckoutNavigation] Total após descontos:", total);
+    console.log("[useCheckoutNavigation] Total after discounts:", total);
     return total;
   };
 

@@ -83,21 +83,35 @@ export const useCheckout = () => {
     }
   }, [step, startDate, endDate, cartItems, checkPanelAvailability, STEPS.REVIEW]);
 
+  // Log payment method changes for debugging
+  useEffect(() => {
+    if (paymentMethod) {
+      console.log(`[useCheckout] Payment method selected: ${paymentMethod}, step: ${step}`);
+      
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `Payment method selected: ${paymentMethod}`,
+        { paymentMethod, step }
+      );
+    }
+  }, [paymentMethod, step]);
+
   // Adapta a função validateCoupon para a nova estrutura
   const handleValidateCoupon = () => {
     validateCoupon(selectedPlan);
   };
 
-  // Define handler for next step with optional payment method
+  // Define handler for next step with explicit payment method
   const handleNextStepWithPayment = (paymentMethod?: string) => {
-    console.log(`[useCheckout] handleNextStepWithPayment chamado com método: ${paymentMethod}`);
+    console.log(`[useCheckout] handleNextStepWithPayment called with method: ${paymentMethod || 'default'}`);
     
     if (handleNavigation.handleNextStep && typeof handleNavigation.handleNextStep === 'function') {
       // Log para diagnóstico
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
-        `Chamando handleNextStep com método: ${paymentMethod || 'undefined'}`,
+        `Calling handleNextStep with method: ${paymentMethod || 'default'}`,
         { paymentMethod }
       );
       
@@ -127,10 +141,10 @@ export const useCheckout = () => {
 
   // Log para diagnóstico dos cálculos
   useEffect(() => {
-    console.log("[useCheckout] Dados do carrinho:", cartItems);
+    console.log("[useCheckout] Cart data:", cartItems);
     if (cartItems.length > 0) {
-      console.log("[useCheckout] Subtotal calculado:", calculateCartSubtotal(cartItems));
-      console.log("[useCheckout] Total calculado:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
+      console.log("[useCheckout] Calculated subtotal:", calculateCartSubtotal(cartItems));
+      console.log("[useCheckout] Calculated total:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
     }
   }, [cartItems, selectedPlan, couponDiscount, couponValid]);
 

@@ -56,14 +56,13 @@ export const usePaymentFlow = () => {
     handleClearCart,
     paymentMethod = 'credit_card'
   }: ProcessPaymentOptions) => {
-    // Validação do paymentMethod - assegura que é um valor válido
-    if (paymentMethod !== 'credit_card' && paymentMethod !== 'pix') {
-      console.warn(`Método de pagamento inválido: ${paymentMethod}, usando credit_card como fallback`);
-      paymentMethod = 'credit_card';
-    }
+    // Normalize and validate payment method - ensure it's a valid value
+    const normalizedPaymentMethod = !paymentMethod || paymentMethod === 'undefined' 
+      ? 'credit_card' 
+      : (paymentMethod === 'pix' ? 'pix' : 'credit_card');
     
-    // Log do método de pagamento selecionado
-    console.log(`[Payment Flow] Iniciando processamento com método: ${paymentMethod}`);
+    // Log detailed payment method info for debugging
+    console.log(`[Payment Flow] Starting processing with method: ${normalizedPaymentMethod} (original: ${paymentMethod})`);
     
     setIsCreatingPayment(true);
     
@@ -72,8 +71,8 @@ export const usePaymentFlow = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Iniciando processamento de pagamento: R$${totalPrice} | Método: ${paymentMethod}`,
-        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length, paymentMethod }
+        `Starting payment processing: R$${totalPrice} | Method: ${normalizedPaymentMethod}`,
+        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length, paymentMethod: normalizedPaymentMethod }
       );
       
       // Display processing toast for better user feedback
@@ -83,7 +82,7 @@ export const usePaymentFlow = () => {
       // IMPORTANT: Ignoring unavailable panels validation to fix the bug
       const isValid = validatePaymentRequirements({
         acceptTerms, 
-        unavailablePanels: [], // Ignorando validação para correção do bug
+        unavailablePanels: [], // Ignoring validation to fix the bug
         sessionUser, 
         isSDKLoaded,
         cartItems
@@ -96,7 +95,7 @@ export const usePaymentFlow = () => {
         logCheckoutEvent(
           CheckoutEvent.PAYMENT_ERROR,
           LogLevel.ERROR,
-          "Requisitos do pagamento não atendidos",
+          "Payment requirements not met",
           { acceptTerms }
         );
         return;
@@ -116,8 +115,8 @@ export const usePaymentFlow = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Pedido criado com ID: ${pedido.id}`,
-        { pedidoId: pedido.id, paymentMethod }
+        `Order created with ID: ${pedido.id}`,
+        { pedidoId: pedido.id, paymentMethod: normalizedPaymentMethod }
       );
       
       toast({
@@ -144,14 +143,14 @@ export const usePaymentFlow = () => {
         },
         userId: sessionUser.id,
         returnUrl: currentUrl,
-        paymentMethod // Enviando o método de pagamento explicitamente
+        paymentMethod: normalizedPaymentMethod // Send the normalized payment method explicitly
       };
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        "Enviando dados para processamento de pagamento",
-        { pedidoId: pedido.id, paymentMethod }
+        "Sending data for payment processing",
+        { pedidoId: pedido.id, paymentMethod: normalizedPaymentMethod }
       );
       
       // Call Edge Function to process payment
@@ -160,39 +159,39 @@ export const usePaymentFlow = () => {
       });
       
       if (error) {
-        throw new Error(`Erro ao processar pagamento: ${error.message}`);
+        throw new Error(`Error processing payment: ${error.message}`);
       }
       
       // Verify valid response
       if (!data || !data.success) {
-        throw new Error('Resposta inválida do processador de pagamento');
+        throw new Error('Invalid response from payment processor');
       }
       
       // Clear cart after successful order creation
       handleClearCart();
       
-      // Log success antes do redirecionamento
+      // Log success before redirection
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Redirecionando para checkout do MercadoPago com preferenceId: ${data.preference_id}`,
-        { preferenceId: data.preference_id, method: paymentMethod }
+        `Redirecting to MercadoPago checkout with preferenceId: ${data.preference_id}`,
+        { preferenceId: data.preference_id, method: normalizedPaymentMethod }
       );
       
       // Redirect to MercadoPago checkout with specific payment method
-      redirectToMercadoPago(data.preference_id, paymentMethod);
+      redirectToMercadoPago(data.preference_id, normalizedPaymentMethod);
       
-      // Não definimos isCreatingPayment como false aqui porque o redirecionamento acontecerá
+      // Don't set isCreatingPayment as false here because redirection will happen
       
     } catch (error: any) {
-      console.error('Erro ao criar pagamento:', error);
+      console.error('Error creating payment:', error);
       sonnerToast.dismiss();
       sonnerToast.error("Erro ao iniciar pagamento");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        `Erro ao criar pagamento: ${error.message}`,
+        `Error creating payment: ${error.message}`,
         { error: error.message }
       );
       

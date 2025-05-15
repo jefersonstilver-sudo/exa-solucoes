@@ -1,5 +1,6 @@
 
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { toast as sonnerToast } from 'sonner';
 
 /**
  * Handles direct redirection to MercadoPago with robust fallback strategies
@@ -9,122 +10,141 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 'credit_card'): void => {
   if (!preferenceId) {
     console.error('Preference ID is required for MercadoPago redirect');
+    sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
     return;
   }
   
+  // Normalize payment method to valid values only
+  const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
+  
   // Log payment attempt for diagnostics
-  console.log(`[MercadoPago] Iniciando redirecionamento com método: ${paymentMethod}, preferenceId: ${preferenceId}`);
+  console.log(`[MercadoPago] Starting redirection with method: ${normalizedPaymentMethod}, preferenceId: ${preferenceId}`);
   
   // Construct base URL
   let url = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
   
   // Add payment method to URL if it's PIX 
-  if (paymentMethod === 'pix') {
+  if (normalizedPaymentMethod === 'pix') {
     url += '&payment_method_id=pix';
-    console.log('[MercadoPago] Redirecionando para PIX:', url);
+    console.log('[MercadoPago] Redirecting to PIX payment:', url);
+    
+    // Show specific PIX toast
+    sonnerToast.dismiss();
+    sonnerToast.loading("Preparando pagamento PIX...");
   } else {
-    console.log('[MercadoPago] Redirecionando para cartão:', url);
+    console.log('[MercadoPago] Redirecting to credit card payment:', url);
+    
+    // Show credit card toast
+    sonnerToast.dismiss();
+    sonnerToast.loading("Redirecionando para pagamento com cartão...");
   }
   
   logCheckoutEvent(
     CheckoutEvent.PAYMENT_PROCESSING, 
     LogLevel.INFO,
-    `Redirecionando para MercadoPago: ${url}`,
-    { preferenceId, paymentMethod }
+    `Redirecting to MercadoPago: ${url}`,
+    { preferenceId, paymentMethod: normalizedPaymentMethod }
   );
   
-  // Implementação simplificada e robusta de redirecionamento
+  // Simplified and robust redirection implementation
   try {
-    // Método primário - navegação direta
-    window.location.href = url;
-    
-    // Fallback em caso de bloqueio de popup ou outra falha
+    // Primary method - direct navigation
     setTimeout(() => {
-      // Verificar se ainda estamos na mesma página após 2 segundos
-      if (document.location.href.indexOf('checkout') > -1) {
-        console.log('[MercadoPago] Redirecionamento primário falhou, tentando alternativas');
-        
-        // Alternativa 1: Abrir em nova aba/janela
-        const newWindow = window.open(url, '_blank');
-        
-        // Alternativa 2: Se a nova janela falhou, criar um elemento visual para o usuário clicar
-        if (!newWindow || newWindow.closed) {
-          console.log('[MercadoPago] Redirecionamento alternativo falhou, criando link manual');
+      window.location.href = url;
+      
+      // Start fallback timer
+      setTimeout(() => {
+        // Check if we're still on the same page after 2 seconds
+        if (document.location.href.indexOf('checkout') > -1) {
+          console.log('[MercadoPago] Primary redirection failed, trying alternatives');
           
-          // Criar um overlay com link clicável
-          const overlay = document.createElement('div');
-          overlay.style.position = 'fixed';
-          overlay.style.top = '0';
-          overlay.style.left = '0';
-          overlay.style.width = '100%';
-          overlay.style.height = '100%';
-          overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-          overlay.style.zIndex = '10000';
-          overlay.style.display = 'flex';
-          overlay.style.alignItems = 'center';
-          overlay.style.justifyContent = 'center';
+          // Alternative 1: Open in new tab/window
+          const newWindow = window.open(url, '_blank');
           
-          const container = document.createElement('div');
-          container.style.backgroundColor = 'white';
-          container.style.padding = '30px';
-          container.style.borderRadius = '10px';
-          container.style.maxWidth = '500px';
-          container.style.textAlign = 'center';
-          
-          const heading = document.createElement('h2');
-          heading.innerText = 'Redirecionamento bloqueado';
-          heading.style.marginBottom = '15px';
-          heading.style.color = '#333';
-          
-          const message = document.createElement('p');
-          message.innerText = 'Não foi possível redirecionar automaticamente para o Mercado Pago. Por favor, clique no botão abaixo para continuar com o pagamento.';
-          message.style.marginBottom = '20px';
-          message.style.color = '#555';
-          
-          const button = document.createElement('a');
-          button.href = url;
-          button.target = '_blank';
-          button.innerText = paymentMethod === 'pix' ? 'Continuar para o pagamento PIX' : 'Continuar para o pagamento';
-          button.style.display = 'inline-block';
-          button.style.padding = '12px 24px';
-          button.style.backgroundColor = '#009ee3';
-          button.style.color = 'white';
-          button.style.borderRadius = '5px';
-          button.style.textDecoration = 'none';
-          button.style.fontWeight = 'bold';
-          button.style.cursor = 'pointer';
-          
-          container.appendChild(heading);
-          container.appendChild(message);
-          container.appendChild(button);
-          overlay.appendChild(container);
-          document.body.appendChild(overlay);
-          
-          // Adicionar evento de clique para remover overlay após redirecionamento
-          button.addEventListener('click', () => {
-            document.body.removeChild(overlay);
-          });
+          // Alternative 2: If new window failed, create a visual element for the user to click
+          if (!newWindow || newWindow.closed) {
+            console.log('[MercadoPago] Alternative redirection failed, creating manual link');
+            sonnerToast.dismiss();
+            sonnerToast.error("Não foi possível redirecionar automaticamente");
+            
+            // Create an overlay with clickable link
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            overlay.style.zIndex = '10000';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            
+            const container = document.createElement('div');
+            container.style.backgroundColor = 'white';
+            container.style.padding = '30px';
+            container.style.borderRadius = '10px';
+            container.style.maxWidth = '500px';
+            container.style.textAlign = 'center';
+            
+            const heading = document.createElement('h2');
+            heading.innerText = 'Redirecionamento bloqueado';
+            heading.style.marginBottom = '15px';
+            heading.style.color = '#333';
+            
+            const message = document.createElement('p');
+            message.innerText = 'Não foi possível redirecionar automaticamente para o Mercado Pago. Por favor, clique no botão abaixo para continuar com o pagamento.';
+            message.style.marginBottom = '20px';
+            message.style.color = '#555';
+            
+            const button = document.createElement('a');
+            button.href = url;
+            button.target = '_blank';
+            button.innerText = normalizedPaymentMethod === 'pix' ? 'Continuar para o pagamento PIX' : 'Continuar para o pagamento';
+            button.style.display = 'inline-block';
+            button.style.padding = '12px 24px';
+            button.style.backgroundColor = '#009ee3';
+            button.style.color = 'white';
+            button.style.borderRadius = '5px';
+            button.style.textDecoration = 'none';
+            button.style.fontWeight = 'bold';
+            button.style.cursor = 'pointer';
+            
+            container.appendChild(heading);
+            container.appendChild(message);
+            container.appendChild(button);
+            overlay.appendChild(container);
+            document.body.appendChild(overlay);
+            
+            // Add click event to remove overlay after redirection
+            button.addEventListener('click', () => {
+              document.body.removeChild(overlay);
+            });
+          }
         }
-      }
-    }, 2000);
-  } catch (error) {
-    console.error('[MercadoPago] Erro crítico ao redirecionar:', error);
+      }, 2000);
+    }, 500); // Short delay to ensure toast is visible
     
-    // Relatório detalhado do erro
+  } catch (error) {
+    console.error('[MercadoPago] Critical error during redirection:', error);
+    sonnerToast.dismiss();
+    sonnerToast.error("Erro ao processar pagamento");
+    
+    // Detailed error report
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_ERROR,
       LogLevel.ERROR,
-      `Erro crítico no redirecionamento: ${error}`,
+      `Critical error during redirection: ${error}`,
       { error: String(error), preferenceId, paymentMethod, userAgent: navigator.userAgent }
     );
     
-    // Último recurso - criar um link para o usuário clicar
+    // Last resort - create a link for the user to click
     alert(`Erro ao processar pagamento. Por favor, tente novamente ou use o link manual que aparecerá na tela.`);
     
     const linkElement = document.createElement('a');
     linkElement.href = url;
     linkElement.target = '_blank';
-    linkElement.innerText = paymentMethod === 'pix' ? 'Clique aqui para pagar com PIX' : 'Clique aqui para abrir o Mercado Pago';
+    linkElement.innerText = normalizedPaymentMethod === 'pix' ? 'Clique aqui para pagar com PIX' : 'Clique aqui para abrir o Mercado Pago';
     linkElement.style.display = 'block';
     linkElement.style.margin = '20px auto';
     linkElement.style.padding = '15px 30px';

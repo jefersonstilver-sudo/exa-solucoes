@@ -23,30 +23,36 @@ export const useMercadoPagoCheckout = () => {
     });
   }, [isSDKLoaded, isError]);
 
-  // Handle redirection to MercadoPago checkout
+  // Handle redirection to MercadoPago checkout with explicit payment method handling
   const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
     if (!preferenceId) {
+      sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
       throw new Error('Preference ID is required for MercadoPago redirect');
     }
     
-    // Registra evento de redirecionamento
+    // Normalize payment method to valid values only
+    const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
+    
+    // Register redirection event with normalized payment method
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Iniciando redirecionamento para Mercado Pago com método ${paymentMethod}`,
-      { preferenceId, paymentMethod }
+      `Starting redirection to Mercado Pago with method ${normalizedPaymentMethod}`,
+      { preferenceId, paymentMethod: normalizedPaymentMethod }
     );
     
-    console.log(`[MercadoPago] Redirecionando para pagamento com método: ${paymentMethod}`);
+    console.log(`[MercadoPago] Redirecting to payment with method: ${normalizedPaymentMethod}`);
     
-    // Mostra toast de confirmação antes do redirecionamento
+    // Show confirmation toast before redirection
     sonnerToast.dismiss();
-    sonnerToast.success("Redirecionando para pagamento...");
+    sonnerToast.success(normalizedPaymentMethod === 'pix' 
+      ? "Redirecionando para pagamento PIX..." 
+      : "Redirecionando para pagamento...");
     
-    // Timeout pequeno para garantir que o toast seja exibido antes do redirecionamento
+    // Small timeout to ensure the toast is displayed before redirection
     setTimeout(() => {
-      // Usa o serviço de redirecionamento unificado
-      handleMercadoPagoRedirect(preferenceId, paymentMethod);
+      // Use the unified redirection service with normalized payment method
+      handleMercadoPagoRedirect(preferenceId, normalizedPaymentMethod);
     }, 800);
   };
 
