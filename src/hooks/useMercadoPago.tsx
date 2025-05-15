@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { toast as sonnerToast } from 'sonner';
 
 interface MercadoPagoCheckoutOptions {
   preferenceId: string;
@@ -22,7 +23,7 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       return;
     }
     
-    // Se o SDK já estava carregado anteriormente, remova-o
+    // Remove any existing script to prevent duplicate loading
     const existingScript = document.getElementById('mercadopago-script');
     if (existingScript) {
       document.body.removeChild(existingScript);
@@ -30,28 +31,37 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       setMercadoPago(null);
     }
     
+    // Create and load the script
     const script = document.createElement('script');
     script.id = 'mercadopago-script';
     script.src = 'https://sdk.mercadopago.com/js/v2';
     script.async = true;
     
+    // Add loading indicator
+    sonnerToast.loading('Carregando MercadoPago SDK...');
+    
     script.onload = () => {
       console.log('MercadoPago SDK carregado com sucesso');
+      sonnerToast.dismiss();
       try {
         // @ts-ignore - MercadoPago é carregado via script
         const mp = new window.MercadoPago(publicKey, {
           locale: 'pt-BR'
         });
+        
         setMercadoPago(mp);
         setIsSDKLoaded(true);
+        console.log('MercadoPago inicializado corretamente');
       } catch (error) {
         console.error('Erro ao inicializar MercadoPago:', error);
+        sonnerToast.error('Erro ao inicializar MercadoPago');
         setIsError(true);
       }
     };
     
     script.onerror = () => {
       console.error('Erro ao carregar MercadoPago SDK');
+      sonnerToast.error('Erro ao carregar MercadoPago SDK');
       setIsError(true);
     };
     
@@ -74,11 +84,20 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       console.log(`Iniciando checkout do MercadoPago com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}`);
       
       if (redirectMode) {
-        // Modo de redirecionamento - Navega para o checkout do MercadoPago
-        window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+        // Direct redirect approach - more reliable
+        const checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
+        console.log('Redirecionando para:', checkoutUrl);
+        
+        // Force page redirect with delay to ensure toast is visible
+        sonnerToast.success('Redirecionando para Mercado Pago...');
+        
+        setTimeout(() => {
+          window.location.href = checkoutUrl;
+        }, 800);
+        
         return { success: true };
       } else {
-        // Modo modal - Abre o checkout do MercadoPago em um modal
+        // Modal approach using SDK
         const checkout = mercadoPago.checkout({
           preference: {
             id: preferenceId

@@ -73,10 +73,8 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       { isPaymentStep, totalPrice }
     );
     
-    // Chamar o manipulador de evento com um pequeno delay para dar feedback visual
-    setTimeout(() => {
-      onNext();
-    }, 100);
+    // Chamar o manipulador de evento
+    onNext();
   };
 
   // Função segura para lidar com o clique no botão voltar

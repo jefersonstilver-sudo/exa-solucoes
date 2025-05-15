@@ -73,7 +73,7 @@ export const useCheckoutNavigation = ({
       return;
     }
 
-    // Adicionar log detalhado para diagnóstico
+    // Log detalhado para diagnóstico
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
@@ -88,7 +88,6 @@ export const useCheckoutNavigation = ({
     }
 
     setIsNavigating(true);
-    sonnerToast.info("Processando, aguarde...");
 
     try {
       if (step === 3) {
@@ -118,6 +117,9 @@ export const useCheckoutNavigation = ({
           return;
         }
 
+        // Toast informativo melhorado
+        sonnerToast.loading("Processando seu pagamento...");
+
         const paymentParams = {
           totalPrice: orderTotal,
           selectedPlan,
@@ -131,41 +133,31 @@ export const useCheckoutNavigation = ({
           handleClearCart
         };
 
-        console.log("Params de pagamento:", paymentParams);
+        console.log("Iniciando processamento de pagamento com params:", paymentParams);
 
         try {
           logCheckoutEvent(
             CheckoutEvent.PAYMENT_PROCESSING,
             LogLevel.INFO,
-            "Iniciando processamento de pagamento",
+            "Iniciando processamento de pagamento via usePaymentProcessor",
             { total: orderTotal, planMonths: selectedPlan }
           );
           
-          // Mostrar toast para feedback imediato
-          toast({
-            title: "Processando pagamento",
-            description: "Você será redirecionado para a página de pagamento...",
-          });
-          
+          // Chamar o processador de pagamento
           await createPayment(paymentParams);
           
-          // Note: A navegação para a página de sucesso é feita dentro de createPayment
-          // Esta função apenas retorna, sem tentar navegar novamente
+          // Note: A função createPayment já manipula o redirecionamento
+          // Não fazemos nada aqui após a chamada, pois o usuário será redirecionado
         } catch (paymentError: any) {
           console.error("Erro ao criar pagamento:", paymentError);
-          logCheckoutEvent(
-            CheckoutEvent.PAYMENT_ERROR,
-            LogLevel.ERROR,
-            "Erro ao processar pagamento",
-            { error: String(paymentError) }
-          );
+          setIsNavigating(false);
+          sonnerToast.error("Não foi possível processar o pagamento");
           
           toast({
             title: "Erro",
             description: paymentError.message || "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
             variant: "destructive",
           });
-          setIsNavigating(false);
         }
       } else {
         // Avança para o próximo passo
@@ -175,19 +167,14 @@ export const useCheckoutNavigation = ({
       }
     } catch (error: any) {
       console.error("Erro inesperado na navegação:", error);
-      logCheckoutEvent(
-        CheckoutEvent.CHECKOUT_ERROR,
-        LogLevel.ERROR, 
-        "Erro inesperado durante o checkout",
-        { error: String(error) }
-      );
+      setIsNavigating(false);
+      sonnerToast.error("Erro inesperado");
       
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
         variant: "destructive",
       });
-      setIsNavigating(false);
     }
   }, [
     step, 
