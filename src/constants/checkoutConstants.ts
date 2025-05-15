@@ -1,11 +1,11 @@
 
-
 // Etapas do checkout (reordered to show PLAN first)
 export const CHECKOUT_STEPS = {
   PLAN: 0,
   REVIEW: 1,
   COUPON: 2,
-  PAYMENT: 3
+  PAYMENT: 3,
+  UPLOAD: 4
 };
 
 // Planos disponíveis with updated pricing and benefits
@@ -53,7 +53,7 @@ export const PLANS = {
     videosPerMonth: 1,
     studioUse: true,
     color: 'purple',
-    tag: '✨ Plano Profissional'
+    tag: '✨ Plano Recomendado'
   },
   12: {
     id: 12,
@@ -79,4 +79,3 @@ export const MP_ACCESS_TOKEN = 'TEST-1284714739337536-091623-...'; // Truncado p
 
 // Constantes de duração
 export const DAYS_IN_MONTH = 30;
-

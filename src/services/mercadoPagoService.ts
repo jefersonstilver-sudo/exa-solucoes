@@ -20,7 +20,7 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   // Log payment attempt for diagnostics
   console.log(`[MercadoPago] Starting redirection with method: ${normalizedPaymentMethod}, preferenceId: ${preferenceId}`);
   
-  // Construct base URL
+  // Construct base URL - Garantindo que o ambiente de teste esteja explícito
   let url = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
   
   // Add payment method to URL if it's PIX 
@@ -32,6 +32,7 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     sonnerToast.dismiss();
     sonnerToast.success("Redirecionando para pagamento PIX...");
   } else {
+    url += '&payment_method_id=credit_card';
     console.log('[MercadoPago] Redirecting to credit card payment:', url);
     
     // Show credit card toast
@@ -39,11 +40,14 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     sonnerToast.success("Redirecionando para pagamento com cartão...");
   }
   
+  // Adicionando parâmetros adicionais para ambiente de teste
+  url += '&sandbox=true&test_mode=true';
+  
   logCheckoutEvent(
     CheckoutEvent.PAYMENT_PROCESSING, 
     LogLevel.INFO,
-    `Redirecting to MercadoPago: ${url}`,
-    { preferenceId, paymentMethod: normalizedPaymentMethod }
+    `Redirecting to MercadoPago Test Environment: ${url}`,
+    { preferenceId, paymentMethod: normalizedPaymentMethod, testMode: true }
   );
   
   // Direct window location change for reliability
@@ -55,4 +59,32 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
  */
 export const isValidPreferenceId = (preferenceId: string | null): boolean => {
   return !!preferenceId && typeof preferenceId === 'string' && preferenceId.length > 5;
+};
+
+/**
+ * Modifica URL para garantir que estamos sempre utilizando o ambiente de teste
+ */
+export const ensureTestEnvironment = (url: string): string => {
+  let testUrl = url;
+  
+  if (!testUrl.includes('test=true')) {
+    testUrl += testUrl.includes('?') ? '&test=true' : '?test=true';
+  }
+  
+  if (!testUrl.includes('sandbox=true')) {
+    testUrl += '&sandbox=true';
+  }
+  
+  return testUrl;
+};
+
+/**
+ * Obtém configurações de teste para o MercadoPago
+ */
+export const getTestCredentials = (): { cardNumber: string; cvv: string; expDate: string } => {
+  return {
+    cardNumber: '5031 4332 1540 6351', // Mastercard de teste
+    cvv: '123',
+    expDate: '11/25'
+  };
 };

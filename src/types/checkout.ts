@@ -1,5 +1,4 @@
 
-
 export interface Plan {
   id: number;
   name: string;
@@ -32,5 +31,5 @@ export interface CheckoutSteps {
   PLAN: number;
   COUPON: number;
   PAYMENT: number;
+  UPLOAD: number;
 }
-

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Upload } from 'lucide-react';
 
 interface CheckoutProgressProps {
   currentStep: number;
@@ -12,7 +12,8 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
     { name: 'Revisão', icon: '📋' },
     { name: 'Plano', icon: '⏱️' },
     { name: 'Cupom', icon: '🏷️' },
-    { name: 'Pagamento', icon: '💳' }
+    { name: 'Pagamento', icon: '💳' },
+    { name: 'Upload', icon: '📤' }
   ];
 
   return (
@@ -32,6 +33,7 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
                     ? 'bg-[#1E1B4B] text-white' // Current
                     : 'bg-gray-100 text-gray-400' // Upcoming
                 }
+                ${index === 4 && currentStep === 4 ? 'animate-pulse bg-[#1E1B4B]' : ''} // Animação pulsante para etapa Upload
               `}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ 
@@ -40,7 +42,7 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
                 backgroundColor: currentStep > index 
                   ? 'rgba(0, 255, 171, 0.2)' // #00FFAB with 20% opacity
                   : currentStep === index 
-                    ? '#1E1B4B' 
+                    ? index === 4 ? '#1E1B4B' : '#1E1B4B' 
                     : '#F3F4F6',
                 transition: {
                   duration: 0.3,
@@ -51,7 +53,7 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
               {currentStep > index ? (
                 <Check className="w-5 h-5" />
               ) : (
-                <span className="text-lg">{step.icon}</span>
+                index === 4 ? <Upload className="w-5 h-5" /> : <span className="text-lg">{step.icon}</span>
               )}
             </motion.div>
             
@@ -62,6 +64,7 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
                   ? 'text-gray-700' 
                   : 'text-gray-400'
                 }
+                ${index === 4 && currentStep === 4 ? 'font-bold text-[#1E1B4B]' : ''}
               `}
               initial={{ opacity: 0 }}
               animate={{ 
@@ -73,7 +76,7 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
                 }
               }}
             >
-              {step.name}
+              {index === 4 && currentStep === 4 ? 'Começar' : step.name}
             </motion.span>
           </div>
         ))}
