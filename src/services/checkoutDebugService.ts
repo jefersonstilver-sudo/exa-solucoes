@@ -11,7 +11,6 @@ export enum LogLevel {
 
 export enum CheckoutEvent {
   AUDIT = 'audit',
-  DEBUG_TOOL_OPENED = 'debug_tool_opened',
   SAVE_CART = 'save_cart',
   LOAD_CART = 'load_cart',
   PROCEED_TO_CHECKOUT = 'proceed_to_checkout',
@@ -26,8 +25,6 @@ export enum CheckoutEvent {
   PAYMENT_PROCESSING = 'payment_processing',
   PAYMENT_SUCCESS = 'payment_success',
   PAYMENT_ERROR = 'payment_error',
-  PAYMENT_STATUS_CHECK = 'payment_status_check',
-  PAYMENT_REDIRECT = 'payment_redirect',
   DEBUG_EVENT = 'debug_event'  // Debug event type
 }
 
@@ -70,16 +67,6 @@ const saveLogs = () => {
   } catch (error) {
     console.error('Erro ao salvar logs de checkout:', error);
   }
-};
-
-// Função para debug geral - mais simples
-export const logDebugEvent = (event: string, details?: any) => {
-  return logCheckoutEvent(
-    CheckoutEvent.DEBUG_EVENT, 
-    LogLevel.DEBUG, 
-    event,
-    details
-  );
 };
 
 // Registrar evento de checkout

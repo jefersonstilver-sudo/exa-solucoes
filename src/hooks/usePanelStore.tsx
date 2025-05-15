@@ -1,272 +1,139 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
-import { Building } from '@/types/panel';
-import { useToast } from '@/hooks/use-toast';
-import { getPanelBasePrice } from '@/utils/priceUtils';
 import { FilterOptions } from '@/types/filter';
+import { getMockPanels } from '@/services/mockPanelService';
+import { useLocationSearch } from '@/hooks/useLocationSearch';
+import { applyAllFilters } from '@/services/panelFilterService';
 
-interface PanelDisplayInfo {
-  id: string;
-  title: string;
-  address: string;
-  district: string;
-  imageUrl: string;
-  status: string;
-  resolution: string;
-  mode: string;
-  lastSync: Date | null;
-  priceBase: number;
-}
-
-interface SearchLocation {
-  address: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-}
-
-// Create a FilterState that matches FilterOptions structure
-const defaultFilters: FilterOptions = {
-  radius: 5000,
-  neighborhood: '',
-  status: [],
-  buildingProfile: [],
-  facilities: [],
-  minMonthlyViews: 0,
-  buildingAge: 'all',
-  buildingType: 'all'
-};
-
-export interface UsePanelStoreReturn {
-  panels: Panel[] | null;
+interface UsePanelStoreReturn {
+  panels: Panel[] | undefined;
   isLoading: boolean;
+  error: unknown;
+  searchLocation: string;
+  setSearchLocation: (location: string) => void;
+  selectedLocation: {lat: number, lng: number} | null;
+  setSelectedLocation: (location: {lat: number, lng: number} | null) => void;
   isSearching: boolean;
   filters: FilterOptions;
-  searchLocation: SearchLocation | null;
-  emptyReason: string | null;
-  handleFilterChange: (filters: Partial<FilterOptions>) => void;
-  searchByLocation: (location: string) => Promise<void>;
-  getPanelDisplayInfo: (panel: Panel) => PanelDisplayInfo;
+  handleFilterChange: (newFilters: Partial<FilterOptions>) => void;
+  handleSearch: (location: string) => Promise<void>;
+  handleClearLocation: () => void;
 }
 
 export const usePanelStore = (): UsePanelStoreReturn => {
-  const [panels, setPanels] = useState<Panel[] | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [filters, setFilters] = useState<FilterOptions>(defaultFilters);
-  const [searchLocation, setSearchLocation] = useState<SearchLocation | null>(null);
-  const [emptyReason, setEmptyReason] = useState<string | null>(null);
-  const { toast } = useToast();
+  // Use the location search hook
+  const {
+    searchLocation,
+    setSearchLocation,
+    isSearching,
+    selectedLocation,
+    setSelectedLocation,
+    handleSearch: handleSearchLocation,
+    handleClearLocation
+  } = useLocationSearch();
+
+  // Filter state
+  const [filters, setFilters] = useState<FilterOptions>({
+    radius: 5000, // 5km default
+    neighborhood: 'all',
+    status: ['online'],
+    buildingProfile: [],
+    facilities: [],
+    minMonthlyViews: 0,
+    buildingAge: 'all',
+    buildingType: 'all'
+  });
   
-  // Fetch initial panels
-  useEffect(() => {
-    fetchAllPanels();
-  }, []);
-  
-  // Reset panels when filters change
-  useEffect(() => {
-    if (panels) {
-      setPanels(prevPanels => prevPanels?.map(panel => ({ ...panel, visible: true })));
-    }
-  }, [filters]);
-  
-  // Geocoding function
-  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-    const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
-    const encodedAddress = encodeURIComponent(address);
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodedAddress}&apiKey=${apiKey}`;
-    
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.features && data.features.length > 0) {
-        const { lat, lon } = data.features[0].properties;
-        return { lat, lng: lon };
-      } else {
-        return null;
-      }
-    } catch (error) {
-      console.error("Erro ao geocodificar endereço:", error);
-      return null;
-    }
-  };
-  
-  // Fetch panels near a location
-  const fetchPanelsNearLocation = async (latitude: number, longitude: number, radius: number): Promise<Panel[]> => {
-    setIsLoading(true);
-    
-    const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    
-    try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/nearby_panels`, {
-        method: 'POST',
-        headers: {
-          'apikey': apiKey,
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          latitude,
-          longitude,
-          radius
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data as Panel[];
-    } catch (error) {
-      console.error("Erro ao buscar painéis próximos:", error);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Fetch all panels
-  const fetchAllPanels = async (): Promise<void> => {
-    setIsLoading(true);
-    setEmptyReason(null);
-    
-    const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    
-    try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/painel?select=*`, {
-        method: 'GET',
-        headers: {
-          'apikey': apiKey,
-          'Authorization': `Bearer ${apiKey}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        setPanels(data as Panel[]);
-      } else {
-        setEmptyReason('all');
-        setPanels([]);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar todos os painéis:", error);
-      toast({
-        title: "Erro ao carregar painéis",
-        description: "Houve um erro ao carregar os painéis. Tente novamente mais tarde.",
-        variant: "destructive",
-      });
-      setPanels(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Search by location
-  const searchByLocation = async (location: string): Promise<void> => {
-    if (!location.trim()) return;
-    
-    setIsSearching(true);
-    
-    try {
-      // Get coordinates for the location
-      const coordinates = await geocodeAddress(location);
-      
-      if (coordinates) {
-        // Fetch buildings/panels near the coordinates
-        const nearbyPanels = await fetchPanelsNearLocation(
-          coordinates.lat,
-          coordinates.lng,
-          5000 // 5km radius
+  // Fetch panels based on filters
+  const { data: panels, isLoading, error, refetch } = useQuery({
+    queryKey: ['panels', filters, selectedLocation],
+    queryFn: async () => {
+      try {
+        // For demo purposes, we'll use the mock panels
+        console.log("Using mock data instead of actual API calls");
+        
+        // Get base mock data
+        let basePanels = getMockPanels();
+        
+        // Apply all filters
+        const filteredPanels = applyAllFilters(
+          basePanels,
+          filters,
+          selectedLocation
         );
         
-        if (nearbyPanels && nearbyPanels.length > 0) {
-          setPanels(nearbyPanels);
-          
-          // Update search location for display
-          setSearchLocation({
-            address: location,
-            coordinates
-          });
-          
-          // Update filter to show we're filtering by location
-          setFilters(prev => ({
-            ...prev,
-            radius: 5000
-          }));
-        } else {
-          // No panels found at this location
-          setEmptyReason('location');
-          setPanels([]);
+        // In production, we would use the Supabase RPC function
+        if (process.env.NODE_ENV === 'production' && selectedLocation) {
+          try {
+            const result = await supabase.rpc('get_panels_by_location', {
+              lat: selectedLocation.lat,
+              lng: selectedLocation.lng,
+              radius_meters: filters.radius
+            });
+            
+            if (result.error) {
+              throw result.error;
+            }
+
+            // Map the API response to match our Panel type
+            return (result.data || []).map(panel => {
+              // Ensure status is one of the allowed values
+              let validStatus: 'online' | 'offline' | 'maintenance' | 'installing' = 'offline';
+              if (panel.status === 'online') validStatus = 'online';
+              else if (panel.status === 'maintenance') validStatus = 'maintenance';
+              else if (panel.status === 'installing') validStatus = 'installing';
+              
+              // Convert the buildings JSON to our BuildingType
+              const buildings = panel.buildings as any;
+              
+              return {
+                ...panel,
+                status: validStatus,
+                buildings: buildings
+              } as Panel;
+            });
+          } catch (error) {
+            console.error("Error fetching panels from API:", error);
+            // Return mock data as fallback
+          }
         }
-      } else {
-        // Location not found
-        toast({
-          title: "Localização não encontrada",
-          description: "Não conseguimos encontrar essa localização. Tente outra ou use os filtros disponíveis.",
-          variant: "destructive",
-        });
+        
+        return filteredPanels;
+      } catch (err) {
+        console.error('Error fetching panels:', err);
+        return [] as Panel[];
       }
-    } catch (error) {
-      console.error("Erro ao buscar por localização:", error);
-      toast({
-        title: "Erro na busca",
-        description: "Houve um erro ao buscar painéis nessa localização.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSearching(false);
+    },
+    enabled: true
+  });
+
+  // Adapted handleSearch to use our location hook
+  const handleSearch = async (location: string) => {
+    const coordinates = await handleSearchLocation(location);
+    if (coordinates) {
+      await refetch();
     }
   };
-  
-  // Handle filter changes
-  const handleFilterChange = (newFilters: Partial<FilterOptions>): void => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters,
-    }));
+
+  const handleFilterChange = (newFilters: Partial<FilterOptions>) => {
+    setFilters(prev => ({...prev, ...newFilters}));
   };
-  
-  // Get panel display information
-  const getPanelDisplayInfo = (panel: Panel): PanelDisplayInfo => {
-    const building = panel.buildings;
-    const buildingName = building ? (building.nome || 'Edifício') : 'Edifício';
-    const buildingAddress = building ? (building.endereco || 'Endereço não disponível') : 'Endereço não disponível';
-    const buildingDistrict = building?.bairro || '';
-    const buildingImageUrl = building?.imageUrl || 'https://via.placeholder.com/400x300?text=Sem+Imagem';
-    
-    return {
-      id: panel.id,
-      title: buildingName,
-      address: buildingAddress,
-      district: buildingDistrict,
-      imageUrl: buildingImageUrl,
-      status: panel.status || 'unknown',
-      resolution: panel.resolucao || '4K',
-      mode: panel.modo || 'Interno',
-      lastSync: panel.ultima_sync ? new Date(panel.ultima_sync) : null,
-      priceBase: getPanelBasePrice(panel),
-    };
-  };
-  
+
   return {
     panels,
     isLoading,
+    error,
+    searchLocation,
+    setSearchLocation,
+    selectedLocation,
+    setSelectedLocation,
     isSearching,
     filters,
-    searchLocation,
-    emptyReason,
     handleFilterChange,
-    searchByLocation,
-    getPanelDisplayInfo,
+    handleSearch,
+    handleClearLocation
   };
 };

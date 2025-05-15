@@ -8,16 +8,19 @@ import PanelFilterSidebar from '@/components/panels/PanelFilterSidebar';
 import { useCartManager } from '@/hooks/useCartManager';
 import { usePanelStore } from '@/hooks/usePanelStore';
 import CartDebugger from '@/components/debug/CartDebugger';
-import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDebugService';
+import { logDebugEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
   const { 
     panels, 
     isLoading, 
-    isSearching,
+    filteredPanels,
     filters,
-    handleFilterChange,
-    searchByLocation
+    handleUpdateFilters,
+    handleSearch,
+    resetFilters,
+    searchTerm,
+    handleSearchChange
   } = usePanelStore();
 
   const { 
@@ -60,12 +63,7 @@ export default function PanelStore() {
   // Função para abrir o debugger
   const openDebugger = (e: React.MouseEvent) => {
     e.preventDefault();
-    logCheckoutEvent(
-      CheckoutEvent.DEBUG_TOOL_OPENED,
-      LogLevel.INFO,
-      "Diagnostic button clicked", 
-      { timestamp: Date.now() }
-    );
+    logDebugEvent("Diagnostic button clicked", { timestamp: Date.now() });
     setIsDebuggerOpen(true);
   };
   
@@ -81,13 +79,8 @@ export default function PanelStore() {
     }
   };
 
-  // Verificar se o painel está no carrinho
-  const isPanelInCart = (panel: any) => {
-    return cartItems.some(item => item.panel.id === panel.id);
-  };
-
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <StoreLayout>
       <div className="container mx-auto px-4 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Sidebar com filtros */}
@@ -99,9 +92,11 @@ export default function PanelStore() {
           >
             <PanelFilterSidebar 
               filters={filters}
-              handleFilterChange={handleFilterChange}
-              isLoading={isLoading}
-              isSearching={isSearching}
+              onUpdateFilters={handleUpdateFilters}
+              onSearch={handleSearch}
+              onReset={resetFilters}
+              searchTerm={searchTerm}
+              onSearchChange={handleSearchChange}
             />
           </motion.div>
           
@@ -113,20 +108,23 @@ export default function PanelStore() {
             animate="visible"
           >
             <PanelList 
-              panels={panels || []} 
+              panels={filteredPanels} 
               isLoading={isLoading} 
-              cartItems={cartItems} 
               onAddToCart={handleAddToCart}
+              inCart={(panel) => cartItems.some(item => item.panel.id === panel.id)}
+              onOpenDebugger={openDebugger}
             />
           </motion.div>
         </div>
         
         {/* Cart sidebar */}
         <PanelCart 
+          open={cartOpen}
+          onClose={() => toggleCart()}
           cartItems={cartItems}
-          onRemove={handleRemoveFromCart}
+          onRemoveItem={handleRemoveFromCart}
           onChangeDuration={handleChangeDuration}
-          onProceedToCheckout={handleProceedToCheckout}
+          onCheckout={handleProceedToCheckout}
         />
         
         {/* Debugger modal */}
@@ -135,6 +133,6 @@ export default function PanelStore() {
           onClose={() => setIsDebuggerOpen(false)}
         />
       </div>
-    </div>
+    </StoreLayout>
   );
 }

@@ -1,106 +1,157 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import CartHeader from '@/components/cart/CartHeader';
+import CartItem from '@/components/cart/CartItem';
+import EmptyCart from '@/components/cart/EmptyCart';
+import CartSummary from '@/components/cart/CartSummary';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 import { Panel } from '@/types/panel';
-import { XCircle, ShoppingCart, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-interface CartItem {
-  panel: Panel;
-  duration: number;
-}
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PanelCartProps {
-  cartItems: CartItem[];
-  onRemove: (panelId: string) => void;
-  onChangeDuration: (panelId: string, duration: number) => void;
+  cartItems: { panel: Panel; duration: number }[];
+  onRemove: (id: string) => void;
+  onClear: () => void;
+  onChangeDuration: (id: string, duration: number) => void;
   onProceedToCheckout: () => void;
 }
 
 const PanelCart: React.FC<PanelCartProps> = ({
   cartItems,
   onRemove,
+  onClear,
   onChangeDuration,
   onProceedToCheckout
 }) => {
-  const hasItems = cartItems.length > 0;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const isEmpty = cartItems.length === 0;
+  
+  // Calculate subtotal, discount and total
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((acc, item) => {
+      return acc + getPanelPrice(item.panel, item.duration);
+    }, 0);
+  }, [cartItems]);
+  
+  // Todo: Implement actual discount calculation
+  const discount = 0;
+  
+  const total = subtotal - discount;
 
+  // Function to calculate price for a specific panel and duration
+  const calculateItemPrice = (panel: Panel, duration: number) => {
+    return getPanelPrice(panel, duration);
+  };
+  
+  const handleCheckout = (e: React.MouseEvent) => {
+    // Importante: Prevenir comportamento padrão e propagação para evitar conflitos
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Log detalhado para diagnóstico
+    console.log("PanelCart: handleCheckout chamado - iniciando checkout");
+    logCheckoutEvent(
+      CheckoutEvent.PROCEED_TO_CHECKOUT, 
+      LogLevel.INFO, 
+      `Iniciando checkout com ${cartItems.length} itens`, 
+      { total, cartItems: cartItems.length }
+    );
+    
+    // Verificar se há itens no carrinho
+    if (isEmpty) {
+      console.log("PanelCart: Checkout cancelado - carrinho vazio");
+      logCheckoutEvent(
+        CheckoutEvent.PROCEED_TO_CHECKOUT, 
+        LogLevel.ERROR, 
+        "Tentativa de checkout com carrinho vazio"
+      );
+      return;
+    }
+    
+    // Definir o estado como processando para evitar cliques duplos
+    setIsSubmitting(true);
+    
+    try {
+      // Salvar carrinho manualmente no localStorage para garantir persistência
+      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART, 
+        LogLevel.SUCCESS, 
+        "Carrinho salvo no localStorage antes do checkout", 
+        { items: cartItems.length }
+      );
+      
+      // Chamar a função de checkout com um pequeno atraso para permitir que o estado de UI seja atualizado
+      setTimeout(() => {
+        onProceedToCheckout();
+      }, 100);
+      
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATE_TO_PLAN, 
+        LogLevel.INFO, 
+        "Navegando para seleção de plano após checkout"
+      );
+    } catch (error) {
+      console.error("PanelCart: Erro durante checkout", error);
+      logCheckoutEvent(
+        CheckoutEvent.PROCEED_TO_CHECKOUT, 
+        LogLevel.ERROR, 
+        "Erro durante processo de checkout", 
+        { error }
+      );
+      
+      // Resetar o estado de envio
+      setIsSubmitting(false);
+    }
+  };
+  
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-2xl z-30">
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <ShoppingCart className="text-purple-600 mr-2" />
-            <span className="font-semibold">
-              {hasItems ? `${cartItems.length} item(s) no carrinho` : 'Seu carrinho está vazio'}
-            </span>
-          </div>
-
-          {hasItems && (
-            <Button 
-              variant="default"
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={onProceedToCheckout}
-            >
-              Prosseguir para checkout
-            </Button>
-          )}
-        </div>
-        
-        {hasItems && (
-          <motion.div 
-            className="mt-3 space-y-2"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            transition={{ duration: 0.3 }}
-          >
-            {cartItems.map((item) => (
-              <div 
-                key={item.panel.id} 
-                className="flex items-center justify-between bg-gray-50 p-2 rounded-lg"
-              >
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gray-200 rounded-md mr-3 overflow-hidden">
-                    {item.panel.buildings?.imageUrl && (
-                      <img 
-                        src={item.panel.buildings.imageUrl} 
-                        alt={item.panel.buildings.nome || 'Painel'} 
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{item.panel.buildings?.nome || 'Painel'}</p>
-                    <p className="text-xs text-gray-500">{item.panel.buildings?.endereco || 'Endereço indisponível'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 text-gray-400 mr-1" />
-                    <select
-                      value={item.duration}
-                      onChange={(e) => onChangeDuration(item.panel.id, parseInt(e.target.value))}
-                      className="text-sm bg-white border border-gray-200 rounded-md px-2 py-1"
-                    >
-                      <option value={7}>7 dias</option>
-                      <option value={15}>15 dias</option>
-                      <option value={30}>30 dias</option>
-                      <option value={60}>60 dias</option>
-                      <option value={90}>90 dias</option>
-                    </select>
-                  </div>
-                  <button 
-                    onClick={() => onRemove(item.panel.id)}
-                    className="text-red-500 hover:text-red-700"
+    <div className="flex flex-col h-full">
+      <CartHeader itemCount={cartItems.length} onClear={onClear} />
+      
+      {isEmpty ? (
+        <EmptyCart />
+      ) : (
+        <div className="flex flex-col h-full">
+          {/* Cart Items */}
+          <ScrollArea className="flex-grow">
+            <AnimatePresence initial={false}>
+              <div className="px-4">
+                {cartItems.map(item => (
+                  <motion.div
+                    key={item.panel.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="py-2"
                   >
-                    <XCircle className="h-5 w-5" />
-                  </button>
-                </div>
+                    <CartItem 
+                      item={item}
+                      onRemove={onRemove}
+                      onChangeDuration={onChangeDuration}
+                      calculatePrice={calculateItemPrice}
+                    />
+                  </motion.div>
+                ))}
               </div>
-            ))}
-          </motion.div>
-        )}
-      </div>
+            </AnimatePresence>
+          </ScrollArea>
+          
+          {/* Cart Summary */}
+          <CartSummary
+            subtotal={subtotal}
+            discount={discount}
+            total={total}
+            onCheckout={handleCheckout}
+            isSubmitting={isSubmitting}
+            isEmpty={isEmpty}
+          />
+        </div>
+      )}
     </div>
   );
 };
