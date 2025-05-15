@@ -71,6 +71,12 @@ export default function PanelStore() {
     handleProceedToCheckout();
   };
 
+  // Modified to match the expected signature without parameters
+  const handleDirectGoToCheckout = () => {
+    console.log("Redirecting to checkout directly");
+    directGoToCheckout(new MouseEvent('click') as unknown as React.MouseEvent);
+  };
+
   // Handler to open debug modal
   const handleOpenDebugger = () => {
     console.log("Opening debug modal");
@@ -114,7 +120,7 @@ export default function PanelStore() {
         <PanelDebugActions 
           cartItemsCount={cartItems.length}
           onProceedToCheckout={handleCheckoutStart}
-          directGoToCheckout={directGoToCheckout}
+          directGoToCheckout={handleDirectGoToCheckout}
           onOpenDebugger={handleOpenDebugger}
         />
       

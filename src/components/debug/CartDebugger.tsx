@@ -61,7 +61,7 @@ const CartDebugger: React.FC<CartDebuggerProps> = ({ onClose }) => {
       </div>
       
       <div className="mb-4">
-        <Badge variant={cartData && cartData.length > 0 ? "success" : "destructive"}>
+        <Badge variant={cartData && cartData.length > 0 ? "secondary" : "destructive"}>
           {cartData && cartData.length > 0 ? 
             `Carrinho com ${cartData.length} item(s)` : 
             "Carrinho vazio"
