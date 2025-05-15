@@ -96,11 +96,14 @@ export const useOrderCreation = () => {
     
     // Atualiza o pedido com informações adicionais
     try {
+      // Ensure log_pagamento is an object before spreading
+      const logPagamento = ensureSpreadable(pedido.log_pagamento);
+      
       await supabase
         .from('pedidos')
         .update({
           log_pagamento: {
-            ...ensureSpreadable(pedido.log_pagamento),
+            ...logPagamento,
             order_created_at: new Date().toISOString(),
             order_source: 'web_checkout',
             client_email: sessionUser.email

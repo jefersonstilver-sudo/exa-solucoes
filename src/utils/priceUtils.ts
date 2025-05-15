@@ -1,58 +1,53 @@
 
-// Utility functions for price calculations and formatting
-
 /**
- * Format a number as currency (BRL)
+ * Formats a number as currency in BRL
+ * @param value Amount to format
+ * @returns Formatted currency string
  */
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    currency: 'BRL'
   }).format(value);
 };
 
 /**
- * Calculate price with discount
+ * Calculates the final price with discount
+ * @param price Original price
+ * @param discountPercentage Discount percentage (0-100)
+ * @returns Price with discount applied
  */
-export const calculatePriceWithDiscount = (
-  originalPrice: number,
-  discountPercentage: number
-): number => {
-  if (!originalPrice || originalPrice <= 0) return 0;
-  if (!discountPercentage || discountPercentage <= 0) return originalPrice;
+export const calculatePriceWithDiscount = (price: number, discountPercentage: number): number => {
+  if (!discountPercentage || discountPercentage <= 0) return price;
+  if (discountPercentage >= 100) return 0;
   
-  const discount = originalPrice * (discountPercentage / 100);
-  return Math.max(0, originalPrice - discount);
+  const discountMultiplier = (100 - discountPercentage) / 100;
+  return price * discountMultiplier;
 };
 
 /**
- * Ensure an object can be safely spread
- * Used for ensuring objects can be safely spread in component props
+ * Ensures that the input can be spread in an object.
+ * This is useful for handling JSON data that might be stored as a string.
+ * @param input The input that needs to be spread-safe
+ * @returns An object that can be safely spread
  */
-export const ensureSpreadable = <T extends object>(obj: T | null | undefined): T => {
-  return obj || {} as T;
-};
-
-/**
- * Calculate percentage discount between two values
- */
-export const calculateDiscountPercentage = (
-  originalPrice: number,
-  discountedPrice: number
-): number => {
-  if (!originalPrice || originalPrice <= 0) return 0;
-  if (!discountedPrice || discountedPrice >= originalPrice) return 0;
+export const ensureSpreadable = (input: any): object => {
+  if (input === null || input === undefined) {
+    return {};
+  }
   
-  const discountAmount = originalPrice - discountedPrice;
-  return Math.round((discountAmount / originalPrice) * 100);
-};
-
-/**
- * Format a discount percentage as a string
- */
-export const formatDiscountPercentage = (percentage: number): string => {
-  if (!percentage || percentage <= 0) return '';
-  return `-${percentage}%`;
+  if (typeof input === 'string') {
+    try {
+      return JSON.parse(input);
+    } catch (e) {
+      console.error('Failed to parse string as JSON in ensureSpreadable:', e);
+      return {};
+    }
+  }
+  
+  if (typeof input === 'object') {
+    return input;
+  }
+  
+  return {};
 };
