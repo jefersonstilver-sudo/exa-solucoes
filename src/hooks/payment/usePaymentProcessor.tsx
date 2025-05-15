@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { usePaymentValidation } from './usePaymentValidation';

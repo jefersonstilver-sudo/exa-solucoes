@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { useSearchParams, Link } from 'react-router-dom';
@@ -32,7 +31,7 @@ const OrderConfirmation: React.FC = () => {
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(OrderStatus.LOADING);
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const { toast } = useToast();
-  const { isLoggedIn, sessionUser } = useUserSession();
+  const { isLoggedIn, user } = useUserSession();
   
   // Estados para upload de vídeo
   const [isUploading, setIsUploading] = useState(false);
@@ -72,11 +71,11 @@ const OrderConfirmation: React.FC = () => {
         }
         
         // Verificar se o usuário já tem um vídeo
-        if (sessionUser?.id) {
+        if (user?.id) {
           const { data: videoData } = await supabase
             .from('videos')
             .select('*')
-            .eq('client_id', sessionUser.id)
+            .eq('client_id', user.id)
             .eq('status', 'ativo')
             .order('created_at', { ascending: false })
             .limit(1);
@@ -93,7 +92,7 @@ const OrderConfirmation: React.FC = () => {
     };
     
     fetchOrderDetails();
-  }, [orderId, status, sessionUser]);
+  }, [orderId, status, user]);
   
   // Função para lidar com upload de vídeo
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +123,7 @@ const OrderConfirmation: React.FC = () => {
   };
   
   const handleUpload = async () => {
-    if (!file || !sessionUser) return;
+    if (!file || !user) return;
     
     setIsUploading(true);
     setUploadProgress(0);
@@ -157,7 +156,7 @@ const OrderConfirmation: React.FC = () => {
         .from('videos')
         .insert([
           {
-            client_id: sessionUser.id,
+            client_id: user.id,
             url: mockVideoUrl,
             nome: file.name,
             status: 'ativo',
@@ -179,14 +178,30 @@ const OrderConfirmation: React.FC = () => {
       
       setVideoUrl(mockVideoUrl);
       
-      // Atualizar campanhas para usar este vídeo
+      // Instead of using RPC, let's update campaigns directly
       if (orderId) {
-        await supabase.rpc('update_campaigns_video', {
-          p_pedido_id: orderId,
-          p_video_id: data.id
-        }).then(({ error }) => {
-          if (error) console.error('Erro ao atualizar campanhas:', error);
-        });
+        const { data: campaigns, error: campaignsFetchError } = await supabase
+          .from('campanhas')
+          .select('id')
+          .eq('client_id', user.id)
+          .is('video_id', null);
+          
+        if (campaignsFetchError) {
+          console.error('Erro ao buscar campanhas:', campaignsFetchError);
+          return;
+        }
+        
+        if (campaigns && campaigns.length > 0) {
+          const campaignIds = campaigns.map(c => c.id);
+          const { error: updateError } = await supabase
+            .from('campanhas')
+            .update({ video_id: data.id })
+            .in('id', campaignIds);
+          
+          if (updateError) {
+            console.error('Erro ao atualizar campanhas:', updateError);
+          }
+        }
       }
       
     } catch (error) {
