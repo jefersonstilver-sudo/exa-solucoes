@@ -27,8 +27,8 @@ export interface Plan {
 export type PlanKey = 1 | 3 | 6 | 12;
 
 export interface CheckoutSteps {
-  REVIEW: number;
   PLAN: number;
+  REVIEW: number;
   COUPON: number;
   PAYMENT: number;
   UPLOAD: number;

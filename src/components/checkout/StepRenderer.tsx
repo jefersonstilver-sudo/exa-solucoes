@@ -6,6 +6,7 @@ import ReviewStep from '@/components/checkout/ReviewStep';
 import PlanSelector from '@/components/checkout/PlanSelector';
 import CouponStep from '@/components/checkout/CouponStep';
 import PaymentStep from '@/components/checkout/PaymentStep';
+import UploadStep from '@/components/checkout/UploadStep'; // Vamos criar este componente
 import TrustIndicators from '@/components/checkout/TrustIndicators';
 import { Panel } from '@/types/panel';
 import { Plan, PlanKey } from '@/types/checkout';
@@ -153,6 +154,24 @@ const StepRenderer: React.FC<StepRendererProps> = ({
             totalPrice={totalPrice}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
+          />
+          <TrustIndicators />
+        </motion.div>
+      );
+    
+    case STEPS.UPLOAD:
+      return (
+        <motion.div
+          key="upload"
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={pageVariants}
+          transition={{ duration: 0.4 }}
+        >
+          <UploadStep
+            cartItems={cartItems}
+            selectedPlan={selectedPlan}
           />
           <TrustIndicators />
         </motion.div>

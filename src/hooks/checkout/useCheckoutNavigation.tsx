@@ -50,14 +50,16 @@ export const useCheckoutNavigation = ({
   // Determine if the next button should be enabled
   const isNextEnabled = () => {
     switch (step) {
-      case 1: // PLAN step
+      case 0: // PLAN step
         return !!selectedPlan && selectedPlan > 0 && cartItems.length > 0;
-      case 2: // REVIEW step
+      case 1: // REVIEW step
         return cartItems.length > 0;
-      case 3: // COUPON step
+      case 2: // COUPON step
         return true; // Always enabled as coupon is optional
-      case 4: // PAYMENT step
+      case 3: // PAYMENT step
         return acceptTerms;
+      case 4: // UPLOAD step
+        return true; // Always enabled for final step
       default:
         return false;
     }
@@ -65,7 +67,7 @@ export const useCheckoutNavigation = ({
   
   // Navigate to the previous step
   const handlePrevStep = () => {
-    if (step > 1) {
+    if (step > 0) {
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
@@ -101,20 +103,18 @@ export const useCheckoutNavigation = ({
         setIsNavigating(false);
         return;
       }
-      
-      if (step < 4) {
-        // Avançar para o próximo passo (não é o último passo)
-        logCheckoutEvent(
-          CheckoutEvent.NAVIGATION_EVENT,
-          LogLevel.INFO,
-          `Navigating to next step: ${step + 1}`,
-          { currentStep: step, nextStep: step + 1 }
-        );
-        
-        setStep(step + 1);
+
+      // Tratar o último passo diferente (UPLOAD)
+      if (step === 4) {
+        // No último passo, redirecionar para a página de confirmação
+        navigate('/pedido-confirmado');
         setIsNavigating(false);
-      } else {
-        // Último passo: processar pagamento
+        return;
+      }
+      
+      // Tratar o passo de pagamento
+      if (step === 3) {
+        // Pagamento
         if (!acceptTerms) {
           sonnerToast.error("Você precisa aceitar os termos para continuar");
           setIsNavigating(false);
@@ -150,6 +150,18 @@ export const useCheckoutNavigation = ({
         });
         
         // Note: createPayment irá resetar isNavigating quando apropriado
+      } 
+      else {
+        // Etapas normais (não é pagamento nem upload)
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATION_EVENT,
+          LogLevel.INFO,
+          `Navigating to next step: ${step + 1}`,
+          { currentStep: step, nextStep: step + 1 }
+        );
+        
+        setStep(step + 1);
+        setIsNavigating(false);
       }
     } catch (error) {
       console.error("[useCheckoutNavigation] Error:", error);

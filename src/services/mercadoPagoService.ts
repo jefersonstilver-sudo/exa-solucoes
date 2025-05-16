@@ -20,6 +20,11 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   // Log payment attempt for diagnostics
   console.log(`[MercadoPago] Starting redirection with method: ${normalizedPaymentMethod}, preferenceId: ${preferenceId}`);
   
+  // Store validation state in local storage
+  localStorage.setItem('payment_attempt_timestamp', Date.now().toString());
+  localStorage.setItem('payment_method_selected', normalizedPaymentMethod);
+  localStorage.setItem('payment_preference_id', preferenceId);
+  
   // Construct base URL - Garantindo que o ambiente de teste esteja explícito
   let url = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
   
@@ -42,6 +47,11 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   
   // Adicionando parâmetros adicionais para ambiente de teste
   url += '&sandbox=true&test_mode=true';
+  
+  // Add success and failure URLs
+  const baseUrl = window.location.origin;
+  url += `&success=${encodeURIComponent(`${baseUrl}/pedido-confirmado`)}`; 
+  url += `&failure=${encodeURIComponent(`${baseUrl}/checkout?error=payment_failed`)}`;
   
   logCheckoutEvent(
     CheckoutEvent.PAYMENT_PROCESSING, 

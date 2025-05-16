@@ -1,468 +1,257 @@
+
 import React, { useEffect, useState } from 'react';
-import Layout from '@/components/layout/Layout';
-import { useSearchParams, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Upload, CheckCircle, FileUp, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Check, X, Upload, Video, AlertTriangle, FileVideo, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useUserSession } from '@/hooks/useUserSession';
-
-enum OrderStatus {
-  LOADING = 'loading',
-  SUCCESS = 'success',
-  ERROR = 'error',
-  NOT_FOUND = 'not_found',
-}
-
-interface OrderData {
-  id: string;
-  status: string;
-  created_at: string;
-  data_inicio: string;
-  data_fim: string;
-  valor_total: number;
-}
+import { Card } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import Layout from '@/components/layout/Layout';
 
 const OrderConfirmation: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const orderId = searchParams.get('id');
-  const status = searchParams.get('status') || 'approved';
-  const [orderStatus, setOrderStatus] = useState<OrderStatus>(OrderStatus.LOADING);
-  const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const { isLoggedIn, user } = useUserSession();
+  const [loading, setLoading] = useState(true);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   
-  // Estados para upload de vídeo
-  const [isUploading, setIsUploading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  // Get order ID from URL params or localStorage (fallback)
+  const orderId = searchParams.get('id') || localStorage.getItem('lastPedidoId');
   
+  // Page animation
+  const pageVariants = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 }
+  };
+  
+  // Fetch order details
   useEffect(() => {
-    if (!orderId) {
-      setOrderStatus(OrderStatus.NOT_FOUND);
-      return;
-    }
-    
     const fetchOrderDetails = async () => {
+      if (!orderId) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "ID do pedido não encontrado."
+        });
+        navigate('/checkout');
+        return;
+      }
+      
       try {
         const { data, error } = await supabase
           .from('pedidos')
-          .select('*')
+          .select('*, lista_paineis, plano_meses, data_inicio, data_fim, status, valor_total')
           .eq('id', orderId)
           .single();
+          
+        if (error) throw error;
         
-        if (error || !data) {
-          console.error('Error fetching order:', error);
-          setOrderStatus(OrderStatus.NOT_FOUND);
-          return;
-        }
+        setOrderDetails(data);
         
-        setOrderData(data);
-        
-        if (status === 'approved' || data.status === 'pago') {
-          setOrderStatus(OrderStatus.SUCCESS);
-        } else if (status === 'rejected' || data.status === 'cancelado') {
-          setOrderStatus(OrderStatus.ERROR);
-        } else {
-          // Implementar lógica para verificar status real com MercadoPago
-          setOrderStatus(OrderStatus.SUCCESS); // Para testes, consideramos sucesso por padrão
-        }
-        
-        // Verificar se o usuário já tem um vídeo
-        if (user?.id) {
-          const { data: videoData } = await supabase
-            .from('videos')
-            .select('*')
-            .eq('client_id', user.id)
-            .eq('status', 'ativo')
-            .order('created_at', { ascending: false })
-            .limit(1);
-            
-          if (videoData && videoData.length > 0) {
-            setVideoUrl(videoData[0].url);
-          }
+        // If we have an order, update its status if needed
+        if (data && data.status === 'pendente') {
+          await supabase
+            .from('pedidos')
+            .update({ status: 'pago' })
+            .eq('id', orderId);
         }
         
       } catch (error) {
-        console.error('Error in order confirmation:', error);
-        setOrderStatus(OrderStatus.ERROR);
+        console.error('Error fetching order details:', error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível carregar os detalhes do pedido."
+        });
+      } finally {
+        setLoading(false);
       }
     };
     
     fetchOrderDetails();
-  }, [orderId, status, user]);
+  }, [orderId, toast, navigate]);
   
-  // Função para lidar com upload de vídeo
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      // Verificar se é um arquivo de vídeo
-      if (!selectedFile.type.startsWith('video/')) {
-        toast({
-          variant: "destructive",
-          title: "Formato não suportado",
-          description: "Por favor, faça upload apenas de arquivos de vídeo.",
-        });
-        return;
-      }
-      
-      // Verificar tamanho (limite de 100MB)
-      if (selectedFile.size > 100 * 1024 * 1024) {
-        toast({
-          variant: "destructive",
-          title: "Arquivo muito grande",
-          description: "O tamanho máximo permitido é 100MB.",
-        });
-        return;
-      }
-      
-      setFile(selectedFile);
-    }
-  };
-  
-  const handleUpload = async () => {
-    if (!file || !user) return;
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     
-    setIsUploading(true);
-    setUploadProgress(0);
+    setUploadStatus('uploading');
     
     try {
-      // Simular progresso para demonstração
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(interval);
-            return 95;
-          }
-          return prev + 5;
-        });
-      }, 300);
-      
-      // Em um ambiente real, aqui faria o upload para um Storage como S3 ou Supabase Storage
-      // Simulando um delay para demonstração
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Finalizar progresso
-      clearInterval(interval);
-      setUploadProgress(100);
-      
-      // Simulando URL do vídeo
-      const mockVideoUrl = 'https://example.com/videos/sample-video.mp4';
-      
-      // Registrar o vídeo no banco de dados
-      const { data, error } = await supabase
-        .from('videos')
-        .insert([
-          {
-            client_id: user.id,
-            url: mockVideoUrl,
-            nome: file.name,
-            status: 'ativo',
-            origem: 'upload',
-            duracao: 30 // Duração padrão em segundos
-          }
-        ])
-        .select()
-        .single();
-      
-      if (error) {
-        throw error;
-      }
+      // Simulate upload for now (add real implementation later)
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
         title: "Upload concluído",
-        description: "Seu vídeo foi carregado com sucesso!",
+        description: "Seu vídeo foi enviado com sucesso!"
       });
       
-      setVideoUrl(mockVideoUrl);
-      
-      // Instead of using RPC, let's update campaigns directly
-      if (orderId) {
-        const { data: campaigns, error: campaignsFetchError } = await supabase
-          .from('campanhas')
-          .select('id')
-          .eq('client_id', user.id)
-          .is('video_id', null);
-          
-        if (campaignsFetchError) {
-          console.error('Erro ao buscar campanhas:', campaignsFetchError);
-          return;
-        }
-        
-        if (campaigns && campaigns.length > 0) {
-          const campaignIds = campaigns.map(c => c.id);
-          const { error: updateError } = await supabase
-            .from('campanhas')
-            .update({ video_id: data.id })
-            .in('id', campaignIds);
-          
-          if (updateError) {
-            console.error('Erro ao atualizar campanhas:', updateError);
-          }
-        }
-      }
-      
+      setUploadStatus('success');
     } catch (error) {
-      console.error('Erro no upload:', error);
+      console.error('Error uploading file:', error);
       toast({
         variant: "destructive",
         title: "Erro no upload",
-        description: "Ocorreu um problema ao fazer upload do seu vídeo.",
+        description: "Ocorreu um erro ao enviar o arquivo."
       });
-    } finally {
-      setIsUploading(false);
+      setUploadStatus('error');
     }
   };
   
-  // Renderização baseada no status
-  const renderOrderStatus = () => {
-    switch (orderStatus) {
-      case OrderStatus.LOADING:
-        return (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-16 h-16 border-4 border-indexa-purple border-t-transparent rounded-full animate-spin mb-4"></div>
-            <h2 className="text-xl font-semibold">Carregando informações do pedido...</h2>
-          </div>
-        );
-        
-      case OrderStatus.SUCCESS:
-        return (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md"
-          >
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-green-600 mb-2">Pedido Confirmado!</h2>
-              <p className="text-gray-600 mb-4">
-                Seu pedido foi processado com sucesso.
-              </p>
-              <div className="bg-gray-50 w-full p-4 rounded-md mb-4">
-                <div className="text-sm text-gray-500">Número do Pedido:</div>
-                <div className="font-mono font-medium">{orderId}</div>
-              </div>
-              
-              {orderData && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="text-sm text-gray-500">Data da Compra:</div>
-                    <div className="font-medium">
-                      {new Date(orderData.created_at).toLocaleDateString('pt-BR')}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="text-sm text-gray-500">Valor Total:</div>
-                    <div className="font-medium">
-                      R$ {Number(orderData.valor_total).toFixed(2)}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="text-sm text-gray-500">Início da Veiculação:</div>
-                    <div className="font-medium">
-                      {new Date(orderData.data_inicio).toLocaleDateString('pt-BR')}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="text-sm text-gray-500">Fim da Veiculação:</div>
-                    <div className="font-medium">
-                      {new Date(orderData.data_fim).toLocaleDateString('pt-BR')}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="border-t border-gray-200 pt-8 mt-8">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Video className="w-5 h-5 mr-2 text-indexa-purple" />
-                Vídeo da Campanha
-              </h3>
-              
-              {videoUrl ? (
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <FileVideo className="w-6 h-6 text-indexa-purple mr-3" />
-                    <div className="flex-grow">
-                      <div className="font-medium">Vídeo já cadastrado</div>
-                      <div className="text-sm text-gray-500">Seu vídeo será usado nas campanhas</div>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to="/campanhas">Ver campanhas</Link>
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-50 border-2 border-dashed border-gray-300 p-6 rounded-md text-center">
-                  <div className="mb-4">
-                    <Upload className="w-10 h-10 text-gray-400 mx-auto" />
-                  </div>
-                  
-                  {isUploading ? (
-                    <div className="space-y-4">
-                      <div className="text-sm font-medium">Enviando vídeo...</div>
-                      
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className="bg-indexa-purple h-2.5 rounded-full" 
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                      </div>
-                      
-                      <div className="text-xs text-gray-500">{uploadProgress}% concluído</div>
-                    </div>
-                  ) : file ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <FileVideo className="w-5 h-5 text-indexa-purple" />
-                        <span className="font-medium text-sm truncate max-w-xs">{file.name}</span>
-                      </div>
-                      
-                      <Button onClick={handleUpload} className="w-full sm:w-auto">
-                        Enviar vídeo
-                      </Button>
-                      
-                      <div>
-                        <button 
-                          onClick={() => setFile(null)} 
-                          className="text-sm text-gray-500 hover:text-red-500"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-gray-600">
-                        Envie seu vídeo para começar sua campanha
-                      </p>
-                      
-                      <p className="text-gray-500 text-sm">
-                        Formatos aceitos: MP4, MOV, AVI (máx. 100MB)
-                      </p>
-                      
-                      <div className="mt-2">
-                        <label className="bg-indexa-purple text-white py-2 px-4 rounded cursor-pointer hover:bg-indexa-purple/90">
-                          Selecionar vídeo
-                          <input 
-                            type="file"
-                            accept="video/*"
-                            onChange={handleFileChange}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="mt-4 text-sm text-gray-500">
-                <p>Você pode enviar seu vídeo agora ou depois através da seção "Campanhas" em sua conta.</p>
-              </div>
-            </div>
-            
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="default" asChild>
-                <Link to="/campanhas">
-                  Ver minhas campanhas
-                </Link>
-              </Button>
-              
-              <Button variant="outline" asChild>
-                <Link to="/paineis-digitais/loja">
-                  Voltar à loja
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
-        );
-        
-      case OrderStatus.ERROR:
-        return (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md"
-          >
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <X className="w-8 h-8 text-red-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-red-600 mb-2">Problema no Pagamento</h2>
-              <p className="text-gray-600 mb-4">
-                Houve um problema ao processar seu pagamento. Por favor, tente novamente.
-              </p>
-            </div>
-            
-            <div className="bg-red-50 p-4 rounded-md mb-6 flex items-start">
-              <AlertTriangle className="text-red-500 w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm text-red-800">
-                  Seu pedido foi criado, mas o pagamento não foi concluído. Se você acredita que isso
-                  é um erro, entre em contato com nossa equipe de suporte.
-                </p>
-              </div>
-            </div>
-            
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="default" asChild>
-                <Link to={`/checkout?id=${orderId}`}>
-                  Tentar novamente
-                </Link>
-              </Button>
-              
-              <Button variant="outline" asChild>
-                <Link to="/paineis-digitais/loja">
-                  Voltar à loja
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
-        );
-        
-      case OrderStatus.NOT_FOUND:
-        return (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md"
-          >
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="w-8 h-8 text-amber-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-amber-600 mb-2">Pedido não encontrado</h2>
-              <p className="text-gray-600 mb-4">
-                Não conseguimos localizar informações sobre este pedido.
-              </p>
-            </div>
-            
-            <div className="mt-8 flex justify-center">
-              <Button variant="default" asChild>
-                <Link to="/paineis-digitais/loja">
-                  Voltar à loja
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
-        );
-    }
-  };
-
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 flex flex-col items-center">
+          <RefreshCw className="h-10 w-10 text-indexa-purple animate-spin" />
+          <h2 className="text-xl font-medium mt-4">Carregando detalhes do pedido...</h2>
+        </div>
+      </Layout>
+    );
+  }
+  
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-center">Confirmação de Pedido</h1>
+      <motion.div
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={pageVariants}
+        className="container mx-auto px-4 py-12"
+      >
+        <div className="max-w-3xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <div className="flex justify-center mb-4">
+              <div className="bg-green-100 p-4 rounded-full">
+                <CheckCircle className="h-12 w-12 text-green-600" />
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Sua campanha está prestes a estrear
+            </h1>
+            <p className="text-gray-600 mt-2 text-lg">
+              O próximo anúncio de sucesso começa agora. Confirme sua veiculação abaixo.
+            </p>
+          </div>
+          
+          {/* Order summary */}
+          <Card className="p-6 mb-8 shadow-md">
+            <h2 className="text-xl font-semibold flex items-center">
+              <span className="mr-2">📋</span>
+              Resumo do pedido
+            </h2>
+            
+            <div className="mt-6 space-y-6">
+              {/* Order details here */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Plano Selecionado</h3>
+                  <p className="text-lg font-medium">
+                    {orderDetails?.plano_meses === 1 && 'Plano Básico (1 mês)'}
+                    {orderDetails?.plano_meses === 3 && 'Plano Popular (3 meses)'}
+                    {orderDetails?.plano_meses === 6 && 'Plano Profissional (6 meses)'}
+                    {orderDetails?.plano_meses === 12 && 'Plano Empresarial (12 meses)'}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Qtde. painéis</h3>
+                  <p className="text-lg font-medium">
+                    {orderDetails?.lista_paineis?.length || 0}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Período</h3>
+                  <div>
+                    <p className="text-md">
+                      <span className="text-gray-700">Início:</span> {new Date(orderDetails?.data_inicio).toLocaleDateString()}
+                    </p>
+                    <p className="text-md">
+                      <span className="text-gray-700">Término:</span> {new Date(orderDetails?.data_fim).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Valor</h3>
+                  <p className="text-lg font-medium">
+                    R$ {orderDetails?.valor_total?.toFixed(2)?.replace('.', ',') || '0,00'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+          
+          {/* File upload */}
+          <Card className="p-6 shadow-md border-2 border-indexa-purple/20">
+            <h2 className="text-xl font-semibold flex items-center">
+              <Upload className="mr-2 h-5 w-5 text-indexa-purple" />
+              Enviar seu vídeo
+            </h2>
+            
+            <p className="mt-2 text-gray-600">
+              Agora você precisa enviar o vídeo que será exibido nos painéis selecionados.
+            </p>
+            
+            <div className="mt-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center">
+                {uploadStatus === 'idle' && (
+                  <>
+                    <FileUp className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">
+                      Arraste e solte seu arquivo aqui, ou clique para selecionar
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      MP4, MOV ou AVI (máx. 1GB)
+                    </p>
+                    <input
+                      type="file"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      accept="video/mp4,video/quicktime,video/avi"
+                      onChange={handleFileUpload}
+                    />
+                  </>
+                )}
+                
+                {uploadStatus === 'uploading' && (
+                  <div className="space-y-2">
+                    <RefreshCw className="mx-auto h-12 w-12 text-indexa-purple animate-spin" />
+                    <p className="text-indexa-purple">Enviando seu vídeo...</p>
+                  </div>
+                )}
+                
+                {uploadStatus === 'success' && (
+                  <div className="space-y-2">
+                    <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
+                    <p className="text-green-600">Upload concluído com sucesso!</p>
+                  </div>
+                )}
+                
+                {uploadStatus === 'error' && (
+                  <div className="space-y-2">
+                    <div className="mx-auto h-12 w-12 text-red-500">❌</div>
+                    <p className="text-red-600">Erro no upload. Por favor tente novamente.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end">
+              <Button 
+                className="px-6 py-2 bg-[#1E1B4B] hover:bg-[#1E1B4B]/90" 
+                disabled={uploadStatus === 'uploading'}
+              >
+                Finalizar
+              </Button>
+            </div>
+          </Card>
         </div>
-        
-        {renderOrderStatus()}
-      </div>
+      </motion.div>
     </Layout>
   );
 };

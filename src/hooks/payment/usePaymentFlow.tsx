@@ -134,7 +134,7 @@ export const usePaymentFlow = () => {
           couponDiscount: couponId ? 10 : 0, // example value
         },
         userId: sessionUser.id,
-        returnUrl: currentUrl,
+        returnUrl: `${currentUrl}/pedido-confirmado?id=${pedido.id}`, // Ensuring proper return URL
         paymentMethod: paymentMethodNormalized // Send normalized value
       };
       
@@ -161,6 +161,9 @@ export const usePaymentFlow = () => {
       
       // Clear cart after successful order creation
       handleClearCart();
+      
+      // Store order ID in local storage for potential recovery
+      localStorage.setItem('lastPedidoId', pedido.id);
       
       // Log success before redirection
       logCheckoutEvent(
