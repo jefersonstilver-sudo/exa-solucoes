@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlanKey } from '@/types/checkout';
@@ -24,7 +23,7 @@ interface UseCheckoutNavigationProps {
   couponId: string | null;
   startDate: Date;
   endDate: Date;
-  sessionUser: any;
+  sessionUser: any; // Updated to accept any user object type
   handleClearCart: () => void;
   createPayment: (options: any) => Promise<void>;
 }

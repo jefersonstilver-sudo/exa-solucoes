@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { PlanKey } from '@/types/checkout';
@@ -10,6 +9,7 @@ import { useOrderCreation } from '@/hooks/payment/useOrderCreation';
 import { usePaymentProcessor } from '@/hooks/payment/usePaymentProcessor';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
 
 export const STEPS = {
   PLAN: 0,
@@ -22,24 +22,56 @@ export const STEPS = {
 // Plans configuration - revise if needed
 const PLANS = {
   1: {
-    id: 1, name: 'Plano Básico', discount: 0,
+    id: 1, 
+    name: 'Plano Básico', 
+    discount: 0,
     subtitle: 'Escolha ideal para testar campanhas',
-    price: '250,00/mês', totalMonths: 1
+    price: '250,00/mês', 
+    totalMonths: 1,
+    description: '1 mês',
+    months: 1,
+    mostPopular: false,
+    pricePerMonth: 250,
+    extras: ['Nenhum vídeo incluso', 'Produção adicional disponível']
   },
   3: {
-    id: 3, name: 'Plano Popular', discount: 5,
+    id: 3, 
+    name: 'Plano Popular', 
+    discount: 5,
     subtitle: 'Ideal para maior fixação da marca',
-    price: '237,50/mês', totalMonths: 3
+    price: '237,50/mês', 
+    totalMonths: 3,
+    description: '3 meses',
+    months: 3,
+    mostPopular: true,
+    pricePerMonth: 237.50,
+    extras: ['1 vídeo por mês incluído', 'Economize R$70/mês', 'Maior visibilidade']
   },
   6: {
-    id: 6, name: 'Plano Profissional', discount: 10,
+    id: 6, 
+    name: 'Plano Profissional', 
+    discount: 10,
     subtitle: 'Ótimo para campanhas sazonais',
-    price: '225,00/mês', totalMonths: 6
+    price: '225,00/mês', 
+    totalMonths: 6,
+    description: '6 meses',
+    months: 6,
+    mostPopular: false,
+    pricePerMonth: 225,
+    extras: ['1 vídeo por mês incluído', 'Uso mensal do Estúdio Indexa', 'Presença contínua']
   },
   12: {
-    id: 12, name: 'Plano Empresarial', discount: 15,
+    id: 12, 
+    name: 'Plano Empresarial', 
+    discount: 15,
     subtitle: 'Melhor custo-benefício anual',
-    price: '212,50/mês', totalMonths: 12
+    price: '212,50/mês', 
+    totalMonths: 12,
+    description: '12 meses',
+    months: 12,
+    mostPopular: false,
+    pricePerMonth: 212.50,
+    extras: ['1 vídeo por mês incluído', 'Bônus institucional', 'Exibição estendida de 30s']
   }
 };
 
@@ -51,7 +83,7 @@ interface CartItem {
 
 export const useCheckout = () => {
   // Session user check
-  const { sessionUser } = useUserSession();
+  const { user: sessionUser } = useUserSession();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -59,7 +91,7 @@ export const useCheckout = () => {
   const { createOrder } = useOrderCreation();
   
   // Cart state
-  const { cart: cartItems, clearCart: handleClearCart } = useCartState();
+  const { cartItems, clearCart: handleClearCart } = useCartState();
   
   // Checkout progress state
   const [step, setStep] = useState(STEPS.PLAN);
@@ -198,11 +230,57 @@ export const useCheckout = () => {
     }
   };
 
+  // Setup navigation hooks after defining all required state
+  const {
+    handleNextStep,
+    handlePrevStep,
+    isNextEnabled,
+    isNavigating
+  } = useCheckoutNavigation({
+    step,
+    setStep,
+    selectedPlan,
+    cartItems,
+    couponDiscount,
+    couponValid,
+    acceptTerms,
+    unavailablePanels,
+    couponId,
+    startDate,
+    endDate,
+    sessionUser,
+    handleClearCart,
+    createPayment
+  });
+
+  // Calculate total price method
+  const calculateTotalPrice = () => {
+    // Base price calculation (example: R$250 per panel per month)
+    const basePrice = 250; // R$ 250,00 por painel por mês
+    
+    // Get plan discount percentage
+    const planDiscount = PLANS[selectedPlan]?.discount || 0;
+    
+    // Calculate subtotal
+    const subtotal = cartItems.length * basePrice * selectedPlan;
+    
+    // Apply plan discount
+    const afterPlanDiscount = subtotal * (1 - planDiscount / 100);
+    
+    // Apply coupon discount if valid
+    const finalPrice = couponValid && couponDiscount > 0 
+      ? afterPlanDiscount * (1 - couponDiscount / 100)
+      : afterPlanDiscount;
+    
+    return finalPrice;
+  };
+
   return {
     step,
     setStep,
     cartItems,
     PLANS,
+    STEPS,
     selectedPlan,
     setSelectedPlan,
     unavailablePanels,
@@ -226,5 +304,10 @@ export const useCheckout = () => {
     handleClearCart,
     paymentMethod,
     setPaymentMethod,
+    handleNextStep,
+    handlePrevStep,
+    isNextEnabled,
+    isNavigating,
+    calculateTotalPrice
   };
 };
