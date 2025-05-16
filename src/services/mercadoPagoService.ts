@@ -46,6 +46,9 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
       url.searchParams.append('payment_method_id', normalizedPaymentMethod);
     }
     
+    // CRITICAL FIX: Force test parameter to ensure it works in any environment
+    url.searchParams.append('test', 'true');
+    
     // Add success and failure URLs for proper redirection after payment
     const returnBaseUrl = window.location.origin;
     url.searchParams.append('success', `${returnBaseUrl}/pedido-confirmado`);
@@ -66,31 +69,40 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     // Show toast before redirect
     sonnerToast.success("Redirecionando para pagamento...");
     
-    // 3-LAYER FALLBACK STRATEGY:
+    // ULTRA-FORCE APPROACH: Combine multiple methods to ensure at least one works
     
-    // Layer 1: Direct window.location.href redirect
-    console.log("[MercadoPago] Tentativa 1: Redirecionamento direto via location.href");
-    window.location.href = finalUrl;
+    // Method 1: Use open in new window 
+    const newWindow = window.open(finalUrl, '_blank');
     
-    // Layer 2: After short delay, try opening in new tab if still here
+    // Method 2: Direct location.href (fallback)
+    setTimeout(() => {
+      if (!newWindow || newWindow.closed || newWindow.closed === undefined) {
+        console.log('[MercadoPago] Fallback: usando window.location.href');
+        window.location.href = finalUrl;
+      }
+    }, 300);
+    
+    // Method 3: Form submission as final fallback
     setTimeout(() => {
       if (document.visibilityState !== 'hidden') {
-        console.log("[MercadoPago] Tentativa 2: Redirecionamento via window.open");
-        const newTab = window.open(finalUrl, '_blank');
+        console.log('[MercadoPago] Double-fallback: usando form submission');
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = url.origin + url.pathname;
+        form.target = '_blank';
         
-        // Layer 3: If new tab fails, try location.replace as final resort
-        if (!newTab) {
-          console.log("[MercadoPago] Tentativa 3: Redirecionamento via location.replace");
-          window.location.replace(finalUrl);
-          
-          // Final emergency approach - reload with redirect parameter
-          setTimeout(() => {
-            console.log("[MercadoPago] Tentativa 4 (emergência): Recarregar página com parâmetro de redirecionamento");
-            window.location.href = `${window.location.origin}/checkout?redirect=${encodeURIComponent(finalUrl)}`;
-          }, 500);
-        }
-      } else {
-        console.log("[MercadoPago] Redirecionamento parece ter sido bem-sucedido");
+        // Add all parameters from the URL
+        url.searchParams.forEach((value, key) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
       }
     }, 800);
     

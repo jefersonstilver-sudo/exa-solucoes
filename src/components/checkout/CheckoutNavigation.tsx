@@ -55,7 +55,10 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       isNavigating,
       isPaymentStep,
       paymentMethod,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      screen: `${window.innerWidth}x${window.innerHeight}`,
+      url: window.location.href
     });
     
     // If disabled, do nothing
@@ -94,6 +97,15 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       } catch (e) {
         console.error("Error storing payment click info:", e);
       }
+      
+      // Anti-bounce mechanism to prevent double clicks
+      const btn = e.currentTarget as HTMLButtonElement;
+      btn.disabled = true;
+      setTimeout(() => {
+        if (btn && !btn.disabled) {
+          btn.disabled = false;
+        }
+      }, 2000);
     } else {
       // Regular navigation event
       logCheckoutEvent(

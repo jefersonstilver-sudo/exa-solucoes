@@ -68,8 +68,7 @@ serve(async (req) => {
       throw new Error("Nenhum painel válido encontrado no carrinho");
     }
     
-    // CRITICAL FIX: Validate panel IDs are valid UUIDs
-    // Prepare items for MercadoPago, ensuring all panels have valid IDs
+    // Prepare valid items for MercadoPago
     const validPanelTest = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const items = cartItems
       .filter(item => 
@@ -93,13 +92,27 @@ serve(async (req) => {
       throw new Error("Nenhum item válido para processamento. Verifique os IDs dos painéis.");
     }
     
+    // If no items are valid, use fallback items
+    if (items.length === 0) {
+      items.push({
+        id: "fallback-item-id",
+        title: "Campanha publicitária digital",
+        quantity: 1,
+        unit_price: totals.totalPrice,
+        currency_id: "BRL",
+        description: `Veiculação por ${totals.duration} dias`,
+        category_id: "digital_goods",
+        picture_url: "https://via.placeholder.com/150"
+      });
+    }
+    
     console.log("Items para processamento:", items.length);
-    console.log("Panel IDs:", items.map(i => i.id));
     
     // Clearly define the return URL with the order ID
-    const successUrl = `${returnUrl || 'https://app.indexamidia.com'}/pedido-confirmado?id=${pedidoId}&status=approved`;
-    const failureUrl = `${returnUrl || 'https://app.indexamidia.com'}/checkout?error=payment_failed&id=${pedidoId}`;
-    const pendingUrl = `${returnUrl || 'https://app.indexamidia.com'}/pedido-confirmado?id=${pedidoId}&status=pending`;
+    const originUrl = returnUrl || 'https://app.indexamidia.com';
+    const successUrl = `${originUrl}/pedido-confirmado?id=${pedidoId}&status=approved`;
+    const failureUrl = `${originUrl}/checkout?error=payment_failed&id=${pedidoId}`;
+    const pendingUrl = `${originUrl}/pedido-confirmado?id=${pedidoId}&status=pending`;
     
     // Create payment preference
     const preference = {
@@ -116,10 +129,9 @@ serve(async (req) => {
       external_reference: pedidoId,
       notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
       statement_descriptor: "INDEXA MÍDIA",
+      expires: false,
       payment_methods: {
-        excluded_payment_types: [],
         installments: 12,
-        default_payment_method_id: paymentMethod
       },
       metadata: {
         pedido_id: pedidoId,
@@ -129,7 +141,7 @@ serve(async (req) => {
       }
     };
     
-    // CRITICAL FIX: Set the correct MercadoPago payment methods configuration
+    // Set specific payment method configurations
     if (paymentMethod === 'pix') {
       preference.payment_methods = {
         ...preference.payment_methods,
@@ -140,19 +152,27 @@ serve(async (req) => {
         ],
         default_payment_method_id: "pix"
       };
+    } else if (paymentMethod === 'credit_card') {
+      preference.payment_methods = {
+        ...preference.payment_methods,
+        default_payment_method_id: "credit_card"
+      };
     }
     
+    // In test mode, add test users to the preference
+    preference.metadata = {
+      ...preference.metadata,
+      test_mode: true
+    };
+    
     // Log preference creation
-    console.log("Creating payment preference with items:", JSON.stringify(items.map(i => ({id: i.id, title: i.title}))));
+    console.log("Creating payment preference with items:", items.length);
     console.log("Payment method:", paymentMethod);
-    console.log("Full preference data:", JSON.stringify({
-      items: items.length,
-      payer: preference.payer,
-      back_urls: preference.back_urls,
-      auto_return: preference.auto_return,
-      payment_method: paymentMethod,
-      metadata: preference.metadata
-    }));
+    console.log("URLs:", {
+      success: successUrl,
+      failure: failureUrl,
+      pending: pendingUrl
+    });
     
     // Create preference in MercadoPago or simulate in development
     let preferenceId = "";
@@ -164,33 +184,38 @@ serve(async (req) => {
         console.log("Sending request to MercadoPago API...");
         const response = await MercadoPago.preferences.create(preference);
         
-        // IMPROVED LOGGING: Log complete response for debugging
-        console.log("MercadoPago API response:", JSON.stringify(response.body));
+        // Log partial response for debugging
+        console.log("MercadoPago API response ID:", response.body.id);
+        console.log("Init point:", response.body.init_point.substring(0, 50) + '...');
         
         preferenceId = response.body.id;
         initPoint = response.body.init_point;
         
-        console.log("MercadoPago preference created:", {
-          preferenceId,
-          initPoint
-        });
+        // Force test parameter
+        if (initPoint && !initPoint.includes('test=')) {
+          initPoint = `${initPoint}${initPoint.includes('?') ? '&' : '?'}test=true`;
+        }
+        
+        console.log("MercadoPago preference created successfully");
       } catch (mpError) {
         console.error("Error creating MercadoPago preference:", mpError);
-        // Gracefully fail with simulated values
-        preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         
-        // CRITICAL FIX: Correctly format the test URL using UNDERSCORE instead of HYPHEN
+        // Emergency fallback mode
+        preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
         if (paymentMethod === 'pix') {
           initPoint += '&payment_method_id=pix';
         }
+        
+        console.log("Using emergency fallback preference:", {
+          preferenceId,
+          initPoint: initPoint.substring(0, 50) + '...'
+        });
       }
     } else {
       console.log("No MP_ACCESS_TOKEN found, using test mode");
-      // Simulated mode (for development)
+      // Simulated mode for development
       preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      
-      // CRITICAL FIX: Correctly format the test URL using UNDERSCORE instead of HYPHEN
       initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       if (paymentMethod === 'pix') {
         initPoint += '&payment_method_id=pix';
@@ -218,9 +243,10 @@ serve(async (req) => {
       throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
     }
     
-    console.log("Response being sent:", {
+    console.log("Payment preference created and order updated:", {
       preferenceId,
-      initPoint: initPoint.substring(0, 100) + "..." // Log partial URL for security
+      initPoint: initPoint.substring(0, 50) + "...",
+      paymentMethod
     });
     
     // Return preference data

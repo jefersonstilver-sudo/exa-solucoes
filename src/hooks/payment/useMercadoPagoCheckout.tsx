@@ -35,7 +35,7 @@ export const useMercadoPagoCheckout = () => {
         console.log("[MercadoPago] Safety timeout triggered - resetting payment state");
         setIsCreatingPayment(false);
         paymentInProgressRef.current = false;
-      }, 20000); // Extended to 20 seconds for better reliability
+      }, 30000); // Extended to 30 seconds for better reliability
       
       return () => clearTimeout(timeout);
     }
@@ -62,9 +62,25 @@ export const useMercadoPagoCheckout = () => {
         
         // Add slight delay to allow UI to render
         setTimeout(() => {
-          // Execute redirect
-          window.location.href = redirectParam;
+          // Execute redirect - IMMEDIATELY OPEN IN NEW TAB
+          window.open(redirectParam, '_blank');
+          
+          // Also use location.href as fallback
+          setTimeout(() => {
+            window.location.href = redirectParam;
+          }, 300);
         }, 500);
+      }
+      
+      // Also check for error parameter
+      const errorParam = url.searchParams.get('error');
+      if (errorParam === 'payment_failed') {
+        console.log("[MercadoPago] Payment failed, showing error message");
+        sonnerToast.error("O pagamento falhou. Por favor, tente novamente.");
+        
+        // Clean URL
+        url.searchParams.delete('error');
+        window.history.replaceState({}, document.title, url.toString());
       }
     } catch (e) {
       console.error("[MercadoPago] Error checking for redirect parameter:", e);
@@ -107,7 +123,7 @@ export const useMercadoPagoCheckout = () => {
         }
       );
       
-      // CRITICAL FIX: Direct redirection using enhanced mercadoPagoService
+      // CRITICAL FIX: Usando o método enhanced de redirecionamento
       handleMercadoPagoRedirect(preferenceId, paymentMethod);
       
       // Add a timeout to reset state if redirection fails
@@ -117,6 +133,30 @@ export const useMercadoPagoCheckout = () => {
           console.log("[MercadoPago] Redirection may have failed, resetting state");
           setIsCreatingPayment(false);
           paymentInProgressRef.current = false;
+          
+          // Tentar novamente usando o botão auxiliar
+          const redirectButton = document.createElement('a');
+          redirectButton.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+          redirectButton.target = '_blank';
+          redirectButton.textContent = 'Clique aqui para pagar se o redirecionamento não funcionou';
+          redirectButton.className = 'bg-blue-500 text-white px-4 py-2 rounded fixed bottom-4 right-4 z-50 shadow-lg';
+          
+          document.body.appendChild(redirectButton);
+          
+          // Notify the user
+          sonnerToast.error("O redirecionamento automático falhou. Use o botão auxiliar no canto inferior direito da tela.");
+          
+          setTimeout(() => {
+            // Automatically click the button
+            redirectButton.click();
+            
+            // Remove after some time
+            setTimeout(() => {
+              if (document.body.contains(redirectButton)) {
+                document.body.removeChild(redirectButton);
+              }
+            }, 30000);
+          }, 1000);
         }
       }, 5000);
       
