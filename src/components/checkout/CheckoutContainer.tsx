@@ -71,13 +71,17 @@ const CheckoutContainer: React.FC = () => {
 
   const totalPrice = calculateTotalPrice();
 
+  // FIXED: Handle the next step explicitly passing the current payment method
   const handleNextWithPaymentMethod = () => {
     console.log(`[CheckoutContainer] Próximo passo com método ${paymentMethod}, step atual: ${step}`);
     
-    // Se estiver no passo de pagamento, passar o método para o handler
+    // Importante: Sempre passar o método de pagamento se estivermos no passo de pagamento
     if (step === STEPS.PAYMENT) {
+      // Logging para diagnóstico
+      console.log(`[CheckoutContainer] Passando método ${paymentMethod} para handleNextStep`);
       return handleNextStep(paymentMethod);
     }
+    
     return handleNextStep();
   };
 
