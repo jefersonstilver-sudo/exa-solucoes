@@ -41,7 +41,7 @@ export const useMercadoPagoCheckout = () => {
       { preferenceId, paymentMethod }
     );
     
-    // Simplistic direct redirect - more reliable than using the SDK
+    // FIXED: Use the enhanced redirect implementation
     handleMercadoPagoRedirect(preferenceId, paymentMethod);
   };
 

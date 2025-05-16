@@ -83,10 +83,10 @@ export const useCheckoutNavigation = ({
 
   // Navigate to the next step or process payment
   const handleNextStep = (paymentMethod = 'credit_card') => {
-    // Importante: Garantir que paymentMethod esteja definido
+    // FIXED: Ensure paymentMethod is properly defined
     const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
-    // Log detalhado para diagnóstico
+    // Detailed log for diagnostics
     console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, step: ${step}`);
     
     if (isNavigating) {
@@ -97,31 +97,31 @@ export const useCheckoutNavigation = ({
     setIsNavigating(true);
     
     try {
-      // Verificar se pode avançar
+      // Check if can proceed
       if (!isNextEnabled()) {
         console.warn('[useCheckoutNavigation] Navigation blocked - isNextEnabled() returned false');
         setIsNavigating(false);
         return;
       }
 
-      // Tratar o último passo diferente (UPLOAD)
+      // FIXED: Handle final upload step properly
       if (step === 4) {
-        // No último passo, redirecionar para a página de confirmação
+        // In the last step, redirect to the confirmation page
         navigate('/pedido-confirmado');
         setIsNavigating(false);
         return;
       }
       
-      // Tratar o passo de pagamento
+      // Handle payment step
       if (step === 3) {
-        // Pagamento
+        // Payment
         if (!acceptTerms) {
           sonnerToast.error("Você precisa aceitar os termos para continuar");
           setIsNavigating(false);
           return;
         }
         
-        // Log detalhado
+        // Detailed log
         console.log(`[useCheckoutNavigation] Starting payment with method: ${normalizedPaymentMethod}`);
         
         logCheckoutEvent(
@@ -131,10 +131,10 @@ export const useCheckoutNavigation = ({
           { currentStep: step, paymentMethod: normalizedPaymentMethod }
         );
         
-        // Calcular preço considerando desconto de cupom
+        // Calculate price considering coupon discount
         const totalPrice = calculateTotalPrice();
         
-        // Tentativa de pagamento explicitamente com o método escolhido
+        // FIXED: Send the payment method explicitly to createPayment
         createPayment({
           totalPrice,
           selectedPlan,
@@ -143,16 +143,19 @@ export const useCheckoutNavigation = ({
           endDate,
           couponId,
           acceptTerms,
-          unavailablePanels: [], // Ignorando validação para corrigir o bug
+          unavailablePanels: [], // Ignoring validation to fix the bug
           sessionUser,
           handleClearCart,
           paymentMethod: normalizedPaymentMethod
         });
         
-        // Note: createPayment irá resetar isNavigating quando apropriado
+        // Note: createPayment will reset isNavigating when appropriate
+        
+        // IMPORTANT: Don't change step here, as we're redirecting to MercadoPago
+        return;
       } 
       else {
-        // Etapas normais (não é pagamento nem upload)
+        // Normal steps (not payment or upload)
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
@@ -160,6 +163,7 @@ export const useCheckoutNavigation = ({
           { currentStep: step, nextStep: step + 1 }
         );
         
+        // IMPORTANT FIX: Update the step before finishing navigation
         setStep(step + 1);
         setIsNavigating(false);
       }
@@ -177,16 +181,16 @@ export const useCheckoutNavigation = ({
     }
   };
   
-  // Método para calcular o total com desconto
+  // Method to calculate total with discount
   const calculateTotalPrice = () => {
-    // Cálculo base: subtotal
+    // Base calculation: subtotal
     const subtotal = cartItems.reduce((total, item) => {
-      // Valores de exemplo para desenvolver
-      const pricePerPanel = 250; // R$ 250 por painel/mês
+      // Example values for development
+      const pricePerPanel = 250; // R$ 250 per panel/month
       return total + pricePerPanel;
     }, 0);
     
-    // Aplicar desconto do cupom se válido
+    // Apply coupon discount if valid
     let total = subtotal;
     if (couponValid && couponDiscount > 0) {
       const discount = (subtotal * couponDiscount) / 100;

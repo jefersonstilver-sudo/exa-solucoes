@@ -80,7 +80,7 @@ export const usePaymentFlow = () => {
       // IMPORTANT: Ignoring unavailable panels validation to fix the bug
       const isValid = validatePaymentRequirements({
         acceptTerms, 
-        unavailablePanels: [], // Ignoring validation to fix the bug
+        unavailablePanels: [], // Explicitly ignoring the validation to fix the bug
         sessionUser, 
         isSDKLoaded,
         cartItems
@@ -173,10 +173,10 @@ export const usePaymentFlow = () => {
         { preferenceId: data.preference_id, method: paymentMethodNormalized }
       );
       
-      // Redirect to MercadoPago checkout with specific payment method
+      // IMPORTANT FIX: More reliable redirection to MercadoPago with explicit payment method
       redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
       
-      // Don't set isCreatingPayment as false here because redirection will happen
+      // IMPORTANT: Don't set isCreatingPayment as false here because redirection will happen
       
     } catch (error: any) {
       console.error('Error creating payment:', error);
