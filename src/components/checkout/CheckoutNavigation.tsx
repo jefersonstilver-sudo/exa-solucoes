@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -28,10 +29,10 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isNavigating = false,
   paymentMethod
 }) => {
-  // Valor combinado para determinar se o botão deve estar desabilitado
+  // Combined value to determine if the button should be disabled
   const isDisabled = !isNextEnabled || isCreatingPayment || isNavigating;
   
-  // Texto para o botão "Próximo" com base no estado atual
+  // Text for the "Next" button based on current state
   const getNextButtonText = () => {
     if (isCreatingPayment || isNavigating) {
       return "Processando...";
@@ -42,21 +43,22 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
     return "Continuar";
   };
 
-  // Função segura para lidar com o clique no botão próximo
+  // Safe function to handle next button click
   const handleNextClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Logging para diagnóstico
+    // Logging for diagnostics
     console.log("Botão próximo clicado. Estado:", {
       isDisabled,
       isNextEnabled,
       isCreatingPayment,
       isNavigating,
       isPaymentStep,
-      paymentMethod
+      paymentMethod,
+      timestamp: new Date().toISOString()
     });
     
-    // Se estiver desabilitado, não fazer nada
+    // If disabled, do nothing
     if (isDisabled) {
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
@@ -73,7 +75,15 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
         `Botão de PAGAMENTO clicado: ${totalPrice} - ${paymentMethod}`,
-        { isPaymentStep, totalPrice, paymentMethod, timestamp: new Date().toISOString() }
+        { 
+          isPaymentStep, 
+          totalPrice, 
+          paymentMethod, 
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          screen: `${window.innerWidth}x${window.innerHeight}`,
+          url: window.location.href
+        }
       );
       
       // Store in localStorage for diagnostics
@@ -94,7 +104,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       );
     }
     
-    // Chamar o manipulador de evento
+    // Call the event handler
     try {
       onNext();
     } catch (error) {
@@ -103,12 +113,12 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
         `Erro ao executar onNext: ${error}`,
-        { error: String(error) }
+        { error: String(error), stack: error.stack }
       );
     }
   };
 
-  // Função segura para lidar com o clique no botão voltar
+  // Safe function to handle back button click
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
@@ -122,14 +132,14 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       return;
     }
     
-    // Registrar o evento
+    // Log the event
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
       `Botão de voltar clicado ${isBackToStore ? '(para loja)' : '(passo anterior)'}`
     );
     
-    // Chamar o manipulador de evento
+    // Call the event handler
     onBack();
   };
 

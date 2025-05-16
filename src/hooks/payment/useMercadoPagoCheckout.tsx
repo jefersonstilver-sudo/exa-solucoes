@@ -35,7 +35,7 @@ export const useMercadoPagoCheckout = () => {
         console.log("[MercadoPago] Safety timeout triggered - resetting payment state");
         setIsCreatingPayment(false);
         paymentInProgressRef.current = false;
-      }, 15000); // 15 seconds safety timeout
+      }, 20000); // Extended to 20 seconds for better reliability
       
       return () => clearTimeout(timeout);
     }
@@ -60,15 +60,18 @@ export const useMercadoPagoCheckout = () => {
         url.searchParams.delete('redirect');
         window.history.replaceState({}, document.title, url.toString());
         
-        // Execute redirect
-        window.location.href = redirectParam;
+        // Add slight delay to allow UI to render
+        setTimeout(() => {
+          // Execute redirect
+          window.location.href = redirectParam;
+        }, 500);
       }
     } catch (e) {
       console.error("[MercadoPago] Error checking for redirect parameter:", e);
     }
   }, []);
 
-  // Direct redirection function with simplified approach
+  // Direct redirection function with improved approach
   const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
     if (!preferenceId) {
       sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
@@ -87,22 +90,48 @@ export const useMercadoPagoCheckout = () => {
     paymentInProgressRef.current = true;
     
     try {
-      console.log(`[MercadoPago] Iniciando redirecionamento direto com método: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
+      // Log detailed information for debugging
+      console.log(`[MercadoPago] Redirecionando para checkout com preferenceId: ${preferenceId.substring(0, 10)}...`);
+      console.log(`[MercadoPago] Método de pagamento: ${paymentMethod}`);
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Iniciando redirecionamento para Mercado Pago com método ${paymentMethod}`,
-        { preferenceId, paymentMethod }
+        `Iniciando redirecionamento para Mercado Pago`,
+        { 
+          preferenceId,
+          paymentMethod,
+          timestamp: new Date().toISOString(),
+          sdkLoaded: isSDKLoaded,
+          sdkError: isError
+        }
       );
       
-      // CRITICAL FIX: Direct redirection using mercadoPagoService
+      // CRITICAL FIX: Direct redirection using enhanced mercadoPagoService
       handleMercadoPagoRedirect(preferenceId, paymentMethod);
+      
+      // Add a timeout to reset state if redirection fails
+      setTimeout(() => {
+        // We only reset if we're still on the same page
+        if (document.visibilityState !== 'hidden') {
+          console.log("[MercadoPago] Redirection may have failed, resetting state");
+          setIsCreatingPayment(false);
+          paymentInProgressRef.current = false;
+        }
+      }, 5000);
+      
     } catch (error) {
       console.error("[MercadoPago] Critical error during redirect:", error);
-      sonnerToast.error("Erro ao redirecionar para pagamento");
+      sonnerToast.error("Erro ao redirecionar para pagamento. Tente novamente.");
       setIsCreatingPayment(false);
       paymentInProgressRef.current = false;
+      
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        `Erro crítico no redirecionamento: ${error}`,
+        { error: String(error) }
+      );
     }
   };
 

@@ -15,6 +15,18 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     if (!publicKey) {
       console.error('[MercadoPago] Public key não fornecida');
       setIsError(true);
+      
+      // CRITICAL FIX: Even without public key, allow the app to proceed
+      // since we'll use direct URL redirection instead of SDK
+      setIsSDKLoaded(true);
+      return;
+    }
+    
+    // Check if SDK is already defined in window
+    // @ts-ignore - MercadoPago é carregado via script
+    if (window.MercadoPago) {
+      console.log('[MercadoPago] SDK já está carregado');
+      setIsSDKLoaded(true);
       return;
     }
     
@@ -25,8 +37,14 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       setIsSDKLoaded(false);
     }
     
-    // Log carregamento do SDK
+    // Log SDK loading start
     console.log('[MercadoPago] Iniciando carregamento do SDK');
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      'Iniciando carregamento do SDK MercadoPago',
+      { publicKey: publicKey.substring(0, 8) + '...' }
+    );
     
     // Create and load the script
     const script = document.createElement('script');
@@ -34,23 +52,22 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     script.src = 'https://sdk.mercadopago.com/js/v2';
     script.async = true;
     
-    // Timeouts para detectar problemas de carregamento
+    // Set a reasonable timeout (5 seconds)
     const timeoutId = setTimeout(() => {
       if (!isSDKLoaded) {
         console.warn('[MercadoPago] O carregamento do SDK está demorando mais que o esperado');
         
-        // Tenta recarregar após falha - simplified retries
-        if (loadAttempts < 1) {
-          setLoadAttempts(prev => prev + 1);
-          if (document.contains(script)) {
-            document.body.removeChild(script);
-          }
-          document.body.appendChild(script);
-        } else {
-          // After retry, just proceed without SDK
-          console.log('[MercadoPago] Proceeding without SDK after retry');
-          setIsSDKLoaded(true); // Let the app proceed anyway
-        }
+        logCheckoutEvent(
+          CheckoutEvent.DEBUG_EVENT,
+          LogLevel.WARNING,
+          'Timeout no carregamento do SDK MercadoPago',
+          { attempts: loadAttempts }
+        );
+        
+        // CRITICAL FIX: Proceed anyway after timeout
+        // We will use direct URL redirection instead of SDK
+        console.log('[MercadoPago] Proceeding without SDK (will use direct URL checkout)');
+        setIsSDKLoaded(true);
       }
     }, 5000);
     
@@ -66,11 +83,26 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
         
         setIsSDKLoaded(true);
         console.log('[MercadoPago] SDK inicializado corretamente');
+        
+        logCheckoutEvent(
+          CheckoutEvent.DEBUG_EVENT,
+          LogLevel.INFO,
+          'SDK MercadoPago carregado com sucesso',
+          { success: true }
+        );
       } catch (error) {
         console.error('[MercadoPago] Erro ao inicializar:', error);
         setIsError(true);
-        // Simply continue anyway since we'll use direct URL redirection
+        
+        // CRITICAL FIX: Continue anyway since we'll use direct URL redirection
         setIsSDKLoaded(true);
+        
+        logCheckoutEvent(
+          CheckoutEvent.DEBUG_EVENT,
+          LogLevel.ERROR,
+          'Erro ao inicializar SDK MercadoPago',
+          { error: String(error) }
+        );
       }
     };
     
@@ -79,9 +111,16 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       clearTimeout(timeoutId);
       setIsError(true);
       
-      // CRITICAL FIX: Proceed even without SDK, since we'll use direct URLs
+      // CRITICAL FIX: Proceed even without SDK
       console.log('[MercadoPago] Proceeding without SDK (will use direct URL checkout)');
-      setIsSDKLoaded(true); // Let the app proceed without SDK
+      setIsSDKLoaded(true);
+      
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.ERROR,
+        'Erro ao carregar SDK MercadoPago',
+        { error: String(e) }
+      );
     };
     
     document.body.appendChild(script);

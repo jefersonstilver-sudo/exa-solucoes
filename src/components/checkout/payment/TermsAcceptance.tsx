@@ -2,6 +2,8 @@
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useEffect } from "react";
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from "@/services/checkoutDebugService";
 
 interface TermsAcceptanceProps {
   acceptTerms: boolean;
@@ -9,6 +11,25 @@ interface TermsAcceptanceProps {
 }
 
 const TermsAcceptance = ({ acceptTerms, setAcceptTerms }: TermsAcceptanceProps) => {
+  // Log when terms are accepted
+  useEffect(() => {
+    if (acceptTerms) {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        "Termos de uso aceitos pelo usuário",
+        { accepted: true, timestamp: new Date().toISOString() }
+      );
+    }
+  }, [acceptTerms]);
+  
+  const handleTermsChange = (checked: boolean) => {
+    setAcceptTerms(!!checked);
+    
+    // Log the change for analytics
+    console.log(`[Checkout] Termos de uso ${checked ? 'aceitos' : 'rejeitados'}`);
+  };
+  
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -19,7 +40,7 @@ const TermsAcceptance = ({ acceptTerms, setAcceptTerms }: TermsAcceptanceProps) 
       <Checkbox 
         id="terms" 
         checked={acceptTerms} 
-        onCheckedChange={(checked) => setAcceptTerms(!!checked)}
+        onCheckedChange={handleTermsChange}
         className="h-5 w-5 mt-0.5 border-gray-300 text-[#00FFAB] focus:ring-[#00FFAB]"
       />
       <Label 

@@ -22,30 +22,37 @@ serve(async (req) => {
   }
   
   try {
-    // Criar cliente Supabase
+    // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Configurar MercadoPago
+    // Configure MercadoPago
     const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
     MercadoPago.configure({
       access_token: MP_ACCESS_TOKEN,
       sandbox: true
     });
     
-    // Obter dados do request
+    // Get request data
     const requestData = await req.json();
     const { pedidoId, cartItems, totals, userId, returnUrl, paymentMethod = 'credit_card' } = requestData;
     
-    console.log("Dados recebidos:", { pedidoId, totals, userId, paymentMethod, cartItemsCount: cartItems?.length });
+    console.log("Dados recebidos:", { 
+      pedidoId, 
+      totals, 
+      userId, 
+      paymentMethod, 
+      cartItemsCount: cartItems?.length,
+      returnUrl
+    });
     
-    // Validar pedidoId (deve ser um UUID válido)
+    // Validate pedidoId (must be a valid UUID)
     if (!pedidoId || typeof pedidoId !== 'string' || !pedidoId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
       throw new Error(`ID de pedido inválido: ${pedidoId}`);
     }
     
-    // Buscar dados do usuário para incluir no pagamento
+    // Fetch user data to include in payment
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('email')
@@ -56,24 +63,26 @@ serve(async (req) => {
       throw new Error(`Erro ao buscar dados do usuário: ${userError.message}`);
     }
     
-    // Verificar se existem painéis válidos
+    // Check if cart has valid panels
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
       throw new Error("Nenhum painel válido encontrado no carrinho");
     }
     
-    // Preparar itens para MercadoPago, garantindo que todos os painéis tenham IDs válidos
+    // CRITICAL FIX: Validate panel IDs are valid UUIDs
+    // Prepare items for MercadoPago, ensuring all panels have valid IDs
+    const validPanelTest = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const items = cartItems
       .filter(item => 
         item.panel && 
         item.panel.id && 
         typeof item.panel.id === 'string' &&
-        item.panel.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+        item.panel.id.match(validPanelTest)
       )
       .map(item => ({
         id: item.panel.id,
         title: `Painel em ${item.panel.buildings?.nome || 'Localização'}`,
         quantity: 1,
-        unit_price: totals.totalPrice / cartItems.length, // Dividir valor total pelos itens
+        unit_price: totals.totalPrice / cartItems.length, // Divide total value by items
         currency_id: 'BRL',
         description: `Veiculação por ${totals.duration} dias`,
         category_id: "digital_goods",
@@ -81,17 +90,18 @@ serve(async (req) => {
       }));
       
     if (items.length === 0) {
-      throw new Error("Nenhum item válido para processamento");
+      throw new Error("Nenhum item válido para processamento. Verifique os IDs dos painéis.");
     }
     
     console.log("Items para processamento:", items.length);
+    console.log("Panel IDs:", items.map(i => i.id));
     
-    // Definir claramente o URL de retorno com o ID do pedido
+    // Clearly define the return URL with the order ID
     const successUrl = `${returnUrl || 'https://app.indexamidia.com'}/pedido-confirmado?id=${pedidoId}&status=approved`;
     const failureUrl = `${returnUrl || 'https://app.indexamidia.com'}/checkout?error=payment_failed&id=${pedidoId}`;
     const pendingUrl = `${returnUrl || 'https://app.indexamidia.com'}/pedido-confirmado?id=${pedidoId}&status=pending`;
     
-    // Criar preferência de pagamento
+    // Create payment preference
     const preference = {
       items,
       payer: {
@@ -132,19 +142,29 @@ serve(async (req) => {
       };
     }
     
-    // Registrar a criação da preferência
+    // Log preference creation
     console.log("Creating payment preference with items:", JSON.stringify(items.map(i => ({id: i.id, title: i.title}))));
     console.log("Payment method:", paymentMethod);
+    console.log("Full preference data:", JSON.stringify({
+      items: items.length,
+      payer: preference.payer,
+      back_urls: preference.back_urls,
+      auto_return: preference.auto_return,
+      payment_method: paymentMethod,
+      metadata: preference.metadata
+    }));
     
-    // Criar preferência no MercadoPago ou simular em desenvolvimento
+    // Create preference in MercadoPago or simulate in development
     let preferenceId = "";
     let initPoint = "";
     
     if (MP_ACCESS_TOKEN) {
       try {
-        // Usar a API do MercadoPago para criar preferência real
+        // Use MercadoPago API to create real preference
         console.log("Sending request to MercadoPago API...");
         const response = await MercadoPago.preferences.create(preference);
+        
+        // IMPROVED LOGGING: Log complete response for debugging
         console.log("MercadoPago API response:", JSON.stringify(response.body));
         
         preferenceId = response.body.id;
@@ -156,7 +176,7 @@ serve(async (req) => {
         });
       } catch (mpError) {
         console.error("Error creating MercadoPago preference:", mpError);
-        // Falhar de forma elegante com valores simulados
+        // Gracefully fail with simulated values
         preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         
         // CRITICAL FIX: Correctly format the test URL using UNDERSCORE instead of HYPHEN
@@ -167,7 +187,7 @@ serve(async (req) => {
       }
     } else {
       console.log("No MP_ACCESS_TOKEN found, using test mode");
-      // Modo simulado (para desenvolvimento)
+      // Simulated mode (for development)
       preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       
       // CRITICAL FIX: Correctly format the test URL using UNDERSCORE instead of HYPHEN
@@ -177,7 +197,7 @@ serve(async (req) => {
       }
     }
     
-    // Atualizar o pedido com informações de pagamento
+    // Update order with payment information
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
@@ -203,7 +223,7 @@ serve(async (req) => {
       initPoint: initPoint.substring(0, 100) + "..." // Log partial URL for security
     });
     
-    // Retornar dados da preferência
+    // Return preference data
     return new Response(
       JSON.stringify({
         success: true,
@@ -224,7 +244,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro ao processar pagamento:', error);
     
-    // Retornar erro com detalhes completos para depuração
+    // Return error with detailed information for debugging
     return new Response(
       JSON.stringify({
         success: false,

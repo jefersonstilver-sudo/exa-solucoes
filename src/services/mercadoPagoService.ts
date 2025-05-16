@@ -14,6 +14,14 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     return;
   }
   
+  // Prevent multiple redirections with a static flag
+  const hasRedirectedKey = 'mp_redirect_in_progress';
+  if (window.sessionStorage.getItem(hasRedirectedKey)) {
+    console.log('[MercadoPago] Redirection already in progress, preventing duplicate');
+    return;
+  }
+  window.sessionStorage.setItem(hasRedirectedKey, 'true');
+  
   try {
     // Normalize payment method to valid values only
     const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
@@ -58,26 +66,43 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     // Show toast before redirect
     sonnerToast.success("Redirecionando para pagamento...");
     
-    // Primary redirect method
-    console.log("[MercadoPago] Executando redirecionamento direto");
+    // 3-LAYER FALLBACK STRATEGY:
+    
+    // Layer 1: Direct window.location.href redirect
+    console.log("[MercadoPago] Tentativa 1: Redirecionamento direto via location.href");
     window.location.href = finalUrl;
     
-    // Fallback: If still here after 1 second, try alternative approach
+    // Layer 2: After short delay, try opening in new tab if still here
     setTimeout(() => {
-      console.log("[MercadoPago] Aplicando método de redirecionamento de fallback");
-      
-      // Try opening in new tab as fallback
-      const newTab = window.open(finalUrl, '_blank');
-      
-      // If new tab also fails, refresh page with redirect parameter
-      if (!newTab) {
-        console.log("[MercadoPago] Aplicando método de redirecionamento de emergência");
-        window.location.href = `${window.location.origin}/checkout?redirect=${encodeURIComponent(finalUrl)}`;
+      if (document.visibilityState !== 'hidden') {
+        console.log("[MercadoPago] Tentativa 2: Redirecionamento via window.open");
+        const newTab = window.open(finalUrl, '_blank');
+        
+        // Layer 3: If new tab fails, try location.replace as final resort
+        if (!newTab) {
+          console.log("[MercadoPago] Tentativa 3: Redirecionamento via location.replace");
+          window.location.replace(finalUrl);
+          
+          // Final emergency approach - reload with redirect parameter
+          setTimeout(() => {
+            console.log("[MercadoPago] Tentativa 4 (emergência): Recarregar página com parâmetro de redirecionamento");
+            window.location.href = `${window.location.origin}/checkout?redirect=${encodeURIComponent(finalUrl)}`;
+          }, 500);
+        }
+      } else {
+        console.log("[MercadoPago] Redirecionamento parece ter sido bem-sucedido");
       }
-    }, 1000);
+    }, 800);
+    
+    // Reset the redirection flag after a generous timeout
+    setTimeout(() => {
+      window.sessionStorage.removeItem(hasRedirectedKey);
+    }, 10000);
+    
   } catch (error) {
     // Capture any error in the redirection process
     console.error("[MercadoPago] Erro crítico durante redirecionamento:", error);
+    window.sessionStorage.removeItem('mp_redirect_in_progress');
     sonnerToast.error("Erro ao redirecionar para pagamento. Tente novamente.");
     
     logCheckoutEvent(
