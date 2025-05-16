@@ -6,9 +6,9 @@ import ServiceCard from '@/components/ui/service-card';
 const Index = () => {
   return (
     <Layout useGradientBackground>
-      {/* Cards de Serviço with background image */}
+      {/* Cards de Serviço com background image */}
       <section 
-        className="py-16 px-4 relative" 
+        className="py-16 px-4 relative min-h-[calc(100vh-200px)] flex items-center" 
         style={{
           backgroundImage: "url('https://cdn.pixabay.com/photo/2015/05/04/20/03/purple-wallpaper-752886_1280.jpg')",
           backgroundSize: 'cover',
@@ -19,7 +19,7 @@ const Index = () => {
         {/* Add a semi-transparent overlay for better card visibility */}
         <div className="absolute inset-0 bg-black/20"></div>
         
-        <div className="max-w-7xl mx-auto relative z-10">
+        <div className="max-w-7xl mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <ServiceCard
               title="Marketing"
