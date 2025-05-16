@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
@@ -9,7 +10,7 @@ const Index = () => {
       <section 
         className="py-16 px-4 relative" 
         style={{
-          backgroundImage: "url('https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Fundo%20do%20site/ChatGPT%20Image%2019%20de%20abr.%20de%202025,%2000_16_28.png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9GdW5kbyBkbyBzaXRlL0NoYXRHUFQgSW1hZ2UgMTkgZGUgYWJyLiBkZSAyMDI1LCAwMF8xNl8yOC5wbmciLCJpYXQiOjE3NDcyMjkzMDYsImV4cCI6MTc3ODc2NTMwNn0._maYLuaSYRS-klLFH2om4rHyFrpAQpHeSAmi5mopWrA')",
+          backgroundImage: "url('https://cdn.pixabay.com/photo/2015/05/04/20/03/purple-wallpaper-752886_1280.jpg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed'
