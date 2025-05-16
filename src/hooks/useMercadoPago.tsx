@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface UseMercadoPagoOptions {
@@ -35,28 +34,22 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     script.src = 'https://sdk.mercadopago.com/js/v2';
     script.async = true;
     
-    // Add loading indicator
-    sonnerToast.loading('Carregando MercadoPago SDK...');
-    
     // Timeouts para detectar problemas de carregamento
     const timeoutId = setTimeout(() => {
       if (!isSDKLoaded) {
         console.warn('[MercadoPago] O carregamento do SDK está demorando mais que o esperado');
-        logCheckoutEvent(
-          CheckoutEvent.DEBUG_EVENT,
-          LogLevel.WARNING,
-          "O carregamento do SDK do MercadoPago está demorando mais que o esperado",
-          { publicKey: publicKey.substring(0, 10) + '...', attempts: loadAttempts }
-        );
         
-        // Tenta recarregar após falha
-        if (loadAttempts < 2) {
+        // Tenta recarregar após falha - simplified retries
+        if (loadAttempts < 1) {
           setLoadAttempts(prev => prev + 1);
-          // Força recarregar o script
           if (document.contains(script)) {
             document.body.removeChild(script);
           }
           document.body.appendChild(script);
+        } else {
+          // After retry, just proceed without SDK
+          console.log('[MercadoPago] Proceeding without SDK after retry');
+          setIsSDKLoaded(true); // Let the app proceed anyway
         }
       }
     }, 5000);
@@ -64,7 +57,6 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     script.onload = () => {
       console.log('[MercadoPago] SDK carregado com sucesso');
       clearTimeout(timeoutId);
-      sonnerToast.dismiss();
       
       try {
         // @ts-ignore - MercadoPago é carregado via script
@@ -74,49 +66,22 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
         
         setIsSDKLoaded(true);
         console.log('[MercadoPago] SDK inicializado corretamente');
-        
-        logCheckoutEvent(
-          CheckoutEvent.DEBUG_EVENT,
-          LogLevel.INFO,
-          "SDK do MercadoPago carregado com sucesso",
-          { publicKey: publicKey.substring(0, 10) + '...' }
-        );
       } catch (error) {
         console.error('[MercadoPago] Erro ao inicializar:', error);
-        sonnerToast.error('Erro ao inicializar MercadoPago');
         setIsError(true);
-        
-        logCheckoutEvent(
-          CheckoutEvent.DEBUG_EVENT,
-          LogLevel.ERROR,
-          `Erro ao inicializar SDK do MercadoPago: ${error}`,
-          { error: String(error) }
-        );
+        // Simply continue anyway since we'll use direct URL redirection
+        setIsSDKLoaded(true);
       }
     };
     
     script.onerror = (e) => {
       console.error('[MercadoPago] Erro ao carregar SDK:', e);
       clearTimeout(timeoutId);
-      sonnerToast.error('Erro ao carregar MercadoPago SDK');
       setIsError(true);
       
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.ERROR,
-        "Erro ao carregar o script do SDK do MercadoPago",
-        { publicKey: publicKey.substring(0, 10) + '...', attempts: loadAttempts }
-      );
-      
-      // Tenta recarregar com CDN alternativo
-      if (loadAttempts < 2) {
-        setLoadAttempts(prev => prev + 1);
-        script.src = 'https://sdk.mercadopago.com/js/v2?t=' + new Date().getTime();
-        if (document.contains(script)) {
-          document.body.removeChild(script);
-        }
-        document.body.appendChild(script);
-      }
+      // CRITICAL FIX: Proceed even without SDK, since we'll use direct URLs
+      console.log('[MercadoPago] Proceeding without SDK (will use direct URL checkout)');
+      setIsSDKLoaded(true); // Let the app proceed without SDK
     };
     
     document.body.appendChild(script);

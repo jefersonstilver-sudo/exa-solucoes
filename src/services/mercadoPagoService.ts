@@ -27,10 +27,16 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     localStorage.setItem('payment_preference_id', preferenceId);
     
     // CRITICAL FIX: Build proper MercadoPago URL using their official documentation format
-    // This is the most reliable way to redirect to MercadoPago
+    // Using preference_id with underscore, not hyphen
     const url = new URL('https://www.mercadopago.com.br/checkout/v1/redirect');
-    url.searchParams.append('preference-id', preferenceId);
-    url.searchParams.append('payment_method_id', normalizedPaymentMethod);
+    
+    // IMPORTANT: Using preference_id (with underscore) as per MercadoPago documentation
+    url.searchParams.append('preference_id', preferenceId);
+    
+    // Add payment method if needed
+    if (normalizedPaymentMethod === 'pix') {
+      url.searchParams.append('payment_method_id', normalizedPaymentMethod);
+    }
     
     // Add success and failure URLs for proper redirection after payment
     const returnBaseUrl = window.location.origin;
@@ -52,12 +58,23 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     // Show toast before redirect
     sonnerToast.success("Redirecionando para pagamento...");
     
-    // CRITICAL FIX: Use window.location.replace for most reliable redirection
+    // Primary redirect method
     console.log("[MercadoPago] Executando redirecionamento direto");
-    
-    // Direct approach with immediate window location change
-    // This bypasses all the previous complex strategies that were causing issues
     window.location.href = finalUrl;
+    
+    // Fallback: If still here after 1 second, try alternative approach
+    setTimeout(() => {
+      console.log("[MercadoPago] Aplicando método de redirecionamento de fallback");
+      
+      // Try opening in new tab as fallback
+      const newTab = window.open(finalUrl, '_blank');
+      
+      // If new tab also fails, refresh page with redirect parameter
+      if (!newTab) {
+        console.log("[MercadoPago] Aplicando método de redirecionamento de emergência");
+        window.location.href = `${window.location.origin}/checkout?redirect=${encodeURIComponent(finalUrl)}`;
+      }
+    }, 1000);
   } catch (error) {
     // Capture any error in the redirection process
     console.error("[MercadoPago] Erro crítico durante redirecionamento:", error);

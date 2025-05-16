@@ -38,7 +38,7 @@ serve(async (req) => {
     const requestData = await req.json();
     const { pedidoId, cartItems, totals, userId, returnUrl, paymentMethod = 'credit_card' } = requestData;
     
-    console.log("Dados recebidos:", { pedidoId, totals, userId, paymentMethod });
+    console.log("Dados recebidos:", { pedidoId, totals, userId, paymentMethod, cartItemsCount: cartItems?.length });
     
     // Validar pedidoId (deve ser um UUID válido)
     if (!pedidoId || typeof pedidoId !== 'string' || !pedidoId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
@@ -84,10 +84,12 @@ serve(async (req) => {
       throw new Error("Nenhum item válido para processamento");
     }
     
+    console.log("Items para processamento:", items.length);
+    
     // Definir claramente o URL de retorno com o ID do pedido
-    const successUrl = `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=approved`;
-    const failureUrl = `${returnUrl || window.location.origin}/checkout?error=payment_failed&id=${pedidoId}`;
-    const pendingUrl = `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=pending`;
+    const successUrl = `${returnUrl || 'https://app.indexamidia.com'}/pedido-confirmado?id=${pedidoId}&status=approved`;
+    const failureUrl = `${returnUrl || 'https://app.indexamidia.com'}/checkout?error=payment_failed&id=${pedidoId}`;
+    const pendingUrl = `${returnUrl || 'https://app.indexamidia.com'}/pedido-confirmado?id=${pedidoId}&status=pending`;
     
     // Criar preferência de pagamento
     const preference = {
@@ -117,7 +119,7 @@ serve(async (req) => {
       }
     };
     
-    // CRITICAL FIX: Set the correct MercadoPago redirect URL format according to their documentation
+    // CRITICAL FIX: Set the correct MercadoPago payment methods configuration
     if (paymentMethod === 'pix') {
       preference.payment_methods = {
         ...preference.payment_methods,
@@ -131,7 +133,7 @@ serve(async (req) => {
     }
     
     // Registrar a criação da preferência
-    console.log("Creating payment preference with items:", JSON.stringify(items));
+    console.log("Creating payment preference with items:", JSON.stringify(items.map(i => ({id: i.id, title: i.title}))));
     console.log("Payment method:", paymentMethod);
     
     // Criar preferência no MercadoPago ou simular em desenvolvimento
@@ -141,25 +143,35 @@ serve(async (req) => {
     if (MP_ACCESS_TOKEN) {
       try {
         // Usar a API do MercadoPago para criar preferência real
+        console.log("Sending request to MercadoPago API...");
         const response = await MercadoPago.preferences.create(preference);
+        console.log("MercadoPago API response:", JSON.stringify(response.body));
+        
         preferenceId = response.body.id;
         initPoint = response.body.init_point;
-        console.log("MercadoPago preference created:", preferenceId);
+        
+        console.log("MercadoPago preference created:", {
+          preferenceId,
+          initPoint
+        });
       } catch (mpError) {
         console.error("Error creating MercadoPago preference:", mpError);
         // Falhar de forma elegante com valores simulados
         preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        // CRITICAL FIX: Correctly format the test URL with proper parameters
-        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference-id=${preferenceId}&test=true`;
+        
+        // CRITICAL FIX: Correctly format the test URL using UNDERSCORE instead of HYPHEN
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
         if (paymentMethod === 'pix') {
           initPoint += '&payment_method_id=pix';
         }
       }
     } else {
+      console.log("No MP_ACCESS_TOKEN found, using test mode");
       // Modo simulado (para desenvolvimento)
       preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      // CRITICAL FIX: Correctly format the test URL with proper parameters
-      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference-id=${preferenceId}&test=true`;
+      
+      // CRITICAL FIX: Correctly format the test URL using UNDERSCORE instead of HYPHEN
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       if (paymentMethod === 'pix') {
         initPoint += '&payment_method_id=pix';
       }
@@ -185,6 +197,11 @@ serve(async (req) => {
     if (updateError) {
       throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
     }
+    
+    console.log("Response being sent:", {
+      preferenceId,
+      initPoint: initPoint.substring(0, 100) + "..." // Log partial URL for security
+    });
     
     // Retornar dados da preferência
     return new Response(

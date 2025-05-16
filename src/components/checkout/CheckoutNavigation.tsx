@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -68,16 +67,45 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       return;
     }
     
-    // Registrar o evento
-    logCheckoutEvent(
-      CheckoutEvent.NAVIGATION_EVENT,
-      LogLevel.INFO,
-      `Botão de próximo passo clicado ${isPaymentStep ? '(pagamento)' : ''}`,
-      { isPaymentStep, totalPrice, paymentMethod }
-    );
+    // CRITICAL FIX: Log payment step clicks with more detail
+    if (isPaymentStep) {
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_PROCESSING,
+        LogLevel.INFO,
+        `Botão de PAGAMENTO clicado: ${totalPrice} - ${paymentMethod}`,
+        { isPaymentStep, totalPrice, paymentMethod, timestamp: new Date().toISOString() }
+      );
+      
+      // Store in localStorage for diagnostics
+      try {
+        localStorage.setItem('last_payment_click', new Date().toISOString());
+        localStorage.setItem('last_payment_method', paymentMethod || 'unknown');
+        localStorage.setItem('last_payment_amount', String(totalPrice));
+      } catch (e) {
+        console.error("Error storing payment click info:", e);
+      }
+    } else {
+      // Regular navigation event
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        `Botão de próximo passo clicado`,
+        { isPaymentStep, totalPrice, paymentMethod }
+      );
+    }
     
     // Chamar o manipulador de evento
-    onNext();
+    try {
+      onNext();
+    } catch (error) {
+      console.error("Erro ao processar next:", error);
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        `Erro ao executar onNext: ${error}`,
+        { error: String(error) }
+      );
+    }
   };
 
   // Função segura para lidar com o clique no botão voltar
