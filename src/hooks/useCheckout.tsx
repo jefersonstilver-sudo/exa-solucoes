@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { PlanKey } from '@/types/checkout';
@@ -91,7 +92,11 @@ export const useCheckout = () => {
   const { createOrder } = useOrderCreation();
   
   // Cart state
-  const { cartItems, clearCart: handleClearCart } = useCartState();
+  const { 
+    cartItems, 
+    clearCart: handleClearCart, 
+    setIsNavigating 
+  } = useCartState();
   
   // Checkout progress state
   const [step, setStep] = useState(STEPS.PLAN);

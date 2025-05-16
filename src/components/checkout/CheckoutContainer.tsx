@@ -7,7 +7,7 @@ import CheckoutProgress from '@/components/checkout/CheckoutProgress';
 import StepRenderer from '@/components/checkout/StepRenderer';
 import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
-import { useCheckout } from '@/hooks/useCheckout';
+import { useCheckout, STEPS } from '@/hooks/useCheckout';
 import { useToast } from '@/hooks/use-toast';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
@@ -18,7 +18,6 @@ const CheckoutContainer: React.FC = () => {
   
   const {
     step,
-    STEPS,
     selectedPlan,
     setSelectedPlan,
     couponCode,

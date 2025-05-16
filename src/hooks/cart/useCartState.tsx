@@ -12,6 +12,8 @@ export const useCartState = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [cartAnimation, setCartAnimation] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -49,6 +51,10 @@ export const useCartState = () => {
     loading,
     setLoading,
     initialLoadDone,
-    clearCart,  // Added this to fix the missing property error
+    clearCart,
+    cartAnimation,
+    setCartAnimation,
+    isNavigating,
+    setIsNavigating
   };
 };
