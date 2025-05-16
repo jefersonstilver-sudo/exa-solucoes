@@ -3,11 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { usePaymentValidation } from './usePaymentValidation';
 import { useOrderCreation } from './useOrderCreation';
 import { useMercadoPagoCheckout } from './useMercadoPagoCheckout';
+import { usePaymentExecution } from './usePaymentExecution';
+import { usePaymentFlowState } from './usePaymentFlowState';
 import { Panel } from '@/types/panel';
 
 interface CartItem {
@@ -36,24 +37,22 @@ export const usePaymentFlow = () => {
   const { createOrder } = useOrderCreation();
   const { 
     isCreatingPayment, 
-    setIsCreatingPayment, 
+    setIsCreatingPayment
+  } = usePaymentFlowState();
+  
+  const { 
     redirectToMercadoPago,
     isMercadoPagoReady,
     isSDKLoaded
   } = useMercadoPagoCheckout();
   
-  // Added tracking for created order and state management
-  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
-  const processingPaymentRef = useRef(false);
+  const {
+    createdOrderId,
+    executePayment,
+    isProcessing,
+    setProcessing
+  } = usePaymentExecution();
   
-  // Reset payment state when component unmounts
-  useEffect(() => {
-    return () => {
-      setIsCreatingPayment(false);
-      processingPaymentRef.current = false;
-    };
-  }, [setIsCreatingPayment]);
-
   // Process payment and manage checkout flow
   const processPayment = async ({
     totalPrice,
@@ -69,12 +68,12 @@ export const usePaymentFlow = () => {
     paymentMethod = 'credit_card'
   }: ProcessPaymentOptions) => {
     // Prevent double submission
-    if (processingPaymentRef.current) {
+    if (isProcessing()) {
       console.log("[Payment Flow] Preventing duplicate payment request");
       return;
     }
     
-    processingPaymentRef.current = true;
+    setProcessing(true);
     
     // Validate and normalize payment method for consistency
     const paymentMethodNormalized = paymentMethod === 'pix' ? 'pix' : 'credit_card';
@@ -94,7 +93,7 @@ export const usePaymentFlow = () => {
         sonnerToast.dismiss();
         sonnerToast.error("Você precisa aceitar os termos para continuar");
         setIsCreatingPayment(false);
-        processingPaymentRef.current = false;
+        setProcessing(false);
         return;
       }
       
@@ -109,7 +108,7 @@ export const usePaymentFlow = () => {
       
       if (!isValid) {
         setIsCreatingPayment(false);
-        processingPaymentRef.current = false;
+        setProcessing(false);
         sonnerToast.dismiss();
         sonnerToast.error("Não foi possível processar o pagamento");
         return;
@@ -126,66 +125,31 @@ export const usePaymentFlow = () => {
         endDate
       });
       
-      // Store order ID
-      setCreatedOrderId(pedido.id);
-      
-      // Get application base URL
-      const currentUrl = window.location.origin;
-      
-      // Convert months to days
-      const duration = selectedPlan * 30;
-      
-      // Prepare data for Edge Function
-      const paymentData = {
+      // Process payment through edge function
+      const paymentResult = await executePayment({
         pedidoId: pedido.id,
-        cartItems,
-        totals: {
-          totalPrice,
-          selectedPlan,
-          duration,
-          withCoupon: !!couponId,
-          couponDiscount: couponId ? 10 : 0,
-        },
-        userId: sessionUser.id,
-        returnUrl: `${currentUrl}/pedido-confirmado?id=${pedido.id}`,
+        sessionUser,
+        startDate,
+        endDate,
+        totalPrice,
+        selectedPlan,
+        couponId,
         paymentMethod: paymentMethodNormalized
-      };
-      
-      console.log("[Payment Flow] Sending data to payment processor", {
-        pedidoId: pedido.id,
-        method: paymentMethodNormalized
       });
       
-      // Call Edge Function
-      const { data, error } = await supabase.functions.invoke('process-payment', {
-        body: paymentData
-      });
-      
-      if (error) {
-        console.error("[Payment Flow] Edge function error:", error);
-        throw new Error(`Error processing payment: ${error.message}`);
-      }
-      
-      console.log("[Payment Flow] Payment processor response:", data);
-      
-      if (!data || !data.success) {
-        throw new Error('Invalid response from payment processor');
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.error || 'Error processing payment');
       }
       
       // Clear cart
       handleClearCart();
       
-      // Store order info in localStorage
-      localStorage.setItem('lastPedidoId', pedido.id);
-      localStorage.setItem('lastPaymentMethod', paymentMethodNormalized);
-      localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
-      
       // Execute redirection
-      console.log(`[Payment Flow] Redirecting to checkout with ID: ${data.preference_id}, method: ${paymentMethodNormalized}`);
+      console.log(`[Payment Flow] Redirecting to checkout with ID: ${paymentResult.preferenceId}, method: ${paymentMethodNormalized}`);
       sonnerToast.dismiss();
       
       // Redirect to MercadoPago - with preference ID from the response
-      redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
+      redirectToMercadoPago(paymentResult.preferenceId, paymentMethodNormalized);
       
     } catch (error: any) {
       // Comprehensive error handling
@@ -211,7 +175,7 @@ export const usePaymentFlow = () => {
       
       // Reset states
       setIsCreatingPayment(false);
-      processingPaymentRef.current = false;
+      setProcessing(false);
     }
   };
 
