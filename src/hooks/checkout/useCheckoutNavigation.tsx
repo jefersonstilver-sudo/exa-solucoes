@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlanKey } from '@/types/checkout';
@@ -81,13 +80,13 @@ export const useCheckoutNavigation = ({
     }
   };
 
-  // Navigate to the next step or process payment
+  // Navigate to the next step or process payment with explicit payment method
   const handleNextStep = (paymentMethod = 'credit_card') => {
-    // FIXED: Ensure paymentMethod is properly defined
+    // CRITICAL FIX: Clear up payment method type
     const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
-    // Detailed log for diagnostics
-    console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, step: ${step}`);
+    // Critical debugging log
+    console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, original: ${paymentMethod}, step: ${step}`);
     
     if (isNavigating) {
       console.warn('[useCheckoutNavigation] Ignoring navigation - already in progress');
@@ -104,16 +103,8 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // FIXED: Handle final upload step properly
-      if (step === 4) {
-        // In the last step, redirect to the confirmation page
-        navigate('/pedido-confirmado');
-        setIsNavigating(false);
-        return;
-      }
-      
-      // Handle payment step
-      if (step === 3) {
+      // CRITICAL FIX: Payment step processing
+      if (step === 3) { // PAYMENT step
         // Payment
         if (!acceptTerms) {
           sonnerToast.error("Você precisa aceitar os termos para continuar");
@@ -121,20 +112,20 @@ export const useCheckoutNavigation = ({
           return;
         }
         
-        // Detailed log
-        console.log(`[useCheckoutNavigation] Starting payment with method: ${normalizedPaymentMethod}`);
+        // Detailed logging
+        console.log(`[useCheckoutNavigation] Processing payment with method: ${normalizedPaymentMethod}`);
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
-          `Starting payment with method: ${normalizedPaymentMethod}`,
+          `Starting payment process with method: ${normalizedPaymentMethod}`,
           { currentStep: step, paymentMethod: normalizedPaymentMethod }
         );
         
-        // Calculate price considering coupon discount
+        // Calculate price with coupon discount
         const totalPrice = calculateTotalPrice();
         
-        // FIXED: Send the payment method explicitly to createPayment
+        // CRITICAL FIX: Explicitly pass the payment method
         createPayment({
           totalPrice,
           selectedPlan,
@@ -143,19 +134,17 @@ export const useCheckoutNavigation = ({
           endDate,
           couponId,
           acceptTerms,
-          unavailablePanels: [], // Ignoring validation to fix the bug
+          unavailablePanels: [], // Ignoring validation for now to fix the bug
           sessionUser,
           handleClearCart,
-          paymentMethod: normalizedPaymentMethod
+          paymentMethod: normalizedPaymentMethod // Ensure we pass the normalized method
         });
         
-        // Note: createPayment will reset isNavigating when appropriate
-        
-        // IMPORTANT: Don't change step here, as we're redirecting to MercadoPago
+        // createPayment will handle the isNavigating state
         return;
       } 
       else {
-        // Normal steps (not payment or upload)
+        // Normal navigation for non-payment steps
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
@@ -163,7 +152,6 @@ export const useCheckoutNavigation = ({
           { currentStep: step, nextStep: step + 1 }
         );
         
-        // IMPORTANT FIX: Update the step before finishing navigation
         setStep(step + 1);
         setIsNavigating(false);
       }

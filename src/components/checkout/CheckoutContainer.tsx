@@ -71,14 +71,34 @@ const CheckoutContainer: React.FC = () => {
 
   const totalPrice = calculateTotalPrice();
 
-  // FIXED: Handle the next step explicitly passing the current payment method
+  // Handle next step with explicit payment method
   const handleNextWithPaymentMethod = () => {
-    console.log(`[CheckoutContainer] Próximo passo com método ${paymentMethod}, step atual: ${step}`);
+    // Critical debugging - log detailed information
+    console.log(`[CheckoutContainer] Próximo passo com método ${paymentMethod}, step atual: ${step}, isNextEnabled: ${isNextEnabled}`);
     
-    // Importante: Sempre passar o método de pagamento se estivermos no passo de pagamento
+    // Always pass payment method when in payment step
     if (step === STEPS.PAYMENT) {
-      // Logging para diagnóstico
-      console.log(`[CheckoutContainer] Passando método ${paymentMethod} para handleNextStep`);
+      // Extra verification logging
+      console.log(`[CheckoutContainer] No passo de PAGAMENTO. Passando método ${paymentMethod} para handleNextStep`);
+      
+      if (!acceptTerms) {
+        console.log('[CheckoutContainer] Termos não aceitos, impedindo navegação');
+        toast({
+          title: "Atenção",
+          description: "Você precisa aceitar os termos para continuar.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Always log before calling important functions
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `Chamando handleNextStep com método ${paymentMethod}`,
+        { step, paymentMethod, acceptTerms }
+      );
+      
       return handleNextStep(paymentMethod);
     }
     

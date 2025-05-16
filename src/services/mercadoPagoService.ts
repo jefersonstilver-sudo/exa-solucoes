@@ -1,4 +1,3 @@
-
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast as sonnerToast } from 'sonner';
 
@@ -18,23 +17,23 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
   
   // Log payment attempt for diagnostics
-  console.log(`[MercadoPago] Starting redirection with method: ${normalizedPaymentMethod}, preferenceId: ${preferenceId}`);
+  console.log(`[MercadoPago] Starting redirection with method: ${normalizedPaymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
   
-  // Store validation state in local storage
+  // Store validation state in local storage for potential recovery
   localStorage.setItem('payment_attempt_timestamp', Date.now().toString());
   localStorage.setItem('payment_method_selected', normalizedPaymentMethod);
   localStorage.setItem('payment_preference_id', preferenceId);
   
-  // FIXED: Redirect URL construction with proper test mode parameters
+  // CRITICAL FIX: Redirect URL construction with proper parameters
   const baseUrl = 'https://www.mercadopago.com.br/checkout/v1/redirect';
   
   // Build URL with parameters
   let url = new URL(baseUrl);
   url.searchParams.append('preference_id', preferenceId);
-  url.searchParams.append('test', 'true');
+  url.searchParams.append('test', 'true'); // Always use test mode for now
   url.searchParams.append('sandbox', 'true');
   
-  // Always add payment_method_id parameter based on selected method
+  // CRITICAL FIX: Always add payment_method_id parameter
   url.searchParams.append('payment_method_id', normalizedPaymentMethod);
   
   // Add success and failure URLs for proper redirection after payment
@@ -50,15 +49,15 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   logCheckoutEvent(
     CheckoutEvent.PAYMENT_PROCESSING, 
     LogLevel.INFO,
-    `Redirecting to MercadoPago Test Environment: ${finalUrl}`,
+    `Redirecting to MercadoPago: ${finalUrl}`,
     { preferenceId, paymentMethod: normalizedPaymentMethod, testMode: true }
   );
   
-  // IMPORTANT FIX: Use a small timeout to ensure any UI updates are completed before redirect
+  // CRITICAL FIX: Use a small timeout to ensure any UI updates are completed before redirect
   setTimeout(() => {
-    // Direct window location change for reliability
+    // Direct window location change
     window.location.href = finalUrl;
-  }, 100);
+  }, 300);
 };
 
 /**

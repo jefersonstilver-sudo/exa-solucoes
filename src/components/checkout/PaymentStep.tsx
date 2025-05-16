@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { 
@@ -8,6 +8,7 @@ import {
   Lock
 } from "lucide-react";
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from "@/services/checkoutDebugService";
+import { toast } from "sonner";
 
 // Componentes refatorados
 import PaymentMethods from "./payment/PaymentMethods";
@@ -34,7 +35,11 @@ const PaymentStep = ({
   
   // Use either external or internal state for payment method
   const selectedMethod = externalPaymentMethod || internalPaymentMethod;
+  
+  // CRITICAL FIX: Ensure payment method is properly set
   const setSelectedMethod = (method: string) => {
+    console.log("[PaymentStep] Setting payment method to:", method);
+    
     if (externalSetPaymentMethod) {
       externalSetPaymentMethod(method);
     } else {
@@ -49,6 +54,14 @@ const PaymentStep = ({
       { method, totalPrice }
     );
   };
+  
+  // Ensure a payment method is always selected
+  useEffect(() => {
+    if (!selectedMethod) {
+      console.log("[PaymentStep] No payment method selected, defaulting to credit_card");
+      setSelectedMethod("credit_card");
+    }
+  }, [selectedMethod]);
 
   return (
     <motion.div 
@@ -91,7 +104,10 @@ const PaymentStep = ({
       {/* Terms acceptance */}
       <TermsAcceptance 
         acceptTerms={acceptTerms} 
-        setAcceptTerms={setAcceptTerms} 
+        setAcceptTerms={(checked) => {
+          console.log("[PaymentStep] Setting terms acceptance to:", checked);
+          setAcceptTerms(checked);
+        }} 
       />
     </motion.div>
   );

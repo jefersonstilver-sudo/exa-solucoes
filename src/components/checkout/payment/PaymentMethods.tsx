@@ -15,7 +15,19 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
   const [pixTotal, setPixTotal] = useState<number>(totalPrice);
   const [cardTotal, setCardTotal] = useState<number>(totalPrice);
   
-  // Recalcular valores baseados no método de pagamento
+  // CRITICAL FIX: Ensure payment method is properly initialized
+  useEffect(() => {
+    // Log the current payment method for debugging
+    console.log("[PaymentMethods] Current selected method:", selectedMethod);
+    
+    // If no method is selected, default to credit_card
+    if (!selectedMethod) {
+      console.log("[PaymentMethods] No method selected, defaulting to credit_card");
+      setSelectedMethod('credit_card');
+    }
+  }, [selectedMethod, setSelectedMethod]);
+  
+  // Recalculate values based on payment method
   useEffect(() => {
     // Para PIX em planos acima de 3 meses, sempre mostrar valor integral
     // Aqui estamos assumindo que se o total é alto, é um plano de mais de 3 meses
@@ -31,7 +43,7 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     setCardTotal(totalPrice);
   }, [totalPrice]);
   
-  // Payment method options - only PIX and credit card
+  // Payment method options
   const paymentMethods = [
     { 
       id: "pix", 
@@ -117,7 +129,10 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
               : `Visa, Mastercard, AMEX, ELO — Total: ${formatCurrency(getTotalWithInterest(installments))}`
           }}
           selectedMethod={selectedMethod}
-          onSelect={setSelectedMethod}
+          onSelect={(method) => {
+            console.log("[PaymentMethods] Setting payment method to:", method);
+            setSelectedMethod(method);
+          }}
           installments={installments}
           setInstallments={method.installments ? setInstallments : undefined}
           getInstallmentValue={method.installments ? getInstallmentValue : undefined}

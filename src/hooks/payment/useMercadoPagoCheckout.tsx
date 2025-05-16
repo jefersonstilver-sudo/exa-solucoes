@@ -23,17 +23,17 @@ export const useMercadoPagoCheckout = () => {
     });
   }, [isSDKLoaded, isError]);
 
-  // Handle redirection to MercadoPago checkout with explicit payment method handling
+  // CRITICAL FIX: Handle redirection to MercadoPago checkout with explicit payment method
   const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
     if (!preferenceId) {
       sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
       throw new Error('Preference ID is required for MercadoPago redirect');
     }
     
-    // Validate and log the payment method for debugging
-    console.log(`[MercadoPago] Redirecting with payment method: ${paymentMethod}`);
+    // Critical logging for payment method handling
+    console.log(`[MercadoPago] Redirecting with payment method: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
     
-    // Log event with payment method for tracking
+    // Store attempted payment info for debugging
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
@@ -41,7 +41,10 @@ export const useMercadoPagoCheckout = () => {
       { preferenceId, paymentMethod }
     );
     
-    // FIXED: Use the enhanced redirect implementation
+    // Display toast before redirect
+    sonnerToast.success("Redirecionando para ambiente de pagamento...");
+    
+    // CRITICAL FIX: Use enhanced redirect implementation with explicit payment method
     handleMercadoPagoRedirect(preferenceId, paymentMethod);
   };
 
