@@ -27,39 +27,43 @@ export const useMercadoPagoCheckout = () => {
     }
   }, [isSDKLoaded, isError]);
 
-  // Improved direct redirection with forceful approach
+  // Safety timeout to reset payment state if stuck
+  useEffect(() => {
+    if (isCreatingPayment) {
+      const timeout = setTimeout(() => {
+        console.log("[MercadoPago] Safety timeout triggered - resetting payment state");
+        setIsCreatingPayment(false);
+      }, 15000); // 15 seconds safety timeout
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isCreatingPayment]);
+
+  // Direct redirection function with simplified approach
   const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
     if (!preferenceId) {
       sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
-      throw new Error('Preference ID is required for MercadoPago redirect');
+      console.error("[MercadoPago] Missing preference ID for redirect");
+      setIsCreatingPayment(false);
+      return;
     }
     
-    // Critical logging for payment method handling
-    console.log(`[MercadoPago] Iniciando redirecionamento com método: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
-    
-    // Store attempted payment info for debugging
-    logCheckoutEvent(
-      CheckoutEvent.PAYMENT_PROCESSING,
-      LogLevel.INFO,
-      `Iniciando redirecionamento para Mercado Pago com método ${paymentMethod}`,
-      { preferenceId, paymentMethod }
-    );
-    
-    // Display toast before redirect
-    sonnerToast.success("Redirecionando para ambiente de pagamento...");
-    
-    // Force a more direct redirect approach
     try {
-      handleMercadoPagoRedirect(preferenceId, paymentMethod);
+      console.log(`[MercadoPago] Initiating direct redirect with method: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
       
-      // Força reset do isCreatingPayment após tentar redirecionamento
-      setTimeout(() => {
-        setIsCreatingPayment(false);
-      }, 10000); // Timeout de segurança de 10s
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_PROCESSING,
+        LogLevel.INFO,
+        `Iniciando redirecionamento para Mercado Pago com método ${paymentMethod}`,
+        { preferenceId, paymentMethod }
+      );
+      
+      // Direct redirection - simplified approach
+      handleMercadoPagoRedirect(preferenceId, paymentMethod);
     } catch (error) {
-      console.error("[MercadoPago] Erro crítico durante redirecionamento:", error);
-      setIsCreatingPayment(false);
+      console.error("[MercadoPago] Critical error during redirect:", error);
       sonnerToast.error("Erro ao redirecionar para pagamento");
+      setIsCreatingPayment(false);
     }
   };
 

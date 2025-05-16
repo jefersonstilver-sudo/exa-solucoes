@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
@@ -41,15 +41,16 @@ export const usePaymentFlow = () => {
     isMercadoPagoReady,
     isSDKLoaded
   } = useMercadoPagoCheckout();
-
-  // Estado para rastrear tentativas de redirecionamento
-  const [redirectAttempts, setRedirectAttempts] = useState(0);
   
-  // Limpar estado de redirecionamento quando o componente é montado
+  // Added tracking for created order and state management
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const processingPaymentRef = useRef(false);
+  
+  // Reset payment state when component unmounts
   useEffect(() => {
     return () => {
-      // Limpar isCreatingPayment ao desmontar para evitar que fique preso
       setIsCreatingPayment(false);
+      processingPaymentRef.current = false;
     };
   }, [setIsCreatingPayment]);
 
@@ -67,53 +68,40 @@ export const usePaymentFlow = () => {
     handleClearCart,
     paymentMethod = 'credit_card'
   }: ProcessPaymentOptions) => {
+    // Prevent double submission
+    if (processingPaymentRef.current) {
+      console.log("[Payment Flow] Preventing duplicate payment request");
+      return;
+    }
+    
+    processingPaymentRef.current = true;
+    
     // Validate and normalize payment method for consistency
     const paymentMethodNormalized = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
-    // Log detailed payment method info for debugging
-    console.log(`[Payment Flow] Início do processamento com método: ${paymentMethodNormalized} (original: ${paymentMethod})`);
-    console.log(`[Payment Flow] Detalhes do pagamento:`, {
-      totalPrice,
-      selectedPlan,
-      cartItemsCount: cartItems.length,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      couponId,
-      acceptTerms,
-      paymentMethod: paymentMethodNormalized
-    });
+    // Detailed logging
+    console.log(`[Payment Flow] Starting payment process: ${paymentMethodNormalized} for R$${totalPrice}`);
     
-    // Reiniciar contagem de tentativas
-    setRedirectAttempts(0);
-    
-    // Define o estado de criação de pagamento
+    // Set payment processing state
     setIsCreatingPayment(true);
     
     try {
-      // Log for diagnostics
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        `Iniciando processamento: R$${totalPrice} | Método: ${paymentMethodNormalized}`,
-        { totalPrice, planMonths: selectedPlan, itemCount: cartItems.length, paymentMethod: paymentMethodNormalized }
-      );
-      
-      // Display processing toast for better user feedback
+      // Display processing toast
       sonnerToast.loading("Preparando pagamento...");
       
-      // Verificar os termos
+      // Verify terms
       if (!acceptTerms) {
         sonnerToast.dismiss();
         sonnerToast.error("Você precisa aceitar os termos para continuar");
         setIsCreatingPayment(false);
+        processingPaymentRef.current = false;
         return;
       }
       
-      // Validate all requirements before proceeding
-      // IMPORTANT: Ignoring unavailable panels validation to fix the bug
+      // Validate requirements - ignore unavailable panels check
       const isValid = validatePaymentRequirements({
         acceptTerms, 
-        unavailablePanels: [], // Explicitly ignoring the validation to fix the bug
+        unavailablePanels: [], // Bypass this check
         sessionUser, 
         isSDKLoaded,
         cartItems
@@ -121,6 +109,7 @@ export const usePaymentFlow = () => {
       
       if (!isValid) {
         setIsCreatingPayment(false);
+        processingPaymentRef.current = false;
         sonnerToast.dismiss();
         sonnerToast.error("Não foi possível processar o pagamento");
         return;
@@ -137,23 +126,14 @@ export const usePaymentFlow = () => {
         endDate
       });
       
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        `Pedido criado com ID: ${pedido.id}`,
-        { pedidoId: pedido.id, paymentMethod: paymentMethodNormalized }
-      );
-      
-      toast({
-        title: "Pedido criado",
-        description: "Aguarde enquanto preparamos seu pagamento...",
-      });
+      // Store order ID
+      setCreatedOrderId(pedido.id);
       
       // Get application base URL
       const currentUrl = window.location.origin;
       
-      // Calculate duration based on plan
-      const duration = selectedPlan * 30; // converting months to days
+      // Convert months to days
+      const duration = selectedPlan * 30;
       
       // Prepare data for Edge Function
       const paymentData = {
@@ -164,102 +144,74 @@ export const usePaymentFlow = () => {
           selectedPlan,
           duration,
           withCoupon: !!couponId,
-          couponDiscount: couponId ? 10 : 0, // example value
+          couponDiscount: couponId ? 10 : 0,
         },
         userId: sessionUser.id,
         returnUrl: `${currentUrl}/pedido-confirmado?id=${pedido.id}`,
         paymentMethod: paymentMethodNormalized
       };
       
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        "Enviando dados para processamento de pagamento",
-        { pedidoId: pedido.id, paymentMethod: paymentMethodNormalized }
-      );
+      console.log("[Payment Flow] Sending data to payment processor", {
+        pedidoId: pedido.id,
+        method: paymentMethodNormalized
+      });
       
-      // Call Edge Function to process payment
+      // Call Edge Function
       const { data, error } = await supabase.functions.invoke('process-payment', {
         body: paymentData
       });
       
       if (error) {
+        console.error("[Payment Flow] Edge function error:", error);
         throw new Error(`Error processing payment: ${error.message}`);
       }
       
-      console.log("Resposta da edge function process-payment:", data);
+      console.log("[Payment Flow] Payment processor response:", data);
       
-      // Verify valid response
       if (!data || !data.success) {
-        throw new Error('Resposta inválida do processador de pagamento');
+        throw new Error('Invalid response from payment processor');
       }
       
-      // Clear cart after successful order creation
+      // Clear cart
       handleClearCart();
       
-      // Store order ID in local storage for potential recovery
+      // Store order info in localStorage
       localStorage.setItem('lastPedidoId', pedido.id);
       localStorage.setItem('lastPaymentMethod', paymentMethodNormalized);
       localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
       
-      // Log success before redirection
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        `Redirecionando para checkout do MercadoPago com preferenceId: ${data.preference_id} | Método: ${paymentMethodNormalized}`,
-        { preferenceId: data.preference_id, method: paymentMethodNormalized }
-      );
+      // Execute redirection
+      console.log(`[Payment Flow] Redirecting to checkout with ID: ${data.preference_id}, method: ${paymentMethodNormalized}`);
+      sonnerToast.dismiss();
       
-      // FIXED: Melhor redirecionamento para o MercadoPago com tratamento de erro
-      try {
-        // Executa o redirecionamento
-        redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
-        
-        // Adiciona um timeout de segurança para resetar o estado caso o redirecionamento falhe
-        setTimeout(() => {
-          // Se ainda estiver no estado de criação após 8 segundos, algo deu errado
-          if (isCreatingPayment) {
-            console.error("[Payment Flow] Redirecionamento não ocorreu dentro do tempo esperado");
-            setIsCreatingPayment(false);
-            sonnerToast.error("Erro ao redirecionar para pagamento. Tente novamente.");
-            
-            // Incrementa contagem de tentativas
-            setRedirectAttempts(prev => prev + 1);
-          }
-        }, 8000);
-      } catch (redirectError) {
-        console.error("[Payment Flow] Erro durante redirecionamento:", redirectError);
-        setIsCreatingPayment(false);
-        sonnerToast.error("Erro ao redirecionar para pagamento");
-        
-        // Tenta redirecionamento alternativo
-        if (redirectAttempts < 2) {
-          sonnerToast.info("Tentando método alternativo de redirecionamento...");
-          setTimeout(() => {
-            window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${data.preference_id}&payment_method_id=${paymentMethodNormalized}`;
-          }, 1500);
-        }
-      }
+      // Redirect to MercadoPago - with preference ID from the response
+      redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
       
     } catch (error: any) {
-      console.error('Erro ao criar pagamento:', error);
-      sonnerToast.dismiss();
-      sonnerToast.error("Erro ao iniciar pagamento");
+      // Comprehensive error handling
+      console.error('[Payment Flow] Payment error:', error);
       
+      sonnerToast.dismiss();
+      sonnerToast.error("Erro ao processar pagamento");
+      
+      // Log detailed error information
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        `Erro ao criar pagamento: ${error.message}`,
-        { error: error.message }
+        `Erro no processamento: ${error.message}`,
+        { error: String(error), stack: error.stack }
       );
       
+      // Display error toast
       toast({
         variant: "destructive",
         title: "Erro ao processar pagamento",
-        description: error.message || "Houve um problema ao processar o pagamento.",
+        description: "Ocorreu um problema no processamento. Por favor tente novamente.",
       });
       
+      // Reset states
       setIsCreatingPayment(false);
+      processingPaymentRef.current = false;
     }
   };
 
@@ -267,6 +219,6 @@ export const usePaymentFlow = () => {
     isCreatingPayment,
     processPayment,
     isMercadoPagoReady,
-    redirectAttempts
+    createdOrderId
   };
 };

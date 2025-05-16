@@ -35,7 +35,8 @@ serve(async (req) => {
     });
     
     // Obter dados do request
-    const { pedidoId, cartItems, totals, userId, returnUrl, paymentMethod = 'credit_card' } = await req.json();
+    const requestData = await req.json();
+    const { pedidoId, cartItems, totals, userId, returnUrl, paymentMethod = 'credit_card' } = requestData;
     
     console.log("Dados recebidos:", { pedidoId, totals, userId, paymentMethod });
     
@@ -83,6 +84,11 @@ serve(async (req) => {
       throw new Error("Nenhum item válido para processamento");
     }
     
+    // Definir claramente o URL de retorno com o ID do pedido
+    const successUrl = `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=approved`;
+    const failureUrl = `${returnUrl || window.location.origin}/checkout?error=payment_failed&id=${pedidoId}`;
+    const pendingUrl = `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=pending`;
+    
     // Criar preferência de pagamento
     const preference = {
       items,
@@ -90,9 +96,9 @@ serve(async (req) => {
         email: userData.email,
       },
       back_urls: {
-        success: `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=approved`,
-        failure: `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=rejected`,
-        pending: `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=pending`
+        success: successUrl,
+        failure: failureUrl,
+        pending: pendingUrl
       },
       auto_return: "approved",
       external_reference: pedidoId,
@@ -128,7 +134,7 @@ serve(async (req) => {
     console.log("Creating payment preference with items:", JSON.stringify(items));
     console.log("Payment method:", paymentMethod);
     
-    // Criar preferência no MercadoPago
+    // Criar preferência no MercadoPago ou simular em desenvolvimento
     let preferenceId = "";
     let initPoint = "";
     
@@ -203,10 +209,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro ao processar pagamento:', error);
     
+    // Retornar erro com detalhes completos para depuração
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error.message,
+        error_details: String(error),
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,
