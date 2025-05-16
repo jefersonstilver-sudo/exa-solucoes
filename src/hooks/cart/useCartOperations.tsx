@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { Check, Trash2 } from 'lucide-react';
 import { CartItem } from './useCartState';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface UseCartOperationsProps {
   cartItems: CartItem[];
@@ -43,6 +44,14 @@ export const useCartOperations = ({
     // Automatically open the cart when an item is added
     setCartOpen(true);
     
+    // Log event
+    logCheckoutEvent(
+      CheckoutEvent.ADD_TO_CART,
+      LogLevel.INFO,
+      "Painel adicionado ao carrinho",
+      { panelId: panel.id, duration }
+    );
+    
     toast({
       title: "✅ Painel adicionado",
       description: `${panel.buildings?.nome || 'Painel'} adicionado ao carrinho`,
@@ -60,6 +69,14 @@ export const useCartOperations = ({
     const panelName = panelToRemove?.panel.buildings?.nome || 'Painel';
     
     setCartItems(prev => prev.filter(item => item.panel.id !== panelId));
+    
+    // Log event
+    logCheckoutEvent(
+      CheckoutEvent.REMOVE_FROM_CART,
+      LogLevel.INFO,
+      "Painel removido do carrinho",
+      { panelId }
+    );
     
     toast({
       title: "🗑️ Painel removido",
@@ -87,6 +104,14 @@ export const useCartOperations = ({
     setCartItems([]);
     localStorage.removeItem('panelCart');
 
+    // Log event
+    logCheckoutEvent(
+      CheckoutEvent.CLEAR_CART,
+      LogLevel.INFO,
+      "Carrinho limpo",
+      { itemCount: cartItems.length }
+    );
+
     toast({
       title: "Carrinho limpo",
       description: "Todos os itens foram removidos do carrinho",
@@ -107,6 +132,14 @@ export const useCartOperations = ({
       const months = duration / 30;
       const monthText = months === 1 ? 'mês' : 'meses';
       
+      // Log event
+      logCheckoutEvent(
+        CheckoutEvent.UPDATE_CART,
+        LogLevel.INFO,
+        "Duração de painel atualizada",
+        { panelId, newDuration: duration }
+      );
+      
       if (panel) {
         toast({
           title: "Duração atualizada",
@@ -126,6 +159,14 @@ export const useCartOperations = ({
         const parsedCart = JSON.parse(lastCart);
         setCartItems(parsedCart);
         sessionStorage.removeItem('lastCart'); // Clear the backup after restoring
+        
+        // Log event
+        logCheckoutEvent(
+          CheckoutEvent.RESTORE_CART,
+          LogLevel.INFO,
+          "Carrinho restaurado do backup",
+          { itemCount: parsedCart.length }
+        );
         
         toast({
           title: "Carrinho restaurado",
