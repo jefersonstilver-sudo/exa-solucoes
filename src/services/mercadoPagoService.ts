@@ -26,16 +26,16 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     localStorage.setItem('payment_method_selected', normalizedPaymentMethod);
     localStorage.setItem('payment_preference_id', preferenceId);
     
-    // CRITICAL FIX: Redirect URL construction with proper parameters
+    // FIXED! Use the correct official URL for Mercado Pago redirects
     const baseUrl = 'https://www.mercadopago.com.br/checkout/v1/redirect';
     
     // Build URL with parameters
-    let url = new URL(baseUrl);
+    const url = new URL(baseUrl);
     url.searchParams.append('preference_id', preferenceId);
     url.searchParams.append('test', 'true'); // Always use test mode for now
     url.searchParams.append('sandbox', 'true');
     
-    // CRITICAL FIX: Always add payment_method_id parameter
+    // Always add payment_method_id parameter
     url.searchParams.append('payment_method_id', normalizedPaymentMethod);
     
     // Add success and failure URLs for proper redirection after payment
@@ -55,20 +55,34 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
       { preferenceId, paymentMethod: normalizedPaymentMethod, testMode: true }
     );
     
-    // CRITICAL FIX: Força o redirecionamento com window.location.assign
-    // Isso é mais confiável do que window.location.href em alguns navegadores
+    // CORREÇÃO CRÍTICA: Melhor abordagem de redirecionamento
     sonnerToast.success("Redirecionando para pagamento...");
     
-    // Garantir que qualquer erro de redirecionamento seja capturado
+    // Redirecionamento forçado com técnicas variadas para maximizar chances
     setTimeout(() => {
+      // Técnica 1: window.location.replace (menos propenso a ser bloqueado)
       try {
-        window.location.assign(finalUrl);
+        window.location.replace(finalUrl);
+        
+        // Técnica 2: Fallback após curto intervalo se o replace não redirecionar
+        setTimeout(() => {
+          window.location.href = finalUrl;
+          
+          // Técnica 3: Último recurso - usar window.open
+          setTimeout(() => {
+            const newWindow = window.open(finalUrl, '_self');
+            
+            // Verificação adicional
+            if (!newWindow || newWindow.closed) {
+              sonnerToast.error("Erro ao abrir janela de pagamento. Verifique se os popups estão permitidos.");
+            }
+          }, 500);
+        }, 300);
       } catch (e) {
-        console.error("[MercadoPago] Erro ao redirecionar com window.location.assign:", e);
-        // Fallback para método tradicional
-        window.location.href = finalUrl;
+        console.error("[MercadoPago] Erro ao redirecionar:", e);
+        window.location.href = finalUrl; // Fallback simples
       }
-    }, 500);
+    }, 500); // Pequeno delay para garantir que o toast seja visível
   } catch (error) {
     // Captura qualquer erro no processo de redirecionamento
     console.error("[MercadoPago] Erro crítico durante redirecionamento:", error);

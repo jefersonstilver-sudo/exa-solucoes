@@ -22,13 +22,12 @@ export const useMercadoPagoCheckout = () => {
       publicKey: MP_PUBLIC_KEY ? MP_PUBLIC_KEY.substring(0, 10) + '...' : 'missing'
     });
     
-    // Verificação extra quando o SDK estiver carregado
     if (isSDKLoaded) {
       console.log("[MercadoPago] SDK carregado com sucesso!");
     }
   }, [isSDKLoaded, isError]);
 
-  // CRITICAL FIX: Handle redirection to MercadoPago checkout with explicit payment method
+  // Improved direct redirection with forceful approach
   const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
     if (!preferenceId) {
       sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
@@ -49,8 +48,19 @@ export const useMercadoPagoCheckout = () => {
     // Display toast before redirect
     sonnerToast.success("Redirecionando para ambiente de pagamento...");
     
-    // CRITICAL FIX: Use enhanced redirect implementation with explicit payment method
-    handleMercadoPagoRedirect(preferenceId, paymentMethod);
+    // Force a more direct redirect approach
+    try {
+      handleMercadoPagoRedirect(preferenceId, paymentMethod);
+      
+      // Força reset do isCreatingPayment após tentar redirecionamento
+      setTimeout(() => {
+        setIsCreatingPayment(false);
+      }, 10000); // Timeout de segurança de 10s
+    } catch (error) {
+      console.error("[MercadoPago] Erro crítico durante redirecionamento:", error);
+      setIsCreatingPayment(false);
+      sonnerToast.error("Erro ao redirecionar para pagamento");
+    }
   };
 
   return {

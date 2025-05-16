@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
@@ -42,6 +42,17 @@ export const usePaymentFlow = () => {
     isSDKLoaded
   } = useMercadoPagoCheckout();
 
+  // Estado para rastrear tentativas de redirecionamento
+  const [redirectAttempts, setRedirectAttempts] = useState(0);
+  
+  // Limpar estado de redirecionamento quando o componente é montado
+  useEffect(() => {
+    return () => {
+      // Limpar isCreatingPayment ao desmontar para evitar que fique preso
+      setIsCreatingPayment(false);
+    };
+  }, [setIsCreatingPayment]);
+
   // Process payment and manage checkout flow
   const processPayment = async ({
     totalPrice,
@@ -72,6 +83,10 @@ export const usePaymentFlow = () => {
       paymentMethod: paymentMethodNormalized
     });
     
+    // Reiniciar contagem de tentativas
+    setRedirectAttempts(0);
+    
+    // Define o estado de criação de pagamento
     setIsCreatingPayment(true);
     
     try {
@@ -152,8 +167,8 @@ export const usePaymentFlow = () => {
           couponDiscount: couponId ? 10 : 0, // example value
         },
         userId: sessionUser.id,
-        returnUrl: `${currentUrl}/pedido-confirmado?id=${pedido.id}`, // Ensuring proper return URL
-        paymentMethod: paymentMethodNormalized // Send normalized value
+        returnUrl: `${currentUrl}/pedido-confirmado?id=${pedido.id}`,
+        paymentMethod: paymentMethodNormalized
       };
       
       logCheckoutEvent(
@@ -195,10 +210,36 @@ export const usePaymentFlow = () => {
         { preferenceId: data.preference_id, method: paymentMethodNormalized }
       );
       
-      // IMPORTANT FIX: More reliable redirection to MercadoPago with explicit payment method
-      redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
-      
-      // IMPORTANT: Não defina isCreatingPayment como false aqui porque o redirecionamento acontecerá
+      // FIXED: Melhor redirecionamento para o MercadoPago com tratamento de erro
+      try {
+        // Executa o redirecionamento
+        redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
+        
+        // Adiciona um timeout de segurança para resetar o estado caso o redirecionamento falhe
+        setTimeout(() => {
+          // Se ainda estiver no estado de criação após 8 segundos, algo deu errado
+          if (isCreatingPayment) {
+            console.error("[Payment Flow] Redirecionamento não ocorreu dentro do tempo esperado");
+            setIsCreatingPayment(false);
+            sonnerToast.error("Erro ao redirecionar para pagamento. Tente novamente.");
+            
+            // Incrementa contagem de tentativas
+            setRedirectAttempts(prev => prev + 1);
+          }
+        }, 8000);
+      } catch (redirectError) {
+        console.error("[Payment Flow] Erro durante redirecionamento:", redirectError);
+        setIsCreatingPayment(false);
+        sonnerToast.error("Erro ao redirecionar para pagamento");
+        
+        // Tenta redirecionamento alternativo
+        if (redirectAttempts < 2) {
+          sonnerToast.info("Tentando método alternativo de redirecionamento...");
+          setTimeout(() => {
+            window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${data.preference_id}&payment_method_id=${paymentMethodNormalized}`;
+          }, 1500);
+        }
+      }
       
     } catch (error: any) {
       console.error('Erro ao criar pagamento:', error);
@@ -225,6 +266,7 @@ export const usePaymentFlow = () => {
   return {
     isCreatingPayment,
     processPayment,
-    isMercadoPagoReady
+    isMercadoPagoReady,
+    redirectAttempts
   };
 };

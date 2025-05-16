@@ -17,6 +17,7 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
   const [mercadoPago, setMercadoPago] = useState<any>(null);
+  const [loadAttempts, setLoadAttempts] = useState(0);
   
   useEffect(() => {
     if (!publicKey) {
@@ -53,8 +54,18 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
           CheckoutEvent.DEBUG_EVENT,
           LogLevel.WARNING,
           "O carregamento do SDK do MercadoPago está demorando mais que o esperado",
-          { publicKey: publicKey.substring(0, 10) + '...' }
+          { publicKey: publicKey.substring(0, 10) + '...', attempts: loadAttempts }
         );
+        
+        // Tenta recarregar após falha
+        if (loadAttempts < 2) {
+          setLoadAttempts(prev => prev + 1);
+          // Força recarregar o script
+          if (document.contains(script)) {
+            document.body.removeChild(script);
+          }
+          document.body.appendChild(script);
+        }
       }
     }, 5000);
     
@@ -103,8 +114,18 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.ERROR,
         "Erro ao carregar o script do SDK do MercadoPago",
-        { publicKey: publicKey.substring(0, 10) + '...' }
+        { publicKey: publicKey.substring(0, 10) + '...', attempts: loadAttempts }
       );
+      
+      // Tenta recarregar com CDN alternativo
+      if (loadAttempts < 2) {
+        setLoadAttempts(prev => prev + 1);
+        script.src = 'https://sdk.mercadopago.com/js/v2?t=' + new Date().getTime();
+        if (document.contains(script)) {
+          document.body.removeChild(script);
+        }
+        document.body.appendChild(script);
+      }
     };
     
     document.body.appendChild(script);
@@ -115,7 +136,7 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
         document.body.removeChild(script);
       }
     };
-  }, [publicKey]);
+  }, [publicKey, loadAttempts]);
 
   const createCheckout = ({ preferenceId, redirectMode = true, paymentMethod = 'credit_card' }: MercadoPagoCheckoutOptions) => {
     if (!isSDKLoaded || !mercadoPago) {
@@ -126,37 +147,30 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     try {
       console.log(`[MercadoPago] Iniciando checkout com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
       
-      // CRITICAL FIX: Forçar redirecionamento direto com URL completa incluindo método de pagamento
-      let checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
-      
-      // Adicionar payment_method_id para PIX se necessário
-      if (paymentMethod === 'pix') {
-        checkoutUrl += '&payment_method_id=pix';
-      } else {
-        checkoutUrl += '&payment_method_id=credit_card';
-      }
+      // FIXED: Redirecionamento direto aperfeiçoado
+      const checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true&payment_method_id=${paymentMethod === 'pix' ? 'pix' : 'credit_card'}`;
       
       console.log('[MercadoPago] URL de redirecionamento:', checkoutUrl);
       
-      // Force page redirect with delay to ensure toast is visible
+      // Force page redirect with safer approach
       sonnerToast.success('Redirecionando para Mercado Pago...');
       
-      // CRITICAL FIX: Tentar diferentes métodos de redirecionamento para garantir compatibilidade
+      // Use uma abordagem de redirecionamento mais confiável
       setTimeout(() => {
         try {
-          // Método 1: window.location.assign
-          window.location.assign(checkoutUrl);
+          // Técnica mais confiável para redirecionamento
+          window.location.replace(checkoutUrl);
           
-          // Método 2 (fallback): se o assign não funcionar, o browser tentará href
+          // Fallback se o replace não funcionar
           setTimeout(() => {
             window.location.href = checkoutUrl;
-          }, 200);
+          }, 300);
         } catch (e) {
           console.error('[MercadoPago] Erro ao redirecionar:', e);
           // Último recurso
           window.open(checkoutUrl, '_self');
         }
-      }, 800);
+      }, 500);
       
       return { success: true };
     } catch (error) {
@@ -169,5 +183,6 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     isSDKLoaded,
     isError,
     createCheckout,
+    loadAttempts
   };
 };
