@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
+import { loadCartFromStorage, saveCartToStorage } from '@/services/cartStorageService';
 
 export interface CartItem {
   panel: Panel;
@@ -10,51 +10,56 @@ export interface CartItem {
 export const useCartState = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [cartAnimation, setCartAnimation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-
-  // Load cart from localStorage on initial render
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  
+  // Load cart from localStorage on component mount - garantindo apenas uma vez
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem('panelCart');
-      if (savedCart) {
-        setCartItems(JSON.parse(savedCart));
-      }
-    } catch (error) {
-      console.error('Error loading cart from localStorage:', error);
-    } finally {
-      setLoading(false);
-      setInitialLoadDone(true);
-    }
-  }, []);
+    if (initialLoadDone) return;
+    
+    console.log("useCartState: Carregando carrinho do localStorage (load inicial)");
+    const loadedCart = loadCartFromStorage();
+    setCartItems(loadedCart);
+    setInitialLoadDone(true);
+    
+    console.log("useCartState: Carrinho inicial carregado:", loadedCart);
+  }, [initialLoadDone]);
 
-  // Update localStorage when cart changes
+  // Save cart to localStorage whenever it changes using our improved service
   useEffect(() => {
-    if (initialLoadDone) {
-      localStorage.setItem('panelCart', JSON.stringify(cartItems));
+    if (!initialLoadDone) {
+      // Evita salvar antes do carregamento inicial
+      return;
     }
+    
+    console.log("useCartState: Salvando carrinho no localStorage devido à mudança no estado:", cartItems);
+    saveCartToStorage(cartItems);
   }, [cartItems, initialLoadDone]);
 
-  // Clear cart function
-  const clearCart = () => {
-    setCartItems([]);
-    localStorage.removeItem('panelCart');
-  };
+  // Keep cart open when items are added
+  useEffect(() => {
+    if (cartItems.length > 0 && !isNavigating) {
+      setCartOpen(true);
+      document.body.classList.add('drawer-open');
+    } else if (cartItems.length === 0) {
+      document.body.classList.remove('drawer-open');
+    }
+
+    return () => {
+      document.body.classList.remove('drawer-open');
+    };
+  }, [cartItems.length, isNavigating]);
 
   return {
     cartItems,
     setCartItems,
     cartOpen,
     setCartOpen,
-    loading,
-    setLoading,
-    initialLoadDone,
-    clearCart,
     cartAnimation,
     setCartAnimation,
     isNavigating,
-    setIsNavigating
+    setIsNavigating,
+    initialLoadDone
   };
 };

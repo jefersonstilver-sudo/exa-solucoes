@@ -1,10 +1,10 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast as sonnerToast } from 'sonner';
-import { STEPS } from '@/hooks/useCheckout';
 
 interface CartItem {
   panel: Panel;
@@ -23,7 +23,7 @@ interface UseCheckoutNavigationProps {
   couponId: string | null;
   startDate: Date;
   endDate: Date;
-  sessionUser: any; // Updated to accept any user object type
+  sessionUser: any;
   handleClearCart: () => void;
   createPayment: (options: any) => Promise<void>;
 }
@@ -50,15 +50,15 @@ export const useCheckoutNavigation = ({
   // Determine if the next button should be enabled
   const isNextEnabled = () => {
     switch (step) {
-      case STEPS.PLAN: // PLAN step
+      case 0: // PLAN step
         return !!selectedPlan && selectedPlan > 0 && cartItems.length > 0;
-      case STEPS.REVIEW: // REVIEW step
+      case 1: // REVIEW step
         return cartItems.length > 0;
-      case STEPS.COUPON: // COUPON step
+      case 2: // COUPON step
         return true; // Always enabled as coupon is optional
-      case STEPS.PAYMENT: // PAYMENT step
+      case 3: // PAYMENT step
         return acceptTerms;
-      case STEPS.UPLOAD: // UPLOAD step
+      case 4: // UPLOAD step
         return true; // Always enabled for final step
       default:
         return false;
@@ -86,7 +86,8 @@ export const useCheckoutNavigation = ({
     // FIXED: Ensure paymentMethod is properly defined
     const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
-    console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, current step: ${step}`);
+    // Detailed log for diagnostics
+    console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, step: ${step}`);
     
     if (isNavigating) {
       console.warn('[useCheckoutNavigation] Ignoring navigation - already in progress');
@@ -103,60 +104,68 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // FIXED: Switch para lidar com cada passo específico
-      switch (step) {
-        case STEPS.PAYMENT:
-          // Payment step - enviar para processamento de pagamento
-          if (!acceptTerms) {
-            sonnerToast.error("Você precisa aceitar os termos para continuar");
-            setIsNavigating(false);
-            return;
-          }
-          
-          console.log(`[useCheckoutNavigation] Starting payment with method: ${normalizedPaymentMethod}`);
-          
-          // Calculate price considering coupon discount
-          const totalPrice = calculateTotalPrice();
-          
-          // Inicia o processo de pagamento
-          createPayment({
-            totalPrice,
-            selectedPlan,
-            cartItems,
-            startDate,
-            endDate,
-            couponId,
-            acceptTerms,
-            unavailablePanels: [], // Ignoring validation to fix the bug
-            sessionUser,
-            handleClearCart,
-            paymentMethod: normalizedPaymentMethod
-          });
-          
-          // Note: createPayment will reset isNavigating when appropriate
-          
-          // IMPORTANTE: Não mudar o step aqui, pois seremos redirecionados ao MP
+      // FIXED: Handle final upload step properly
+      if (step === 4) {
+        // In the last step, redirect to the confirmation page
+        navigate('/pedido-confirmado');
+        setIsNavigating(false);
+        return;
+      }
+      
+      // Handle payment step
+      if (step === 3) {
+        // Payment
+        if (!acceptTerms) {
+          sonnerToast.error("Você precisa aceitar os termos para continuar");
           setIsNavigating(false);
-          break;
-          
-        case STEPS.UPLOAD:
-          // Upload step - último passo, redireciona para confirmação
-          navigate('/pedido-confirmado');
-          setIsNavigating(false);
-          break;
-          
-        default:
-          // Normal steps (not payment or upload)
-          logCheckoutEvent(
-            CheckoutEvent.NAVIGATION_EVENT,
-            LogLevel.INFO,
-            `Navigating to next step: ${step + 1}`,
-            { currentStep: step, nextStep: step + 1 }
-          );
-          
-          setStep(step + 1);
-          setIsNavigating(false);
-          break;
+          return;
+        }
+        
+        // Detailed log
+        console.log(`[useCheckoutNavigation] Starting payment with method: ${normalizedPaymentMethod}`);
+        
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATION_EVENT,
+          LogLevel.INFO,
+          `Starting payment with method: ${normalizedPaymentMethod}`,
+          { currentStep: step, paymentMethod: normalizedPaymentMethod }
+        );
+        
+        // Calculate price considering coupon discount
+        const totalPrice = calculateTotalPrice();
+        
+        // FIXED: Send the payment method explicitly to createPayment
+        createPayment({
+          totalPrice,
+          selectedPlan,
+          cartItems,
+          startDate,
+          endDate,
+          couponId,
+          acceptTerms,
+          unavailablePanels: [], // Ignoring validation to fix the bug
+          sessionUser,
+          handleClearCart,
+          paymentMethod: normalizedPaymentMethod
+        });
+        
+        // Note: createPayment will reset isNavigating when appropriate
+        
+        // IMPORTANT: Don't change step here, as we're redirecting to MercadoPago
+        return;
+      } 
+      else {
+        // Normal steps (not payment or upload)
+        logCheckoutEvent(
+          CheckoutEvent.NAVIGATION_EVENT,
+          LogLevel.INFO,
+          `Navigating to next step: ${step + 1}`,
+          { currentStep: step, nextStep: step + 1 }
+        );
+        
+        // IMPORTANT FIX: Update the step before finishing navigation
+        setStep(step + 1);
+        setIsNavigating(false);
       }
     } catch (error) {
       console.error("[useCheckoutNavigation] Error:", error);

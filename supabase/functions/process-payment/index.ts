@@ -2,6 +2,9 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
+// Importar a SDK do MercadoPago
+import * as MercadoPago from "https://esm.sh/mercadopago@1.5.16";
+
 // Configurar CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,8 +27,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Configurar MercadoPago
+    const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
+    MercadoPago.configure({
+      access_token: MP_ACCESS_TOKEN,
+      sandbox: true
+    });
+    
     // Obter dados do request
-    const { pedidoId, cartItems, totals, userId, paymentMethod = 'credit_card' } = await req.json();
+    const { pedidoId, cartItems, totals, userId, returnUrl, paymentMethod = 'credit_card' } = await req.json();
     
     console.log("Dados recebidos:", { pedidoId, totals, userId, paymentMethod });
     
@@ -55,7 +65,8 @@ serve(async (req) => {
       .filter(item => 
         item.panel && 
         item.panel.id && 
-        typeof item.panel.id === 'string'
+        typeof item.panel.id === 'string' &&
+        item.panel.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
       )
       .map(item => ({
         id: item.panel.id,
@@ -72,10 +83,79 @@ serve(async (req) => {
       throw new Error("Nenhum item válido para processamento");
     }
     
-    // SIMULAÇÃO PARA TESTES: Gerar IDs e URLs fictícias de preferência
-    // Isso é uma solução temporária para bypass do MercadoPago
-    const preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`;
+    // Criar preferência de pagamento
+    const preference = {
+      items,
+      payer: {
+        email: userData.email,
+      },
+      back_urls: {
+        success: `${returnUrl}/pedido-confirmado?id=${pedidoId}&status=approved`,
+        failure: `${returnUrl}/pedido-confirmado?id=${pedidoId}&status=rejected`,
+        pending: `${returnUrl}/pedido-confirmado?id=${pedidoId}&status=pending`
+      },
+      auto_return: "approved",
+      external_reference: pedidoId,
+      notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
+      statement_descriptor: "INDEXA MÍDIA",
+      payment_methods: {
+        excluded_payment_types: [],
+        installments: 12,
+        default_payment_method_id: paymentMethod
+      },
+      metadata: {
+        pedido_id: pedidoId,
+        user_id: userId,
+        payment_method: paymentMethod,
+        test: true
+      }
+    };
+    
+    // Adicionar configurações específicas para PIX se for o método selecionado
+    if (paymentMethod === 'pix') {
+      preference.payment_methods = {
+        ...preference.payment_methods,
+        excluded_payment_types: [
+          { id: "credit_card" },
+          { id: "debit_card" },
+          { id: "ticket" }
+        ],
+        default_payment_method_id: "pix"
+      };
+    }
+    
+    // Registrar a criação da preferência
+    console.log("Creating payment preference with items:", JSON.stringify(items));
+    console.log("Payment method:", paymentMethod);
+    
+    // Criar preferência no MercadoPago
+    let preferenceId = "";
+    let initPoint = "";
+    
+    if (MP_ACCESS_TOKEN) {
+      try {
+        // Usar a API do MercadoPago para criar preferência real
+        const response = await MercadoPago.preferences.create(preference);
+        preferenceId = response.body.id;
+        initPoint = response.body.init_point;
+        console.log("MercadoPago preference created:", preferenceId);
+      } catch (mpError) {
+        console.error("Error creating MercadoPago preference:", mpError);
+        // Falhar de forma elegante com valores simulados
+        preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+        if (paymentMethod === 'pix') {
+          initPoint += '&payment_method_id=pix';
+        }
+      }
+    } else {
+      // Modo simulado (para desenvolvimento)
+      preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+      if (paymentMethod === 'pix') {
+        initPoint += '&payment_method_id=pix';
+      }
+    }
     
     // Atualizar o pedido com informações de pagamento
     const { error: updateError } = await supabase

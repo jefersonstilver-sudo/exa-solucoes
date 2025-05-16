@@ -1,247 +1,126 @@
 
-import { useState, useEffect } from 'react';
-import { Panel } from '@/types/panel';
-import { PlanKey } from '@/types/checkout';
-import { useUserSession } from '@/hooks/useUserSession';
-import { useToast } from '@/hooks/use-toast';
-import { addDays } from 'date-fns';
-import { useCartState } from '@/hooks/cart/useCartState';
-import { useOrderCreation } from '@/hooks/payment/useOrderCreation';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useCartManager } from '@/hooks/useCartManager';
+import { useCouponValidator } from '@/hooks/useCouponValidator';
+import { usePanelAvailability } from '@/hooks/usePanelAvailability';
 import { usePaymentProcessor } from '@/hooks/payment/usePaymentProcessor';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { calculateTotalPrice, calculateCartSubtotal } from '@/utils/checkoutUtils';
+import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
+import { useCheckoutState } from '@/hooks/checkout/useCheckoutState';
+import { useCheckoutAuth } from '@/hooks/checkout/useCheckoutAuth';
+import { useCartValidation } from '@/hooks/checkout/useCartValidation';
 import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
+import { CheckoutSteps, Plan, PlanKey } from '@/types/checkout';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-export const STEPS = {
-  PLAN: 0,
-  REVIEW: 1,
-  COUPON: 2,
-  PAYMENT: 3,
-  UPLOAD: 4, // CORREÇÃO: Adicionando um passo explícito de upload
-};
-
-// Plans configuration - revise if needed
-const PLANS = {
-  1: {
-    id: 1, 
-    name: 'Plano Básico', 
-    discount: 0,
-    subtitle: 'Escolha ideal para testar campanhas',
-    price: '250,00/mês', 
-    totalMonths: 1,
-    description: '1 mês',
-    months: 1,
-    mostPopular: false,
-    pricePerMonth: 250,
-    extras: ['Nenhum vídeo incluso', 'Produção adicional disponível']
-  },
-  3: {
-    id: 3, 
-    name: 'Plano Popular', 
-    discount: 5,
-    subtitle: 'Ideal para maior fixação da marca',
-    price: '237,50/mês', 
-    totalMonths: 3,
-    description: '3 meses',
-    months: 3,
-    mostPopular: true,
-    pricePerMonth: 237.50,
-    extras: ['1 vídeo por mês incluído', 'Economize R$70/mês', 'Maior visibilidade']
-  },
-  6: {
-    id: 6, 
-    name: 'Plano Profissional', 
-    discount: 10,
-    subtitle: 'Ótimo para campanhas sazonais',
-    price: '225,00/mês', 
-    totalMonths: 6,
-    description: '6 meses',
-    months: 6,
-    mostPopular: false,
-    pricePerMonth: 225,
-    extras: ['1 vídeo por mês incluído', 'Uso mensal do Estúdio Indexa', 'Presença contínua']
-  },
-  12: {
-    id: 12, 
-    name: 'Plano Empresarial', 
-    discount: 15,
-    subtitle: 'Melhor custo-benefício anual',
-    price: '212,50/mês', 
-    totalMonths: 12,
-    description: '12 meses',
-    months: 12,
-    mostPopular: false,
-    pricePerMonth: 212.50,
-    extras: ['1 vídeo por mês incluído', 'Bônus institucional', 'Exibição estendida de 30s']
-  }
-};
-
-// Interface for cart items
-interface CartItem {
-  panel: Panel;
-  duration: number;
-}
+export const STEPS = CHECKOUT_STEPS; // Re-exporta para compatibilidade
+export { PLANS }; // Re-exporta para compatibilidade
 
 export const useCheckout = () => {
-  // Session user check
-  const { user: sessionUser } = useUserSession();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('id');
   
-  // Order creation hooks
-  const { createOrder } = useOrderCreation();
+  // Usa os hooks modularizados
+  const { cartItems, handleClearCart } = useCartManager();
   
-  // Cart state
-  const { 
-    cartItems, 
-    clearCart: handleClearCart, 
-    setIsNavigating 
-  } = useCartState();
-  
-  // Checkout progress state
-  const [step, setStep] = useState(STEPS.PLAN);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [unavailablePanels, setUnavailablePanels] = useState<string[]>([]);
-  
-  // Payment and total price
-  const { isCreatingPayment, createPayment, paymentMethod, setPaymentMethod } = usePaymentProcessor();
-  const [totalPrice, setTotalPrice] = useState(0);
-  
-  // Plan configuration
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(3);
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(() => addDays(new Date(), 90)); // Default 3 months
-  
-  // Coupon handling
-  const [couponId, setCouponId] = useState<string | null>(null);
-  const [couponValid, setCouponValid] = useState(false);
-  const [couponMessage, setCouponMessage] = useState('');
-  const [couponCode, setCouponCode] = useState('');
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-  
-  // Terms acceptance
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  
-  // IMPORTANTE: Verifica se a rota atual é /pedido-confirmado
-  // Se sim, vai automaticamente para a etapa de upload
-  useEffect(() => {
-    if (window.location.pathname === "/pedido-confirmado") {
-      setStep(STEPS.UPLOAD);
-    }
-  }, []);
+  const {
+    step, setStep,
+    selectedPlan, setSelectedPlan,
+    acceptTerms, setAcceptTerms,
+    startDate, endDate,
+    sessionUser, setSessionUser,
+    STEPS
+  } = useCheckoutState();
 
-  // Calculate the total price based on cart items, plan, and coupon
+  // Carrega plano selecionado do localStorage (vem da página PlanSelection)
   useEffect(() => {
-    if (cartItems.length > 0 && selectedPlan) {
-      // Base price calculation (example: R$250 per panel per month)
-      const basePrice = 250; // R$ 250,00 por painel por mês
-      
-      // Get plan discount percentage
-      const planDiscount = PLANS[selectedPlan]?.discount || 0;
-      
-      // Calculate subtotal
-      const subtotal = cartItems.length * basePrice * selectedPlan;
-      
-      // Apply plan discount
-      const afterPlanDiscount = subtotal * (1 - planDiscount / 100);
-      
-      // Apply coupon discount if valid
-      const finalPrice = couponValid && couponDiscount > 0 
-        ? afterPlanDiscount * (1 - couponDiscount / 100)
-        : afterPlanDiscount;
-      
-      setTotalPrice(finalPrice);
-    } else {
-      setTotalPrice(0);
-    }
-  }, [cartItems, selectedPlan, couponValid, couponDiscount]);
-  
-  // Update end date when plan changes
-  useEffect(() => {
-    if (selectedPlan) {
-      const months = Number(selectedPlan);
-      const days = months * 30; // Approximate days in a month
-      setEndDate(addDays(startDate, days));
-    }
-  }, [selectedPlan, startDate]);
-
-  // Validate coupon function
-  const validateCoupon = async () => {
-    if (!couponCode || couponCode.trim() === '') {
-      setCouponMessage('Por favor, digite um código de cupom');
-      setCouponValid(false);
-      return;
-    }
-    
-    setIsValidatingCoupon(true);
-    
     try {
-      // Call the Supabase function to validate the coupon
-      const { data, error } = await supabase.rpc('validate_cupom', {
-        p_codigo: couponCode,
-        p_meses: selectedPlan
-      });
+      const savedPlan = localStorage.getItem('selectedPlan');
+      console.log('[useCheckout] Plano carregado do localStorage:', savedPlan);
       
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const result = data[0];
-        
-        if (result.valid) {
-          setCouponId(result.id);
-          setCouponDiscount(result.desconto_percentual);
-          setCouponValid(true);
-          setCouponMessage(result.message);
-          toast({
-            title: "Cupom válido!",
-            description: `Desconto de ${result.desconto_percentual}% aplicado.`,
-          });
-        } else {
-          setCouponId(null);
-          setCouponDiscount(0);
-          setCouponValid(false);
-          setCouponMessage(result.message);
-          toast({
-            variant: "destructive",
-            title: "Cupom inválido",
-            description: result.message,
-          });
+      if (savedPlan) {
+        const parsedPlan = parseInt(savedPlan);
+        if ([1, 3, 6, 12].includes(parsedPlan)) {
+          setSelectedPlan(parsedPlan as PlanKey);
         }
-      } else {
-        setCouponId(null);
-        setCouponDiscount(0);
-        setCouponValid(false);
-        setCouponMessage('Erro ao validar cupom');
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível validar o cupom. Tente novamente.",
-        });
       }
     } catch (error) {
-      console.error('Error validating coupon:', error);
-      setCouponId(null);
-      setCouponDiscount(0);
-      setCouponValid(false);
-      setCouponMessage('Erro ao validar cupom');
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Houve um problema ao validar o cupom.",
-      });
-    } finally {
-      setIsValidatingCoupon(false);
+      console.error('[useCheckout] Erro ao carregar plano selecionado:', error);
+    }
+  }, [setSelectedPlan]);
+
+  // Hook de autenticação
+  useCheckoutAuth(setSessionUser);
+  
+  // Hook de validação do carrinho
+  useCartValidation(cartItems);
+  
+  const {
+    couponCode, setCouponCode,
+    couponDiscount, couponId,
+    isValidatingCoupon, couponMessage,
+    couponValid, validateCoupon
+  } = useCouponValidator();
+  
+  const {
+    isCheckingAvailability,
+    unavailablePanels,
+    checkPanelAvailability
+  } = usePanelAvailability();
+  
+  const {
+    isCreatingPayment,
+    createPayment,
+    paymentMethod,
+    setPaymentMethod
+  } = usePaymentProcessor();
+  
+  // Verifica a disponibilidade dos painéis quando a etapa muda para revisão
+  useEffect(() => {
+    if (step === STEPS.REVIEW) {
+      checkPanelAvailability(cartItems, startDate, endDate);
+    }
+  }, [step, startDate, endDate, cartItems, checkPanelAvailability, STEPS.REVIEW]);
+
+  // Log payment method changes for debugging
+  useEffect(() => {
+    if (paymentMethod) {
+      console.log(`[useCheckout] Payment method selected: ${paymentMethod}, step: ${step}`);
+      
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `Payment method selected: ${paymentMethod}`,
+        { paymentMethod, step }
+      );
+    }
+  }, [paymentMethod, step]);
+
+  // Adapta a função validateCoupon para a nova estrutura
+  const handleValidateCoupon = () => {
+    validateCoupon(selectedPlan);
+  };
+
+  // Define handler for next step with explicit payment method
+  const handleNextStepWithPayment = (paymentMethod?: string) => {
+    console.log(`[useCheckout] handleNextStepWithPayment called with method: ${paymentMethod || 'default'}`);
+    
+    if (handleNavigation.handleNextStep && typeof handleNavigation.handleNextStep === 'function') {
+      // Log para diagnóstico
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `Calling handleNextStep with method: ${paymentMethod || 'default'}`,
+        { paymentMethod }
+      );
+      
+      handleNavigation.handleNextStep(paymentMethod);
     }
   };
 
-  // Setup navigation hooks after defining all required state
-  const {
-    handleNextStep,
-    handlePrevStep,
-    isNextEnabled,
-    isNavigating
-  } = useCheckoutNavigation({
+  // Usa o hook de navegação
+  const handleNavigation = useCheckoutNavigation({
     step,
     setStep,
     selectedPlan,
@@ -257,62 +136,51 @@ export const useCheckout = () => {
     handleClearCart,
     createPayment
   });
+  
+  const { isNavigating } = handleNavigation;
 
-  // Calculate total price method
-  const calculateTotalPrice = () => {
-    // Base price calculation (example: R$250 per panel per month)
-    const basePrice = 250; // R$ 250,00 por painel por mês
-    
-    // Get plan discount percentage
-    const planDiscount = PLANS[selectedPlan]?.discount || 0;
-    
-    // Calculate subtotal
-    const subtotal = cartItems.length * basePrice * selectedPlan;
-    
-    // Apply plan discount
-    const afterPlanDiscount = subtotal * (1 - planDiscount / 100);
-    
-    // Apply coupon discount if valid
-    const finalPrice = couponValid && couponDiscount > 0 
-      ? afterPlanDiscount * (1 - couponDiscount / 100)
-      : afterPlanDiscount;
-    
-    return finalPrice;
+  // Log para diagnóstico dos cálculos
+  useEffect(() => {
+    console.log("[useCheckout] Cart data:", cartItems);
+    if (cartItems.length > 0) {
+      console.log("[useCheckout] Calculated subtotal:", calculateCartSubtotal(cartItems));
+      console.log("[useCheckout] Calculated total:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
+    }
+  }, [cartItems, selectedPlan, couponDiscount, couponValid]);
+
+  // Função para calcular o total do pedido (usado no PaymentStep)
+  const getOrderTotal = () => {
+    return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   };
 
   return {
     step,
-    setStep,
-    cartItems,
-    PLANS,
     STEPS,
     selectedPlan,
     setSelectedPlan,
-    unavailablePanels,
     couponCode,
     setCouponCode,
-    validateCoupon,
-    isValidatingCoupon,
+    couponDiscount,
     couponMessage,
     couponValid,
-    couponDiscount,
+    isValidatingCoupon,
     acceptTerms,
     setAcceptTerms,
-    totalPrice,
-    isCreatingPayment,
-    isProcessing,
     startDate,
     endDate,
-    sessionUser,
-    createPayment,
-    couponId,
-    handleClearCart,
-    paymentMethod,
-    setPaymentMethod,
-    handleNextStep,
-    handlePrevStep,
-    isNextEnabled,
+    isCreatingPayment,
     isNavigating,
-    calculateTotalPrice
+    unavailablePanels,
+    cartItems,
+    validateCoupon: handleValidateCoupon,
+    handleNextStep: handleNextStepWithPayment,
+    handlePrevStep: handleNavigation.handlePrevStep,
+    isNextEnabled: handleNavigation.isNextEnabled,
+    PLANS,
+    calculateTotalPrice: getOrderTotal,
+    calculateCartSubtotal: () => calculateCartSubtotal(cartItems),
+    orderId,
+    paymentMethod,
+    setPaymentMethod
   };
 };

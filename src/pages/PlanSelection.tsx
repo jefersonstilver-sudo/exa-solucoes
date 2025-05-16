@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -13,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ClientOnly } from '@/components/ui/client-only';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { isCartEmpty, loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
-import { Plan } from '@/types/checkout';
 
 const PlanSelection = () => {
   const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
@@ -21,8 +21,8 @@ const PlanSelection = () => {
   const { toast } = useToast();
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [hasCart, setHasCart] = useState(false);
+  // Adicionado initialLoadDone para prevenir redirecionamentos prematuros
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-  
   const {
     selectedPlan, 
     setSelectedPlan,
@@ -231,41 +231,16 @@ const PlanSelection = () => {
     navigate('/checkout');
   };
   
-  // Convert PLANS to the expected Plan type structure
-  const plansForSelector: Record<number, Plan> = {
-    1: {
-      ...PLANS[1],
-      description: PLANS[1].description || '1 mês',
-      months: PLANS[1].months || 1,
-      mostPopular: PLANS[1].mostPopular || false,
-      pricePerMonth: PLANS[1].pricePerMonth || 250,
-      extras: PLANS[1].extras || []
-    },
-    3: {
-      ...PLANS[3],
-      description: PLANS[3].description || '3 meses',
-      months: PLANS[3].months || 3,
-      mostPopular: PLANS[3].mostPopular || true,
-      pricePerMonth: PLANS[3].pricePerMonth || 237.50,
-      extras: PLANS[3].extras || []
-    },
-    6: {
-      ...PLANS[6],
-      description: PLANS[6].description || '6 meses',
-      months: PLANS[6].months || 6,
-      mostPopular: PLANS[6].mostPopular || false,
-      pricePerMonth: PLANS[6].pricePerMonth || 225,
-      extras: PLANS[6].extras || []
-    },
-    12: {
-      ...PLANS[12],
-      description: PLANS[12].description || '12 meses',
-      months: PLANS[12].months || 12,
-      mostPopular: PLANS[12].mostPopular || false,
-      pricePerMonth: PLANS[12].pricePerMonth || 212.50,
-      extras: PLANS[12].extras || []
-    }
-  };
+  // Loading screen while checking session or cart
+  if (isSessionLoading || isPageLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </Layout>
+    );
+  }
   
   // If cart exists but user is not logged in, redirect to login
   if (hasCart && !isLoggedIn) {
@@ -291,7 +266,7 @@ const PlanSelection = () => {
             <PlanSelector
               selectedPlan={selectedPlan}
               onSelectPlan={setSelectedPlan}
-              plans={plansForSelector}
+              plans={PLANS}
               panelCount={cartItems.length}
               onProceed={handleProceed}
             />

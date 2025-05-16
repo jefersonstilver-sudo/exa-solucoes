@@ -30,20 +30,18 @@ export const useMercadoPagoCheckout = () => {
       throw new Error('Preference ID is required for MercadoPago redirect');
     }
     
-    // Mostrar toast antes do redirecionamento
-    sonnerToast.success('Redirecionando para o Mercado Pago...', {
-      duration: 3000 // Toast mais longo para garantir visibilidade
-    });
+    // Validate and log the payment method for debugging
+    console.log(`[MercadoPago] Redirecting with payment method: ${paymentMethod}`);
     
-    // Log do evento para rastreamento
+    // Log event with payment method for tracking
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Iniciando redirecionamento para o Mercado Pago com método ${paymentMethod}`,
+      `Starting redirection to Mercado Pago with method ${paymentMethod}`,
       { preferenceId, paymentMethod }
     );
     
-    // CORREÇÃO CRÍTICA: Usar método simplificado de redirecionamento
+    // FIXED: Use the enhanced redirect implementation
     handleMercadoPagoRedirect(preferenceId, paymentMethod);
   };
 
