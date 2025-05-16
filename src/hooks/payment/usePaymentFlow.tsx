@@ -41,6 +41,9 @@ export const usePaymentFlow = () => {
     isMercadoPagoReady,
     isSDKLoaded
   } = useMercadoPagoCheckout();
+  
+  // Adicionando uma verificação de timeout para o processamento de pagamento
+  const [paymentTimeoutId, setPaymentTimeoutId] = useState<number | null>(null);
 
   // Process payment and manage checkout flow
   const processPayment = async ({
@@ -62,6 +65,19 @@ export const usePaymentFlow = () => {
     // Log detailed payment method info for debugging
     console.log(`[Payment Flow] Starting processing with method: ${paymentMethodNormalized} (original: ${paymentMethod})`);
     
+    // Clear any existing timeout
+    if (paymentTimeoutId !== null) {
+      clearTimeout(paymentTimeoutId);
+    }
+    
+    // Set a new timeout to automatically reset the payment state if stuck
+    const timeoutId = window.setTimeout(() => {
+      console.error('[Payment Flow] Timeout reached during payment processing');
+      setIsCreatingPayment(false);
+      sonnerToast.error("O tempo para processamento expirou. Por favor, tente novamente.");
+    }, 20000); // 20 segundos de timeout
+    
+    setPaymentTimeoutId(timeoutId);
     setIsCreatingPayment(true);
     
     try {
@@ -87,6 +103,8 @@ export const usePaymentFlow = () => {
       });
       
       if (!isValid) {
+        clearTimeout(timeoutId);
+        setPaymentTimeoutId(null);
         setIsCreatingPayment(false);
         sonnerToast.dismiss();
         sonnerToast.error("Não foi possível processar o pagamento");
@@ -155,15 +173,9 @@ export const usePaymentFlow = () => {
       }
       
       // Verify valid response
-      if (!data || !data.success) {
+      if (!data || !data.success || !data.preference_id) {
         throw new Error('Invalid response from payment processor');
       }
-      
-      // Clear cart after successful order creation
-      handleClearCart();
-      
-      // Store order ID in local storage for potential recovery
-      localStorage.setItem('lastPedidoId', pedido.id);
       
       // Log success before redirection
       logCheckoutEvent(
@@ -173,13 +185,25 @@ export const usePaymentFlow = () => {
         { preferenceId: data.preference_id, method: paymentMethodNormalized }
       );
       
-      // IMPORTANT FIX: More reliable redirection to MercadoPago with explicit payment method
+      // Clear cart after successful order creation
+      handleClearCart();
+      
+      // Store order ID in local storage for potential recovery
+      localStorage.setItem('lastPedidoId', pedido.id);
+      
+      // CORREÇÃO CRÍTICA: Redefinir o timeout antes do redirecionamento
+      clearTimeout(timeoutId);
+      setPaymentTimeoutId(null);
+      
+      // SOLUÇÃO: Redirecionamento mais robusto para o MercadoPago com método de pagamento explícito
       redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
       
-      // IMPORTANT: Don't set isCreatingPayment as false here because redirection will happen
+      // Não desativamos isCreatingPayment aqui porque redirecionamento acontecerá
       
     } catch (error: any) {
       console.error('Error creating payment:', error);
+      clearTimeout(timeoutId);
+      setPaymentTimeoutId(null);
       sonnerToast.dismiss();
       sonnerToast.error("Erro ao iniciar pagamento");
       

@@ -42,9 +42,6 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     script.src = 'https://sdk.mercadopago.com/js/v2';
     script.async = true;
     
-    // Add loading indicator
-    sonnerToast.loading('Carregando MercadoPago SDK...');
-    
     // Timeouts para detectar problemas de carregamento
     const timeoutId = setTimeout(() => {
       if (!isSDKLoaded) {
@@ -61,7 +58,6 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     script.onload = () => {
       console.log('[MercadoPago] SDK carregado com sucesso');
       clearTimeout(timeoutId);
-      sonnerToast.dismiss();
       
       try {
         // @ts-ignore - MercadoPago é carregado via script
@@ -118,20 +114,20 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
   }, [publicKey]);
 
   const createCheckout = ({ preferenceId, redirectMode = true, paymentMethod = 'credit_card' }: MercadoPagoCheckoutOptions) => {
-    if (!isSDKLoaded || !mercadoPago) {
-      console.error('[MercadoPago] SDK não carregado');
-      return { success: false, error: 'MercadoPago SDK não carregado' };
+    if (!preferenceId) {
+      console.error('[MercadoPago] Preference ID é necessário');
+      return { success: false, error: 'Preference ID é necessário' };
     }
     
     try {
-      console.log(`[MercadoPago] Iniciando checkout com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
+      console.log(`[MercadoPago] Iniciando checkout com preferenceId: ${preferenceId}, método: ${paymentMethod}`);
       
-      let checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+      // CORREÇÃO: Construção de URL mais direta e confiável
+      let checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}&test=true`;
       
-      // Adicionar payment_method_id para PIX
+      // Adicionar payment_method_id para PIX quando aplicável
       if (paymentMethod === 'pix') {
         checkoutUrl += '&payment_method_id=pix';
-        console.log('[MercadoPago] URL para PIX:', checkoutUrl);
       }
       
       console.log('[MercadoPago] URL de redirecionamento:', checkoutUrl);
@@ -139,8 +135,9 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       // Force page redirect with delay to ensure toast is visible
       sonnerToast.success('Redirecionando para Mercado Pago...');
       
+      // SOLUÇÃO: Usar location.assign em vez de location.href
       setTimeout(() => {
-        window.location.href = checkoutUrl;
+        window.location.assign(checkoutUrl);
       }, 800);
       
       return { success: true };

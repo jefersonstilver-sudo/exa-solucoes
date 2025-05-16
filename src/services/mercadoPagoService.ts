@@ -25,40 +25,56 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   localStorage.setItem('payment_method_selected', normalizedPaymentMethod);
   localStorage.setItem('payment_preference_id', preferenceId);
   
-  // FIXED: Redirect URL construction with proper test mode parameters
-  const baseUrl = 'https://www.mercadopago.com.br/checkout/v1/redirect';
+  // CORREÇÃO: Construção da URL de forma mais direta e força o modo de teste
+  let mercadoPagoUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`;
   
-  // Build URL with parameters
-  let url = new URL(baseUrl);
-  url.searchParams.append('preference_id', preferenceId);
-  url.searchParams.append('test', 'true');
-  url.searchParams.append('sandbox', 'true');
+  // Adicionar parâmetro de método de pagamento
+  if (normalizedPaymentMethod === 'pix') {
+    mercadoPagoUrl += '&payment_method_id=pix';
+  }
   
-  // Always add payment_method_id parameter based on selected method
-  url.searchParams.append('payment_method_id', normalizedPaymentMethod);
+  // Adicionar parâmetros de teste obrigatórios
+  mercadoPagoUrl += '&test=true';
   
-  // Add success and failure URLs for proper redirection after payment
+  // Adicionar URLs de sucesso e falha
   const returnBaseUrl = window.location.origin;
-  url.searchParams.append('success', `${returnBaseUrl}/pedido-confirmado`);
-  url.searchParams.append('failure', `${returnBaseUrl}/checkout?error=payment_failed`);
+  mercadoPagoUrl += `&success=${encodeURIComponent(`${returnBaseUrl}/pedido-confirmado`)}`;
+  mercadoPagoUrl += `&failure=${encodeURIComponent(`${returnBaseUrl}/checkout?error=payment_failed`)}`;
   
-  const finalUrl = url.toString();
-  
-  // Log the URL for debugging
-  console.log('[MercadoPago] Final redirect URL:', finalUrl);
+  // Log da URL final para depuração
+  console.log('[MercadoPago] Final redirect URL:', mercadoPagoUrl);
   
   logCheckoutEvent(
     CheckoutEvent.PAYMENT_PROCESSING, 
     LogLevel.INFO,
-    `Redirecting to MercadoPago Test Environment: ${finalUrl}`,
+    `Redirecionando para o ambiente de testes do MercadoPago: ${mercadoPagoUrl}`,
     { preferenceId, paymentMethod: normalizedPaymentMethod, testMode: true }
   );
   
-  // IMPORTANT FIX: Use a small timeout to ensure any UI updates are completed before redirect
-  setTimeout(() => {
-    // Direct window location change for reliability
-    window.location.href = finalUrl;
-  }, 100);
+  // SOLUÇÃO DO PROBLEMA: Usar location.assign em vez de location.href para garantir o redirecionamento
+  try {
+    // Usar window.open em uma nova aba para facilitar a depuração
+    // window.open(mercadoPagoUrl, '_blank');
+    
+    // Solução mais robusta: usar location.assign com intervalo para garantir que a UI seja atualizada primeiro
+    setTimeout(() => {
+      window.location.assign(mercadoPagoUrl);
+      
+      // Backup: se depois de 2 segundos ainda estivermos na mesma página, tentar outro método
+      setTimeout(() => {
+        if (document.location.pathname.includes('checkout')) {
+          console.log('[MercadoPago] Redirecionamento falhou, tentando método alternativo...');
+          window.location.href = mercadoPagoUrl;
+        }
+      }, 2000);
+    }, 100);
+  } catch (error) {
+    console.error('[MercadoPago] Erro ao redirecionar:', error);
+    sonnerToast.error("Erro ao redirecionar para o Mercado Pago. Tente novamente.");
+    
+    // Método de fallback direto em caso de erro
+    window.location.replace(mercadoPagoUrl);
+  }
 };
 
 /**
@@ -75,7 +91,6 @@ export const ensureTestEnvironment = (url: string): string => {
   const urlObj = new URL(url);
   
   urlObj.searchParams.set('test', 'true');
-  urlObj.searchParams.set('sandbox', 'true');
   
   return urlObj.toString();
 };
