@@ -126,12 +126,14 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     try {
       console.log(`[MercadoPago] Iniciando checkout com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
       
+      // CRITICAL FIX: Forçar redirecionamento direto com URL completa incluindo método de pagamento
       let checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       
-      // Adicionar payment_method_id para PIX
+      // Adicionar payment_method_id para PIX se necessário
       if (paymentMethod === 'pix') {
         checkoutUrl += '&payment_method_id=pix';
-        console.log('[MercadoPago] URL para PIX:', checkoutUrl);
+      } else {
+        checkoutUrl += '&payment_method_id=credit_card';
       }
       
       console.log('[MercadoPago] URL de redirecionamento:', checkoutUrl);
@@ -139,8 +141,21 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       // Force page redirect with delay to ensure toast is visible
       sonnerToast.success('Redirecionando para Mercado Pago...');
       
+      // CRITICAL FIX: Tentar diferentes métodos de redirecionamento para garantir compatibilidade
       setTimeout(() => {
-        window.location.href = checkoutUrl;
+        try {
+          // Método 1: window.location.assign
+          window.location.assign(checkoutUrl);
+          
+          // Método 2 (fallback): se o assign não funcionar, o browser tentará href
+          setTimeout(() => {
+            window.location.href = checkoutUrl;
+          }, 200);
+        } catch (e) {
+          console.error('[MercadoPago] Erro ao redirecionar:', e);
+          // Último recurso
+          window.open(checkoutUrl, '_self');
+        }
       }, 800);
       
       return { success: true };

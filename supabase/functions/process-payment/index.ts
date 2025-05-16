@@ -90,9 +90,9 @@ serve(async (req) => {
         email: userData.email,
       },
       back_urls: {
-        success: `${returnUrl}/pedido-confirmado?id=${pedidoId}&status=approved`,
-        failure: `${returnUrl}/pedido-confirmado?id=${pedidoId}&status=rejected`,
-        pending: `${returnUrl}/pedido-confirmado?id=${pedidoId}&status=pending`
+        success: `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=approved`,
+        failure: `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=rejected`,
+        pending: `${returnUrl || window.location.origin}/pedido-confirmado?id=${pedidoId}&status=pending`
       },
       auto_return: "approved",
       external_reference: pedidoId,
@@ -146,6 +146,8 @@ serve(async (req) => {
         initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
         if (paymentMethod === 'pix') {
           initPoint += '&payment_method_id=pix';
+        } else {
+          initPoint += '&payment_method_id=credit_card';
         }
       }
     } else {
@@ -154,6 +156,8 @@ serve(async (req) => {
       initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       if (paymentMethod === 'pix') {
         initPoint += '&payment_method_id=pix';
+      } else {
+        initPoint += '&payment_method_id=credit_card';
       }
     }
     
@@ -168,7 +172,8 @@ serve(async (req) => {
           payment_status: 'pending',
           payment_method: paymentMethod,
           items: items.length,
-          test: true
+          test: true,
+          timestamp: new Date().toISOString()
         }
       })
       .eq('id', pedidoId);

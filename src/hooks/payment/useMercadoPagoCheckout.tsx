@@ -21,6 +21,11 @@ export const useMercadoPagoCheckout = () => {
       isError,
       publicKey: MP_PUBLIC_KEY ? MP_PUBLIC_KEY.substring(0, 10) + '...' : 'missing'
     });
+    
+    // Verificação extra quando o SDK estiver carregado
+    if (isSDKLoaded) {
+      console.log("[MercadoPago] SDK carregado com sucesso!");
+    }
   }, [isSDKLoaded, isError]);
 
   // CRITICAL FIX: Handle redirection to MercadoPago checkout with explicit payment method
@@ -31,13 +36,13 @@ export const useMercadoPagoCheckout = () => {
     }
     
     // Critical logging for payment method handling
-    console.log(`[MercadoPago] Redirecting with payment method: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
+    console.log(`[MercadoPago] Iniciando redirecionamento com método: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
     
     // Store attempted payment info for debugging
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Starting redirection to Mercado Pago with method ${paymentMethod}`,
+      `Iniciando redirecionamento para Mercado Pago com método ${paymentMethod}`,
       { preferenceId, paymentMethod }
     );
     
