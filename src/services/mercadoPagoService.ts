@@ -25,55 +25,45 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
   localStorage.setItem('payment_method_selected', normalizedPaymentMethod);
   localStorage.setItem('payment_preference_id', preferenceId);
   
-  // CORREÇÃO: Construção da URL de forma mais direta e força o modo de teste
-  let mercadoPagoUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`;
-  
-  // Adicionar parâmetro de método de pagamento
-  if (normalizedPaymentMethod === 'pix') {
-    mercadoPagoUrl += '&payment_method_id=pix';
-  }
-  
-  // Adicionar parâmetros de teste obrigatórios
-  mercadoPagoUrl += '&test=true';
-  
-  // Adicionar URLs de sucesso e falha
-  const returnBaseUrl = window.location.origin;
-  mercadoPagoUrl += `&success=${encodeURIComponent(`${returnBaseUrl}/pedido-confirmado`)}`;
-  mercadoPagoUrl += `&failure=${encodeURIComponent(`${returnBaseUrl}/checkout?error=payment_failed`)}`;
-  
-  // Log da URL final para depuração
-  console.log('[MercadoPago] Final redirect URL:', mercadoPagoUrl);
+  // CORREÇÃO CRÍTICA: URL direta para produção do Mercado Pago sem parâmetros extras
+  // Isso é uma solução para os problemas de redirecionamento
+  const mercadoPagoUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`;
   
   logCheckoutEvent(
     CheckoutEvent.PAYMENT_PROCESSING, 
     LogLevel.INFO,
-    `Redirecionando para o ambiente de testes do MercadoPago: ${mercadoPagoUrl}`,
-    { preferenceId, paymentMethod: normalizedPaymentMethod, testMode: true }
+    `Redirecionando para o MercadoPago: ${mercadoPagoUrl}`,
+    { preferenceId, paymentMethod: normalizedPaymentMethod }
   );
   
-  // SOLUÇÃO DO PROBLEMA: Usar location.assign em vez de location.href para garantir o redirecionamento
+  // SOLUÇÃO: Usar window.location.href diretamente com um atraso mínimo
   try {
-    // Usar window.open em uma nova aba para facilitar a depuração
-    // window.open(mercadoPagoUrl, '_blank');
+    console.log('[MercadoPago] Redirecionando para:', mercadoPagoUrl);
     
-    // Solução mais robusta: usar location.assign com intervalo para garantir que a UI seja atualizada primeiro
+    // Mostrar toast antes do redirecionamento
+    sonnerToast.success('Redirecionando para o Mercado Pago...', {
+      duration: 3000
+    });
+    
+    // Solução de contorno: Usar setTimeout com window.location.href diretamente
     setTimeout(() => {
-      window.location.assign(mercadoPagoUrl);
+      window.location.href = mercadoPagoUrl;
       
-      // Backup: se depois de 2 segundos ainda estivermos na mesma página, tentar outro método
+      // Verificação de backup para garantir que o redirecionamento aconteça
       setTimeout(() => {
-        if (document.location.pathname.includes('checkout')) {
-          console.log('[MercadoPago] Redirecionamento falhou, tentando método alternativo...');
-          window.location.href = mercadoPagoUrl;
+        if (document.location.href.includes('checkout')) {
+          console.log('[MercadoPago] Redirecionamento falhou, tentando via location.replace');
+          window.location.replace(mercadoPagoUrl);
         }
-      }, 2000);
-    }, 100);
+      }, 1500);
+      
+    }, 800);
   } catch (error) {
     console.error('[MercadoPago] Erro ao redirecionar:', error);
     sonnerToast.error("Erro ao redirecionar para o Mercado Pago. Tente novamente.");
     
-    // Método de fallback direto em caso de erro
-    window.location.replace(mercadoPagoUrl);
+    // Último recurso: redirecionamento direto
+    window.open(mercadoPagoUrl, '_self');
   }
 };
 

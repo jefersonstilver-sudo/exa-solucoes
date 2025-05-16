@@ -32,7 +32,7 @@ export const useMercadoPagoCheckout = () => {
     
     // Mostrar toast antes do redirecionamento
     sonnerToast.success('Redirecionando para o Mercado Pago...', {
-      duration: 5000 // Toast mais longo para garantir visibilidade
+      duration: 3000 // Toast mais longo para garantir visibilidade
     });
     
     // Log do evento para rastreamento
@@ -43,22 +43,8 @@ export const useMercadoPagoCheckout = () => {
       { preferenceId, paymentMethod }
     );
     
-    try {
-      // SOLUÇÃO: Usar a implementação de redirecionamento melhorada
-      handleMercadoPagoRedirect(preferenceId, paymentMethod);
-      
-      // Defina um temporizador para verificar se ainda estamos na mesma página após alguns segundos
-      setTimeout(() => {
-        if (document.location.pathname.includes('checkout')) {
-          console.warn('[MercadoPago] Possível falha no redirecionamento. Tentando novamente...');
-          handleMercadoPagoRedirect(preferenceId, paymentMethod);
-        }
-      }, 3000);
-    } catch (error) {
-      console.error('[MercadoPago] Erro ao redirecionar:', error);
-      setIsCreatingPayment(false);
-      sonnerToast.error("Erro ao redirecionar para o Mercado Pago");
-    }
+    // CORREÇÃO CRÍTICA: Usar método simplificado de redirecionamento
+    handleMercadoPagoRedirect(preferenceId, paymentMethod);
   };
 
   return {
