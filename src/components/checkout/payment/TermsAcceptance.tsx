@@ -1,5 +1,5 @@
 
-import { ReactNode } from "react";
+import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
@@ -10,28 +10,25 @@ interface TermsAcceptanceProps {
 
 const TermsAcceptance = ({ acceptTerms, setAcceptTerms }: TermsAcceptanceProps) => {
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-3">
-        <Checkbox 
-          id="terms" 
-          checked={acceptTerms} 
-          onCheckedChange={(checked) => setAcceptTerms(!!checked)} 
-          className="mt-1"
-        />
-        <div>
-          <Label 
-            htmlFor="terms" 
-            className="font-medium cursor-pointer"
-          >
-            Aceito os termos e condições
-          </Label>
-          <p className="text-sm text-muted-foreground mt-1">
-            Ao confirmar este pedido, concordo com os <a href="#" className="text-indexa-purple hover:underline">Termos de Uso</a> e <a href="#" className="text-indexa-purple hover:underline">Política de Privacidade</a> da Indexa. 
-            Estou ciente de que meu pagamento será processado pelo Mercado Pago e que não será possível cancelar campanhas ativas.
-          </p>
-        </div>
-      </div>
-    </div>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
+      className="flex items-start space-x-3"
+    >
+      <Checkbox 
+        id="terms" 
+        checked={acceptTerms} 
+        onCheckedChange={(checked) => setAcceptTerms(!!checked)}
+        className="h-5 w-5 mt-0.5 border-gray-300 text-[#00FFAB] focus:ring-[#00FFAB]"
+      />
+      <Label 
+        htmlFor="terms" 
+        className="text-sm text-gray-600 cursor-pointer"
+      >
+        Li e concordo com os <a href="/termos" className="text-[#1E1B4B] hover:underline">Termos de Uso</a> e a <a href="/privacidade" className="text-[#1E1B4B] hover:underline">Política de Privacidade</a>.
+      </Label>
+    </motion.div>
   );
 };
 

@@ -82,7 +82,12 @@ const CheckoutProgress: React.FC<CheckoutProgressProps> = ({ currentStep }) => {
         ))}
       </div>
       
-      <div className="relative flex items-center justify-between mt-3 px-6">
+      {/* Step indicator text */}
+      <div className="text-center mt-1 mb-3">
+        <span className="text-xs text-gray-500">Etapa {currentStep + 1} de {steps.length}</span>
+      </div>
+      
+      <div className="relative flex items-center justify-between mt-1 px-6">
         {/* Background bar */}
         <div className="absolute w-full h-1.5 bg-gray-200 rounded-full"></div>
         

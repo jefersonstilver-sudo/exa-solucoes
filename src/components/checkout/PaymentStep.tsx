@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { 
   CreditCardIcon,
   ExternalLink,
-  AlertTriangle,
   Lock
 } from "lucide-react";
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from "@/services/checkoutDebugService";
@@ -60,7 +59,7 @@ const PaymentStep = ({
       <div className="space-y-2">
         <h2 className="text-xl font-semibold flex items-center">
           <CreditCardIcon className="mr-2 h-5 w-5 text-indexa-purple" />
-          Forma de pagamento
+          Como você deseja pagar sua campanha?
         </h2>
         <p className="text-sm text-muted-foreground">
           Escolha como deseja pagar sua campanha
@@ -73,39 +72,14 @@ const PaymentStep = ({
         totalPrice={totalPrice} 
       />
 
-      {/* Ambiente de teste do Mercado Pago - Destacado */}
-      <PaymentInfoBox 
-        variant="warning" 
-        icon={<AlertTriangle />} 
-        title="Ambiente de testes do Mercado Pago"
-        highlighted={true}
-      >
-        <p className="font-medium text-yellow-800">
-          Este é um ambiente de demonstração com o Mercado Pago em modo de teste. 
-          Você pode testar a experiência de checkout completa sem efetuar pagamentos reais.
-          As transações aparecerão na sua conta do Mercado Pago como testes.
-        </p>
-        <p className="mt-3 font-medium border-t border-yellow-200 pt-2">
-          Para testar cartões, use:
-          <ul className="list-disc pl-5 mt-1">
-            <li>Mastercard: 5031 4332 1540 6351</li>
-            <li>Visa: 4235 6477 2802 5682</li>
-            <li>PIX: Qualquer dado gera um QR Code de teste</li>
-          </ul>
-        </p>
-      </PaymentInfoBox>
-
-      {/* Redirect Information */}
+      {/* Redirect Information - Clean and minimal */}
       <PaymentInfoBox 
         variant="info" 
-        icon={<ExternalLink />} 
-        title="Redirecionamento para o Mercado Pago"
+        icon={<ExternalLink className="h-4 w-4" />} 
+        title="Você será redirecionado ao ambiente seguro do Mercado Pago para finalizar sua compra."
       >
-        <p>
-          Ao clicar em "Confirmar e pagar", você será redirecionado para a plataforma segura 
-          do Mercado Pago para finalizar seu pagamento. Após concluir, você retornará 
-          automaticamente para a página de confirmação do seu pedido, onde poderá fazer 
-          upload do seu vídeo.
+        <p className="text-sm text-blue-600 font-medium">
+          Após concluir o pagamento, você retornará automaticamente para continuar o processo.
         </p>
       </PaymentInfoBox>
 

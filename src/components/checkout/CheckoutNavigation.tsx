@@ -15,7 +15,7 @@ interface CheckoutNavigationProps {
   isPaymentStep: boolean;
   totalPrice?: number;
   isNavigating?: boolean;
-  paymentMethod?: string; // Added missing prop
+  paymentMethod?: string;
 }
 
 const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
@@ -27,7 +27,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isPaymentStep,
   totalPrice = 0,
   isNavigating = false,
-  paymentMethod // Added missing prop
+  paymentMethod
 }) => {
   // Valor combinado para determinar se o botão deve estar desabilitado
   const isDisabled = !isNextEnabled || isCreatingPayment || isNavigating;
@@ -54,7 +54,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       isCreatingPayment,
       isNavigating,
       isPaymentStep,
-      paymentMethod // Log payment method for debugging
+      paymentMethod
     });
     
     // Se estiver desabilitado, não fazer nada
@@ -73,7 +73,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
       `Botão de próximo passo clicado ${isPaymentStep ? '(pagamento)' : ''}`,
-      { isPaymentStep, totalPrice, paymentMethod } // Include payment method in log
+      { isPaymentStep, totalPrice, paymentMethod }
     );
     
     // Chamar o manipulador de evento
@@ -133,10 +133,11 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
         className={`
           py-6 px-8 flex items-center space-x-2
           ${isPaymentStep 
-            ? 'bg-green-600 hover:bg-green-700 focus:ring-green-600' 
+            ? 'bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#1E1B4B] font-bold shadow-lg shadow-[#00FFAB]/20 focus:ring-[#00FFAB]' 
             : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'}
           ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}
           focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all
+          hover:scale-[1.02] active:scale-[0.98] transform duration-200
         `}
         type="button"
         data-testid="checkout-next-button"
