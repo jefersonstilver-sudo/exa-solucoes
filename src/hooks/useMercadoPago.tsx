@@ -3,12 +3,6 @@ import { useState, useEffect } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-interface MercadoPagoCheckoutOptions {
-  preferenceId: string;
-  redirectMode?: boolean;
-  paymentMethod?: 'credit_card' | 'pix' | string;
-}
-
 interface UseMercadoPagoOptions {
   publicKey: string;
 }
@@ -16,7 +10,6 @@ interface UseMercadoPagoOptions {
 export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [mercadoPago, setMercadoPago] = useState<any>(null);
   const [loadAttempts, setLoadAttempts] = useState(0);
   
   useEffect(() => {
@@ -31,7 +24,6 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
     if (existingScript) {
       document.body.removeChild(existingScript);
       setIsSDKLoaded(false);
-      setMercadoPago(null);
     }
     
     // Log carregamento do SDK
@@ -80,7 +72,6 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
           locale: 'pt-BR'
         });
         
-        setMercadoPago(mp);
         setIsSDKLoaded(true);
         console.log('[MercadoPago] SDK inicializado corretamente');
         
@@ -137,52 +128,10 @@ export const useMercadoPago = ({ publicKey }: UseMercadoPagoOptions) => {
       }
     };
   }, [publicKey, loadAttempts]);
-
-  const createCheckout = ({ preferenceId, redirectMode = true, paymentMethod = 'credit_card' }: MercadoPagoCheckoutOptions) => {
-    if (!isSDKLoaded || !mercadoPago) {
-      console.error('[MercadoPago] SDK não carregado');
-      return { success: false, error: 'MercadoPago SDK não carregado' };
-    }
-    
-    try {
-      console.log(`[MercadoPago] Iniciando checkout com preferenceId: ${preferenceId}, modo: ${redirectMode ? 'redirect' : 'modal'}, método: ${paymentMethod || 'default'}`);
-      
-      // FIXED: Redirecionamento direto aperfeiçoado
-      const checkoutUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true&payment_method_id=${paymentMethod === 'pix' ? 'pix' : 'credit_card'}`;
-      
-      console.log('[MercadoPago] URL de redirecionamento:', checkoutUrl);
-      
-      // Force page redirect with safer approach
-      sonnerToast.success('Redirecionando para Mercado Pago...');
-      
-      // Use uma abordagem de redirecionamento mais confiável
-      setTimeout(() => {
-        try {
-          // Técnica mais confiável para redirecionamento
-          window.location.replace(checkoutUrl);
-          
-          // Fallback se o replace não funcionar
-          setTimeout(() => {
-            window.location.href = checkoutUrl;
-          }, 300);
-        } catch (e) {
-          console.error('[MercadoPago] Erro ao redirecionar:', e);
-          // Último recurso
-          window.open(checkoutUrl, '_self');
-        }
-      }, 500);
-      
-      return { success: true };
-    } catch (error) {
-      console.error('[MercadoPago] Erro ao criar checkout:', error);
-      return { success: false, error };
-    }
-  };
   
   return {
     isSDKLoaded,
     isError,
-    createCheckout,
     loadAttempts
   };
 };

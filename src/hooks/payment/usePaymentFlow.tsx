@@ -68,7 +68,7 @@ export const usePaymentFlow = () => {
     handleClearCart,
     paymentMethod = 'credit_card'
   }: ProcessPaymentOptions) => {
-    // Prevent double submission
+    // CRITICAL FIX: Prevent double submission
     if (processingPaymentRef.current) {
       console.log("[Payment Flow] Preventing duplicate payment request");
       return;
@@ -172,6 +172,10 @@ export const usePaymentFlow = () => {
         throw new Error('Invalid response from payment processor');
       }
       
+      // CRITICAL FIX: Store trace information in localStorage for debugging
+      localStorage.setItem('mp_redirect_timestamp', Date.now().toString());
+      localStorage.setItem('mp_preference_id', data.preference_id);
+      
       // Clear cart
       handleClearCart();
       
@@ -184,7 +188,7 @@ export const usePaymentFlow = () => {
       console.log(`[Payment Flow] Redirecting to checkout with ID: ${data.preference_id}, method: ${paymentMethodNormalized}`);
       sonnerToast.dismiss();
       
-      // Redirect to MercadoPago - with preference ID from the response
+      // CRITICAL FIX: Redirect to MercadoPago with preference ID from the response
       redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
       
     } catch (error: any) {

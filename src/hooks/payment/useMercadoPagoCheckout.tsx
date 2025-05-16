@@ -10,7 +10,7 @@ export const useMercadoPagoCheckout = () => {
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   
   // Initialize MercadoPago
-  const { isSDKLoaded, createCheckout, isError } = useMercadoPago({
+  const { isSDKLoaded, isError } = useMercadoPago({
     publicKey: MP_PUBLIC_KEY
   });
 
@@ -49,7 +49,7 @@ export const useMercadoPagoCheckout = () => {
     }
     
     try {
-      console.log(`[MercadoPago] Initiating direct redirect with method: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
+      console.log(`[MercadoPago] Iniciando redirecionamento direto com método: ${paymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
@@ -58,7 +58,7 @@ export const useMercadoPagoCheckout = () => {
         { preferenceId, paymentMethod }
       );
       
-      // Direct redirection - simplified approach
+      // CRITICAL FIX: Direct redirection using mercadoPagoService
       handleMercadoPagoRedirect(preferenceId, paymentMethod);
     } catch (error) {
       console.error("[MercadoPago] Critical error during redirect:", error);

@@ -26,16 +26,10 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     localStorage.setItem('payment_method_selected', normalizedPaymentMethod);
     localStorage.setItem('payment_preference_id', preferenceId);
     
-    // IMPORTANT FIX: Use the correct official URL for Mercado Pago redirects with explicit test mode parameters
-    const baseUrl = 'https://www.mercadopago.com.br/checkout/v1/redirect';
-    
-    // Build URL with parameters
-    const url = new URL(baseUrl);
-    url.searchParams.append('preference_id', preferenceId);
-    url.searchParams.append('test', 'true'); // Force test mode
-    url.searchParams.append('sandbox', 'true');
-    
-    // Always add payment_method_id parameter
+    // CRITICAL FIX: Build proper MercadoPago URL using their official documentation format
+    // This is the most reliable way to redirect to MercadoPago
+    const url = new URL('https://www.mercadopago.com.br/checkout/v1/redirect');
+    url.searchParams.append('preference-id', preferenceId);
     url.searchParams.append('payment_method_id', normalizedPaymentMethod);
     
     // Add success and failure URLs for proper redirection after payment
@@ -52,16 +46,17 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
       CheckoutEvent.PAYMENT_PROCESSING, 
       LogLevel.INFO,
       `Redirecionando para MercadoPago: ${finalUrl}`,
-      { preferenceId, paymentMethod: normalizedPaymentMethod, testMode: true }
+      { preferenceId, paymentMethod: normalizedPaymentMethod }
     );
     
     // Show toast before redirect
     sonnerToast.success("Redirecionando para pagamento...");
     
-    // CRITICAL FIX: Completely revamped redirection strategy with synchronous approach
-    console.log("[MercadoPago] Executando redirecionamento direto para:", finalUrl);
+    // CRITICAL FIX: Use window.location.replace for most reliable redirection
+    console.log("[MercadoPago] Executando redirecionamento direto");
     
-    // Direct approach with no setTimeout to avoid async issues
+    // Direct approach with immediate window location change
+    // This bypasses all the previous complex strategies that were causing issues
     window.location.href = finalUrl;
   } catch (error) {
     // Capture any error in the redirection process

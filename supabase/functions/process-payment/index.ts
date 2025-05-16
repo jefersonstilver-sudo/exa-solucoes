@@ -117,7 +117,7 @@ serve(async (req) => {
       }
     };
     
-    // Adicionar configurações específicas para PIX se for o método selecionado
+    // CRITICAL FIX: Set the correct MercadoPago redirect URL format according to their documentation
     if (paymentMethod === 'pix') {
       preference.payment_methods = {
         ...preference.payment_methods,
@@ -149,21 +149,19 @@ serve(async (req) => {
         console.error("Error creating MercadoPago preference:", mpError);
         // Falhar de forma elegante com valores simulados
         preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+        // CRITICAL FIX: Correctly format the test URL with proper parameters
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference-id=${preferenceId}&test=true`;
         if (paymentMethod === 'pix') {
           initPoint += '&payment_method_id=pix';
-        } else {
-          initPoint += '&payment_method_id=credit_card';
         }
       }
     } else {
       // Modo simulado (para desenvolvimento)
       preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+      // CRITICAL FIX: Correctly format the test URL with proper parameters
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference-id=${preferenceId}&test=true`;
       if (paymentMethod === 'pix') {
         initPoint += '&payment_method_id=pix';
-      } else {
-        initPoint += '&payment_method_id=credit_card';
       }
     }
     
