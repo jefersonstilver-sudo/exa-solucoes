@@ -5,6 +5,7 @@ import { Plan, PlanKey } from '@/types/checkout';
 import PlanCard from './PlanCard';
 import PlanHeader from './PlanHeader';
 import PlanProceedButton from './PlanProceedButton';
+import { formatCurrency } from '@/utils/priceUtils';
 
 interface PlanSelectorProps {
   selectedPlan: PlanKey;
@@ -12,6 +13,7 @@ interface PlanSelectorProps {
   plans: Record<number, Plan>;
   panelCount: number;
   onProceed?: () => void;
+  totalPrice?: number;
 }
 
 const PlanSelector: React.FC<PlanSelectorProps> = ({ 
@@ -19,7 +21,8 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   onSelectPlan, 
   plans,
   panelCount,
-  onProceed
+  onProceed,
+  totalPrice
 }) => {
   const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
   
@@ -94,6 +97,9 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         <PlanProceedButton 
           onProceed={onProceed}
           disabled={!selectedPlan}
+          selectedPlan={selectedPlan}
+          planData={selectedPlan ? plans[selectedPlan] : null}
+          totalPrice={totalPrice}
         />
       )}
     </div>

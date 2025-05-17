@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -153,6 +152,18 @@ const PlanSelection = () => {
     }
   }, [setSelectedPlan]);
   
+  // Calculate estimated total price based on cart and selected plan
+  const calculateEstimatedPrice = () => {
+    if (!selectedPlan || !cartItems.length) return 0;
+    
+    // Base calculation: number of panels * basic price per panel * months
+    const pricePerPanelPerMonth = 250; // Example base price
+    const totalPanels = cartItems.length;
+    const months = PLANS[selectedPlan].months;
+    
+    return totalPanels * pricePerPanelPerMonth * months;
+  };
+
   // Proceed to next step after plan selection
   const handleProceed = () => {
     console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
@@ -269,6 +280,7 @@ const PlanSelection = () => {
               plans={PLANS}
               panelCount={cartItems.length}
               onProceed={handleProceed}
+              totalPrice={calculateEstimatedPrice()}
             />
           </div>
           
