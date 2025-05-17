@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlanKey } from '@/types/checkout';
@@ -81,13 +82,22 @@ export const useCheckoutNavigation = ({
   };
 
   // Navigate to the next step or process payment with explicit payment method
-  const handleNextStep = (paymentMethod = 'credit_card') => {
+  const handleNextStep = async (paymentMethod = 'credit_card') => {
+    // ENHANCED DEBUG: Add detailed tracing for payment flow
+    console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: handleNextStep iniciado", {
+      step,
+      paymentMethod,
+      isNavigating,
+      isNextEnabled: isNextEnabled()
+    });
+  
     // CRITICAL FIX: Clear up payment method type
     const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
     // Critical debugging log
     console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, original: ${paymentMethod}, step: ${step}`);
     
+    // CRITICAL FIX: Prevent duplicate navigation
     if (isNavigating) {
       console.warn('[useCheckoutNavigation] Ignoring navigation - already in progress');
       return;
@@ -113,7 +123,7 @@ export const useCheckoutNavigation = ({
         }
         
         // Detailed logging
-        console.log(`[useCheckoutNavigation] Processing payment with method: ${normalizedPaymentMethod}`);
+        console.log(`[useCheckoutNavigation] PAYMENT FLOW TRACE: Processando pagamento com método: ${normalizedPaymentMethod}`);
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
@@ -125,22 +135,45 @@ export const useCheckoutNavigation = ({
         // Calculate price with coupon discount
         const totalPrice = calculateTotalPrice();
         
-        // CRITICAL FIX: Explicitly pass the payment method
-        createPayment({
-          totalPrice,
-          selectedPlan,
-          cartItems,
-          startDate,
-          endDate,
-          couponId,
-          acceptTerms,
-          unavailablePanels: [], // Ignoring validation for now to fix the bug
-          sessionUser,
-          handleClearCart,
-          paymentMethod: normalizedPaymentMethod // Ensure we pass the normalized method
-        });
+        // CRITICAL FIX: Explicitly await the payment promise
+        try {
+          console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: Chamando createPayment");
+          
+          // CRITICAL FIX: Add await here to properly handle the async operation
+          await createPayment({
+            totalPrice,
+            selectedPlan,
+            cartItems,
+            startDate,
+            endDate,
+            couponId,
+            acceptTerms,
+            unavailablePanels: [], // Ignoring validation for now to fix the bug
+            sessionUser,
+            handleClearCart,
+            paymentMethod: normalizedPaymentMethod // Ensure we pass the normalized method
+          });
+          
+          console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: createPayment concluído com sucesso");
+        } catch (error) {
+          console.error("[useCheckoutNavigation] PAYMENT FLOW TRACE: Erro em createPayment", error);
+          
+          // Explicitly log error details
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_ERROR,
+            LogLevel.ERROR,
+            `Erro ao processar pagamento: ${error}`,
+            { error: String(error), stack: error instanceof Error ? error.stack : 'unknown' }
+          );
+          
+          // Show error to user
+          sonnerToast.error("Erro ao processar pagamento. Tente novamente.");
+          
+          // Reset navigation state
+          setIsNavigating(false);
+          throw error; // Re-throw to allow upstream handling
+        }
         
-        // createPayment will handle the isNavigating state
         return;
       } 
       else {

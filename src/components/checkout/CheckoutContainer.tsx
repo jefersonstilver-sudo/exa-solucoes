@@ -73,8 +73,16 @@ const CheckoutContainer: React.FC = () => {
 
   // Handle next step with explicit payment method
   const handleNextWithPaymentMethod = () => {
-    // Critical debugging - log detailed information
-    console.log(`[CheckoutContainer] Próximo passo com método ${paymentMethod}, step atual: ${step}, isNextEnabled: ${isNextEnabled}`);
+    // ENHANCED DEBUG: Log all important state before proceeding
+    console.log(`[CheckoutContainer] PAYMENT DEBUG: Iniciando pagamento`, {
+      step,
+      paymentMethod,
+      acceptTerms,
+      isNextEnabled,
+      isCreatingPayment,
+      isNavigating,
+      totalPrice
+    });
     
     // Always pass payment method when in payment step
     if (step === STEPS.PAYMENT) {

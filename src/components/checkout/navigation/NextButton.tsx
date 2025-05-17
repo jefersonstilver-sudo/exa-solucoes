@@ -37,16 +37,18 @@ const NextButton: React.FC<NextButtonProps> = ({
   const handleNextClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Logging for diagnostics
-    console.log("Botão próximo clicado. Estado:", {
+    // ENHANCED DEBUGGING: Add extended logging to trace payment flow
+    console.log("[NextButton] PAYMENT FLOW TRACE: Botão clicado", { 
       isDisabled,
       isLoading,
       isPaymentStep,
       paymentMethod,
+      totalPrice,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       screen: `${window.innerWidth}x${window.innerHeight}`,
-      url: window.location.href
+      url: window.location.href,
+      referrer: document.referrer
     });
     
     // If disabled, do nothing
@@ -90,7 +92,7 @@ const NextButton: React.FC<NextButtonProps> = ({
       const btn = e.currentTarget as HTMLButtonElement;
       btn.disabled = true;
       setTimeout(() => {
-        if (btn && !btn.disabled) {
+        if (btn && document.body.contains(btn)) {
           btn.disabled = false;
         }
       }, 2000);
@@ -104,16 +106,22 @@ const NextButton: React.FC<NextButtonProps> = ({
       );
     }
     
-    // Call the event handler
+    // CRITICAL FIX: Use try-catch with proper error logging
     try {
+      console.log("[NextButton] PAYMENT FLOW TRACE: Chamando onClick handler");
       onClick(e);
-    } catch (error) {
-      console.error("Erro ao processar next:", error);
+      console.log("[NextButton] PAYMENT FLOW TRACE: onClick handler executado com sucesso");
+    } catch (error: any) {
+      console.error("PAYMENT ERROR - Erro ao processar next:", error);
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
         `Erro ao executar onClick: ${error}`,
-        { error: String(error), stack: error.stack }
+        { 
+          error: String(error), 
+          stack: error.stack, 
+          component: 'NextButton' 
+        }
       );
     }
   };

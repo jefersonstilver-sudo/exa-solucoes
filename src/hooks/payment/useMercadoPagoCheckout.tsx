@@ -8,7 +8,8 @@ import { MP_PUBLIC_KEY } from '@/services/mercadoPago';
 
 export const useMercadoPagoCheckout = () => {
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
-  const paymentInProgressRef = useRef(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const processingPaymentRef = useRef(false);
   
   // Initialize MercadoPago
   const { isSDKLoaded, isError } = useMercadoPago({
@@ -34,7 +35,10 @@ export const useMercadoPagoCheckout = () => {
       const timeout = setTimeout(() => {
         console.log("[MercadoPago] Safety timeout triggered - resetting payment state");
         setIsCreatingPayment(false);
-        paymentInProgressRef.current = false;
+        processingPaymentRef.current = false;
+        
+        // Show error message to user
+        sonnerToast.error("O processamento do pagamento está demorando muito. Tente novamente.");
       }, 30000); // Extended to 30 seconds for better reliability
       
       return () => clearTimeout(timeout);
@@ -83,27 +87,42 @@ export const useMercadoPagoCheckout = () => {
 
   // Direct redirection function with improved approach
   const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
+    // CRITICAL DEBUG: Add detailed tracing for redirect issues
+    console.log("[MercadoPago] PAYMENT FLOW TRACE - redirectToMercadoPago chamado", {
+      preferenceId: preferenceId ? preferenceId.substring(0, 10) + '...' : 'undefined',
+      paymentMethod,
+      isCreatingPayment,
+      isProcessingRef: processingPaymentRef.current
+    });
+
     // CRITICAL FIX: Validate preference ID
     if (!isValidPreferenceId(preferenceId)) {
       sonnerToast.error("Erro: ID de referência para pagamento inválido");
       console.error("[MercadoPago] Invalid preference ID:", preferenceId);
       setIsCreatingPayment(false);
-      paymentInProgressRef.current = false;
+      processingPaymentRef.current = false;
+      
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        "Invalid preference ID for MercadoPago redirect",
+        { preferenceId }
+      );
       return;
     }
     
     // Prevent double redirects
-    if (paymentInProgressRef.current) {
+    if (processingPaymentRef.current) {
       console.log("[MercadoPago] Redirect already in progress, skipping");
       return;
     }
     
-    paymentInProgressRef.current = true;
+    processingPaymentRef.current = true;
     
     try {
       // Log detailed information for debugging
-      console.log(`[MercadoPago] Redirecionando para checkout com preferenceId: ${preferenceId}`);
-      console.log(`[MercadoPago] Método de pagamento: ${paymentMethod}`);
+      console.log(`[MercadoPago] PAYMENT FLOW TRACE - Redirecionando para checkout com preferenceId: ${preferenceId}`);
+      console.log(`[MercadoPago] PAYMENT FLOW TRACE - Método de pagamento: ${paymentMethod}`);
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
@@ -125,9 +144,9 @@ export const useMercadoPagoCheckout = () => {
       setTimeout(() => {
         // We only reset if we're still on the same page
         if (document.visibilityState !== 'hidden') {
-          console.log("[MercadoPago] Redirection may have failed, resetting state");
+          console.log("[MercadoPago] PAYMENT FLOW TRACE - Redirecionamento pode ter falhado, resetando estado");
           setIsCreatingPayment(false);
-          paymentInProgressRef.current = false;
+          processingPaymentRef.current = false;
           
           // Attempt manual recovery - create a clickable button
           const redirectButton = document.createElement('a');
@@ -143,7 +162,11 @@ export const useMercadoPagoCheckout = () => {
           
           // Automatically click after a delay
           setTimeout(() => {
-            redirectButton.click();
+            try {
+              redirectButton.click();
+            } catch (e) {
+              console.error("[MercadoPago] Error auto-clicking backup button:", e);
+            }
           }, 1000);
           
           // Clean up after some time
@@ -159,7 +182,7 @@ export const useMercadoPagoCheckout = () => {
       console.error("[MercadoPago] Critical error during redirect:", error);
       sonnerToast.error("Erro ao redirecionar para pagamento. Tente novamente.");
       setIsCreatingPayment(false);
-      paymentInProgressRef.current = false;
+      processingPaymentRef.current = false;
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
@@ -173,6 +196,9 @@ export const useMercadoPagoCheckout = () => {
   return {
     isCreatingPayment,
     setIsCreatingPayment,
+    createdOrderId,
+    setCreatedOrderId,
+    processingPaymentRef,
     redirectToMercadoPago,
     isMercadoPagoReady: isSDKLoaded && !isError,
     isSDKLoaded,

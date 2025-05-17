@@ -8,9 +8,22 @@ import { toast as sonnerToast } from 'sonner';
  * @param paymentMethod Payment method (credit_card or pix)
  */
 export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 'credit_card'): void => {
+  // CRITICAL DEBUG: Add extended logging to trace redirection issues
+  console.log("[MercadoPago] REDIRECT TRACE - Iniciando redirecionamento", { 
+    preferenceId: preferenceId ? preferenceId.substring(0, 10) + '...' : 'undefined', 
+    paymentMethod,
+    timestamp: new Date().toISOString()
+  });
+
   if (!preferenceId) {
-    console.error('Preference ID is required for MercadoPago redirect');
+    console.error('CRITICAL ERROR: Preference ID is required for MercadoPago redirect');
     sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
+    logCheckoutEvent(
+      CheckoutEvent.PAYMENT_ERROR,
+      LogLevel.ERROR,
+      "Tentativa de redirecionamento sem preference_id",
+      { timestamp: new Date().toISOString() }
+    );
     return;
   }
   
@@ -27,7 +40,7 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
     // Log payment attempt for diagnostics
-    console.log(`[MercadoPago] Iniciando redirecionamento com método: ${normalizedPaymentMethod}, preferenceId: ${preferenceId.substring(0, 10)}...`);
+    console.log(`[MercadoPago] REDIRECT TRACE - URL building: método=${normalizedPaymentMethod}, preferenceId=${preferenceId.substring(0, 10)}...`);
     
     // Store validation state in local storage for potential recovery
     localStorage.setItem('payment_attempt_timestamp', Date.now().toString());
@@ -56,13 +69,13 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     
     const finalUrl = url.toString();
     
-    // CRITICAL FIX: Show a visual indication that redirection is happening
+    // ENHANCED DEBUG: Show more visible redirection indication
     sonnerToast.loading("Redirecionando para o portal de pagamento...", {
       duration: 5000
     });
     
     // Log the URL for debugging
-    console.log('[MercadoPago] URL final de redirecionamento:', finalUrl);
+    console.log('[MercadoPago] REDIRECT TRACE - URL final de redirecionamento:', finalUrl);
     
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING, 
@@ -72,34 +85,84 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     );
     
     // ULTRA-FORCE APPROACH: Combine multiple methods to ensure at least one works
+    console.log("[MercadoPago] REDIRECT TRACE - Executando redirecionamento agora");
     
     // Method 1: Use location.replace for most reliable redirect
     window.location.replace(finalUrl);
     
+    // ENHANCED: Create a visible backup link for manual redirection
+    const backupLink = document.createElement('a');
+    backupLink.href = finalUrl;
+    backupLink.target = '_blank';
+    backupLink.style.position = 'fixed';
+    backupLink.style.bottom = '20px';
+    backupLink.style.right = '20px';
+    backupLink.style.padding = '10px 15px';
+    backupLink.style.backgroundColor = '#00FFAB';
+    backupLink.style.color = '#1E1B4B';
+    backupLink.style.fontWeight = 'bold';
+    backupLink.style.borderRadius = '4px';
+    backupLink.style.zIndex = '9999';
+    backupLink.style.boxShadow = '0 2px 8px rgba(0, 255, 171, 0.5)';
+    backupLink.style.display = 'none'; // Hidden initially
+    backupLink.textContent = 'Clique para ir para o pagamento';
+    document.body.appendChild(backupLink);
+    
     // Method 2: Fall back to location.href after a small delay
     setTimeout(() => {
       if (document.visibilityState !== 'hidden') {
-        console.log('[MercadoPago] Fallback: usando window.location.href');
+        console.log('[MercadoPago] REDIRECT TRACE - Fallback 1: usando window.location.href');
         window.location.href = finalUrl;
+        
+        // Show backup link after first fallback
+        backupLink.style.display = 'block';
       }
-    }, 300);
+    }, 1000);
     
     // Method 3: Open in new window as final fallback
     setTimeout(() => {
       if (document.visibilityState !== 'hidden') {
-        console.log('[MercadoPago] Double-fallback: abrindo em nova janela');
-        window.open(finalUrl, '_blank');
+        console.log('[MercadoPago] REDIRECT TRACE - Fallback 2: abrindo em nova janela');
+        
+        // Attempt to open in new window
+        const newWindow = window.open(finalUrl, '_blank');
+        
+        // If popup blocked, make the backup link more visible
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.log('[MercadoPago] REDIRECT TRACE - Popup bloqueado, destacando link de backup');
+          backupLink.style.backgroundColor = '#FF0000';
+          backupLink.style.color = 'white';
+          backupLink.style.animation = 'pulse 1s infinite';
+          backupLink.style.padding = '15px 20px';
+          backupLink.textContent = '⚠️ CLIQUE AQUI PARA PAGAR ⚠️';
+          
+          // Add pulse animation
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes pulse {
+              0% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+              100% { transform: scale(1); }
+            }
+          `;
+          document.head.appendChild(style);
+        }
       }
-    }, 600);
+    }, 2000);
     
     // Reset the redirection flag after a generous timeout
     setTimeout(() => {
       window.sessionStorage.removeItem(hasRedirectedKey);
-    }, 10000);
+      
+      // Remove backup link if still present
+      if (document.body.contains(backupLink)) {
+        document.body.removeChild(backupLink);
+      }
+    }, 30000);
     
   } catch (error) {
     // Capture any error in the redirection process
-    console.error("[MercadoPago] Erro crítico durante redirecionamento:", error);
+    console.error("[MercadoPago] REDIRECT TRACE - Erro crítico durante redirecionamento:", error);
     window.sessionStorage.removeItem('mp_redirect_in_progress');
     sonnerToast.error("Erro ao redirecionar para pagamento. Tente novamente.");
     
