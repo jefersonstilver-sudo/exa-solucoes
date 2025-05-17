@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
-// CORS headers
+// CORS headers for browser requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,29 +17,52 @@ serve(async (req) => {
   }
   
   try {
-    // Create Supabase client
+    // Create Supabase client with admin privileges
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Parse webhook data
+    // Get MercadoPago secret for webhook validation
+    const mpWebhookSecret = Deno.env.get('MERCADO_PAGO_WEBHOOK_SECRET') || '';
+    
+    // Extract the data from webhook
     const data = await req.json();
     
-    // Log webhook for debugging
-    await logWebhook(supabase, data, 'mercadopago_webhook');
+    // Log webhook data immediately for debugging
+    const { error: logError } = await supabase
+      .from('webhook_logs')
+      .insert({
+        origem: 'mercadopago_webhook',
+        status: 'received',
+        payload: data,
+        recebido_em: new Date().toISOString()
+      });
     
-    // Process payment notification if applicable
-    if (data.action === 'payment.updated' || data.action === 'payment.created') {
-      await processPayment(supabase, data);
+    if (logError) {
+      console.error("Error logging webhook:", logError);
     }
     
+    // Validate the webhook data
+    if (!data.action || !data.data || !data.data.id) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook payload' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+    
+    // Process the payment if it's a payment event
+    if (data.action === 'payment.updated' || data.action === 'payment.created') {
+      await processPayment(supabase, data.data.id);
+    }
+    
+    // Return success response
     return new Response(
       JSON.stringify({ success: true }),
       {
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders,
-        },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     );
   } catch (error) {
@@ -49,143 +72,128 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       {
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders,
-        },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     );
   }
 });
 
-// Log webhook to database
-async function logWebhook(supabase, payload, origem = 'mercadopago_webhook') {
+// Process the payment notification
+async function processPayment(supabase, paymentId) {
   try {
-    await supabase
-      .from('webhook_logs')
-      .insert({
-        origem,
-        status: 'received',
-        payload,
-        recebido_em: new Date().toISOString()
-      });
-  } catch (error) {
-    console.error('Error logging webhook:', error);
-  }
-}
-
-// Process payment
-async function processPayment(supabase, webhookData) {
-  try {
-    // Fetch the MP public access token to get payment details
-    const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
+    // Get MercadoPago access token from environment variables
+    const mercadoPagoToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
     
-    // Extract data from webhook
-    const paymentId = webhookData.data?.id;
-    if (!paymentId) {
-      throw new Error('Payment ID not found in webhook data');
+    if (!mercadoPagoToken) {
+      throw new Error('MercadoPago access token not configured');
     }
     
-    // In a real implementation, you'd fetch payment details from MercadoPago API
-    // For now, we'll simulate with data from the webhook
-    let paymentStatus = 'pending';
-    let externalReference = '';
-    
-    if (webhookData.data && webhookData.data.id) {
-      // Try to get external reference from webhook data or fetch from MP API
-      if (MP_ACCESS_TOKEN) {
-        // Here would be the code to fetch from MercadoPago API
-        // For simulation, we'll use values from webhook data if available
-        if (webhookData.metadata?.external_reference) {
-          externalReference = webhookData.metadata.external_reference;
-        }
-        
-        if (webhookData.status) {
-          paymentStatus = webhookData.status;
-        }
-      } else {
-        // Simulate for development
-        externalReference = `test-order-${Date.now()}`;
-        paymentStatus = 'approved'; // Default to approved for testing
+    // Fetch payment details from MercadoPago
+    const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: {
+        "Authorization": `Bearer ${mercadoPagoToken}`
       }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch payment details: ${response.statusText}`);
     }
     
-    // If no external reference found, try to find the pedido by payment_preference_id
-    if (!externalReference) {
-      const { data: pedidos, error } = await supabase
-        .from('pedidos')
-        .select('*')
-        .like('log_pagamento->payment_preference_id', `%${paymentId}%`)
-        .limit(1);
-        
-      if (!error && pedidos?.length > 0) {
-        externalReference = pedidos[0].id;
-      } else {
-        throw new Error('Unable to find related order for payment');
-      }
+    const paymentData = await response.json();
+    
+    // Extract external reference (contains pedido ID)
+    const externalReference = paymentData.external_reference;
+    if (!externalReference || !externalReference.includes('CLIENTE')) {
+      throw new Error(`Invalid external reference: ${externalReference}`);
     }
     
-    // Find the pedido using external reference (pedido ID)
-    const { data: pedidos, error } = await supabase
+    // Parse pedidoId from external reference format CLIENTE{pedido_id}/{user_id}
+    const pedidoIdMatch = externalReference.match(/CLIENTE([^/]+)\//);
+    if (!pedidoIdMatch || !pedidoIdMatch[1]) {
+      throw new Error(`Cannot extract pedido ID from reference: ${externalReference}`);
+    }
+    
+    const pedidoId = pedidoIdMatch[1];
+    
+    // Get payment status
+    const paymentStatus = paymentData.status;
+    
+    // Update pedido status based on payment status
+    let pedidoStatus;
+    switch (paymentStatus) {
+      case 'approved':
+        pedidoStatus = 'pago';
+        break;
+      case 'rejected':
+        pedidoStatus = 'cancelado';
+        break;
+      case 'pending':
+      case 'in_process':
+        pedidoStatus = 'pendente';
+        break;
+      default:
+        pedidoStatus = 'pendente';
+    }
+    
+    // Find the pedido
+    const { data: pedidos, error: findError } = await supabase
       .from('pedidos')
       .select('*')
-      .eq('id', externalReference)
+      .eq('id', pedidoId)
       .limit(1);
-      
-    if (error) {
-      throw error;
+    
+    if (findError) {
+      throw findError;
     }
     
     if (!pedidos || pedidos.length === 0) {
-      throw new Error('No pedido found for external reference: ' + externalReference);
+      throw new Error(`No pedido found with ID: ${pedidoId}`);
     }
     
     const pedido = pedidos[0];
     
-    // Update pedido status based on payment status
-    let pedidoStatus = 'pendente';
-    if (paymentStatus === 'approved') {
-      pedidoStatus = 'pago';
-    } else if (paymentStatus === 'rejected') {
-      pedidoStatus = 'cancelado';
-    }
-    
-    // Update the pedido with payment details
-    const paymentUpdate = {
-      status: pedidoStatus,
-      log_pagamento: {
-        ...(pedido.log_pagamento || {}),
-        payment_id: paymentId,
-        payment_status: paymentStatus,
-        payment_updated_at: new Date().toISOString()
-      }
-    };
-    
+    // Update pedido payment information
     const { error: updateError } = await supabase
       .from('pedidos')
-      .update(paymentUpdate)
-      .eq('id', pedido.id);
+      .update({
+        status: pedidoStatus,
+        log_pagamento: {
+          ...(pedido.log_pagamento || {}),
+          payment_id: paymentData.id,
+          payment_status: paymentStatus,
+          payment_updated_at: new Date().toISOString(),
+          pix_data: {
+            ...(pedido.log_pagamento?.pix_data || {}),
+            status: paymentStatus,
+            status_detail: paymentData.status_detail
+          }
+        }
+      })
+      .eq('id', pedidoId);
       
     if (updateError) {
       throw updateError;
     }
     
-    // If payment approved, create campaigns
+    // Log the payment update
+    await supabase
+      .from('webhook_logs')
+      .insert({
+        origem: 'payment_status_update',
+        status: 'success',
+        payload: {
+          pedido_id: pedidoId,
+          payment_id: paymentData.id,
+          old_status: pedido.log_pagamento?.payment_status || 'unknown',
+          new_status: paymentStatus,
+          pedido_status: pedidoStatus
+        }
+      });
+    
+    // If payment is approved, create campaigns
     if (paymentStatus === 'approved') {
       await createCampaignsFromPedido(supabase, pedido);
     }
-    
-    // Log the action
-    await logUserAction(
-      supabase,
-      pedido.client_id,
-      'payment_processed',
-      { 
-        pedido_id: pedido.id, 
-        payment_id: paymentId,
-        payment_status: paymentStatus
-      }
-    );
     
     return true;
   } catch (error) {
@@ -210,11 +218,11 @@ async function createCampaignsFromPedido(supabase, pedido) {
       throw videosError;
     }
     
-    // Determine if client has an active video
+    // Determine video status
     const videoId = videos && videos.length > 0 ? videos[0].id : null;
     const campaignStatus = videoId ? 'pendente' : 'aguardando_video';
     
-    // Filter valid panel IDs
+    // Ensure all panel IDs are valid UUIDs
     const validPanelIds = pedido.lista_paineis.filter(id => 
       id && typeof id === 'string' && id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
     );
@@ -236,7 +244,6 @@ async function createCampaignsFromPedido(supabase, pedido) {
       ultima_atualizacao: new Date().toISOString()
     }));
     
-    // Insert campaigns
     const { data: campaigns, error: campaignsError } = await supabase
       .from('campanhas')
       .insert(campaignInserts)
@@ -247,39 +254,34 @@ async function createCampaignsFromPedido(supabase, pedido) {
     }
     
     // Log the action
-    await logUserAction(
-      supabase,
-      pedido.client_id,
-      'campaigns_created_from_pedido',
-      { 
-        pedido_id: pedido.id, 
-        campaign_ids: campaigns.map(c => c.id) 
-      }
-    );
+    await supabase
+      .from('webhook_logs')
+      .insert({
+        origem: 'campaigns_creation',
+        status: 'success',
+        payload: {
+          pedido_id: pedido.id,
+          client_id: pedido.client_id,
+          campaign_ids: campaigns.map(c => c.id),
+          campaign_count: campaigns.length
+        }
+      });
     
     return campaigns;
   } catch (error) {
     console.error('Error creating campaigns from pedido:', error);
-    throw error;
-  }
-}
-
-// Log user action
-async function logUserAction(supabase, userId, action, details) {
-  try {
+    
+    // Log the error but don't throw to prevent webhook failure
     await supabase
       .from('webhook_logs')
       .insert({
-        origem: 'user_action',
-        status: 'success',
+        origem: 'campaigns_creation_error',
+        status: 'error',
         payload: {
-          user_id: userId,
-          action,
-          details,
-          timestamp: new Date().toISOString()
+          pedido_id: pedido.id,
+          client_id: pedido.client_id,
+          error: error.message
         }
       });
-  } catch (error) {
-    console.error('Error logging user action:', error);
   }
 }

@@ -28,7 +28,13 @@ const NextButton: React.FC<NextButtonProps> = ({
       return "Processando...";
     }
     if (isPaymentStep) {
-      return `Confirmar e pagar ${formatCurrency(totalPrice)}`;
+      // Apply 5% discount for PIX payments
+      const displayPrice = paymentMethod === 'pix' 
+        ? totalPrice * 0.95 // 5% off
+        : totalPrice;
+        
+      const methodText = paymentMethod === 'pix' ? 'PIX' : 'cartão';
+      return `Pagar com ${methodText} ${formatCurrency(displayPrice)}`;
     }
     return "Continuar";
   };
@@ -125,6 +131,18 @@ const NextButton: React.FC<NextButtonProps> = ({
       );
     }
   };
+  
+  // Choose button color based on payment method
+  const getButtonColor = () => {
+    if (!isPaymentStep) return 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90';
+    
+    return paymentMethod === 'pix' 
+      ? 'bg-[#32BCAD] hover:bg-[#32BCAD]/90 text-white font-bold shadow-lg shadow-[#32BCAD]/20 focus:ring-[#32BCAD]'
+      : 'bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#1E1B4B] font-bold shadow-lg shadow-[#00FFAB]/20 focus:ring-[#00FFAB]';
+  };
+  
+  // Button color class
+  const buttonColorClass = getButtonColor();
 
   return (
     <Button
@@ -133,9 +151,7 @@ const NextButton: React.FC<NextButtonProps> = ({
       size="lg"
       className={`
         py-6 px-8 flex items-center space-x-2
-        ${isPaymentStep 
-          ? 'bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#1E1B4B] font-bold shadow-lg shadow-[#00FFAB]/20 focus:ring-[#00FFAB]' 
-          : 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90'}
+        ${buttonColorClass}
         ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}
         focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all
         hover:scale-[1.02] active:scale-[0.98] transform duration-200

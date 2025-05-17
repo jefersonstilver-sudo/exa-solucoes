@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { useNavigate } from 'react-router-dom';
@@ -30,7 +30,7 @@ interface ProcessPaymentOptions {
 export const usePaymentFlow = () => {
   const navigate = useNavigate();
   
-  // Use the new specialized hooks
+  // Use the specialized hooks
   const {
     isCreatingPayment, 
     setIsCreatingPayment,
@@ -115,7 +115,7 @@ export const usePaymentFlow = () => {
       setCreatedOrderId(pedido.id);
       
       // Process payment with Edge Function
-      const { preferenceId, initPoint } = await processPaymentWithEdgeFunction({
+      const paymentResult = await processPaymentWithEdgeFunction({
         pedidoId: pedido.id,
         cartItems,
         selectedPlan,
@@ -126,17 +126,34 @@ export const usePaymentFlow = () => {
       });
       
       // Store checkout info in localStorage
-      storeCheckoutInfo(pedido.id, paymentMethodNormalized, preferenceId);
-      
-      // Clear cart
-      handleClearCart();
-      
-      // Execute redirection
-      console.log(`[Payment Flow] Redirecting to checkout with ID: ${preferenceId}, method: ${paymentMethodNormalized}`);
-      sonnerToast.dismiss();
-      
-      // Redirect to MercadoPago with preference ID from the response
-      redirectToMercadoPago(preferenceId, paymentMethodNormalized);
+      if (paymentMethodNormalized === 'credit_card') {
+        const { preferenceId, initPoint } = paymentResult;
+        storeCheckoutInfo(pedido.id, paymentMethodNormalized, preferenceId);
+        
+        // Clear cart
+        handleClearCart();
+        
+        // Execute redirection for credit card payments
+        console.log(`[Payment Flow] Redirecting to MercadoPago checkout with ID: ${preferenceId}`);
+        sonnerToast.dismiss();
+        
+        // Redirect to MercadoPago with preference ID from the response
+        redirectToMercadoPago(preferenceId, paymentMethodNormalized);
+      } else if (paymentMethodNormalized === 'pix') {
+        // For PIX payments, store info and navigate to PIX payment page
+        const { pixData, pedidoId } = paymentResult;
+        storeCheckoutInfo(pedidoId, paymentMethodNormalized);
+        
+        // Clear cart
+        handleClearCart();
+        
+        // Navigate to PIX payment page
+        console.log('[Payment Flow] Navigating to PIX payment page', { pedidoId });
+        sonnerToast.dismiss();
+        
+        // Redirect to PIX payment page
+        navigate(`/pix-payment?pedido=${pedidoId}`);
+      }
       
     } catch (error: any) {
       // Comprehensive error handling

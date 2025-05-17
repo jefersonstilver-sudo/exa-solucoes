@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import PaymentMethodOption from "./PaymentMethodOption";
 import { CreditCard } from "lucide-react";
@@ -27,19 +26,13 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     }
   }, [selectedMethod, setSelectedMethod]);
   
-  // Recalculate values based on payment method
+  // Calculate PIX discount (5% off for PIX payments)
   useEffect(() => {
-    // Para PIX em planos acima de 3 meses, sempre mostrar valor integral
-    // Aqui estamos assumindo que se o total é alto, é um plano de mais de 3 meses
-    if (totalPrice > 1000) { // Ajuste esse valor conforme necessário
-      setPixTotal(totalPrice);
-    } else {
-      // Para planos menores, poderíamos aplicar um desconto no PIX, mas seguindo a instrução
-      // estamos mantendo o valor integral
-      setPixTotal(totalPrice);
-    }
+    // Apply 5% discount for PIX payments
+    const pixDiscount = 0.05; // 5%
+    setPixTotal(totalPrice * (1 - pixDiscount));
     
-    // Para cartão, o total já inclui as eventuais taxas nas parcelas
+    // For credit card, keep the original price
     setCardTotal(totalPrice);
   }, [totalPrice]);
   
@@ -48,7 +41,7 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     { 
       id: "pix", 
       name: "PIX", 
-      description: "Pagamento instantâneo — valor integral", 
+      description: "Pagamento instantâneo — 5% de desconto", 
       icon: <svg 
         viewBox="0 0 512 512" 
         className="h-5 w-5" 
@@ -57,7 +50,8 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
         <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
       </svg>,
       installments: false,
-      totalValue: pixTotal
+      totalValue: pixTotal,
+      highlight: true
     },
     { 
       id: "credit_card", 
@@ -125,7 +119,7 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
           method={{
             ...method,
             description: method.id === "pix" 
-              ? `Pagamento instantâneo — Total: ${formatCurrency(pixTotal)}` 
+              ? `Pagamento instantâneo com 5% de desconto — Total: ${formatCurrency(pixTotal)}` 
               : `Visa, Mastercard, AMEX, ELO — Total: ${formatCurrency(getTotalWithInterest(installments))}`
           }}
           selectedMethod={selectedMethod}

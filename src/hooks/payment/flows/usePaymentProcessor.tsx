@@ -107,23 +107,41 @@ export const usePaymentProcessor = () => {
       method: paymentMethod
     });
     
+    // Determine which edge function to call based on payment method
+    const functionName = paymentMethod === 'pix' ? 'process-pix-payment' : 'process-payment';
+    
     // Call Edge Function
-    const { data, error } = await supabase.functions.invoke('process-payment', {
-      body: paymentData
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: functionName === 'process-pix-payment' ? {
+        amount: totalPrice,
+        pedidoId,
+        description: `Plano: ${selectedPlan} meses`,
+        userId: sessionUser.id,
+        userEmail: sessionUser.email,
+        returnUrl: `${currentUrl}/pedido-confirmado?id=${pedidoId}`
+      } : paymentData
     });
     
     if (error) {
-      console.error("[Payment Flow] Edge function error:", error);
+      console.error(`[Payment Flow] Edge function error: ${functionName}`, error);
       throw new Error(`Error processing payment: ${error.message}`);
     }
     
-    console.log("[Payment Flow] Payment processor response:", data);
+    console.log(`[Payment Flow] ${functionName} response:`, data);
     
     if (!data || !data.success) {
       throw new Error('Invalid response from payment processor');
     }
     
-    // CRITICAL FIX: Validate the preference_id from response
+    // For PIX payments, we return a different structure
+    if (paymentMethod === 'pix') {
+      return {
+        pixData: data.pix_data,
+        pedidoId: data.pedido_id
+      };
+    }
+    
+    // For credit card payments, validate the preference_id
     if (!data.preference_id) {
       throw new Error('Missing preference_id in payment processor response');
     }
@@ -137,15 +155,17 @@ export const usePaymentProcessor = () => {
   /**
    * Store checkout information in localStorage
    */
-  const storeCheckoutInfo = (pedidoId: string, paymentMethod: string, preferenceId: string) => {
-    // CRITICAL FIX: Store trace information in localStorage for debugging
-    localStorage.setItem('mp_redirect_timestamp', Date.now().toString());
-    localStorage.setItem('mp_preference_id', preferenceId);
-    
+  const storeCheckoutInfo = (pedidoId: string, paymentMethod: string, preferenceId?: string) => {
     // Store order info in localStorage
     localStorage.setItem('lastPedidoId', pedidoId);
     localStorage.setItem('lastPaymentMethod', paymentMethod);
     localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
+    
+    // For credit card payments, also store MercadoPago info
+    if (paymentMethod === 'credit_card' && preferenceId) {
+      localStorage.setItem('mp_redirect_timestamp', Date.now().toString());
+      localStorage.setItem('mp_preference_id', preferenceId);
+    }
   };
 
   return {
