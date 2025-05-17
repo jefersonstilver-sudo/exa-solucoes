@@ -56,6 +56,11 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
     
     const finalUrl = url.toString();
     
+    // CRITICAL FIX: Show a visual indication that redirection is happening
+    sonnerToast.loading("Redirecionando para o portal de pagamento...", {
+      duration: 5000
+    });
+    
     // Log the URL for debugging
     console.log('[MercadoPago] URL final de redirecionamento:', finalUrl);
     
@@ -66,45 +71,26 @@ export const handleMercadoPagoRedirect = (preferenceId: string, paymentMethod = 
       { preferenceId, paymentMethod: normalizedPaymentMethod }
     );
     
-    // Show toast before redirect
-    sonnerToast.success("Redirecionando para pagamento...");
-    
     // ULTRA-FORCE APPROACH: Combine multiple methods to ensure at least one works
     
-    // Method 1: Use open in new window 
-    const newWindow = window.open(finalUrl, '_blank');
+    // Method 1: Use location.replace for most reliable redirect
+    window.location.replace(finalUrl);
     
-    // Method 2: Direct location.href (fallback)
+    // Method 2: Fall back to location.href after a small delay
     setTimeout(() => {
-      if (!newWindow || newWindow.closed || newWindow.closed === undefined) {
+      if (document.visibilityState !== 'hidden') {
         console.log('[MercadoPago] Fallback: usando window.location.href');
         window.location.href = finalUrl;
       }
     }, 300);
     
-    // Method 3: Form submission as final fallback
+    // Method 3: Open in new window as final fallback
     setTimeout(() => {
       if (document.visibilityState !== 'hidden') {
-        console.log('[MercadoPago] Double-fallback: usando form submission');
-        const form = document.createElement('form');
-        form.method = 'GET';
-        form.action = url.origin + url.pathname;
-        form.target = '_blank';
-        
-        // Add all parameters from the URL
-        url.searchParams.forEach((value, key) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        });
-        
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
+        console.log('[MercadoPago] Double-fallback: abrindo em nova janela');
+        window.open(finalUrl, '_blank');
       }
-    }, 800);
+    }, 600);
     
     // Reset the redirection flag after a generous timeout
     setTimeout(() => {

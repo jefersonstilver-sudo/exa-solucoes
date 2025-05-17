@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { usePaymentFlow } from './usePaymentFlow';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { toast as sonnerToast } from 'sonner';
 
 interface CartItem {
   panel: Panel;
@@ -61,7 +62,7 @@ export const usePaymentProcessor = () => {
   }, []);
   
   // Maintain the same interface as before, but with improved logging
-  const createPayment = (options: PaymentOptions) => {
+  const createPayment = async (options: PaymentOptions) => {
     // Verify terms acceptance
     if (!options.acceptTerms) {
       console.error("[Payment] Payment attempted without accepting terms");
@@ -72,11 +73,16 @@ export const usePaymentProcessor = () => {
         "Tentativa de pagamento sem aceitar os termos",
         { acceptTerms: options.acceptTerms, timestamp: new Date().toISOString() }
       );
+      
+      sonnerToast.error("É necessário aceitar os termos para continuar");
       return;
     }
     
+    // CRITICAL FIX: Ensure payment method is correctly set and passed
+    const effectivePaymentMethod = options.paymentMethod || paymentMethod;
+    
     // Log payment attempt with method
-    console.log(`[Payment] Creating payment with method: ${options.paymentMethod || paymentMethod}`);
+    console.log(`[Payment] Creating payment with method: ${effectivePaymentMethod}`);
     
     // Get panel IDs for logging
     const panelIds = options.cartItems.map(item => item.panel.id);
@@ -84,13 +90,13 @@ export const usePaymentProcessor = () => {
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Iniciando processamento de pagamento via ${options.paymentMethod || paymentMethod}`,
+      `Iniciando processamento de pagamento via ${effectivePaymentMethod}`,
       {
         totalPrice: options.totalPrice, 
         selectedPlan: options.selectedPlan,
         panelCount: options.cartItems.length,
         panelIds: panelIds,
-        paymentMethod: options.paymentMethod || paymentMethod,
+        paymentMethod: effectivePaymentMethod,
         userAgent: navigator.userAgent,
         screen: `${window.innerWidth}x${window.innerHeight}`,
         url: window.location.href
@@ -100,16 +106,23 @@ export const usePaymentProcessor = () => {
     // Store payment attempt in localStorage for diagnostics
     try {
       localStorage.setItem('last_payment_attempt', new Date().toISOString());
-      localStorage.setItem('last_payment_method', options.paymentMethod || paymentMethod);
+      localStorage.setItem('last_payment_method', effectivePaymentMethod);
       localStorage.setItem('last_payment_amount', String(options.totalPrice));
     } catch (e) {
       console.error("Error storing payment attempt info:", e);
     }
     
-    return processPayment({
-      ...options,
-      paymentMethod: options.paymentMethod || paymentMethod
-    });
+    // CRITICAL FIX: Ensure we await the promise
+    try {
+      return await processPayment({
+        ...options,
+        paymentMethod: effectivePaymentMethod
+      });
+    } catch (error) {
+      console.error("[Payment] Error in payment processing:", error);
+      sonnerToast.error("Erro ao processar pagamento. Tente novamente.");
+      throw error; // Re-throw to allow proper error handling upstream
+    }
   };
 
   return {

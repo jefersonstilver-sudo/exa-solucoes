@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { handleMercadoPagoRedirect } from '@/services/mercadoPagoService';
+import { handleMercadoPagoRedirect, isValidPreferenceId } from '@/services/mercadoPagoService';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { MP_PUBLIC_KEY } from '@/services/mercadoPago';
 
@@ -60,15 +60,9 @@ export const useMercadoPagoCheckout = () => {
         url.searchParams.delete('redirect');
         window.history.replaceState({}, document.title, url.toString());
         
-        // Add slight delay to allow UI to render
+        // Execute redirect
         setTimeout(() => {
-          // Execute redirect - IMMEDIATELY OPEN IN NEW TAB
-          window.open(redirectParam, '_blank');
-          
-          // Also use location.href as fallback
-          setTimeout(() => {
-            window.location.href = redirectParam;
-          }, 300);
+          window.location.href = redirectParam;
         }, 500);
       }
       
@@ -89,9 +83,10 @@ export const useMercadoPagoCheckout = () => {
 
   // Direct redirection function with improved approach
   const redirectToMercadoPago = (preferenceId: string, paymentMethod = 'credit_card') => {
-    if (!preferenceId) {
-      sonnerToast.error("Erro: ID de referência para pagamento não encontrado");
-      console.error("[MercadoPago] Missing preference ID for redirect");
+    // CRITICAL FIX: Validate preference ID
+    if (!isValidPreferenceId(preferenceId)) {
+      sonnerToast.error("Erro: ID de referência para pagamento inválido");
+      console.error("[MercadoPago] Invalid preference ID:", preferenceId);
       setIsCreatingPayment(false);
       paymentInProgressRef.current = false;
       return;
@@ -107,7 +102,7 @@ export const useMercadoPagoCheckout = () => {
     
     try {
       // Log detailed information for debugging
-      console.log(`[MercadoPago] Redirecionando para checkout com preferenceId: ${preferenceId.substring(0, 10)}...`);
+      console.log(`[MercadoPago] Redirecionando para checkout com preferenceId: ${preferenceId}`);
       console.log(`[MercadoPago] Método de pagamento: ${paymentMethod}`);
       
       logCheckoutEvent(
@@ -134,29 +129,29 @@ export const useMercadoPagoCheckout = () => {
           setIsCreatingPayment(false);
           paymentInProgressRef.current = false;
           
-          // Tentar novamente usando o botão auxiliar
+          // Attempt manual recovery - create a clickable button
           const redirectButton = document.createElement('a');
           redirectButton.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
           redirectButton.target = '_blank';
           redirectButton.textContent = 'Clique aqui para pagar se o redirecionamento não funcionou';
-          redirectButton.className = 'bg-blue-500 text-white px-4 py-2 rounded fixed bottom-4 right-4 z-50 shadow-lg';
+          redirectButton.className = 'fixed bottom-4 right-4 z-50 bg-blue-500 text-white px-4 py-2 rounded shadow-lg';
           
           document.body.appendChild(redirectButton);
           
           // Notify the user
-          sonnerToast.error("O redirecionamento automático falhou. Use o botão auxiliar no canto inferior direito da tela.");
+          sonnerToast.error("O redirecionamento automático falhou. Use o botão auxiliar no canto inferior direito.");
           
+          // Automatically click after a delay
           setTimeout(() => {
-            // Automatically click the button
             redirectButton.click();
-            
-            // Remove after some time
-            setTimeout(() => {
-              if (document.body.contains(redirectButton)) {
-                document.body.removeChild(redirectButton);
-              }
-            }, 30000);
           }, 1000);
+          
+          // Clean up after some time
+          setTimeout(() => {
+            if (document.body.contains(redirectButton)) {
+              document.body.removeChild(redirectButton);
+            }
+          }, 30000);
         }
       }, 5000);
       

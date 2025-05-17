@@ -172,6 +172,11 @@ export const usePaymentFlow = () => {
         throw new Error('Invalid response from payment processor');
       }
       
+      // CRITICAL FIX: Validate the preference_id from response
+      if (!data.preference_id) {
+        throw new Error('Missing preference_id in payment processor response');
+      }
+      
       // CRITICAL FIX: Store trace information in localStorage for debugging
       localStorage.setItem('mp_redirect_timestamp', Date.now().toString());
       localStorage.setItem('mp_preference_id', data.preference_id);
