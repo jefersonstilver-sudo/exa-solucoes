@@ -4,18 +4,25 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 import PixPaymentDetails from '@/components/checkout/payment/PixPaymentDetails';
+import PixPaymentDebugger from '@/components/checkout/payment/PixPaymentDebugger';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 
 interface PixPaymentContentProps {
   paymentData: PixPaymentData;
   onBack: () => void;
   onRefreshStatus: () => Promise<void>;
+  isLoading?: boolean;
+  error?: string | null;
+  pedidoId: string | null;
 }
 
 const PixPaymentContent = ({ 
   paymentData, 
   onBack, 
-  onRefreshStatus 
+  onRefreshStatus,
+  isLoading = false,
+  error = null,
+  pedidoId
 }: PixPaymentContentProps) => {
   return (
     <ClientOnly>
@@ -46,6 +53,15 @@ const PixPaymentContent = ({
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>Após realizar o pagamento, você será redirecionado automaticamente para a página de confirmação.</p>
         </div>
+        
+        {/* Debugger component */}
+        <PixPaymentDebugger 
+          paymentData={paymentData}
+          error={error}
+          isLoading={isLoading}
+          pedidoId={pedidoId}
+          onRefresh={onRefreshStatus}
+        />
       </div>
     </ClientOnly>
   );
