@@ -3,6 +3,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 // Pages
 import Index from './pages/Index'
@@ -18,9 +19,12 @@ import Confirmacao from './pages/Confirmacao'
 import PixPayment from './pages/PixPayment'
 
 // Providers
-import { ThemeProvider } from '@/components/ui/theme-provider'
+import { ThemeProvider } from './components/ui/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as SonnerToaster } from 'sonner'
+
+// Create a client
+const queryClient = new QueryClient()
 
 const router = createBrowserRouter([
   {
@@ -68,10 +72,12 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <RouterProvider router={router} />
-      <Toaster />
-      <SonnerToaster position="top-center" expand={true} richColors closeButton />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <RouterProvider router={router} />
+        <Toaster />
+        <SonnerToaster position="top-center" expand={true} richColors closeButton />
+      </ThemeProvider>
+    </QueryClientProvider>
   </React.StrictMode>,
 )
