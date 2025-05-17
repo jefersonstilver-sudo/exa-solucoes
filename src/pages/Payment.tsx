@@ -8,11 +8,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { ClientOnly } from '@/components/ui/client-only';
 import PaymentGateway from '@/components/checkout/payment/PaymentGateway';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+
+// Define a type for the payment log data structure
+interface PaymentLogData {
+  payment_method?: string;
+  preference_id?: string;
+  payment_id?: string;
+  payment_status?: string;
+  pix_data?: {
+    qr_code_base64?: string;
+    qr_code?: string;
+  };
+}
 
 const Payment = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   
   const pedidoId = searchParams.get('pedido');
@@ -27,7 +41,7 @@ const Payment = () => {
     if (isSessionLoading) return;
     
     if (!isLoggedIn) {
-      toast({
+      uiToast({
         title: "Login necessário",
         description: "Você precisa estar logado para acessar esta página",
         variant: "destructive"
@@ -37,7 +51,7 @@ const Payment = () => {
     }
     
     if (!pedidoId) {
-      toast({
+      uiToast({
         title: "Pedido não encontrado",
         description: "ID do pedido não fornecido",
         variant: "destructive"
@@ -67,8 +81,8 @@ const Payment = () => {
           throw new Error("Você não tem permissão para visualizar este pedido");
         }
         
-        // Processar dados de pagamento
-        const logPagamento = order.log_pagamento || {};
+        // Processar dados de pagamento - tratar log_pagamento como PaymentLogData com tipagem segura
+        const logPagamento = (order.log_pagamento || {}) as PaymentLogData;
         const paymentMethod = logPagamento.payment_method || method;
         
         setPaymentData({
@@ -97,7 +111,7 @@ const Payment = () => {
           { pedidoId, error: String(err) }
         );
         
-        toast({
+        uiToast({
           title: "Erro",
           description: err.message || "Erro ao carregar dados do pagamento",
           variant: "destructive"
@@ -122,7 +136,7 @@ const Payment = () => {
       if (error) throw error;
       if (!data || data.length === 0) throw new Error("Pedido não encontrado");
       
-      const logPagamento = data[0].log_pagamento || {};
+      const logPagamento = (data[0].log_pagamento || {}) as PaymentLogData;
       const paymentMethod = logPagamento.payment_method || 'credit_card';
       
       if (paymentMethod === 'pix' && logPagamento.pix_data) {

@@ -9,6 +9,18 @@ interface PixPaymentStatus {
   pedidoId: string;
 }
 
+// Define a type for the payment log data structure
+interface PaymentLogData {
+  payment_method?: string;
+  preference_id?: string;
+  payment_id?: string;
+  payment_status?: string;
+  pix_data?: {
+    qr_code_base64?: string;
+    qr_code?: string;
+  };
+}
+
 /**
  * Classe para monitorar pagamentos PIX em background
  */
@@ -112,16 +124,18 @@ export class PixMonitor {
         return;
       }
 
-      const paymentLog = data.log_pagamento;
+      const paymentLog = data.log_pagamento as PaymentLogData;
       const currentStatus = paymentLog.payment_status;
       
       console.log(`[PixMonitor] Status atual: ${currentStatus}`);
 
       // Notifica mudanças de status
-      this.onStatusChange(currentStatus);
+      if (currentStatus) {
+        this.onStatusChange(currentStatus);
+      }
 
       // Para o monitoramento quando o pagamento for aprovado ou rejeitado
-      if (['approved', 'rejected'].includes(currentStatus) || this.attempts >= this.maxAttempts) {
+      if (['approved', 'rejected'].includes(currentStatus || '') || this.attempts >= this.maxAttempts) {
         if (currentStatus === 'approved') {
           toast.success("Pagamento aprovado! Redirecionando...");
         } else if (currentStatus === 'rejected') {
