@@ -1,14 +1,12 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { usePaymentValidation } from './usePaymentValidation';
-import { useOrderCreation } from './useOrderCreation';
-import { useMercadoPagoCheckout } from './useMercadoPagoCheckout';
 import { Panel } from '@/types/panel';
+import { usePaymentInit } from './flows/usePaymentInit';
+import { usePaymentValidator } from './flows/usePaymentValidator';
+import { usePaymentProcessor } from './flows/usePaymentProcessor';
 
 interface CartItem {
   panel: Panel;
@@ -30,29 +28,27 @@ interface ProcessPaymentOptions {
 }
 
 export const usePaymentFlow = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const { validatePaymentRequirements } = usePaymentValidation();
-  const { createOrder } = useOrderCreation();
-  const { 
+  
+  // Use the new specialized hooks
+  const {
     isCreatingPayment, 
-    setIsCreatingPayment, 
+    setIsCreatingPayment,
+    createdOrderId,
+    setCreatedOrderId,
+    processingPaymentRef,
     redirectToMercadoPago,
     isMercadoPagoReady,
     isSDKLoaded
-  } = useMercadoPagoCheckout();
+  } = usePaymentInit();
   
-  // Added tracking for created order and state management
-  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
-  const processingPaymentRef = useRef(false);
+  const { validateForPayment, toast } = usePaymentValidator();
   
-  // Reset payment state when component unmounts
-  useEffect(() => {
-    return () => {
-      setIsCreatingPayment(false);
-      processingPaymentRef.current = false;
-    };
-  }, [setIsCreatingPayment]);
+  const {
+    createPaymentOrder,
+    processPaymentWithEdgeFunction,
+    storeCheckoutInfo
+  } = usePaymentProcessor();
 
   // Process payment and manage checkout flow
   const processPayment = async ({
@@ -89,20 +85,11 @@ export const usePaymentFlow = () => {
       // Display processing toast
       sonnerToast.loading("Preparando pagamento...");
       
-      // Verify terms
-      if (!acceptTerms) {
-        sonnerToast.dismiss();
-        sonnerToast.error("Você precisa aceitar os termos para continuar");
-        setIsCreatingPayment(false);
-        processingPaymentRef.current = false;
-        return;
-      }
-      
-      // Validate requirements - ignore unavailable panels check
-      const isValid = validatePaymentRequirements({
-        acceptTerms, 
-        unavailablePanels: [], // Bypass this check
-        sessionUser, 
+      // Validation step
+      const isValid = validateForPayment({
+        acceptTerms,
+        unavailablePanels,
+        sessionUser,
         isSDKLoaded,
         cartItems
       });
@@ -110,13 +97,11 @@ export const usePaymentFlow = () => {
       if (!isValid) {
         setIsCreatingPayment(false);
         processingPaymentRef.current = false;
-        sonnerToast.dismiss();
-        sonnerToast.error("Não foi possível processar o pagamento");
         return;
       }
       
       // Create order in database
-      const pedido = await createOrder({
+      const pedido = await createPaymentOrder({
         sessionUser,
         cartItems,
         selectedPlan,
@@ -129,72 +114,29 @@ export const usePaymentFlow = () => {
       // Store order ID
       setCreatedOrderId(pedido.id);
       
-      // Get application base URL
-      const currentUrl = window.location.origin;
-      
-      // Convert months to days
-      const duration = selectedPlan * 30;
-      
-      // Prepare data for Edge Function
-      const paymentData = {
+      // Process payment with Edge Function
+      const { preferenceId, initPoint } = await processPaymentWithEdgeFunction({
         pedidoId: pedido.id,
         cartItems,
-        totals: {
-          totalPrice,
-          selectedPlan,
-          duration,
-          withCoupon: !!couponId,
-          couponDiscount: couponId ? 10 : 0,
-        },
-        userId: sessionUser.id,
-        returnUrl: `${currentUrl}/pedido-confirmado?id=${pedido.id}`,
+        selectedPlan,
+        totalPrice,
+        couponId,
+        sessionUser,
         paymentMethod: paymentMethodNormalized
-      };
-      
-      console.log("[Payment Flow] Sending data to payment processor", {
-        pedidoId: pedido.id,
-        method: paymentMethodNormalized
       });
       
-      // Call Edge Function
-      const { data, error } = await supabase.functions.invoke('process-payment', {
-        body: paymentData
-      });
-      
-      if (error) {
-        console.error("[Payment Flow] Edge function error:", error);
-        throw new Error(`Error processing payment: ${error.message}`);
-      }
-      
-      console.log("[Payment Flow] Payment processor response:", data);
-      
-      if (!data || !data.success) {
-        throw new Error('Invalid response from payment processor');
-      }
-      
-      // CRITICAL FIX: Validate the preference_id from response
-      if (!data.preference_id) {
-        throw new Error('Missing preference_id in payment processor response');
-      }
-      
-      // CRITICAL FIX: Store trace information in localStorage for debugging
-      localStorage.setItem('mp_redirect_timestamp', Date.now().toString());
-      localStorage.setItem('mp_preference_id', data.preference_id);
+      // Store checkout info in localStorage
+      storeCheckoutInfo(pedido.id, paymentMethodNormalized, preferenceId);
       
       // Clear cart
       handleClearCart();
       
-      // Store order info in localStorage
-      localStorage.setItem('lastPedidoId', pedido.id);
-      localStorage.setItem('lastPaymentMethod', paymentMethodNormalized);
-      localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
-      
       // Execute redirection
-      console.log(`[Payment Flow] Redirecting to checkout with ID: ${data.preference_id}, method: ${paymentMethodNormalized}`);
+      console.log(`[Payment Flow] Redirecting to checkout with ID: ${preferenceId}, method: ${paymentMethodNormalized}`);
       sonnerToast.dismiss();
       
-      // CRITICAL FIX: Redirect to MercadoPago with preference ID from the response
-      redirectToMercadoPago(data.preference_id, paymentMethodNormalized);
+      // Redirect to MercadoPago with preference ID from the response
+      redirectToMercadoPago(preferenceId, paymentMethodNormalized);
       
     } catch (error: any) {
       // Comprehensive error handling
