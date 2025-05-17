@@ -18,7 +18,7 @@ import Confirmacao from './pages/Confirmacao'
 import PixPayment from './pages/PixPayment'
 
 // Providers
-import { ThemeProvider } from './components/ui/theme-provider'
+import { ThemeProvider } from '@/components/ui/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as SonnerToaster } from 'sonner'
 

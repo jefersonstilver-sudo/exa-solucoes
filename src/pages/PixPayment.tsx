@@ -4,12 +4,25 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import PixPaymentDetails from '@/components/checkout/payment/PixPaymentDetails';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, AlertCircle, Loader } from 'lucide-react';
+import { ChevronLeft, AlertCircle } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserSession } from '@/hooks/useUserSession';
+
+// Define types for payment related data
+interface PixData {
+  qr_code: string;
+  qr_code_base64: string;
+}
+
+interface PaymentLog {
+  payment_method: string;
+  payment_status: string;
+  payment_id: string;
+  pix_data?: PixData;
+}
 
 const PixPayment = () => {
   const [searchParams] = useSearchParams();
@@ -47,22 +60,24 @@ const PixPayment = () => {
       }
       
       // Check if payment exists and is a PIX payment
-      if (!pedido.log_pagamento || pedido.log_pagamento.payment_method !== 'pix') {
+      const logPagamento = pedido.log_pagamento as PaymentLog;
+      
+      if (!logPagamento || logPagamento.payment_method !== 'pix') {
         throw new Error("Método de pagamento inválido ou não encontrado");
       }
       
       // Set the payment data
       setPaymentData({
         pedidoId: pedido.id,
-        status: pedido.log_pagamento.payment_status || 'pending',
-        qrCode: pedido.log_pagamento.pix_data?.qr_code || '',
-        qrCodeBase64: pedido.log_pagamento.pix_data?.qr_code_base64 || '',
-        paymentId: pedido.log_pagamento.payment_id || '',
+        status: logPagamento.payment_status || 'pending',
+        qrCode: logPagamento.pix_data?.qr_code || '',
+        qrCodeBase64: logPagamento.pix_data?.qr_code_base64 || '',
+        paymentId: logPagamento.payment_id || '',
         valorTotal: pedido.valor_total
       });
       
       // If payment is already approved, redirect to confirmation page after a short delay
-      if (pedido.log_pagamento.payment_status === 'approved') {
+      if (logPagamento.payment_status === 'approved') {
         setTimeout(() => {
           navigate(`/pedido-confirmado?id=${pedido.id}`);
         }, 3000);
@@ -98,22 +113,23 @@ const PixPayment = () => {
       if (!data || data.length === 0) throw new Error("Pedido não encontrado");
       
       const pedido = data[0];
+      const logPagamento = pedido.log_pagamento as PaymentLog;
       
       // Update local payment data
       setPaymentData(prev => ({
         ...prev,
-        status: pedido.log_pagamento.payment_status || 'pending',
+        status: logPagamento.payment_status || 'pending',
       }));
       
       // If payment is approved, redirect to confirmation page
-      if (pedido.log_pagamento.payment_status === 'approved') {
+      if (logPagamento.payment_status === 'approved') {
         toast.success("Pagamento aprovado! Redirecionando...");
         setTimeout(() => {
           navigate(`/pedido-confirmado?id=${pedido.id}`);
         }, 1500);
       }
       
-      return pedido.log_pagamento.payment_status;
+      return logPagamento.payment_status;
     } catch (err: any) {
       console.error("Error refreshing payment status:", err);
       toast.error("Erro ao atualizar status do pagamento");

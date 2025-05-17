@@ -143,6 +143,7 @@ export const useUserSession = () => {
 
   return {
     user,
+    sessionUser: user, // Add sessionUser as an alias to user for backward compatibility
     session,
     isLoading,
     isLoggedIn: !!user,
