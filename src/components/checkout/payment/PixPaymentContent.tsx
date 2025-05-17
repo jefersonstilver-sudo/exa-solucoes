@@ -54,7 +54,7 @@ const PixPaymentContent = ({
           <p>Após realizar o pagamento, você será redirecionado automaticamente para a página de confirmação.</p>
         </div>
         
-        {/* Debugger component */}
+        {/* Debugger component - agora visível por padrão */}
         <PixPaymentDebugger 
           paymentData={paymentData}
           error={error}
