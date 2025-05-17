@@ -10,6 +10,7 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserSession } from '@/hooks/useUserSession';
+import { Json } from '@/integrations/supabase/types';
 
 // Define types for payment related data
 interface PixData {
@@ -60,7 +61,8 @@ const PixPayment = () => {
       }
       
       // Check if payment exists and is a PIX payment
-      const logPagamento = pedido.log_pagamento as PaymentLog;
+      // We need to safely cast the log_pagamento to PaymentLog
+      const logPagamento = pedido.log_pagamento as unknown as PaymentLog;
       
       if (!logPagamento || logPagamento.payment_method !== 'pix') {
         throw new Error("Método de pagamento inválido ou não encontrado");
@@ -99,7 +101,7 @@ const PixPayment = () => {
   };
   
   // Refresh the payment status
-  const refreshPaymentStatus = async () => {
+  const refreshPaymentStatus = async (): Promise<void> => {
     if (!pedidoId) return;
     
     try {
@@ -113,7 +115,8 @@ const PixPayment = () => {
       if (!data || data.length === 0) throw new Error("Pedido não encontrado");
       
       const pedido = data[0];
-      const logPagamento = pedido.log_pagamento as PaymentLog;
+      // We need to safely cast the log_pagamento to PaymentLog
+      const logPagamento = pedido.log_pagamento as unknown as PaymentLog;
       
       // Update local payment data
       setPaymentData(prev => ({
@@ -129,11 +132,10 @@ const PixPayment = () => {
         }, 1500);
       }
       
-      return logPagamento.payment_status;
+      // Return type is void, so we don't need to return anything
     } catch (err: any) {
       console.error("Error refreshing payment status:", err);
       toast.error("Erro ao atualizar status do pagamento");
-      throw err;
     }
   };
   
