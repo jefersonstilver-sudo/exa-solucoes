@@ -8,21 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { ClientOnly } from '@/components/ui/client-only';
 import PaymentGateway from '@/components/checkout/payment/PaymentGateway';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { Json } from '@/integrations/supabase/types';
-
-// Type definition for the payment log
-interface PaymentLog {
-  payment_method: string;
-  payment_status: string;
-  payment_id: string;
-  preference_id?: string;
-  pix_data?: {
-    qr_code_base64: string;
-    qr_code: string;
-  };
-}
 
 const Payment = () => {
   const [searchParams] = useSearchParams();
@@ -82,16 +67,16 @@ const Payment = () => {
           throw new Error("Você não tem permissão para visualizar este pedido");
         }
         
-        // Processar dados de pagamento - Apply proper type casting
-        const logPagamento = order.log_pagamento as unknown as PaymentLog || {};
-        const paymentMethod = logPagamento?.payment_method || method;
+        // Processar dados de pagamento
+        const logPagamento = order.log_pagamento || {};
+        const paymentMethod = logPagamento.payment_method || method;
         
         setPaymentData({
           orderId: order.id,
           totalAmount: order.valor_total,
-          preferenceId: logPagamento?.preference_id || null,
+          preferenceId: logPagamento.preference_id || null,
           method: paymentMethod,
-          pixData: paymentMethod === 'pix' && logPagamento?.pix_data ? {
+          pixData: paymentMethod === 'pix' && logPagamento.pix_data ? {
             qrCodeBase64: logPagamento.pix_data.qr_code_base64 || '',
             qrCode: logPagamento.pix_data.qr_code || '',
             paymentId: logPagamento.payment_id || '',
@@ -137,11 +122,10 @@ const Payment = () => {
       if (error) throw error;
       if (!data || data.length === 0) throw new Error("Pedido não encontrado");
       
-      // Proper type casting
-      const logPagamento = data[0].log_pagamento as unknown as PaymentLog || {};
-      const paymentMethod = logPagamento?.payment_method || 'credit_card';
+      const logPagamento = data[0].log_pagamento || {};
+      const paymentMethod = logPagamento.payment_method || 'credit_card';
       
-      if (paymentMethod === 'pix' && logPagamento?.pix_data) {
+      if (paymentMethod === 'pix' && logPagamento.pix_data) {
         setPaymentData(prev => ({
           ...prev,
           pixData: {
@@ -152,7 +136,7 @@ const Payment = () => {
       }
       
       // Redirecionar se pagamento aprovado
-      if (logPagamento?.payment_status === 'approved') {
+      if (logPagamento.payment_status === 'approved') {
         toast.success("Pagamento aprovado! Redirecionando...");
         setTimeout(() => {
           navigate(`/pedido-confirmado?id=${pedidoId}`);
