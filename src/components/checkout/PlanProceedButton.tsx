@@ -42,7 +42,7 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
       console.log("Sending webhook with payload:", webhookPayload);
       
       // Send webhook to the specified URL
-      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/ad8c7812-22a7-4334-a6ea-4de38f0abbe9', {
+      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/4d787fb3-407b-434b-ab51-83836f064416', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
