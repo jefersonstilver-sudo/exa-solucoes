@@ -1,12 +1,24 @@
-
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { Json } from '@/integrations/supabase/types';
 
 interface PixPaymentStatus {
   paymentId: string;
   status: string;
   pedidoId: string;
+}
+
+// Type definition for the payment log
+interface PaymentLog {
+  payment_method: string;
+  payment_status: string;
+  payment_id: string;
+  preference_id?: string;
+  pix_data?: {
+    qr_code_base64: string;
+    qr_code: string;
+  };
 }
 
 /**
@@ -112,8 +124,8 @@ export class PixMonitor {
         return;
       }
 
-      const paymentLog = data.log_pagamento;
-      const currentStatus = paymentLog.payment_status;
+      const paymentLog = data.log_pagamento as unknown as PaymentLog;
+      const currentStatus = paymentLog?.payment_status || 'pending';
       
       console.log(`[PixMonitor] Status atual: ${currentStatus}`);
 
