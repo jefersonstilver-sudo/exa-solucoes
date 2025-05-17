@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
       // Prepare webhook payload with user and plan data
       const webhookPayload = {
         userId: user.id,
-        fullName: user.user_metadata?.full_name || 'Not provided',
+        fullName: user.name || 'Not provided', // Using name property instead of user_metadata
         userEmail: user.email,
         planoEscolhido: selectedPlan,
         periodoDias: selectedPlan * 30, // Converting months to days
