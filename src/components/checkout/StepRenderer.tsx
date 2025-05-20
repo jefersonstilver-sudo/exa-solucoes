@@ -6,7 +6,7 @@ import ReviewStep from '@/components/checkout/ReviewStep';
 import PlanSelector from '@/components/checkout/PlanSelector';
 import CouponStep from '@/components/checkout/CouponStep';
 import PaymentStep from '@/components/checkout/PaymentStep';
-import UploadStep from '@/components/checkout/UploadStep'; // Vamos criar este componente
+import UploadStep from '@/components/checkout/UploadStep';
 import TrustIndicators from '@/components/checkout/TrustIndicators';
 import { Panel } from '@/types/panel';
 import { Plan, PlanKey } from '@/types/checkout';
@@ -34,6 +34,7 @@ interface StepRendererProps {
   totalPrice: number;
   paymentMethod?: string;
   setPaymentMethod?: (method: string) => void;
+  orderId?: string;
 }
 
 const StepRenderer: React.FC<StepRendererProps> = ({
@@ -53,7 +54,8 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   setAcceptTerms,
   totalPrice,
   paymentMethod,
-  setPaymentMethod
+  setPaymentMethod,
+  orderId
 }) => {
   // Variantes de animação para transições de página
   const pageVariants = {
@@ -154,6 +156,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
             totalPrice={totalPrice}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
+            orderId={orderId}
           />
           <TrustIndicators />
         </motion.div>

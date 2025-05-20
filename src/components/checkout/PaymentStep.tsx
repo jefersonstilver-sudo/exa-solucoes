@@ -5,10 +5,15 @@ import { motion } from "framer-motion";
 import { 
   CreditCardIcon,
   ExternalLink,
-  Lock
+  Lock,
+  TestTube
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from "@/services/checkoutDebugService";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useUserSession } from "@/hooks/useUserSession";
+import { supabase } from "@/integrations/supabase/client";
 
 // Componentes refatorados
 import PaymentMethods from "./payment/PaymentMethods";
@@ -22,6 +27,7 @@ interface PaymentStepProps {
   totalPrice: number;
   paymentMethod?: string;
   setPaymentMethod?: (method: string) => void;
+  orderId?: string;
 }
 
 const PaymentStep = ({ 
@@ -29,9 +35,12 @@ const PaymentStep = ({
   setAcceptTerms, 
   totalPrice, 
   paymentMethod: externalPaymentMethod, 
-  setPaymentMethod: externalSetPaymentMethod 
+  setPaymentMethod: externalSetPaymentMethod,
+  orderId
 }: PaymentStepProps) => {
   const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>("credit_card");
+  const navigate = useNavigate();
+  const { user } = useUserSession();
   
   // Use either external or internal state for payment method
   const selectedMethod = externalPaymentMethod || internalPaymentMethod;
@@ -62,6 +71,72 @@ const PaymentStep = ({
       setSelectedMethod("credit_card");
     }
   }, [selectedMethod]);
+
+  // Test payment handler
+  const handleTestPayment = async () => {
+    toast.success("Modo de pagamento de teste ativado");
+    
+    try {
+      // Get cart items from localStorage
+      const cartStorageKey = 'indexa_cart';
+      const cartItemsJSON = localStorage.getItem(cartStorageKey);
+      const cartItems = cartItemsJSON ? JSON.parse(cartItemsJSON) : [];
+      
+      // Get building names for the selected panels
+      let paineisList = [];
+      if (cartItems && cartItems.length > 0) {
+        // Fetch building information for each panel
+        const panelIds = cartItems.map(item => item.panel.id);
+        const { data: buildingsData } = await supabase
+          .from('buildings')
+          .select('id, nome')
+          .in('id', panelIds);
+          
+        if (buildingsData) {
+          paineisList = buildingsData.map(building => building.nome);
+        } else {
+          paineisList = cartItems.map((item, index) => `Painel ${index + 1}`);
+        }
+      }
+      
+      // Prepare webhook payload with user and plan data
+      const webhookPayload = {
+        userId: user?.id,
+        fullName: user?.name || 'Não fornecido',
+        userEmail: user?.email,
+        valorCompra: totalPrice || 0,
+        paineisSelecionados: paineisList,
+        timestamp: new Date().toISOString(),
+        testMode: true
+      };
+      
+      console.log("Sending webhook with test payload:", webhookPayload);
+      
+      // Send webhook to the specified URL
+      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload)
+      });
+      
+      if (response.ok) {
+        console.log("Test webhook sent successfully");
+        // Simulate payment success and redirect
+        toast.success("Pagamento de teste processado! Redirecionando...");
+        setTimeout(() => {
+          navigate(`/pedido-confirmado?id=${orderId}`);
+        }, 1500);
+      } else {
+        console.error("Error sending webhook:", response.status);
+        toast.error("Erro ao enviar dados de teste");
+      }
+    } catch (error) {
+      console.error("Error in test payment:", error);
+      toast.error("Erro ao processar pagamento de teste");
+    }
+  };
 
   return (
     <motion.div 
@@ -109,6 +184,21 @@ const PaymentStep = ({
           setAcceptTerms(checked);
         }} 
       />
+
+      {/* Test Payment Button */}
+      {orderId && (
+        <div className="mt-4 flex justify-center">
+          <Button 
+            onClick={handleTestPayment}
+            size="lg"
+            variant="outline"
+            className="border-2 border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+          >
+            PAGAR TESTE
+            <TestTube className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+      )}
     </motion.div>
   );
 };

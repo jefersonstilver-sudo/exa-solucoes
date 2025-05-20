@@ -1,189 +1,236 @@
-
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import CheckoutHeader from '@/components/checkout/CheckoutHeader';
 import CheckoutProgress from '@/components/checkout/CheckoutProgress';
-import StepRenderer from '@/components/checkout/StepRenderer';
 import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
-import { useCheckout } from '@/hooks/useCheckout';
+import CheckoutDebugger from '@/components/checkout/CheckoutDebugger';
+import StepRenderer from '@/components/checkout/StepRenderer';
+import { useCheckout, STEPS, PLANS } from '@/hooks/useCheckout';
+import { useCoupon } from '@/hooks/useCoupon';
 import { useToast } from '@/hooks/use-toast';
+import { useCart } from '@/hooks/useCart';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { calculateTotalPrice } from '@/services/pricingService';
+import { isCartEmpty } from '@/services/cartStorageService';
 
-const CheckoutContainer: React.FC = () => {
+const CheckoutContainer = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const pedidoId = searchParams.get('pedido');
   const { toast } = useToast();
-  const [paymentMethod, setPaymentMethod] = useState<string>('credit_card');
-  
+  const { cartItems, unavailablePanels } = useCart();
   const {
-    step,
-    STEPS,
+    currentStep,
+    setCurrentStep,
     selectedPlan,
     setSelectedPlan,
-    couponCode,
-    setCouponCode,
-    couponDiscount,
-    couponMessage,
-    couponValid,
-    isValidatingCoupon,
     acceptTerms,
     setAcceptTerms,
-    startDate,
-    endDate,
-    isCreatingPayment,
-    isNavigating,
-    unavailablePanels,
-    cartItems,
-    validateCoupon,
-    handleNextStep,
-    handlePrevStep,
-    isNextEnabled,
-    PLANS,
-    calculateTotalPrice
+    paymentMethod,
+    setPaymentMethod
   } = useCheckout();
-
-  // Verify that we have a plan selected from the plan selection page
-  useEffect(() => {
-    if (selectedPlan === null || !selectedPlan) {
+  const {
+    couponCode,
+    setCouponCode,
+    validateCoupon,
+    isValidatingCoupon,
+    couponMessage,
+    couponValid,
+    couponDiscount
+  } = useCoupon();
+  
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Calculate total price
+  const totalPrice = calculateTotalPrice(cartItems, selectedPlan, couponValid, couponDiscount);
+  
+  // Get selected plan price
+  const getSelectedPlanPrice = () => {
+    if (!selectedPlan) return 0;
+    return PLANS[selectedPlan].price;
+  };
+  
+  // Navigation handlers
+  const handleNextStep = useCallback(() => {
+    setIsNavigating(true);
+    
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      `handleNextStep - Current step: ${currentStep}`,
+      { currentStep, timestamp: Date.now() }
+    );
+    
+    // Validate cart before proceeding
+    if (isCartEmpty()) {
       toast({
-        title: "Selecione um plano",
-        description: "É necessário selecionar um plano antes de prosseguir com o checkout.",
+        title: "Carrinho vazio",
+        description: "Adicione itens ao carrinho antes de prosseguir.",
         variant: "destructive"
       });
-      navigate('/selecionar-plano');
+      setIsNavigating(false);
+      return;
     }
-  }, [selectedPlan, navigate, toast]);
-
-  // Log payment method changes
-  useEffect(() => {
-    if (paymentMethod) {
-      console.log(`[CheckoutContainer] Método de pagamento definido: ${paymentMethod}, step: ${step}`);
-      
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        `Método de pagamento definido: ${paymentMethod}`,
-        { paymentMethod, step }
-      );
-    }
-  }, [paymentMethod, step]);
-
-  const totalPrice = calculateTotalPrice();
-
-  // Handle next step with explicit payment method
-  const handleNextWithPaymentMethod = () => {
-    // ENHANCED DEBUG: Log all important state before proceeding
-    console.log(`[CheckoutContainer] PAYMENT DEBUG: Iniciando pagamento`, {
-      step,
-      paymentMethod,
-      acceptTerms,
-      isNextEnabled,
-      isCreatingPayment,
-      isNavigating,
-      totalPrice
-    });
     
-    // Always pass payment method when in payment step
-    if (step === STEPS.PAYMENT) {
-      // Extra verification logging
-      console.log(`[CheckoutContainer] No passo de PAGAMENTO. Passando método ${paymentMethod} para handleNextStep`);
+    // Validate terms acceptance on payment step
+    if (currentStep === STEPS.PAYMENT && !acceptTerms) {
+      toast({
+        title: "Termos não aceitos",
+        description: "Você precisa aceitar os termos para continuar.",
+        variant: "destructive"
+      });
+      setIsNavigating(false);
+      return;
+    }
+    
+    // Proceed to the next step
+    if (currentStep < STEPS.PAYMENT) {
+      setCurrentStep(currentStep + 1);
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        `Moving to next step: ${currentStep + 1}`,
+        { nextStep: currentStep + 1, timestamp: Date.now() }
+      );
+    } else {
+      // Payment processing logic here
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_INITIATED,
+        LogLevel.INFO,
+        "Payment processing initiated",
+        { timestamp: Date.now() }
+      );
       
-      if (!acceptTerms) {
-        console.log('[CheckoutContainer] Termos não aceitos, impedindo navegação');
+      setIsCreatingPayment(true);
+      
+      // Simulate payment processing
+      setTimeout(() => {
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_SUCCESS,
+          LogLevel.SUCCESS,
+          "Payment processed successfully",
+          { timestamp: Date.now() }
+        );
+        
+        setIsCreatingPayment(false);
         toast({
-          title: "Atenção",
-          description: "Você precisa aceitar os termos para continuar.",
-          variant: "destructive"
+          title: "Pagamento realizado",
+          description: "Seu pedido foi processado com sucesso!",
         });
-        return;
-      }
-      
-      // Always log before calling important functions
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        `Chamando handleNextStep com método ${paymentMethod}`,
-        { step, paymentMethod, acceptTerms }
-      );
-      
-      return handleNextStep(paymentMethod);
+        
+        // Redirect to confirmation page
+        navigate('/pedido-confirmado');
+      }, 2000);
     }
     
-    return handleNextStep();
+    setIsNavigating(false);
+  }, [currentStep, setCurrentStep, acceptTerms, navigate, toast]);
+  
+  const handleBackStep = () => {
+    setIsNavigating(true);
+    
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      `handleBackStep - Current step: ${currentStep}`,
+      { currentStep, timestamp: Date.now() }
+    );
+    
+    if (currentStep > STEPS.REVIEW) {
+      setCurrentStep(currentStep - 1);
+      
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        `Moving back to step: ${currentStep - 1}`,
+        { previousStep: currentStep - 1, timestamp: Date.now() }
+      );
+    } else {
+      // If on the first step, navigate back to the store
+      navigate('/paineis-digitais/loja');
+      
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        "Navigating back to store",
+        { timestamp: Date.now() }
+      );
+    }
+    
+    setIsNavigating(false);
   };
+  
+  // Enable next step only if terms are accepted on payment step
+  const isNextStepEnabled = !(currentStep === STEPS.PAYMENT && !acceptTerms);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="container mx-auto px-4 py-8 max-w-5xl"
-    >
+    <div className="min-h-screen bg-gray-50 pb-20">
       <CheckoutHeader />
       
-      <div className="mb-10">
-        <CheckoutProgress currentStep={step} />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Conteúdo principal */}
-        <div className="md:col-span-2 space-y-6">
-          <StepRenderer 
-            step={step}
-            cartItems={cartItems}
-            unavailablePanels={unavailablePanels}
-            selectedPlan={selectedPlan}
-            setSelectedPlan={setSelectedPlan}
-            PLANS={PLANS}
-            couponCode={couponCode}
-            setCouponCode={setCouponCode}
-            validateCoupon={validateCoupon}
-            isValidatingCoupon={isValidatingCoupon}
-            couponMessage={couponMessage}
-            couponValid={couponValid}
-            acceptTerms={acceptTerms}
-            setAcceptTerms={setAcceptTerms}
-            totalPrice={totalPrice}
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-          />
-        </div>
-        
-        {/* Resumo do checkout */}
-        <div className="md:col-span-1">
-          <motion.div
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-          >
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8">
+              <CheckoutProgress currentStep={currentStep} />
+              
+              <div className="mt-8">
+                <StepRenderer 
+                  step={currentStep}
+                  cartItems={cartItems}
+                  unavailablePanels={unavailablePanels}
+                  selectedPlan={selectedPlan}
+                  setSelectedPlan={setSelectedPlan}
+                  PLANS={PLANS}
+                  couponCode={couponCode}
+                  setCouponCode={setCouponCode}
+                  validateCoupon={validateCoupon}
+                  isValidatingCoupon={isValidatingCoupon}
+                  couponMessage={couponMessage}
+                  couponValid={couponValid}
+                  acceptTerms={acceptTerms}
+                  setAcceptTerms={setAcceptTerms}
+                  totalPrice={totalPrice}
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  orderId={pedidoId}
+                />
+              </div>
+              
+              <CheckoutNavigation
+                onBack={handleBackStep}
+                onNext={handleNextStep}
+                isBackToStore={currentStep === STEPS.REVIEW}
+                isNextEnabled={isNextStepEnabled}
+                isCreatingPayment={isCreatingPayment}
+                isPaymentStep={currentStep === STEPS.PAYMENT}
+                totalPrice={totalPrice}
+                isNavigating={isNavigating}
+                paymentMethod={paymentMethod}
+                orderId={pedidoId}
+              />
+            </div>
+            
+            <CheckoutDebugger />
+          </div>
+          
+          <div className="lg:col-span-1">
             <CheckoutSummary 
               cartItems={cartItems}
               selectedPlan={selectedPlan}
-              plans={PLANS}
-              couponDiscount={couponValid ? couponDiscount : 0}
               couponValid={couponValid}
-              startDate={startDate}
-              endDate={endDate}
-              paymentMethod={paymentMethod}
+              couponDiscount={couponDiscount}
+              planPrice={getSelectedPlanPrice()}
+              totalPrice={totalPrice}
+              planData={PLANS[selectedPlan]}
+              isNavigating={isNavigating}
             />
-          </motion.div>
+          </div>
         </div>
       </div>
-      
-      {/* Botões de navegação */}
-      <CheckoutNavigation
-        onBack={step === STEPS.PLAN ? () => window.location.href = '/paineis-digitais/loja' : handlePrevStep}
-        onNext={handleNextWithPaymentMethod}
-        isBackToStore={step === STEPS.PLAN}
-        isNextEnabled={isNextEnabled}
-        isCreatingPayment={isCreatingPayment}
-        isNavigating={isNavigating}
-        isPaymentStep={step === STEPS.PAYMENT}
-        totalPrice={totalPrice}
-        paymentMethod={paymentMethod}
-      />
-    </motion.div>
+    </div>
   );
 };
 

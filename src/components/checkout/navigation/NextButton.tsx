@@ -1,176 +1,165 @@
 
 import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader } from 'lucide-react';
-import { formatCurrency } from '@/utils/priceUtils';
+import { useUserSession } from '@/hooks/useUserSession';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface NextButtonProps {
-  onClick: (e: React.MouseEvent) => void;
+  onClick: () => void;
   isDisabled: boolean;
-  isLoading: boolean;
-  isPaymentStep: boolean;
+  isLoading?: boolean;
+  isPaymentStep?: boolean;
   totalPrice?: number;
   paymentMethod?: string;
+  orderId?: string;
 }
 
 const NextButton: React.FC<NextButtonProps> = ({ 
   onClick, 
   isDisabled, 
-  isLoading, 
-  isPaymentStep, 
+  isLoading = false,
+  isPaymentStep = false,
   totalPrice = 0,
-  paymentMethod
+  paymentMethod,
+  orderId
 }) => {
-  // Text for the "Next" button based on current state
-  const getNextButtonText = () => {
-    if (isLoading) {
-      return "Processando...";
+  const navigate = useNavigate();
+  const { user } = useUserSession();
+  
+  let buttonText = "Continuar";
+  
+  if (isPaymentStep) {
+    if (paymentMethod === 'pix') {
+      buttonText = "Pagar com PIX";
+    } else if (paymentMethod === 'credit_card') {
+      buttonText = "Pagar com Cartão";
+    } else {
+      buttonText = "Prosseguir com pagamento";
     }
-    if (isPaymentStep) {
-      // Apply 5% discount for PIX payments
-      const displayPrice = paymentMethod === 'pix' 
-        ? totalPrice * 0.95 // 5% off
-        : totalPrice;
-        
-      const methodText = paymentMethod === 'pix' ? 'PIX' : 'cartão';
-      return `Pagar com ${methodText} ${formatCurrency(displayPrice)}`;
-    }
-    return "Continuar";
-  };
-
-  // Safe function to handle next button click
-  const handleNextClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  }
+  
+  // Test payment handler
+  const handleTestPayment = async () => {
+    toast.success("Modo de pagamento de teste ativado");
     
-    // ENHANCED DEBUGGING: Add extended logging to trace payment flow
-    console.log("[NextButton] PAYMENT FLOW TRACE: Botão clicado", { 
-      isDisabled,
-      isLoading,
-      isPaymentStep,
-      paymentMethod,
-      totalPrice,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      screen: `${window.innerWidth}x${window.innerHeight}`,
-      url: window.location.href,
-      referrer: document.referrer
-    });
-    
-    // If disabled, do nothing
-    if (isDisabled) {
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.WARNING,
-        "Clique em botão desabilitado ignorado",
-        { isLoading, isDisabled }
-      );
-      return;
-    }
-    
-    // CRITICAL FIX: Log payment step clicks with more detail
-    if (isPaymentStep) {
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        `Botão de PAGAMENTO clicado: ${totalPrice} - ${paymentMethod}`,
-        { 
-          isPaymentStep, 
-          totalPrice, 
-          paymentMethod, 
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          screen: `${window.innerWidth}x${window.innerHeight}`,
-          url: window.location.href
-        }
-      );
+    try {
+      // Get cart items from localStorage
+      const cartStorageKey = 'indexa_cart';
+      const cartItemsJSON = localStorage.getItem(cartStorageKey);
+      const cartItems = cartItemsJSON ? JSON.parse(cartItemsJSON) : [];
       
-      // Store in localStorage for diagnostics
-      try {
-        localStorage.setItem('last_payment_click', new Date().toISOString());
-        localStorage.setItem('last_payment_method', paymentMethod || 'unknown');
-        localStorage.setItem('last_payment_amount', String(totalPrice));
-      } catch (e) {
-        console.error("Error storing payment click info:", e);
+      // Get building names for the selected panels
+      let paineisList = [];
+      if (cartItems && cartItems.length > 0) {
+        // Fetch building information for each panel
+        const panelIds = cartItems.map(item => item.panel.id);
+        const { data: buildingsData } = await supabase
+          .from('buildings')
+          .select('id, nome')
+          .in('id', panelIds);
+          
+        if (buildingsData) {
+          paineisList = buildingsData.map(building => building.nome);
+        } else {
+          paineisList = cartItems.map((item, index) => `Painel ${index + 1}`);
+        }
       }
       
-      // Anti-bounce mechanism to prevent double clicks
-      const btn = e.currentTarget as HTMLButtonElement;
-      btn.disabled = true;
-      setTimeout(() => {
-        if (btn && document.body.contains(btn)) {
-          btn.disabled = false;
-        }
-      }, 2000);
-    } else {
-      // Regular navigation event
+      // Prepare webhook payload with user and plan data
+      const webhookPayload = {
+        userId: user?.id,
+        fullName: user?.name || 'Não fornecido',
+        userEmail: user?.email,
+        valorCompra: totalPrice || 0,
+        paineisSelecionados: paineisList,
+        timestamp: new Date().toISOString(),
+        testMode: true
+      };
+      
       logCheckoutEvent(
-        CheckoutEvent.NAVIGATION_EVENT,
+        CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
-        `Botão de próximo passo clicado`,
-        { isPaymentStep, totalPrice, paymentMethod }
+        `Sending test payment webhook`,
+        webhookPayload
       );
-    }
-    
-    // CRITICAL FIX: Use try-catch with proper error logging
-    try {
-      console.log("[NextButton] PAYMENT FLOW TRACE: Chamando onClick handler");
-      onClick(e);
-      console.log("[NextButton] PAYMENT FLOW TRACE: onClick handler executado com sucesso");
-    } catch (error: any) {
-      console.error("PAYMENT ERROR - Erro ao processar next:", error);
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_ERROR,
-        LogLevel.ERROR,
-        `Erro ao executar onClick: ${error}`,
-        { 
-          error: String(error), 
-          stack: error.stack, 
-          component: 'NextButton' 
-        }
-      );
+      
+      // Send webhook to the specified URL
+      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload)
+      });
+      
+      if (response.ok) {
+        console.log("Test webhook sent successfully");
+        // Simulate payment success and redirect
+        toast.success("Pagamento de teste processado! Redirecionando...");
+        setTimeout(() => {
+          navigate(`/pedido-confirmado?id=${orderId}`);
+        }, 1500);
+      } else {
+        console.error("Error sending webhook:", response.status);
+        toast.error("Erro ao enviar dados de teste");
+      }
+    } catch (error) {
+      console.error("Error in test payment:", error);
+      toast.error("Erro ao processar pagamento de teste");
     }
   };
-  
-  // Choose button color based on payment method
-  const getButtonColor = () => {
-    if (!isPaymentStep) return 'bg-[#1E1B4B] hover:bg-[#1E1B4B]/90';
-    
-    return paymentMethod === 'pix' 
-      ? 'bg-[#32BCAD] hover:bg-[#32BCAD]/90 text-white font-bold shadow-lg shadow-[#32BCAD]/20 focus:ring-[#32BCAD]'
-      : 'bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#1E1B4B] font-bold shadow-lg shadow-[#00FFAB]/20 focus:ring-[#00FFAB]';
-  };
-  
-  // Button color class
-  const buttonColorClass = getButtonColor();
 
   return (
-    <Button
-      onClick={handleNextClick}
-      disabled={isDisabled}
-      size="lg"
-      className={`
-        py-6 px-8 flex items-center space-x-2
-        ${buttonColorClass}
-        ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}
-        focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all
-        hover:scale-[1.02] active:scale-[0.98] transform duration-200
-      `}
-      type="button"
-      data-testid="checkout-next-button"
-    >
-      {isLoading ? (
-        <>
-          <Loader className="h-4 w-4 animate-spin mr-2" />
-          <span>Processando...</span>
-        </>
-      ) : (
-        <>
-          <span>{getNextButtonText()}</span>
-          {isPaymentStep && <CheckCircle className="h-4 w-4 ml-2" />}
-        </>
+    <div className="flex gap-4">
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Button
+          onClick={onClick}
+          disabled={isDisabled}
+          size="lg"
+          className={`px-8 py-6 ${isPaymentStep ? 'bg-green-600 hover:bg-green-700' : ''}`}
+        >
+          {isLoading ? (
+            <>
+              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              Processando...
+            </>
+          ) : (
+            <>
+              {buttonText}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </>
+          )}
+        </Button>
+      </motion.div>
+      
+      {isPaymentStep && orderId && (
+        <motion.div
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <Button 
+            onClick={handleTestPayment}
+            disabled={isDisabled}
+            size="lg"
+            variant="outline"
+            className="px-8 py-6 border-2 border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+          >
+            PAGAR TESTE
+            <TestTube className="ml-2 h-5 w-5" />
+          </Button>
+        </motion.div>
       )}
-    </Button>
+    </div>
   );
 };
 
