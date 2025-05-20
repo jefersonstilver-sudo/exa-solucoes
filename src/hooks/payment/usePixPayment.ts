@@ -2,6 +2,20 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { toast } from 'sonner';
+
+// Define more specific types for payment related data
+interface PixData {
+  qr_code?: string;
+  qr_code_base64?: string;
+}
+
+interface PaymentLog {
+  payment_method?: string;
+  payment_status?: string;
+  payment_id?: string;
+  pix_data?: PixData;
+}
 
 export interface PixPaymentData {
   status: string;
@@ -45,17 +59,15 @@ export const usePixPayment = (pedidoId: string | null) => {
         return;
       }
 
-      // Safely handle log_pagamento field
-      const logPagamento = pedidoData.log_pagamento || {};
+      // Cast log_pagamento to the PaymentLog type for safe access
+      const logPagamento = pedidoData.log_pagamento as unknown as PaymentLog || {};
       
-      // Extract payment information safely
+      // Extract payment information safely with optional chaining
       const pixData: PixPaymentData = {
         status: pedidoData.status,
-        qrCodeBase64: typeof logPagamento === 'object' && logPagamento.pix_data ? 
-                      logPagamento.pix_data.qr_code_base64 : '',
-        qrCodeText: typeof logPagamento === 'object' && logPagamento.pix_data ? 
-                    logPagamento.pix_data.qr_code : '',
-        paymentId: typeof logPagamento === 'object' ? logPagamento.payment_id : '',
+        qrCodeBase64: logPagamento?.pix_data?.qr_code_base64,
+        qrCodeText: logPagamento?.pix_data?.qr_code,
+        paymentId: logPagamento?.payment_id,
         totalAmount: pedidoData.valor_total?.toString() || '0'
       };
 
