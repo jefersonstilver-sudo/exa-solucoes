@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -169,8 +168,8 @@ const PaymentGateway = ({
               id: painel.id,
               code: painel.code,
               buildingId: painel.building_id,
-              buildingName: buildingData?.nome || buildingData?.name || 'Não especificado',
-              address: buildingData?.endereco || buildingData?.address || 'Não especificado'
+              buildingName: buildingData?.nome || 'Não especificado',
+              address: buildingData?.endereco || 'Não especificado'
             });
           } catch (err) {
             console.error("[PaymentGateway] Error processing building data:", err);
