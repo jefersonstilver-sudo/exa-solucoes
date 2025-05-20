@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PlanProceedButtonProps {
   onProceed: () => void;
@@ -27,22 +28,42 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
     if (!user || !selectedPlan || !planData) return;
     
     try {
+      // Get cart items from localStorage
+      const cartStorageKey = 'indexa_cart';
+      const cartItemsJSON = localStorage.getItem(cartStorageKey);
+      const cartItems = cartItemsJSON ? JSON.parse(cartItemsJSON) : [];
+      
+      // Get building names for the selected panels
+      let paineisList = [];
+      if (cartItems && cartItems.length > 0) {
+        // Fetch building information for each panel
+        const panelIds = cartItems.map(item => item.panel.id);
+        const { data: buildingsData } = await supabase
+          .from('buildings')
+          .select('id, nome')
+          .in('id', panelIds);
+          
+        if (buildingsData) {
+          paineisList = buildingsData.map(building => building.nome);
+        } else {
+          paineisList = cartItems.map((item, index) => `Painel ${index + 1}`);
+        }
+      }
+      
       // Prepare webhook payload with user and plan data
       const webhookPayload = {
         userId: user.id,
-        fullName: user.name || 'Not provided', // Using name property instead of user_metadata
+        fullName: user.name || 'Não fornecido',
         userEmail: user.email,
-        planoEscolhido: selectedPlan,
-        periodoDias: selectedPlan * 30, // Converting months to days
-        planoNome: planData.name || `Plano ${selectedPlan} meses`,
-        valorTotal: totalPrice || 0,
+        valorCompra: totalPrice || 0,
+        paineisSelecionados: paineisList,
         timestamp: new Date().toISOString()
       };
       
       console.log("Sending webhook with payload:", webhookPayload);
       
       // Send webhook to the specified URL
-      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/4d787fb3-407b-434b-ab51-83836f064416', {
+      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,6 +78,7 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
       }
     } catch (error) {
       console.error("Error sending webhook:", error);
+      // Don't block the payment process if webhook fails
     }
   };
   
