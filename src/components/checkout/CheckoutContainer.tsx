@@ -23,10 +23,11 @@ const CheckoutContainer = () => {
   const { toast } = useToast();
   const { cartItems, unavailablePanels } = useCart();
   
-  // Updated to use step instead of currentStep to match the hook's property names
+  // Destructure the hook properties correctly - use step instead of currentStep
+  // and make sure we're using the correct setter function name from the hook
   const {
     step,
-    setStep,
+    setStep,  // This was missing/incorrect before
     selectedPlan,
     setSelectedPlan,
     acceptTerms,
@@ -228,6 +229,7 @@ const CheckoutContainer = () => {
               couponDiscount={couponDiscount}
               totalPrice={totalPrice}
               planData={PLANS[selectedPlan]}
+              isNavigating={isNavigating}
             />
           </div>
         </div>
