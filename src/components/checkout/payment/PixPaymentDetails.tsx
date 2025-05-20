@@ -119,7 +119,7 @@ const PixPaymentDetails = ({
       
       {qrCodeBase64 && (
         <div className="flex flex-col items-center">
-          <QRCodeDisplay base64Image={qrCodeBase64} />
+          <QRCodeDisplay qrCodeBase64={qrCodeBase64} />
         </div>
       )}
       
@@ -133,6 +133,7 @@ const PixPaymentDetails = ({
       <RefreshStatusButton
         onClick={handleRefreshStatus}
         isRefreshing={isRefreshing}
+        status={status}
         className="mt-4"
       />
       

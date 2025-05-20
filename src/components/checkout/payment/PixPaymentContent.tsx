@@ -205,7 +205,7 @@ const PixPaymentContent = ({
         
         <div className="bg-white rounded-lg shadow-sm p-6 border">
           <PixPaymentDetails
-            qrCodeBase64={paymentData.qrCodeBase64}
+            qrCodeBase64={paymentData.qrCodeBase64 || ''}
             qrCodeText={paymentData.qrCode || ''} 
             status={paymentData.status}
             paymentId={paymentData.paymentId || ''}

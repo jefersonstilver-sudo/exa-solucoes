@@ -4,27 +4,42 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
 
 interface RefreshStatusButtonProps {
-  status: string;
-  onRefresh: () => Promise<void>;
+  status?: string;
+  onClick: () => Promise<void>; // Changed onRefresh to onClick for consistency
+  isRefreshing?: boolean; // Added isRefreshing as an optional prop
+  className?: string; // Added className as an optional prop
 }
 
-const RefreshStatusButton = ({ status, onRefresh }: RefreshStatusButtonProps) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
+const RefreshStatusButton = ({ 
+  status = 'pending', 
+  onClick, 
+  isRefreshing: externalIsRefreshing,
+  className = ''
+}: RefreshStatusButtonProps) => {
+  const [internalIsRefreshing, setInternalIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [timeLeft, setTimeLeft] = useState(60);
+  
+  // Use external state if provided, otherwise use internal state
+  const isRefreshing = externalIsRefreshing !== undefined ? externalIsRefreshing : internalIsRefreshing;
 
   // Handle refresh status
   const handleRefresh = async () => {
     if (isRefreshing) return;
     
-    setIsRefreshing(true);
+    if (externalIsRefreshing === undefined) {
+      setInternalIsRefreshing(true);
+    }
+    
     try {
-      await onRefresh();
+      await onClick();
       setLastRefresh(new Date());
     } catch (error) {
       console.error("Error refreshing payment status:", error);
     } finally {
-      setIsRefreshing(false);
+      if (externalIsRefreshing === undefined) {
+        setInternalIsRefreshing(false);
+      }
     }
   };
   
@@ -40,7 +55,7 @@ const RefreshStatusButton = ({ status, onRefresh }: RefreshStatusButtonProps) =>
   }, [lastRefresh]);
 
   return (
-    <div className="w-full max-w-md">
+    <div className={`w-full max-w-md ${className}`}>
       <Button
         onClick={handleRefresh}
         disabled={isRefreshing || timeLeft > 0 || status === 'approved'}

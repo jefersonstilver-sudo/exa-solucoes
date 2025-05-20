@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface QRCodeDisplayProps {
-  qrCodeBase64: string;
+  qrCodeBase64: string; // Changed from base64Image for consistency
 }
 
 const QRCodeDisplay = ({ qrCodeBase64 }: QRCodeDisplayProps) => {

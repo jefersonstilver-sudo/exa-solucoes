@@ -20,9 +20,10 @@ interface PaymentLog {
 export interface PixPaymentData {
   status: string;
   qrCodeBase64?: string;
-  qrCodeText?: string;
+  qrCode?: string; // Changed from qrCodeText to match usage in components
   paymentId?: string;
   totalAmount?: string;
+  valorTotal?: number; // Added to match usage in components
 }
 
 export const usePixPayment = (pedidoId: string | null) => {
@@ -66,8 +67,9 @@ export const usePixPayment = (pedidoId: string | null) => {
       const pixData: PixPaymentData = {
         status: pedidoData.status,
         qrCodeBase64: logPagamento?.pix_data?.qr_code_base64,
-        qrCodeText: logPagamento?.pix_data?.qr_code,
+        qrCode: logPagamento?.pix_data?.qr_code, // Note the change here
         paymentId: logPagamento?.payment_id,
+        valorTotal: pedidoData.valor_total || 0, // Added to match usage
         totalAmount: pedidoData.valor_total?.toString() || '0'
       };
 
