@@ -43,14 +43,23 @@ const PaymentGateway = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSendingWebhook, setIsSendingWebhook] = useState<boolean>(false);
   const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [webhookSent, setWebhookSent] = useState<boolean>(false);
   
   // Log for debugging webhook execution
   useEffect(() => {
-    console.log("PaymentGateway component loaded with orderId:", orderId);
+    console.log("[PaymentGateway] Component loaded with orderId:", orderId);
     if (pixData) {
-      console.log("PIX data available:", pixData.status);
+      console.log("[PaymentGateway] PIX data available:", pixData.status);
     }
-  }, [orderId, pixData]);
+    
+    // Log info about the webhook state
+    console.log("[PaymentGateway] Initial webhook state:", {
+      webhookSent,
+      isSendingWebhook,
+      retryCount
+    });
+  }, [orderId, pixData, webhookSent, isSendingWebhook, retryCount]);
   
   // Buscar detalhes do pedido ao carregar o componente
   useEffect(() => {
@@ -61,54 +70,122 @@ const PaymentGateway = ({
   
   const fetchOrderDetails = async () => {
     try {
+      console.log("[PaymentGateway] Fetching order details for ID:", orderId);
+      
       const { data, error } = await supabase
         .from('pedidos')
         .select('*, lista_paineis(id, building_id), buildings(*)')
         .eq('id', orderId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("[PaymentGateway] Error fetching order details:", error);
+        throw error;
+      }
       
-      console.log('Detalhes do pedido carregados:', data);
+      console.log('[PaymentGateway] Order details loaded:', data);
       setOrderDetails(data);
+      
+      // Log to verify lista_paineis and buildings data
+      if (data.lista_paineis) {
+        console.log('[PaymentGateway] Panels in order:', data.lista_paineis.length);
+      }
+      
+      if (data.buildings) {
+        console.log('[PaymentGateway] Buildings data:', 
+          Array.isArray(data.buildings) 
+            ? `${data.buildings.length} buildings` 
+            : 'Single building object');
+      }
     } catch (err) {
-      console.error('Erro ao carregar detalhes do pedido:', err);
+      console.error('[PaymentGateway] Error loading order details:', err);
       toast.error('Não foi possível carregar detalhes do pedido');
     }
   };
   
   // Função para enviar webhook com informações do plano e prédios
   const sendWebhook = async () => {
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      `Tentando enviar webhook PIX`,
+      { orderId, paymentMethod, timestamp: new Date().toISOString() }
+    );
+    
     if (!user || !orderDetails) {
-      console.error("Webhook não enviado: dados do usuário ou pedido ausentes", { 
+      console.error("[PaymentGateway] Webhook não enviado: dados do usuário ou pedido ausentes", { 
         hasUser: !!user, 
-        hasOrderDetails: !!orderDetails
+        hasOrderDetails: !!orderDetails,
+        userId: user?.id,
+        orderDetailsId: orderDetails?.id
       });
+      
       toast.error("Dados incompletos para finalizar o pedido");
       return false;
     }
     
     setIsSendingWebhook(true);
     try {
+      console.log("[PaymentGateway] Preparing webhook payload with order:", orderDetails);
+      
+      // Verificar se temos lista_paineis no orderDetails
+      if (!orderDetails.lista_paineis) {
+        console.error("[PaymentGateway] Missing lista_paineis in order details");
+        await fetchOrderDetails(); // Tentar buscar novamente os dados
+        
+        if (!orderDetails.lista_paineis) {
+          toast.error("Dados de painéis não encontrados. Tente novamente.");
+          setIsSendingWebhook(false);
+          return false;
+        }
+      }
+      
       // Extrair informações dos prédios selecionados
-      const selectedBuildings = orderDetails.lista_paineis 
-        ? orderDetails.lista_paineis.map((painel: any) => {
-            // Encontrar o prédio correspondente
-            const building = orderDetails.buildings ? orderDetails.buildings.find((b: any) => b.id === painel.building_id) : null;
-            return {
+      const selectedBuildings = [];
+      
+      // Verificar se lista_paineis é um array
+      if (Array.isArray(orderDetails.lista_paineis)) {
+        console.log("[PaymentGateway] Processing panel list:", orderDetails.lista_paineis.length);
+        
+        for (const painel of orderDetails.lista_paineis) {
+          try {
+            console.log("[PaymentGateway] Processing panel:", painel);
+            
+            // Buscar informações do prédio diretamente do banco
+            const { data: buildingData, error } = await supabase
+              .from('buildings')
+              .select('*')
+              .eq('id', painel.building_id)
+              .single();
+              
+            if (error) {
+              console.error("[PaymentGateway] Error fetching building data:", error);
+              continue;
+            }
+            
+            console.log("[PaymentGateway] Found building data:", buildingData);
+            
+            selectedBuildings.push({
               id: painel.id,
               code: painel.code,
               buildingId: painel.building_id,
-              buildingName: building ? building.name || building.nome : 'Não especificado',
-              address: building ? building.address || building.endereco : 'Não especificado'
-            };
-          })
-        : [];
+              buildingName: buildingData?.nome || buildingData?.name || 'Não especificado',
+              address: buildingData?.endereco || buildingData?.address || 'Não especificado'
+            });
+          } catch (err) {
+            console.error("[PaymentGateway] Error processing building data:", err);
+          }
+        }
+      } else {
+        console.error("[PaymentGateway] lista_paineis is not an array:", orderDetails.lista_paineis);
+      }
+      
+      console.log("[PaymentGateway] Processed buildings:", selectedBuildings);
       
       // Calcular período em dias
       const planoMeses = orderDetails.duracao / 30; // Convertendo dias para meses aproximados
       
-      // Preparar payload do webhook com todos os parâmetros anteriores e adicionando informações dos prédios
+      // Preparar payload do webhook com todos os parâmetros
       const webhookPayload = {
         userId: user.id,
         fullName: user.name || 'Not provided',
@@ -123,34 +200,79 @@ const PaymentGateway = ({
         timestamp: new Date().toISOString()
       };
       
-      console.log("Enviando webhook com payload:", webhookPayload);
+      console.log("[PaymentGateway] Sending webhook with payload:", webhookPayload);
       
-      // URL correta do webhook
+      // URL do webhook
       const webhookUrl = "https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19";
       
-      // Enviar webhook para a URL especificada
+      // Enviar webhook para a URL especificada com timeout de 15 segundos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Request-Source': 'stilver-app',
         },
         body: JSON.stringify(webhookPayload),
-        signal: AbortSignal.timeout(10000)
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
-        console.log("Webhook enviado com sucesso:", await response.text());
+        const responseText = await response.text();
+        console.log("[PaymentGateway] Webhook sent successfully:", responseText);
         toast.success("Plano registrado com sucesso!");
+        logCheckoutEvent(
+          CheckoutEvent.DEBUG_EVENT,
+          LogLevel.INFO,
+          `Webhook PIX enviado com sucesso`,
+          { orderId, responseStatus: response.status }
+        );
+        setWebhookSent(true);
+        setRetryCount(0);
         return true;
       } else {
-        console.error("Erro ao enviar webhook. Status:", response.status, "Resposta:", await response.text());
-        toast.error("Erro ao registrar plano. Por favor, tente novamente.");
-        return false;
+        console.error("[PaymentGateway] Error sending webhook. Status:", response.status, "Response:", await response.text());
+        toast.error("Erro ao registrar plano. Nova tentativa em curso...");
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.ERROR,
+          `Erro no envio do webhook PIX`,
+          { orderId, status: response.status }
+        );
+        
+        // Se não for bem sucedido e tivermos menos de 3 tentativas, tentar novamente após 2 segundos
+        if (retryCount < 3) {
+          setRetryCount(prev => prev + 1);
+          setTimeout(() => sendWebhook(), 2000);
+          return false;
+        } else {
+          toast.error("Erro ao registrar plano após várias tentativas. Continuando com o pagamento.");
+          return true; // Continuar mesmo após falhas
+        }
       }
     } catch (error) {
-      console.error("Exceção ao enviar webhook:", error);
-      toast.error("Falha na comunicação. Por favor, tente novamente.");
-      return false;
+      console.error("[PaymentGateway] Exception when sending webhook:", error);
+      toast.error("Falha na comunicação. Tentando novamente...");
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        `Exceção no envio do webhook PIX: ${error}`,
+        { orderId, error: String(error) }
+      );
+      
+      // Se tivermos menos de 3 tentativas, tentar novamente após 2 segundos
+      if (retryCount < 3) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => sendWebhook(), 2000);
+        return false;
+      } else {
+        toast.error("Erro de comunicação após várias tentativas. Continuando com o pagamento.");
+        return true; // Continuar mesmo após falhas
+      }
     } finally {
       setIsSendingWebhook(false);
     }
@@ -211,14 +333,32 @@ const PaymentGateway = ({
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
       } else if (paymentMethod === 'pix') {
-        // Enviar webhook antes de prosseguir com o pagamento PIX
-        const webhookSuccess = await sendWebhook();
-        
-        if (webhookSuccess) {
-          navigate(`/pix-payment?pedido=${orderId}`);
-        } else {
-          setIsLoading(false);
+        // Antes de prosseguir com o PIX, verificar se temos detalhes do pedido
+        if (!orderDetails) {
+          console.log("[PaymentGateway] Order details missing, trying to fetch...");
+          await fetchOrderDetails();
+          
+          // Se ainda não temos detalhes, exibir erro
+          if (!orderDetails) {
+            console.error("[PaymentGateway] Unable to load order details");
+            toast.error("Não foi possível carregar detalhes do pedido. Tente novamente.");
+            setIsLoading(false);
+            return;
+          }
         }
+        
+        console.log("[PaymentGateway] Processing PIX payment, sending webhook...");
+        
+        // Enviar webhook antes de prosseguir com o pagamento PIX
+        // CRITICAL: Esta é a parte importante que garante que o webhook seja enviado
+        const webhookResult = await sendWebhook();
+        
+        // Log webhook result
+        console.log("[PaymentGateway] Webhook result:", webhookResult);
+        
+        // Sempre navegar para a página de PIX, mesmo se o webhook falhar
+        // O webhook pode ser reenviado posteriormente se necessário
+        navigate(`/pix-payment?pedido=${orderId}`);
       } else {
         toast.error("Configuração de pagamento inválida");
         setIsLoading(false);
@@ -244,7 +384,7 @@ const PaymentGateway = ({
         >
           {isSendingWebhook || isLoading ? (
             <>
-              Processando pagamento...
+              {isSendingWebhook ? "Enviando dados..." : "Processando pagamento..."}
               <span className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
             </>
           ) : (
