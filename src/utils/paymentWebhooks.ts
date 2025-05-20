@@ -73,28 +73,42 @@ export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promis
 };
 
 /**
- * Gets user information from Supabase
+ * Gets user information directly from provided client ID and email
+ * Rather than querying the database, we use the data we already have
  */
-export const getUserInfo = async (userId: string): Promise<{email: string; nome: string} | null> => {
+export const getUserInfo = async (userId: string, userEmail?: string): Promise<{email: string; nome: string} | null> => {
   try {
-    // Query the 'users' table
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('email, id')
-      .eq('id', userId)
-      .single();
-
-    if (userError) {
-      console.error("[PIX Webhook] Erro ao buscar dados do usuário:", userError);
+    if (!userId) {
+      console.error("[PIX Webhook] ID de usuário não fornecido");
       return null;
     }
-
+    
+    // Use the provided email or get it from the session
+    let email = userEmail || "";
+    
+    // If we don't have an email yet, try to get it from the auth session as a fallback
+    if (!email) {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user?.email) {
+        email = data.session.user.email;
+      }
+    }
+    
+    if (!email) {
+      console.error("[PIX Webhook] Email não disponível para o usuário");
+      return null;
+    }
+    
+    // Extract a name from the email (before the @ symbol)
+    // or use "Cliente" as a fallback
+    const nome = email.split('@')[0] || 'Cliente';
+    
     return {
-      email: userData?.email || '',
-      nome: userData?.email?.split('@')[0] || 'Cliente'
+      email,
+      nome
     };
   } catch (error) {
-    console.error("[PIX Webhook] Error fetching user info:", error);
+    console.error("[PIX Webhook] Erro ao obter informações do usuário:", error);
     return null;
   }
 };

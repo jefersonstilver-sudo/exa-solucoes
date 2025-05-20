@@ -44,8 +44,8 @@ const ClientInfoDialog = ({
     setIsSending(true);
     
     try {
-      // Get additional user information
-      const userInfo = await getUserInfo(clientId);
+      // Get additional user information, passing both ID and email
+      const userInfo = await getUserInfo(clientId, clientEmail);
       
       if (!userInfo) {
         throw new Error("Não foi possível obter informações do usuário");
@@ -70,7 +70,7 @@ const ClientInfoDialog = ({
       // Create webhook payload
       const webhookData: PixWebhookData = {
         cliente_id: clientId,
-        email: clientEmail || userInfo.email,
+        email: userInfo.email || clientEmail, // Use the email we got or fall back to the provided one
         nome: userInfo.nome,
         plano_escolhido: "Mensal", // Default plan
         predios_selecionados: selectedPanels,
