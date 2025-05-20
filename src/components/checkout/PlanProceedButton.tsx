@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
-import { toast } from 'sonner';
 
 interface PlanProceedButtonProps {
   onProceed: () => void;

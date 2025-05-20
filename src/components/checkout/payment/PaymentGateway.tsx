@@ -44,6 +44,14 @@ const PaymentGateway = ({
   const [isSendingWebhook, setIsSendingWebhook] = useState<boolean>(false);
   const [orderDetails, setOrderDetails] = useState<any>(null);
   
+  // Log for debugging webhook execution
+  useEffect(() => {
+    console.log("PaymentGateway component loaded with orderId:", orderId);
+    if (pixData) {
+      console.log("PIX data available:", pixData.status);
+    }
+  }, [orderId, pixData]);
+  
   // Buscar detalhes do pedido ao carregar o componente
   useEffect(() => {
     if (orderId) {
@@ -86,13 +94,13 @@ const PaymentGateway = ({
       const selectedBuildings = orderDetails.lista_paineis 
         ? orderDetails.lista_paineis.map((painel: any) => {
             // Encontrar o prédio correspondente
-            const building = orderDetails.buildings.find((b: any) => b.id === painel.building_id);
+            const building = orderDetails.buildings ? orderDetails.buildings.find((b: any) => b.id === painel.building_id) : null;
             return {
               id: painel.id,
               code: painel.code,
               buildingId: painel.building_id,
-              buildingName: building ? building.name : 'Não especificado',
-              address: building ? building.address : 'Não especificado'
+              buildingName: building ? building.name || building.nome : 'Não especificado',
+              address: building ? building.address || building.endereco : 'Não especificado'
             };
           })
         : [];
@@ -117,8 +125,11 @@ const PaymentGateway = ({
       
       console.log("Enviando webhook com payload:", webhookPayload);
       
+      // CORREÇÃO: URL correta do webhook
+      const webhookUrl = "https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19";
+      
       // Enviar webhook para a URL especificada
-      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
