@@ -134,10 +134,10 @@ const PaymentGateway = ({
         }
       }
       
-      // Prepare webhook payload
+      // Prepare webhook payload - fixing the user_metadata access issue
       const webhookPayload = {
         user_id: user.id,
-        nome: user.user_metadata?.full_name || 'Cliente',
+        nome: user.name || 'Cliente', // Use name from UserProfile instead of user_metadata
         email: userData?.email || user.email,
         valor_compra: totalAmount,
         paineis_escolhidos: panelDetails
