@@ -23,11 +23,13 @@ const CheckoutContainer = () => {
   const { toast } = useToast();
   const { cartItems, unavailablePanels } = useCart();
   
-  // Destructure the hook properties correctly - use step instead of currentStep
-  // and make sure we're using the correct setter function name from the hook
+  // Use the correct property names from the useCheckout hook
+  // The error shows setStep doesn't exist, so we need to use whatever setter the hook provides
   const {
     step,
-    setStep,  // This was missing/incorrect before
+    // Using the documented property from useCheckout for setting the step
+    handleNextStep: stepSetter,
+    handlePrevStep: prevStepHandler,
     selectedPlan,
     setSelectedPlan,
     acceptTerms,
@@ -93,7 +95,9 @@ const CheckoutContainer = () => {
     
     // Proceed to the next step
     if (step < STEPS.PAYMENT) {
-      setStep(step + 1);
+      // Use hook's provided method for step navigation instead of direct setter
+      stepSetter();
+      
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
@@ -132,7 +136,7 @@ const CheckoutContainer = () => {
     }
     
     setIsNavigating(false);
-  }, [step, setStep, acceptTerms, navigate, toast]);
+  }, [step, stepSetter, acceptTerms, navigate, toast]);
   
   const handleBackStep = () => {
     setIsNavigating(true);
@@ -145,7 +149,8 @@ const CheckoutContainer = () => {
     );
     
     if (step > STEPS.REVIEW) {
-      setStep(step - 1);
+      // Use the hook's provided method for navigation instead of direct setter
+      prevStepHandler();
       
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
