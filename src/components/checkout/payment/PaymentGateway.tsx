@@ -42,6 +42,7 @@ const PaymentGateway = ({
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [isSendingWebhook, setIsSendingWebhook] = useState<boolean>(false);
   
   // Log for debugging component load
   useEffect(() => {
@@ -90,6 +91,79 @@ const PaymentGateway = ({
     } catch (err) {
       console.error('[PaymentGateway] Error loading order details:', err);
       toast.error('Não foi possível carregar detalhes do pedido');
+    }
+  };
+  
+  // Function to send webhook with user and order details
+  const sendPixWebhook = async () => {
+    if (!user || !orderDetails) return;
+    
+    try {
+      setIsSendingWebhook(true);
+      console.log("[PaymentGateway] Sending PIX webhook for order:", orderId);
+      
+      // Get user information
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', user.id)
+        .single();
+      
+      if (userError) {
+        console.error("[PaymentGateway] Error fetching user data:", userError);
+        throw userError;
+      }
+      
+      // Get building information for selected panels
+      const panelDetails = [];
+      if (orderDetails.lista_paineis && Array.isArray(orderDetails.lista_paineis)) {
+        for (const panel of orderDetails.lista_paineis) {
+          const { data: buildingData, error: buildingError } = await supabase
+            .from('buildings')
+            .select('*')
+            .eq('id', panel.building_id)
+            .single();
+            
+          if (!buildingError && buildingData) {
+            panelDetails.push({
+              id: panel.id,
+              buildingName: buildingData.nome,
+              address: buildingData.endereco
+            });
+          }
+        }
+      }
+      
+      // Prepare webhook payload
+      const webhookPayload = {
+        user_id: user.id,
+        nome: user.user_metadata?.full_name || 'Cliente',
+        email: userData?.email || user.email,
+        valor_compra: totalAmount,
+        paineis_escolhidos: panelDetails
+      };
+      
+      // Send webhook
+      const webhookResponse = await fetch("https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload)
+      });
+      
+      if (!webhookResponse.ok) {
+        const errorText = await webhookResponse.text();
+        console.error("[PaymentGateway] Webhook failed:", errorText);
+        // We continue the payment process even if webhook fails
+      } else {
+        console.log("[PaymentGateway] Webhook sent successfully");
+      }
+    } catch (err) {
+      console.error("[PaymentGateway] Error sending webhook:", err);
+      // Payment process continues even if webhook fails
+    } finally {
+      setIsSendingWebhook(false);
     }
   };
   
@@ -148,6 +222,11 @@ const PaymentGateway = ({
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
       } else if (paymentMethod === 'pix') {
+        // Before proceeding with PIX payment, trigger the webhook
+        if (paymentMethod === 'pix') {
+          await sendPixWebhook();
+        }
+      
         // Antes de prosseguir com o PIX, verificar se temos detalhes do pedido
         if (!orderDetails) {
           console.log("[PaymentGateway] Order details missing, trying to fetch...");
@@ -184,11 +263,11 @@ const PaymentGateway = ({
       return (
         <Button 
           onClick={handleProceedPayment}
-          disabled={isLoading}
+          disabled={isLoading || isSendingWebhook}
           size="lg"
           className="bg-green-500 hover:bg-green-600 text-white w-full py-6"
         >
-          {isLoading ? (
+          {isLoading || isSendingWebhook ? (
             <>
               Processando pagamento...
               <span className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
