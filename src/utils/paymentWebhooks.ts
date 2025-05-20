@@ -21,12 +21,21 @@ export interface PixWebhookData {
  */
 export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promise<boolean> => {
   try {
-    // Send data to webhook
+    // Fixed webhook URL from the user's input
     const webhookUrl = "https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19";
     
-    console.log("Enviando dados para webhook:", webhookData);
+    // Log before attempting to send the webhook
+    console.log("[PIX Webhook] Enviando dados para webhook:", JSON.stringify(webhookData, null, 2));
     
-    await fetch(webhookUrl, {
+    logCheckoutEvent(
+      CheckoutEvent.PAYMENT_PROCESSING,
+      LogLevel.INFO,
+      `Iniciando chamada do webhook PIX`,
+      { webhookUrl, paymentData: webhookData }
+    );
+    
+    // Send data to webhook with improved error handling
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -35,17 +44,30 @@ export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promis
       mode: 'no-cors' // Important for cross-origin webhook calls
     });
 
-    // Log the webhook call
+    // Log the webhook call success
+    console.log("[PIX Webhook] Webhook chamado com sucesso");
+    
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Webhook chamado para pagamento PIX`,
+      `Webhook PIX chamado com sucesso`,
       { webhookData }
     );
     
+    toast.success("Iniciando processamento do pagamento PIX");
     return true;
   } catch (error) {
-    console.error("Erro ao chamar webhook:", error);
+    // Enhanced error logging
+    console.error("[PIX Webhook] Erro ao chamar webhook:", error);
+    
+    logCheckoutEvent(
+      CheckoutEvent.PAYMENT_ERROR,
+      LogLevel.ERROR,
+      `Erro ao chamar webhook PIX: ${error}`,
+      { error: String(error) }
+    );
+    
+    toast.error("Erro ao processar pagamento PIX. Tente novamente.");
     return false;
   }
 };
@@ -55,7 +77,7 @@ export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promis
  */
 export const getUserInfo = async (userId: string): Promise<{email: string; nome: string} | null> => {
   try {
-    // Fix: Query the 'users' table instead of 'clientes'
+    // Query the 'users' table
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('email, id')
@@ -63,7 +85,7 @@ export const getUserInfo = async (userId: string): Promise<{email: string; nome:
       .single();
 
     if (userError) {
-      console.error("Erro ao buscar dados do usuário:", userError);
+      console.error("[PIX Webhook] Erro ao buscar dados do usuário:", userError);
       return null;
     }
 
@@ -72,7 +94,7 @@ export const getUserInfo = async (userId: string): Promise<{email: string; nome:
       nome: userData?.email?.split('@')[0] || 'Cliente'
     };
   } catch (error) {
-    console.error("Error fetching user info:", error);
+    console.error("[PIX Webhook] Error fetching user info:", error);
     return null;
   }
 };

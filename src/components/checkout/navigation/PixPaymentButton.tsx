@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
 import { sendPixPaymentWebhook, getUserInfo } from '@/utils/paymentWebhooks';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PixPaymentButtonProps {
   onClick: () => void;
@@ -22,6 +23,16 @@ const PixPaymentButton = ({
   
   const handlePayWithPix = async () => {
     try {
+      // Enhanced logging
+      console.log("[PixPaymentButton] Botão 'Pagar com PIX' clicado");
+      
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        "Botão 'Pagar com PIX' clicado na página de checkout",
+        { timestamp: new Date().toISOString(), totalPrice }
+      );
+      
       // Get user information
       if (!user) {
         toast.error("Usuário não autenticado");
@@ -53,6 +64,12 @@ const PixPaymentButton = ({
         nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
       }));
 
+      console.log("[PixPaymentButton] Dados formatados para webhook:", {
+        cartItems: formattedPredios,
+        selectedPlan,
+        discountedTotal
+      });
+
       // Prepare webhook data
       const webhookData = {
         cliente_id: user.id,
@@ -65,12 +82,21 @@ const PixPaymentButton = ({
       };
 
       // Send webhook and continue
-      await sendPixPaymentWebhook(webhookData);
+      const webhookSent = await sendPixPaymentWebhook(webhookData);
+      
+      console.log("[PixPaymentButton] Resultado do envio do webhook:", webhookSent);
       
       // Continue with payment flow
       onClick();
     } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
+      console.error("[PixPaymentButton] Erro ao processar pagamento:", error);
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        "Erro ao processar PIX na página de checkout",
+        { error: String(error) }
+      );
+      
       // Continue with payment even if webhook fails
       onClick();
     }

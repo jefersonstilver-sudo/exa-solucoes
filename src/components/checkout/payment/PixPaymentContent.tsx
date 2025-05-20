@@ -31,6 +31,20 @@ const PixPaymentContent = ({
   // Function to handle the webhook call when paying with PIX
   const handlePayWithPix = async () => {
     try {
+      console.log("[PixPaymentContent] Botão 'Pagar com PIX' clicado na página de pagamento");
+      
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        "Botão 'Pagar com PIX' clicado na página de pagamento PIX",
+        { 
+          timestamp: new Date().toISOString(), 
+          pedidoId,
+          paymentId: paymentData.paymentId,
+          hasQRCode: !!paymentData.qrCodeText
+        }
+      );
+      
       // Get order details
       if (!pedidoId) {
         toast.error("ID do pedido não encontrado");
@@ -48,7 +62,7 @@ const PixPaymentContent = ({
         .single();
 
       if (orderError) {
-        console.error("Erro ao buscar detalhes do pedido:", orderError);
+        console.error("[PixPaymentContent] Erro ao buscar detalhes do pedido:", orderError);
         toast.error("Erro ao processar pagamento");
         return;
       }
@@ -77,6 +91,12 @@ const PixPaymentContent = ({
         return;
       }
 
+      console.log("[PixPaymentContent] Dados formatados para webhook:", {
+        selectedBuildings,
+        selectedPlan: Math.round(selectedPlan / 30),
+        valor: paymentData.qrCodeText ? orderData.valor_total.toString() : '0.00'
+      });
+
       // Prepare data for the webhook
       const webhookData = {
         cliente_id: orderData.client_id,
@@ -91,15 +111,26 @@ const PixPaymentContent = ({
         }
       };
 
-      // Send webhook
-      await sendPixPaymentWebhook(webhookData);
+      // Send webhook with enhanced logging
+      const webhookSent = await sendPixPaymentWebhook(webhookData);
       
-      toast.success("Pagamento em processamento!");
+      console.log("[PixPaymentContent] Resultado do envio do webhook:", webhookSent);
+      
+      if (webhookSent) {
+        toast.success("Pagamento em processamento!");
+      }
       
       // Refresh payment status
       await onRefreshStatus();
     } catch (error) {
-      console.error("Erro ao chamar webhook:", error);
+      console.error("[PixPaymentContent] Erro ao chamar webhook:", error);
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        "Erro ao processar PIX na página de pagamento PIX",
+        { error: String(error), pedidoId }
+      );
+      
       toast.error("Erro ao processar pagamento");
     }
   };
@@ -129,11 +160,12 @@ const PixPaymentContent = ({
             onRefreshStatus={onRefreshStatus}
           />
           
-          {/* Pay with PIX button */}
+          {/* Pay with PIX button - Now with improved visibility and logging */}
           <div className="mt-6">
             <Button
               onClick={handlePayWithPix}
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-md flex items-center justify-center"
+              data-testid="pay-with-pix-button"
             >
               <span className="mr-2">Pagar com PIX {paymentData.qrCodeText ? `R$ ${(parseFloat(paymentData.totalAmount || '0') || 0).toFixed(2)}` : ''}</span>
               <CheckCircle className="h-5 w-5" />
