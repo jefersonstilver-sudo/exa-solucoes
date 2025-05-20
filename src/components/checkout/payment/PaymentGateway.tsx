@@ -1,14 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, TestTube } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 import { toast } from 'sonner';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDebugService';
 import { handleMercadoPagoRedirect } from '@/services/mercadoPagoService';
-import { useUserSession } from '@/hooks/useUserSession';
-import { supabase } from '@/integrations/supabase/client';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import PixPaymentDetails from './PixPaymentDetails';
 import CreditCardPayment from './CreditCardPayment';
@@ -39,7 +38,6 @@ const PaymentGateway = ({
     localStorage.getItem('preferred_payment_method') || 'credit_card'
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { user } = useUserSession();
   
   // Log de montagem do componente
   useEffect(() => {
@@ -108,72 +106,6 @@ const PaymentGateway = ({
     }
   };
   
-  // Test payment handler
-  const handleTestPayment = async () => {
-    toast.success("Modo de pagamento de teste ativado");
-    
-    try {
-      // Get cart items from localStorage
-      const cartStorageKey = 'indexa_cart';
-      const cartItemsJSON = localStorage.getItem(cartStorageKey);
-      const cartItems = cartItemsJSON ? JSON.parse(cartItemsJSON) : [];
-      
-      // Get building names for the selected panels
-      let paineisList = [];
-      if (cartItems && cartItems.length > 0) {
-        // Fetch building information for each panel
-        const panelIds = cartItems.map(item => item.panel.id);
-        const { data: buildingsData } = await supabase
-          .from('buildings')
-          .select('id, nome')
-          .in('id', panelIds);
-          
-        if (buildingsData) {
-          paineisList = buildingsData.map(building => building.nome);
-        } else {
-          paineisList = cartItems.map((item, index) => `Painel ${index + 1}`);
-        }
-      }
-      
-      // Prepare webhook payload with user and plan data
-      const webhookPayload = {
-        userId: user?.id,
-        fullName: user?.name || 'Não fornecido',
-        userEmail: user?.email,
-        valorCompra: totalAmount || 0,
-        paineisSelecionados: paineisList,
-        timestamp: new Date().toISOString(),
-        testMode: true
-      };
-      
-      console.log("Sending webhook with test payload:", webhookPayload);
-      
-      // Send webhook to the specified URL
-      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookPayload)
-      });
-      
-      if (response.ok) {
-        console.log("Test webhook sent successfully");
-        // Simulate payment success and redirect
-        toast.success("Pagamento de teste processado! Redirecionando...");
-        setTimeout(() => {
-          navigate(`/pedido-confirmado?id=${orderId}`);
-        }, 1500);
-      } else {
-        console.error("Error sending webhook:", response.status);
-        toast.error("Erro ao enviar dados de teste");
-      }
-    } catch (error) {
-      console.error("Error in test payment:", error);
-      toast.error("Erro ao processar pagamento de teste");
-    }
-  };
-  
   return (
     <ClientOnly>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -224,7 +156,7 @@ const PaymentGateway = ({
           </div>
         </div>
         
-        <div className="mt-8 text-center flex justify-center gap-4">
+        <div className="mt-8 text-center">
           {!pixData && !preferenceId && (
             <Button 
               onClick={handleProceedPayment} 
@@ -234,18 +166,6 @@ const PaymentGateway = ({
               {isLoading ? "Processando..." : "Prosseguir com pagamento"}
             </Button>
           )}
-          
-          {/* Test payment button */}
-          <Button 
-            onClick={handleTestPayment}
-            disabled={isLoading}
-            size="lg"
-            variant="outline"
-            className="border-2 border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
-          >
-            PAGAR TESTE
-            <TestTube className="ml-2 h-5 w-5" />
-          </Button>
         </div>
         
         {/* Debugger para ambos os métodos de pagamento */}

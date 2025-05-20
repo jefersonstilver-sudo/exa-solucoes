@@ -1,11 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, TestTube } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 interface PlanProceedButtonProps {
   onProceed: () => void;
@@ -23,44 +22,33 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
   totalPrice
 }) => {
   const { user } = useUserSession();
+  const [isSending, setIsSending] = useState(false);
   
   const sendWebhook = async () => {
-    if (!user || !selectedPlan || !planData) return;
+    if (!user || !selectedPlan || !planData) {
+      console.error("Webhook não enviado: dados do usuário ou plano ausentes", { 
+        hasUser: !!user, 
+        selectedPlan, 
+        hasPlanData: !!planData 
+      });
+      return;
+    }
     
+    setIsSending(true);
     try {
-      // Get cart items from localStorage
-      const cartStorageKey = 'indexa_cart';
-      const cartItemsJSON = localStorage.getItem(cartStorageKey);
-      const cartItems = cartItemsJSON ? JSON.parse(cartItemsJSON) : [];
-      
-      // Get building names for the selected panels
-      let paineisList = [];
-      if (cartItems && cartItems.length > 0) {
-        // Fetch building information for each panel
-        const panelIds = cartItems.map(item => item.panel.id);
-        const { data: buildingsData } = await supabase
-          .from('buildings')
-          .select('id, nome')
-          .in('id', panelIds);
-          
-        if (buildingsData) {
-          paineisList = buildingsData.map(building => building.nome);
-        } else {
-          paineisList = cartItems.map((item, index) => `Painel ${index + 1}`);
-        }
-      }
-      
       // Prepare webhook payload with user and plan data
       const webhookPayload = {
         userId: user.id,
-        fullName: user.name || 'Não fornecido',
+        fullName: user.name || 'Not provided',
         userEmail: user.email,
-        valorCompra: totalPrice || 0,
-        paineisSelecionados: paineisList,
+        planoEscolhido: selectedPlan,
+        periodoDias: selectedPlan * 30, // Converting months to days
+        planoNome: planData.name || `Plano ${selectedPlan} meses`,
+        valorTotal: totalPrice || 0,
         timestamp: new Date().toISOString()
       };
       
-      console.log("Sending webhook with payload:", webhookPayload);
+      console.log("Enviando webhook com payload:", webhookPayload);
       
       // Send webhook to the specified URL
       const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
@@ -68,31 +56,29 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(webhookPayload)
+        body: JSON.stringify(webhookPayload),
+        // Adiciona timeout para evitar que a requisição fique pendente por muito tempo
+        signal: AbortSignal.timeout(10000)
       });
       
       if (response.ok) {
-        console.log("Webhook sent successfully");
+        console.log("Webhook enviado com sucesso:", await response.text());
+        toast.success("Plano registrado com sucesso!");
       } else {
-        console.error("Error sending webhook:", response.status);
+        console.error("Erro ao enviar webhook. Status:", response.status, "Resposta:", await response.text());
+        toast.error("Erro ao registrar plano. Por favor, tente novamente.");
       }
     } catch (error) {
-      console.error("Error sending webhook:", error);
-      // Don't block the payment process if webhook fails
+      console.error("Exceção ao enviar webhook:", error);
+      toast.error("Falha na comunicação. Por favor, tente novamente.");
+    } finally {
+      setIsSending(false);
     }
   };
   
-  const handleClick = () => {
+  const handleClick = async () => {
     // Send webhook before proceeding
-    sendWebhook();
-    // Continue with the original function
-    onProceed();
-  };
-  
-  const handleTestPayment = () => {
-    toast.success("Modo de pagamento de teste ativado");
-    // Send webhook before proceeding
-    sendWebhook();
+    await sendWebhook();
     // Continue with the original function
     onProceed();
   };
@@ -102,27 +88,25 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="mt-10 flex justify-center gap-4"
+      className="mt-10 flex justify-center"
     >
       <Button 
         size="lg" 
         className="px-8 py-6 bg-indexa-purple hover:bg-indexa-purple/90"
         onClick={handleClick}
-        disabled={disabled}
+        disabled={disabled || isSending}
       >
-        Continuar com o plano selecionado
-        <ArrowRight className="ml-2 h-5 w-5" />
-      </Button>
-      
-      <Button 
-        size="lg" 
-        variant="outline"
-        className="px-8 py-6 border-2 border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
-        onClick={handleTestPayment}
-        disabled={disabled}
-      >
-        PAGAR TESTE
-        <TestTube className="ml-2 h-5 w-5" />
+        {isSending ? (
+          <>
+            Registrando plano...
+            <span className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+          </>
+        ) : (
+          <>
+            Continuar com o plano selecionado
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </>
+        )}
       </Button>
     </motion.div>
   );

@@ -14,7 +14,6 @@ interface CheckoutNavigationProps {
   totalPrice?: number;
   isNavigating?: boolean;
   paymentMethod?: string;
-  orderId?: string;
 }
 
 const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
@@ -26,8 +25,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isPaymentStep,
   totalPrice = 0,
   isNavigating = false,
-  paymentMethod,
-  orderId
+  paymentMethod
 }) => {
   // Combined value to determine if the button should be disabled
   const isDisabled = !isNextEnabled || isCreatingPayment || isNavigating;
@@ -38,7 +36,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.6, duration: 0.5 }}
-      className="mt-12 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0"
+      className="mt-12 flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0"
     >
       <BackButton 
         onClick={onBack} 
@@ -53,7 +51,6 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
         isPaymentStep={isPaymentStep}
         totalPrice={totalPrice}
         paymentMethod={paymentMethod}
-        orderId={orderId}
       />
     </motion.div>
   );
