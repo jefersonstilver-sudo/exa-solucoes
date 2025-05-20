@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, CheckCircle } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
@@ -9,6 +9,7 @@ import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { sendPixPaymentWebhook, getUserInfo } from '@/utils/paymentWebhooks';
 
 interface PixPaymentContentProps {
   paymentData: PixPaymentData;
@@ -41,7 +42,7 @@ const PixPaymentContent = ({
         .from('pedidos')
         .select(`
           *,
-          clientes:client_id (id, email, nome)
+          client_id
         `)
         .eq('id', pedidoId)
         .single();
@@ -66,44 +67,30 @@ const PixPaymentContent = ({
       const selectedPlan = orderData.duracao || 30; // Default to 30 days if not set
 
       // Get client info
-      const clientInfo = orderData.clientes || {};
+      const userInfo = await getUserInfo(orderData.client_id);
+      
+      if (!userInfo) {
+        toast.error("Erro ao buscar dados do usuário");
+        return;
+      }
 
       // Prepare data for the webhook
       const webhookData = {
         cliente_id: orderData.client_id,
-        email: clientInfo.email,
-        nome: clientInfo.nome,
+        email: userInfo.email,
+        nome: userInfo.nome,
         plano_escolhido: `${Math.round(selectedPlan / 30)} meses`, // Convert days to months
         predios_selecionados: selectedBuildings,
-        valor_total: paymentData.status === 'pending' ? orderData.valor_total : 0,
+        valor_total: paymentData.qrCodeText ? orderData.valor_total : '0.00',
         periodo_exibicao: {
           inicio: orderData.data_inicio,
           fim: orderData.data_fim
         }
       };
 
-      // Send data to webhook
-      const webhookUrl = "https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19";
+      // Send webhook
+      await sendPixPaymentWebhook(webhookData);
       
-      console.log("Enviando dados para webhook:", webhookData);
-      
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookData),
-        mode: 'no-cors' // Important for cross-origin webhook calls
-      });
-
-      // Log the webhook call
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        `Webhook chamado para PIX payment`,
-        { pedidoId, webhookData }
-      );
-
       toast.success("Pagamento em processamento!");
       
       // Refresh payment status
@@ -133,9 +120,9 @@ const PixPaymentContent = ({
         <div className="bg-white rounded-lg shadow-sm p-6 border">
           <PixPaymentDetails
             qrCodeBase64={paymentData.qrCodeBase64}
-            qrCodeText={paymentData.qrCode}
+            qrCodeText={paymentData.qrCodeText || ''} 
             status={paymentData.status}
-            paymentId={paymentData.paymentId}
+            paymentId={paymentData.paymentId || ''}
             onRefreshStatus={onRefreshStatus}
           />
           
@@ -145,7 +132,7 @@ const PixPaymentContent = ({
               onClick={handlePayWithPix}
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-md flex items-center justify-center"
             >
-              <span className="mr-2">Pagar com PIX {paymentData.qrCode ? `R$ ${(parseFloat(paymentData.amount || '0') || 0).toFixed(2)}` : ''}</span>
+              <span className="mr-2">Pagar com PIX {paymentData.qrCodeText ? `R$ ${(parseFloat(paymentData.totalAmount || '0') || 0).toFixed(2)}` : ''}</span>
               <CheckCircle className="h-5 w-5" />
             </Button>
           </div>
