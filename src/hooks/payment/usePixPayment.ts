@@ -45,12 +45,17 @@ export const usePixPayment = (pedidoId: string | null) => {
         return;
       }
 
-      // Extract payment information from pedido
+      // Safely handle log_pagamento field
+      const logPagamento = pedidoData.log_pagamento || {};
+      
+      // Extract payment information safely
       const pixData: PixPaymentData = {
         status: pedidoData.status,
-        qrCodeBase64: pedidoData.log_pagamento?.qr_code_base64 || '',
-        qrCodeText: pedidoData.log_pagamento?.qr_code || '',
-        paymentId: pedidoData.log_pagamento?.id || '',
+        qrCodeBase64: typeof logPagamento === 'object' && logPagamento.pix_data ? 
+                      logPagamento.pix_data.qr_code_base64 : '',
+        qrCodeText: typeof logPagamento === 'object' && logPagamento.pix_data ? 
+                    logPagamento.pix_data.qr_code : '',
+        paymentId: typeof logPagamento === 'object' ? logPagamento.payment_id : '',
         totalAmount: pedidoData.valor_total?.toString() || '0'
       };
 

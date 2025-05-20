@@ -60,7 +60,10 @@ const PixPaymentContent = ({
 
       // Get the list of buildings (panels) selected
       const selectedBuildings = Array.isArray(orderData.lista_paineis) 
-        ? orderData.lista_paineis 
+        ? orderData.lista_paineis.map((painel: any) => ({
+            id: painel.id || painel,
+            nome: painel.nome || painel.buildings?.nome || 'Painel'
+          }))
         : [];
 
       // Get the selected plan duration

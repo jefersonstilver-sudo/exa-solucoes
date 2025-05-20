@@ -47,16 +47,19 @@ const PixPaymentButton = ({
         return;
       }
 
+      // Format cart items to match the expected structure
+      const formattedPredios = cartItems.map((item: any) => ({
+        id: item.panel?.id || '',
+        nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
+      }));
+
       // Prepare webhook data
       const webhookData = {
         cliente_id: user.id,
         email: userInfo.email,
         nome: userInfo.nome,
         plano_escolhido: `${selectedPlan} ${parseInt(selectedPlan) === 1 ? 'mês' : 'meses'}`,
-        predios_selecionados: cartItems.map((item: any) => ({
-          id: item.panel.id,
-          nome: item.panel.nome || item.panel.buildings?.nome || 'Painel'
-        })),
+        predios_selecionados: formattedPredios,
         valor_total: discountedTotal.toFixed(2),
         periodo_exibicao: 'Conforme selecionado no checkout'
       };
