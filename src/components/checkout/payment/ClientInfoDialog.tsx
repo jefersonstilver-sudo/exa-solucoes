@@ -82,7 +82,7 @@ const ClientInfoDialog = ({
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Enviando dados como parâmetros para webhook`,
+        `Enviando dados de teste para webhook`,
         { webhookData }
       );
 

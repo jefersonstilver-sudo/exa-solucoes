@@ -17,58 +17,30 @@ export interface PixWebhookData {
 }
 
 /**
- * Sends payment data to the PIX webhook as URL parameters instead of JSON body
+ * Sends payment data to the PIX webhook
  */
 export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promise<boolean> => {
   try {
     // Fixed webhook URL from the user's input
-    const baseWebhookUrl = "https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19";
+    const webhookUrl = "https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19";
     
     // Log before attempting to send the webhook
-    console.log("[PIX Webhook] Preparando dados para webhook como parâmetros:", webhookData);
-    
-    // Create URL with parameters
-    const url = new URL(baseWebhookUrl);
-    
-    // Add simple parameters
-    url.searchParams.append('cliente_id', webhookData.cliente_id);
-    url.searchParams.append('email', webhookData.email);
-    url.searchParams.append('nome', webhookData.nome);
-    url.searchParams.append('plano_escolhido', webhookData.plano_escolhido);
-    url.searchParams.append('valor_total', webhookData.valor_total);
-    
-    // Handle complex parameters - predios_selecionados
-    // For arrays, we'll add each item as a separate parameter with index
-    webhookData.predios_selecionados.forEach((predio, index) => {
-      url.searchParams.append(`predio_id_${index}`, predio.id);
-      url.searchParams.append(`predio_nome_${index}`, predio.nome);
-    });
-    
-    // Handle periodo_exibicao
-    if (typeof webhookData.periodo_exibicao === 'string') {
-      url.searchParams.append('periodo_exibicao', webhookData.periodo_exibicao);
-    } else {
-      if (webhookData.periodo_exibicao.inicio) {
-        url.searchParams.append('periodo_inicio', webhookData.periodo_exibicao.inicio);
-      }
-      if (webhookData.periodo_exibicao.fim) {
-        url.searchParams.append('periodo_fim', webhookData.periodo_exibicao.fim);
-      }
-    }
-    
-    // Log the constructed URL
-    console.log("[PIX Webhook] URL do webhook com parâmetros:", url.toString());
+    console.log("[PIX Webhook] Enviando dados para webhook:", JSON.stringify(webhookData, null, 2));
     
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Iniciando chamada do webhook PIX com parâmetros`,
-      { webhookUrl: url.toString() }
+      `Iniciando chamada do webhook PIX`,
+      { webhookUrl, paymentData: webhookData }
     );
     
-    // Send GET request with parameters in URL
-    const response = await fetch(url, {
-      method: 'GET', // Changed to GET since we're using URL parameters
+    // Send data to webhook with improved error handling
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(webhookData),
       mode: 'no-cors' // Important for cross-origin webhook calls
     });
 
@@ -79,7 +51,7 @@ export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promis
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
       `Webhook PIX chamado com sucesso`,
-      { url: url.toString() }
+      { webhookData }
     );
     
     toast.success("Iniciando processamento do pagamento PIX");
