@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -21,9 +22,11 @@ const CheckoutContainer = () => {
   const pedidoId = searchParams.get('pedido');
   const { toast } = useToast();
   const { cartItems, unavailablePanels } = useCart();
+  
+  // Updated to use step instead of currentStep to match the hook's property names
   const {
-    currentStep,
-    setCurrentStep,
+    step,
+    setStep,
     selectedPlan,
     setSelectedPlan,
     acceptTerms,
@@ -31,6 +34,7 @@ const CheckoutContainer = () => {
     paymentMethod,
     setPaymentMethod
   } = useCheckout();
+  
   const {
     couponCode,
     setCouponCode,
@@ -50,7 +54,7 @@ const CheckoutContainer = () => {
   // Get selected plan price
   const getSelectedPlanPrice = () => {
     if (!selectedPlan) return 0;
-    return PLANS[selectedPlan].price;
+    return PLANS[selectedPlan].pricePerMonth; // Changed from price to pricePerMonth to match PLANS structure
   };
   
   // Navigation handlers
@@ -60,8 +64,8 @@ const CheckoutContainer = () => {
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
-      `handleNextStep - Current step: ${currentStep}`,
-      { currentStep, timestamp: Date.now() }
+      `handleNextStep - Current step: ${step}`,
+      { currentStep: step, timestamp: Date.now() }
     );
     
     // Validate cart before proceeding
@@ -76,7 +80,7 @@ const CheckoutContainer = () => {
     }
     
     // Validate terms acceptance on payment step
-    if (currentStep === STEPS.PAYMENT && !acceptTerms) {
+    if (step === STEPS.PAYMENT && !acceptTerms) {
       toast({
         title: "Termos não aceitos",
         description: "Você precisa aceitar os termos para continuar.",
@@ -87,18 +91,18 @@ const CheckoutContainer = () => {
     }
     
     // Proceed to the next step
-    if (currentStep < STEPS.PAYMENT) {
-      setCurrentStep(currentStep + 1);
+    if (step < STEPS.PAYMENT) {
+      setStep(step + 1);
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
-        `Moving to next step: ${currentStep + 1}`,
-        { nextStep: currentStep + 1, timestamp: Date.now() }
+        `Moving to next step: ${step + 1}`,
+        { nextStep: step + 1, timestamp: Date.now() }
       );
     } else {
       // Payment processing logic here
       logCheckoutEvent(
-        CheckoutEvent.PAYMENT_INITIATED,
+        CheckoutEvent.DEBUG_EVENT, // Changed from PAYMENT_INITIATED which doesn't exist
         LogLevel.INFO,
         "Payment processing initiated",
         { timestamp: Date.now() }
@@ -127,7 +131,7 @@ const CheckoutContainer = () => {
     }
     
     setIsNavigating(false);
-  }, [currentStep, setCurrentStep, acceptTerms, navigate, toast]);
+  }, [step, setStep, acceptTerms, navigate, toast]);
   
   const handleBackStep = () => {
     setIsNavigating(true);
@@ -135,18 +139,18 @@ const CheckoutContainer = () => {
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
-      `handleBackStep - Current step: ${currentStep}`,
-      { currentStep, timestamp: Date.now() }
+      `handleBackStep - Current step: ${step}`,
+      { currentStep: step, timestamp: Date.now() }
     );
     
-    if (currentStep > STEPS.REVIEW) {
-      setCurrentStep(currentStep - 1);
+    if (step > STEPS.REVIEW) {
+      setStep(step - 1);
       
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
-        `Moving back to step: ${currentStep - 1}`,
-        { previousStep: currentStep - 1, timestamp: Date.now() }
+        `Moving back to step: ${step - 1}`,
+        { previousStep: step - 1, timestamp: Date.now() }
       );
     } else {
       // If on the first step, navigate back to the store
@@ -164,7 +168,7 @@ const CheckoutContainer = () => {
   };
   
   // Enable next step only if terms are accepted on payment step
-  const isNextStepEnabled = !(currentStep === STEPS.PAYMENT && !acceptTerms);
+  const isNextStepEnabled = !(step === STEPS.PAYMENT && !acceptTerms);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -174,11 +178,11 @@ const CheckoutContainer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8">
-              <CheckoutProgress currentStep={currentStep} />
+              <CheckoutProgress currentStep={step} />
               
               <div className="mt-8">
                 <StepRenderer 
-                  step={currentStep}
+                  step={step}
                   cartItems={cartItems}
                   unavailablePanels={unavailablePanels}
                   selectedPlan={selectedPlan}
@@ -202,10 +206,10 @@ const CheckoutContainer = () => {
               <CheckoutNavigation
                 onBack={handleBackStep}
                 onNext={handleNextStep}
-                isBackToStore={currentStep === STEPS.REVIEW}
+                isBackToStore={step === STEPS.REVIEW}
                 isNextEnabled={isNextStepEnabled}
                 isCreatingPayment={isCreatingPayment}
-                isPaymentStep={currentStep === STEPS.PAYMENT}
+                isPaymentStep={step === STEPS.PAYMENT}
                 totalPrice={totalPrice}
                 isNavigating={isNavigating}
                 paymentMethod={paymentMethod}
@@ -222,10 +226,8 @@ const CheckoutContainer = () => {
               selectedPlan={selectedPlan}
               couponValid={couponValid}
               couponDiscount={couponDiscount}
-              planPrice={getSelectedPlanPrice()}
               totalPrice={totalPrice}
               planData={PLANS[selectedPlan]}
-              isNavigating={isNavigating}
             />
           </div>
         </div>
