@@ -125,7 +125,7 @@ const PaymentGateway = ({
       
       console.log("Enviando webhook com payload:", webhookPayload);
       
-      // CORREÇÃO: URL correta do webhook
+      // URL correta do webhook
       const webhookUrl = "https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19";
       
       // Enviar webhook para a URL especificada
