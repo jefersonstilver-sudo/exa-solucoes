@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
@@ -88,13 +88,21 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
     // Continue with the original function
     onProceed();
   };
+  
+  const handleTestPayment = () => {
+    toast.success("Modo de pagamento de teste ativado");
+    // Send webhook before proceeding
+    sendWebhook();
+    // Continue with the original function
+    onProceed();
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="mt-10 flex justify-center"
+      className="mt-10 flex justify-center gap-4"
     >
       <Button 
         size="lg" 
@@ -104,6 +112,17 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
       >
         Continuar com o plano selecionado
         <ArrowRight className="ml-2 h-5 w-5" />
+      </Button>
+      
+      <Button 
+        size="lg" 
+        variant="outline"
+        className="px-8 py-6 border-2 border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+        onClick={handleTestPayment}
+        disabled={disabled}
+      >
+        PAGAR TESTE
+        <TestTube className="ml-2 h-5 w-5" />
       </Button>
     </motion.div>
   );
