@@ -1,7 +1,10 @@
+
 import { useState, useEffect } from "react";
 import PaymentMethodOption from "./PaymentMethodOption";
 import { CreditCard } from "lucide-react";
 import { formatCurrency } from '@/utils/priceUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PaymentMethodsProps {
   selectedMethod: string;
@@ -35,6 +38,25 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     // For credit card, keep the original price
     setCardTotal(totalPrice);
   }, [totalPrice]);
+
+  // Function to handle method selection with webhook call
+  const handleMethodSelect = async (method: string) => {
+    // Check if method is changing to PIX
+    const isChangingToPix = method === 'pix' && selectedMethod !== 'pix';
+    
+    // Set the selected method
+    setSelectedMethod(method);
+    
+    console.log("[PaymentMethods] Setting payment method to:", method);
+    
+    // Log the payment method selection for analytics
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      `Método de pagamento selecionado: ${method}`,
+      { method, totalPrice }
+    );
+  };
   
   // Payment method options
   const paymentMethods = [
@@ -123,10 +145,7 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
               : `Visa, Mastercard, AMEX, ELO — Total: ${formatCurrency(getTotalWithInterest(installments))}`
           }}
           selectedMethod={selectedMethod}
-          onSelect={(method) => {
-            console.log("[PaymentMethods] Setting payment method to:", method);
-            setSelectedMethod(method);
-          }}
+          onSelect={handleMethodSelect}
           installments={installments}
           setInstallments={method.installments ? setInstallments : undefined}
           getInstallmentValue={method.installments ? getInstallmentValue : undefined}
