@@ -24,6 +24,7 @@ interface PaymentGatewayProps {
     status: string;
   };
   onRefreshStatus?: () => Promise<void>;
+  userId?: string; // Added userId prop
 }
 
 const PaymentGateway = ({
@@ -31,7 +32,8 @@ const PaymentGateway = ({
   totalAmount,
   preferenceId,
   pixData,
-  onRefreshStatus
+  onRefreshStatus,
+  userId // Make this available for the PIX payment flow
 }: PaymentGatewayProps) => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<string>(
@@ -49,7 +51,8 @@ const PaymentGateway = ({
         orderId, 
         paymentMethod,
         hasPix: !!pixData,
-        hasPreference: !!preferenceId
+        hasPreference: !!preferenceId,
+        hasUserId: !!userId
       }
     );
     
@@ -64,7 +67,7 @@ const PaymentGateway = ({
         { orderId }
       );
     };
-  }, [orderId, paymentMethod, pixData, preferenceId]);
+  }, [orderId, paymentMethod, pixData, preferenceId, userId]);
   
   // Voltar para o checkout
   const handleBack = () => {
@@ -88,6 +91,14 @@ const PaymentGateway = ({
   // Prosseguir com o pagamento
   const handleProceedPayment = async () => {
     setIsLoading(true);
+    
+    // Validate user authentication first
+    if (paymentMethod === 'pix' && !userId) {
+      toast.error("Usuário não autenticado");
+      setIsLoading(false);
+      navigate('/login?redirect=/checkout');
+      return;
+    }
     
     try {
       if (paymentMethod === 'credit_card' && preferenceId) {
@@ -141,6 +152,7 @@ const PaymentGateway = ({
                 status={pixData.status}
                 paymentId={pixData.paymentId}
                 onRefreshStatus={onRefreshStatus || (() => Promise.resolve())}
+                userId={userId}
               />
             ) : paymentMethod === 'credit_card' ? (
               <CreditCardPayment

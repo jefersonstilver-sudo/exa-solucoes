@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, CheckCircle } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 import PixPaymentDetails from '@/components/checkout/payment/PixPaymentDetails';
 import PixPaymentDebugger from '@/components/checkout/payment/PixPaymentDebugger';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
+import { useUserSession } from '@/hooks/useUserSession';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
@@ -28,9 +30,31 @@ const PixPaymentContent = ({
   error = null,
   pedidoId
 }: PixPaymentContentProps) => {
+  const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
+  const navigate = useNavigate();
+  const [processando, setProcessando] = useState(false);
+  
+  // Check authentication on mount
+  useEffect(() => {
+    if (!isSessionLoading && !isLoggedIn) {
+      toast.error("Usuário não autenticado");
+      navigate('/login?redirect=/checkout');
+    }
+  }, [isLoggedIn, isSessionLoading, navigate]);
+
   // Function to handle the webhook call when paying with PIX
   const handlePayWithPix = async () => {
     try {
+      // Verify user is authenticated
+      if (!isLoggedIn || !user) {
+        toast.error("Usuário não autenticado");
+        navigate('/login?redirect=/checkout');
+        return;
+      }
+      
+      // Set processing state
+      setProcessando(true);
+      
       console.log("[PixPaymentContent] Botão 'Pagar com PIX' clicado na página de pagamento");
       
       logCheckoutEvent(
@@ -41,13 +65,15 @@ const PixPaymentContent = ({
           timestamp: new Date().toISOString(), 
           pedidoId,
           paymentId: paymentData.paymentId,
-          hasQRCode: !!paymentData.qrCodeText
+          hasQRCode: !!paymentData.qrCode,
+          userId: user.id
         }
       );
       
       // Get order details
       if (!pedidoId) {
         toast.error("ID do pedido não encontrado");
+        setProcessando(false);
         return;
       }
 
@@ -64,11 +90,20 @@ const PixPaymentContent = ({
       if (orderError) {
         console.error("[PixPaymentContent] Erro ao buscar detalhes do pedido:", orderError);
         toast.error("Erro ao processar pagamento");
+        setProcessando(false);
         return;
       }
 
       if (!orderData) {
         toast.error("Pedido não encontrado");
+        setProcessando(false);
+        return;
+      }
+
+      // Verify this user is authorized for this order
+      if (orderData.client_id !== user.id) {
+        toast.error("Você não tem permissão para acessar este pedido");
+        setProcessando(false);
         return;
       }
 
@@ -88,13 +123,15 @@ const PixPaymentContent = ({
       
       if (!userInfo) {
         toast.error("Erro ao buscar dados do usuário");
+        setProcessando(false);
         return;
       }
 
       console.log("[PixPaymentContent] Dados formatados para webhook:", {
         selectedBuildings,
         selectedPlan: Math.round(selectedPlan / 30),
-        valor: paymentData.qrCodeText ? orderData.valor_total.toString() : '0.00'
+        valor: paymentData.qrCode ? orderData.valor_total.toString() : '0.00',
+        userId: user.id
       });
 
       // Prepare data for the webhook
@@ -104,7 +141,7 @@ const PixPaymentContent = ({
         nome: userInfo.nome,
         plano_escolhido: `${Math.round(selectedPlan / 30)} meses`, // Convert days to months
         predios_selecionados: selectedBuildings,
-        valor_total: paymentData.qrCodeText ? orderData.valor_total.toString() : '0.00',
+        valor_total: paymentData.qrCode ? orderData.valor_total.toString() : '0.00',
         periodo_exibicao: {
           inicio: orderData.data_inicio,
           fim: orderData.data_fim
@@ -132,8 +169,23 @@ const PixPaymentContent = ({
       );
       
       toast.error("Erro ao processar pagamento");
+    } finally {
+      setProcessando(false);
     }
   };
+
+  // Don't render content if user is not authenticated
+  if (isSessionLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+        <div className="h-10 w-10 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  if (!isLoggedIn) {
+    return null; // Will be redirected by the effect above
+  }
 
   return (
     <ClientOnly>
@@ -154,10 +206,11 @@ const PixPaymentContent = ({
         <div className="bg-white rounded-lg shadow-sm p-6 border">
           <PixPaymentDetails
             qrCodeBase64={paymentData.qrCodeBase64}
-            qrCodeText={paymentData.qrCodeText || ''} 
+            qrCodeText={paymentData.qrCode || ''} 
             status={paymentData.status}
             paymentId={paymentData.paymentId || ''}
             onRefreshStatus={onRefreshStatus}
+            userId={user?.id}
           />
           
           {/* Pay with PIX button - Now with improved visibility and logging */}
@@ -166,9 +219,19 @@ const PixPaymentContent = ({
               onClick={handlePayWithPix}
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-md flex items-center justify-center"
               data-testid="pay-with-pix-button"
+              disabled={processando}
             >
-              <span className="mr-2">Pagar com PIX {paymentData.qrCodeText ? `R$ ${(parseFloat(paymentData.totalAmount || '0') || 0).toFixed(2)}` : ''}</span>
-              <CheckCircle className="h-5 w-5" />
+              {processando ? (
+                <>
+                  <span className="mr-2">Processando...</span>
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">Pagar com PIX {paymentData.valorTotal ? `R$ ${(paymentData.valorTotal * 0.95).toFixed(2)}` : ''}</span>
+                  <CheckCircle className="h-5 w-5" />
+                </>
+              )}
             </Button>
           </div>
         </div>
