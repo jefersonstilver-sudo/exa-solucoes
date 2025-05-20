@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import QRCodeDisplay from './QRCodeDisplay';
+import { QRCodeDisplay } from './QRCodeDisplay';
 import PixCodeCopyField from './PixCodeCopyField';
 import PaymentStatusBadge from './PaymentStatusBadge';
 import RefreshStatusButton from './RefreshStatusButton';
