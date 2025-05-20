@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDebugService';
 import { handleMercadoPagoRedirect } from '@/services/mercadoPagoService';
+import { useUserSession } from '@/hooks/useUserSession';
+import { supabase } from '@/integrations/supabase/client';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import PixPaymentDetails from './PixPaymentDetails';
 import CreditCardPayment from './CreditCardPayment';
@@ -34,10 +36,114 @@ const PaymentGateway = ({
   onRefreshStatus
 }: PaymentGatewayProps) => {
   const navigate = useNavigate();
+  const { user } = useUserSession();
   const [paymentMethod, setPaymentMethod] = useState<string>(
     localStorage.getItem('preferred_payment_method') || 'credit_card'
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSendingWebhook, setIsSendingWebhook] = useState<boolean>(false);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+  
+  // Buscar detalhes do pedido ao carregar o componente
+  useEffect(() => {
+    if (orderId) {
+      fetchOrderDetails();
+    }
+  }, [orderId]);
+  
+  const fetchOrderDetails = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('*, lista_paineis(id, building_id), buildings(*)')
+        .eq('id', orderId)
+        .single();
+      
+      if (error) throw error;
+      
+      console.log('Detalhes do pedido carregados:', data);
+      setOrderDetails(data);
+    } catch (err) {
+      console.error('Erro ao carregar detalhes do pedido:', err);
+      toast.error('Não foi possível carregar detalhes do pedido');
+    }
+  };
+  
+  // Função para enviar webhook com informações do plano e prédios
+  const sendWebhook = async () => {
+    if (!user || !orderDetails) {
+      console.error("Webhook não enviado: dados do usuário ou pedido ausentes", { 
+        hasUser: !!user, 
+        hasOrderDetails: !!orderDetails
+      });
+      toast.error("Dados incompletos para finalizar o pedido");
+      return false;
+    }
+    
+    setIsSendingWebhook(true);
+    try {
+      // Extrair informações dos prédios selecionados
+      const selectedBuildings = orderDetails.lista_paineis 
+        ? orderDetails.lista_paineis.map((painel: any) => {
+            // Encontrar o prédio correspondente
+            const building = orderDetails.buildings.find((b: any) => b.id === painel.building_id);
+            return {
+              id: painel.id,
+              code: painel.code,
+              buildingId: painel.building_id,
+              buildingName: building ? building.name : 'Não especificado',
+              address: building ? building.address : 'Não especificado'
+            };
+          })
+        : [];
+      
+      // Calcular período em dias
+      const planoMeses = orderDetails.duracao / 30; // Convertendo dias para meses aproximados
+      
+      // Preparar payload do webhook com todos os parâmetros anteriores e adicionando informações dos prédios
+      const webhookPayload = {
+        userId: user.id,
+        fullName: user.name || 'Not provided',
+        userEmail: user.email,
+        planoEscolhido: planoMeses,
+        periodoDias: orderDetails.duracao,
+        planoNome: `Plano ${planoMeses} meses`,
+        valorTotal: totalAmount || 0,
+        prediosSelecionados: selectedBuildings,
+        paymentMethod: paymentMethod,
+        orderId: orderId,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log("Enviando webhook com payload:", webhookPayload);
+      
+      // Enviar webhook para a URL especificada
+      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload),
+        signal: AbortSignal.timeout(10000)
+      });
+      
+      if (response.ok) {
+        console.log("Webhook enviado com sucesso:", await response.text());
+        toast.success("Plano registrado com sucesso!");
+        return true;
+      } else {
+        console.error("Erro ao enviar webhook. Status:", response.status, "Resposta:", await response.text());
+        toast.error("Erro ao registrar plano. Por favor, tente novamente.");
+        return false;
+      }
+    } catch (error) {
+      console.error("Exceção ao enviar webhook:", error);
+      toast.error("Falha na comunicação. Por favor, tente novamente.");
+      return false;
+    } finally {
+      setIsSendingWebhook(false);
+    }
+  };
   
   // Log de montagem do componente
   useEffect(() => {
@@ -94,7 +200,14 @@ const PaymentGateway = ({
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
       } else if (paymentMethod === 'pix') {
-        navigate(`/pix-payment?pedido=${orderId}`);
+        // Enviar webhook antes de prosseguir com o pagamento PIX
+        const webhookSuccess = await sendWebhook();
+        
+        if (webhookSuccess) {
+          navigate(`/pix-payment?pedido=${orderId}`);
+        } else {
+          setIsLoading(false);
+        }
       } else {
         toast.error("Configuração de pagamento inválida");
         setIsLoading(false);
@@ -104,6 +217,64 @@ const PaymentGateway = ({
       toast.error("Erro ao processar pagamento");
       setIsLoading(false);
     }
+  };
+  
+  // Botão personalizado para PIX
+  const renderPixButton = () => {
+    if (pixData) return null; // Se já temos dados PIX, não mostrar o botão
+    
+    if (paymentMethod === 'pix') {
+      return (
+        <Button 
+          onClick={handleProceedPayment}
+          disabled={isLoading || isSendingWebhook}
+          size="lg"
+          className="bg-green-500 hover:bg-green-600 text-white w-full py-6"
+        >
+          {isSendingWebhook || isLoading ? (
+            <>
+              Processando pagamento...
+              <span className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+            </>
+          ) : (
+            <>
+              Pagar com PIX R$ {totalAmount.toFixed(2).replace('.', ',')}
+            </>
+          )}
+        </Button>
+      );
+    }
+    
+    return null;
+  };
+  
+  // Botão para cartão de crédito
+  const renderCreditCardButton = () => {
+    if (preferenceId) return null; // Se já temos preferência, não mostrar o botão
+    
+    if (paymentMethod === 'credit_card') {
+      return (
+        <Button 
+          onClick={handleProceedPayment}
+          disabled={isLoading}
+          size="lg"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-6"
+        >
+          {isLoading ? (
+            <>
+              Processando...
+              <span className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+            </>
+          ) : (
+            <>
+              Pagar com Cartão R$ {totalAmount.toFixed(2).replace('.', ',')}
+            </>
+          )}
+        </Button>
+      );
+    }
+    
+    return null;
   };
   
   return (
@@ -158,13 +329,10 @@ const PaymentGateway = ({
         
         <div className="mt-8 text-center">
           {!pixData && !preferenceId && (
-            <Button 
-              onClick={handleProceedPayment} 
-              disabled={isLoading}
-              size="lg"
-            >
-              {isLoading ? "Processando..." : "Prosseguir com pagamento"}
-            </Button>
+            <>
+              {renderPixButton()}
+              {renderCreditCardButton()}
+            </>
           )}
         </div>
         
