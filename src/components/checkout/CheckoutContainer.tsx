@@ -7,14 +7,20 @@ import CheckoutProgress from '@/components/checkout/CheckoutProgress';
 import StepRenderer from '@/components/checkout/StepRenderer';
 import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
+import ClientInfoDialog from '@/components/checkout/payment/ClientInfoDialog';
 import { useCheckout } from '@/hooks/useCheckout';
 import { useToast } from '@/hooks/use-toast';
+import { useUserSession } from '@/hooks/useUserSession';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 const CheckoutContainer: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState<string>('credit_card');
+  const { user } = useUserSession();
+  
+  // Add state for client info dialog
+  const [isClientInfoOpen, setIsClientInfoOpen] = useState(false);
   
   const {
     step,
@@ -112,6 +118,27 @@ const CheckoutContainer: React.FC = () => {
     
     return handleNextStep();
   };
+  
+  // Handle test payment button click
+  const handleTestPayment = () => {
+    if (!acceptTerms) {
+      toast({
+        title: "Atenção",
+        description: "Você precisa aceitar os termos para continuar.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      `Botão de teste de pagamento clicado`,
+      { userId: user?.id, userEmail: user?.email, totalPrice, cartItems }
+    );
+    
+    setIsClientInfoOpen(true);
+  };
 
   return (
     <motion.div 
@@ -182,6 +209,17 @@ const CheckoutContainer: React.FC = () => {
         isPaymentStep={step === STEPS.PAYMENT}
         totalPrice={totalPrice}
         paymentMethod={paymentMethod}
+        onTestPayment={step === STEPS.PAYMENT ? handleTestPayment : undefined}
+      />
+      
+      {/* Client Info Dialog */}
+      <ClientInfoDialog
+        isOpen={isClientInfoOpen}
+        onClose={() => setIsClientInfoOpen(false)}
+        clientId={user?.id}
+        clientEmail={user?.email}
+        totalPrice={totalPrice}
+        panels={cartItems}
       />
     </motion.div>
   );

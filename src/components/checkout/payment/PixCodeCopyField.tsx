@@ -5,7 +5,7 @@ import { Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PixCodeCopyFieldProps {
-  code: string; // Changed from qrCodeText for consistency
+  code: string; // The PIX code to be copied
 }
 
 const PixCodeCopyField = ({ code }: PixCodeCopyFieldProps) => {

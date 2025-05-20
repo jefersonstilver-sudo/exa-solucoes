@@ -5,7 +5,7 @@ import { RefreshCw, CheckCircle2 } from 'lucide-react';
 
 interface RefreshStatusButtonProps {
   status?: string;
-  onClick: () => Promise<void>; // Changed onRefresh to onClick for consistency
+  onClick: () => Promise<void>; // Changed parameter name for consistency
   isRefreshing?: boolean; // Added isRefreshing as an optional prop
   className?: string; // Added className as an optional prop
 }

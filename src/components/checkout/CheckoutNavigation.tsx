@@ -3,6 +3,7 @@ import React from 'react';
 import BackButton from '@/components/checkout/navigation/BackButton';
 import ContinueButton from '@/components/checkout/navigation/ContinueButton';
 import PixPaymentButton from '@/components/checkout/navigation/PixPaymentButton';
+import TestPaymentButton from '@/components/checkout/navigation/TestPaymentButton';
 
 interface CheckoutNavigationProps {
   onBack: () => void;
@@ -14,6 +15,7 @@ interface CheckoutNavigationProps {
   isPaymentStep: boolean;
   totalPrice?: number;
   paymentMethod?: string;
+  onTestPayment?: () => void; // New prop for test payment button
 }
 
 const CheckoutNavigation = ({ 
@@ -25,7 +27,8 @@ const CheckoutNavigation = ({
   isNavigating,
   isPaymentStep,
   totalPrice = 0,
-  paymentMethod = 'credit_card'
+  paymentMethod = 'credit_card',
+  onTestPayment
 }: CheckoutNavigationProps) => {
   // Determine which next button to show based on current step and payment method
   const renderNextButton = () => {
@@ -35,22 +38,38 @@ const CheckoutNavigation = ({
     // When on payment step and using PIX, show a specific pay button
     if (isPaymentStep && paymentMethod === 'pix') {
       return (
-        <PixPaymentButton
-          onClick={onNext}
-          isDisabled={isDisabled}
-          isLoading={isLoading}
-          totalPrice={totalPrice}
-        />
+        <div className="flex space-x-2">
+          {onTestPayment && (
+            <TestPaymentButton 
+              onClick={onTestPayment}
+              isDisabled={isDisabled}
+            />
+          )}
+          <PixPaymentButton
+            onClick={onNext}
+            isDisabled={isDisabled}
+            isLoading={isLoading}
+            totalPrice={totalPrice}
+          />
+        </div>
       );
     }
 
-    // Default continue button
+    // Default continue button with optional test payment button
     return (
-      <ContinueButton 
-        onClick={onNext}
-        isDisabled={isDisabled}
-        isLoading={isLoading}
-      />
+      <div className="flex space-x-2">
+        {isPaymentStep && onTestPayment && (
+          <TestPaymentButton 
+            onClick={onTestPayment}
+            isDisabled={isDisabled}
+          />
+        )}
+        <ContinueButton 
+          onClick={onNext}
+          isDisabled={isDisabled}
+          isLoading={isLoading}
+        />
+      </div>
     );
   };
 
