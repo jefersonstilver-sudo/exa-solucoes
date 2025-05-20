@@ -84,7 +84,7 @@ const PixPaymentContent = ({
         nome: userInfo.nome,
         plano_escolhido: `${Math.round(selectedPlan / 30)} meses`, // Convert days to months
         predios_selecionados: selectedBuildings,
-        valor_total: paymentData.qrCodeText ? orderData.valor_total : '0.00',
+        valor_total: paymentData.qrCodeText ? orderData.valor_total.toString() : '0.00',
         periodo_exibicao: {
           inicio: orderData.data_inicio,
           fim: orderData.data_fim

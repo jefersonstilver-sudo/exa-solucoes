@@ -64,7 +64,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       
       // Log payment data loaded event
       logCheckoutEvent(
-        CheckoutEvent.PAYMENT_STATUS,
+        CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
         `PIX payment data loaded for pedido ${pedidoId}`,
         { status: pixData.status, paymentId: pixData.paymentId }
