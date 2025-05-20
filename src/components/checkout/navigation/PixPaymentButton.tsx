@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
-import { sendPixPaymentWebhook, getUserInfo } from '@/utils/paymentWebhooks';
+import { sendPixPaymentWebhook, getUserInfo, PixWebhookData, PixWebhookResponse } from '@/utils/paymentWebhooks';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 
 interface PixPaymentButtonProps {
   onClick: () => void;
@@ -16,13 +17,19 @@ interface PixPaymentButtonProps {
 const PixPaymentButton = ({ 
   onClick, 
   isDisabled, 
-  isLoading,
+  isLoading: externalIsLoading,
   totalPrice 
 }: PixPaymentButtonProps) => {
   const { user } = useUserSession();
+  const [isLoading, setIsLoading] = useState(false);
+  const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
+  const [pixData, setPixData] = useState<PixWebhookResponse | null>(null);
   
   const handlePayWithPix = async () => {
     try {
+      // Set loading state
+      setIsLoading(true);
+      
       // Enhanced logging
       console.log("[PixPaymentButton] Botão 'Pagar com PIX' clicado");
       
@@ -36,6 +43,7 @@ const PixPaymentButton = ({
       // Get user information
       if (!user) {
         toast.error("Usuário não autenticado");
+        setIsLoading(false);
         return;
       }
 
@@ -55,6 +63,7 @@ const PixPaymentButton = ({
       
       if (!userInfo) {
         toast.error("Erro ao buscar dados do usuário");
+        setIsLoading(false);
         return;
       }
 
@@ -70,24 +79,41 @@ const PixPaymentButton = ({
         discountedTotal
       });
 
+      // Get current date and end date (30 days from now)
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(now.getDate() + 30);
+
+      const formatDate = (date: Date) => {
+        return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+      };
+
       // Prepare webhook data
-      const webhookData = {
+      const webhookData: PixWebhookData = {
         cliente_id: user.id,
         email: userInfo.email,
         nome: userInfo.nome,
         plano_escolhido: `${selectedPlan} ${parseInt(selectedPlan) === 1 ? 'mês' : 'meses'}`,
         predios_selecionados: formattedPredios,
         valor_total: discountedTotal.toFixed(2),
-        periodo_exibicao: 'Conforme selecionado no checkout'
+        periodo_exibicao: {
+          inicio: formatDate(now),
+          fim: formatDate(endDate)
+        }
       };
 
-      // Send webhook and continue
-      const webhookSent = await sendPixPaymentWebhook(webhookData);
+      // Send webhook and get response with QR code data
+      const response = await sendPixPaymentWebhook(webhookData);
       
-      console.log("[PixPaymentButton] Resultado do envio do webhook:", webhookSent);
+      console.log("[PixPaymentButton] Resposta do webhook:", response);
       
-      // Continue with payment flow
-      onClick();
+      if (response.success) {
+        // Store the PIX data and show the QR code dialog
+        setPixData(response);
+        setQrCodeDialogOpen(true);
+      } else {
+        toast.error("Erro ao processar pagamento PIX");
+      }
     } catch (error) {
       console.error("[PixPaymentButton] Erro ao processar pagamento:", error);
       logCheckoutEvent(
@@ -97,26 +123,43 @@ const PixPaymentButton = ({
         { error: String(error) }
       );
       
-      // Continue with payment even if webhook fails
-      onClick();
+      toast.error("Erro ao processar pagamento PIX");
+    } finally {
+      setIsLoading(false);
     }
   };
   
   return (
-    <Button
-      onClick={handlePayWithPix}
-      disabled={isDisabled || isLoading}
-      className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-md"
-    >
-      {isLoading ? (
-        <>
-          <span className="mr-2">Processando...</span>
-          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        </>
-      ) : (
-        <>Pagar com PIX {totalPrice ? `R$ ${(totalPrice * 0.95).toFixed(2)}` : ''}</>
+    <>
+      <Button
+        onClick={handlePayWithPix}
+        disabled={isDisabled || isLoading || externalIsLoading}
+        className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-md"
+      >
+        {isLoading || externalIsLoading ? (
+          <>
+            <span className="mr-2">Processando...</span>
+            <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </>
+        ) : (
+          <>Pagar com PIX {totalPrice ? `R$ ${(totalPrice * 0.95).toFixed(2)}` : ''}</>
+        )}
+      </Button>
+
+      {pixData && (
+        <PixQrCodeDialog
+          isOpen={qrCodeDialogOpen}
+          onClose={() => {
+            setQrCodeDialogOpen(false);
+            // Call the original onClick after closing the dialog to continue with checkout process
+            onClick();
+          }}
+          qrCodeBase64={pixData.qrCodeBase64}
+          qrCodeText={pixData.qrCodeText}
+          paymentLink={pixData.paymentLink}
+        />
       )}
-    </Button>
+    </>
   );
 };
 

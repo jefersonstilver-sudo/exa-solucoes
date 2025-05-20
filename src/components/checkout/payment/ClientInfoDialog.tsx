@@ -15,6 +15,7 @@ import { Panel } from '@/types/panel';
 import { sendPixPaymentWebhook, getUserInfo, PixWebhookData } from '@/utils/paymentWebhooks';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast } from 'sonner';
+import PixQrCodeDialog from './PixQrCodeDialog';
 
 interface ClientInfoDialogProps {
   isOpen: boolean;
@@ -34,6 +35,12 @@ const ClientInfoDialog = ({
   panels
 }: ClientInfoDialogProps) => {
   const [isSending, setIsSending] = useState(false);
+  const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
+  const [pixData, setPixData] = useState<{
+    qrCodeBase64?: string;
+    qrCodeText?: string;
+    paymentLink?: string;
+  } | null>(null);
 
   const handleSendWebhook = async () => {
     if (!clientId) {
@@ -87,11 +94,18 @@ const ClientInfoDialog = ({
       );
 
       // Send data to webhook
-      const success = await sendPixPaymentWebhook(webhookData);
+      const response = await sendPixPaymentWebhook(webhookData);
       
-      if (success) {
+      if (response.success) {
         toast.success("Dados enviados com sucesso!");
-        onClose();
+        
+        // Store the PIX data and open the QR code dialog
+        setPixData({
+          qrCodeBase64: response.qrCodeBase64,
+          qrCodeText: response.qrCodeText,
+          paymentLink: response.paymentLink
+        });
+        setQrCodeDialogOpen(true);
       } else {
         throw new Error("Falha ao enviar dados para o webhook");
       }
@@ -112,65 +126,81 @@ const ClientInfoDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Informações do Cliente</DialogTitle>
-          <DialogDescription>
-            Detalhes para processamento de pagamento
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">ID do Cliente</h3>
-            <p className="text-sm text-gray-500 break-all bg-gray-50 p-2 rounded">{clientId || "Não disponível"}</p>
-          </div>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Informações do Cliente</DialogTitle>
+            <DialogDescription>
+              Detalhes para processamento de pagamento
+            </DialogDescription>
+          </DialogHeader>
           
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">Email</h3>
-            <p className="text-sm text-gray-500 bg-gray-50 p-2 rounded">{clientEmail || "Não disponível"}</p>
-          </div>
-          
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">Valor Total</h3>
-            <p className="text-sm font-semibold text-green-600 bg-gray-50 p-2 rounded">
-              R$ {totalPrice.toFixed(2).replace('.', ',')}
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">Painéis Selecionados ({panels.length})</h3>
-            <div className="max-h-40 overflow-y-auto bg-gray-50 p-2 rounded">
-              {panels.length > 0 ? (
-                <ul className="list-disc pl-5 text-sm text-gray-500">
-                  {panels.map((item, index) => (
-                    <li key={index}>
-                      {item.panel.buildings?.nome || "Painel sem nome"} ({item.duration} dias)
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500">Nenhum painel selecionado</p>
-              )}
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">ID do Cliente</h3>
+              <p className="text-sm text-gray-500 break-all bg-gray-50 p-2 rounded">{clientId || "Não disponível"}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Email</h3>
+              <p className="text-sm text-gray-500 bg-gray-50 p-2 rounded">{clientEmail || "Não disponível"}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Valor Total</h3>
+              <p className="text-sm font-semibold text-green-600 bg-gray-50 p-2 rounded">
+                R$ {totalPrice.toFixed(2).replace('.', ',')}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Painéis Selecionados ({panels.length})</h3>
+              <div className="max-h-40 overflow-y-auto bg-gray-50 p-2 rounded">
+                {panels.length > 0 ? (
+                  <ul className="list-disc pl-5 text-sm text-gray-500">
+                    {panels.map((item, index) => (
+                      <li key={index}>
+                        {item.panel.buildings?.nome || "Painel sem nome"} ({item.duration} dias)
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhum painel selecionado</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose} disabled={isSending}>
-            Fechar
-          </Button>
-          <Button 
-            onClick={handleSendWebhook} 
-            className="bg-purple-600 hover:bg-purple-700"
-            disabled={isSending}
-          >
-            {isSending ? 'Enviando...' : 'Enviar para Webhook'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose} disabled={isSending}>
+              Fechar
+            </Button>
+            <Button 
+              onClick={handleSendWebhook} 
+              className="bg-purple-600 hover:bg-purple-700"
+              disabled={isSending}
+            >
+              {isSending ? 'Enviando...' : 'Enviar para Webhook'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Dialog */}
+      {pixData && (
+        <PixQrCodeDialog
+          isOpen={qrCodeDialogOpen}
+          onClose={() => {
+            setQrCodeDialogOpen(false);
+            onClose();
+          }}
+          qrCodeBase64={pixData.qrCodeBase64}
+          qrCodeText={pixData.qrCodeText}
+          paymentLink={pixData.paymentLink}
+        />
+      )}
+    </>
   );
 };
 
