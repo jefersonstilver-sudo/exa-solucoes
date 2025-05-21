@@ -17,6 +17,7 @@ import PlanSelection from './pages/PlanSelection'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Confirmacao from './pages/Confirmacao'
 import PixPayment from './pages/PixPayment'
+import MeusPedidos from './pages/MeusPedidos'
 
 // Providers
 import { ThemeProvider } from './components/ui/theme-provider'
@@ -67,6 +68,10 @@ const router = createBrowserRouter([
   {
     path: '/pix-payment',
     element: <PixPayment />
+  },
+  {
+    path: '/meus-pedidos',
+    element: <MeusPedidos />
   }
 ])
 

@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Forbidden from "./pages/Forbidden";
 import PixPayment from "./pages/PixPayment";
 import Payment from "./pages/Payment";
+import MeusPedidos from "./pages/MeusPedidos";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
@@ -36,8 +37,8 @@ const App = () => (
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/403" element={<Forbidden />} />
+        <Route path="/meus-pedidos" element={<MeusPedidos />} /> 
         {/* Rotas adicionadas para o menu do usuário */}
-        <Route path="/pedidos" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}
         <Route path="/campanhas" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}
         <Route path="/configuracoes" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}
         <Route path="/alterar-senha" element={<NotFound />} /> {/* Temporário - Substituir por componente real */}

@@ -333,14 +333,14 @@ export type Database = {
           cupom_id: string | null
           data_fim: string | null
           data_inicio: string | null
-          duracao: number
+          duracao: number | null
           id: string
-          lista_paineis: string[]
+          lista_paineis: string[] | null
           log_pagamento: Json | null
           plano_meses: number
           status: string
           termos_aceitos: boolean | null
-          valor_total: number
+          valor_total: number | null
         }
         Insert: {
           client_id: string
@@ -348,14 +348,14 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
-          duracao: number
+          duracao?: number | null
           id?: string
-          lista_paineis: string[]
+          lista_paineis?: string[] | null
           log_pagamento?: Json | null
           plano_meses?: number
           status?: string
           termos_aceitos?: boolean | null
-          valor_total: number
+          valor_total?: number | null
         }
         Update: {
           client_id?: string
@@ -363,14 +363,14 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
-          duracao?: number
+          duracao?: number | null
           id?: string
-          lista_paineis?: string[]
+          lista_paineis?: string[] | null
           log_pagamento?: Json | null
           plano_meses?: number
           status?: string
           termos_aceitos?: boolean | null
-          valor_total?: number
+          valor_total?: number | null
         }
         Relationships: [
           {
@@ -420,6 +420,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tentativas_compra: {
+        Row: {
+          created_at: string
+          credencial: string | null
+          id: string
+          id_user: string
+          predios_selecionados: number[] | null
+          valor_total: number | null
+        }
+        Insert: {
+          created_at?: string
+          credencial?: string | null
+          id?: string
+          id_user: string
+          predios_selecionados?: number[] | null
+          valor_total?: number | null
+        }
+        Update: {
+          created_at?: string
+          credencial?: string | null
+          id?: string
+          id_user?: string
+          predios_selecionados?: number[] | null
+          valor_total?: number | null
+        }
+        Relationships: []
       }
       users: {
         Row: {
