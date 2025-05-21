@@ -53,7 +53,7 @@ export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promis
     });
 
     // Parse the webhook response
-    let responseData = {};
+    let responseData: Record<string, any> = {};
     try {
       responseData = await response.json();
       console.log("[PIX Webhook] Resposta do webhook:", responseData);
@@ -156,3 +156,4 @@ export const getUserInfo = async (userId: string, userEmail?: string): Promise<{
     return null;
   }
 };
+
