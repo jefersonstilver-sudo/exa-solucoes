@@ -29,46 +29,16 @@ const MeusPedidos: React.FC = () => {
   const { isLoggedIn, user, isLoading: isSessionLoading } = useUserSession();
   const navigate = useNavigate();
 
-  // Carrega os pedidos do usuário
+  // Carrega todos os pedidos sem filtro por usuário
   useEffect(() => {
     const fetchPedidos = async () => {
-      if (isSessionLoading) return;
-      
-      if (!isLoggedIn || !user) {
-        toast.error('Você precisa estar logado para visualizar seus pedidos');
-        navigate('/login?redirect=/meus-pedidos');
-        return;
-      }
-
       try {
         setIsLoading(true);
         
-        // Query all orders associated with this user's email from the users table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-          
-        if (userError) {
-          console.error('Erro ao buscar ID do usuário:', userError);
-          throw userError;
-        }
-        
-        if (!userData) {
-          console.error('Usuário não encontrado na tabela users');
-          toast.error('Não foi possível encontrar seu perfil de usuário');
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log('ID do usuário encontrado na tabela users:', userData.id);
-        
-        // Now fetch the orders using the correct user ID from the users table
+        // Buscar todos os pedidos sem filtrar por client_id
         const { data, error } = await supabase
           .from('pedidos')
           .select('*')
-          .eq('client_id', userData.id)
           .order('created_at', { ascending: false });
         
         if (error) {
@@ -80,14 +50,14 @@ const MeusPedidos: React.FC = () => {
         setPedidos(data || []);
       } catch (error: any) {
         console.error('Erro ao carregar pedidos:', error.message || error);
-        toast.error('Não foi possível carregar seus pedidos');
+        toast.error('Não foi possível carregar os pedidos');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPedidos();
-  }, [isLoggedIn, user, isSessionLoading, navigate]);
+  }, []);
 
   // Formatador de status para exibição - agora lida com string ou boolean
   const formatStatus = (status: string | boolean) => {
@@ -114,13 +84,13 @@ const MeusPedidos: React.FC = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  if (isSessionLoading || (isLoading && isLoggedIn)) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-indexa-purple mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-800">Carregando seus pedidos...</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Carregando pedidos...</h2>
           </div>
         </div>
       </Layout>
