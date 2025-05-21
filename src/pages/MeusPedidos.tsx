@@ -43,11 +43,32 @@ const MeusPedidos: React.FC = () => {
       try {
         setIsLoading(true);
         
-        // Simplificamos a consulta para pegar todos os pedidos sem filtrar por status
+        // Query all orders associated with this user's email from the users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+          
+        if (userError) {
+          console.error('Erro ao buscar ID do usuário:', userError);
+          throw userError;
+        }
+        
+        if (!userData) {
+          console.error('Usuário não encontrado na tabela users');
+          toast.error('Não foi possível encontrar seu perfil de usuário');
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('ID do usuário encontrado na tabela users:', userData.id);
+        
+        // Now fetch the orders using the correct user ID from the users table
         const { data, error } = await supabase
           .from('pedidos')
           .select('*')
-          .eq('client_id', user.id)
+          .eq('client_id', userData.id)
           .order('created_at', { ascending: false });
         
         if (error) {
