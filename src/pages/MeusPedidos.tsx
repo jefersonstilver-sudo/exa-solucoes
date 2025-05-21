@@ -15,9 +15,9 @@ import { toast } from 'sonner';
 interface Pedido {
   id: string;
   created_at: string;
-  status: string;
+  status: string | boolean;
   valor_total: number;
-  lista_paineis: string[];
+  lista_paineis: string[] | null;
   plano_meses: number;
   data_inicio?: string;
   data_fim?: string;
@@ -67,17 +67,22 @@ const MeusPedidos: React.FC = () => {
     fetchPedidos();
   }, [isLoggedIn, user, isSessionLoading, navigate]);
 
-  // Formatador de status para exibição
-  const formatStatus = (status: string) => {
-    switch (status.toLowerCase()) {
+  // Formatador de status para exibição - agora lida com string ou boolean
+  const formatStatus = (status: string | boolean) => {
+    // Convertendo o status para string para garantir compatibilidade
+    const statusString = String(status).toLowerCase();
+    
+    switch (statusString) {
       case 'pendente':
+      case 'false':
         return { label: 'Pendente', color: 'bg-yellow-200 text-yellow-800' };
       case 'pago':
+      case 'true':
         return { label: 'Pago', color: 'bg-green-200 text-green-800' };
       case 'cancelado':
         return { label: 'Cancelado', color: 'bg-red-200 text-red-800' };
       default:
-        return { label: status, color: 'bg-gray-200 text-gray-800' };
+        return { label: statusString || 'Desconhecido', color: 'bg-gray-200 text-gray-800' };
     }
   };
 
@@ -155,6 +160,8 @@ const MeusPedidos: React.FC = () => {
                 <TableBody>
                   {pedidos.map((pedido) => {
                     const status = formatStatus(pedido.status);
+                    const paineisList = Array.isArray(pedido.lista_paineis) ? pedido.lista_paineis : [];
+                    
                     return (
                       <TableRow key={pedido.id}>
                         <TableCell className="font-medium">
@@ -183,7 +190,7 @@ const MeusPedidos: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {Array.isArray(pedido.lista_paineis) ? pedido.lista_paineis.length : 0}
+                          {paineisList.length}
                         </TableCell>
                         <TableCell>
                           <Button
