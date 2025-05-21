@@ -12,6 +12,7 @@ import PaymentMethodSelector from './PaymentMethodSelector';
 import PixPaymentDetails from './PixPaymentDetails';
 import CreditCardPayment from './CreditCardPayment';
 import PixPaymentDebugger from './PixPaymentDebugger';
+import { sendPixPaymentWebhook, getUserInfo } from '@/utils/paymentWebhooks';
 
 interface PaymentGatewayProps {
   orderId: string;
@@ -24,7 +25,7 @@ interface PaymentGatewayProps {
     status: string;
   };
   onRefreshStatus?: () => Promise<void>;
-  userId?: string; // Added userId prop
+  userId?: string;
 }
 
 const PaymentGateway = ({
@@ -33,7 +34,7 @@ const PaymentGateway = ({
   preferenceId,
   pixData,
   onRefreshStatus,
-  userId // Make this available for the PIX payment flow
+  userId
 }: PaymentGatewayProps) => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<string>(
@@ -105,6 +106,52 @@ const PaymentGateway = ({
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
       } else if (paymentMethod === 'pix') {
+        // If we're in PIX payment flow, send the webhook and then navigate
+        if (userId) {
+          // Get user information
+          const userInfo = await getUserInfo(userId);
+          
+          if (!userInfo) {
+            toast.error("Erro ao buscar dados do usuário");
+            setIsLoading(false);
+            return;
+          }
+          
+          // Get cart items from localStorage
+          const cartItemsStr = localStorage.getItem('indexa_cart');
+          const cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
+          
+          // Format cart items for the webhook
+          const formattedPredios = cartItems.map((item: any) => ({
+            id: item.panel?.id || '',
+            nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
+          }));
+          
+          // Prepare webhook data
+          const webhookData = {
+            cliente_id: userId,
+            email: userInfo.email,
+            nome: userInfo.nome,
+            plano_escolhido: "Mensal",
+            predios_selecionados: formattedPredios,
+            valor_total: totalAmount.toFixed(2),
+            periodo_exibicao: {
+              inicio: new Date().toLocaleDateString('pt-BR'),
+              fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('pt-BR')
+            }
+          };
+          
+          // Send webhook and handle response
+          const response = await sendPixPaymentWebhook(webhookData);
+          
+          if (response.success) {
+            // Show success and navigate to PIX payment page
+            toast.success("PIX gerado com sucesso!");
+          } else {
+            toast.error("Erro ao gerar PIX");
+          }
+        }
+        
         navigate(`/pix-payment?pedido=${orderId}`);
       } else {
         toast.error("Configuração de pagamento inválida");
@@ -174,8 +221,11 @@ const PaymentGateway = ({
               onClick={handleProceedPayment} 
               disabled={isLoading}
               size="lg"
+              className={paymentMethod === 'pix' ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""}
             >
-              {isLoading ? "Processando..." : "Prosseguir com pagamento"}
+              {isLoading ? "Processando..." : paymentMethod === 'pix' ? 
+                `Pagar com PIX ${totalAmount ? `R$ ${(totalAmount * 0.95).toFixed(2)}` : ''}` : 
+                "Prosseguir com pagamento"}
             </Button>
           )}
         </div>
