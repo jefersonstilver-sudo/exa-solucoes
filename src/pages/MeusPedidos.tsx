@@ -43,6 +43,7 @@ const MeusPedidos: React.FC = () => {
       try {
         setIsLoading(true);
         
+        // Simplificamos a consulta para pegar todos os pedidos sem filtrar por status
         const { data, error } = await supabase
           .from('pedidos')
           .select('*')
