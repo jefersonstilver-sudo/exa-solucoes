@@ -111,6 +111,19 @@ export const logUserAction = async (
 };
 
 /**
+ * Fetches all orders without filtering by user
+ */
+export const getAllPedidos = async () => {
+  const { data, error } = await supabase
+    .from('pedidos')
+    .select('*')
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  return data || [];
+};
+
+/**
  * Fetches panels near a specific location
  */
 export const getPanelsByLocation = async (
