@@ -14,6 +14,7 @@ interface CheckoutNavigationProps {
   isPaymentStep: boolean;
   totalPrice?: number;
   paymentMethod?: string;
+  onTestPayment?: () => void;
 }
 
 const CheckoutNavigation = ({ 
@@ -25,7 +26,8 @@ const CheckoutNavigation = ({
   isNavigating,
   isPaymentStep,
   totalPrice = 0,
-  paymentMethod = 'credit_card'
+  paymentMethod = 'credit_card',
+  onTestPayment
 }: CheckoutNavigationProps) => {
   // Determine which next button to show based on current step and payment method
   const renderNextButton = () => {
