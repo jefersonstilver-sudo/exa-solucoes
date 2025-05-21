@@ -49,12 +49,15 @@ const MeusPedidos: React.FC = () => {
           .eq('client_id', user.id)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Erro detalhado ao carregar pedidos:', error);
+          throw error;
+        }
         
         console.log("Pedidos carregados:", data);
         setPedidos(data || []);
-      } catch (error) {
-        console.error('Erro ao carregar pedidos:', error);
+      } catch (error: any) {
+        console.error('Erro ao carregar pedidos:', error.message || error);
         toast.error('Não foi possível carregar seus pedidos');
       } finally {
         setIsLoading(false);
@@ -180,7 +183,7 @@ const MeusPedidos: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {pedido.lista_paineis?.length || 0}
+                          {Array.isArray(pedido.lista_paineis) ? pedido.lista_paineis.length : 0}
                         </TableCell>
                         <TableCell>
                           <Button
