@@ -19,6 +19,8 @@ interface PixQrCodeDialogProps {
   qrCodeBase64?: string;
   qrCodeText?: string;
   paymentLink?: string;
+  pix_url?: string;
+  pix_base64?: string;
 }
 
 const PixQrCodeDialog = ({
@@ -26,11 +28,18 @@ const PixQrCodeDialog = ({
   onClose,
   qrCodeBase64,
   qrCodeText,
-  paymentLink
+  paymentLink,
+  pix_url,
+  pix_base64
 }: PixQrCodeDialogProps) => {
+  // Use pix_url/pix_base64 if available, otherwise fall back to the original fields
+  const finalQrCodeBase64 = pix_base64 || qrCodeBase64;
+  const finalQrCodeText = pix_url || qrCodeText;
+  const finalPaymentLink = paymentLink;
+
   const handleCopyQrCode = () => {
-    if (qrCodeText) {
-      navigator.clipboard.writeText(qrCodeText)
+    if (finalQrCodeText) {
+      navigator.clipboard.writeText(finalQrCodeText)
         .then(() => toast.success("Código PIX copiado para a área de transferência"))
         .catch(() => toast.error("Erro ao copiar código PIX"));
     }
@@ -47,13 +56,13 @@ const PixQrCodeDialog = ({
         </DialogHeader>
         
         <div className="flex flex-col items-center space-y-4 py-4">
-          {qrCodeBase64 && (
+          {finalQrCodeBase64 && (
             <div className="w-full flex justify-center">
-              <QRCodeDisplay qrCodeBase64={qrCodeBase64} />
+              <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
             </div>
           )}
           
-          {qrCodeText && (
+          {finalQrCodeText && (
             <div className="w-full">
               <div className="flex flex-col space-y-2">
                 <label className="text-sm font-medium text-gray-700">
@@ -61,7 +70,7 @@ const PixQrCodeDialog = ({
                 </label>
                 <div className="relative">
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-xs overflow-x-auto max-w-full whitespace-nowrap">
-                    {qrCodeText.length > 50 ? `${qrCodeText.substring(0, 50)}...` : qrCodeText}
+                    {finalQrCodeText.length > 50 ? `${finalQrCodeText.substring(0, 50)}...` : finalQrCodeText}
                   </div>
                   <Button 
                     size="sm" 
@@ -77,10 +86,10 @@ const PixQrCodeDialog = ({
             </div>
           )}
           
-          {paymentLink && (
+          {finalPaymentLink && (
             <div className="w-full">
               <a 
-                href={paymentLink} 
+                href={finalPaymentLink} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center justify-center w-full bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md transition-colors"

@@ -7,6 +7,11 @@ interface QRCodeDisplayProps {
 }
 
 export const QRCodeDisplay = ({ qrCodeBase64 }: QRCodeDisplayProps) => {
+  // Check if the base64 string already includes the data URI scheme
+  const imageSource = qrCodeBase64.startsWith('data:') 
+    ? qrCodeBase64 
+    : `data:image/png;base64,${qrCodeBase64}`;
+    
   return (
     <motion.div 
       className="flex flex-col items-center space-y-2"
@@ -19,7 +24,7 @@ export const QRCodeDisplay = ({ qrCodeBase64 }: QRCodeDisplayProps) => {
       
       <div className="border border-gray-200 p-4 rounded-lg bg-white">
         <img 
-          src={`data:image/png;base64,${qrCodeBase64}`} 
+          src={imageSource} 
           alt="QR Code PIX" 
           className="w-64 h-64"
         />

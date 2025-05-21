@@ -111,6 +111,7 @@ const PixPaymentButton = ({
         // Store the PIX data and show the QR code dialog
         setPixData(response);
         setQrCodeDialogOpen(true);
+        toast.success("QR Code PIX gerado com sucesso!");
       } else {
         toast.error("Erro ao processar pagamento PIX");
       }
@@ -157,6 +158,8 @@ const PixPaymentButton = ({
           qrCodeBase64={pixData.qrCodeBase64}
           qrCodeText={pixData.qrCodeText}
           paymentLink={pixData.paymentLink}
+          pix_url={pixData.pix_url}
+          pix_base64={pixData.pix_base64}
         />
       )}
     </>
