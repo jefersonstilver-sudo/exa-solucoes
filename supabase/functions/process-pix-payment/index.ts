@@ -102,18 +102,18 @@ serve(async (req) => {
       );
     }
     
-    // Extract important PIX data from response
+    // Extract important PIX data from response with consistent field naming
     const pixData = {
       payment_id: paymentResponse.id,
-      qr_code: paymentResponse.point_of_interaction?.transaction_data?.qr_code || null,
-      qr_code_base64: paymentResponse.point_of_interaction?.transaction_data?.qr_code_base64 || null,
+      qrCode: paymentResponse.point_of_interaction?.transaction_data?.qr_code || null,
+      qrCodeBase64: paymentResponse.point_of_interaction?.transaction_data?.qr_code_base64 || null,
       ticket_url: paymentResponse.point_of_interaction?.transaction_data?.ticket_url || null,
       status: paymentResponse.status,
       status_detail: paymentResponse.status_detail,
       external_reference: paymentResponse.external_reference
     };
     
-    // Update the pedido with payment information
+    // Update the pedido with payment information - using standardized field names
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
@@ -122,7 +122,13 @@ serve(async (req) => {
           payment_id: pixData.payment_id,
           payment_status: pixData.status,
           payment_created_at: new Date().toISOString(),
-          pix_data: pixData
+          pix_data: {
+            qr_code: pixData.qrCode,
+            qr_code_base64: pixData.qrCodeBase64,
+            qrCode: pixData.qrCode,
+            qrCodeBase64: pixData.qrCodeBase64,
+            ticket_url: pixData.ticket_url
+          }
         }
       })
       .eq('id', pedidoId);
@@ -146,11 +152,17 @@ serve(async (req) => {
         }
       });
     
-    // Return success with PIX data
+    // Return success with PIX data - using standardized field names in response
     return new Response(
       JSON.stringify({ 
         success: true, 
-        pix_data: pixData,
+        pix_data: {
+          payment_id: pixData.payment_id,
+          qrCode: pixData.qrCode,
+          qrCodeBase64: pixData.qrCodeBase64,
+          status: pixData.status,
+          ticket_url: pixData.ticket_url
+        },
         pedido_id: pedidoId
       }),
       { 

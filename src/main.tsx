@@ -17,7 +17,6 @@ import PlanSelection from './pages/PlanSelection'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Confirmacao from './pages/Confirmacao'
 import PixPayment from './pages/PixPayment'
-import MeusPedidos from './pages/MeusPedidos'
 import Pedidos2 from './pages/Pedidos2'
 
 // Providers
@@ -71,8 +70,12 @@ const router = createBrowserRouter([
     element: <PixPayment />
   },
   {
+    path: '/pedidos',
+    element: <Pedidos2 />
+  },
+  {
     path: '/meus-pedidos',
-    element: <MeusPedidos />
+    element: <Pedidos2 />
   },
   {
     path: '/pedidos2',

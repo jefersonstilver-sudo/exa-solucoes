@@ -9,8 +9,11 @@ import { useUserSession } from '@/hooks/useUserSession';
 
 // Define types for payment related data
 interface PixData {
-  qr_code: string;
-  qr_code_base64: string;
+  qr_code?: string;
+  qr_code_base64?: string;
+  qrCode?: string;
+  qrCodeBase64?: string;
+  ticket_url?: string;
 }
 
 export interface PaymentLog {
@@ -69,12 +72,26 @@ export const usePixPayment = (pedidoId: string | null) => {
         throw new Error("Método de pagamento inválido ou não encontrado");
       }
       
-      // Set the payment data
+      // Handle both naming conventions (new and old) for maximum compatibility
+      const pixData = logPagamento.pix_data || {};
+      
+      // Enhanced logging for debugging
+      console.log("[usePixPayment] Raw PIX data:", pixData);
+      
+      // Set the payment data, trying different field naming patterns
+      const qrCode = pixData.qrCode || pixData.qr_code || '';
+      const qrCodeBase64 = pixData.qrCodeBase64 || pixData.qr_code_base64 || '';
+      
+      console.log("[usePixPayment] Extracted QR data:", { 
+        qrCode: qrCode ? `${qrCode.substring(0, 20)}...` : 'Not found',
+        qrCodeBase64: qrCodeBase64 ? `${qrCodeBase64.substring(0, 20)}...` : 'Not found' 
+      });
+      
       setPaymentData({
         pedidoId: pedido.id,
         status: logPagamento.payment_status || 'pending',
-        qrCode: logPagamento.pix_data?.qr_code || '',
-        qrCodeBase64: logPagamento.pix_data?.qr_code_base64 || '',
+        qrCode: qrCode,
+        qrCodeBase64: qrCodeBase64,
         paymentId: logPagamento.payment_id || '',
         valorTotal: pedido.valor_total
       });
