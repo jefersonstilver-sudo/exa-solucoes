@@ -41,12 +41,19 @@ const UserSyncComponent: React.FC = () => {
     setSyncStatus(null);
     
     try {
-      // Call a dedicated function to sync users to bypass RLS issues
-      const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-users');
+      // Call our edge function to sync users and bypass RLS issues
+      const response = await fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/sync-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       
-      if (syncError) {
-        throw new Error(`Error syncing users: ${syncError.message}`);
+      if (!response.ok) {
+        throw new Error(`Error syncing users: ${response.statusText}`);
       }
+      
+      const syncResult = await response.json();
       
       if (!syncResult || !syncResult.success) {
         throw new Error(syncResult?.message || 'Unknown error during synchronization');

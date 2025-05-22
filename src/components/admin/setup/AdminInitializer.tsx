@@ -11,12 +11,11 @@ const AdminInitializer = () => {
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Check if master admin exists
+  // Check if master admin exists using our security definer function
   useEffect(() => {
     const checkMasterAdmin = async () => {
       try {
-        // Use a direct RPC call instead of querying the users table
-        // This avoids potential RLS recursion issues
+        // Use our custom RPC function to avoid RLS recursion issues
         const { data, error } = await supabase.rpc(
           'admin_check_user_exists', 
           { user_email: 'jefersonstilver@gmail.com' }

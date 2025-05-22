@@ -33,7 +33,7 @@ serve(async (req) => {
       throw authError
     }
 
-    // Get existing user IDs from public users table using a direct SQL query
+    // Get existing user IDs from public users table using our security definer function
     // This bypasses RLS policies
     const { data: existingUserIds, error: idsError } = await supabaseAdmin.rpc(
       'admin_get_all_user_ids'
@@ -63,7 +63,7 @@ serve(async (req) => {
       )
     }
     
-    // Use admin function to insert users safely
+    // Use our security definer function to insert users safely
     let syncedCount = 0
     for (const user of usersToCreate) {
       const role = user.user_metadata?.role || 'client'

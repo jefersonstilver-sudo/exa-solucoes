@@ -542,6 +542,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_check_user_exists: {
+        Args: { user_email: string }
+        Returns: boolean
+      }
+      admin_get_all_user_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      admin_insert_user: {
+        Args: { user_id: string; user_email: string; user_role: string }
+        Returns: string
+      }
       check_panel_availability: {
         Args: { p_panel_id: string; p_start_date: string; p_end_date: string }
         Returns: boolean

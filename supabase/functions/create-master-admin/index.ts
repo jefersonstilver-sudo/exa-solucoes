@@ -65,7 +65,7 @@ serve(async (req) => {
       throw createError
     }
 
-    // Insert the user role directly using SQL function to bypass RLS
+    // Insert the user role directly using our security definer function to bypass RLS
     const { data: userData, error: userError } = await supabaseAdmin.rpc(
       'admin_insert_user',
       {
