@@ -9,6 +9,7 @@ import { Shield, CheckCircle, AlertCircle, Loader2, User, ArrowRight } from 'luc
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminInitializer from '@/components/admin/setup/AdminInitializer';
 import { useUserSession } from '@/hooks/useUserSession';
+import { useRouteProtection } from '@/hooks/useRouteProtection';
 
 const AdminInitializerPage: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
@@ -19,6 +20,10 @@ const AdminInitializerPage: React.FC = () => {
   } | null>(null);
   const navigate = useNavigate();
   const { isLoggedIn, hasRole, user } = useUserSession();
+  const { isLoading } = useRouteProtection({
+    requireLogin: true,
+    redirectTo: '/login'
+  });
   
   // Handle user sync between auth.users and public.users
   const syncUsers = async () => {
@@ -47,7 +52,7 @@ const AdminInitializerPage: React.FC = () => {
       }
       
       // Create a set of existing user IDs for quick lookup
-      const existingUserIds = new Set(existingUsers?.map(u => u.id) || []);
+      const existingUserIds = new Set((existingUsers || []).map(u => u.id));
       
       // Find users that are in auth.users but not in public.users
       const usersToCreate = authUsers.users
@@ -104,7 +109,7 @@ const AdminInitializerPage: React.FC = () => {
       toast.error("Você precisa estar logado para acessar esta página.");
       navigate('/login');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, navigate, isLoading]);
   
   return (
     <div className="container max-w-4xl py-8">
