@@ -19,6 +19,13 @@ import Confirmacao from './pages/Confirmacao'
 import PixPayment from './pages/PixPayment'
 import Pedidos2 from './pages/Pedidos2'
 
+// Admin Pages
+import Dashboard from './pages/admin/Dashboard'
+import OrdersPage from './pages/admin/OrdersPage'
+import OrderDetails from './pages/admin/OrderDetails'
+import BuildingsPage from './pages/admin/BuildingsPage'
+import PanelsPage from './pages/admin/PanelsPage'
+
 // Providers
 import { ThemeProvider } from './components/ui/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
@@ -80,6 +87,27 @@ const router = createBrowserRouter([
   {
     path: '/pedidos2',
     element: <Pedidos2 />
+  },
+  // Admin routes
+  {
+    path: '/admin',
+    element: <Dashboard />
+  },
+  {
+    path: '/admin/pedidos',
+    element: <OrdersPage />
+  },
+  {
+    path: '/admin/pedidos/detalhes/:id',
+    element: <OrderDetails />
+  },
+  {
+    path: '/admin/predios',
+    element: <BuildingsPage />
+  },
+  {
+    path: '/admin/paineis',
+    element: <PanelsPage />
   }
 ])
 
