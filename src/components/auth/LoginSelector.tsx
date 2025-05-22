@@ -6,11 +6,15 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { LogIn, Eye, EyeOff, User } from 'lucide-react';
+import { LogIn, Eye, EyeOff, User, ShieldCheck } from 'lucide-react';
 
 type LoginMode = 'client' | 'admin';
 
-const LoginSelector = () => {
+interface LoginSelectorProps {
+  onLoginSuccess?: () => void;
+}
+
+const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<LoginMode>('client');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,6 +68,11 @@ const LoginSelector = () => {
       } else {
         navigate('/anunciante');
       }
+      
+      // Callback após login bem-sucedido
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
     } catch (error: any) {
       console.error('Erro no login:', error);
       toast.error(error.message || 'Erro ao realizar login');
@@ -94,8 +103,18 @@ const LoginSelector = () => {
               />
             </div>
             
-            <span className="text-sm ml-2">
-              {mode === 'admin' ? 'Modo Administrador' : 'Modo Anunciante'}
+            <span className="text-sm ml-2 flex items-center">
+              {mode === 'admin' ? (
+                <>
+                  <ShieldCheck className="h-4 w-4 mr-1" />
+                  Administrador
+                </>
+              ) : (
+                <>
+                  <User className="h-4 w-4 mr-1" />
+                  Anunciante
+                </>
+              )}
             </span>
           </div>
         </div>

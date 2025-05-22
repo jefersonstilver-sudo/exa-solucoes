@@ -19,39 +19,32 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   requireSuperAdmin = false
 }) => {
   const navigate = useNavigate();
-  const { isLoading, isLoggedIn, user, session } = useUserSession();
+  const { isLoading, isLoggedIn, hasRole } = useUserSession();
   
   // Check if user is logged in and has admin role
   React.useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      toast.error('Você precisa estar logado para acessar esta página');
-      navigate('/login?redirect=/admin');
-      return;
-    }
-    
-    // Check user role when it's available
-    if (!isLoading && isLoggedIn) {
-      // Get role from session metadata if available, or from user object
-      const userRole = session?.user?.user_metadata?.role || 
-                      (user && 'role' in user ? (user as any).role : null);
+    if (!isLoading) {
+      if (!isLoggedIn) {
+        toast.error('Você precisa estar logado para acessar esta página');
+        navigate('/login?redirect=/admin');
+        return;
+      }
       
       // If super admin is required, check for that role specifically
-      if (requireSuperAdmin && userRole !== 'super_admin') {
+      if (requireSuperAdmin && !hasRole('super_admin')) {
         toast.error('Você não tem permissão para acessar esta página. Acesso restrito para super administradores.');
         navigate('/forbidden');
         return;
       }
       
       // Check if user has any admin role
-      if (!userRole || (userRole !== 'admin' && userRole !== 'super_admin')) {
+      if (!hasRole('admin') && !hasRole('super_admin')) {
         toast.error('Você não tem permissão para acessar esta página. Acesso restrito para administradores.');
         navigate('/forbidden');
         return;
       }
-      
-      console.log('Usuário autenticado com role:', userRole);
     }
-  }, [isLoading, isLoggedIn, user, session, navigate, requireSuperAdmin]);
+  }, [isLoading, isLoggedIn, hasRole, navigate, requireSuperAdmin]);
   
   if (isLoading) {
     return (

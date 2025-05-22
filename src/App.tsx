@@ -24,6 +24,7 @@ import OrderDetails from "./pages/admin/OrderDetails";
 import BuildingsPage from "./pages/admin/BuildingsPage";
 import PanelsPage from "./pages/admin/PanelsPage";
 import UsersPage from "./pages/admin/UsersPage";
+import UserManagement from "./pages/admin/UserManagement"; // New user management page
 import UserForm from "./pages/admin/UserForm";
 
 // Advertiser Routes
@@ -68,7 +69,8 @@ const App = () => (
         <Route path="/admin/pedidos/detalhes/:id" element={<OrderDetails />} />
         <Route path="/admin/predios" element={<BuildingsPage />} />
         <Route path="/admin/paineis" element={<PanelsPage />} />
-        <Route path="/admin/usuarios" element={<UsersPage />} />
+        <Route path="/admin/usuarios" element={<UserManagement />} /> {/* Updated route */}
+        <Route path="/admin/usuarios-antigo" element={<UsersPage />} /> {/* Keep old page for reference */}
         <Route path="/admin/usuarios/novo" element={<UserForm />} />
         <Route path="/admin/usuarios/editar/:id" element={<UserForm />} />
         

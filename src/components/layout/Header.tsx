@@ -7,6 +7,7 @@ import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '@/components/
 import PanelCart from '@/components/panels/PanelCart';
 import UserMenu from '@/components/user/UserMenu';
 import UserAccessButton from '@/components/auth/UserAccessButton';
+import AdminAccessButton from '@/components/admin/AdminAccessButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserSession } from '@/hooks/useUserSession';
 
@@ -32,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartAnimating, setCartAnimating] = useState(false);
-  const { isLoggedIn } = useUserSession();
+  const { isLoggedIn, hasRole } = useUserSession();
 
   // Add animation when cart items change
   useEffect(() => {
@@ -104,8 +105,13 @@ const Header: React.FC<HeaderProps> = ({
         </Link>
 
         <div className="flex items-center gap-3">
-          {/* Novo botão de acesso unificado */}
+          {/* Botão de acesso unificado */}
           <UserAccessButton />
+          
+          {/* Botão de acesso admin (apenas para admins) */}
+          {isLoggedIn && (hasRole('admin') || hasRole('super_admin')) && (
+            <AdminAccessButton variant="icon" />
+          )}
           
           {/* Mostrar UserMenu apenas quando logado */}
           {isLoggedIn && <UserMenu />}

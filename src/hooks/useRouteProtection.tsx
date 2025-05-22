@@ -8,17 +8,19 @@ interface UseRouteProtectionProps {
   redirectTo?: string;
   message?: string;
   requireLogin?: boolean;
+  requiredRole?: 'client' | 'admin' | 'super_admin';
 }
 
 /**
- * Hook to protect routes that require authentication
+ * Hook to protect routes that require authentication and specific roles
  */
 export const useRouteProtection = ({
   redirectTo = '/login',
   message = 'Faça login para acessar esta página',
-  requireLogin = true
+  requireLogin = true,
+  requiredRole
 }: UseRouteProtectionProps = {}) => {
-  const { isLoggedIn, isLoading } = useUserSession();
+  const { isLoggedIn, isLoading, hasRole } = useUserSession();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const navigate = useNavigate();
 
@@ -30,14 +32,34 @@ export const useRouteProtection = ({
       // User needs to be logged in but isn't
       toast.error(message);
       navigate(`${redirectTo}?redirect=${encodeURIComponent(window.location.pathname)}`);
-    } else if (!requireLogin && isLoggedIn) {
+      return;
+    } 
+    
+    if (!requireLogin && isLoggedIn) {
       // User is logged in but page is for anonymous users only
       navigate('/paineis-digitais/loja');
-    } else {
-      // User has proper authorization for this page
-      setIsAuthorized(true);
+      return;
     }
-  }, [isLoggedIn, isLoading, navigate, redirectTo, message, requireLogin]);
+    
+    // Check role if required
+    if (requiredRole && isLoggedIn) {
+      if (!hasRole(requiredRole)) {
+        // User doesn't have the required role
+        toast.error(`Você não tem permissão para acessar esta página. Acesso restrito para ${requiredRole}.`);
+        
+        // Redirect based on the user's highest role
+        if (hasRole('super_admin') || hasRole('admin')) {
+          navigate('/admin');
+        } else {
+          navigate('/anunciante');
+        }
+        return;
+      }
+    }
+    
+    // User has proper authorization for this page
+    setIsAuthorized(true);
+  }, [isLoggedIn, isLoading, navigate, redirectTo, message, requireLogin, requiredRole, hasRole]);
 
   return { isAuthorized, isLoading };
 };

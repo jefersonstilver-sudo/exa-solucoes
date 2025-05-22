@@ -10,7 +10,7 @@ export interface UserProfile {
   email: string;
   name?: string;
   avatar_url?: string;
-  role?: 'client' | 'admin' | 'super_admin'; // Adicionando role no UserProfile
+  role?: 'client' | 'admin' | 'super_admin';
 }
 
 export const useUserSession = () => {

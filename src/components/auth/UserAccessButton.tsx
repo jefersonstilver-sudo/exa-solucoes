@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import LoginSelector from './LoginSelector';
 import { ClientOnly } from '@/components/ui/client-only';
+import AdminAccessButton from '@/components/admin/AdminAccessButton';
 
 const UserAccessButton = () => {
   const { isLoggedIn, user } = useUserSession();
@@ -42,7 +43,7 @@ const UserAccessButton = () => {
         </Button>
         
         {isOpen && !isLoggedIn && (
-          <LoginSelector />
+          <LoginSelector onLoginSuccess={() => setIsOpen(false)} />
         )}
       </div>
     </ClientOnly>
