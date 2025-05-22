@@ -1,22 +1,18 @@
 
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import { useUserSession } from '@/hooks/useUserSession';
-import { useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'sonner';
+import { useRouteProtection } from '@/hooks/useRouteProtection';
+import { useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 const CampaignDetails = () => {
   const { id } = useParams();
-  const { isLoggedIn, isLoading } = useUserSession();
-  const navigate = useNavigate();
-  
-  React.useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      toast.error('Você precisa estar logado para acessar a área do anunciante');
-      navigate('/login?redirect=/anunciante/campanhas');
-    }
-  }, [isLoading, isLoggedIn, navigate]);
+  const { isAuthorized, isLoading } = useRouteProtection({
+    requireLogin: true,
+    requiredRole: 'client',
+    redirectTo: '/login',
+    message: 'Você precisa estar logado para acessar a área do anunciante'
+  });
   
   if (isLoading) {
     return (
@@ -27,6 +23,10 @@ const CampaignDetails = () => {
         </div>
       </Layout>
     );
+  }
+  
+  if (!isAuthorized) {
+    return null; // The hook will handle redirection
   }
   
   return (

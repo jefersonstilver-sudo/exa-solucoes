@@ -29,6 +29,12 @@ import UserManagement from './pages/admin/UserManagement'
 import AdminInitializerPage from './components/admin/setup/AdminInitializerPage'
 import ConfiguracoesPage from './pages/admin/ConfiguracoesPage'
 
+// Advertiser Pages
+import AdvertiserDashboard from './pages/advertiser/AdvertiserDashboard'
+import MyCampaigns from './pages/advertiser/MyCampaigns'
+import CampaignDetails from './pages/advertiser/CampaignDetails'
+import MyVideos from './pages/advertiser/MyVideos'
+
 // Providers
 import { ThemeProvider } from './components/ui/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
@@ -123,6 +129,23 @@ const router = createBrowserRouter([
   {
     path: '/admin/configuracoes',
     element: <ConfiguracoesPage />
+  },
+  // Advertiser routes
+  {
+    path: '/anunciante',
+    element: <AdvertiserDashboard />
+  },
+  {
+    path: '/anunciante/campanhas',
+    element: <MyCampaigns />
+  },
+  {
+    path: '/anunciante/campanhas/:id',
+    element: <CampaignDetails />
+  },
+  {
+    path: '/anunciante/videos',
+    element: <MyVideos />
   }
 ])
 

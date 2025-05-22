@@ -37,7 +37,7 @@ export const useRouteProtection = ({
     
     if (!requireLogin && isLoggedIn) {
       // User is logged in but page is for anonymous users only
-      navigate('/paineis-digitais/loja');
+      navigate('/anunciante');
       return;
     }
     
