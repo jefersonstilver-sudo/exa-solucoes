@@ -6,8 +6,9 @@ import { ShoppingCart, Menu, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '@/components/ui/drawer';
 import PanelCart from '@/components/panels/PanelCart';
 import UserMenu from '@/components/user/UserMenu';
-import AdminAccessButton from '@/components/admin/AdminAccessButton';
+import UserAccessButton from '@/components/auth/UserAccessButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUserSession } from '@/hooks/useUserSession';
 
 interface HeaderProps {
   cartItems?: {panel: any, duration: number}[];
@@ -31,6 +32,7 @@ const Header: React.FC<HeaderProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartAnimating, setCartAnimating] = useState(false);
+  const { isLoggedIn } = useUserSession();
 
   // Add animation when cart items change
   useEffect(() => {
@@ -102,11 +104,11 @@ const Header: React.FC<HeaderProps> = ({
         </Link>
 
         <div className="flex items-center gap-3">
-          {/* Admin Access Button */}
-          <AdminAccessButton variant="icon" className="hidden sm:flex" />
+          {/* Novo botão de acesso unificado */}
+          <UserAccessButton />
           
-          {/* User profile menu */}
-          <UserMenu />
+          {/* Mostrar UserMenu apenas quando logado */}
+          {isLoggedIn && <UserMenu />}
           
           {/* Shopping cart drawer */}
           <Drawer open={isCartOpen} onOpenChange={handleCartOpen}>
@@ -184,10 +186,6 @@ const Header: React.FC<HeaderProps> = ({
             <Link to="/paineis-digitais/loja" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md bg-indexa-mint/20" onClick={() => setIsMenuOpen(false)}>
               Loja Online
             </Link>
-            {/* Admin access button for mobile */}
-            <div className="p-2">
-              <AdminAccessButton variant="subtle" className="w-full justify-start" />
-            </div>
           </div>
         </div>
       )}
