@@ -13,6 +13,12 @@ interface SyncStatus {
   userCount: number;
 }
 
+// Define the interface for user objects
+interface UserData {
+  id: string;
+  [key: string]: any; // For other properties that might exist
+}
+
 const UserSyncComponent: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
@@ -46,9 +52,9 @@ const UserSyncComponent: React.FC = () => {
       // Create a set of existing user IDs for quick lookup
       const existingUserIds = new Set<string>();
       if (existingUsers && Array.isArray(existingUsers)) {
-        existingUsers.forEach(user => {
+        existingUsers.forEach((user: UserData) => {
           if (user && typeof user === 'object' && 'id' in user) {
-            existingUserIds.add(user.id as string);
+            existingUserIds.add(user.id);
           }
         });
       }
