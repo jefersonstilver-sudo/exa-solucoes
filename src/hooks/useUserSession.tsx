@@ -1,43 +1,21 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
-export interface UserProfile {
-  id: string;
-  email: string;
-  name?: string;
-  avatar_url?: string;
-  role?: 'client' | 'admin' | 'super_admin';
-}
+import { UserProfile, UserRole, UserSessionState } from '@/types/userTypes';
+import { fetchUserRole, hasUserRole } from '@/services/userRoleService';
+import { logoutUser, updateUserProfileData, setUserRoleData } from '@/services/userAuthService';
+
+export { UserProfile } from '@/types/userTypes';
 
 export const useUserSession = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-
-  // Fetch user role from the public.users table
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
-      }
-      
-      return data?.role;
-    } catch (error) {
-      console.error('Exception fetching user role:', error);
-      return null;
-    }
-  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -73,7 +51,7 @@ export const useUserSession = () => {
             if (dbRole) {
               setUser(prev => prev ? {
                 ...prev,
-                role: dbRole as 'client' | 'admin' | 'super_admin'
+                role: dbRole as UserRole
               } : null);
             } else if (metadataRole) {
               // If no DB role but metadata role exists, try to sync it to DB
@@ -129,7 +107,7 @@ export const useUserSession = () => {
           if (dbRole) {
             setUser(prev => prev ? {
               ...prev,
-              role: dbRole as 'client' | 'admin' | 'super_admin'
+              role: dbRole as UserRole
             } : null);
           }
           
@@ -156,136 +134,72 @@ export const useUserSession = () => {
   }, []);
 
   const logout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Limpar localStorage (carrinhos, preferências, etc)
-      localStorage.removeItem('indexa_cart');
-      localStorage.removeItem('indexa_preferences');
-      localStorage.removeItem('panelCart'); // Make sure we clear any cart data
-      
+    const result = await logoutUser();
+    
+    if (result.success) {
       // Clear state
       setUser(null);
       setSession(null);
       
       toast.success('Logout realizado com sucesso');
       navigate('/login');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+    } else {
+      console.error('Erro ao fazer logout:', result.error);
       toast.error('Erro ao fazer logout. Tente novamente.');
     }
   };
   
   // Function to update user profile
   const updateUserProfile = async (userProfile: Partial<UserProfile>) => {
-    try {
-      // Update auth metadata
-      const { data, error } = await supabase.auth.updateUser({
-        data: userProfile
-      });
-      
-      if (error) {
-        throw error;
+    const result = await updateUserProfileData(userProfile, user?.id);
+    
+    if (result.success) {
+      // Get role from database (source of truth)
+      let role = user?.role;
+      if (userProfile.role) {
+        role = userProfile.role;
       }
       
-      // If trying to update role, we also need to update the users table
-      if (userProfile.role && user?.id) {
-        const { error: userUpdateError } = await supabase
-          .from('users')
-          .update({ role: userProfile.role })
-          .eq('id', user.id);
-          
-        if (userUpdateError) {
-          console.error('Error updating role in users table:', userUpdateError);
-          toast.error('Erro ao atualizar função do usuário na base de dados');
-        }
-      }
+      setUser(prev => prev ? {
+        ...prev,
+        ...userProfile,
+        role: role
+      } : null);
       
-      if (data.user) {
-        // Get role from database (source of truth)
-        let role = user?.role;
-        if (userProfile.role) {
-          role = userProfile.role;
-        }
-        
-        setUser(prev => prev ? {
-          ...prev,
-          ...userProfile,
-          role: role
-        } : null);
-        
-        toast.success('Perfil atualizado com sucesso');
-      }
-      
-      return { success: true };
-    } catch (error: any) {
-      console.error('Erro ao atualizar perfil:', error);
-      toast.error('Erro ao atualizar perfil: ' + error.message);
-      return { success: false, error };
+      toast.success('Perfil atualizado com sucesso');
+    } else {
+      toast.error('Erro ao atualizar perfil: ' + result.error?.message);
     }
+    
+    return result;
   };
   
   // Function to check if user has a specific role
-  const hasRole = (requiredRole: 'client' | 'admin' | 'super_admin'): boolean => {
-    if (!user || !user.role) return false;
-    
-    // Super admin has access to all roles
-    if (user.role === 'super_admin') return true;
-    
-    // Admin has access to admin and client roles
-    if (user.role === 'admin' && (requiredRole === 'admin' || requiredRole === 'client')) return true;
-    
-    // Client has access only to client role
-    if (user.role === 'client' && requiredRole === 'client') return true;
-    
-    return false;
+  const hasRole = (requiredRole: UserRole): boolean => {
+    return hasUserRole(user?.role, requiredRole);
   };
   
   // Function to set user role (for dev/testing purposes)
-  const setUserRole = async (role: 'client' | 'admin' | 'super_admin') => {
-    try {
-      if (!user?.id) {
-        throw new Error('No user logged in');
-      }
-      
-      // Update the users table (source of truth)
-      const { error: userUpdateError } = await supabase
-        .from('users')
-        .update({ role })
-        .eq('id', user.id);
-        
-      if (userUpdateError) {
-        throw userUpdateError;
-      }
-      
-      // Also update auth metadata to keep them in sync
-      const { data, error } = await supabase.auth.updateUser({
-        data: { role }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data.user) {
-        setUser(prev => prev ? {
-          ...prev,
-          role
-        } : null);
-        
-        toast.success(`Role atualizada para: ${role}`);
-      }
-      
-      return { success: true };
-    } catch (error: any) {
-      console.error('Erro ao atualizar role:', error);
-      toast.error('Erro ao atualizar role: ' + error.message);
-      return { success: false, error };
+  const setUserRole = async (role: UserRole) => {
+    if (!user?.id) {
+      toast.error('Nenhum usuário logado');
+      return { success: false, error: new Error('No user logged in') };
     }
+    
+    const result = await setUserRoleData(user.id, role);
+    
+    if (result.success) {
+      setUser(prev => prev ? {
+        ...prev,
+        role
+      } : null);
+      
+      toast.success(`Role atualizada para: ${role}`);
+    } else {
+      toast.error('Erro ao atualizar role: ' + result.error?.message);
+    }
+    
+    return result;
   };
 
   return {

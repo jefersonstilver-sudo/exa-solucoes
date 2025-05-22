@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserSession } from './useUserSession';
 import { toast } from 'sonner';
+import { UserRole } from '@/types/userTypes';
 
 interface UseRouteProtectionProps {
   redirectTo?: string;
   message?: string;
   requireLogin?: boolean;
-  requiredRole?: 'client' | 'admin' | 'super_admin';
+  requiredRole?: UserRole;
 }
 
 /**
