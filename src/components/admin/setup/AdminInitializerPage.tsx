@@ -52,7 +52,11 @@ const AdminInitializerPage: React.FC = () => {
       }
       
       // Create a set of existing user IDs for quick lookup
-      const existingUserIds = new Set((existingUsers || []).map(u => u.id));
+      // We ensure existingUsers is an array with a fallback to empty array
+      // And explicitly define the type for clarity
+      const existingUserIds = new Set(
+        (existingUsers as Array<{ id: string }> || []).map(u => u.id)
+      );
       
       // Find users that are in auth.users but not in public.users
       const usersToCreate = authUsers.users
