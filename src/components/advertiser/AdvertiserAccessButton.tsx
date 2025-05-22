@@ -22,10 +22,10 @@ const AdvertiserAccessButton: React.FC<AdvertiserAccessButtonProps> = ({
   variant = 'default'
 }) => {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useUserSession();
+  const { isLoggedIn, user, hasRole } = useUserSession();
 
-  // Verificar se é um anunciante
-  const isAdvertiser = isLoggedIn && user && (user.role === 'client' || user.role === 'admin' || user.role === 'super_admin');
+  // Check if user has client role or higher
+  const isAdvertiser = isLoggedIn && hasRole('client');
   
   const handleAdvertiserAccess = () => {
     if (!isLoggedIn) {

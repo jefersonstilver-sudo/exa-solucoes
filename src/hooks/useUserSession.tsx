@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -19,25 +18,68 @@ export const useUserSession = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Fetch user role from the public.users table
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
+      
+      return data?.role;
+    } catch (error) {
+      console.error('Exception fetching user role:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession?.user?.email);
         
         setSession(currentSession);
         
         if (currentSession?.user) {
-          // Get role from user metadata
-          const userRole = currentSession.user.user_metadata?.role || 'client';
+          // First get metadata role from session
+          const metadataRole = currentSession.user.user_metadata?.role;
           
-          setUser({
+          // Create base user object
+          const baseUser = {
             id: currentSession.user.id,
             email: currentSession.user.email || '',
             name: currentSession.user.user_metadata?.name || currentSession.user.email?.split('@')[0],
             avatar_url: currentSession.user.user_metadata?.avatar_url,
-            role: userRole
+          };
+          
+          // Set initial user state with metadata (will be updated with DB role)
+          setUser({
+            ...baseUser,
+            role: metadataRole
           });
+          
+          // Then fetch role from database in non-blocking way
+          setTimeout(async () => {
+            const dbRole = await fetchUserRole(currentSession.user.id);
+            
+            // If we found a role in the database, use it (it's the source of truth)
+            if (dbRole) {
+              setUser(prev => prev ? {
+                ...prev,
+                role: dbRole as 'client' | 'admin' | 'super_admin'
+              } : null);
+            } else if (metadataRole) {
+              // If no DB role but metadata role exists, try to sync it to DB
+              console.log('No DB role found, using metadata role:', metadataRole);
+            }
+          }, 0);
           
           if (event === 'SIGNED_IN') {
             toast.success('Login realizado com sucesso!');
@@ -62,20 +104,36 @@ export const useUserSession = () => {
           // Sync session state
           setSession(data.session);
           
-          // Get role from user metadata
-          const userRole = data.session.user.user_metadata?.role || 'client';
+          // Get user ID
+          const userId = data.session.user.id;
           
-          // Set user profile
-          const userData = data.session.user;
+          // Create base user object
+          const baseUser = {
+            id: userId,
+            email: data.session.user.email || '',
+            name: data.session.user.user_metadata?.name || data.session.user.email?.split('@')[0],
+            avatar_url: data.session.user.user_metadata?.avatar_url,
+          };
+          
+          // First set user with metadata role
+          const metadataRole = data.session.user.user_metadata?.role;
           setUser({
-            id: userData.id,
-            email: userData.email || '',
-            name: userData.user_metadata?.name || userData.email?.split('@')[0],
-            avatar_url: userData.user_metadata?.avatar_url,
-            role: userRole
+            ...baseUser,
+            role: metadataRole
           });
           
-          console.log('User session restored:', userData.email);
+          // Then fetch role from database
+          const dbRole = await fetchUserRole(userId);
+          
+          // If we found a role in the database, it overrides metadata
+          if (dbRole) {
+            setUser(prev => prev ? {
+              ...prev,
+              role: dbRole as 'client' | 'admin' | 'super_admin'
+            } : null);
+          }
+          
+          console.log('User session restored:', data.session.user.email, 'Database role:', dbRole);
         } else {
           setUser(null);
           setSession(null);
@@ -125,6 +183,7 @@ export const useUserSession = () => {
   // Function to update user profile
   const updateUserProfile = async (userProfile: Partial<UserProfile>) => {
     try {
+      // Update auth metadata
       const { data, error } = await supabase.auth.updateUser({
         data: userProfile
       });
@@ -133,14 +192,30 @@ export const useUserSession = () => {
         throw error;
       }
       
+      // If trying to update role, we also need to update the users table
+      if (userProfile.role && user?.id) {
+        const { error: userUpdateError } = await supabase
+          .from('users')
+          .update({ role: userProfile.role })
+          .eq('id', user.id);
+          
+        if (userUpdateError) {
+          console.error('Error updating role in users table:', userUpdateError);
+          toast.error('Erro ao atualizar função do usuário na base de dados');
+        }
+      }
+      
       if (data.user) {
-        // Get role from user metadata
-        const userRole = data.user.user_metadata?.role || 'client';
+        // Get role from database (source of truth)
+        let role = user?.role;
+        if (userProfile.role) {
+          role = userProfile.role;
+        }
         
         setUser(prev => prev ? {
           ...prev,
           ...userProfile,
-          role: userRole
+          role: role
         } : null);
         
         toast.success('Perfil atualizado com sucesso');
@@ -173,6 +248,21 @@ export const useUserSession = () => {
   // Function to set user role (for dev/testing purposes)
   const setUserRole = async (role: 'client' | 'admin' | 'super_admin') => {
     try {
+      if (!user?.id) {
+        throw new Error('No user logged in');
+      }
+      
+      // Update the users table (source of truth)
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({ role })
+        .eq('id', user.id);
+        
+      if (userUpdateError) {
+        throw userUpdateError;
+      }
+      
+      // Also update auth metadata to keep them in sync
       const { data, error } = await supabase.auth.updateUser({
         data: { role }
       });

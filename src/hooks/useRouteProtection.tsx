@@ -20,7 +20,7 @@ export const useRouteProtection = ({
   requireLogin = true,
   requiredRole
 }: UseRouteProtectionProps = {}) => {
-  const { isLoggedIn, isLoading, hasRole } = useUserSession();
+  const { isLoggedIn, isLoading, hasRole, user } = useUserSession();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const navigate = useNavigate();
 
@@ -48,7 +48,9 @@ export const useRouteProtection = ({
         toast.error(`Você não tem permissão para acessar esta página. Acesso restrito para ${requiredRole}.`);
         
         // Redirect based on the user's highest role
-        if (hasRole('super_admin') || hasRole('admin')) {
+        if (user?.role === 'super_admin') {
+          navigate('/admin');
+        } else if (user?.role === 'admin') {
           navigate('/admin');
         } else {
           navigate('/anunciante');
@@ -59,7 +61,7 @@ export const useRouteProtection = ({
     
     // User has proper authorization for this page
     setIsAuthorized(true);
-  }, [isLoggedIn, isLoading, navigate, redirectTo, message, requireLogin, requiredRole, hasRole]);
+  }, [isLoggedIn, isLoading, navigate, redirectTo, message, requireLogin, requiredRole, hasRole, user]);
 
   return { isAuthorized, isLoading };
 };

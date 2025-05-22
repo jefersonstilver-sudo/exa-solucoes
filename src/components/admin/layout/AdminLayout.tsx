@@ -6,6 +6,7 @@ import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouteProtection } from '@/hooks/useRouteProtection';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -19,32 +20,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   requireSuperAdmin = false
 }) => {
   const navigate = useNavigate();
-  const { isLoading, isLoggedIn, hasRole } = useUserSession();
+  const { isLoggedIn, hasRole, isLoading } = useUserSession();
   
-  // Check if user is logged in and has admin role
-  React.useEffect(() => {
-    if (!isLoading) {
-      if (!isLoggedIn) {
-        toast.error('Você precisa estar logado para acessar esta página');
-        navigate('/login?redirect=/admin');
-        return;
-      }
-      
-      // If super admin is required, check for that role specifically
-      if (requireSuperAdmin && !hasRole('super_admin')) {
-        toast.error('Você não tem permissão para acessar esta página. Acesso restrito para super administradores.');
-        navigate('/forbidden');
-        return;
-      }
-      
-      // Check if user has any admin role
-      if (!hasRole('admin') && !hasRole('super_admin')) {
-        toast.error('Você não tem permissão para acessar esta página. Acesso restrito para administradores.');
-        navigate('/forbidden');
-        return;
-      }
-    }
-  }, [isLoading, isLoggedIn, hasRole, navigate, requireSuperAdmin]);
+  // Use our route protection hook for consistent permission checking
+  const requiredRole = requireSuperAdmin ? 'super_admin' : 'admin';
+  const { isAuthorized } = useRouteProtection({
+    requireLogin: true,
+    requiredRole,
+    redirectTo: '/login',
+    message: requireSuperAdmin
+      ? 'Você precisa ser um super administrador para acessar esta página'
+      : 'Você precisa ser um administrador para acessar esta página'
+  });
   
   if (isLoading) {
     return (
@@ -53,6 +40,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         <p className="ml-2 text-lg">Carregando...</p>
       </div>
     );
+  }
+  
+  if (!isAuthorized && !isLoading) {
+    return null; // useRouteProtection will handle redirects
   }
   
   return (

@@ -40,6 +40,12 @@ const UserAccessButton = () => {
           {isLoggedIn && (
             <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center"></span>
           )}
+          {user?.role === 'admin' && (
+            <span className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center"></span>
+          )}
+          {user?.role === 'super_admin' && (
+            <span className="absolute -bottom-1 -right-1 bg-amber-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center"></span>
+          )}
         </Button>
         
         {isOpen && !isLoggedIn && (
