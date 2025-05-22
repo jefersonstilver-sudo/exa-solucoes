@@ -3,9 +3,7 @@ import React from 'react';
 import AdminLayout from '@/components/admin/layout/AdminLayout';
 import { useUserSession } from '@/hooks/useUserSession';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Shield, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
 import AdminInitializer from '@/components/admin/setup/AdminInitializer';
 import UserSyncComponent from '@/components/admin/setup/UserSyncComponent';
 

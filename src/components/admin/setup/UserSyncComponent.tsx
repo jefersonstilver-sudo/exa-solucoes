@@ -41,73 +41,24 @@ const UserSyncComponent: React.FC = () => {
     setSyncStatus(null);
     
     try {
-      // Fetch users from auth.users using our Edge Function
-      const { data: authResponse, error: authFunctionError } = await supabase.functions.invoke('list-users');
+      // Call a dedicated function to sync users to bypass RLS issues
+      const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-users');
       
-      if (authFunctionError) {
-        throw new Error(`Error fetching auth users: ${authFunctionError.message}`);
+      if (syncError) {
+        throw new Error(`Error syncing users: ${syncError.message}`);
       }
       
-      if (!authResponse || !authResponse.users || !Array.isArray(authResponse.users) || authResponse.users.length === 0) {
-        throw new Error('No auth users found');
-      }
-      
-      const authUsers = authResponse.users as AuthUser[];
-      
-      // Get existing users from public.users
-      const { data: existingUsers, error: existingError } = await supabase
-        .from('users')
-        .select('id');
-        
-      if (existingError) {
-        throw new Error(`Error fetching existing users: ${existingError.message}`);
-      }
-      
-      // Create a set of existing user IDs for quick lookup
-      const existingUserIds = new Set<string>();
-      if (existingUsers && Array.isArray(existingUsers)) {
-        existingUsers.forEach((user) => {
-          if (user && typeof user === 'object' && 'id' in user) {
-            existingUserIds.add(user.id);
-          }
-        });
-      }
-      
-      // Find users that are in auth.users but not in public.users
-      const usersToCreate = authUsers
-        .filter(authUser => !existingUserIds.has(authUser.id))
-        .map(authUser => ({
-          id: authUser.id,
-          email: authUser.email || '',
-          role: authUser.user_metadata?.role || 'client' // Default to 'client' if no role
-        }));
-      
-      if (usersToCreate.length === 0) {
-        setSyncStatus({
-          success: true,
-          message: 'All users are already synchronized!',
-          userCount: 0
-        });
-        return;
-      }
-      
-      // Insert missing users into public.users
-      const { data, error } = await supabase
-        .from('users')
-        .insert(usersToCreate)
-        .select();
-        
-      if (error) {
-        throw new Error(`Error syncing users: ${error.message}`);
+      if (!syncResult || !syncResult.success) {
+        throw new Error(syncResult?.message || 'Unknown error during synchronization');
       }
       
       setSyncStatus({
         success: true,
-        message: `Successfully synchronized ${usersToCreate.length} users between auth and public tables!`,
-        userCount: usersToCreate.length
+        message: syncResult.message || 'Synchronization completed successfully!',
+        userCount: syncResult.syncedCount || 0
       });
       
-      toast.success(`Sincronizados ${usersToCreate.length} usuários`);
+      toast.success(`Sincronizados ${syncResult.syncedCount || 0} usuários`);
       
     } catch (error: any) {
       console.error('Error syncing users:', error);
@@ -123,72 +74,69 @@ const UserSyncComponent: React.FC = () => {
   };
 
   return (
-    <section>
-      <h2 className="text-xl font-semibold mb-4">2. Sincronizar Usuários</h2>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="text-blue-500" />
-            Sincronização de Usuários
-          </CardTitle>
-          <CardDescription>
-            Sincronize usuários entre auth.users e public.users para garantir permissões corretas
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          {syncStatus ? (
-            <Alert variant={syncStatus.success ? "default" : "destructive"}>
-              {syncStatus.success ? (
-                <CheckCircle className="h-5 w-5" />
-              ) : (
-                <AlertCircle className="h-5 w-5" />
-              )}
-              <AlertTitle>
-                {syncStatus.success ? "Sincronização Concluída" : "Erro na Sincronização"}
-              </AlertTitle>
-              <AlertDescription>
-                {syncStatus.message}
-                {syncStatus.success && syncStatus.userCount > 0 && (
-                  <p className="mt-2">
-                    {syncStatus.userCount} usuários foram sincronizados com sucesso.
-                  </p>
-                )}
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div>
-              <p className="mb-4">
-                Este processo irá sincronizar usuários entre as tabelas auth.users e public.users,
-                garantindo que todos os usuários tenham seus papéis corretamente definidos.
-              </p>
-              <ul className="list-disc pl-5 space-y-1 mb-4">
-                <li>Usuários existentes apenas em auth.users serão adicionados à tabela public.users</li>
-                <li>Papel padrão 'client' será atribuído aos novos usuários</li>
-                <li>A operação é segura e não afetará usuários já sincronizados</li>
-              </ul>
-            </div>
-          )}
-        </CardContent>
-        
-        <CardFooter>
-          <Button 
-            onClick={syncUsers} 
-            disabled={isSyncing}
-            className="w-full"
-          >
-            {isSyncing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sincronizando...
-              </>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="text-blue-500" />
+          Sincronização de Usuários
+        </CardTitle>
+        <CardDescription>
+          Sincronize usuários entre auth.users e public.users para garantir permissões corretas
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent>
+        {syncStatus ? (
+          <Alert variant={syncStatus.success ? "default" : "destructive"}>
+            {syncStatus.success ? (
+              <CheckCircle className="h-5 w-5" />
             ) : (
-              'Iniciar Sincronização'
+              <AlertCircle className="h-5 w-5" />
             )}
-          </Button>
-        </CardFooter>
-      </Card>
-    </section>
+            <AlertTitle>
+              {syncStatus.success ? "Sincronização Concluída" : "Erro na Sincronização"}
+            </AlertTitle>
+            <AlertDescription>
+              {syncStatus.message}
+              {syncStatus.success && syncStatus.userCount > 0 && (
+                <p className="mt-2">
+                  {syncStatus.userCount} usuários foram sincronizados com sucesso.
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div>
+            <p className="mb-4">
+              Este processo irá sincronizar usuários entre as tabelas auth.users e public.users,
+              garantindo que todos os usuários tenham seus papéis corretamente definidos.
+            </p>
+            <ul className="list-disc pl-5 space-y-1 mb-4">
+              <li>Usuários existentes apenas em auth.users serão adicionados à tabela public.users</li>
+              <li>Papel padrão 'client' será atribuído aos novos usuários</li>
+              <li>A operação é segura e não afetará usuários já sincronizados</li>
+            </ul>
+          </div>
+        )}
+      </CardContent>
+      
+      <CardFooter>
+        <Button 
+          onClick={syncUsers} 
+          disabled={isSyncing}
+          className="w-full"
+        >
+          {isSyncing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sincronizando...
+            </>
+          ) : (
+            'Iniciar Sincronização'
+          )}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

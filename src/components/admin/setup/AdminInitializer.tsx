@@ -15,12 +15,12 @@ const AdminInitializer = () => {
   useEffect(() => {
     const checkMasterAdmin = async () => {
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', 'jefersonstilver@gmail.com')
-          .eq('role', 'super_admin')
-          .maybeSingle();
+        // Use a direct RPC call instead of querying the users table
+        // This avoids potential RLS recursion issues
+        const { data, error } = await supabase.rpc(
+          'admin_check_user_exists', 
+          { user_email: 'jefersonstilver@gmail.com' }
+        );
         
         if (error) throw error;
         
@@ -44,7 +44,6 @@ const AdminInitializer = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`,
         }
       });
       

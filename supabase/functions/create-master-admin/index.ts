@@ -26,12 +26,12 @@ serve(async (req) => {
       }
     )
 
-    // Check if master admin already exists
-    const { data: existingUser, error: checkError } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('email', 'jefersonstilver@gmail.com')
-      .maybeSingle()
+    // Check if master admin already exists using direct SQL query
+    // This avoids potential RLS recursion issues
+    const { data: existingUser, error: checkError } = await supabaseAdmin.rpc(
+      'admin_check_user_exists',
+      { user_email: 'jefersonstilver@gmail.com' }
+    )
 
     if (checkError) {
       throw checkError
@@ -65,16 +65,15 @@ serve(async (req) => {
       throw createError
     }
 
-    // Insert or update the user role in the users table
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .upsert({
-        id: authUser.user.id,
-        email: 'jefersonstilver@gmail.com',
-        role: 'super_admin',
-      })
-      .select()
-      .single()
+    // Insert the user role directly using SQL function to bypass RLS
+    const { data: userData, error: userError } = await supabaseAdmin.rpc(
+      'admin_insert_user',
+      {
+        user_id: authUser.user.id,
+        user_email: 'jefersonstilver@gmail.com',
+        user_role: 'super_admin'
+      }
+    )
 
     if (userError) {
       throw userError
