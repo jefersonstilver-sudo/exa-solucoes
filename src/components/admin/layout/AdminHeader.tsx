@@ -32,7 +32,7 @@ interface AdminHeaderProps {
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   const { setTheme } = useTheme();
-  const { user } = useUserSession();
+  const { user, session } = useUserSession();
   const navigate = useNavigate();
   
   // Mobile menu state
@@ -48,6 +48,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
       toast.error('Erro ao realizar logout');
     }
   };
+
+  // Get user name and role from session if available
+  const userName = session?.user?.user_metadata?.name || user?.name || user?.email || 'Usuario';
+  const userRole = session?.user?.user_metadata?.role || 'admin';
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -128,8 +132,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <span>{user?.user_metadata?.name || user?.email}</span>
-                  <span className="text-xs text-gray-500">{user?.user_metadata?.role || 'admin'}</span>
+                  <span>{userName}</span>
+                  <span className="text-xs text-gray-500">{userRole}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

@@ -19,7 +19,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   requireSuperAdmin = false
 }) => {
   const navigate = useNavigate();
-  const { isLoading, isLoggedIn, user } = useUserSession();
+  const { isLoading, isLoggedIn, user, session } = useUserSession();
   
   // Check if user is logged in and has admin role
   React.useEffect(() => {
@@ -30,8 +30,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     }
     
     // Check user role when it's available
-    if (!isLoading && isLoggedIn && user?.user_metadata) {
-      const role = user.user_metadata.role;
+    if (!isLoading && isLoggedIn) {
+      // Get role from user metadata if available, or from user object
+      const role = session?.user?.user_metadata?.role || user?.role;
       
       // If super admin is required, check for that role specifically
       if (requireSuperAdmin && role !== 'super_admin') {
@@ -47,7 +48,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         return;
       }
     }
-  }, [isLoading, isLoggedIn, user, navigate, requireSuperAdmin]);
+  }, [isLoading, isLoggedIn, user, session, navigate, requireSuperAdmin]);
   
   if (isLoading) {
     return (

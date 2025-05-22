@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -12,7 +11,8 @@ import {
   Users,
   CheckCircle,
   AlertCircle,
-  Copy
+  Copy,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/layout/AdminLayout';
@@ -51,9 +51,9 @@ interface OrderDetails {
   data_inicio: string;
   data_fim: string;
   log_pagamento: any;
-  client_email?: string;
-  client_name?: string;
-  buildings?: Building[];
+  client_email?: string;  // Added for custom fields
+  client_name?: string;   // Added for custom fields
+  buildings?: Building[]; // Added for custom fields
 }
 
 const OrderDetails: React.FC = () => {
@@ -87,30 +87,38 @@ const OrderDetails: React.FC = () => {
         return;
       }
       
+      // Create a new object with the initial order data
+      const orderWithCustomFields: OrderDetails = {
+        ...orderData,
+        client_email: undefined,
+        client_name: undefined,
+        buildings: undefined
+      };
+      
       // Fetch client information
-      if (orderData.client_id) {
+      if (orderWithCustomFields.client_id) {
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
-          .eq('id', orderData.client_id)
+          .eq('id', orderWithCustomFields.client_id)
           .single();
           
         if (!userError && userData) {
           setClientInfo(userData);
           
           // Add client info to order
-          orderData.client_email = userData.email;
-          orderData.client_name = userData.name || userData.email;
+          orderWithCustomFields.client_email = userData.email;
+          orderWithCustomFields.client_name = userData.name || userData.email;
         }
       }
       
       // Fetch buildings information if lista_paineis exists
-      if (Array.isArray(orderData.lista_paineis) && orderData.lista_paineis.length > 0) {
+      if (Array.isArray(orderWithCustomFields.lista_paineis) && orderWithCustomFields.lista_paineis.length > 0) {
         // First get paineis to get building IDs
         const { data: panelsData, error: panelsError } = await supabase
           .from('painels')
           .select('building_id')
-          .in('id', orderData.lista_paineis);
+          .in('id', orderWithCustomFields.lista_paineis);
           
         if (!panelsError && panelsData && panelsData.length > 0) {
           // Get unique building IDs
@@ -124,12 +132,12 @@ const OrderDetails: React.FC = () => {
             
           if (!buildingsError && buildingsData) {
             setBuildings(buildingsData);
-            orderData.buildings = buildingsData;
+            orderWithCustomFields.buildings = buildingsData;
           }
         }
       }
       
-      setOrder(orderData);
+      setOrder(orderWithCustomFields);
     } catch (error) {
       console.error('Erro ao carregar detalhes do pedido:', error);
       toast.error('Erro ao carregar detalhes do pedido');
