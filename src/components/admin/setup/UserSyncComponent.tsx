@@ -13,10 +13,22 @@ interface SyncStatus {
   userCount: number;
 }
 
-// Define the interface for user objects
-interface UserData {
+// Define the interface for user objects from auth.users
+interface AuthUser {
   id: string;
-  [key: string]: any; // For other properties that might exist
+  email: string | null;
+  user_metadata?: {
+    role?: string;
+  };
+  [key: string]: any;
+}
+
+// Define the interface for user objects from public.users
+interface DbUser {
+  id: string;
+  email: string;
+  role?: string;
+  [key: string]: any;
 }
 
 const UserSyncComponent: React.FC = () => {
@@ -29,16 +41,18 @@ const UserSyncComponent: React.FC = () => {
     setSyncStatus(null);
     
     try {
-      // Fetch users from auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      // Fetch users from auth.users using our Edge Function
+      const { data: authResponse, error: authFunctionError } = await supabase.functions.invoke('list-users');
       
-      if (authError) {
-        throw new Error(`Error fetching auth users: ${authError.message}`);
+      if (authFunctionError) {
+        throw new Error(`Error fetching auth users: ${authFunctionError.message}`);
       }
       
-      if (!authUsers?.users?.length) {
+      if (!authResponse || !authResponse.users || !Array.isArray(authResponse.users) || authResponse.users.length === 0) {
         throw new Error('No auth users found');
       }
+      
+      const authUsers = authResponse.users as AuthUser[];
       
       // Get existing users from public.users
       const { data: existingUsers, error: existingError } = await supabase
@@ -60,11 +74,11 @@ const UserSyncComponent: React.FC = () => {
       }
       
       // Find users that are in auth.users but not in public.users
-      const usersToCreate = authUsers.users
+      const usersToCreate = authUsers
         .filter(authUser => !existingUserIds.has(authUser.id))
         .map(authUser => ({
           id: authUser.id,
-          email: authUser.email,
+          email: authUser.email || '',
           role: authUser.user_metadata?.role || 'client' // Default to 'client' if no role
         }));
       
