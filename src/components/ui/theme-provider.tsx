@@ -8,42 +8,40 @@ import { type ThemeProviderProps } from "next-themes/dist/types"
 
 type Theme = "dark" | "light" | "system"
 
-type ThemeContextType = {
+type ThemeProviderContextType = {
   theme: Theme
   setTheme: (theme: Theme) => void
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+const ThemeProviderContext = createContext<ThemeProviderContextType | undefined>(undefined)
 
 export function ThemeProvider({ 
   children, 
   defaultTheme = "system", 
   ...props 
 }: ThemeProviderProps) {
-  return <NextThemesProvider {...props} defaultTheme={defaultTheme}>{children}</NextThemesProvider>
+  const [theme, setTheme] = useState<Theme>(defaultTheme as Theme)
+  
+  return (
+    <NextThemesProvider {...props} defaultTheme={defaultTheme}>
+      <ThemeProviderContext.Provider value={{ theme, setTheme }}>
+        {children}
+      </ThemeProviderContext.Provider>
+    </NextThemesProvider>
+  )
 }
 
-export const useTheme = () => {
-  const { resolvedTheme, theme, setTheme } = useThemeInternal()
+export const useTheme = (): { theme: Theme; setTheme: (theme: Theme) => void } => {
+  const context = useContext(ThemeProviderContext)
   
-  return {
-    setTheme: setTheme as (theme: Theme) => void,
-    theme: (resolvedTheme || theme) as Theme,
-  }
-}
-
-// Internal hook directly from next-themes
-function useThemeInternal() {
-  // Access the context properly from the next-themes library
-  const context = useContext(NextThemesProvider.Context)
-  
-  if (!context) {
+  if (context === undefined) {
     throw new Error("useTheme must be used within a ThemeProvider")
   }
   
   return {
     theme: context.theme,
-    resolvedTheme: context.resolvedTheme,
-    setTheme: context.setTheme,
+    setTheme: (theme: Theme) => {
+      context.setTheme(theme)
+    }
   }
 }
