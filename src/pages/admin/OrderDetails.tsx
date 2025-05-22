@@ -51,9 +51,17 @@ interface OrderDetails {
   data_inicio: string;
   data_fim: string;
   log_pagamento: any;
-  client_email?: string;  // Added for custom fields
-  client_name?: string;   // Added for custom fields
-  buildings?: Building[]; // Added for custom fields
+  client_email?: string;  // Custom fields
+  client_name?: string;   // Custom fields
+  buildings?: Building[]; // Custom fields
+}
+
+interface UserData {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+  data_criacao?: string;
 }
 
 const OrderDetails: React.FC = () => {
@@ -62,7 +70,7 @@ const OrderDetails: React.FC = () => {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [clientInfo, setClientInfo] = useState<any>(null);
+  const [clientInfo, setClientInfo] = useState<UserData | null>(null);
   
   useEffect(() => {
     if (!id) return;
@@ -104,11 +112,16 @@ const OrderDetails: React.FC = () => {
           .single();
           
         if (!userError && userData) {
-          setClientInfo(userData);
+          setClientInfo(userData as UserData);
           
           // Add client info to order
           orderWithCustomFields.client_email = userData.email;
-          orderWithCustomFields.client_name = userData.name || userData.email;
+          orderWithCustomFields.client_name = userData.email; // Default to email if name is not available
+          
+          // Use name if available
+          if ('name' in userData) {
+            orderWithCustomFields.client_name = (userData as any).name || userData.email;
+          }
         }
       }
       

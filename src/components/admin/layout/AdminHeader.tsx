@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +9,8 @@ import {
   Sun, 
   Moon, 
   Menu,
-  User
+  User,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,8 +50,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   };
 
   // Get user name and role from session if available
-  const userName = session?.user?.user_metadata?.name || user?.name || user?.email || 'Usuario';
-  const userRole = session?.user?.user_metadata?.role || 'admin';
+  const userName = session?.user?.user_metadata?.name || 
+                  (user && 'name' in user ? (user as any).name : user?.email) || 
+                  'Usuario';
+                  
+  const userRole = session?.user?.user_metadata?.role || 
+                  (user && 'role' in user ? (user as any).role : 'admin');
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">

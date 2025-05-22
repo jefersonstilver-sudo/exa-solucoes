@@ -31,18 +31,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     
     // Check user role when it's available
     if (!isLoading && isLoggedIn) {
-      // Get role from user metadata if available, or from user object
-      const role = session?.user?.user_metadata?.role || user?.role;
+      // Get role from session metadata if available, or from user object
+      const userRole = session?.user?.user_metadata?.role || 
+                      (user && 'role' in user ? (user as any).role : null);
       
       // If super admin is required, check for that role specifically
-      if (requireSuperAdmin && role !== 'super_admin') {
+      if (requireSuperAdmin && userRole !== 'super_admin') {
         toast.error('Você não tem permissão para acessar esta página');
         navigate('/forbidden');
         return;
       }
       
       // Check if user has any admin role
-      if (!role || (role !== 'admin' && role !== 'super_admin')) {
+      if (!userRole || (userRole !== 'admin' && userRole !== 'super_admin')) {
         toast.error('Você não tem permissão para acessar esta página');
         navigate('/forbidden');
         return;

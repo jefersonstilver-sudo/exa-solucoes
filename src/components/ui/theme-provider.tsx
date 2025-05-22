@@ -24,24 +24,26 @@ export function ThemeProvider({
 }
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext)
-  const { setTheme: setNextTheme, theme: activeTheme } = useTheme_internal()
-  
-  const setTheme = (theme: Theme) => {
-    setNextTheme(theme)
-  }
+  const { resolvedTheme, theme, setTheme } = useThemeInternal()
   
   return {
-    setTheme,
-    theme: activeTheme as Theme,
+    setTheme: setTheme as (theme: Theme) => void,
+    theme: (resolvedTheme || theme) as Theme,
   }
 }
 
 // Internal hook directly from next-themes
-function useTheme_internal() {
-  const { resolvedTheme, theme, setTheme } = useContext(NextThemesProvider.Context)
+function useThemeInternal() {
+  // Access the context properly from the next-themes library
+  const context = useContext(NextThemesProvider.Context)
+  
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider")
+  }
+  
   return {
-    theme: resolvedTheme || theme,
-    setTheme,
+    theme: context.theme,
+    resolvedTheme: context.resolvedTheme,
+    setTheme: context.setTheme,
   }
 }
