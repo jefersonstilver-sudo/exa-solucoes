@@ -6,6 +6,7 @@ import { ShoppingCart, Menu, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '@/components/ui/drawer';
 import PanelCart from '@/components/panels/PanelCart';
 import UserMenu from '@/components/user/UserMenu';
+import AdminAccessButton from '@/components/admin/AdminAccessButton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
@@ -101,6 +102,9 @@ const Header: React.FC<HeaderProps> = ({
         </Link>
 
         <div className="flex items-center gap-3">
+          {/* Admin Access Button */}
+          <AdminAccessButton variant="icon" className="hidden sm:flex" />
+          
           {/* User profile menu */}
           <UserMenu />
           
@@ -180,6 +184,10 @@ const Header: React.FC<HeaderProps> = ({
             <Link to="/paineis-digitais/loja" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md bg-indexa-mint/20" onClick={() => setIsMenuOpen(false)}>
               Loja Online
             </Link>
+            {/* Admin access button for mobile */}
+            <div className="p-2">
+              <AdminAccessButton variant="subtle" className="w-full justify-start" />
+            </div>
           </div>
         </div>
       )}

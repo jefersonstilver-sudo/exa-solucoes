@@ -10,6 +10,7 @@ import {
   LogIn, 
   UserPlus, 
   User as UserIcon, 
+  ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,6 +38,21 @@ const UserMenu = () => {
     setOpen(false);
     toast.success('Sessão encerrada com sucesso!');
   };
+
+  // Get user role from session metadata if available, or from user object
+  const getUserRole = () => {
+    if (!user) return null;
+    
+    if (user.role) {
+      return user.role;
+    }
+    
+    return null;
+  };
+  
+  const userRole = getUserRole();
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isSuperAdmin = userRole === 'super_admin';
 
   // Generate avatar initials from name or email
   const getInitials = () => {
@@ -144,7 +160,17 @@ const UserMenu = () => {
                       <>
                         <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
                           <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-bold leading-none">{user?.name || "Usuário"}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold leading-none">{user?.name || "Usuário"}</p>
+                              {isSuperAdmin && (
+                                <ShieldCheck className="h-4 w-4 text-amber-400" />
+                              )}
+                              {isAdmin && !isSuperAdmin && (
+                                <span className="text-xs bg-green-600/20 text-green-400 px-1.5 py-0.5 rounded-sm">
+                                  Admin
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-white/70 leading-none truncate">
                               {user?.email}
                             </p>
@@ -152,6 +178,16 @@ const UserMenu = () => {
                         </DropdownMenuLabel>
                         
                         <DropdownMenuGroup className="p-2">
+                          {/* Admin panel access for admin users */}
+                          {isAdmin && (
+                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/20 hover:text-amber-300 focus:bg-amber-500/20 focus:text-amber-300">
+                              <Link to="/admin" className="flex items-center">
+                                <ShieldCheck className="mr-3 h-5 w-5 text-amber-400" />
+                                <span className="font-medium">Área Administrativa</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+                          
                           <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
                             <Link to="/minhas-campanhas" className="flex items-center">
                               <ClipboardList className="mr-3 h-5 w-5" />

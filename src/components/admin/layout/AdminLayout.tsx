@@ -37,17 +37,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       
       // If super admin is required, check for that role specifically
       if (requireSuperAdmin && userRole !== 'super_admin') {
-        toast.error('Você não tem permissão para acessar esta página');
+        toast.error('Você não tem permissão para acessar esta página. Acesso restrito para super administradores.');
         navigate('/forbidden');
         return;
       }
       
       // Check if user has any admin role
       if (!userRole || (userRole !== 'admin' && userRole !== 'super_admin')) {
-        toast.error('Você não tem permissão para acessar esta página');
+        toast.error('Você não tem permissão para acessar esta página. Acesso restrito para administradores.');
         navigate('/forbidden');
         return;
       }
+      
+      console.log('Usuário autenticado com role:', userRole);
     }
   }, [isLoading, isLoggedIn, user, session, navigate, requireSuperAdmin]);
   

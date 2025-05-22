@@ -10,6 +10,7 @@ export interface UserProfile {
   email: string;
   name?: string;
   avatar_url?: string;
+  role?: 'client' | 'admin' | 'super_admin'; // Adicionando role no UserProfile
 }
 
 export const useUserSession = () => {
@@ -27,11 +28,15 @@ export const useUserSession = () => {
         setSession(currentSession);
         
         if (currentSession?.user) {
+          // Get role from user metadata
+          const userRole = currentSession.user.user_metadata?.role || 'client';
+          
           setUser({
             id: currentSession.user.id,
             email: currentSession.user.email || '',
             name: currentSession.user.user_metadata?.name || currentSession.user.email?.split('@')[0],
-            avatar_url: currentSession.user.user_metadata?.avatar_url
+            avatar_url: currentSession.user.user_metadata?.avatar_url,
+            role: userRole
           });
           
           if (event === 'SIGNED_IN') {
@@ -57,13 +62,17 @@ export const useUserSession = () => {
           // Sync session state
           setSession(data.session);
           
+          // Get role from user metadata
+          const userRole = data.session.user.user_metadata?.role || 'client';
+          
           // Set user profile
           const userData = data.session.user;
           setUser({
             id: userData.id,
             email: userData.email || '',
             name: userData.user_metadata?.name || userData.email?.split('@')[0],
-            avatar_url: userData.user_metadata?.avatar_url
+            avatar_url: userData.user_metadata?.avatar_url,
+            role: userRole
           });
           
           console.log('User session restored:', userData.email);
@@ -125,9 +134,13 @@ export const useUserSession = () => {
       }
       
       if (data.user) {
+        // Get role from user metadata
+        const userRole = data.user.user_metadata?.role || 'client';
+        
         setUser(prev => prev ? {
           ...prev,
-          ...userProfile
+          ...userProfile,
+          role: userRole
         } : null);
         
         toast.success('Perfil atualizado com sucesso');
@@ -140,6 +153,50 @@ export const useUserSession = () => {
       return { success: false, error };
     }
   };
+  
+  // Function to check if user has a specific role
+  const hasRole = (requiredRole: 'client' | 'admin' | 'super_admin'): boolean => {
+    if (!user || !user.role) return false;
+    
+    // Super admin has access to all roles
+    if (user.role === 'super_admin') return true;
+    
+    // Admin has access to admin and client roles
+    if (user.role === 'admin' && (requiredRole === 'admin' || requiredRole === 'client')) return true;
+    
+    // Client has access only to client role
+    if (user.role === 'client' && requiredRole === 'client') return true;
+    
+    return false;
+  };
+  
+  // Function to set user role (for dev/testing purposes)
+  const setUserRole = async (role: 'client' | 'admin' | 'super_admin') => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: { role }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data.user) {
+        setUser(prev => prev ? {
+          ...prev,
+          role
+        } : null);
+        
+        toast.success(`Role atualizada para: ${role}`);
+      }
+      
+      return { success: true };
+    } catch (error: any) {
+      console.error('Erro ao atualizar role:', error);
+      toast.error('Erro ao atualizar role: ' + error.message);
+      return { success: false, error };
+    }
+  };
 
   return {
     user,
@@ -148,6 +205,8 @@ export const useUserSession = () => {
     isLoading,
     isLoggedIn: !!user,
     logout,
-    updateUserProfile
+    updateUserProfile,
+    hasRole,
+    setUserRole
   };
 };
