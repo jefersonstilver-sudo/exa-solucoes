@@ -7,7 +7,9 @@ import { UserPlus, Edit, Trash2, Shield, User, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
 import AdminInitializer from '@/components/admin/setup/AdminInitializer';
+import UserSyncComponent from '@/components/admin/setup/UserSyncComponent';
 
 interface UserData {
   id: string;
@@ -77,15 +79,14 @@ const UserManagement = () => {
     }
     
     try {
-      // Primeiro, verificar se não é o próprio usuário logado
+      // First, check if it's not the logged-in user
       const { data: session } = await supabase.auth.getSession();
       if (session?.session?.user?.id === userId) {
         toast.error('Você não pode excluir seu próprio usuário!');
         return;
       }
       
-      // TODO: Implementar exclusão de usuário via edge function
-      toast.error('Funcionalidade ainda não implementada');
+      toast.error('Funcionalidade de exclusão ainda não implementada');
     } catch (error: any) {
       console.error('Erro ao excluir usuário:', error);
       toast.error('Erro ao excluir usuário: ' + error.message);
@@ -122,7 +123,21 @@ const UserManagement = () => {
           </div>
         </div>
         
-        <AdminInitializer />
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="p-0">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-medium mb-4">Inicializar Admin Master</h3>
+              <AdminInitializer />
+            </CardContent>
+          </Card>
+          
+          <Card className="p-0">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-medium mb-4">Sincronizar Usuários</h3>
+              <UserSyncComponent />
+            </CardContent>
+          </Card>
+        </div>
         
         <div className="border rounded-md shadow-sm bg-white dark:bg-gray-800">
           <Table>
