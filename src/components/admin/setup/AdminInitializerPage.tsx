@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -52,10 +51,9 @@ const AdminInitializerPage: React.FC = () => {
       }
       
       // Create a set of existing user IDs for quick lookup
-      // We ensure existingUsers is an array with a fallback to empty array
-      // And explicitly define the type for clarity
+      // Explicitly type existingUsers and provide a default empty array if it's null
       const existingUserIds = new Set(
-        (existingUsers as Array<{ id: string }> || []).map(u => u.id)
+        (Array.isArray(existingUsers) ? existingUsers : []).map((u: { id: string }) => u.id)
       );
       
       // Find users that are in auth.users but not in public.users
