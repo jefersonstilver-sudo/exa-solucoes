@@ -58,4 +58,7 @@ verify_jwt = true
 verify_jwt = false
 [functions.list-users]
 verify_jwt = true
-
+[functions.create-master-admin]
+verify_jwt = false
+[functions.sync-users]
+verify_jwt = false

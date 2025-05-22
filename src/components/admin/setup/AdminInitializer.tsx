@@ -38,11 +38,12 @@ const AdminInitializer = () => {
     setError(null);
     
     try {
-      // Call the edge function to create master admin
+      // Call the edge function to create master admin with proper authentication
       const response = await fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/create-master-admin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk'
         }
       });
       
