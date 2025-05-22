@@ -52,8 +52,10 @@ const UserSyncComponent: React.FC = () => {
       // Create a set of existing user IDs for quick lookup
       const existingUserIds = new Set<string>();
       if (existingUsers && Array.isArray(existingUsers)) {
-        existingUsers.forEach((user: UserData) => {
-          existingUserIds.add(user.id);
+        existingUsers.forEach((user) => {
+          if (user && typeof user === 'object' && 'id' in user) {
+            existingUserIds.add(user.id);
+          }
         });
       }
       
