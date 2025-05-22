@@ -2,8 +2,13 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
+import AdminAccessButton from '@/components/admin/AdminAccessButton';
+import { useUserSession } from '@/hooks/useUserSession';
 
 const Index = () => {
+  const { isLoggedIn, hasRole } = useUserSession();
+  const isAdmin = hasRole('admin');
+  
   return (
     <Layout useGradientBackground>
       {/* Cards de Serviço com background image */}
@@ -20,6 +25,12 @@ const Index = () => {
         <div className="absolute inset-0 bg-black/20"></div>
         
         <div className="max-w-7xl mx-auto relative z-10 w-full">
+          {isLoggedIn && isAdmin && (
+            <div className="mb-8 flex justify-center">
+              <AdminAccessButton />
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <ServiceCard
               title="Marketing"

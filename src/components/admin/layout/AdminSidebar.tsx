@@ -8,7 +8,8 @@ import {
   MonitorPlay, 
   Settings, 
   Users, 
-  Shield 
+  Shield,
+  UserCog 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserSession } from '@/hooks/useUserSession';

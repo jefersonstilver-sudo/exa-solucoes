@@ -1,3 +1,4 @@
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
@@ -26,6 +27,7 @@ import BuildingsPage from './pages/admin/BuildingsPage'
 import PanelsPage from './pages/admin/PanelsPage'
 import UserManagement from './pages/admin/UserManagement'
 import AdminInitializerPage from './components/admin/setup/AdminInitializerPage'
+import ConfiguracoesPage from './pages/admin/ConfiguracoesPage'
 
 // Providers
 import { ThemeProvider } from './components/ui/theme-provider'
@@ -117,6 +119,10 @@ const router = createBrowserRouter([
   {
     path: '/admin/setup',
     element: <AdminInitializerPage />
+  },
+  {
+    path: '/admin/configuracoes',
+    element: <ConfiguracoesPage />
   }
 ])
 
