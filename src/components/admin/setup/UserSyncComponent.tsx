@@ -53,9 +53,7 @@ const UserSyncComponent: React.FC = () => {
       const existingUserIds = new Set<string>();
       if (existingUsers && Array.isArray(existingUsers)) {
         existingUsers.forEach((user: UserData) => {
-          if (user && typeof user === 'object' && 'id' in user) {
-            existingUserIds.add(user.id);
-          }
+          existingUserIds.add(user.id);
         });
       }
       
