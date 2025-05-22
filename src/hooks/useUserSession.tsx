@@ -9,7 +9,8 @@ import { UserProfile, UserRole, UserSessionState } from '@/types/userTypes';
 import { fetchUserRole, hasUserRole } from '@/services/userRoleService';
 import { logoutUser, updateUserProfileData, setUserRoleData } from '@/services/userAuthService';
 
-export { UserProfile } from '@/types/userTypes';
+// Change this line to use 'export type' instead of just 'export'
+export type { UserProfile } from '@/types/userTypes';
 
 export const useUserSession = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
