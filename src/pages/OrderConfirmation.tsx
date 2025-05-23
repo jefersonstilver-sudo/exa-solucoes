@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Upload, CheckCircle, FileUp, RefreshCw, AlertCircle, Info, X } from 'lucide-react';
@@ -274,13 +273,13 @@ const OrderConfirmation: React.FC = () => {
                 }
                 
                 // Create campaigns with the video
-                const { data: paineis } = await supabase
-                  .from('paineis')
+                const { data: painels } = await supabase
+                  .from('painels')
                   .select('id')
                   .in('id', orderDetails.lista_paineis);
                   
-                if (paineis && paineis.length > 0) {
-                  const campanhas = paineis.map((painel: { id: string }) => ({
+                if (painels && painels.length > 0) {
+                  const campanhas = painels.map((painel: { id: string }) => ({
                     client_id: user.id,
                     video_id: videoData.id,
                     painel_id: painel.id,

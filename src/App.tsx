@@ -2,10 +2,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
-import { AuthRoutes } from '@/routes/AuthRoutes';
-import { AdminRoutes } from '@/routes/AdminRoutes';
-import { ClientRoutes } from '@/routes/ClientRoutes';
-import { PublicRoutes } from '@/routes/PublicRoutes';
+import AuthRoutes from '@/routes/AuthRoutes';
+import AdminRoutes from '@/routes/AdminRoutes';
+import ClientRoutes from '@/routes/ClientRoutes';
+import PublicRoutes from '@/routes/PublicRoutes';
 import NotFound from '@/pages/NotFound';
 import Payment from '@/pages/Payment';
 import PixPayment from '@/pages/PixPayment';
@@ -33,14 +33,6 @@ const App = () => {
         <Route path="/payment" element={<Payment />} />
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
-        
-        {/* Redirect /pedido-confirmado without params to dashboard */}
-        <Route 
-          path="/pedido-confirmado" 
-          element={
-            <OrderConfirmation />
-          } 
-        />
         
         {/* Not Found */}
         <Route path="*" element={<NotFound />} />
