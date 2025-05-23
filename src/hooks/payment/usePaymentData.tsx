@@ -77,18 +77,20 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         const order = unwrapData(data[0]);
         if (!order) throw new Error("Erro ao processar os dados do pedido");
         
+        const orderTyped = order as any;
+        
         // Verify user permission
-        if (order && user && order.client_id !== user.id) {
+        if (orderTyped && user && orderTyped.client_id !== user.id) {
           throw new Error("Você não tem permissão para visualizar este pedido");
         }
         
         // Process payment data - treat log_pagamento as PaymentLogData with safe typing
-        const logPagamento = (order.log_pagamento || {}) as PaymentLogData;
+        const logPagamento = (orderTyped.log_pagamento || {}) as PaymentLogData;
         const paymentMethod = logPagamento.payment_method || 'credit_card';
         
         setPaymentData({
-          orderId: order.id,
-          totalAmount: order.valor_total,
+          orderId: orderTyped.id,
+          totalAmount: orderTyped.valor_total,
           preferenceId: logPagamento.preference_id || null,
           method: paymentMethod,
           pixData: paymentMethod === 'pix' && logPagamento.pix_data ? {
@@ -140,7 +142,8 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
       const orderData = unwrapData(data[0]);
       if (!orderData) throw new Error("Erro ao processar os dados do pedido");
       
-      const logPagamento = (orderData.log_pagamento || {}) as PaymentLogData;
+      const orderDataTyped = orderData as any;
+      const logPagamento = (orderDataTyped.log_pagamento || {}) as PaymentLogData;
       const paymentMethod = logPagamento.payment_method || 'credit_card';
       
       if (paymentMethod === 'pix' && logPagamento.pix_data) {
