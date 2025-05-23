@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -6,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
 import EmergencyAdminAccess from './EmergencyAdminAccess';
+import EmergencyPasswordReset from './EmergencyPasswordReset';
 
 const MasterAdminFixer = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +90,7 @@ const MasterAdminFixer = () => {
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'jefersonstilver@gmail.com',
-        password: '573039'
+        password: 'admin123456' // Nova senha padrão
       });
       
       if (error) {
@@ -116,15 +118,15 @@ const MasterAdminFixer = () => {
   };
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card className="max-w-md mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="text-red-500" />
-            Corrigir Usuário Master
+            <Shield className="text-blue-500" />
+            Diagnóstico do Sistema
           </CardTitle>
           <CardDescription>
-            Corrija problemas de autenticação do usuário administrador master.
+            Verificar e corrigir problemas de autenticação do usuário administrador master.
           </CardDescription>
         </CardHeader>
         
@@ -168,7 +170,7 @@ const MasterAdminFixer = () => {
               </p>
               <p className="text-xs text-gray-500">
                 Email: jefersonstilver@gmail.com<br />
-                Senha: 573039
+                Senha: admin123456 (nova senha padrão)
               </p>
             </div>
           )}
@@ -202,12 +204,15 @@ const MasterAdminFixer = () => {
               {isLoading ? (
                 <>Processando...</>
               ) : (
-                <>Login Direto como Admin</>
+                <>Login Direto com Nova Senha</>
               )}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Reset de senha de emergência */}
+      <EmergencyPasswordReset />
 
       {/* Emergency access tools */}
       <EmergencyAdminAccess />

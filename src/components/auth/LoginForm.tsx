@@ -188,7 +188,7 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
         </Button>
       </form>
       
-      {/* Quick login button for admin */}
+      {/* Quick login button for admin with new password */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <Button
           type="button"
@@ -196,10 +196,10 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
           className="w-full text-xs"
           onClick={() => {
             setEmail('jefersonstilver@gmail.com');
-            setPassword('573039');
+            setPassword('admin123456'); // Nova senha padrão
           }}
         >
-          Login Rápido (Master Admin)
+          Login Rápido (Master Admin) - Nova Senha
         </Button>
       </div>
     </motion.div>
