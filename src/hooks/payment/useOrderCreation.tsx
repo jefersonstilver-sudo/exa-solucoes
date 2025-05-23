@@ -200,7 +200,7 @@ export const useOrderCreation = () => {
           ? updatedOrderTyped.lista_paineis 
           : [updatedOrderTyped.lista_paineis];
 
-        // FIXED: Create campaigns one by one instead of using spread operator
+        // Create campaigns one by one instead of using spread operator
         for (const panelId of panelIds) {
           const campaignData = prepareForInsert({
             client_id: sessionUser.id,
@@ -306,7 +306,7 @@ export const useOrderCreation = () => {
         throw new Error('Nenhum painel encontrado no pedido');
       }
       
-      // FIXED: Create campaigns one by one instead of using spread operator
+      // Create campaigns one by one instead of using spread operator
       for (const panelId of panelIds) {
         const campaignData = prepareForInsert({
           client_id: userId,
