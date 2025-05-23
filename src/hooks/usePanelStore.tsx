@@ -44,7 +44,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [] as string[],
+  selectedPanels: [],
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,
@@ -116,7 +116,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   },
   
   clearSelectedPanels: () => {
-    set({ selectedPanels: [] as string[] });
+    set({ selectedPanels: [] });
   },
   
   isPanelSelected: (panelId: string) => {
