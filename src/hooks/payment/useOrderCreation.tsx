@@ -84,6 +84,10 @@ export const useOrderCreation = () => {
       throw pedidoError;
     }
     
+    if (!pedido) {
+      throw new Error('Erro ao criar pedido: dados não retornados');
+    }
+    
     // Se um cupom foi aplicado, registra seu uso com tipo correto
     if (couponId && pedido && pedido.id) {
       try {
