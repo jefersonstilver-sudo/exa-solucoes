@@ -347,7 +347,7 @@ export const useOrderCreation = () => {
   };
 
   // Fixed: Add the createOrder method that was missing
-  const createOrder = async (orderData: any) => {
+  const createOrder = async (orderData: CreatePaymentOrderParams) => {
     return await createPaymentOrder(orderData);
   };
 
