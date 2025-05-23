@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
-import { Panel, PanelWithDistance } from '@/types/panel';
+import { Panel } from '@/types/panel';
 import { ensureArray, unwrapData } from '@/utils/supabaseUtils';
 
 interface PanelStoreState {

@@ -14,6 +14,7 @@ export enum CheckoutEvent {
   PAYMENT_UPDATE = 'PAYMENT_UPDATE',
   PAYMENT_EVENT = 'PAYMENT_EVENT',
   NAVIGATION_EVENT = 'NAVIGATION_EVENT',
+  NAVIGATION_ERROR = 'NAVIGATION_ERROR',
   DEBUG_EVENT = 'DEBUG_EVENT',
   AUTH_EVENT = 'AUTH_EVENT',
   USER_ACTION = 'USER_ACTION',
@@ -58,9 +59,6 @@ export const logCheckoutEvent = (
   checkoutLogs.push(logEntry);
   
   console.log(`%c[${level}] [${event}] ${message}`, `color: ${color}`, data || {});
-  
-  // In a production environment, you might want to send these logs to a server
-  // or analytics platform for monitoring and debugging
 };
 
 // Export functions for debug components
@@ -76,7 +74,8 @@ export const getCheckoutAuditSummary = () => {
     infoCount: checkoutLogs.filter(log => log.level === LogLevel.INFO).length,
     successCount: checkoutLogs.filter(log => log.level === LogLevel.SUCCESS).length,
     debugCount: checkoutLogs.filter(log => log.level === LogLevel.DEBUG).length,
-    lastLogTime: checkoutLogs.length > 0 ? checkoutLogs[checkoutLogs.length - 1].timestamp : null
+    lastLogTime: checkoutLogs.length > 0 ? checkoutLogs[checkoutLogs.length - 1].timestamp : null,
+    recentErrors: checkoutLogs.filter(log => log.level === LogLevel.ERROR).slice(-5)
   };
   
   return summary;

@@ -1,6 +1,7 @@
 
-import { supabase } from '../services/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { filterEq } from '@/utils/supabaseUtils';
 
 // Types for user roles
 export type UserRole = 'admin' | 'client' | 'painel';
@@ -30,7 +31,7 @@ export const validateToken = async (token: string): Promise<User | null> => {
     const { data: userData } = await supabase
       .from('users')
       .select('id, email, role, created_at as data_criacao')
-      .eq('id', user.user.id)
+      .eq('id', filterEq(user.user.id))
       .single();
       
     if (!userData) {

@@ -4,13 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { prepareForUpdate, filterEq, unwrapData } from '@/utils/supabaseUtils';
-import { Database } from '@/integrations/supabase/types';
 
 interface UseOrderDetailsProps {
   orderId: string | null;
 }
-
-type PedidoUpdate = Database['public']['Tables']['pedidos']['Update'];
 
 export function useOrderDetails({ orderId }: UseOrderDetailsProps) {
   const navigate = useNavigate();
@@ -50,13 +47,13 @@ export function useOrderDetails({ orderId }: UseOrderDetailsProps) {
         
         // If we have an order, update its status if needed
         if (typedData && typedData.status === 'pendente') {
-          const updateData = prepareForUpdate<PedidoUpdate>({
+          const updateData = prepareForUpdate({
             status: 'pago'
           });
           
           await supabase
             .from('pedidos')
-            .update(updateData)
+            .update(updateData as any)
             .eq('id', filterEq(orderId));
             
           console.log('Order status updated to paid');

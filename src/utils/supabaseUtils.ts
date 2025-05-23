@@ -131,12 +131,11 @@ export const unwrapData = <T>(data: T | any): T | null => {
 /**
  * Type-safe equality filter for Supabase queries
  * 
- * @param column The column name to filter on
  * @param value The value to filter for
  * @returns The typed value for filter
  */
-export const filterEq = <T>(value: string): T => {
-  return value as unknown as T;
+export const filterEq = (value: string): any => {
+  return value;
 };
 
 /**

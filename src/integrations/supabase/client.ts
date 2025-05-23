@@ -20,9 +20,6 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true,
       flowType: 'implicit'
     },
-    realtime: {
-      persistSession: true
-    },
     global: {
       headers: {
         'X-Client-Info': 'supabase-js@2.x'

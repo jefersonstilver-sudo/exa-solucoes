@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { unwrapData } from '@/utils/supabaseUtils';
+import { unwrapData, filterEq } from '@/utils/supabaseUtils';
 
 export interface PixPaymentData {
   qrCodeBase64: string;
@@ -40,7 +40,7 @@ export const usePixPayment = (pedidoId: string | null): UsePixPaymentResult => {
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
-        .eq('id', pedidoId)
+        .eq('id', filterEq(pedidoId))
         .single();
 
       if (pedidoError) throw pedidoError;
@@ -110,7 +110,7 @@ export const usePixPayment = (pedidoId: string | null): UsePixPaymentResult => {
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .select('log_pagamento, status')
-        .eq('id', pedidoId)
+        .eq('id', filterEq(pedidoId))
         .single();
 
       if (pedidoError) throw pedidoError;
