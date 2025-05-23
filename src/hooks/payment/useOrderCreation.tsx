@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { prepareForInsert, prepareForUpdate, unwrapData, filterEq } from '@/utils/supabaseUtils';
