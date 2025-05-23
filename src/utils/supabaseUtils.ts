@@ -3,6 +3,8 @@
  * Utility functions for working with Supabase responses
  */
 
+import { PostgrestSingleResponse } from '@supabase/supabase-js';
+
 /**
  * Safe check to determine if a Supabase response contains data
  * @param response The response from a Supabase query
@@ -46,4 +48,47 @@ export const getFirstItem = <T>(response: { data: T[] | null, error: any }): T |
  */
 export const dbCast = <T>(value: any): T => {
   return value as T;
+};
+
+/**
+ * Safely extract data from a Supabase single response
+ * Ensures the response has data and isn't an error before accessing properties
+ * 
+ * @param response The Supabase single response object
+ * @returns The data if it exists, null otherwise
+ */
+export const extractSingleData = <T>(response: PostgrestSingleResponse<T>): T | null => {
+  if (response.error || !response.data) {
+    return null;
+  }
+  return response.data;
+};
+
+/**
+ * Assert that a value is not null or undefined
+ * Useful when TypeScript knows a value might be null but you've checked it
+ * 
+ * @param value The value to check
+ * @param message Optional error message
+ * @returns The non-null value
+ * @throws Error if value is null or undefined
+ */
+export const assertDefined = <T>(value: T | null | undefined, message = 'Value is null or undefined'): T => {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+};
+
+/**
+ * Safe accessor for database record properties
+ * Returns undefined if the record or property doesn't exist
+ * 
+ * @param record The database record
+ * @param prop Property name to access
+ * @returns The property value or undefined
+ */
+export const safeGet = <T, K extends keyof T>(record: T | null | undefined, prop: K): T[K] | undefined => {
+  if (!record) return undefined;
+  return record[prop];
 };

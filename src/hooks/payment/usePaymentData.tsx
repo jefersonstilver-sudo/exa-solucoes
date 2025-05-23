@@ -6,7 +6,6 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast } from 'sonner';
-import { toTypedId, getFirstItem } from '@/utils/supabaseUtils';
 
 // Define a type for the payment log data structure
 interface PaymentLogData {
@@ -68,13 +67,13 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         const { data, error } = await supabase
           .from('pedidos')
           .select('*')
-          .eq('id', toTypedId(pedidoId))
+          .eq('id', pedidoId)
           .limit(1);
         
         if (error) throw error;
         if (!data || data.length === 0) throw new Error("Pedido não encontrado");
         
-        const order = data[0];
+        const order = data[0] as any;
         
         // Verify user permission
         if (order && user && order.client_id !== user.id) {
@@ -130,7 +129,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
       const { data, error } = await supabase
         .from('pedidos')
         .select('log_pagamento')
-        .eq('id', toTypedId(pedidoId))
+        .eq('id', pedidoId)
         .limit(1);
       
       if (error) throw error;

@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { toTypedId } from '@/utils/supabaseUtils';
 
 interface UseOrderDetailsProps {
   orderId: string | null;
@@ -31,7 +30,7 @@ export function useOrderDetails({ orderId }: UseOrderDetailsProps) {
         const { data, error } = await supabase
           .from('pedidos')
           .select('*, lista_paineis, plano_meses, data_inicio, data_fim, status, valor_total')
-          .eq('id', toTypedId(orderId))
+          .eq('id', orderId)
           .single();
           
         if (error) throw error;
@@ -43,7 +42,7 @@ export function useOrderDetails({ orderId }: UseOrderDetailsProps) {
           await supabase
             .from('pedidos')
             .update({ status: 'pago' })
-            .eq('id', toTypedId(orderId));
+            .eq('id', orderId);
             
           console.log('Order status updated to paid');
         }

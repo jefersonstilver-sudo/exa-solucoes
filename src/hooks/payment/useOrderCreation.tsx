@@ -4,7 +4,7 @@ import { ensureSpreadable } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
 import { Database } from '@/integrations/supabase/types';
 import type { Json } from '@/integrations/supabase/types';
-import { dbCast, toTypedId, getFirstItem } from '@/utils/supabaseUtils';
+import { dbCast, toTypedId, getFirstItem, extractSingleData, assertDefined, safeGet } from '@/utils/supabaseUtils';
 
 // Define proper types for database inserts and updates
 type PedidoInsert = Database['public']['Tables']['pedidos']['Insert'];
@@ -77,9 +77,9 @@ export const useOrderCreation = () => {
     };
     
     // Cria pedido no banco de dados com tipo correto
-    const { data: pedidoData, error: pedidoError } = await supabase
+    const { data, error: pedidoError } = await supabase
       .from('pedidos')
-      .insert(dbCast<PedidoInsert>(pedidoPayload))
+      .insert(pedidoPayload as any)
       .select()
       .single();
     
@@ -89,12 +89,14 @@ export const useOrderCreation = () => {
     }
     
     // Check if we have a valid result
-    if (!pedidoData) {
+    if (!data) {
       throw new Error('Erro ao criar pedido: dados não retornados');
     }
+
+    const pedidoData = data as any;
     
     // Se um cupom foi aplicado, registra seu uso com tipo correto
-    if (couponId && pedidoData && pedidoData.id) {
+    if (couponId && pedidoData?.id) {
       try {
         const cupomUsoPayload: CupomUsoInsert = {
           cupom_id: couponId,
@@ -104,7 +106,7 @@ export const useOrderCreation = () => {
         
         await supabase
           .from('cupom_usos')
-          .insert(dbCast<CupomUsoInsert>(cupomUsoPayload));
+          .insert(cupomUsoPayload as any);
       } catch (error) {
         console.error('Erro ao registrar uso do cupom:', error);
         // Não impedimos o fluxo se o registro do cupom falhar
@@ -112,10 +114,10 @@ export const useOrderCreation = () => {
     }
     
     // Atualiza o pedido com informações adicionais
-    if (pedidoData && pedidoData.id) {
+    if (pedidoData?.id) {
       try {
         // Ensure log_pagamento is an object before spreading
-        const logPagamentoObj = ensureSpreadable(pedidoData.log_pagamento);
+        const logPagamentoObj = ensureSpreadable(pedidoData.log_pagamento || {});
         
         const additionalLogInfo = {
           order_created_at: new Date().toISOString(),
@@ -134,8 +136,8 @@ export const useOrderCreation = () => {
 
         await supabase
           .from('pedidos')
-          .update(dbCast<PedidoUpdate>(updateData))
-          .eq('id', toTypedId(pedidoData.id));
+          .update(updateData as any)
+          .eq('id', pedidoData.id);
       } catch (updateError) {
         console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
         // Não impedimos o fluxo se a atualização falhar
@@ -149,16 +151,18 @@ export const useOrderCreation = () => {
   const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
     try {
       // Buscar detalhes do pedido
-      const { data: pedidoData, error: pedidoError } = await supabase
+      const { data, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
-        .eq('id', toTypedId(pedidoId))
+        .eq('id', pedidoId)
         .single();
       
-      if (pedidoError || !pedidoData) {
+      if (pedidoError || !data) {
         console.error('Erro ao buscar detalhes do pedido:', pedidoError);
         throw pedidoError || new Error('Pedido não encontrado');
       }
+      
+      const pedidoData = data as any;
       
       // Atualizar status do pedido para 'pago'
       const pedidoUpdateData: PedidoUpdate = {
@@ -167,14 +171,14 @@ export const useOrderCreation = () => {
       
       await supabase
         .from('pedidos')
-        .update(dbCast<PedidoUpdate>(pedidoUpdateData))
-        .eq('id', toTypedId(pedidoId));
+        .update(pedidoUpdateData as any)
+        .eq('id', pedidoId);
       
       // Buscar vídeo ativo do cliente (se houver)
       const { data: videos, error: videoError } = await supabase
         .from('videos')
         .select('*')
-        .eq('client_id', toTypedId(userId))
+        .eq('client_id', userId)
         .eq('status', 'ativo')
         .order('created_at', { ascending: false })
         .limit(1);
@@ -182,7 +186,7 @@ export const useOrderCreation = () => {
       // Determinar se o cliente tem um vídeo ou precisa cadastrar um
       const videoId = videos && videos.length > 0 ? videos[0].id : null;
       
-      if (pedidoData && pedidoData.lista_paineis && Array.isArray(pedidoData.lista_paineis)) {
+      if (pedidoData?.lista_paineis && Array.isArray(pedidoData.lista_paineis)) {
         // Criar campanhas para cada painel do pedido
         const campanhasInsert = pedidoData.lista_paineis.map((painelId: string) => ({
           client_id: userId,
@@ -198,7 +202,7 @@ export const useOrderCreation = () => {
         if (campanhasInsert.length > 0) {
           const { error: campanhasError } = await supabase
             .from('campanhas')
-            .insert(dbCast(campanhasInsert));
+            .insert(campanhasInsert as any);
           
           if (campanhasError) {
             console.error('Erro ao criar campanhas:', campanhasError);
