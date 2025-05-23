@@ -19,15 +19,8 @@ import Confirmacao from './pages/Confirmacao'
 import PixPayment from './pages/PixPayment'
 import Pedidos from './pages/Pedidos'
 
-// Admin Pages
-import Dashboard from './pages/admin/Dashboard'
-import OrdersPage from './pages/admin/OrdersPage'
-import OrderDetails from './pages/admin/OrderDetails'
-import BuildingsPage from './pages/admin/BuildingsPage'
-import PanelsPage from './pages/admin/PanelsPage'
-import UserManagement from './pages/admin/UserManagement'
-import AdminInitializerPage from './components/admin/setup/AdminInitializerPage'
-import ConfiguracoesPage from './pages/admin/ConfiguracoesPage'
+// Super Admin Pages (via SuperAdminPage que contém todas as rotas)
+import SuperAdminPage from './pages/SuperAdminPage'
 
 // Advertiser Pages
 import AdvertiserDashboard from './pages/advertiser/AdvertiserDashboard'
@@ -93,38 +86,10 @@ const router = createBrowserRouter([
     path: '/meus-pedidos',
     element: <Pedidos />
   },
-  // Admin routes
+  // Super Admin routes - Acesso exclusivo para jefersonstilver@gmail.com
   {
-    path: '/admin',
-    element: <Dashboard />
-  },
-  {
-    path: '/admin/pedidos',
-    element: <OrdersPage />
-  },
-  {
-    path: '/admin/pedidos/detalhes/:id',
-    element: <OrderDetails />
-  },
-  {
-    path: '/admin/predios',
-    element: <BuildingsPage />
-  },
-  {
-    path: '/admin/paineis',
-    element: <PanelsPage />
-  },
-  {
-    path: '/admin/usuarios',
-    element: <UserManagement />
-  },
-  {
-    path: '/admin/setup',
-    element: <AdminInitializerPage />
-  },
-  {
-    path: '/admin/configuracoes',
-    element: <ConfiguracoesPage />
+    path: '/super_admin/*',
+    element: <SuperAdminPage />
   },
   // Advertiser routes
   {
@@ -150,10 +115,6 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <RouterProvider router={router} />
-        {/* 
-          Usando apenas o SonnerToaster como provider de toast principal
-          para evitar duplicação de notificações
-        */}
         <SonnerToaster 
           position="top-center" 
           expand={true} 

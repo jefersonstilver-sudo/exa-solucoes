@@ -1,0 +1,61 @@
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouteProtection } from '@/hooks/useRouteProtection';
+import AdminHeader from './AdminHeader';
+import AdminSidebar from './AdminSidebar';
+import { toast } from 'sonner';
+
+interface SuperAdminLayoutProps {
+  children: React.ReactNode;
+}
+
+const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
+  const { userProfile, isLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  // Proteção específica para Super Admin
+  const { isAuthorized } = useRouteProtection({
+    redirectTo: '/login',
+    message: 'Acesso restrito ao Super Administrador',
+    requireLogin: true,
+    requiredRole: 'super_admin'
+  });
+
+  // Verificação rigorosa: só permite jefersonstilver@gmail.com
+  React.useEffect(() => {
+    if (!isLoading && userProfile) {
+      if (userProfile.email !== 'jefersonstilver@gmail.com' || userProfile.role !== 'super_admin') {
+        toast.error('Acesso negado. Área restrita ao Super Administrador.');
+        navigate('/login');
+      }
+    }
+  }, [userProfile, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized || userProfile?.email !== 'jefersonstilver@gmail.com') {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <AdminSidebar />
+      <div className="flex-1 flex flex-col">
+        <AdminHeader />
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default SuperAdminLayout;

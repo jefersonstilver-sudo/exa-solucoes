@@ -54,11 +54,15 @@ export const useLoginForm = (redirectPath: string) => {
         const userRole = userData?.role;
         console.log('Role do usuário:', userRole);
         
-        // Redirect based on role
+        // Redirect logic - Super Admin gets exclusive access
         setTimeout(() => {
-          if (userRole === 'admin' || userRole === 'super_admin') {
-            console.log('Redirecionando admin para: /admin');
-            navigate('/admin');
+          if (data.user.email === 'jefersonstilver@gmail.com' && userRole === 'super_admin') {
+            console.log('Redirecionando Super Admin para: /super_admin');
+            navigate('/super_admin');
+          } else if (userRole === 'admin') {
+            // Outros admins podem ter redirecionamento específico se necessário
+            console.log('Redirecionando admin regular para: /anunciante');
+            navigate('/anunciante');
           } else {
             const searchParams = new URLSearchParams(location.search);
             const redirectTo = searchParams.get('redirect') || redirectPath;

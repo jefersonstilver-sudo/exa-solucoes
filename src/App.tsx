@@ -3,9 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import AuthRoutes from '@/routes/AuthRoutes';
-import AdminRoutes from '@/routes/AdminRoutes';
 import ClientRoutes from '@/routes/ClientRoutes';
 import PublicRoutes from '@/routes/PublicRoutes';
+import SuperAdminPage from '@/pages/SuperAdminPage';
 import NotFound from '@/pages/NotFound';
 import Payment from '@/pages/Payment';
 import PixPayment from '@/pages/PixPayment';
@@ -24,8 +24,8 @@ const App = () => {
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
         
-        {/* Admin Routes */}
-        <Route path="/admin/*" element={<AdminRoutes />} />
+        {/* Super Admin Routes - Acesso exclusivo para jefersonstilver@gmail.com */}
+        <Route path="/super_admin/*" element={<SuperAdminPage />} />
         
         {/* Client Routes */}
         <Route path="/client/*" element={<ClientRoutes />} />
@@ -37,14 +37,14 @@ const App = () => {
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/meus-pedidos" element={<Pedidos />} />
         
+        {/* Redirect old admin routes to super_admin */}
+        <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/admin/*" element={<Navigate to="/super_admin" replace />} />
+        
         {/* Not Found */}
         <Route path="*" element={<NotFound />} />
       </Routes>
       
-      {/* 
-        Only include ONE toast provider to avoid duplications
-        Using Sonner as the main toast provider for better configuration
-      */}
       <SonnerToaster 
         position="top-right" 
         closeButton 
