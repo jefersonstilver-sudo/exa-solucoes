@@ -51,6 +51,15 @@ export const useOrderCreation = () => {
     // Cria uma cópia dos itens do carrinho para evitar problemas se o carrinho for limpo
     const cartItemsCopy = [...cartItems];
     
+    // Prepare the log_pagamento JSON data with proper typing
+    const logPagamento = {
+      plan_details: { months: selectedPlan },
+      coupon_applied: couponId ? true : false,
+      panels_count: cartItemsCopy.length,
+      user_name: sessionUser.user_metadata?.name || sessionUser.email,
+      payment_method: 'mercado_pago'
+    } as Json;
+    
     // Prepare the data with proper typing for insertion
     const pedidoData: PedidoInsert = {
       client_id: sessionUser.id,
@@ -58,18 +67,12 @@ export const useOrderCreation = () => {
       duracao: selectedPlan * 30, // Converte meses para dias
       plano_meses: selectedPlan,
       valor_total: totalPrice,
-      cupom_id: couponId,
+      cupom_id: couponId || null,
       data_inicio: startDate.toISOString().split('T')[0],
       data_fim: endDate.toISOString().split('T')[0],
       termos_aceitos: true,
       status: 'pendente',
-      log_pagamento: {
-        plan_details: { months: selectedPlan },
-        coupon_applied: couponId ? true : false,
-        panels_count: cartItemsCopy.length,
-        user_name: sessionUser.user_metadata?.name || sessionUser.email,
-        payment_method: 'mercado_pago'
-      } as unknown as Json
+      log_pagamento: logPagamento
     };
     
     // Cria pedido no banco de dados com tipo correto
@@ -110,15 +113,21 @@ export const useOrderCreation = () => {
     if (pedido && pedido.id) {
       try {
         // Ensure log_pagamento is an object before spreading
-        const logPagamento = ensureSpreadable(pedido.log_pagamento);
+        const logPagamentoObj = ensureSpreadable(pedido.log_pagamento);
+        
+        const additionalLogInfo = {
+          order_created_at: new Date().toISOString(),
+          order_source: 'web_checkout',
+          client_email: sessionUser.email
+        };
+        
+        const updatedLogPagamento = {
+          ...logPagamentoObj,
+          ...additionalLogInfo
+        } as Json;
         
         const updateData: PedidoUpdate = {
-          log_pagamento: {
-            ...logPagamento,
-            order_created_at: new Date().toISOString(),
-            order_source: 'web_checkout',
-            client_email: sessionUser.email
-          } as unknown as Json
+          log_pagamento: updatedLogPagamento
         };
 
         await supabase
