@@ -6,6 +6,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast } from 'sonner';
+import { toTypedId, getFirstItem } from '@/utils/supabaseUtils';
 
 // Define a type for the payment log data structure
 interface PaymentLogData {
@@ -67,7 +68,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         const { data, error } = await supabase
           .from('pedidos')
           .select('*')
-          .eq('id', pedidoId as any)
+          .eq('id', toTypedId(pedidoId))
           .limit(1);
         
         if (error) throw error;
@@ -129,7 +130,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
       const { data, error } = await supabase
         .from('pedidos')
         .select('log_pagamento')
-        .eq('id', pedidoId as any)
+        .eq('id', toTypedId(pedidoId))
         .limit(1);
       
       if (error) throw error;

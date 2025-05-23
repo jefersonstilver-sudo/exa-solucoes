@@ -4,6 +4,7 @@ import { ensureSpreadable } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
 import { Database } from '@/integrations/supabase/types';
 import type { Json } from '@/integrations/supabase/types';
+import { dbCast, toTypedId, getFirstItem } from '@/utils/supabaseUtils';
 
 // Define proper types for database inserts and updates
 type PedidoInsert = Database['public']['Tables']['pedidos']['Insert'];
@@ -76,9 +77,9 @@ export const useOrderCreation = () => {
     };
     
     // Cria pedido no banco de dados com tipo correto
-    const { data: pedido, error: pedidoError } = await supabase
+    const { data: pedidoData, error: pedidoError } = await supabase
       .from('pedidos')
-      .insert(pedidoData as any) // Force cast as any to bypass type checking
+      .insert(dbCast<PedidoInsert>(pedidoData))
       .select()
       .single();
     
@@ -87,6 +88,7 @@ export const useOrderCreation = () => {
       throw pedidoError;
     }
     
+    const pedido = pedidoData;
     if (!pedido) {
       throw new Error('Erro ao criar pedido: dados não retornados');
     }
@@ -102,7 +104,7 @@ export const useOrderCreation = () => {
         
         await supabase
           .from('cupom_usos')
-          .insert(cupomUsoData as any); // Force cast as any to bypass type checking
+          .insert(dbCast<CupomUsoInsert>(cupomUsoData));
       } catch (error) {
         console.error('Erro ao registrar uso do cupom:', error);
         // Não impedimos o fluxo se o registro do cupom falhar
@@ -132,8 +134,8 @@ export const useOrderCreation = () => {
 
         await supabase
           .from('pedidos')
-          .update(updateData as any) // Force cast as any to bypass type checking
-          .eq('id', pedido.id);
+          .update(dbCast<PedidoUpdate>(updateData))
+          .eq('id', toTypedId(pedido.id));
       } catch (updateError) {
         console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
         // Não impedimos o fluxo se a atualização falhar
@@ -147,16 +149,18 @@ export const useOrderCreation = () => {
   const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
     try {
       // Buscar detalhes do pedido
-      const { data: pedido, error: pedidoError } = await supabase
+      const { data, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
-        .eq('id', pedidoId)
+        .eq('id', toTypedId(pedidoId))
         .single();
       
-      if (pedidoError || !pedido) {
+      if (pedidoError || !data) {
         console.error('Erro ao buscar detalhes do pedido:', pedidoError);
-        throw pedidoError;
+        throw pedidoError || new Error('Pedido não encontrado');
       }
+      
+      const pedido = data;
       
       // Atualizar status do pedido para 'pago'
       const pedidoUpdateData: PedidoUpdate = {
@@ -165,14 +169,14 @@ export const useOrderCreation = () => {
       
       await supabase
         .from('pedidos')
-        .update(pedidoUpdateData as any) // Force cast as any to bypass type checking
-        .eq('id', pedidoId);
+        .update(dbCast<PedidoUpdate>(pedidoUpdateData))
+        .eq('id', toTypedId(pedidoId));
       
       // Buscar vídeo ativo do cliente (se houver)
       const { data: videos, error: videoError } = await supabase
         .from('videos')
         .select('*')
-        .eq('client_id', userId)
+        .eq('client_id', toTypedId(userId))
         .eq('status', 'ativo')
         .order('created_at', { ascending: false })
         .limit(1);
@@ -196,7 +200,7 @@ export const useOrderCreation = () => {
         if (campanhasInsert.length > 0) {
           const { error: campanhasError } = await supabase
             .from('campanhas')
-            .insert(campanhasInsert as any); // Force cast as any to bypass type checking
+            .insert(dbCast(campanhasInsert));
           
           if (campanhasError) {
             console.error('Erro ao criar campanhas:', campanhasError);
