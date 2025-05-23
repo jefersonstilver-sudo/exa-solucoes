@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -133,6 +132,11 @@ const PixPayment = () => {
     navigate('/checkout');
   };
   
+  // Wrap refreshPaymentStatus to ensure it returns void instead of string
+  const handleRefreshStatus = async () => {
+    await refreshPaymentStatus();
+  };
+  
   // Loading state
   if (isLoading) {
     return <PixPaymentLoading />;
@@ -149,7 +153,7 @@ const PixPayment = () => {
         <PixPaymentContent 
           paymentData={paymentData}
           onBack={handleBack}
-          onRefreshStatus={refreshPaymentStatus}
+          onRefreshStatus={handleRefreshStatus}
           isLoading={isLoading}
           error={error}
           pedidoId={pedidoId}

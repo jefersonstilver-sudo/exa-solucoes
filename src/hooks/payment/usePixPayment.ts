@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -117,7 +116,7 @@ export const usePixPayment = (pedidoId: string | null) => {
   }, [pedidoId]);
 
   // Function to refresh payment status
-  const refreshPaymentStatus = async () => {
+  const refreshPaymentStatus = async (): Promise<void> => {
     try {
       if (!pedidoId) {
         throw new Error("ID do pedido não encontrado");
@@ -170,9 +169,6 @@ export const usePixPayment = (pedidoId: string | null) => {
         
         return updatedData;
       });
-      
-      // Return the new status in case caller needs it
-      return newStatus;
     } catch (error: any) {
       console.error("Error refreshing payment status:", error);
       toast.error("Erro ao atualizar status do pagamento");
