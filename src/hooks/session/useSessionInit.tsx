@@ -158,23 +158,83 @@ export const useSessionInit = () => {
           console.log('No session found during initialization');
           setUser(null);
           setSession(null);
+          
+          logCheckoutEvent(
+            CheckoutEvent.AUTH_EVENT,
+            LogLevel.INFO,
+            "No authenticated session found",
+            { timestamp: new Date().toISOString() }
+          );
         }
       } catch (error) {
         console.error('Erro ao verificar autenticação:', error);
         setUser(null);
         setSession(null);
+        
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT,
+          LogLevel.ERROR,
+          "Error checking authentication",
+          { error: String(error), timestamp: new Date().toISOString() }
+        );
       } finally {
         setIsLoading(false);
       }
     };
+
+    // Força atualização a cada 60 segundos para evitar sessão desatualizada
+    const refreshInterval = setInterval(() => {
+      // Nova verificação periódica da sessão para garantir que não perdemos nenhuma mudança
+      supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+        if (currentSession) {
+          // Se temos uma sessão válida, validamos o estado do usuário
+          if (!user) {
+            console.log('Sessão restaurada pela verificação periódica');
+            
+            // Atualizar o estado do usuário com a sessão atual
+            setSession(currentSession);
+            setUser({
+              id: currentSession.user.id,
+              email: currentSession.user.email || '',
+              name: currentSession.user.user_metadata?.name || currentSession.user.email?.split('@')[0],
+              avatar_url: currentSession.user.user_metadata?.avatar_url,
+              role: currentSession.user.user_metadata?.role
+            });
+            
+            logCheckoutEvent(
+              CheckoutEvent.AUTH_EVENT,
+              LogLevel.INFO,
+              "Sessão restaurada por verificação periódica",
+              { 
+                userId: currentSession.user.id,
+                timestamp: new Date().toISOString() 
+              }
+            );
+          }
+        } else if (user) {
+          // Se temos um usuário no estado, mas não temos uma sessão válida
+          console.log('Sessão expirada detectada na verificação periódica');
+          setUser(null);
+          setSession(null);
+          
+          logCheckoutEvent(
+            CheckoutEvent.AUTH_EVENT,
+            LogLevel.WARNING,
+            "Sessão expirada detectada",
+            { timestamp: new Date().toISOString() }
+          );
+        }
+      });
+    }, 60000); // 60 segundos
 
     initializeAuth();
 
     // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
+      clearInterval(refreshInterval);
     };
-  }, []);
+  }, [user]);
 
   return {
     user,

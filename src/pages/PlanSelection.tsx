@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -30,22 +31,70 @@ const PlanSelection = () => {
     PLANS
   } = useCheckout();
   
+  // Log de informação quando o componente é montado
+  useEffect(() => {
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      "PlanSelection: Componente montado",
+      { isLoggedIn, userId: user?.id || 'não autenticado' }
+    );
+  }, [isLoggedIn, user]);
+  
   // Função para verificar a autenticação
   const checkAuthentication = useCallback(async () => {
-    if (!isSessionLoading) {
-      if (!isLoggedIn) {
-        const { data } = await supabase.auth.getSession();
-        
-        // Dupla verificação para garantir que o usuário realmente não está autenticado
-        if (!data.session) {
-          console.log("PlanSelection: Usuário não autenticado, mostrando notificação de login");
-          return false;
-        } 
-        return !!data.session;
+    try {
+      if (!isSessionLoading) {
+        if (!isLoggedIn) {
+          // Verificação explícita da sessão para ter certeza
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error("PlanSelection: Erro ao verificar sessão", error);
+            logCheckoutEvent(
+              CheckoutEvent.AUTH_EVENT,
+              LogLevel.ERROR,
+              "Erro ao verificar sessão na página de planos",
+              { error: String(error), timestamp: Date.now() }
+            );
+            return false;
+          }
+          
+          // Dupla verificação para garantir que o usuário realmente não está autenticado
+          if (!data.session) {
+            console.log("PlanSelection: Usuário não autenticado, mostrando notificação de login");
+            logCheckoutEvent(
+              CheckoutEvent.AUTH_EVENT,
+              LogLevel.INFO,
+              "Usuário não autenticado na página de planos",
+              { timestamp: Date.now() }
+            );
+            return false;
+          } 
+          
+          // Temos uma sessão, mas o hook useUserSession ainda não atualizou
+          logCheckoutEvent(
+            CheckoutEvent.AUTH_EVENT,
+            LogLevel.WARNING,
+            "Sessão encontrada, mas estado de usuário está desatualizado",
+            { userId: data.session.user.id, timestamp: Date.now() }
+          );
+          
+          return !!data.session;
+        }
+        return true;
       }
-      return true;
+      return false;
+    } catch (error) {
+      console.error("Erro ao verificar autenticação:", error);
+      logCheckoutEvent(
+        CheckoutEvent.AUTH_EVENT,
+        LogLevel.ERROR,
+        "Erro crítico ao verificar autenticação na página de planos",
+        { error: String(error), timestamp: Date.now() }
+      );
+      return false;
     }
-    return false;
   }, [isSessionLoading, isLoggedIn]);
   
   // Verificação de autenticação no início
@@ -205,22 +254,55 @@ const PlanSelection = () => {
   const handleProceed = async () => {
     console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
     
-    // Verificação de autenticação antes de prosseguir
-    const isAuthenticated = await checkAuthentication();
-    
-    if (!isAuthenticated) {
+    // Verificação de autenticação robusta antes de prosseguir
+    try {
+      // Verificar sessão atual explicitamente
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw new Error(`Erro ao verificar sessão: ${sessionError.message}`);
+      }
+      
+      if (!sessionData.session) {
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT, 
+          LogLevel.WARNING, 
+          "Tentativa de prosseguir sem sessão válida", 
+          { timestamp: Date.now() }
+        );
+        
+        toast({
+          title: "Login necessário",
+          description: "Faça login para continuar com sua compra.",
+          variant: "destructive"
+        });
+        
+        return;
+      }
+      
+      // Temos sessão confirmada, continua o processo
       logCheckoutEvent(
         CheckoutEvent.AUTH_EVENT, 
-        LogLevel.WARNING, 
-        "Tentativa de prosseguir sem autenticação", 
+        LogLevel.SUCCESS, 
+        "Sessão validada antes de prosseguir com plano", 
+        { userId: sessionData.session.user.id, timestamp: Date.now() }
+      );
+    } catch (error) {
+      console.error("Erro ao verificar autenticação:", error);
+      
+      logCheckoutEvent(
+        CheckoutEvent.AUTH_EVENT, 
+        LogLevel.ERROR, 
+        `Erro ao verificar autenticação: ${String(error)}`, 
         { timestamp: Date.now() }
       );
       
       toast({
-        title: "Login necessário",
-        description: "Você precisa estar logado para continuar. Faça login e tente novamente.",
+        title: "Erro de autenticação",
+        description: "Ocorreu um problema ao verificar sua sessão. Tente fazer login novamente.",
         variant: "destructive"
       });
+      
       return;
     }
     
@@ -287,18 +369,6 @@ const PlanSelection = () => {
       return;
     }
     
-    // Verificação final de autenticação antes de navegar para o checkout
-    const finalCheck = await checkAuthentication();
-    
-    if (!finalCheck) {
-      toast({
-        title: "Login necessário",
-        description: "Você precisa estar logado para prosseguir para o checkout.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     // Navigate to checkout page
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT, 
@@ -321,8 +391,8 @@ const PlanSelection = () => {
     );
   }
   
-  // If cart exists but user is not logged in, redirect to login
-  if (hasCart && !isLoggedIn) {
+  // Exibir botão de login se não estiver logado, independentemente do carregamento do carrinho
+  if (!isLoggedIn) {
     return (
       <Layout>
         <PlanLoginNotification />
