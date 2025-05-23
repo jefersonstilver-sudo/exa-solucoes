@@ -85,7 +85,7 @@ export const useOrderCreation = () => {
     }
     
     // Se um cupom foi aplicado, registra seu uso com tipo correto
-    if (couponId && pedido) {
+    if (couponId && pedido && pedido.id) {
       try {
         const cupomUsoData: CupomUsoInsert = {
           cupom_id: couponId,
@@ -103,7 +103,7 @@ export const useOrderCreation = () => {
     }
     
     // Atualiza o pedido com informações adicionais
-    if (pedido) {
+    if (pedido && pedido.id) {
       try {
         // Ensure log_pagamento is an object before spreading
         const logPagamento = ensureSpreadable(pedido.log_pagamento);
