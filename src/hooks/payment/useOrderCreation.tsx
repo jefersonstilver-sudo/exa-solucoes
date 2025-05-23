@@ -200,7 +200,7 @@ export const useOrderCreation = () => {
           ? updatedOrderTyped.lista_paineis 
           : [updatedOrderTyped.lista_paineis];
 
-        // Create campaigns one by one instead of using spread operator
+        // Create campaigns one by one
         for (const panelId of panelIds) {
           const campaignData = prepareForInsert({
             client_id: sessionUser.id,
@@ -286,7 +286,6 @@ export const useOrderCreation = () => {
       const updateData = prepareForUpdate({
         status: 'pago',
         log_pagamento: {
-          ...(orderData.log_pagamento || {}),
           status: 'completed',
           completed_at: new Date().toISOString()
         }
