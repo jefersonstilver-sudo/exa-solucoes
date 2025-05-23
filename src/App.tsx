@@ -11,6 +11,7 @@ import Payment from '@/pages/Payment';
 import PixPayment from '@/pages/PixPayment';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 import Home from '@/pages/Home';
+import Pedidos from '@/pages/Pedidos';
 
 const App = () => {
   return (
@@ -33,17 +34,17 @@ const App = () => {
         <Route path="/payment" element={<Payment />} />
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
+        <Route path="/pedidos" element={<Pedidos />} />
+        <Route path="/meus-pedidos" element={<Pedidos />} />
         
         {/* Not Found */}
         <Route path="*" element={<NotFound />} />
       </Routes>
       
       {/* 
-        Only include ONE of each toast provider 
-        Toaster - shadcn/ui toast provider  
-        SonnerToaster - sonner toast provider
+        Only include ONE toast provider to avoid duplications
+        Using Sonner as the main toast provider for better configuration
       */}
-      <Toaster />
       <SonnerToaster 
         position="top-right" 
         closeButton 

@@ -17,7 +17,7 @@ import PlanSelection from './pages/PlanSelection'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Confirmacao from './pages/Confirmacao'
 import PixPayment from './pages/PixPayment'
-import Pedidos2 from './pages/Pedidos2'
+import Pedidos from './pages/Pedidos'
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard'
@@ -87,15 +87,11 @@ const router = createBrowserRouter([
   },
   {
     path: '/pedidos',
-    element: <Pedidos2 />
+    element: <Pedidos />
   },
   {
     path: '/meus-pedidos',
-    element: <Pedidos2 />
-  },
-  {
-    path: '/pedidos2',
-    element: <Pedidos2 />
+    element: <Pedidos />
   },
   // Admin routes
   {
@@ -155,12 +151,9 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <RouterProvider router={router} />
         {/* 
-          Configure toasts with better settings:
-          - Set a reasonable duration
-          - Add position and close button 
-          - Enable animations
+          Usando apenas o SonnerToaster como provider de toast principal
+          para evitar duplicação de notificações
         */}
-        <Toaster />
         <SonnerToaster 
           position="top-center" 
           expand={true} 
