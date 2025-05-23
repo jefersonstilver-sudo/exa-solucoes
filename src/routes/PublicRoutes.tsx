@@ -8,6 +8,7 @@ export const PublicRoutes = () => {
   return (
     <Routes>
       <Route path="/planos" element={<PlanSelection />} />
+      <Route path="/selecionar-plano" element={<PlanSelection />} />
       <Route path="/confirmacao" element={<Confirmacao />} />
     </Routes>
   );
