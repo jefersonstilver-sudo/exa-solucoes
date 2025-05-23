@@ -5,7 +5,6 @@ import { Panel } from '@/types/panel';
 import { Database } from '@/integrations/supabase/types';
 import type { Json } from '@/integrations/supabase/types';
 import { 
-  dbCast, 
   prepareForInsert, 
   prepareForUpdate, 
   filterEq, 
