@@ -43,7 +43,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [], // Fixed: Ensure this is an empty array, not a string
+  selectedPanels: [] as string[], // Fixed: Explicitly type as string array
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,

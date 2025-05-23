@@ -346,9 +346,9 @@ export const useOrderCreation = () => {
     }
   };
 
-  // Fixed: Properly define the createOrder method to match CreatePaymentOrderParams interface
+  // Fixed: Properly define the createOrder method
   const createOrder = async (orderData: CreatePaymentOrderParams) => {
-    return await createPaymentOrder(orderData);
+    return createPaymentOrder(orderData);
   };
 
   return {
