@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { usePaymentFlow } from './usePaymentFlow';
@@ -70,7 +71,7 @@ export const usePaymentProcessor = () => {
       );
       
       sonnerToast.error("É necessário aceitar os termos para continuar");
-      return;
+      return undefined;
     }
     
     // CRITICAL FIX: Ensure payment method is correctly set and passed
@@ -107,12 +108,13 @@ export const usePaymentProcessor = () => {
       console.error("Error storing payment attempt info:", e);
     }
     
-    // CRITICAL FIX: Ensure we await the promise
+    // CRITICAL FIX: Ensure we await the promise and return proper response
     try {
-      return await processPayment({
+      const response = await processPayment({
         ...options,
         paymentMethod: effectivePaymentMethod
       });
+      return response;
     } catch (error) {
       console.error("[Payment] Error in payment processing:", error);
       sonnerToast.error("Erro ao processar pagamento. Tente novamente.");

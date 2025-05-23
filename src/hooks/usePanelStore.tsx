@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
@@ -43,7 +44,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [], // Inicializado corretamente como um array vazio
+  selectedPanels: [] as string[], // FIXED: Explicitly typed as string array
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,
@@ -101,13 +102,14 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   
   togglePanelSelection: (panelId: string) => {
     set((state) => {
-      if (state.selectedPanels.includes(panelId)) {
+      const currentSelection = state.selectedPanels || []; // Ensure it's an array
+      if (currentSelection.includes(panelId)) {
         return {
-          selectedPanels: state.selectedPanels.filter(id => id !== panelId)
+          selectedPanels: currentSelection.filter(id => id !== panelId)
         };
       } else {
         return {
-          selectedPanels: [...state.selectedPanels, panelId]
+          selectedPanels: [...currentSelection, panelId]
         };
       }
     });
@@ -118,15 +120,18 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   },
   
   isPanelSelected: (panelId: string) => {
-    return get().selectedPanels.includes(panelId);
+    const selectedPanels = get().selectedPanels || []; // Ensure it's an array
+    return selectedPanels.includes(panelId);
   },
   
   getSelectedPanelCount: () => {
-    return get().selectedPanels.length;
+    const selectedPanels = get().selectedPanels || []; // Ensure it's an array
+    return selectedPanels.length;
   },
   
   getSelectedPanels: () => {
-    return get().panels.filter(panel => get().selectedPanels.includes(panel.id));
+    const selectedPanels = get().selectedPanels || []; // Ensure it's an array
+    return get().panels.filter(panel => selectedPanels.includes(panel.id));
   },
   
   handleSearch: async (location: string) => {

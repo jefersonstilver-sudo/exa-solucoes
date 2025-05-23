@@ -13,6 +13,7 @@ import { useCartValidation } from '@/hooks/checkout/useCartValidation';
 import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
 import { CheckoutSteps, Plan, PlanKey } from '@/types/checkout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { PaymentResponse } from '@/types/payment';
 
 export const STEPS = CHECKOUT_STEPS; // Re-exporta para compatibilidade
 export { PLANS }; // Re-exporta para compatibilidade
@@ -102,6 +103,18 @@ export const useCheckout = () => {
     validateCoupon(couponCode, selectedPlan);
   };
 
+  // FIXED: Create a wrapper function that matches the expected signature
+  const wrappedCreatePayment = async (options: any): Promise<void> => {
+    try {
+      const response = await createPayment(options);
+      // Handle the response as needed, but don't return it since we need Promise<void>
+      console.log('[useCheckout] Payment created:', response);
+    } catch (error) {
+      console.error('[useCheckout] Payment error:', error);
+      throw error; // Re-throw to maintain error handling
+    }
+  };
+
   // Define handler for next step with explicit payment method
   const handleNextStepWithPayment = (paymentMethod?: string) => {
     console.log(`[useCheckout] handleNextStepWithPayment called with method: ${paymentMethod || 'default'}`);
@@ -134,7 +147,7 @@ export const useCheckout = () => {
     endDate,
     sessionUser,
     handleClearCart,
-    createPayment
+    createPayment: wrappedCreatePayment // Use the wrapped function
   });
   
   const { isNavigating } = handleNavigation;

@@ -1,50 +1,28 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { prepareForInsert, prepareForUpdate, unwrapData, filterEq } from '@/utils/supabaseUtils';
 import { Panel } from '@/types/panel';
+import { CreatePaymentOrderParams, ProcessPaymentParams, StoreCheckoutInfoParams } from '@/types/payment';
 
 interface CartItem {
   panel: Panel;
   duration: number;
 }
 
-interface CreatePaymentOrderParams {
-  sessionUser: any;
-  cartItems: CartItem[];
-  selectedPlan: number;
-  totalPrice: number;
-  couponId: string | null;
-  startDate: Date;
-  endDate: Date;
-}
-
-interface ProcessPaymentParams {
-  pedidoId: string;
-  cartItems: CartItem[];
-  selectedPlan: number;
-  totalPrice: number;
-  couponId: string | null;
-  sessionUser: any;
-  paymentMethod: string;
-}
-
-interface StoreCheckoutInfoParams {
-  pedidoId: string;
-  paymentMethod: string;
-  preferenceId?: string;
-}
-
 export const useOrderCreation = () => {
   
-  const createPaymentOrder = async ({
-    sessionUser,
-    cartItems,
-    selectedPlan,
-    totalPrice,
-    couponId,
-    startDate,
-    endDate
-  }: CreatePaymentOrderParams) => {
+  const createPaymentOrder = async (params: CreatePaymentOrderParams) => {
+    const {
+      sessionUser,
+      cartItems,
+      selectedPlan,
+      totalPrice,
+      couponId,
+      startDate,
+      endDate
+    } = params;
+
     try {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
@@ -149,15 +127,17 @@ export const useOrderCreation = () => {
     }
   };
 
-  const processPaymentWithEdgeFunction = async ({
-    pedidoId,
-    cartItems,
-    selectedPlan,
-    totalPrice,
-    couponId,
-    sessionUser,
-    paymentMethod
-  }: ProcessPaymentParams) => {
+  const processPaymentWithEdgeFunction = async (params: ProcessPaymentParams) => {
+    const {
+      pedidoId,
+      cartItems,
+      selectedPlan,
+      totalPrice,
+      couponId,
+      sessionUser,
+      paymentMethod
+    } = params;
+
     try {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
@@ -256,7 +236,9 @@ export const useOrderCreation = () => {
     }
   };
 
-  const storeCheckoutInfo = ({ pedidoId, paymentMethod, preferenceId }: StoreCheckoutInfoParams) => {
+  const storeCheckoutInfo = (params: StoreCheckoutInfoParams) => {
+    const { pedidoId, paymentMethod, preferenceId } = params;
+    
     try {
       const checkoutInfo = {
         orderId: pedidoId,
@@ -345,7 +327,7 @@ export const useOrderCreation = () => {
     }
   };
 
-  // Corrigido: Define a createOrder corretamente sem usar spread para passar parâmetros
+  // Corrigido: Define a createOrder corretamente passando cada parâmetro individualmente
   const createOrder = async (orderData: CreatePaymentOrderParams) => {
     return createPaymentOrder(orderData);
   };
