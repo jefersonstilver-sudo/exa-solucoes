@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -52,7 +51,7 @@ const UserMenu = () => {
   
   const userRole = getUserRole();
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const isSuperAdmin = userRole === 'super_admin';
+  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && userRole === 'super_admin';
 
   // Generate avatar initials from name or email
   const getInitials = () => {
@@ -178,12 +177,12 @@ const UserMenu = () => {
                         </DropdownMenuLabel>
                         
                         <DropdownMenuGroup className="p-2">
-                          {/* Admin panel access for admin users */}
-                          {isAdmin && (
+                          {/* Super Admin Panel - Apenas para jefersonstilver@gmail.com */}
+                          {isSuperAdmin && (
                             <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/20 hover:text-amber-300 focus:bg-amber-500/20 focus:text-amber-300">
-                              <Link to="/admin" className="flex items-center">
+                              <Link to="/super_admin" className="flex items-center">
                                 <ShieldCheck className="mr-3 h-5 w-5 text-amber-400" />
-                                <span className="font-medium">Área Administrativa</span>
+                                <span className="font-medium">Super Admin Panel</span>
                               </Link>
                             </DropdownMenuItem>
                           )}

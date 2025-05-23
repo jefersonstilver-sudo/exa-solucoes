@@ -54,19 +54,23 @@ export const useLoginForm = (redirectPath: string) => {
         const userRole = userData?.role;
         console.log('Role do usuário:', userRole);
         
-        // Redirect logic - Super Admin gets exclusive access
+        // LÓGICA DE REDIRECIONAMENTO CORRIGIDA - Super Admin tem prioridade absoluta
         setTimeout(() => {
-          if (data.user.email === 'jefersonstilver@gmail.com' && userRole === 'super_admin') {
-            console.log('Redirecionando Super Admin para: /super_admin');
+          // PRIMEIRO: Verificar se é o super admin master
+          if (data.user.email === 'jefersonstilver@gmail.com') {
+            console.log('SUPER ADMIN DETECTADO - Redirecionando para: /super_admin');
             navigate('/super_admin');
-          } else if (userRole === 'admin') {
-            // Outros admins podem ter redirecionamento específico se necessário
-            console.log('Redirecionando admin regular para: /anunciante');
+            return;
+          }
+          
+          // SEGUNDO: Verificar roles para outros usuários
+          if (userRole === 'admin') {
+            console.log('Admin regular detectado - Redirecionando para: /anunciante');
             navigate('/anunciante');
           } else {
             const searchParams = new URLSearchParams(location.search);
             const redirectTo = searchParams.get('redirect') || redirectPath;
-            console.log('Redirecionando usuário para:', redirectTo);
+            console.log('Usuário comum - Redirecionando para:', redirectTo);
             navigate(redirectTo);
           }
         }, 500);

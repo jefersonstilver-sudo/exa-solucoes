@@ -24,7 +24,7 @@ const App = () => {
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
         
-        {/* Super Admin Routes - Acesso exclusivo para jefersonstilver@gmail.com */}
+        {/* Super Admin Routes - Acesso EXCLUSIVO para jefersonstilver@gmail.com */}
         <Route path="/super_admin/*" element={<SuperAdminPage />} />
         
         {/* Client Routes */}
@@ -37,7 +37,7 @@ const App = () => {
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/meus-pedidos" element={<Pedidos />} />
         
-        {/* Redirect old admin routes to super_admin */}
+        {/* Redirect ALL old admin routes to super_admin */}
         <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
         <Route path="/admin/*" element={<Navigate to="/super_admin" replace />} />
         
