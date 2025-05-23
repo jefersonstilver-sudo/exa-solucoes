@@ -28,35 +28,48 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
+      console.log('Tentando fazer login com:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
-        if (error.message.includes('Invalid login') || error.message.includes('Email not confirmed')) {
-          setError('Email ou senha inválidos. Verifique suas credenciais.');
+        console.error('Erro de login detalhado:', error);
+        
+        // Tratamento específico de erros
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Sua conta ainda não foi confirmada. Verifique seu email.');
+        } else if (error.message.includes('Too many requests')) {
+          setError('Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.');
         } else {
-          setError(error.message);
+          setError(`Erro de autenticação: ${error.message}`);
         }
-        console.error('Login error:', error);
         return;
       }
       
-      if (data.session) {
+      if (data.session && data.user) {
+        console.log('Login bem-sucedido:', data.user.email);
         toast.success('Login realizado com sucesso!');
         
         // Get redirect path from URL if present
         const searchParams = new URLSearchParams(location.search);
         const redirectTo = searchParams.get('redirect') || redirectPath;
         
-        // Redirect to specified path
-        console.log('Redirecting to:', redirectTo);
-        navigate(redirectTo);
+        // Wait a bit to ensure session is properly established
+        setTimeout(() => {
+          console.log('Redirecionando para:', redirectTo);
+          navigate(redirectTo);
+        }, 500);
+      } else {
+        setError('Falha na autenticação. Dados de sessão inválidos.');
       }
-    } catch (err) {
-      console.error('Unexpected error during login:', err);
-      setError('Ocorreu um erro inesperado. Tente novamente.');
+    } catch (err: any) {
+      console.error('Erro inesperado durante login:', err);
+      setError('Ocorreu um erro inesperado. Tente novamente em alguns instantes.');
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +146,23 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
           )}
         </Button>
       </form>
+      
+      {/* Quick login button for testing */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full text-xs"
+            onClick={() => {
+              setEmail('jefersonstilver@gmail.com');
+              setPassword('573039');
+            }}
+          >
+            Login Rápido (Master Admin)
+          </Button>
+        </div>
+      )}
     </motion.div>
   );
 };

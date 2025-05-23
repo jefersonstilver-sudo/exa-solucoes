@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Shield, CheckCircle, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import MasterAdminFixer from './MasterAdminFixer';
 
 const AdminInitializer = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -65,65 +66,61 @@ const AdminInitializer = () => {
   };
   
   return (
-    <Card className="max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="text-indigo-500" />
-          Inicialização de Administrador Master
-        </CardTitle>
-        <CardDescription>
-          {initialized 
-            ? 'O usuário administrador master já está configurado.'
-            : 'Configure o usuário administrador master do sistema.'}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        {initialized ? (
-          <div className="flex items-center gap-2 text-green-500">
-            <CheckCircle className="h-5 w-5" />
-            <p>Usuário admin master já está configurado:</p>
-          </div>
-        ) : error ? (
-          <div className="flex items-center gap-2 text-red-500">
-            <AlertCircle className="h-5 w-5" />
-            <p>{error}</p>
-          </div>
-        ) : (
-          <div>
-            <p className="mb-4">
-              Este processo irá criar o usuário administrador master com as seguintes credenciais:
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Email: <span className="font-mono">jefersonstilver@gmail.com</span></li>
-              <li>Senha: <span className="font-mono">573039</span></li>
-              <li>Função: <span className="font-semibold">Super Admin</span></li>
-            </ul>
-          </div>
+    <div className="space-y-6">
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="text-indigo-500" />
+            Inicialização de Administrador Master
+          </CardTitle>
+          <CardDescription>
+            {initialized 
+              ? 'O usuário administrador master já está configurado.'
+              : 'Configure o usuário administrador master do sistema.'}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          {initialized ? (
+            <div className="flex items-center gap-2 text-green-500">
+              <CheckCircle className="h-5 w-5" />
+              <p>Usuário admin master já está configurado:</p>
+            </div>
+          ) : error ? (
+            <div className="flex items-center gap-2 text-red-500">
+              <AlertCircle className="h-5 w-5" />
+              <p>{error}</p>
+            </div>
+          ) : (
+            <div className="text-center space-y-2">
+              <p className="text-sm text-gray-600">
+                Clique para criar o usuário administrador master.
+              </p>
+              <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                <p><strong>Email:</strong> jefersonstilver@gmail.com</p>
+                <p><strong>Senha:</strong> 573039</p>
+                <p><strong>Função:</strong> Super Administrador</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+        
+        {!initialized && (
+          <CardFooter>
+            <Button 
+              onClick={initializeMasterAdmin}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? 'Criando...' : 'Criar Admin Master'}
+            </Button>
+          </CardFooter>
         )}
-      </CardContent>
-      
-      <CardFooter>
-        {initialized ? (
-          <Button variant="outline" disabled>Já inicializado</Button>
-        ) : (
-          <Button 
-            onClick={initializeMasterAdmin} 
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? (
-              <>
-                <span className="animate-spin mr-2">⟳</span>
-                Inicializando...
-              </>
-            ) : (
-              'Inicializar Admin Master'
-            )}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+      </Card>
+
+      {/* Add the fixer component for troubleshooting */}
+      <MasterAdminFixer />
+    </div>
   );
 };
 
