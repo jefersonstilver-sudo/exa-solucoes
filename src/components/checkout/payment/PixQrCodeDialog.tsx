@@ -6,7 +6,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogClose
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
@@ -14,6 +13,7 @@ import { QRCodeDisplay } from '@/components/checkout/payment/QRCodeDisplay';
 import { toast } from 'sonner';
 import PixCountdownTimer from '@/components/checkout/payment/PixCountdownTimer';
 import PaymentSuccessAnimation from '@/components/checkout/payment/PaymentSuccessAnimation';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PixQrCodeDialogProps {
   isOpen: boolean;
@@ -44,9 +44,12 @@ const PixQrCodeDialog = ({
   // States
   const [isExpired, setIsExpired] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(QR_EXPIRATION_TIME);
   
   // Simulação de verificação de pagamento (em um caso real, isso seria uma API)
   useEffect(() => {
+    if (isExpired || paymentConfirmed) return;
+    
     const checkInterval = setInterval(() => {
       // Aqui seria a verificação real do pagamento
       // Para simular, vamos apenas criar um efeito de demonstração
@@ -55,6 +58,14 @@ const PixQrCodeDialog = ({
       if (shouldConfirm && !isExpired) {
         setPaymentConfirmed(true);
         clearInterval(checkInterval);
+        
+        // Log payment confirmation
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_EVENT,
+          LogLevel.INFO,
+          "Pagamento PIX confirmado (simulação)",
+          { timestamp: new Date().toISOString() }
+        );
         
         // Após a animação, redirecionar para página de upload
         setTimeout(() => {
@@ -65,13 +76,21 @@ const PixQrCodeDialog = ({
     }, 3000);
     
     return () => clearInterval(checkInterval);
-  }, [isExpired, onClose]);
+  }, [isExpired, onClose, paymentConfirmed]);
 
   const handleCopyQrCode = () => {
     if (finalQrCodeText) {
       navigator.clipboard.writeText(finalQrCodeText)
         .then(() => toast.success("Código PIX copiado para a área de transferência"))
         .catch(() => toast.error("Erro ao copiar código PIX"));
+      
+      // Log copy action
+      logCheckoutEvent(
+        CheckoutEvent.USER_ACTION,
+        LogLevel.INFO,
+        "Usuário copiou código PIX",
+        { timestamp: new Date().toISOString() }
+      );
     }
   };
   
@@ -79,10 +98,23 @@ const PixQrCodeDialog = ({
     setIsExpired(true);
     toast.warning("QR Code expirado. Feche e gere um novo código para tentar novamente.");
     
+    // Log expiration
+    logCheckoutEvent(
+      CheckoutEvent.PAYMENT_EVENT,
+      LogLevel.WARNING,
+      "QR Code PIX expirado",
+      { timestamp: new Date().toISOString() }
+    );
+    
     // Fecha o diálogo automaticamente após 3 segundos
     setTimeout(() => {
       onClose();
     }, 3000);
+  };
+  
+  // Update time remaining from timer component
+  const handleTimeUpdate = (seconds: number) => {
+    setTimeRemaining(seconds);
   };
 
   return (
@@ -107,19 +139,25 @@ const PixQrCodeDialog = ({
             
             <div className="flex flex-col items-center space-y-4 py-4">
               {finalQrCodeBase64 && (
-                <div className="w-full flex justify-center">
-                  <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
+                <div className="w-full flex flex-col items-center space-y-3">
+                  <div className="w-full flex justify-center">
+                    <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
+                  </div>
+                  
+                  {/* Timer colocado abaixo do QR code conforme solicitado */}
+                  <div className="w-full max-w-[220px]">
+                    <PixCountdownTimer
+                      initialSeconds={QR_EXPIRATION_TIME}
+                      onExpire={handleExpire}
+                      isActive={!isExpired}
+                      onTimeUpdate={handleTimeUpdate}
+                    />
+                    <p className="text-xs text-center text-gray-500 mt-1">
+                      O código expira em {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
+                    </p>
+                  </div>
                 </div>
               )}
-              
-              {/* Timer colocado abaixo do QR code */}
-              <div className="w-full">
-                <PixCountdownTimer
-                  initialSeconds={QR_EXPIRATION_TIME}
-                  onExpire={handleExpire}
-                  isActive={!isExpired}
-                />
-              </div>
               
               {!isExpired && finalQrCodeText && (
                 <div className="w-full">

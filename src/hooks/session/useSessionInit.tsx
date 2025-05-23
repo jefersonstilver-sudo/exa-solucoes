@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, UserRole } from '@/types/userTypes';
 import { fetchUserRole } from '@/services/userRoleService';
 import { toast } from 'sonner';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export const useSessionInit = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -12,18 +13,29 @@ export const useSessionInit = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener FIRST (critical for proper session handling)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession?.user?.email);
         
-        setSession(currentSession);
+        if (event === 'SIGNED_OUT') {
+          // Clear user and session immediately on sign out
+          setUser(null);
+          setSession(null);
+          logCheckoutEvent(
+            CheckoutEvent.AUTH_EVENT,
+            LogLevel.INFO,
+            "User signed out",
+            { event, timestamp: new Date().toISOString() }
+          );
+          return;
+        }
         
         if (currentSession?.user) {
-          // First get metadata role from session
-          const metadataRole = currentSession.user.user_metadata?.role;
+          // Update session state immediately
+          setSession(currentSession);
           
-          // Create base user object
+          // Create base user object from auth data
           const baseUser = {
             id: currentSession.user.id,
             email: currentSession.user.email || '',
@@ -31,48 +43,70 @@ export const useSessionInit = () => {
             avatar_url: currentSession.user.user_metadata?.avatar_url,
           };
           
-          // Set initial user state with metadata (will be updated with DB role)
+          // First set user with metadata role (faster UI update)
+          const metadataRole = currentSession.user.user_metadata?.role;
           setUser({
             ...baseUser,
             role: metadataRole
           });
           
-          // Then fetch role from database in non-blocking way
+          // Then fetch role from database using setTimeout to prevent auth deadlocks
           setTimeout(async () => {
-            const dbRole = await fetchUserRole(currentSession.user.id);
-            
-            // If we found a role in the database, use it (it's the source of truth)
-            if (dbRole) {
-              setUser(prev => prev ? {
-                ...prev,
-                role: dbRole as UserRole
-              } : null);
-            } else if (metadataRole) {
-              // If no DB role but metadata role exists, try to sync it to DB
-              console.log('No DB role found, using metadata role:', metadataRole);
+            try {
+              const dbRole = await fetchUserRole(currentSession.user.id);
+              
+              // If we found a role in the database, use it (it's the source of truth)
+              if (dbRole) {
+                setUser(prev => prev ? {
+                  ...prev,
+                  role: dbRole as UserRole
+                } : null);
+              } else if (metadataRole) {
+                // If no DB role but metadata role exists, log but don't block UI
+                console.log('No DB role found, using metadata role:', metadataRole);
+              }
+            } catch (err) {
+              console.error('Error fetching user role:', err);
             }
           }, 0);
           
           if (event === 'SIGNED_IN') {
             toast.success('Login realizado com sucesso!');
+            logCheckoutEvent(
+              CheckoutEvent.AUTH_EVENT,
+              LogLevel.INFO,
+              "User signed in successfully",
+              { 
+                userId: currentSession.user.id, 
+                email: currentSession.user.email,
+                timestamp: new Date().toISOString() 
+              }
+            );
           }
-        } else {
-          setUser(null);
         }
       }
     );
 
-    // THEN check for existing session
+    // AFTER setting up listener, check for existing session
     const initializeAuth = async () => {
       setIsLoading(true);
       try {
+        // Get session with robust error handling
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Erro ao obter sessão:', error);
           setUser(null);
           setSession(null);
+          logCheckoutEvent(
+            CheckoutEvent.AUTH_EVENT,
+            LogLevel.ERROR,
+            "Failed to get session",
+            { error: String(error), timestamp: new Date().toISOString() }
+          );
         } else if (data?.session) {
+          console.log('Session found during initialization:', data.session.user.email);
+          
           // Sync session state
           setSession(data.session);
           
@@ -87,26 +121,41 @@ export const useSessionInit = () => {
             avatar_url: data.session.user.user_metadata?.avatar_url,
           };
           
-          // First set user with metadata role
+          // First set user with metadata role (faster UI update)
           const metadataRole = data.session.user.user_metadata?.role;
           setUser({
             ...baseUser,
             role: metadataRole
           });
           
-          // Then fetch role from database
-          const dbRole = await fetchUserRole(userId);
-          
-          // If we found a role in the database, it overrides metadata
-          if (dbRole) {
-            setUser(prev => prev ? {
-              ...prev,
-              role: dbRole as UserRole
-            } : null);
+          // Then fetch role from database (without blocking UI)
+          try {
+            const dbRole = await fetchUserRole(userId);
+            
+            // If we found a role in the database, it overrides metadata
+            if (dbRole) {
+              setUser(prev => prev ? {
+                ...prev,
+                role: dbRole as UserRole
+              } : null);
+            }
+            
+            logCheckoutEvent(
+              CheckoutEvent.AUTH_EVENT,
+              LogLevel.INFO,
+              "User session restored successfully",
+              { 
+                userId, 
+                email: data.session.user.email,
+                hasDbRole: !!dbRole,
+                timestamp: new Date().toISOString() 
+              }
+            );
+          } catch (err) {
+            console.error('Error fetching user role:', err);
           }
-          
-          console.log('User session restored:', data.session.user.email, 'Database role:', dbRole);
         } else {
+          console.log('No session found during initialization');
           setUser(null);
           setSession(null);
         }

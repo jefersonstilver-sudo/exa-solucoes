@@ -1,254 +1,133 @@
 
-import React, { useState, useEffect } from 'react';
-import { X, Bug, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { RotateCw, Bug } from 'lucide-react';
+import { PixPaymentData } from '@/hooks/payment/usePixPayment';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PixPaymentDebuggerProps {
-  paymentData: any | null;
+  paymentData: PixPaymentData;
   error: string | null;
   isLoading: boolean;
   pedidoId: string | null;
   onRefresh: () => Promise<void>;
 }
 
-const PixPaymentDebugger = ({
+const PixPaymentDebugger: React.FC<PixPaymentDebuggerProps> = ({
   paymentData,
   error,
   isLoading,
   pedidoId,
   onRefresh
-}: PixPaymentDebuggerProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [localLogs, setLocalLogs] = useState<any[]>([]);
-
-  // Adiciona um log com timestamp
-  const addLog = (message: string, type: 'info' | 'error' | 'success' = 'info', data?: any) => {
-    const newLog = {
-      timestamp: new Date().toISOString(),
-      message,
-      type,
-      data
-    };
-    
-    setLocalLogs(prev => [newLog, ...prev.slice(0, 19)]);
-    return newLog;
-  };
-
-  // Captura eventos de refresh
-  const handleRefresh = async () => {
-    addLog('Iniciando atualização manual de status', 'info');
+}) => {
+  const [isDebugExpanded, setIsDebugExpanded] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Only show in development or if a special parameter is present
+  const isDev = process.env.NODE_ENV === 'development' || new URLSearchParams(window.location.search).has('debug');
+  
+  if (!isDev) return null;
+  
+  const handleDebugRefresh = async () => {
+    setIsRefreshing(true);
     try {
       await onRefresh();
-      addLog('Atualização de status concluída', 'success');
-    } catch (err) {
-      addLog(`Erro na atualização: ${err}`, 'error', err);
-    }
-  };
-
-  // Log de montagem do componente
-  useEffect(() => {
-    addLog('Debugger inicializado', 'info');
-    addLog(`PedidoID: ${pedidoId || 'não disponível'}`, 'info');
-    
-    // Capture console.logs relacionados a pagamento
-    const originalConsoleLog = console.log;
-    const originalConsoleError = console.error;
-    
-    console.log = (...args) => {
-      originalConsoleLog(...args);
-      if (args.some(arg => 
-        typeof arg === 'string' && 
-        (arg.includes('payment') || arg.includes('pagamento') || arg.includes('PIX'))
-      )) {
-        addLog(`LOG: ${args.join(' ')}`, 'info');
-      }
-    };
-    
-    console.error = (...args) => {
-      originalConsoleError(...args);
-      if (args.some(arg => 
-        typeof arg === 'string' && 
-        (arg.includes('payment') || arg.includes('pagamento') || arg.includes('PIX'))
-      )) {
-        addLog(`ERROR: ${args.join(' ')}`, 'error');
-      }
-    };
-    
-    return () => {
-      console.log = originalConsoleLog;
-      console.error = originalConsoleError;
-      addLog('Debugger finalizado', 'info');
-    };
-  }, []);
-  
-  // Log de mudanças no estado do pagamento
-  useEffect(() => {
-    if (isLoading) {
-      addLog('Carregando dados do pagamento...', 'info');
-    } else if (error) {
-      addLog(`Erro detectado: ${error}`, 'error', { error });
-    } else if (paymentData) {
-      addLog(`Status do pagamento: ${paymentData.status}`, 
-        paymentData.status === 'approved' ? 'success' : 'info', 
-        { paymentStatus: paymentData.status }
+      
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        "Manual refresh initiated from debug panel",
+        { 
+          pedidoId,
+          paymentId: paymentData.paymentId,
+          timestamp: new Date().toISOString() 
+        }
       );
+    } catch (err) {
+      console.error("Error refreshing payment status:", err);
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [isLoading, error, paymentData]);
-  
-  // Função para exportar logs
-  const exportLogs = () => {
-    const logData = JSON.stringify({
-      paymentData,
-      error,
-      logs: localLogs,
-      timestamp: new Date().toISOString(),
-      pedidoId,
-      userAgent: navigator.userAgent
-    }, null, 2);
-    
-    const blob = new Blob([logData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pix-payment-debug-${pedidoId || 'unknown'}-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast.success("Logs exportados com sucesso!");
   };
-  
-  if (!isOpen) {
-    return (
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-50 bg-yellow-100 hover:bg-yellow-200 border-yellow-300 flex items-center"
-      >
-        <Bug className="h-4 w-4 mr-2" />
-        Debug
-      </Button>
-    );
-  }
   
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80 max-h-[80vh] bg-white border rounded-md shadow-lg overflow-hidden">
-      <div className="p-2 bg-yellow-100 border-b border-yellow-300 flex justify-between items-center">
+    <div className="mt-8 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+      <div className="bg-gray-100 border-b border-gray-200 px-4 py-2 flex justify-between items-center">
         <div className="flex items-center">
-          <Bug className="h-4 w-4 mr-2 text-yellow-800" />
-          <h3 className="font-medium text-yellow-900">PIX Payment Debugger</h3>
+          <Bug className="h-4 w-4 text-gray-600 mr-2" />
+          <h3 className="text-sm font-medium text-gray-700">Debug - PIX Payment</h3>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="h-6 w-6 p-0">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      
-      <div className="p-2 bg-gray-50 border-b">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-medium text-gray-500">Status</span>
-          {isLoading ? (
-            <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-300">
-              Carregando...
-            </Badge>
-          ) : error ? (
-            <Badge variant="outline" className="bg-red-50 text-red-600 border-red-300">
-              Erro
-            </Badge>
-          ) : paymentData ? (
-            <Badge 
-              variant="outline" 
-              className={
-                paymentData.status === 'approved' 
-                  ? "bg-green-50 text-green-600 border-green-300" 
-                  : paymentData.status === 'rejected'
-                    ? "bg-red-50 text-red-600 border-red-300"
-                    : "bg-yellow-50 text-yellow-600 border-yellow-300"
-              }
-            >
-              {paymentData.status}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-300">
-              Não inicializado
-            </Badge>
-          )}
-        </div>
-        
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-medium text-gray-500">Pedido ID</span>
-          <span className="text-xs text-gray-900">{pedidoId || "N/A"}</span>
-        </div>
-        
-        {paymentData && (
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-medium text-gray-500">Payment ID</span>
-            <span className="text-xs text-gray-900">{paymentData.paymentId || "N/A"}</span>
-          </div>
-        )}
-      </div>
-      
-      <div className="flex justify-between p-2 bg-gray-50 border-b">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-xs"
-          onClick={handleRefresh}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0"
+          onClick={() => setIsDebugExpanded(!isDebugExpanded)}
         >
-          <RefreshCw className="h-3 w-3 mr-1" />
-          Refresh Status
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-xs"
-          onClick={exportLogs}
-        >
-          Export Logs
+          <span className="sr-only">Toggle debug panel</span>
+          <svg 
+            className={`h-4 w-4 transform transition-transform ${isDebugExpanded ? 'rotate-180' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </Button>
       </div>
       
-      <div className="overflow-y-auto max-h-60 bg-gray-900 p-2">
-        {localLogs.map((log, index) => (
-          <div key={index} className="mb-2">
-            <div className="flex justify-between items-start text-xs">
-              <span 
-                className={
-                  log.type === 'error' 
-                    ? "text-red-400" 
-                    : log.type === 'success'
-                      ? "text-green-400"
-                      : "text-blue-400"
-                }
-              >
-                {new Date(log.timestamp).toLocaleTimeString()}
-              </span>
-              <span 
-                className={
-                  log.type === 'error' 
-                    ? "text-red-200" 
-                    : log.type === 'success'
-                      ? "text-green-200"
-                      : "text-gray-200"
-                }
-              >
-                {log.message}
-              </span>
+      {isDebugExpanded && (
+        <div className="p-4 text-sm">
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="bg-white p-2 rounded border border-gray-200">
+              <div className="font-medium text-gray-700 mb-1">Status</div>
+              <div className={`text-sm ${paymentData.status === 'approved' ? 'text-green-600' : 'text-orange-500'}`}>
+                {paymentData.status || 'Unknown'}
+              </div>
             </div>
-            {log.data && (
-              <pre className="text-xs mt-1 text-gray-400 overflow-x-auto">
-                {JSON.stringify(log.data, null, 2)}
-              </pre>
-            )}
-            <Separator className="mt-2 bg-gray-700" />
+            <div className="bg-white p-2 rounded border border-gray-200">
+              <div className="font-medium text-gray-700 mb-1">Total</div>
+              <div className="text-sm">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paymentData.valorTotal || 0)}
+              </div>
+            </div>
+            <div className="bg-white p-2 rounded border border-gray-200">
+              <div className="font-medium text-gray-700 mb-1">Payment ID</div>
+              <div className="text-sm font-mono text-xs truncate">{paymentData.paymentId || 'N/A'}</div>
+            </div>
+            <div className="bg-white p-2 rounded border border-gray-200">
+              <div className="font-medium text-gray-700 mb-1">Order ID</div>
+              <div className="text-sm font-mono text-xs truncate">{pedidoId || 'N/A'}</div>
+            </div>
           </div>
-        ))}
-      </div>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 p-2 rounded mb-4">
+              <div className="font-medium text-red-700 mb-1">Error</div>
+              <div className="text-sm text-red-600">{error}</div>
+            </div>
+          )}
+          
+          <Button 
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleDebugRefresh}
+            disabled={isRefreshing || isLoading}
+          >
+            {isRefreshing ? (
+              <>
+                <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RotateCw className="h-4 w-4 mr-2" />
+                Refresh Status
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

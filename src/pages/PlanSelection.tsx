@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
@@ -12,10 +13,11 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { useToast } from '@/hooks/use-toast';
 import { ClientOnly } from '@/components/ui/client-only';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { supabase } from '@/integrations/supabase/client';
 import { isCartEmpty, loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
 
 const PlanSelection = () => {
-  const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
+  const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -28,6 +30,42 @@ const PlanSelection = () => {
     cartItems,
     PLANS
   } = useCheckout();
+  
+  // Função para verificar a autenticação
+  const checkAuthentication = useCallback(async () => {
+    if (!isSessionLoading) {
+      if (!isLoggedIn) {
+        const { data } = await supabase.auth.getSession();
+        
+        // Dupla verificação para garantir que o usuário realmente não está autenticado
+        if (!data.session) {
+          console.log("PlanSelection: Usuário não autenticado, mostrando notificação de login");
+          return false;
+        } 
+        return !!data.session;
+      }
+      return true;
+    }
+    return false;
+  }, [isSessionLoading, isLoggedIn]);
+  
+  // Verificação de autenticação no início
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const isAuthenticated = await checkAuthentication();
+      
+      if (initialLoadDone && !isAuthenticated) {
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT,
+          LogLevel.WARNING,
+          "Usuário não autenticado na seleção de plano",
+          { timestamp: Date.now() }
+        );
+      }
+    };
+    
+    verifyAuth();
+  }, [initialLoadDone, checkAuthentication]);
   
   // Verificação crítica - Carrinho vazio
   useEffect(() => {
@@ -165,8 +203,27 @@ const PlanSelection = () => {
   };
 
   // Proceed to next step after plan selection
-  const handleProceed = () => {
+  const handleProceed = async () => {
     console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
+    
+    // Verificação de autenticação antes de prosseguir
+    const isAuthenticated = await checkAuthentication();
+    
+    if (!isAuthenticated) {
+      logCheckoutEvent(
+        CheckoutEvent.AUTH_EVENT, 
+        LogLevel.WARNING, 
+        "Tentativa de prosseguir sem autenticação", 
+        { timestamp: Date.now() }
+      );
+      
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para continuar. Faça login e tente novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT, 
@@ -231,6 +288,18 @@ const PlanSelection = () => {
       return;
     }
     
+    // Verificação final de autenticação antes de navegar para o checkout
+    const finalCheck = await checkAuthentication();
+    
+    if (!finalCheck) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para prosseguir para o checkout.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Navigate to checkout page
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT, 
@@ -269,7 +338,7 @@ const PlanSelection = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="container mx-auto px-4 py-12 max-w-6xl"
+          className="container mx-auto px-4 py-8 lg:py-12 max-w-6xl"
         >
           <PlanPageHeader />
           

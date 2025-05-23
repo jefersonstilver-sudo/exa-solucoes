@@ -1,80 +1,94 @@
 
 import React, { useState, useEffect } from 'react';
-import { CircularProgress } from '@/components/ui/progress';
-import { AlertTriangle } from 'lucide-react';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PixCountdownTimerProps {
   initialSeconds: number;
   onExpire: () => void;
-  isActive?: boolean;
+  isActive: boolean;
+  onTimeUpdate?: (seconds: number) => void;
 }
 
-const PixCountdownTimer: React.FC<PixCountdownTimerProps> = ({
-  initialSeconds,
+const PixCountdownTimer: React.FC<PixCountdownTimerProps> = ({ 
+  initialSeconds, 
   onExpire,
-  isActive = true
+  isActive,
+  onTimeUpdate
 }) => {
   const [seconds, setSeconds] = useState(initialSeconds);
-  const [isExpired, setIsExpired] = useState(false);
   
   useEffect(() => {
-    if (!isActive) return;
-    
-    if (seconds <= 0) {
-      setIsExpired(true);
-      onExpire();
+    if (!isActive) {
       return;
     }
     
-    const timer = setInterval(() => {
-      setSeconds(prevSeconds => prevSeconds - 1);
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, [seconds, isActive, onExpire]);
-  
-  // Format time as mm:ss
-  const formatTime = (totalSeconds: number) => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const remainingSeconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-  
-  // Calculate percentage for circular progress
-  const progressPercentage = Math.max(0, (seconds / initialSeconds) * 100);
-  
-  // Determine color based on remaining time
-  const getColorClass = () => {
-    if (seconds < 60) return 'text-red-500'; // Less than 1 minute
-    if (seconds < 120) return 'text-orange-500'; // Less than 2 minutes
-    return 'text-green-500'; // More than 2 minutes
-  };
-  
-  if (isExpired) {
-    return (
-      <div className="flex items-center justify-center p-3 bg-red-50 border border-red-200 rounded-lg">
-        <AlertTriangle className="text-red-500 mr-2 h-5 w-5" />
-        <span className="text-red-700 font-medium">QR Code expirado</span>
-      </div>
+    // Log timer start
+    logCheckoutEvent(
+      CheckoutEvent.PAYMENT_EVENT,
+      LogLevel.INFO,
+      "Iniciando temporizador PIX",
+      { duration: initialSeconds, timestamp: new Date().toISOString() }
     );
-  }
+    
+    const interval = setInterval(() => {
+      setSeconds(prevSeconds => {
+        const newSeconds = prevSeconds - 1;
+        
+        // Notificar o componente pai sobre o tempo restante (se disponível)
+        if (onTimeUpdate) {
+          onTimeUpdate(newSeconds);
+        }
+        
+        // Log warning when there's only 60 seconds left
+        if (newSeconds === 60) {
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_EVENT,
+            LogLevel.WARNING,
+            "Apenas 1 minuto restante no timer PIX",
+            { timestamp: new Date().toISOString() }
+          );
+        }
+        
+        // Verificar se o tempo acabou
+        if (newSeconds <= 0) {
+          clearInterval(interval);
+          
+          // Log expiration
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_EVENT,
+            LogLevel.WARNING,
+            "Timer PIX expirado",
+            { timestamp: new Date().toISOString() }
+          );
+          
+          onExpire();
+          return 0;
+        }
+        return newSeconds;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [initialSeconds, onExpire, isActive, onTimeUpdate]);
   
+  // Calcular progresso para a barra de progresso
+  const progress = (seconds / initialSeconds) * 100;
+  
+  // Determinar a cor da barra de progresso com base no tempo restante
+  const getProgressColor = () => {
+    if (progress > 60) return 'bg-green-500';
+    if (progress > 20) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
-    <div className="flex flex-col items-center space-y-2">
-      <div className="relative flex items-center justify-center">
-        <CircularProgress 
-          value={progressPercentage} 
-          size="lg"
-          className="text-gray-200" 
-          indicatorClassName={getColorClass()}
+    <div className="w-full">
+      <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+        <div 
+          className={`h-full ${getProgressColor()} transition-all duration-1000 ease-linear`} 
+          style={{ width: `${progress}%` }}
         />
-        <span className={`absolute ${getColorClass()} text-lg font-semibold`}>
-          {formatTime(seconds)}
-        </span>
       </div>
-      <p className="text-sm text-gray-600">
-        {seconds > 0 ? 'Tempo restante para pagamento' : 'QR Code expirado'}
-      </p>
     </div>
   );
 };

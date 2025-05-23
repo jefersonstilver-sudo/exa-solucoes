@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import CheckoutHeader from '@/components/checkout/CheckoutHeader';
@@ -10,16 +11,18 @@ import ClientInfoDialog from '@/components/checkout/payment/ClientInfoDialog';
 import { useCheckout } from '@/hooks/useCheckout';
 import { useToast } from '@/hooks/use-toast';
 import { useUserSession } from '@/hooks/useUserSession';
+import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 const CheckoutContainer: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState<string>('credit_card');
-  const { user } = useUserSession();
+  const { user, isLoggedIn } = useUserSession();
   
   // Add state for client info dialog
   const [isClientInfoOpen, setIsClientInfoOpen] = useState(false);
+  const [isVerifyingAuth, setIsVerifyingAuth] = useState(true);
   
   const {
     step,
@@ -74,10 +77,111 @@ const CheckoutContainer: React.FC = () => {
     }
   }, [paymentMethod, step]);
 
+  // Verificar a autenticação periodicamente para evitar perda de sessão
+  const verifyAuth = useCallback(async () => {
+    setIsVerifyingAuth(true);
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("[CheckoutContainer] Erro ao verificar sessão:", error);
+        
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT,
+          LogLevel.ERROR,
+          "Error checking session in checkout container",
+          { error: String(error), timestamp: new Date().toISOString() }
+        );
+        
+        toast({
+          title: "Erro de autenticação",
+          description: "Ocorreu um problema ao verificar sua sessão. Por favor, faça login novamente.",
+          variant: "destructive"
+        });
+        navigate('/login?redirect=/checkout');
+        return false;
+      }
+      
+      if (!data.session?.user) {
+        console.warn("[CheckoutContainer] Usuário não autenticado na verificação");
+        
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT,
+          LogLevel.WARNING,
+          "User not authenticated in checkout container verification",
+          { timestamp: new Date().toISOString() }
+        );
+        
+        toast({
+          title: "Login necessário",
+          description: "Sua sessão expirou. Por favor, faça login novamente para continuar com a compra.",
+          variant: "destructive"
+        });
+        navigate('/login?redirect=/checkout');
+        return false;
+      }
+      
+      return true;
+    } catch (err) {
+      console.error("[CheckoutContainer] Erro ao verificar autenticação:", err);
+      return false;
+    } finally {
+      setIsVerifyingAuth(false);
+    }
+  }, [navigate, toast]);
+
+  // Verificação inicial e periódica de autenticação
+  useEffect(() => {
+    verifyAuth();
+    
+    // Verificar a cada 30 segundos
+    const authCheckInterval = setInterval(() => {
+      verifyAuth();
+    }, 30000);
+    
+    return () => {
+      clearInterval(authCheckInterval);
+    };
+  }, [verifyAuth]);
+
+  // Listener de autenticação
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        console.log("[CheckoutContainer] Evento de logout detectado");
+        
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT,
+          LogLevel.WARNING,
+          "Logout event detected in checkout container",
+          { event, timestamp: new Date().toISOString() }
+        );
+        
+        toast({
+          title: "Sessão encerrada",
+          description: "Sua sessão foi encerrada. Por favor, faça login novamente para continuar.",
+          variant: "destructive"
+        });
+        navigate('/login?redirect=/checkout');
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
+
   const totalPrice = calculateTotalPrice();
 
   // Handle next step with explicit payment method
-  const handleNextWithPaymentMethod = () => {
+  const handleNextWithPaymentMethod = async () => {
+    // Verificar autenticação antes de prosseguir
+    const isAuthenticated = await verifyAuth();
+    
+    if (!isAuthenticated) {
+      return;
+    }
+    
     // ENHANCED DEBUG: Log all important state before proceeding
     console.log(`[CheckoutContainer] PAYMENT DEBUG: Iniciando pagamento`, {
       step,
@@ -86,7 +190,8 @@ const CheckoutContainer: React.FC = () => {
       isNextEnabled,
       isCreatingPayment,
       isNavigating,
-      totalPrice
+      totalPrice,
+      isAuthVerified: isAuthenticated
     });
     
     // Always pass payment method when in payment step
@@ -119,7 +224,14 @@ const CheckoutContainer: React.FC = () => {
   };
   
   // Handle test payment button click
-  const handleTestPayment = () => {
+  const handleTestPayment = async () => {
+    // Verificar autenticação antes de prosseguir
+    const isAuthenticated = await verifyAuth();
+    
+    if (!isAuthenticated) {
+      return;
+    }
+    
     if (!acceptTerms) {
       toast({
         title: "Atenção",
@@ -138,6 +250,44 @@ const CheckoutContainer: React.FC = () => {
     
     setIsClientInfoOpen(true);
   };
+  
+  // Tela de carregamento durante verificações
+  if (isVerifyingAuth) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[50vh]">
+        <div className="h-10 w-10 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin"></div>
+        <span className="ml-3 text-gray-600">Verificando sua sessão...</span>
+      </div>
+    );
+  }
+  
+  // Verificação de autenticação
+  if (!isLoggedIn) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-2xl mx-auto">
+          <h2 className="text-lg font-semibold text-yellow-800 mb-2">Login necessário</h2>
+          <p className="text-yellow-700 mb-4">
+            Para prosseguir com sua compra, é necessário fazer login ou criar uma conta.
+          </p>
+          <div className="flex space-x-4">
+            <button 
+              onClick={() => navigate('/login?redirect=/checkout')}
+              className="px-4 py-2 bg-[#3C1361] text-white rounded-md hover:bg-[#3C1361]/90"
+            >
+              Fazer login
+            </button>
+            <button 
+              onClick={() => navigate('/cadastro?redirect=/checkout')}
+              className="px-4 py-2 border border-[#3C1361] text-[#3C1361] rounded-md hover:bg-[#3C1361]/10"
+            >
+              Criar conta
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div 

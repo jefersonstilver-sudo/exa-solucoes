@@ -1,8 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface PaymentSuccessAnimationProps {
   onContinue: () => void;
@@ -10,80 +9,126 @@ interface PaymentSuccessAnimationProps {
 }
 
 const PaymentSuccessAnimation: React.FC<PaymentSuccessAnimationProps> = ({ 
-  onContinue,
-  autoRedirectTimeout = 3000
+  onContinue, 
+  autoRedirectTimeout = 3000 
 }) => {
+  const [redirectCounter, setRedirectCounter] = useState(Math.ceil(autoRedirectTimeout / 1000));
+  
   useEffect(() => {
-    // Auto redirect after specified timeout
-    const timer = setTimeout(() => {
-      onContinue();
-    }, autoRedirectTimeout);
-    
-    return () => clearTimeout(timer);
-  }, [onContinue, autoRedirectTimeout]);
+    // Configure countdown timer for redirection
+    if (autoRedirectTimeout > 0) {
+      const interval = setInterval(() => {
+        setRedirectCounter(prev => {
+          const newValue = prev - 1;
+          if (newValue <= 0) {
+            clearInterval(interval);
+            onContinue();
+          }
+          return newValue;
+        });
+      }, 1000);
+      
+      // Set timeout for redirection
+      const timeout = setTimeout(() => {
+        onContinue();
+      }, autoRedirectTimeout);
+      
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [autoRedirectTimeout, onContinue]);
+  
+  // Animation variants for the elements
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.2,
+        duration: 0.3
+      }
+    }
+  };
+  
+  const iconVariants = {
+    hidden: { scale: 0, opacity: 0 },
+    visible: { 
+      scale: 1, 
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 10,
+        duration: 0.5
+      }
+    }
+  };
+  
+  const textVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 10
+      }
+    }
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="flex flex-col items-center justify-center py-8 px-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200"
+      className="flex flex-col items-center justify-center py-6 px-4 text-center"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
     >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ 
-          type: "spring",
-          stiffness: 260,
-          damping: 20,
-          delay: 0.2
-        }}
-        className="relative mb-4"
+      <motion.div 
+        className="relative mb-6"
+        variants={iconVariants}
       >
-        <motion.div 
+        {/* Background circle with gradient animation */}
+        <motion.div
+          className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-600"
           animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [1, 0.8, 1]
+            scale: [1, 1.1, 1],
+            opacity: [0.7, 0.9, 0.7]
           }}
-          transition={{ 
+          transition={{
             duration: 2,
             repeat: Infinity,
             repeatType: "reverse"
           }}
-          className="absolute -inset-2 rounded-full bg-green-200 blur-md"
+          style={{ filter: "blur(10px)" }}
         />
-        <CheckCircle className="relative h-16 w-16 text-green-500" strokeWidth={2.5} />
+        
+        {/* Success icon */}
+        <CheckCircle className="relative h-20 w-20 text-white" strokeWidth={2} />
       </motion.div>
       
       <motion.h2 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="text-2xl font-bold text-green-800 mb-2"
+        className="text-xl font-bold mb-2 text-green-600"
+        variants={textVariants}
       >
-        PIX Recebido!
+        Pagamento Confirmado!
       </motion.h2>
       
-      <motion.p 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="text-center text-green-700 mb-6 max-w-xs"
+      <motion.p
+        className="text-gray-600 mb-6"
+        variants={textVariants}
       >
-        Seu pagamento foi confirmado. Redirecionando para upload do vídeo...
+        Seu pagamento foi processado com sucesso.
       </motion.p>
       
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
+        className="text-sm text-gray-500"
+        variants={textVariants}
       >
-        <Button 
-          onClick={onContinue}
-          className="bg-green-500 hover:bg-green-600 text-white px-6 py-2"
-        >
-          Continuar para Upload
-        </Button>
+        Redirecionando em {redirectCounter} {redirectCounter === 1 ? 'segundo' : 'segundos'}...
       </motion.div>
     </motion.div>
   );
