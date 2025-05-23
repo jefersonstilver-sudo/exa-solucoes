@@ -9,9 +9,10 @@ import {
   DialogClose
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { QRCodeDisplay } from '@/components/checkout/payment/QRCodeDisplay';
 import { toast } from 'sonner';
+import PixCountdownTimer from '@/components/checkout/payment/PixCountdownTimer';
 
 interface PixQrCodeDialogProps {
   isOpen: boolean;
@@ -35,7 +36,9 @@ const PixQrCodeDialog = ({
   // Use pix_url/pix_base64 if available, otherwise fall back to the original fields
   const finalQrCodeBase64 = pix_base64 || qrCodeBase64;
   const finalQrCodeText = pix_url || qrCodeText;
-  const finalPaymentLink = paymentLink;
+
+  // QR Code expiration time (5 minutes = 300 seconds)
+  const QR_EXPIRATION_TIME = 300;
 
   const handleCopyQrCode = () => {
     if (finalQrCodeText) {
@@ -56,6 +59,17 @@ const PixQrCodeDialog = ({
         </DialogHeader>
         
         <div className="flex flex-col items-center space-y-4 py-4">
+          {/* Add countdown timer */}
+          <div className="w-full">
+            <PixCountdownTimer
+              initialSeconds={QR_EXPIRATION_TIME}
+              onExpire={() => {
+                toast.warning("QR Code expirado. Feche e reabra para gerar um novo código.");
+              }}
+              isActive={true}
+            />
+          </div>
+          
           {finalQrCodeBase64 && (
             <div className="w-full flex justify-center">
               <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
@@ -86,19 +100,7 @@ const PixQrCodeDialog = ({
             </div>
           )}
           
-          {finalPaymentLink && (
-            <div className="w-full">
-              <a 
-                href={finalPaymentLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center justify-center w-full bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md transition-colors"
-              >
-                <span className="mr-2">Abrir PIX no App</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-          )}
+          {/* Removed the "Abrir PIX no App" button */}
         </div>
         
         <div className="flex justify-end gap-2 mt-4">
