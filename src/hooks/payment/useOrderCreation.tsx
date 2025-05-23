@@ -4,6 +4,9 @@ import { ensureSpreadable } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
 import { Database } from '@/integrations/supabase/types';
 
+type PedidoInsert = Database['public']['Tables']['pedidos']['Insert'];
+type CupomUsoInsert = Database['public']['Tables']['cupom_usos']['Insert'];
+
 interface CartItem {
   panel: Panel;
   duration: number;
@@ -45,28 +48,31 @@ export const useOrderCreation = () => {
     // Cria uma cópia dos itens do carrinho para evitar problemas se o carrinho for limpo
     const cartItemsCopy = [...cartItems];
     
-    // Cria pedido no banco de dados - fix by properly typing the insert data
+    // Prepare the data with proper typing for insertion
+    const pedidoData: PedidoInsert = {
+      client_id: sessionUser.id,
+      lista_paineis: validPanelIds,
+      duracao: selectedPlan * 30, // Converte meses para dias
+      plano_meses: selectedPlan,
+      valor_total: totalPrice,
+      cupom_id: couponId,
+      data_inicio: startDate.toISOString().split('T')[0],
+      data_fim: endDate.toISOString().split('T')[0],
+      termos_aceitos: true,
+      status: 'pendente',
+      log_pagamento: {
+        plan_details: { months: selectedPlan },
+        coupon_applied: couponId ? true : false,
+        panels_count: cartItemsCopy.length,
+        user_name: sessionUser.user_metadata?.name || sessionUser.email,
+        payment_method: 'mercado_pago'
+      }
+    };
+    
+    // Cria pedido no banco de dados com tipo correto
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
-      .insert({
-        client_id: sessionUser.id,
-        lista_paineis: validPanelIds,
-        duracao: selectedPlan * 30, // Converte meses para dias
-        plano_meses: selectedPlan,
-        valor_total: totalPrice,
-        cupom_id: couponId,
-        data_inicio: startDate.toISOString().split('T')[0],
-        data_fim: endDate.toISOString().split('T')[0],
-        termos_aceitos: true,
-        status: 'pendente',
-        log_pagamento: {
-          plan_details: { months: selectedPlan },
-          coupon_applied: couponId ? true : false,
-          panels_count: cartItemsCopy.length,
-          user_name: sessionUser.user_metadata?.name || sessionUser.email,
-          payment_method: 'mercado_pago'
-        }
-      })
+      .insert(pedidoData)
       .select()
       .single();
     
@@ -75,16 +81,18 @@ export const useOrderCreation = () => {
       throw pedidoError;
     }
     
-    // Se um cupom foi aplicado, registra seu uso - fix with proper type
+    // Se um cupom foi aplicado, registra seu uso com tipo correto
     if (couponId && pedido) {
       try {
+        const cupomUsoData: CupomUsoInsert = {
+          cupom_id: couponId,
+          user_id: sessionUser.id,
+          pedido_id: pedido.id
+        };
+        
         await supabase
           .from('cupom_usos')
-          .insert({
-            cupom_id: couponId,
-            user_id: sessionUser.id,
-            pedido_id: pedido.id
-          });
+          .insert(cupomUsoData);
       } catch (error) {
         console.error('Erro ao registrar uso do cupom:', error);
         // Não impedimos o fluxo se o registro do cupom falhar
@@ -106,7 +114,7 @@ export const useOrderCreation = () => {
               order_source: 'web_checkout',
               client_email: sessionUser.email
             }
-          })
+          } as PedidoInsert)
           .eq('id', pedido.id);
       } catch (updateError) {
         console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
@@ -127,7 +135,7 @@ export const useOrderCreation = () => {
         .eq('id', pedidoId)
         .single();
       
-      if (pedidoError) {
+      if (pedidoError || !pedido) {
         console.error('Erro ao buscar detalhes do pedido:', pedidoError);
         throw pedidoError;
       }
@@ -135,7 +143,7 @@ export const useOrderCreation = () => {
       // Atualizar status do pedido para 'pago'
       await supabase
         .from('pedidos')
-        .update({ status: 'pago' })
+        .update({ status: 'pago' } as PedidoInsert)
         .eq('id', pedidoId);
       
       // Buscar vídeo ativo do cliente (se houver)
@@ -150,7 +158,7 @@ export const useOrderCreation = () => {
       // Determinar se o cliente tem um vídeo ou precisa cadastrar um
       const videoId = videos && videos.length > 0 ? videos[0].id : null;
       
-      if (pedido && pedido.lista_paineis) {
+      if (pedido && pedido.lista_paineis && Array.isArray(pedido.lista_paineis)) {
         // Criar campanhas para cada painel do pedido
         const campanhasInsert = pedido.lista_paineis.map((painelId: string) => ({
           client_id: userId,
