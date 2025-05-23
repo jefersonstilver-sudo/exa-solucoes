@@ -1,14 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { usePaymentFlow } from './usePaymentFlow';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast as sonnerToast } from 'sonner';
-
-interface CartItem {
-  panel: Panel;
-  duration: number;
-}
+import { CartItem, PaymentResponse } from '@/types/payment';
 
 interface PaymentOptions {
   totalPrice: number;
@@ -62,7 +57,7 @@ export const usePaymentProcessor = () => {
   }, []);
   
   // Maintain the same interface as before, but with improved logging
-  const createPayment = async (options: PaymentOptions) => {
+  const createPayment = async (options: PaymentOptions): Promise<PaymentResponse | undefined> => {
     // Verify terms acceptance
     if (!options.acceptTerms) {
       console.error("[Payment] Payment attempted without accepting terms");

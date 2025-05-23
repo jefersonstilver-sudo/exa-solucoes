@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
@@ -44,7 +43,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [], // Fixed: This is now properly initialized as an empty array
+  selectedPanels: [], // Inicializado corretamente como um array vazio
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,
@@ -129,8 +128,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   getSelectedPanels: () => {
     return get().panels.filter(panel => get().selectedPanels.includes(panel.id));
   },
-
-  // Add the handleSearch method
+  
   handleSearch: async (location: string) => {
     if (!location.trim()) {
       return;
@@ -163,7 +161,6 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
     }
   },
   
-  // Add the handleClearLocation method
   handleClearLocation: () => {
     set({ 
       selectedLocation: null,
