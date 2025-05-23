@@ -3,13 +3,23 @@ import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
 import { ensureArray, unwrapData } from '@/utils/supabaseUtils';
+import { useToast } from '@/hooks/use-toast';
+import { FilterOptions } from '@/types/filter';
+import { getLocationCoordinates } from '@/services/geocoding';
 
 interface PanelStoreState {
   panels: Panel[];
   loading: boolean;
+  isLoading: boolean; // Alias for loading to maintain API compatibility
   error: string | null;
   selectedPanels: string[];
   searchRadius: number;
+  searchLocation: string;
+  setSearchLocation: (location: string) => void;
+  selectedLocation: { lat: number, lng: number } | null;
+  isSearching: boolean;
+  filters: FilterOptions;
+  handleFilterChange: (newFilters: Partial<FilterOptions>) => void;
   setSearchRadius: (radius: number) => void;
   fetchPanels: (lat: number, lng: number) => Promise<void>;
   togglePanelSelection: (panelId: string) => void;
@@ -17,14 +27,39 @@ interface PanelStoreState {
   isPanelSelected: (panelId: string) => boolean;
   getSelectedPanelCount: () => number;
   getSelectedPanels: () => Panel[];
+  handleSearch: (location: string) => Promise<void>;
+  handleClearLocation: () => void;
 }
+
+// Default filter options
+const defaultFilters: FilterOptions = {
+  status: 'all',
+  resolution: 'all',
+  sort: 'distance',
+  priceRange: { min: 0, max: 10000 }
+};
 
 export const usePanelStore = create<PanelStoreState>((set, get) => ({
   panels: [],
   loading: false,
+  isLoading: false, // Alias for loading
   error: null,
   selectedPanels: [],
   searchRadius: 500,
+  searchLocation: '',
+  selectedLocation: null,
+  isSearching: false,
+  filters: { ...defaultFilters },
+  
+  setSearchLocation: (location: string) => {
+    set({ searchLocation: location });
+  },
+  
+  handleFilterChange: (newFilters: Partial<FilterOptions>) => {
+    set(state => ({
+      filters: { ...state.filters, ...newFilters }
+    }));
+  },
   
   setSearchRadius: (radius: number) => {
     set({ searchRadius: radius });
@@ -32,7 +67,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   
   fetchPanels: async (lat: number, lng: number) => {
     try {
-      set({ loading: true, error: null });
+      set({ loading: true, isLoading: true, error: null });
       
       const { data: responseData, error } = await supabase.rpc('get_panels_by_location', {
         lat,
@@ -57,11 +92,11 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
         buildings: item.buildings
       })) as Panel[];
       
-      set({ panels, loading: false });
+      set({ panels, loading: false, isLoading: false });
       
     } catch (error: any) {
       console.error('Error fetching panels:', error);
-      set({ error: error.message || 'Failed to fetch panels', loading: false });
+      set({ error: error.message || 'Failed to fetch panels', loading: false, isLoading: false });
     }
   },
   
@@ -93,6 +128,48 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   
   getSelectedPanels: () => {
     return get().panels.filter(panel => get().selectedPanels.includes(panel.id));
+  },
+
+  // Add the handleSearch method
+  handleSearch: async (location: string) => {
+    if (!location.trim()) {
+      return;
+    }
+    
+    try {
+      set({ isSearching: true });
+      
+      // Get coordinates from address using geocoding service
+      const coordinates = await getLocationCoordinates(location);
+      
+      if (!coordinates) {
+        set({ isSearching: false });
+        return;
+      }
+      
+      // Update selected location
+      set({ 
+        selectedLocation: coordinates,
+        searchLocation: location
+      });
+      
+      // Fetch panels using the coordinates
+      await get().fetchPanels(coordinates.lat, coordinates.lng);
+      
+      set({ isSearching: false });
+    } catch (error) {
+      console.error("Error searching location:", error);
+      set({ isSearching: false });
+    }
+  },
+  
+  // Add the handleClearLocation method
+  handleClearLocation: () => {
+    set({ 
+      selectedLocation: null,
+      searchLocation: '',
+      panels: []
+    });
   }
 }));
 

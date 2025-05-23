@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FileUp, RefreshCw, X, CheckCircle, AlertCircle } from 'lucide-react';
@@ -20,7 +19,7 @@ type UploadStatusProps = {
   handleDragOver: (e: React.DragEvent) => void;
   handleDragLeave: (e: React.DragEvent) => void;
   handleDrop: (e: React.DragEvent) => void;
-  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void; // Add this prop
+  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 const UploadStatus: React.FC<UploadStatusProps> = ({
@@ -38,7 +37,7 @@ const UploadStatus: React.FC<UploadStatusProps> = ({
   handleDragOver,
   handleDragLeave,
   handleDrop,
-  handleFileUpload, // Include in the component props
+  handleFileUpload
 }) => {
   return (
     <div className="mt-6">
@@ -207,7 +206,7 @@ const UploadStatus: React.FC<UploadStatusProps> = ({
             type="file"
             className="hidden"
             accept="video/mp4,video/quicktime,video/avi"
-            onChange={handleFileUpload} // Use the prop directly
+            onChange={handleFileUpload}
           />
           <FileUp className="mx-auto h-12 w-12 text-gray-400" />
           <p className="mt-4 text-lg font-medium text-gray-700">

@@ -27,12 +27,12 @@ interface ProcessPaymentConfig {
  * Hook for payment processing logic
  */
 export const usePaymentProcessor = () => {
-  const { createOrder } = useOrderCreation();
+  const { createPaymentOrder, processPaymentWithEdgeFunction, storeCheckoutInfo } = useOrderCreation();
 
   /**
    * Create order in database
    */
-  const createPaymentOrder = async ({
+  const createPaymentOrder2 = async ({
     sessionUser,
     cartItems,
     selectedPlan,
@@ -49,7 +49,7 @@ export const usePaymentProcessor = () => {
     startDate: Date;
     endDate: Date;
   }) => {
-    return await createOrder({
+    return await createPaymentOrder({
       sessionUser,
       cartItems,
       selectedPlan,
@@ -63,7 +63,7 @@ export const usePaymentProcessor = () => {
   /**
    * Process payment with Edge Function
    */
-  const processPaymentWithEdgeFunction = async ({
+  const processPaymentWithEdgeFunction2 = async ({
     pedidoId,
     cartItems,
     selectedPlan,
@@ -155,7 +155,7 @@ export const usePaymentProcessor = () => {
   /**
    * Store checkout information in localStorage
    */
-  const storeCheckoutInfo = (pedidoId: string, paymentMethod: string, preferenceId?: string) => {
+  const storeCheckoutInfo2 = (pedidoId: string, paymentMethod: string, preferenceId?: string) => {
     // Store order info in localStorage
     localStorage.setItem('lastPedidoId', pedidoId);
     localStorage.setItem('lastPaymentMethod', paymentMethod);

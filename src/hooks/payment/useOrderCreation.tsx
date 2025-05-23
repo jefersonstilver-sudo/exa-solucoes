@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { prepareForInsert, prepareForUpdate, unwrapData } from '@/utils/supabaseUtils';
+import { prepareForInsert, prepareForUpdate, unwrapData, filterEq } from '@/utils/supabaseUtils';
 import { Panel } from '@/types/panel';
 
 interface CartItem {
@@ -280,9 +280,76 @@ export const useOrderCreation = () => {
     }
   };
 
+  // Add the missing createCampaignsAfterPayment method required by usePaymentSimulator
+  const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
+    try {
+      if (!pedidoId || !userId) {
+        throw new Error('ID do pedido ou usuário não fornecido');
+      }
+      
+      // Get the order details
+      const { data: orderData, error: orderError } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('id', filterEq(pedidoId))
+        .single();
+      
+      if (orderError || !orderData) {
+        throw new Error(`Erro ao buscar detalhes do pedido: ${orderError?.message || 'Pedido não encontrado'}`);
+      }
+      
+      // Update order status to 'pago'
+      const updateData = prepareForUpdate({
+        status: 'pago',
+        log_pagamento: {
+          ...(orderData.log_pagamento || {}),
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        }
+      });
+      
+      await supabase
+        .from('pedidos')
+        .update(updateData as any)
+        .eq('id', filterEq(pedidoId));
+      
+      // Create campaigns for each panel
+      const panelIds = Array.isArray(orderData.lista_paineis) 
+        ? orderData.lista_paineis 
+        : [orderData.lista_paineis];
+      
+      if (!panelIds || panelIds.length === 0) {
+        throw new Error('Nenhum painel encontrado no pedido');
+      }
+      
+      const campaignData = panelIds.map(panelId => prepareForInsert({
+        client_id: userId,
+        painel_id: panelId,
+        video_id: 'default_video_id', // This should come from user's uploaded video
+        data_inicio: orderData.data_inicio,
+        data_fim: orderData.data_fim,
+        status: 'ativa'
+      }));
+      
+      const { error: campaignError } = await supabase
+        .from('campanhas')
+        .insert(campaignData as any);
+      
+      if (campaignError) {
+        throw new Error(`Erro ao criar campanhas: ${campaignError.message}`);
+      }
+      
+      return { success: true, message: 'Campanhas criadas com sucesso' };
+    } catch (error: any) {
+      console.error('Erro ao processar pós-pagamento:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   return {
     createPaymentOrder,
     processPaymentWithEdgeFunction,
-    storeCheckoutInfo
+    storeCheckoutInfo,
+    createCampaignsAfterPayment
   };
 };

@@ -9,7 +9,7 @@ export interface UseVideoUploadResult {
   uploadProgress: number;
   videoFile: File | null;
   videoDuration: number | null;
-  videoOrientation: string | null;
+  videoOrientation: 'landscape' | 'portrait' | 'unknown';
   videoError: string | null;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleDragEnter: (e: React.DragEvent) => void;
@@ -19,6 +19,9 @@ export interface UseVideoUploadResult {
   startUpload: () => Promise<void>;
   handleReset: () => void;
   handleContinue: () => void;
+  // Add the missing ref properties
+  videoRef: React.RefObject<HTMLVideoElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
 }
 
 interface UseVideoUploadProps {
@@ -32,13 +35,13 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
-  const [videoOrientation, setVideoOrientation] = useState<string | null>(null);
+  const [videoOrientation, setVideoOrientation] = useState<'landscape' | 'portrait' | 'unknown'>('unknown');
   const [videoError, setVideoError] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const validateVideo = useCallback((file: File): Promise<{ duration: number; orientation: string }> => {
+  const validateVideo = useCallback((file: File): Promise<{ duration: number; orientation: 'landscape' | 'portrait' }> => {
     return new Promise((resolve, reject) => {
       if (!videoRef.current) {
         reject(new Error('Video element not available'));
@@ -168,7 +171,7 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
   const handleReset = useCallback(() => {
     setVideoFile(null);
     setVideoDuration(null);
-    setVideoOrientation(null);
+    setVideoOrientation('unknown');
     setVideoError(null);
     setUploadStatus('idle');
     setUploadProgress(0);
@@ -197,6 +200,9 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
     handleDrop,
     startUpload,
     handleReset,
-    handleContinue
+    handleContinue,
+    // Export the refs
+    videoRef,
+    fileInputRef
   };
 };
