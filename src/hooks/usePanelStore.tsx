@@ -11,7 +11,7 @@ interface PanelStoreState {
   loading: boolean;
   isLoading: boolean; // Alias for loading to maintain API compatibility
   error: string | null;
-  selectedPanels: string[];
+  selectedPanels: string[]; // Fixed: Ensure this is typed as string array
   searchRadius: number;
   searchLocation: string;
   setSearchLocation: (location: string) => void;
@@ -43,7 +43,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [] as string[], // Fixed: Explicitly type as string array
+  selectedPanels: [], // Fixed: Initialize as empty array
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,

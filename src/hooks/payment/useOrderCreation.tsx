@@ -1,4 +1,5 @@
 
+
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { prepareForInsert, prepareForUpdate, unwrapData, filterEq } from '@/utils/supabaseUtils';
@@ -346,9 +347,9 @@ export const useOrderCreation = () => {
     }
   };
 
-  // Fixed: Properly define the createOrder method
+  // Fixed: Properly define the createOrder method with correct return type
   const createOrder = async (orderData: CreatePaymentOrderParams) => {
-    return createPaymentOrder(orderData);
+    return await createPaymentOrder(orderData);
   };
 
   return {
