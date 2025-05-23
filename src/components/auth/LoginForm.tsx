@@ -19,7 +19,6 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [authDebug, setAuthDebug] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -30,28 +29,29 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
         const { data, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Erro ao verificar sessão:', error);
-          setAuthDebug(`Erro na verificação inicial: ${error.message}`);
         } else if (data.session) {
           console.log('Sessão encontrada:', data.session.user.email);
-          setAuthDebug(`Sessão ativa: ${data.session.user.email}`);
-        } else {
-          console.log('Sem sessão ativa');
-          setAuthDebug('Sem sessão ativa');
+          
+          // Check if user is admin and redirect accordingly
+          const userRole = data.session.user.user_metadata?.role;
+          if (userRole === 'admin' || userRole === 'super_admin') {
+            navigate('/admin');
+          } else {
+            navigate('/client/comprar');
+          }
         }
       } catch (err) {
         console.error('Erro inesperado:', err);
-        setAuthDebug(`Erro inesperado: ${String(err)}`);
       }
     };
     
     checkAuth();
-  }, []);
+  }, [navigate]);
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    setAuthDebug(null);
     
     try {
       console.log('Tentando fazer login com:', email);
@@ -71,16 +71,12 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
         // Tratamento específico de erros
         if (error.message.includes('Invalid login credentials')) {
           setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.');
-          setAuthDebug(`Credenciais inválidas. Detalhes: ${error.message}`);
         } else if (error.message.includes('Email not confirmed')) {
           setError('Sua conta ainda não foi confirmada. Verifique seu email.');
-          setAuthDebug(`Email não confirmado. Detalhes: ${error.message}`);
         } else if (error.message.includes('Too many requests')) {
           setError('Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.');
-          setAuthDebug(`Rate limit. Detalhes: ${error.message}`);
         } else {
           setError(`Erro de autenticação: ${error.message}`);
-          setAuthDebug(`Erro genérico. Detalhes: ${error.message}`);
         }
         return;
       }
@@ -89,30 +85,29 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
         console.log('Login bem-sucedido:', data.user.email);
         toast.success('Login realizado com sucesso!');
         
-        // Verificar role do usuário para garantir que está sendo carregada
-        console.log('User metadata:', data.user.user_metadata);
-        console.log('User role from metadata:', data.user.user_metadata?.role);
-        
-        // Get redirect path from URL if present
-        const searchParams = new URLSearchParams(location.search);
-        const redirectTo = searchParams.get('redirect') || redirectPath;
-        
-        // Log additional session information
-        console.log('Session expiração:', new Date(data.session.expires_at! * 1000).toLocaleString());
+        // Verificar role do usuário e redirecionar adequadamente
+        const userRole = data.user.user_metadata?.role;
+        console.log('User role from metadata:', userRole);
         
         // Wait a bit to ensure session is properly established
         setTimeout(() => {
-          console.log('Redirecionando para:', redirectTo);
-          navigate(redirectTo);
+          if (userRole === 'admin' || userRole === 'super_admin') {
+            console.log('Redirecionando admin para:/admin');
+            navigate('/admin');
+          } else {
+            // Get redirect path from URL if present
+            const searchParams = new URLSearchParams(location.search);
+            const redirectTo = searchParams.get('redirect') || redirectPath;
+            console.log('Redirecionando usuário para:', redirectTo);
+            navigate(redirectTo);
+          }
         }, 500);
       } else {
         setError('Falha na autenticação. Dados de sessão inválidos.');
-        setAuthDebug('Resposta sem erro mas sem sessão válida. Verificar configuração do Supabase.');
       }
     } catch (err: any) {
       console.error('Erro inesperado durante login:', err);
       setError('Ocorreu um erro inesperado. Tente novamente em alguns instantes.');
-      setAuthDebug(`Erro inesperado: ${String(err)}`);
     } finally {
       setIsLoading(false);
     }
@@ -130,11 +125,6 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
             <AlertTriangle size={16} />
             <p>{error}</p>
           </div>
-          {authDebug && (
-            <div className="mt-2 pt-2 border-t border-red-200 text-xs">
-              <p className="font-mono">Debug: {authDebug}</p>
-            </div>
-          )}
         </div>
       )}
       
@@ -211,55 +201,6 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
         >
           Login Rápido (Master Admin)
         </Button>
-      </div>
-      
-      {/* Admin troubleshooting tools */}
-      <div className="mt-4 pt-2 border-t border-gray-200">
-        <details>
-          <summary className="text-xs text-gray-500 cursor-pointer">Ferramentas de diagnóstico</summary>
-          <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="w-full text-xs mb-2"
-              onClick={async () => {
-                try {
-                  await supabase.auth.signOut();
-                  toast.success('Sessão limpa com sucesso');
-                  setAuthDebug('Sessão limpa manualmente');
-                } catch (err) {
-                  console.error('Erro ao limpar sessão:', err);
-                  setAuthDebug(`Erro ao limpar sessão: ${String(err)}`);
-                }
-              }}
-            >
-              Limpar Sessão
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="w-full text-xs"
-              onClick={async () => {
-                try {
-                  const { data, error } = await supabase.auth.getSession();
-                  if (error) {
-                    setAuthDebug(`Erro: ${error.message}`);
-                  } else if (data.session) {
-                    setAuthDebug(`Sessão: ${data.session.user.email} (${new Date(data.session.expires_at! * 1000).toLocaleString()})`);
-                  } else {
-                    setAuthDebug('Nenhuma sessão ativa');
-                  }
-                } catch (err) {
-                  setAuthDebug(`Erro: ${String(err)}`);
-                }
-              }}
-            >
-              Verificar Sessão
-            </Button>
-          </div>
-        </details>
       </div>
     </motion.div>
   );

@@ -94,8 +94,9 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
           }, 0);
           
           if (event === 'SIGNED_IN') {
-            // Only show toast if we haven't shown it yet
-            if (!loginToastShown.current) {
+            // Only show toast if we haven't shown it yet and we're not on login page
+            const isOnLoginPage = window.location.pathname === '/login';
+            if (!loginToastShown.current && !isOnLoginPage) {
               toast.success('Login realizado com sucesso!');
               loginToastShown.current = true;
               
