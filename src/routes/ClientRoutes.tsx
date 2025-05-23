@@ -3,7 +3,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import PanelStore from '@/pages/PanelStore';
 import Checkout from '@/pages/Checkout';
-import MeusPedidos from '@/pages/MeusPedidos';
+import Pedidos from '@/pages/Pedidos';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import MyCampaigns from '@/pages/advertiser/MyCampaigns';
 import CampaignDetails from '@/pages/advertiser/CampaignDetails';
@@ -16,7 +16,7 @@ export const ClientRoutes = () => {
       <Route path="/dashboard" element={<AdvertiserDashboard />} />
       <Route path="/comprar" element={<PanelStore />} />
       <Route path="/checkout" element={<Checkout />} />
-      <Route path="/pedidos" element={<MeusPedidos />} />
+      <Route path="/pedidos" element={<Pedidos />} />
       <Route path="/campanhas" element={<MyCampaigns />} />
       <Route path="/campanhas/:id" element={<CampaignDetails />} />
       <Route path="/videos" element={<MyVideos />} />
