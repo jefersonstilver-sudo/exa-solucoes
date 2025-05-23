@@ -54,7 +54,7 @@ export const useOrderCreation = () => {
     // Prepare the data with proper typing for insertion
     const pedidoData: PedidoInsert = {
       client_id: sessionUser.id,
-      lista_paineis: validPanelIds as string[],
+      lista_paineis: validPanelIds as unknown as string[],
       duracao: selectedPlan * 30, // Converte meses para dias
       plano_meses: selectedPlan,
       valor_total: totalPrice,
