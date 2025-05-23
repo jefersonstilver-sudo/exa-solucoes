@@ -54,7 +54,7 @@ export const useOrderCreation = () => {
     // Prepare the data with proper typing for insertion
     const pedidoData: PedidoInsert = {
       client_id: sessionUser.id,
-      lista_paineis: validPanelIds,
+      lista_paineis: validPanelIds as string[],
       duracao: selectedPlan * 30, // Converte meses para dias
       plano_meses: selectedPlan,
       valor_total: totalPrice,
@@ -69,7 +69,7 @@ export const useOrderCreation = () => {
         panels_count: cartItemsCopy.length,
         user_name: sessionUser.user_metadata?.name || sessionUser.email,
         payment_method: 'mercado_pago'
-      }
+      } as unknown as Json
     };
     
     // Cria pedido no banco de dados com tipo correto
@@ -114,7 +114,7 @@ export const useOrderCreation = () => {
             order_created_at: new Date().toISOString(),
             order_source: 'web_checkout',
             client_email: sessionUser.email
-          }
+          } as unknown as Json
         };
 
         await supabase
