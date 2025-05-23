@@ -6,6 +6,10 @@ import { UserSessionHookReturn } from '@/types/sessionTypes';
 // Re-export UserProfile type
 export type { UserProfile } from '@/types/userTypes';
 
+/**
+ * Main hook for managing user authentication session
+ * Provides user data, session status, and authentication actions
+ */
 export const useUserSession = (): UserSessionHookReturn => {
   const { user, session, isLoading, setUser } = useSessionInit();
   const { logout, updateUserProfile, hasRole, setUserRole } = useSessionActions(user, setUser);

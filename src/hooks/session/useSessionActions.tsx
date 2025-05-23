@@ -1,84 +1,81 @@
 
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { UserProfile, UserRole } from '@/types/userTypes';
-import { logoutUser, updateUserProfileData, setUserRoleData } from '@/services/userAuthService';
-import { hasUserRole } from '@/services/userRoleService';
+import { updateUserProfileData, logoutUser, setUserRoleData } from '@/services/userAuthService';
 
+/**
+ * Hook for user session actions (logout, profile updates, role checks)
+ */
 export const useSessionActions = (
   user: UserProfile | null,
   setUser: React.Dispatch<React.SetStateAction<UserProfile | null>>
 ) => {
-  const navigate = useNavigate();
-
-  const logout = useCallback(async () => {
+  /**
+   * Log out the current user
+   */
+  const logout = async (): Promise<void> => {
     const result = await logoutUser();
-    
-    if (result.success) {
-      // Clear state
-      setUser(null);
-      
-      toast.success('Logout realizado com sucesso');
-      navigate('/login');
-    } else {
-      console.error('Erro ao fazer logout:', result.error);
-      toast.error('Erro ao fazer logout. Tente novamente.');
+    if (!result.success) {
+      console.error('Error logging out:', result.error);
     }
-  }, [setUser, navigate]);
-  
-  // Function to update user profile
-  const updateUserProfile = useCallback(async (userProfile: Partial<UserProfile>) => {
-    const result = await updateUserProfileData(userProfile, user?.id);
+  };
+
+  /**
+   * Update the user's profile
+   */
+  const updateUserProfile = async (
+    userProfile: Partial<UserProfile>
+  ): Promise<{success: boolean, error?: any}> => {
+    if (!user) {
+      return { success: false, error: new Error('No user logged in') };
+    }
+    
+    const result = await updateUserProfileData(userProfile, user.id);
     
     if (result.success) {
-      // Get role from database (source of truth)
-      let role = user?.role;
-      if (userProfile.role) {
-        role = userProfile.role;
-      }
-      
-      setUser(prev => prev ? {
-        ...prev,
-        ...userProfile,
-        role: role
-      } : null);
-      
-      toast.success('Perfil atualizado com sucesso');
-    } else {
-      toast.error('Erro ao atualizar perfil: ' + result.error?.message);
+      // Update local state
+      setUser(prev => prev ? { ...prev, ...userProfile } : null);
     }
     
     return result;
-  }, [user, setUser]);
+  };
   
-  // Function to check if user has a specific role
-  const hasRole = useCallback((requiredRole: UserRole): boolean => {
-    return hasUserRole(user?.role, requiredRole);
-  }, [user]);
+  /**
+   * Check if the user has a required role
+   */
+  const hasRole = (requiredRole: UserRole): boolean => {
+    if (!user || !user.role) return false;
+    
+    // Super admins can access everything
+    if (user.role === 'super_admin') return true;
+    
+    // Admins can access admin and client areas
+    if (user.role === 'admin' && (requiredRole === 'admin' || requiredRole === 'client')) {
+      return true;
+    }
+    
+    // Direct role match
+    return user.role === requiredRole;
+  };
   
-  // Function to set user role (for dev/testing purposes)
-  const setUserRole = useCallback(async (role: UserRole) => {
-    if (!user?.id) {
-      toast.error('Nenhum usuário logado');
+  /**
+   * Set the user's role (both in auth and database)
+   */
+  const setUserRole = async (
+    role: UserRole
+  ): Promise<{success: boolean, error?: any}> => {
+    if (!user) {
       return { success: false, error: new Error('No user logged in') };
     }
     
     const result = await setUserRoleData(user.id, role);
     
     if (result.success) {
-      setUser(prev => prev ? {
-        ...prev,
-        role
-      } : null);
-      
-      toast.success(`Role atualizada para: ${role}`);
-    } else {
-      toast.error('Erro ao atualizar role: ' + result.error?.message);
+      // Update local state
+      setUser(prev => prev ? { ...prev, role } : null);
     }
     
     return result;
-  }, [user, setUser]);
+  };
 
   return {
     logout,
