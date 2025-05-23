@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
@@ -11,7 +12,7 @@ interface PanelStoreState {
   loading: boolean;
   isLoading: boolean; // Alias for loading to maintain API compatibility
   error: string | null;
-  selectedPanels: string[]; // Fixed: Ensure this is typed as string array
+  selectedPanels: string[];
   searchRadius: number;
   searchLocation: string;
   setSearchLocation: (location: string) => void;
@@ -43,7 +44,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [], // Fixed: Initialize as empty array
+  selectedPanels: [], // Fixed: This is now properly initialized as an empty array
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,

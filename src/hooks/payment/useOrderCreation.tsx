@@ -1,5 +1,4 @@
 
-
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { prepareForInsert, prepareForUpdate, unwrapData, filterEq } from '@/utils/supabaseUtils';
@@ -349,6 +348,7 @@ export const useOrderCreation = () => {
 
   // Fixed: Properly define the createOrder method with correct return type
   const createOrder = async (orderData: CreatePaymentOrderParams) => {
+    // Direct call to the function without using spread on non-object type
     return await createPaymentOrder(orderData);
   };
 
