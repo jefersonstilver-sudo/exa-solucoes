@@ -48,6 +48,9 @@ export const hasUserRole = (
   // Client has access only to client role
   if (userRole === 'client' && requiredRole === 'client') return true;
   
+  // Painel role - typically for display devices
+  if (userRole === 'painel' && requiredRole === 'painel') return true;
+  
   return false;
 };
 
