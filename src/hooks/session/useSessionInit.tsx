@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, UserRole } from '@/types/userTypes';
@@ -11,12 +11,18 @@ export const useSessionInit = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Track if component is mounted to prevent state updates after unmount
+    let isMounted = true;
+    
     // Set up auth state listener FIRST (critical for proper session handling)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession?.user?.email);
+        
+        if (!isMounted) return;
         
         if (event === 'SIGNED_OUT') {
           // Clear user and session immediately on sign out
@@ -52,11 +58,12 @@ export const useSessionInit = () => {
           
           // Then fetch role from database using setTimeout to prevent auth deadlocks
           setTimeout(async () => {
+            if (!isMounted) return;
             try {
               const dbRole = await fetchUserRole(currentSession.user.id);
               
               // If we found a role in the database, use it (it's the source of truth)
-              if (dbRole) {
+              if (dbRole && isMounted) {
                 setUser(prev => prev ? {
                   ...prev,
                   role: dbRole as UserRole
@@ -89,10 +96,13 @@ export const useSessionInit = () => {
 
     // AFTER setting up listener, check for existing session
     const initializeAuth = async () => {
+      if (!isMounted) return;
       setIsLoading(true);
       try {
         // Get session with robust error handling
         const { data, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
         
         if (error) {
           console.error('Erro ao obter sessão:', error);
@@ -131,6 +141,8 @@ export const useSessionInit = () => {
           // Then fetch role from database (without blocking UI)
           try {
             const dbRole = await fetchUserRole(userId);
+            
+            if (!isMounted) return;
             
             // If we found a role in the database, it overrides metadata
             if (dbRole) {
@@ -178,20 +190,33 @@ export const useSessionInit = () => {
           { error: String(error), timestamp: new Date().toISOString() }
         );
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    // Força atualização a cada 60 segundos para evitar sessão desatualizada
-    const refreshInterval = setInterval(() => {
-      // Nova verificação periódica da sessão para garantir que não perdemos nenhuma mudança
+    initializeAuth();
+
+    // Set up periodic session check at a longer interval (every 3 minutes instead of every 60s)
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+
+    refreshIntervalRef.current = window.setInterval(() => {
+      if (!isMounted) return;
+      
+      // Only do periodic checks if we're in an ambiguous state or if there might be changes
       supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-        if (currentSession) {
-          // Se temos uma sessão válida, validamos o estado do usuário
-          if (!user) {
+        if (!isMounted) return;
+        
+        const hasSession = !!currentSession;
+        const hasUser = !!user;
+        
+        // Only update if there's a mismatch between our state and reality
+        if (hasSession !== hasUser) {
+          if (hasSession && !hasUser) {
             console.log('Sessão restaurada pela verificação periódica');
-            
-            // Atualizar o estado do usuário com a sessão atual
             setSession(currentSession);
             setUser({
               id: currentSession.user.id,
@@ -210,31 +235,32 @@ export const useSessionInit = () => {
                 timestamp: new Date().toISOString() 
               }
             );
+          } else if (!hasSession && hasUser) {
+            console.log('Sessão expirada detectada na verificação periódica');
+            setUser(null);
+            setSession(null);
+            
+            logCheckoutEvent(
+              CheckoutEvent.AUTH_EVENT,
+              LogLevel.WARNING,
+              "Sessão expirada detectada",
+              { timestamp: new Date().toISOString() }
+            );
           }
-        } else if (user) {
-          // Se temos um usuário no estado, mas não temos uma sessão válida
-          console.log('Sessão expirada detectada na verificação periódica');
-          setUser(null);
-          setSession(null);
-          
-          logCheckoutEvent(
-            CheckoutEvent.AUTH_EVENT,
-            LogLevel.WARNING,
-            "Sessão expirada detectada",
-            { timestamp: new Date().toISOString() }
-          );
         }
       });
-    }, 60000); // 60 segundos
+    }, 180000); // Check every 3 minutes instead of every 60 seconds
 
-    initializeAuth();
-
-    // Cleanup subscription on unmount
+    // Cleanup subscription and interval on unmount
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
-      clearInterval(refreshInterval);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
     };
-  }, [user]);
+  }, []);
 
   return {
     user,

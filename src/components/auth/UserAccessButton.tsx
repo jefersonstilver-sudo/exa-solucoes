@@ -8,7 +8,7 @@ import { ClientOnly } from '@/components/ui/client-only';
 import AdminAccessButton from '@/components/admin/AdminAccessButton';
 
 const UserAccessButton = () => {
-  const { isLoggedIn, user } = useUserSession();
+  const { isLoggedIn, user, isLoading } = useUserSession();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -26,8 +26,21 @@ const UserAccessButton = () => {
     };
   }, []);
 
+  // Don't render the button at all if we're still loading the authentication state
+  if (isLoading) {
+    return (
+      <div className="w-10 h-10 flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full border-2 border-gray-300 border-t-transparent animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
-    <ClientOnly>
+    <ClientOnly fallback={
+      <div className="w-10 h-10 flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full border-2 border-gray-300 border-t-transparent animate-spin"></div>
+      </div>
+    }>
       <div className="relative" ref={dropdownRef}>
         <Button
           variant="ghost"

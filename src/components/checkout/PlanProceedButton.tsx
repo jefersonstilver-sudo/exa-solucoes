@@ -22,27 +22,29 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
   planData,
   totalPrice
 }) => {
-  const { user, isLoggedIn } = useUserSession();
+  const { user, isLoggedIn, isLoading } = useUserSession();
   const [isSending, setIsSending] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   
-  // Verificar autenticação toda vez que o componente renderizar
+  // Verificar autenticação quando o componente montar ou quando o status de autenticação mudar
   useEffect(() => {
-    setAuthChecked(true);
-    
-    // Log para diagnóstico do estado de autenticação
-    logCheckoutEvent(
-      CheckoutEvent.AUTH_EVENT,
-      LogLevel.INFO,
-      `PlanProceedButton: Status de autenticação verificado`,
-      { 
-        isLoggedIn, 
-        hasUser: !!user,
-        userId: user?.id || 'não autenticado',
-        timestamp: new Date().toISOString() 
-      }
-    );
-  }, [user, isLoggedIn]);
+    if (!isLoading) {
+      setAuthChecked(true);
+      
+      // Log para diagnóstico do estado de autenticação
+      logCheckoutEvent(
+        CheckoutEvent.AUTH_EVENT,
+        LogLevel.INFO,
+        `PlanProceedButton: Status de autenticação verificado`,
+        { 
+          isLoggedIn, 
+          hasUser: !!user,
+          userId: user?.id || 'não autenticado',
+          timestamp: new Date().toISOString() 
+        }
+      );
+    }
+  }, [user, isLoggedIn, isLoading]);
   
   const handleClick = async () => {
     // Primeiro verificar se está autenticado
@@ -106,6 +108,27 @@ const PlanProceedButton: React.FC<PlanProceedButtonProps> = ({
       );
     }
   };
+  
+  // Mostrar loading enquanto verificamos a autenticação
+  if (isLoading) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mt-10 flex justify-center"
+      >
+        <Button 
+          size="lg" 
+          className="px-8 py-6"
+          disabled={true}
+        >
+          <span className="mr-2">Verificando autenticação</span>
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+        </Button>
+      </motion.div>
+    );
+  }
   
   // Renderizar botão diferente se não estiver autenticado
   if (!isLoggedIn && authChecked) {
