@@ -17,6 +17,7 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
   const loginToastShown = useRef<boolean>(false);
   // Adiciona um ref para evitar atualizações duplicadas
   const initialSessionChecked = useRef<boolean>(false);
+  const pendingUpdateRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (!isMounted.current) return;
@@ -25,8 +26,8 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
     
     // Set up auth state listener FIRST (critical for proper session handling)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log('Auth state changed:', event, currentSession?.user?.email);
+      (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession?.user?.email || 'No email');
         
         if (!isMounted.current) return;
         
@@ -64,11 +65,17 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
             role: metadataRole
           });
           
+          // Cancel any pending role update to avoid race conditions
+          if (pendingUpdateRef.current) {
+            clearTimeout(pendingUpdateRef.current);
+          }
+          
           // Then fetch role from database using setTimeout to prevent auth deadlocks
-          setTimeout(async () => {
+          pendingUpdateRef.current = setTimeout(async () => {
             if (!isMounted.current) return;
             try {
               const dbRole = await fetchUserRole(currentSession.user.id);
+              pendingUpdateRef.current = null;
               
               // If we found a role in the database, use it (it's the source of truth)
               if (dbRole && isMounted.current) {
@@ -82,6 +89,7 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
               }
             } catch (err) {
               console.error('Error fetching user role:', err);
+              pendingUpdateRef.current = null;
             }
           }, 0);
           
@@ -116,14 +124,17 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
     // Verificação inicial de sessão após configurar o listener
     if (!initialSessionChecked.current) {
       supabase.auth.getSession().then(({ data, error }) => {
+        if (!isMounted.current) return;
+        
         if (error) {
           console.error('Erro ao verificar sessão inicial:', error);
+          initialSessionChecked.current = true;
           return;
         }
         
         const currentSession = data.session;
         
-        if (currentSession?.user && isMounted.current) {
+        if (currentSession?.user) {
           console.log('Sessão inicial encontrada:', currentSession.user.email);
           
           // Atualiza o estado da sessão
@@ -157,8 +168,11 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
                   role: dbRole
                 } : null);
               }
+              
+              initialSessionChecked.current = true;
             } catch (err) {
               console.error('Erro ao buscar função do usuário:', err);
+              initialSessionChecked.current = true;
             }
           }, 0);
           
@@ -174,13 +188,16 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
           );
         } else {
           console.log('Nenhuma sessão inicial encontrada');
+          initialSessionChecked.current = true;
         }
-        
-        initialSessionChecked.current = true;
       });
     }
 
     return () => {
+      // Clean up all timeouts and subscriptions
+      if (pendingUpdateRef.current) {
+        clearTimeout(pendingUpdateRef.current);
+      }
       subscription.unsubscribe();
     };
   }, [setUser, setSession, isMounted]);

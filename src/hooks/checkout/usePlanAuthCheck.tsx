@@ -11,95 +11,82 @@ export const usePlanAuthCheck = () => {
   const [isAuthVerified, setIsAuthVerified] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [forceRerender, setForceRerender] = useState(0);
+  const [sessionRetries, setSessionRetries] = useState(0);
+
+  // Verificação otimizada de sessão
+  const verifySession = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        throw error;
+      }
+      
+      return !!data.session?.user;
+    } catch (err) {
+      console.error('Erro crítico ao verificar sessão:', err);
+      return false;
+    }
+  }, []);
 
   // Verificação explícita de autenticação ao iniciar o componente
   useEffect(() => {
-    const verifySession = async () => {
+    let isMounted = true;
+    
+    const verifyAuthStatus = async () => {
       console.log('Verificando sessão do Supabase explicitamente');
       try {
         setIsPageLoading(true);
-        const { data, error } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('Erro na verificação explícita de sessão:', error);
-          setIsAuthVerified(true); // Mesmo com erro, consideramos verificado
-          setIsPageLoading(false);
-          return false;
-        }
+        const hasSession = await verifySession();
         
-        const hasValidSession = !!data.session?.user;
-        console.log('Verificação de sessão:', hasValidSession ? 'Sessão válida encontrada' : 'Nenhuma sessão encontrada');
+        if (!isMounted) return;
         
-        if (hasValidSession) {
+        console.log('Verificação de sessão:', hasSession ? 'Sessão válida encontrada' : 'Nenhuma sessão encontrada');
+        
+        if (hasSession) {
           logCheckoutEvent(
             CheckoutEvent.AUTH_EVENT,
             LogLevel.INFO,
             "Sessão válida verificada na página de planos",
-            { 
-              userId: data.session.user.id,
-              email: data.session.user.email,
-              timestamp: new Date().toISOString() 
-            }
+            { timestamp: new Date().toISOString() }
           );
         }
         
         setIsAuthVerified(true);
+        setIsPageLoading(false);
         
-        return hasValidSession;
+        return hasSession;
       } catch (err) {
         console.error('Erro crítico ao verificar sessão:', err);
+        
+        if (!isMounted) return false;
+        
+        // Se ainda não atingimos o máximo de tentativas, tentar novamente
+        if (sessionRetries < 2) {
+          console.log(`Tentando novamente (${sessionRetries + 1}/3)...`);
+          setSessionRetries(prev => prev + 1);
+          return false;
+        }
+        
+        // Se atingimos o máximo de tentativas, sinalizar como verificado para não bloquear o fluxo
         setIsAuthVerified(true);
         setIsPageLoading(false);
         return false;
       }
     };
     
-    verifySession();
-  }, [forceRerender]);
+    verifyAuthStatus();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [forceRerender, verifySession, sessionRetries]);
   
-  // Função para verificar a autenticação
+  // Função para verificar a autenticação - versão mais eficiente
   const checkAuthentication = useCallback(async () => {
-    try {
-      console.log("PlanSelection: Verificando autenticação diretamente com Supabase...");
-      
-      // Verificação explícita da sessão
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("PlanSelection: Erro ao verificar sessão", error);
-        logCheckoutEvent(
-          CheckoutEvent.AUTH_EVENT,
-          LogLevel.ERROR,
-          "Erro ao verificar sessão na página de planos",
-          { error: String(error), timestamp: Date.now() }
-        );
-        return false;
-      }
-      
-      if (!data.session) {
-        console.log("PlanSelection: Usuário não autenticado, mostrando notificação de login");
-        logCheckoutEvent(
-          CheckoutEvent.AUTH_EVENT,
-          LogLevel.INFO,
-          "Usuário não autenticado na página de planos",
-          { timestamp: Date.now() }
-        );
-        return false;
-      } 
-      
-      console.log("PlanSelection: Sessão encontrada no Supabase:", data.session.user.email);
-      return true;
-    } catch (error) {
-      console.error("Erro ao verificar autenticação:", error);
-      logCheckoutEvent(
-        CheckoutEvent.AUTH_EVENT,
-        LogLevel.ERROR,
-        "Erro crítico ao verificar autenticação na página de planos",
-        { error: String(error), timestamp: Date.now() }
-      );
-      return false;
-    }
-  }, []);
+    return await verifySession();
+  }, [verifySession]);
 
   return {
     isAuthVerified,

@@ -19,6 +19,7 @@ export const useSessionRefresh = ({
 }: UseSessionRefreshProps) => {
   const refreshIntervalRef = useRef<number | null>(null);
   const lastSessionStatus = useRef<boolean | null>(null);
+  const isRefreshing = useRef<boolean>(false);
 
   useEffect(() => {
     // Set up periodic session check at a shorter interval (every 60s)
@@ -27,18 +28,23 @@ export const useSessionRefresh = ({
     }
 
     refreshIntervalRef.current = window.setInterval(() => {
-      if (!isMounted.current) return;
+      if (!isMounted.current || isRefreshing.current) return;
       
+      isRefreshing.current = true;
       console.log('Verificação periódica de sessão');
       
       // Realizar verificação explícita de sessão
       supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
-        if (error) {
-          console.error('Erro na verificação periódica de sessão:', error);
+        if (!isMounted.current) {
+          isRefreshing.current = false;
           return;
         }
         
-        if (!isMounted.current) return;
+        if (error) {
+          console.error('Erro na verificação periódica de sessão:', error);
+          isRefreshing.current = false;
+          return;
+        }
         
         const hasSession = !!currentSession;
         const hasUser = !!user;
@@ -84,6 +90,11 @@ export const useSessionRefresh = ({
             );
           }
         }
+        
+        isRefreshing.current = false;
+      }).catch((err) => {
+        console.error('Erro crítico na verificação periódica:', err);
+        isRefreshing.current = false;
       });
     }, 60000); // Check every 60 seconds
 

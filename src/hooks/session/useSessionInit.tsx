@@ -12,39 +12,32 @@ export const useSessionInit = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isMounted = useRef<boolean>(true);
+  const sessionInitialized = useRef<boolean>(false);
   
-  // Adicionar verificação de sessão explícita na inicialização do componente
-  useEffect(() => {
-    const checkInitialSession = async () => {
-      try {
-        console.log('Verificando sessão inicial via useSessionInit');
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Erro ao verificar sessão inicial:', error);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (data.session) {
-          console.log('Sessão válida encontrada na inicialização');
-        } else {
-          console.log('Nenhuma sessão encontrada na inicialização');
-        }
-        
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Erro crítico ao verificar sessão:', err);
-        setIsLoading(false);
-      }
-    };
-    
-    checkInitialSession();
-  }, []);
-
   // Set up a ref to track component mount status
   useEffect(() => {
     isMounted.current = true;
+    
+    // Fast initial session check on component mount
+    const quickSessionCheck = async () => {
+      try {
+        if (sessionInitialized.current) return;
+        
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          console.log('Quick session check: Valid session found');
+        } else {
+          console.log('Quick session check: No session found');
+        }
+        
+        sessionInitialized.current = true;
+      } catch (err) {
+        console.error('Error in quick session check:', err);
+      }
+    };
+    
+    quickSessionCheck();
+    
     return () => {
       isMounted.current = false;
     };

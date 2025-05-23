@@ -1,26 +1,30 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import PlanLoginNotification from '@/components/checkout/PlanLoginNotification';
 import PlanSelectionContent from '@/components/checkout/PlanSelectionContent';
 import PlanLoadingIndicator from '@/components/checkout/PlanLoadingIndicator';
 import { useUserSession } from '@/hooks/useUserSession';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { usePlanAuthCheck } from '@/hooks/checkout/usePlanAuthCheck';
-import { useCartVerification } from '@/hooks/checkout/useCartVerification';
 import { usePlanSelection } from '@/hooks/checkout/usePlanSelection';
-import { supabase } from '@/integrations/supabase/client';
+import { useCartVerification } from '@/hooks/checkout/useCartVerification';
 
 const PlanSelection = () => {
   // Estados de autenticação - deixar o estado de sessão primeiro para garantir inicialização correta
   const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
   
-  // Custom hooks para gerenciar diferentes aspectos da página
-  const { isAuthVerified, isPageLoading, setIsPageLoading, forceRerender, setForceRerender, checkAuthentication } = usePlanAuthCheck();
-  const { hasCart, initialLoadDone } = useCartVerification(isAuthVerified);
-  const { selectedPlan, setSelectedPlan, PLANS, cartItems, calculateEstimatedPrice, handleProceed } = usePlanSelection(hasCart);
+  // Para evitar re-renderizações desnecessárias
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [authVerified, setAuthVerified] = useState(false);
   
-  // Log de informação quando o componente é montado
+  // Estado do carrinho
+  const { hasCart, initialLoadDone } = useCartVerification(authVerified);
+  
+  // Seleção de plano - somente inicializar quando o resto estiver carregado
+  const { selectedPlan, setSelectedPlan, PLANS, cartItems, calculateEstimatedPrice, handleProceed } = 
+    usePlanSelection(hasCart);
+  
+  // Log de informação quando o componente é montado (apenas uma vez)
   useEffect(() => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
@@ -28,47 +32,34 @@ const PlanSelection = () => {
       "PlanSelection: Componente montado",
       { isLoggedIn, userId: user?.id || 'não autenticado' }
     );
-  }, [isLoggedIn, user]);
-
-  // Verificação de autenticação e verificação do carrinho juntas
-  useEffect(() => {
-    // Só executar quando a autenticação estiver verificada
-    if (!isAuthVerified) return;
     
-    const verifyCartAndAuth = async () => {
-      try {
-        // Primeiro verificar autenticação
-        const isAuthenticated = await checkAuthentication();
-        
-        console.log("PlanSelection: Verificação de autenticação concluída:", isAuthenticated);
-        
-        // Atualizar estado de carregamento após verificações
+    // Verificar e marcar autenticação como verificada quando o carregamento da sessão terminar
+    if (!isSessionLoading) {
+      console.log("Sessão inicializada, autenticação verificada:", isLoggedIn);
+      setAuthVerified(true);
+      
+      // Se já estiver autenticado, podemos continuar com a próxima etapa
+      if (isLoggedIn) {
         setIsPageLoading(false);
-      } catch (error) {
-        console.error("Erro no processo de verificação:", error);
+      } else {
+        // Se não estiver autenticado, ainda não é necessário carregar outros dados
         setIsPageLoading(false);
       }
-    };
-    
-    verifyCartAndAuth();
-  }, [isAuthVerified, checkAuthentication, setIsPageLoading]);
+    }
+  }, [isSessionLoading, isLoggedIn, user]);
+  
+  // Memoizar status de carregamento para evitar re-renderizações desnecessárias
+  const isLoading = useMemo(() => {
+    return isSessionLoading || isPageLoading;
+  }, [isSessionLoading, isPageLoading]);
   
   // Loading screen while checking session or cart
-  if (isSessionLoading || isPageLoading) {
+  if (isLoading) {
     return <PlanLoadingIndicator />;
   }
   
   // Exibir botão de login se não estiver logado, independentemente do carregamento do carrinho
   if (!isLoggedIn) {
-    // Verificar uma última vez se realmente não há sessão
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        // Se houver sessão mas isLoggedIn for falso, forçar recarregamento
-        console.log("Inconsistência detectada: sessão existe mas isLoggedIn é falso. Recarregando...");
-        setForceRerender(prev => prev + 1);
-      }
-    });
-    
     return (
       <Layout>
         <PlanLoginNotification />

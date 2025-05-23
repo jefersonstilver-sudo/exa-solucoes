@@ -17,7 +17,29 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      flowType: 'implicit'
+    },
+    realtime: {
+      persistSession: true
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'supabase-js@2.x'
+      }
     }
   }
 );
+
+// Configurações adicionais para garantir consistência na reinicialização
+try {
+  // Tenta manter a consistência nos reloads
+  const existingSession = localStorage.getItem('supabase.auth.token');
+  if (!existingSession) {
+    console.log('Nenhuma sessão encontrada no localStorage');
+  } else {
+    console.log('Sessão encontrada no localStorage');
+  }
+} catch (err) {
+  console.error('Erro ao verificar sessão armazenada:', err);
+}
