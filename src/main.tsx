@@ -154,8 +154,23 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <RouterProvider router={router} />
+        {/* 
+          Configure toasts with better settings:
+          - Set a reasonable duration
+          - Add position and close button 
+          - Enable animations
+        */}
         <Toaster />
-        <SonnerToaster position="top-center" expand={true} richColors closeButton />
+        <SonnerToaster 
+          position="top-center" 
+          expand={true} 
+          richColors 
+          closeButton
+          toastOptions={{
+            duration: 3000,
+            className: "toast-class"
+          }} 
+        />
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,

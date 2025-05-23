@@ -38,8 +38,23 @@ const App = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       
+      {/* 
+        Only include ONE of each toast provider 
+        Toaster - shadcn/ui toast provider  
+        SonnerToaster - sonner toast provider
+      */}
       <Toaster />
-      <SonnerToaster position="top-right" closeButton richColors />
+      <SonnerToaster 
+        position="top-right" 
+        closeButton 
+        richColors 
+        toastOptions={{
+          duration: 3000,
+          classNames: {
+            toast: "group toast-class",
+          }
+        }} 
+      />
     </Router>
   );
 };

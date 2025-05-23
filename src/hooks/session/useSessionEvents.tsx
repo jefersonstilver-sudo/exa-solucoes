@@ -13,6 +13,9 @@ interface UseSessionEventsProps {
 }
 
 export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionEventsProps) => {
+  // Add a ref to track if we've already shown a login toast in this session
+  const loginToastShown = useRef<boolean>(false);
+  
   useEffect(() => {
     // Set up auth state listener FIRST (critical for proper session handling)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -75,7 +78,18 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
           }, 0);
           
           if (event === 'SIGNED_IN') {
-            toast.success('Login realizado com sucesso!');
+            // Only show toast if we haven't shown it yet
+            if (!loginToastShown.current) {
+              toast.success('Login realizado com sucesso!');
+              loginToastShown.current = true;
+              
+              // Reset the flag after 3 seconds to prevent spamming toasts
+              // but allow future logins to show the toast
+              setTimeout(() => {
+                loginToastShown.current = false;
+              }, 3000);
+            }
+            
             logCheckoutEvent(
               CheckoutEvent.AUTH_EVENT,
               LogLevel.INFO,
