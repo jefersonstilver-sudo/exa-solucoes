@@ -1,16 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ClientOnly } from '@/components/ui/client-only';
-import PixPaymentDetails from '@/components/checkout/payment/PixPaymentDetails';
-import PixPaymentDebugger from '@/components/checkout/payment/PixPaymentDebugger';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { useUserSession } from '@/hooks/useUserSession';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import PixPaymentDebugger from '@/components/checkout/payment/PixPaymentDebugger';
+import PixPaymentDetails from '@/components/checkout/payment/PixPaymentDetails';
+import BackToCheckoutButton from '@/components/checkout/payment/BackToCheckoutButton';
+import PixPaymentHeader from '@/components/checkout/payment/PixPaymentHeader';
+import PixMobilePayButton from '@/components/checkout/payment/PixMobilePayButton';
+import PixPaymentInstructions from '@/components/checkout/payment/PixPaymentInstructions';
+import PixContentContainer from '@/components/checkout/payment/PixContentContainer';
+import PixPaymentLoadingState from '@/components/checkout/payment/PixPaymentLoadingState';
 
 interface PixPaymentContentProps {
   paymentData: PixPaymentData;
@@ -103,11 +106,7 @@ const PixPaymentContent = ({
 
   // Don't render content if user is not authenticated
   if (isSessionLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-        <div className="h-10 w-10 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <PixPaymentLoadingState />;
   }
   
   if (!isLoggedIn) {
@@ -116,19 +115,10 @@ const PixPaymentContent = ({
 
   return (
     <ClientOnly>
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className="flex items-center text-gray-600"
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Voltar para checkout
-          </Button>
-        </div>
+      <PixContentContainer>
+        <BackToCheckoutButton onBack={onBack} />
         
-        <h1 className="text-2xl font-bold mb-6 text-center">Pagamento via PIX</h1>
+        <PixPaymentHeader />
         
         <div className="bg-white rounded-lg shadow-sm p-6 border">
           <PixPaymentDetails
@@ -143,32 +133,15 @@ const PixPaymentContent = ({
           
           {/* Pay with PIX button only shown if payment not approved */}
           {paymentData.status !== 'approved' && (
-            <div className="mt-6">
-              <Button
-                onClick={handlePayWithPix}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-md flex items-center justify-center"
-                data-testid="pay-with-pix-button"
-                disabled={processando}
-              >
-                {processando ? (
-                  <>
-                    <span className="mr-2">Processando...</span>
-                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">Abrir App do Banco para Pagar</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            <PixMobilePayButton
+              onClick={handlePayWithPix}
+              isProcessing={processando}
+            />
           )}
         </div>
         
         {paymentData.status !== 'approved' && (
-          <div className="mt-8 text-center text-sm text-gray-500">
-            <p>Após realizar o pagamento, você será redirecionado automaticamente para a página de confirmação.</p>
-          </div>
+          <PixPaymentInstructions />
         )}
         
         {/* Debugger component */}
@@ -179,7 +152,7 @@ const PixPaymentContent = ({
           pedidoId={pedidoId}
           onRefresh={onRefreshStatus}
         />
-      </div>
+      </PixContentContainer>
     </ClientOnly>
   );
 };
