@@ -9,7 +9,8 @@ import {
   Settings, 
   Users, 
   Shield,
-  UserCog 
+  UserCog,
+  Crown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -22,56 +23,65 @@ const AdminSidebar = () => {
     {
       label: 'Dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      href: '/admin',
+      href: '/super_admin',
       requireSuperAdmin: false,
     },
     {
       label: 'Pedidos',
       icon: <ShoppingBag className="h-5 w-5" />,
-      href: '/admin/pedidos',
+      href: '/super_admin/pedidos',
       requireSuperAdmin: false,
     },
     {
       label: 'Prédios',
       icon: <Building2 className="h-5 w-5" />,
-      href: '/admin/predios',
+      href: '/super_admin/predios',
       requireSuperAdmin: false,
     },
     {
       label: 'Painéis',
       icon: <MonitorPlay className="h-5 w-5" />,
-      href: '/admin/paineis',
+      href: '/super_admin/paineis',
       requireSuperAdmin: false,
     },
     {
       label: 'Usuários',
       icon: <Users className="h-5 w-5" />,
-      href: '/admin/usuarios',
-      requireSuperAdmin: true, // Only super admins can manage users
+      href: '/super_admin/usuarios',
+      requireSuperAdmin: true,
     },
     {
       label: 'Configurações',
       icon: <Settings className="h-5 w-5" />,
-      href: '/admin/configuracoes',
-      requireSuperAdmin: true,
-    },
-    {
-      label: 'Setup',
-      icon: <Shield className="h-5 w-5" />,
-      href: '/admin/setup',
+      href: '/super_admin/configuracoes',
       requireSuperAdmin: true,
     },
   ];
   
   return (
-    <aside className="w-64 min-h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+    <aside className="w-64 min-h-screen bg-gradient-to-b from-slate-800 to-slate-900 border-r border-slate-700/50 shadow-2xl">
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">INDEXA Admin</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Painel de Administração</p>
+        {/* Header with enhanced branding */}
+        <div className="p-6 border-b border-slate-700/50 bg-slate-800/50">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-500 rounded-lg flex items-center justify-center shadow-lg">
+                <Crown className="h-6 w-6 text-slate-900" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-slate-800 animate-pulse"></div>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">INDEXA</h1>
+              <p className="text-xs text-amber-400 font-medium flex items-center">
+                <Shield className="h-3 w-3 mr-1" />
+                Master Control
+              </p>
+            </div>
+          </div>
         </div>
         
-        <nav className="flex-1 p-4 space-y-1">
+        {/* Navigation with enhanced styling */}
+        <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
             // Skip items that require super admin if user isn't a super admin
             if (item.requireSuperAdmin && !isSuperAdmin) {
@@ -83,21 +93,48 @@ const AdminSidebar = () => {
                 key={item.href}
                 to={item.href}
                 className={({ isActive }) => cn(
-                  "flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
-                  isActive ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300" : ""
+                  "flex items-center px-4 py-3 text-slate-300 rounded-lg hover:bg-slate-700/50 hover:text-white transition-all duration-200 group relative overflow-hidden",
+                  isActive ? "bg-gradient-to-r from-amber-500/20 to-amber-400/10 text-amber-300 border border-amber-500/30 shadow-lg" : ""
                 )}
               >
-                {item.icon}
-                <span className="ml-3">{item.label}</span>
+                {({ isActive }) => (
+                  <>
+                    {/* Subtle glow effect for active items */}
+                    {isActive && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent rounded-lg"></div>
+                    )}
+                    <div className="relative z-10 flex items-center w-full">
+                      <div className={cn(
+                        "transition-colors duration-200",
+                        isActive ? "text-amber-400" : "text-slate-400 group-hover:text-white"
+                      )}>
+                        {item.icon}
+                      </div>
+                      <span className="ml-3 font-medium">{item.label}</span>
+                      {isActive && (
+                        <div className="ml-auto w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
+                      )}
+                    </div>
+                  </>
+                )}
               </NavLink>
             );
           })}
         </nav>
         
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            Ambiente de Produção
+        {/* Status footer with enhanced info */}
+        <div className="p-4 border-t border-slate-700/50 bg-slate-800/30">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2 text-slate-400">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+              <span className="font-medium">Sistema Ativo</span>
+            </div>
+            <div className="text-xs text-slate-500">
+              v2.0.1
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-slate-500">
+            Ambiente: <span className="text-amber-400 font-medium">PRODUÇÃO</span>
           </div>
         </div>
       </div>

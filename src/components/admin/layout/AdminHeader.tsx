@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +11,9 @@ import {
   Moon, 
   Menu,
   User,
-  RefreshCw
+  RefreshCw,
+  Shield,
+  Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,96 +60,111 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   const userRole = session?.user?.user_metadata?.role || 
                   (user && 'role' in user ? (user as any).role : 'admin');
 
+  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between px-4 py-3">
+    <header className="bg-gradient-to-r from-slate-800 to-slate-700 shadow-xl border-b border-slate-600/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="md:hidden mr-2" 
+            className="md:hidden mr-2 text-slate-300 hover:text-white hover:bg-slate-700" 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
           >
             <Menu className="h-5 w-5" />
           </Button>
           
-          <div>
-            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">{title}</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Painel Administrativo INDEXA
-            </p>
+          <div className="flex items-center space-x-3">
+            {isSuperAdmin && (
+              <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-500 rounded-lg flex items-center justify-center">
+                <Crown className="h-4 w-4 text-slate-900" />
+              </div>
+            )}
+            <div>
+              <h1 className="text-xl font-bold text-white flex items-center">
+                {title}
+                {isSuperAdmin && (
+                  <span className="ml-3 text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full border border-amber-500/30">
+                    MASTER
+                  </span>
+                )}
+              </h1>
+              <p className="text-sm text-slate-400">
+                {isSuperAdmin ? 'Sistema de Controle Master' : 'Painel Administrativo INDEXA'}
+              </p>
+            </div>
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
-          {/* Search */}
-          <div className="hidden md:flex items-center border rounded-md px-2 py-1 bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-            <Search className="h-4 w-4 text-gray-400 mr-1" />
+        <div className="flex items-center space-x-3">
+          {/* Search - Enhanced for super admin */}
+          <div className="hidden md:flex items-center border border-slate-600 rounded-lg px-3 py-2 bg-slate-800/50 backdrop-blur-sm">
+            <Search className="h-4 w-4 text-slate-400 mr-2" />
             <input 
               type="search" 
-              placeholder="Buscar..." 
-              className="bg-transparent border-none focus:outline-none text-sm w-32 md:w-48"
+              placeholder={isSuperAdmin ? "Busca avançada..." : "Buscar..."} 
+              className="bg-transparent border-none focus:outline-none text-sm w-32 md:w-48 text-slate-300 placeholder-slate-500"
             />
           </div>
           
-          {/* Notifications */}
+          {/* Notifications - Enhanced styling */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative text-slate-300 hover:text-white hover:bg-slate-700">
                 <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <span className="absolute top-1 right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notificações</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+            <DropdownMenuContent align="end" className="w-80 bg-slate-800 border-slate-700">
+              <DropdownMenuLabel className="text-slate-200">
+                {isSuperAdmin ? 'Alertas do Sistema' : 'Notificações'}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-slate-700" />
               <div className="max-h-64 overflow-auto">
-                <DropdownMenuItem className="p-3 cursor-pointer">
+                <DropdownMenuItem className="p-3 cursor-pointer text-slate-300 hover:bg-slate-700">
                   <div>
-                    <p className="font-medium">Novo pedido recebido</p>
-                    <p className="text-sm text-gray-500">Pedido #12345 precisa de aprovação</p>
-                    <p className="text-xs text-gray-400 mt-1">Há 5 minutos</p>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="p-3 cursor-pointer">
-                  <div>
-                    <p className="font-medium">Painel offline</p>
-                    <p className="text-sm text-gray-500">Painel no edifício Central Park não está respondendo</p>
-                    <p className="text-xs text-gray-400 mt-1">Há 20 minutos</p>
+                    <p className="font-medium">Sistema atualizado</p>
+                    <p className="text-sm text-slate-400">Todas as funcionalidades operacionais</p>
+                    <p className="text-xs text-slate-500 mt-1">Há 5 minutos</p>
                   </div>
                 </DropdownMenuItem>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="justify-center font-medium">
-                Ver todas as notificações
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Theme Toggle */}
-          <ModeToggle />
+          {/* Theme Toggle - Enhanced */}
+          <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white hover:bg-slate-700">
+            <Sun className="h-5 w-5" />
+          </Button>
           
-          {/* User Menu */}
+          {/* User Menu - Enhanced for super admin */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" className="rounded-full text-slate-300 hover:text-white hover:bg-slate-700 relative">
                 <User className="h-5 w-5" />
+                {isSuperAdmin && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border border-slate-800"></div>
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+              <DropdownMenuLabel className="text-slate-200">
                 <div className="flex flex-col">
-                  <span>{userName}</span>
-                  <span className="text-xs text-gray-500">{userRole}</span>
+                  <span className="flex items-center">
+                    {userName}
+                    {isSuperAdmin && <Crown className="h-3 w-3 ml-2 text-amber-400" />}
+                  </span>
+                  <span className="text-xs text-slate-400">{userRole}</span>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+              <DropdownMenuSeparator className="bg-slate-700" />
+              <DropdownMenuItem onClick={() => navigate('/super_admin/configuracoes')} className="text-slate-300 hover:bg-slate-700">
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configurações</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
+              <DropdownMenuSeparator className="bg-slate-700" />
+              <DropdownMenuItem onClick={handleSignOut} className="text-red-400 hover:bg-red-900/20">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sair</span>
               </DropdownMenuItem>
