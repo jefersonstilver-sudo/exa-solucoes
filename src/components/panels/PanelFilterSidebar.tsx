@@ -12,13 +12,15 @@ interface PanelFilterSidebarProps {
   handleFilterChange: (filters: Partial<FilterOptions>) => void;
   isLoading: boolean;
   isSearching: boolean;
+  onSearch?: (location: string) => void;
 }
 
 const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
   filters,
   handleFilterChange,
   isLoading,
-  isSearching
+  isSearching,
+  onSearch = () => {}
 }) => {
   // Map toggle state
   const [mapOpen, setMapOpen] = useState(false);
@@ -75,7 +77,7 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
             <PanelFilters 
               filters={filters} 
               onFilterChange={handleFilterChange}
-              onSearch={() => {}}
+              onSearch={onSearch}
               loading={isLoading || isSearching}
             />
           </SheetContent>
@@ -93,7 +95,7 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
             <PanelFilters 
               filters={filters}
               onFilterChange={handleFilterChange}
-              onSearch={() => {}}
+              onSearch={onSearch}
               loading={isLoading || isSearching}
               compact={true}
             />

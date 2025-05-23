@@ -24,7 +24,7 @@ interface PanelFiltersProps {
   onFilterChange: (filters: Partial<FilterOptions>) => void;
   onSearch: (location: string) => void;
   loading: boolean;
-  compact?: boolean; // Adicionando a propriedade compact como opcional
+  compact?: boolean;
 }
 
 const neighborhoodOptions = [
@@ -60,7 +60,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
   onFilterChange, 
   onSearch,
   loading,
-  compact = false // Valor padrão é false
+  compact = false
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [expandedSections, setExpandedSections] = useState({
@@ -71,6 +71,18 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
     facilities: true,
     views: false
   });
+  
+  // Make sure filters is properly initialized with default values
+  const safeFilters: FilterOptions = {
+    radius: filters?.radius || 500,
+    neighborhood: filters?.neighborhood || '',
+    status: filters?.status || [],
+    buildingProfile: filters?.buildingProfile || [],
+    facilities: filters?.facilities || [],
+    minMonthlyViews: filters?.minMonthlyViews || 0,
+    buildingAge: filters?.buildingAge || 'all',
+    buildingType: filters?.buildingType || 'all'
+  };
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -88,24 +100,24 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
   
   const handleFacilityChange = (facilityId: string, checked: boolean) => {
     const newFacilities = checked 
-      ? [...filters.facilities, facilityId]
-      : filters.facilities.filter(f => f !== facilityId);
+      ? [...safeFilters.facilities, facilityId]
+      : safeFilters.facilities.filter(f => f !== facilityId);
       
     onFilterChange({ facilities: newFacilities });
   };
   
   const handleProfileChange = (profileId: string, checked: boolean) => {
     const newProfiles = checked 
-      ? [...filters.buildingProfile, profileId]
-      : filters.buildingProfile.filter(p => p !== profileId);
+      ? [...safeFilters.buildingProfile, profileId]
+      : safeFilters.buildingProfile.filter(p => p !== profileId);
       
     onFilterChange({ buildingProfile: newProfiles });
   };
   
   const handleStatusChange = (status: string, checked: boolean) => {
     const newStatus = checked 
-      ? [...filters.status, status]
-      : filters.status.filter(s => s !== status);
+      ? [...safeFilters.status, status]
+      : safeFilters.status.filter(s => s !== status);
       
     onFilterChange({ status: newStatus });
   };
@@ -113,7 +125,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
   const resetFilters = () => {
     onFilterChange({
       radius: 5000,
-      neighborhood: 'all',
+      neighborhood: '',
       status: ['online'],
       buildingProfile: [],
       facilities: [],
@@ -199,7 +211,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
           className="overflow-hidden"
         >
           <Select 
-            value={filters.radius.toString()} 
+            value={safeFilters.radius.toString()} 
             onValueChange={(value) => onFilterChange({ radius: parseInt(value) })}
           >
             <SelectTrigger className="w-full mt-3 rounded-lg">
@@ -241,7 +253,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
           className="overflow-hidden"
         >
           <Select 
-            value={filters.neighborhood || "all"} 
+            value={safeFilters.neighborhood || "all"} 
             onValueChange={(value) => onFilterChange({ neighborhood: value })}
           >
             <SelectTrigger className="w-full mt-3 rounded-lg">
@@ -287,7 +299,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
             <div className="flex items-center">
               <Checkbox 
                 id="status-online"
-                checked={filters.status.includes('online')}
+                checked={safeFilters.status.includes('online')}
                 onCheckedChange={(checked) => 
                   handleStatusChange('online', checked as boolean)
                 }
@@ -303,7 +315,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
             <div className="flex items-center">
               <Checkbox 
                 id="status-installing"
-                checked={filters.status.includes('installing')}
+                checked={safeFilters.status.includes('installing')}
                 onCheckedChange={(checked) => 
                   handleStatusChange('installing', checked as boolean)
                 }
@@ -348,7 +360,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
               <div key={profile.id} className="flex items-center">
                 <Checkbox 
                   id={`profile-${profile.id}`}
-                  checked={filters.buildingProfile.includes(profile.id)}
+                  checked={safeFilters.buildingProfile.includes(profile.id)}
                   onCheckedChange={(checked) => 
                     handleProfileChange(profile.id, checked as boolean)
                   }
@@ -392,7 +404,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
               <div key={facility.id} className="flex items-center">
                 <Checkbox 
                   id={`facility-${facility.id}`}
-                  checked={filters.facilities.includes(facility.id)}
+                  checked={safeFilters.facilities.includes(facility.id)}
                   onCheckedChange={(checked) => 
                     handleFacilityChange(facility.id, checked as boolean)
                   }
@@ -434,8 +446,8 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
           <div className="mt-3">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold">
-                {filters.minMonthlyViews > 0 
-                  ? `${filters.minMonthlyViews.toLocaleString('pt-BR')}+` 
+                {safeFilters.minMonthlyViews > 0 
+                  ? `${safeFilters.minMonthlyViews.toLocaleString('pt-BR')}+` 
                   : 'Qualquer'}
               </span>
             </div>
@@ -443,7 +455,7 @@ const PanelFilters: React.FC<PanelFiltersProps> = ({
               defaultValue={[0]}
               max={10000}
               step={500}
-              value={[filters.minMonthlyViews]}
+              value={[safeFilters.minMonthlyViews]}
               onValueChange={(values) => {
                 onFilterChange({ minMonthlyViews: values[0] });
               }}

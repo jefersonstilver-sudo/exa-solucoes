@@ -17,11 +17,15 @@ export const applyAllFilters = (
 ): Panel[] => {
   let filteredPanels = [...panels];
   
-  // Filter by status
-  filteredPanels = filterPanelsByStatus(filteredPanels, filters.status);
+  // Filter by status if there are any status options selected
+  if (filters.status && filters.status.length > 0) {
+    filteredPanels = filterPanelsByStatus(filteredPanels, filters.status);
+  }
   
-  // Filter by neighborhood
-  filteredPanels = filterPanelsByNeighborhood(filteredPanels, filters.neighborhood);
+  // Filter by neighborhood if a specific neighborhood is selected
+  if (filters.neighborhood && filters.neighborhood !== 'all') {
+    filteredPanels = filterPanelsByNeighborhood(filteredPanels, filters.neighborhood);
+  }
   
   // Filter by building type if specified
   if (filters.buildingType && filters.buildingType !== 'all') {
@@ -36,7 +40,7 @@ export const applyAllFilters = (
   }
   
   // Filter by location/distance if we have a selected location
-  if (selectedLocation) {
+  if (selectedLocation && typeof filters.radius === 'number') {
     filteredPanels = filterPanelsByLocation(filteredPanels, selectedLocation, filters.radius)
       .map(panel => {
         // Calculate distance using Haversine formula

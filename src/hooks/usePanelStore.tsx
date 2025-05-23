@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
@@ -30,12 +31,16 @@ interface PanelStoreState {
   handleClearLocation: () => void;
 }
 
-// Default filter options
+// Default filter options that match the FilterOptions interface
 const defaultFilters: FilterOptions = {
-  status: 'all',
-  resolution: 'all',
-  sort: 'distance',
-  priceRange: { min: 0, max: 10000 }
+  radius: 500,
+  neighborhood: '',
+  status: [],
+  buildingProfile: [],
+  facilities: [],
+  minMonthlyViews: 0,
+  buildingAge: 'all',
+  buildingType: 'all'
 };
 
 export const usePanelStore = create<PanelStoreState>((set, get) => ({
@@ -43,7 +48,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [],
+  selectedPanels: [] as string[], // Explicit type assertion here
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,
