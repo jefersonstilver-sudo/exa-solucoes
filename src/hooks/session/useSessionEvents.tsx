@@ -15,8 +15,14 @@ interface UseSessionEventsProps {
 export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionEventsProps) => {
   // Add a ref to track if we've already shown a login toast in this session
   const loginToastShown = useRef<boolean>(false);
+  // Adiciona um ref para evitar atualizações duplicadas
+  const initialSessionChecked = useRef<boolean>(false);
   
   useEffect(() => {
+    if (!isMounted.current) return;
+    
+    console.log('Configurando eventos de sessão e verificação inicial');
+    
     // Set up auth state listener FIRST (critical for proper session handling)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
@@ -38,6 +44,8 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
         }
         
         if (currentSession?.user) {
+          console.log('Sessão encontrada no evento onAuthStateChange:', currentSession.user.email);
+          
           // Update session state immediately
           setSession(currentSession);
           
@@ -104,6 +112,73 @@ export const useSessionEvents = ({ setUser, setSession, isMounted }: UseSessionE
         }
       }
     );
+    
+    // Verificação inicial de sessão após configurar o listener
+    if (!initialSessionChecked.current) {
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (error) {
+          console.error('Erro ao verificar sessão inicial:', error);
+          return;
+        }
+        
+        const currentSession = data.session;
+        
+        if (currentSession?.user && isMounted.current) {
+          console.log('Sessão inicial encontrada:', currentSession.user.email);
+          
+          // Atualiza o estado da sessão
+          setSession(currentSession);
+          
+          // Cria o objeto de usuário
+          const baseUser = {
+            id: currentSession.user.id,
+            email: currentSession.user.email || '',
+            name: currentSession.user.user_metadata?.name || currentSession.user.email?.split('@')[0],
+            avatar_url: currentSession.user.user_metadata?.avatar_url,
+          };
+          
+          // Define o usuário com a função dos metadados
+          const metadataRole = currentSession.user.user_metadata?.role;
+          setUser({
+            ...baseUser,
+            role: metadataRole
+          });
+          
+          // Busca a função do banco de dados
+          setTimeout(async () => {
+            if (!isMounted.current) return;
+            
+            try {
+              const dbRole = await fetchUserRole(currentSession.user.id);
+              
+              if (dbRole && isMounted.current) {
+                setUser(prev => prev ? {
+                  ...prev,
+                  role: dbRole
+                } : null);
+              }
+            } catch (err) {
+              console.error('Erro ao buscar função do usuário:', err);
+            }
+          }, 0);
+          
+          logCheckoutEvent(
+            CheckoutEvent.AUTH_EVENT,
+            LogLevel.INFO,
+            "Sessão inicial do usuário detectada",
+            { 
+              userId: currentSession.user.id,
+              email: currentSession.user.email,
+              timestamp: new Date().toISOString() 
+            }
+          );
+        } else {
+          console.log('Nenhuma sessão inicial encontrada');
+        }
+        
+        initialSessionChecked.current = true;
+      });
+    }
 
     return () => {
       subscription.unsubscribe();

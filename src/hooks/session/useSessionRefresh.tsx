@@ -18,9 +18,10 @@ export const useSessionRefresh = ({
   isMounted 
 }: UseSessionRefreshProps) => {
   const refreshIntervalRef = useRef<number | null>(null);
+  const lastSessionStatus = useRef<boolean | null>(null);
 
   useEffect(() => {
-    // Set up periodic session check at a longer interval (every 3 minutes instead of every 60s)
+    // Set up periodic session check at a shorter interval (every 60s)
     if (refreshIntervalRef.current) {
       clearInterval(refreshIntervalRef.current);
     }
@@ -28,12 +29,25 @@ export const useSessionRefresh = ({
     refreshIntervalRef.current = window.setInterval(() => {
       if (!isMounted.current) return;
       
-      // Only do periodic checks if we're in an ambiguous state or if there might be changes
-      supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log('Verificação periódica de sessão');
+      
+      // Realizar verificação explícita de sessão
+      supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
+        if (error) {
+          console.error('Erro na verificação periódica de sessão:', error);
+          return;
+        }
+        
         if (!isMounted.current) return;
         
         const hasSession = !!currentSession;
         const hasUser = !!user;
+        
+        // Registra alteração de estado da sessão quando há mudança
+        if (lastSessionStatus.current !== hasSession) {
+          console.log(`Estado da sessão mudou: ${lastSessionStatus.current} -> ${hasSession}`);
+          lastSessionStatus.current = hasSession;
+        }
         
         // Only update if there's a mismatch between our state and reality
         if (hasSession !== hasUser) {
@@ -71,7 +85,7 @@ export const useSessionRefresh = ({
           }
         }
       });
-    }, 180000); // Check every 3 minutes instead of every 60 seconds
+    }, 60000); // Check every 60 seconds
 
     return () => {
       if (refreshIntervalRef.current) {
