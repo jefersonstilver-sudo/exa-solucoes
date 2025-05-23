@@ -346,10 +346,16 @@ export const useOrderCreation = () => {
     }
   };
 
+  // Fixed: Add the createOrder method that was missing
+  const createOrder = async (orderData: any) => {
+    return await createPaymentOrder(orderData);
+  };
+
   return {
     createPaymentOrder,
     processPaymentWithEdgeFunction,
     storeCheckoutInfo,
-    createCampaignsAfterPayment
+    createCampaignsAfterPayment,
+    createOrder // Add the missing method
   };
 };

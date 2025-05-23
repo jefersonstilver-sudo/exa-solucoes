@@ -124,7 +124,7 @@ export const usePaymentFlow = () => {
       // Store order ID
       setCreatedOrderId(pedidoTyped.id);
       
-      // Process payment with Edge Function
+      // Process payment with Edge Function - Fixed: Use correct function signature
       const paymentResult = await processPaymentWithEdgeFunction({
         pedidoId: pedidoTyped.id,
         cartItems,
@@ -138,7 +138,12 @@ export const usePaymentFlow = () => {
       // Store checkout info in localStorage
       if (paymentMethodNormalized === 'credit_card') {
         const { preferenceId, initPoint } = paymentResult;
-        storeCheckoutInfo(pedidoTyped.id, paymentMethodNormalized, preferenceId);
+        // Fixed: Use correct function signature
+        storeCheckoutInfo({
+          pedidoId: pedidoTyped.id,
+          paymentMethod: paymentMethodNormalized,
+          preferenceId
+        });
         
         // Clear cart
         handleClearCart();
@@ -155,7 +160,11 @@ export const usePaymentFlow = () => {
       } else if (paymentMethodNormalized === 'pix') {
         // For PIX payments, store info and navigate to PIX payment page
         const { pixData, pedidoId } = paymentResult;
-        storeCheckoutInfo(pedidoId, paymentMethodNormalized);
+        // Fixed: Use correct function signature
+        storeCheckoutInfo({
+          pedidoId,
+          paymentMethod: paymentMethodNormalized
+        });
         
         // Clear cart
         handleClearCart();
