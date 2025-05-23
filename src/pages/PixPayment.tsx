@@ -40,13 +40,13 @@ const PixPayment = () => {
     };
   }, [pedidoId]);
   
-  // Check payment status periodically
+  // Check payment status periodically with a shorter interval (5 seconds)
   useEffect(() => {
     if (!paymentData || isLoading || checkingStatus) return;
     
     // Only run automatic checks if payment is not yet approved
     if (paymentData.status !== 'approved') {
-      // Set up automatic status refresh every 10 seconds
+      // Set up automatic status refresh every 5 seconds instead of 10
       const intervalId = setInterval(async () => {
         setCheckingStatus(true);
         try {
@@ -58,22 +58,29 @@ const PixPayment = () => {
             localStorage.setItem('lastCompletedOrderId', pedidoId);
             clearInterval(intervalId);
             
-            // Redirect to order confirmation page
-            navigate(`/pedido-confirmado?id=${pedidoId}`);
+            // Redirect to order confirmation page after a short delay
+            // to allow user to see the success animation
+            setTimeout(() => {
+              navigate(`/pedido-confirmado?id=${pedidoId}`);
+            }, 2000);
           }
         } catch (err) {
           console.error('Error refreshing payment status:', err);
         } finally {
           setCheckingStatus(false);
         }
-      }, 10000); // Check every 10 seconds
+      }, 5000); // Check every 5 seconds instead of 10
       
       // Clean up interval
       return () => clearInterval(intervalId);
     } else if (paymentData.status === 'approved' && pedidoId) {
       // If payment is already approved, redirect immediately
       localStorage.setItem('lastCompletedOrderId', pedidoId);
-      navigate(`/pedido-confirmado?id=${pedidoId}`);
+      
+      // Small delay to show the success animation
+      setTimeout(() => {
+        navigate(`/pedido-confirmado?id=${pedidoId}`);
+      }, 2000);
     }
   }, [paymentData, isLoading, pedidoId, navigate, refreshPaymentStatus, checkingStatus]);
   

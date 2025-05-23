@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, CheckCircle } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 import PixPaymentDetails from '@/components/checkout/payment/PixPaymentDetails';
 import PixPaymentDebugger from '@/components/checkout/payment/PixPaymentDebugger';
@@ -11,7 +11,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { sendPixPaymentWebhook, getUserInfo } from '@/utils/paymentWebhooks';
 
 interface PixPaymentContentProps {
   paymentData: PixPaymentData;
@@ -41,6 +40,20 @@ const PixPaymentContent = ({
       navigate('/login?redirect=/checkout');
     }
   }, [isLoggedIn, isSessionLoading, navigate]);
+  
+  // Check payment status more frequently
+  useEffect(() => {
+    // Only set up automatic checking if payment is still pending
+    if (paymentData.status !== 'approved') {
+      const checkStatusInterval = setInterval(() => {
+        onRefreshStatus().catch(err => {
+          console.error("Error checking payment status:", err);
+        });
+      }, 5000); // Check every 5 seconds
+      
+      return () => clearInterval(checkStatusInterval);
+    }
+  }, [paymentData.status, onRefreshStatus]);
 
   // Function to handle the webhook call when paying with PIX
   const handlePayWithPix = async () => {
@@ -70,107 +83,21 @@ const PixPaymentContent = ({
         }
       );
       
-      // Get order details
-      if (!pedidoId) {
-        toast.error("ID do pedido não encontrado");
-        setProcessando(false);
-        return;
-      }
-
-      // Get the order details from Supabase
-      const { data: orderData, error: orderError } = await supabase
-        .from('pedidos')
-        .select(`
-          *,
-          client_id
-        `)
-        .eq('id', pedidoId)
-        .single();
-
-      if (orderError) {
-        console.error("[PixPaymentContent] Erro ao buscar detalhes do pedido:", orderError);
-        toast.error("Erro ao processar pagamento");
-        setProcessando(false);
-        return;
-      }
-
-      if (!orderData) {
-        toast.error("Pedido não encontrado");
-        setProcessando(false);
-        return;
-      }
-
-      // Verify this user is authorized for this order
-      if (orderData.client_id !== user.id) {
-        toast.error("Você não tem permissão para acessar este pedido");
-        setProcessando(false);
-        return;
-      }
-
-      // Get the list of buildings (panels) selected
-      const selectedBuildings = Array.isArray(orderData.lista_paineis) 
-        ? orderData.lista_paineis.map((painel: any) => ({
-            id: painel.id || painel,
-            nome: painel.nome || painel.buildings?.nome || 'Painel'
-          }))
-        : [];
-
-      // Get the selected plan duration
-      const selectedPlan = orderData.duracao || 30; // Default to 30 days if not set
-
-      // Get client info
-      const userInfo = await getUserInfo(orderData.client_id);
-      
-      if (!userInfo) {
-        toast.error("Erro ao buscar dados do usuário");
-        setProcessando(false);
-        return;
-      }
-
-      console.log("[PixPaymentContent] Dados formatados para webhook:", {
-        selectedBuildings,
-        selectedPlan: Math.round(selectedPlan / 30),
-        valor: paymentData.qrCode ? orderData.valor_total.toString() : '0.00',
-        userId: user.id
-      });
-
-      // Prepare data for the webhook
-      const webhookData = {
-        cliente_id: orderData.client_id,
-        email: userInfo.email,
-        nome: userInfo.nome,
-        plano_escolhido: `${Math.round(selectedPlan / 30)} meses`, // Convert days to months
-        predios_selecionados: selectedBuildings,
-        valor_total: paymentData.qrCode ? orderData.valor_total.toString() : '0.00',
-        periodo_exibicao: {
-          inicio: orderData.data_inicio,
-          fim: orderData.data_fim
-        }
-      };
-
-      // Send webhook with enhanced logging
-      const webhookSent = await sendPixPaymentWebhook(webhookData);
-      
-      console.log("[PixPaymentContent] Resultado do envio do webhook:", webhookSent);
-      
-      if (webhookSent) {
-        toast.success("Pagamento em processamento!");
-      }
-      
       // Refresh payment status
       await onRefreshStatus();
-    } catch (error) {
-      console.error("[PixPaymentContent] Erro ao chamar webhook:", error);
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_ERROR,
-        LogLevel.ERROR,
-        "Erro ao processar PIX na página de pagamento PIX",
-        { error: String(error), pedidoId }
-      );
-      
-      toast.error("Erro ao processar pagamento");
-    } finally {
       setProcessando(false);
+      
+      // If payment is not approved yet, show a guide toast
+      if (paymentData.status !== 'approved') {
+        toast("Para pagar, escaneie o QR code com seu app do banco", {
+          description: "Após o pagamento, o sistema detectará automaticamente",
+          duration: 5000
+        });
+      }
+    } catch (error) {
+      console.error("[PixPaymentContent] Erro ao processar pagamento:", error);
+      setProcessando(false);
+      toast.error("Erro ao processar pagamento");
     }
   };
 
@@ -211,34 +138,38 @@ const PixPaymentContent = ({
             paymentId={paymentData.paymentId || ''}
             onRefreshStatus={onRefreshStatus}
             userId={user?.id}
+            pedidoId={pedidoId}
           />
           
-          {/* Pay with PIX button - Now with improved visibility and logging */}
-          <div className="mt-6">
-            <Button
-              onClick={handlePayWithPix}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-md flex items-center justify-center"
-              data-testid="pay-with-pix-button"
-              disabled={processando}
-            >
-              {processando ? (
-                <>
-                  <span className="mr-2">Processando...</span>
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </>
-              ) : (
-                <>
-                  <span className="mr-2">Pagar com PIX {paymentData.valorTotal ? `R$ ${(paymentData.valorTotal * 0.95).toFixed(2)}` : ''}</span>
-                  <CheckCircle className="h-5 w-5" />
-                </>
-              )}
-            </Button>
-          </div>
+          {/* Pay with PIX button only shown if payment not approved */}
+          {paymentData.status !== 'approved' && (
+            <div className="mt-6">
+              <Button
+                onClick={handlePayWithPix}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-md flex items-center justify-center"
+                data-testid="pay-with-pix-button"
+                disabled={processando}
+              >
+                {processando ? (
+                  <>
+                    <span className="mr-2">Processando...</span>
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">Abrir App do Banco para Pagar</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
         
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Após realizar o pagamento, você será redirecionado automaticamente para a página de confirmação.</p>
-        </div>
+        {paymentData.status !== 'approved' && (
+          <div className="mt-8 text-center text-sm text-gray-500">
+            <p>Após realizar o pagamento, você será redirecionado automaticamente para a página de confirmação.</p>
+          </div>
+        )}
         
         {/* Debugger component */}
         <PixPaymentDebugger 
