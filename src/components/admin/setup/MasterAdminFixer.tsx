@@ -35,45 +35,42 @@ const MasterAdminFixer = () => {
     checkLocalAuth();
   }, []);
   
-  const fixMasterAdmin = async () => {
+  const recreateMasterAdmin = async () => {
     setIsLoading(true);
     setError(null);
     setResult(null);
     
     try {
-      console.log('Iniciando verificação do admin master...');
-      const response = await fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/fix-master-admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk'
-        }
-      });
+      console.log('Iniciando recriação completa do admin master...');
       
-      console.log('Status da resposta:', response.status);
+      const { data, error: invokeError } = await supabase.functions.invoke('recreate-master-admin');
       
-      const data = await response.json();
-      console.log('Resposta completa:', data);
+      if (invokeError) {
+        console.error('Erro ao invocar função:', invokeError);
+        throw invokeError;
+      }
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao corrigir admin master');
+      console.log('Resposta da recriação:', data);
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Erro desconhecido na recriação');
       }
       
       setResult(data);
-      toast.success(`Usuário admin master ${data.action === 'created' ? 'criado' : 'atualizado'} com sucesso!`);
+      toast.success('Usuário admin master recriado com sucesso!');
       
-      // Try to clear local session after successful fix
+      // Try to clear local session after successful recreation
       try {
         await supabase.auth.signOut();
         console.log('Sessão local limpa para garantir login limpo');
-        toast.info('Sessão limpa. Por favor faça login novamente.');
+        toast.info('Sessão limpa. Agora você pode fazer login com as credenciais corretas.');
       } catch (err) {
         console.error('Erro ao limpar sessão:', err);
       }
     } catch (err: any) {
-      console.error('Erro ao corrigir admin master:', err);
+      console.error('Erro ao recriar admin master:', err);
       setError(err.message);
-      toast.error(`Erro ao corrigir admin master: ${err.message}`);
+      toast.error(`Erro ao recriar admin master: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -123,12 +120,23 @@ const MasterAdminFixer = () => {
       <Card className="max-w-md mx-auto">
         <CardContent className="space-y-4 pt-6">
           <AdminFixerStatus result={result} error={error} />
-          <AdminFixerActions 
-            onFixMasterAdmin={fixMasterAdmin}
-            onLoginDirectly={loginDirectly}
-            isLoading={isLoading}
-            result={result}
-          />
+          <div className="space-y-2">
+            <button 
+              onClick={recreateMasterAdmin}
+              disabled={isLoading}
+              className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              {isLoading ? 'Recriando...' : 'Recriar Usuário Master (DEFINITIVO)'}
+            </button>
+            
+            <button 
+              onClick={loginDirectly}
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              {isLoading ? 'Processando...' : 'Testar Login Direto'}
+            </button>
+          </div>
         </CardContent>
       </Card>
 

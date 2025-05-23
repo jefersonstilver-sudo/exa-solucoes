@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export const useLoginForm = (redirectPath: string) => {
   const [email, setEmail] = useState('');
@@ -72,40 +71,23 @@ export const useLoginForm = (redirectPath: string) => {
     }
   };
 
-  // Function to check if user exists and try to sync metadata
-  const checkAndSyncUser = async (email: string) => {
+  // Function to recreate master admin user
+  const recreateMasterAdmin = async () => {
     try {
-      console.log('Verificando se usuário existe na tabela users:', email);
+      console.log('Recriando usuário master admin...');
       
-      // Check if user exists in users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
+      const { data: recreateResult, error: recreateError } = await supabase.functions.invoke('recreate-master-admin');
       
-      if (userError || !userData) {
-        console.log('Usuário não encontrado na tabela users, tentando sincronizar...');
-        
-        // Try to sync user metadata
-        const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-user-metadata', {
-          body: { email }
-        });
-        
-        if (syncError) {
-          console.error('Erro ao sincronizar metadados:', syncError);
-          return false;
-        }
-        
-        console.log('Sincronização realizada:', syncResult);
-        return true;
+      if (recreateError) {
+        console.error('Erro ao recriar master admin:', recreateError);
+        throw recreateError;
       }
       
-      console.log('Usuário encontrado na tabela users:', userData);
-      return true;
+      console.log('Master admin recriado com sucesso:', recreateResult);
+      return recreateResult;
     } catch (err) {
-      console.error('Erro ao verificar/sincronizar usuário:', err);
-      return false;
+      console.error('Erro na recriação do master admin:', err);
+      throw err;
     }
   };
   
@@ -116,12 +98,6 @@ export const useLoginForm = (redirectPath: string) => {
     
     try {
       console.log('Tentando fazer login com:', email);
-      
-      // First check if user exists and sync if needed
-      if (email === 'jefersonstilver@gmail.com') {
-        console.log('Detectado email do master admin, verificando sincronização...');
-        await checkAndSyncUser(email);
-      }
       
       // Clear any existing session first
       await supabase.auth.signOut();
@@ -135,34 +111,37 @@ export const useLoginForm = (redirectPath: string) => {
       if (error) {
         console.error('Erro de login detalhado:', error);
         
-        // For master admin, try to fix the issue automatically
+        // For master admin with invalid credentials, try to recreate the user
         if (email === 'jefersonstilver@gmail.com' && error.message.includes('Invalid login credentials')) {
-          console.log('Tentando corrigir usuário master admin...');
+          console.log('Detectado erro de credenciais para master admin, tentando recriar usuário...');
           
           try {
-            const { data: fixResult, error: fixError } = await supabase.functions.invoke('fix-master-admin');
+            await recreateMasterAdmin();
+            toast.success('Usuário master admin recriado! Tentando login novamente...');
             
-            if (fixError) {
-              console.error('Erro ao corrigir master admin:', fixError);
+            // Wait a moment for the user to be fully created
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Try login again after recreation
+            const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            });
+            
+            if (!retryError && retryData.session) {
+              console.log('Login bem-sucedido após recriação do usuário');
+              toast.success('Login realizado com sucesso após recriação do usuário!');
+              navigate('/admin');
+              return;
             } else {
-              console.log('Correção do master admin realizada:', fixResult);
-              
-              // Try login again after fix
-              const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-                email,
-                password
-              });
-              
-              if (!retryError && retryData.session) {
-                console.log('Login bem-sucedido após correção');
-                toast.success('Login realizado com sucesso após correção automática!');
-                navigate('/admin');
-                return;
-              }
+              console.error('Login ainda falhou após recriação:', retryError);
+              setError('Falha no login mesmo após recriação do usuário. Contate o suporte.');
             }
-          } catch (fixErr) {
-            console.error('Erro na tentativa de correção automática:', fixErr);
+          } catch (recreateErr) {
+            console.error('Erro na recriação automática:', recreateErr);
+            setError('Erro ao recriar usuário master admin. Contate o suporte.');
           }
+          return;
         }
         
         // Standard error handling
