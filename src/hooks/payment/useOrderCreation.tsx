@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ensureSpreadable } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
+import { Database } from '@/integrations/supabase/types';
 
 interface CartItem {
   panel: Panel;
@@ -47,27 +48,25 @@ export const useOrderCreation = () => {
     // Cria pedido no banco de dados
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
-      .insert([
-        {
-          client_id: sessionUser.id,
-          lista_paineis: validPanelIds,
-          duracao: selectedPlan * 30, // Converte meses para dias
-          plano_meses: selectedPlan,
-          valor_total: totalPrice,
-          cupom_id: couponId,
-          data_inicio: startDate.toISOString().split('T')[0],
-          data_fim: endDate.toISOString().split('T')[0],
-          termos_aceitos: true,
-          status: 'pendente',
-          log_pagamento: {
-            plan_details: { months: selectedPlan },
-            coupon_applied: couponId ? true : false,
-            panels_count: cartItemsCopy.length,
-            user_name: sessionUser.user_metadata?.name || sessionUser.email,
-            payment_method: 'mercado_pago'
-          }
+      .insert({
+        client_id: sessionUser.id,
+        lista_paineis: validPanelIds,
+        duracao: selectedPlan * 30, // Converte meses para dias
+        plano_meses: selectedPlan,
+        valor_total: totalPrice,
+        cupom_id: couponId,
+        data_inicio: startDate.toISOString().split('T')[0],
+        data_fim: endDate.toISOString().split('T')[0],
+        termos_aceitos: true,
+        status: 'pendente',
+        log_pagamento: {
+          plan_details: { months: selectedPlan },
+          coupon_applied: couponId ? true : false,
+          panels_count: cartItemsCopy.length,
+          user_name: sessionUser.user_metadata?.name || sessionUser.email,
+          payment_method: 'mercado_pago'
         }
-      ])
+      })
       .select()
       .single();
     
@@ -77,17 +76,15 @@ export const useOrderCreation = () => {
     }
     
     // Se um cupom foi aplicado, registra seu uso
-    if (couponId) {
+    if (couponId && pedido) {
       try {
         await supabase
           .from('cupom_usos')
-          .insert([
-            {
-              cupom_id: couponId,
-              user_id: sessionUser.id,
-              pedido_id: pedido.id
-            }
-          ]);
+          .insert({
+            cupom_id: couponId,
+            user_id: sessionUser.id,
+            pedido_id: pedido.id
+          });
       } catch (error) {
         console.error('Erro ao registrar uso do cupom:', error);
         // Não impedimos o fluxo se o registro do cupom falhar
@@ -95,24 +92,26 @@ export const useOrderCreation = () => {
     }
     
     // Atualiza o pedido com informações adicionais
-    try {
-      // Ensure log_pagamento is an object before spreading
-      const logPagamento = ensureSpreadable(pedido.log_pagamento);
-      
-      await supabase
-        .from('pedidos')
-        .update({
-          log_pagamento: {
-            ...logPagamento,
-            order_created_at: new Date().toISOString(),
-            order_source: 'web_checkout',
-            client_email: sessionUser.email
-          }
-        })
-        .eq('id', pedido.id);
-    } catch (updateError) {
-      console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
-      // Não impedimos o fluxo se a atualização falhar
+    if (pedido) {
+      try {
+        // Ensure log_pagamento is an object before spreading
+        const logPagamento = ensureSpreadable(pedido.log_pagamento);
+        
+        await supabase
+          .from('pedidos')
+          .update({
+            log_pagamento: {
+              ...logPagamento,
+              order_created_at: new Date().toISOString(),
+              order_source: 'web_checkout',
+              client_email: sessionUser.email
+            }
+          })
+          .eq('id', pedido.id);
+      } catch (updateError) {
+        console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
+        // Não impedimos o fluxo se a atualização falhar
+      }
     }
       
     return pedido;
@@ -151,26 +150,28 @@ export const useOrderCreation = () => {
       // Determinar se o cliente tem um vídeo ou precisa cadastrar um
       const videoId = videos && videos.length > 0 ? videos[0].id : null;
       
-      // Criar campanhas para cada painel do pedido
-      const campanhasInsert = pedido.lista_paineis.map((painelId: string) => ({
-        client_id: userId,
-        video_id: videoId,
-        painel_id: painelId,
-        data_inicio: pedido.data_inicio,
-        data_fim: pedido.data_fim,
-        status: videoId ? 'pendente' : 'aguardando_video',
-        obs: `Criado a partir do pedido ${pedidoId}`
-      }));
-      
-      // Inserir campanhas no banco de dados
-      if (campanhasInsert.length > 0) {
-        const { error: campanhasError } = await supabase
-          .from('campanhas')
-          .insert(campanhasInsert);
+      if (pedido && pedido.lista_paineis) {
+        // Criar campanhas para cada painel do pedido
+        const campanhasInsert = pedido.lista_paineis.map((painelId: string) => ({
+          client_id: userId,
+          video_id: videoId,
+          painel_id: painelId,
+          data_inicio: pedido.data_inicio,
+          data_fim: pedido.data_fim,
+          status: videoId ? 'pendente' : 'aguardando_video',
+          obs: `Criado a partir do pedido ${pedidoId}`
+        }));
         
-        if (campanhasError) {
-          console.error('Erro ao criar campanhas:', campanhasError);
-          throw campanhasError;
+        // Inserir campanhas no banco de dados
+        if (campanhasInsert.length > 0) {
+          const { error: campanhasError } = await supabase
+            .from('campanhas')
+            .insert(campanhasInsert);
+          
+          if (campanhasError) {
+            console.error('Erro ao criar campanhas:', campanhasError);
+            throw campanhasError;
+          }
         }
       }
       
