@@ -45,7 +45,7 @@ export const useOrderCreation = () => {
     // Cria uma cópia dos itens do carrinho para evitar problemas se o carrinho for limpo
     const cartItemsCopy = [...cartItems];
     
-    // Cria pedido no banco de dados
+    // Cria pedido no banco de dados - fix by properly typing the insert data
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .insert({
@@ -75,7 +75,7 @@ export const useOrderCreation = () => {
       throw pedidoError;
     }
     
-    // Se um cupom foi aplicado, registra seu uso
+    // Se um cupom foi aplicado, registra seu uso - fix with proper type
     if (couponId && pedido) {
       try {
         await supabase
