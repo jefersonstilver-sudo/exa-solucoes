@@ -137,6 +137,9 @@ export const usePaymentFlow = () => {
         console.log(`[Payment Flow] Redirecting to MercadoPago checkout with ID: ${preferenceId}`);
         sonnerToast.dismiss();
         
+        // IMPORTANT: Store the order ID in localStorage before redirecting
+        localStorage.setItem('lastCompletedOrderId', pedido.id);
+        
         // Redirect to MercadoPago with preference ID from the response
         redirectToMercadoPago(preferenceId, paymentMethodNormalized);
       } else if (paymentMethodNormalized === 'pix') {
@@ -146,6 +149,9 @@ export const usePaymentFlow = () => {
         
         // Clear cart
         handleClearCart();
+        
+        // IMPORTANT: Store the order ID in localStorage before redirecting
+        localStorage.setItem('lastCompletedOrderId', pedidoId);
         
         // Navigate to PIX payment page
         console.log('[Payment Flow] Navigating to PIX payment page', { pedidoId });

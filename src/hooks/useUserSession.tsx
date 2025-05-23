@@ -10,12 +10,15 @@ export const useUserSession = (): UserSessionHookReturn => {
   const { user, session, isLoading, setUser } = useSessionInit();
   const { logout, updateUserProfile, hasRole, setUserRole } = useSessionActions(user, setUser);
 
+  // Make sure we have consistent isLoggedIn value based on both user and session
+  const isLoggedIn = !!user && !!session;
+  
   return {
     user,
-    sessionUser: user, // Add sessionUser as an alias to user for backward compatibility
+    sessionUser: user, // Keep sessionUser as an alias to user for backward compatibility
     session,
     isLoading,
-    isLoggedIn: !!user,
+    isLoggedIn,
     logout,
     updateUserProfile,
     hasRole,
