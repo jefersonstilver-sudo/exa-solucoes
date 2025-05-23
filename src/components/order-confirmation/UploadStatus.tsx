@@ -20,6 +20,7 @@ type UploadStatusProps = {
   handleDragOver: (e: React.DragEvent) => void;
   handleDragLeave: (e: React.DragEvent) => void;
   handleDrop: (e: React.DragEvent) => void;
+  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void; // Add this prop
 };
 
 const UploadStatus: React.FC<UploadStatusProps> = ({
@@ -37,6 +38,7 @@ const UploadStatus: React.FC<UploadStatusProps> = ({
   handleDragOver,
   handleDragLeave,
   handleDrop,
+  handleFileUpload, // Include in the component props
 }) => {
   return (
     <div className="mt-6">
@@ -205,19 +207,7 @@ const UploadStatus: React.FC<UploadStatusProps> = ({
             type="file"
             className="hidden"
             accept="video/mp4,video/quicktime,video/avi"
-            onChange={(e) => {
-              if (e.target.files?.[0]) {
-                // Using the props function directly here
-                const file = e.target.files[0];
-                if (file) {
-                  fileInputRef.current!.value = '';
-                  handleReset();
-                  // Simulating file upload handling
-                  const event = { target: { files: [file] } } as React.ChangeEvent<HTMLInputElement>;
-                  handleFileUpload(event);
-                }
-              }
-            }}
+            onChange={handleFileUpload} // Use the prop directly
           />
           <FileUp className="mx-auto h-12 w-12 text-gray-400" />
           <p className="mt-4 text-lg font-medium text-gray-700">
@@ -230,12 +220,6 @@ const UploadStatus: React.FC<UploadStatusProps> = ({
       )}
     </div>
   );
-};
-
-// This is a helper function for the input change handler since we need access to the component's state
-const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-  // This is a placeholder - the actual implementation will happen in the parent component
-  // The parent component will pass its own implementation via props
 };
 
 export default UploadStatus;

@@ -120,6 +120,7 @@ const OrderConfirmation: React.FC = () => {
                 handleDragOver={handleDragOver}
                 handleDragLeave={handleDragLeave}
                 handleDrop={handleDrop}
+                handleFileUpload={handleFileUpload}
               />
             </Card>
           </motion.div>
