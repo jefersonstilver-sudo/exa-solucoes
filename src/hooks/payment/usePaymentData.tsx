@@ -6,6 +6,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast } from 'sonner';
+import { filterEq, unwrapData } from '@/utils/supabaseUtils';
 
 // Define a type for the payment log data structure
 interface PaymentLogData {
@@ -67,13 +68,14 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         const { data, error } = await supabase
           .from('pedidos')
           .select('*')
-          .eq('id', pedidoId)
+          .eq('id', filterEq(pedidoId))
           .limit(1);
         
         if (error) throw error;
         if (!data || data.length === 0) throw new Error("Pedido não encontrado");
         
-        const order = data[0] as any;
+        const order = unwrapData(data[0]);
+        if (!order) throw new Error("Erro ao processar os dados do pedido");
         
         // Verify user permission
         if (order && user && order.client_id !== user.id) {
@@ -129,13 +131,16 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
       const { data, error } = await supabase
         .from('pedidos')
         .select('log_pagamento')
-        .eq('id', pedidoId)
+        .eq('id', filterEq(pedidoId))
         .limit(1);
       
       if (error) throw error;
       if (!data || data.length === 0) throw new Error("Pedido não encontrado");
       
-      const logPagamento = (data[0].log_pagamento || {}) as PaymentLogData;
+      const orderData = unwrapData(data[0]);
+      if (!orderData) throw new Error("Erro ao processar os dados do pedido");
+      
+      const logPagamento = (orderData.log_pagamento || {}) as PaymentLogData;
       const paymentMethod = logPagamento.payment_method || 'credit_card';
       
       if (paymentMethod === 'pix' && logPagamento.pix_data) {

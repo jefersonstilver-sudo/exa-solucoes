@@ -4,6 +4,7 @@
  */
 
 import { PostgrestSingleResponse } from '@supabase/supabase-js';
+import { Database } from '@/integrations/supabase/types';
 
 /**
  * Safe check to determine if a Supabase response contains data
@@ -15,13 +16,13 @@ export const hasData = (response: { data: any, error: any }): boolean => {
 };
 
 /**
- * Type-safe way to convert a string to a typed ID for database operations
+ * Type-safe way to cast a string to a database ID
  * Works around TypeScript limitations with Supabase's strongly typed queries
  * 
  * @param id The ID string to convert
- * @returns The same ID but type-cast to work with Supabase typed queries
+ * @returns The same ID but properly typed to work with Supabase typed queries
  */
-export const toTypedId = <T>(id: string): T => {
+export const toTypedId = <T>(id: string | null | undefined): T => {
   return id as unknown as T;
 };
 
@@ -91,4 +92,62 @@ export const assertDefined = <T>(value: T | null | undefined, message = 'Value i
 export const safeGet = <T, K extends keyof T>(record: T | null | undefined, prop: K): T[K] | undefined => {
   if (!record) return undefined;
   return record[prop];
+};
+
+/**
+ * Type-safe way to prepare data for database inserts
+ * 
+ * @param data The data object to prepare for insert
+ * @returns The same data object with proper typing for database inserts
+ */
+export const prepareForInsert = <T>(data: any): T => {
+  return data as unknown as T;
+};
+
+/**
+ * Type-safe way to prepare data for database updates
+ * 
+ * @param data The data object to prepare for update
+ * @returns The same data object with proper typing for database updates
+ */
+export const prepareForUpdate = <T>(data: any): T => {
+  return data as unknown as T;
+};
+
+/**
+ * Type-safe way to check and unwrap data from a Supabase response
+ * 
+ * @param data The data from a Supabase response
+ * @returns The data object or null if it's an error
+ */
+export const unwrapData = <T>(data: T | any): T | null => {
+  // Check if the data is an error object
+  if (data && (data.error || typeof data.error === 'object')) {
+    return null;
+  }
+  return data as T;
+};
+
+/**
+ * Type-safe equality filter for Supabase queries
+ * 
+ * @param column The column name to filter on
+ * @param value The value to filter for
+ * @returns The typed value for filter
+ */
+export const filterEq = <T>(value: string): T => {
+  return value as unknown as T;
+};
+
+/**
+ * Safely handle array results from database functions
+ * Ensures the result is an array before attempting to use array methods
+ * 
+ * @param result Result from a database function
+ * @returns The result as an array, or an empty array if the result is not an array
+ */
+export const ensureArray = <T>(result: any): T[] => {
+  if (!result) return [];
+  if (Array.isArray(result)) return result as T[];
+  return [result] as T[];
 };

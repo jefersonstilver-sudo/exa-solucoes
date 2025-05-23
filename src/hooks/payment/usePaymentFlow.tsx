@@ -7,6 +7,7 @@ import { Panel } from '@/types/panel';
 import { usePaymentInit } from './flows/usePaymentInit';
 import { usePaymentValidator } from './flows/usePaymentValidator';
 import { usePaymentProcessor } from './flows/usePaymentProcessor';
+import { unwrapData } from '@/utils/supabaseUtils';
 
 interface CartItem {
   panel: Panel;
@@ -101,7 +102,7 @@ export const usePaymentFlow = () => {
       }
       
       // Create order in database
-      const pedido = await createPaymentOrder({
+      const pedidoResult = await createPaymentOrder({
         sessionUser,
         cartItems,
         selectedPlan,
@@ -111,6 +112,8 @@ export const usePaymentFlow = () => {
         endDate
       });
       
+      // Ensure we have a valid order
+      const pedido = unwrapData(pedidoResult);
       if (!pedido || !pedido.id) {
         throw new Error("Falha ao criar pedido: dados inválidos retornados");
       }

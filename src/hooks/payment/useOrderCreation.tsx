@@ -4,12 +4,20 @@ import { ensureSpreadable } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
 import { Database } from '@/integrations/supabase/types';
 import type { Json } from '@/integrations/supabase/types';
-import { dbCast, toTypedId, getFirstItem, extractSingleData, assertDefined, safeGet } from '@/utils/supabaseUtils';
+import { 
+  dbCast, 
+  prepareForInsert, 
+  prepareForUpdate, 
+  filterEq, 
+  unwrapData,
+  ensureArray 
+} from '@/utils/supabaseUtils';
 
 // Define proper types for database inserts and updates
 type PedidoInsert = Database['public']['Tables']['pedidos']['Insert'];
 type PedidoUpdate = Database['public']['Tables']['pedidos']['Update'];
 type CupomUsoInsert = Database['public']['Tables']['cupom_usos']['Insert'];
+type CampanhaInsert = Database['public']['Tables']['campanhas']['Insert'];
 
 interface CartItem {
   panel: Panel;
@@ -79,7 +87,7 @@ export const useOrderCreation = () => {
     // Cria pedido no banco de dados com tipo correto
     const { data, error: pedidoError } = await supabase
       .from('pedidos')
-      .insert(pedidoPayload as any)
+      .insert(prepareForInsert<PedidoInsert>(pedidoPayload))
       .select()
       .single();
     
@@ -88,25 +96,24 @@ export const useOrderCreation = () => {
       throw pedidoError;
     }
     
-    // Check if we have a valid result
-    if (!data) {
+    // Check if we have valid data
+    const pedido = unwrapData(data);
+    if (!pedido) {
       throw new Error('Erro ao criar pedido: dados não retornados');
     }
-
-    const pedidoData = data as any;
     
     // Se um cupom foi aplicado, registra seu uso com tipo correto
-    if (couponId && pedidoData?.id) {
+    if (couponId && pedido && pedido.id) {
       try {
         const cupomUsoPayload: CupomUsoInsert = {
           cupom_id: couponId,
           user_id: sessionUser.id,
-          pedido_id: pedidoData.id
+          pedido_id: pedido.id
         };
         
         await supabase
           .from('cupom_usos')
-          .insert(cupomUsoPayload as any);
+          .insert(prepareForInsert<CupomUsoInsert>(cupomUsoPayload));
       } catch (error) {
         console.error('Erro ao registrar uso do cupom:', error);
         // Não impedimos o fluxo se o registro do cupom falhar
@@ -114,10 +121,10 @@ export const useOrderCreation = () => {
     }
     
     // Atualiza o pedido com informações adicionais
-    if (pedidoData?.id) {
+    if (pedido && pedido.id) {
       try {
         // Ensure log_pagamento is an object before spreading
-        const logPagamentoObj = ensureSpreadable(pedidoData.log_pagamento || {});
+        const logPagamentoObj = ensureSpreadable(pedido.log_pagamento || {});
         
         const additionalLogInfo = {
           order_created_at: new Date().toISOString(),
@@ -136,15 +143,15 @@ export const useOrderCreation = () => {
 
         await supabase
           .from('pedidos')
-          .update(updateData as any)
-          .eq('id', pedidoData.id);
+          .update(prepareForUpdate<PedidoUpdate>(updateData))
+          .eq('id', filterEq(pedido.id));
       } catch (updateError) {
         console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
         // Não impedimos o fluxo se a atualização falhar
       }
     }
       
-    return pedidoData;
+    return pedido;
   };
   
   // Função para criar campanhas após pagamento confirmado
@@ -154,7 +161,7 @@ export const useOrderCreation = () => {
       const { data, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
-        .eq('id', pedidoId)
+        .eq('id', filterEq(pedidoId))
         .single();
       
       if (pedidoError || !data) {
@@ -162,7 +169,11 @@ export const useOrderCreation = () => {
         throw pedidoError || new Error('Pedido não encontrado');
       }
       
-      const pedidoData = data as any;
+      // Unwrap data to ensure it's a valid order
+      const pedido = unwrapData(data);
+      if (!pedido) {
+        throw new Error('Pedido inválido');
+      }
       
       // Atualizar status do pedido para 'pago'
       const pedidoUpdateData: PedidoUpdate = {
@@ -171,38 +182,38 @@ export const useOrderCreation = () => {
       
       await supabase
         .from('pedidos')
-        .update(pedidoUpdateData as any)
-        .eq('id', pedidoId);
+        .update(prepareForUpdate<PedidoUpdate>(pedidoUpdateData))
+        .eq('id', filterEq(pedidoId));
       
       // Buscar vídeo ativo do cliente (se houver)
       const { data: videos, error: videoError } = await supabase
         .from('videos')
         .select('*')
-        .eq('client_id', userId)
-        .eq('status', 'ativo')
+        .eq('client_id', filterEq(userId))
+        .eq('status', filterEq('ativo'))
         .order('created_at', { ascending: false })
         .limit(1);
       
       // Determinar se o cliente tem um vídeo ou precisa cadastrar um
       const videoId = videos && videos.length > 0 ? videos[0].id : null;
       
-      if (pedidoData?.lista_paineis && Array.isArray(pedidoData.lista_paineis)) {
+      if (pedido && pedido.lista_paineis && Array.isArray(pedido.lista_paineis)) {
         // Criar campanhas para cada painel do pedido
-        const campanhasInsert = pedidoData.lista_paineis.map((painelId: string) => ({
+        const campanhasPayload = pedido.lista_paineis.map((painelId: string) => ({
           client_id: userId,
           video_id: videoId,
           painel_id: painelId,
-          data_inicio: pedidoData.data_inicio,
-          data_fim: pedidoData.data_fim,
+          data_inicio: pedido.data_inicio,
+          data_fim: pedido.data_fim,
           status: videoId ? 'pendente' : 'aguardando_video',
           obs: `Criado a partir do pedido ${pedidoId}`
         }));
         
         // Inserir campanhas no banco de dados
-        if (campanhasInsert.length > 0) {
+        if (campanhasPayload.length > 0) {
           const { error: campanhasError } = await supabase
             .from('campanhas')
-            .insert(campanhasInsert as any);
+            .insert(prepareForInsert<CampanhaInsert[]>(campanhasPayload));
           
           if (campanhasError) {
             console.error('Erro ao criar campanhas:', campanhasError);

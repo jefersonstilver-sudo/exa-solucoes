@@ -1,181 +1,179 @@
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { toast } from 'sonner';
-import { useUserSession } from '@/hooks/useUserSession';
-
-// Define more specific types for payment related data
-interface PixData {
-  qr_code?: string;
-  qr_code_base64?: string;
-}
-
-interface PaymentLog {
-  payment_method?: string;
-  payment_status?: string;
-  payment_id?: string;
-  pix_data?: PixData;
-  created_at?: string;
-}
+import { filterEq, unwrapData } from '@/utils/supabaseUtils';
 
 export interface PixPaymentData {
+  qrCodeBase64: string;
+  qrCode: string;
+  paymentId: string;
   status: string;
-  qrCodeBase64?: string;
-  qrCode?: string; // Changed from qrCodeText to match usage in components
-  paymentId?: string;
-  totalAmount?: string;
-  valorTotal?: number; // Added to match usage in components
-  createdAt?: string; // Add creation timestamp for expiration check
+  orderId?: string;
+  totalAmount?: number;
+  expiresAt?: string;
 }
 
-export const usePixPayment = (pedidoId: string | null) => {
-  const [isLoading, setIsLoading] = useState(true);
+interface UsePixPaymentResult {
+  isLoading: boolean;
+  error: string | null;
+  paymentData: PixPaymentData | null;
+  refreshPaymentStatus: () => Promise<void>;
+}
+
+export const usePixPayment = (pedidoId: string | null): UsePixPaymentResult => {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<PixPaymentData | null>(null);
-  const { user } = useUserSession();
-  const navigate = useNavigate();
-  
-  // Function to get payment data
-  const fetchPaymentData = async () => {
-    try {
-      if (!pedidoId) {
-        setError("ID do pedido não encontrado");
-        setIsLoading(false);
-        return;
-      }
 
-      // Fetch payment data from Supabase
-      const { data: pedidoData, error: pedidoError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', pedidoId)
-        .single();
-
-      if (pedidoError) {
-        console.error("Erro ao buscar pedido:", pedidoError);
-        setError("Erro ao buscar informações do pagamento");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!pedidoData) {
-        setError("Pedido não encontrado");
-        setIsLoading(false);
-        return;
-      }
-      
-      // Verify user permission
-      if (user && pedidoData.client_id !== user.id) {
-        setError("Você não tem permissão para visualizar este pagamento");
-        setIsLoading(false);
-        return;
-      }
-
-      // Cast log_pagamento to the PaymentLog type for safe access
-      const logPagamento = pedidoData.log_pagamento as unknown as PaymentLog || {};
-      
-      // Extract payment information safely with optional chaining
-      const pixData: PixPaymentData = {
-        status: pedidoData.status === 'pago' || logPagamento?.payment_status === 'approved' 
-          ? 'approved' 
-          : logPagamento?.payment_status || 'pending',
-        qrCodeBase64: logPagamento?.pix_data?.qr_code_base64,
-        qrCode: logPagamento?.pix_data?.qr_code, // Note the change here
-        paymentId: logPagamento?.payment_id,
-        valorTotal: pedidoData.valor_total || 0, // Added to match usage
-        totalAmount: pedidoData.valor_total?.toString() || '0',
-        createdAt: logPagamento?.created_at || pedidoData.created_at
-      };
-
-      setPaymentData(pixData);
-      setIsLoading(false);
-      
-      // Log payment data loaded event
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        `PIX payment data loaded for pedido ${pedidoId}`,
-        { status: pixData.status, paymentId: pixData.paymentId }
-      );
-      
-      // If payment is approved, update notification
-      if (pixData.status === 'approved') {
-        toast.success("Pagamento já aprovado!");
-      }
-    } catch (err) {
-      console.error("Error loading payment data:", err);
-      setError("Erro ao carregar dados do pagamento");
-      setIsLoading(false);
-    }
-  };
-
-  // Load payment data on mount
   useEffect(() => {
-    fetchPaymentData();
-  }, [pedidoId]);
-
-  // Function to refresh payment status
-  const refreshPaymentStatus = async (): Promise<void> => {
-    try {
+    const fetchPixData = async () => {
       if (!pedidoId) {
-        throw new Error("ID do pedido não encontrado");
+        setError('ID do pedido é obrigatório');
+        setIsLoading(false);
+        return;
       }
       
-      // Fetch latest payment data
-      const { data: pedidoData, error: pedidoError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', pedidoId)
-        .single();
-      
-      if (pedidoError) {
-        throw new Error("Erro ao buscar informações do pagamento");
-      }
-
-      if (!pedidoData) {
-        throw new Error("Pedido não encontrado");
-      }
-      
-      // Cast log_pagamento to the PaymentLog type for safe access
-      const logPagamento = pedidoData.log_pagamento as unknown as PaymentLog || {};
-      
-      // Check payment status
-      const newStatus = pedidoData.status === 'pago' || logPagamento?.payment_status === 'approved' 
-        ? 'approved' 
-        : logPagamento?.payment_status || 'pending';
-      
-      // Update payment data state
-      setPaymentData(prev => {
-        if (!prev) return null;
+      try {
+        setIsLoading(true);
         
-        const updatedData = {
-          ...prev,
-          status: newStatus
-        };
+        // Buscar dados do pedido
+        const { data, error } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', filterEq(pedidoId))
+          .single();
         
-        // Show notification for payment approved
-        if (newStatus === 'approved' && prev.status !== 'approved') {
-          toast.success("Pagamento aprovado!");
-          
-          // Log payment approved
-          logCheckoutEvent(
-            CheckoutEvent.PAYMENT_PROCESSING,
-            LogLevel.INFO,
-            `PIX payment approved for pedido ${pedidoId}`,
-            { paymentId: prev.paymentId }
-          );
+        if (error) throw error;
+        
+        // Ensure we have valid data
+        const order = unwrapData(data);
+        if (!order) throw new Error('Não foi possível obter dados do pedido');
+        
+        // Verificar se o cliente é o mesmo que fez o pedido
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (userId !== order.client_id) {
+          throw new Error('Você não tem permissão para visualizar este pedido');
         }
         
-        return updatedData;
-      });
-    } catch (error: any) {
-      console.error("Error refreshing payment status:", error);
-      toast.error("Erro ao atualizar status do pagamento");
-      throw error;
+        // Obter dados de pagamento PIX
+        const logPagamento = order.log_pagamento || {};
+        
+        if (!logPagamento.payment_method || logPagamento.payment_method !== 'pix') {
+          throw new Error('Este pedido não foi gerado com método PIX');
+        }
+        
+        // Verificar se temos os dados do PIX
+        if (!logPagamento.pix_data) {
+          throw new Error('Dados de pagamento PIX não encontrados');
+        }
+        
+        // Montar dados do pagamento PIX
+        setPaymentData({
+          qrCodeBase64: logPagamento.pix_data.qr_code_base64 || '',
+          qrCode: logPagamento.pix_data.qr_code || '',
+          paymentId: logPagamento.payment_id || '',
+          status: logPagamento.payment_status || 'pending',
+          orderId: order.id,
+          totalAmount: parseFloat(order.valor_total) || 0,
+          expiresAt: logPagamento.expires_at || new Date(new Date().getTime() + 30 * 60000).toISOString()
+        });
+        
+        setIsLoading(false);
+        
+        // Log de eventos para depuração
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_UPDATE,
+          LogLevel.INFO,
+          'Dados PIX carregados com sucesso',
+          { 
+            pedidoId, 
+            status: logPagamento.payment_status || 'pending',
+            hasQRCode: !!logPagamento.pix_data.qr_code 
+          }
+        );
+        
+      } catch (err: any) {
+        console.error('Erro ao carregar dados do PIX:', err);
+        setError(err.message || 'Erro ao carregar dados do pagamento PIX');
+        setIsLoading(false);
+        
+        // Log do erro para depuração
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.ERROR,
+          `Erro ao carregar dados PIX: ${err.message}`,
+          { pedidoId, error: String(err) }
+        );
+        
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: err.message || "Erro ao carregar dados do pagamento"
+        });
+      }
+    };
+    
+    fetchPixData();
+  }, [pedidoId, toast]);
+  
+  // Atualizar status do pagamento
+  const refreshPaymentStatus = async (): Promise<void> => {
+    if (!pedidoId) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Buscar dados atualizados do pedido
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('log_pagamento')
+        .eq('id', filterEq(pedidoId))
+        .single();
+      
+      if (error) throw error;
+      
+      // Ensure we have valid data
+      const order = unwrapData(data);
+      if (!order) throw new Error('Não foi possível obter dados do pedido');
+      
+      // Atualizar status do pagamento
+      const logPagamento = order.log_pagamento || {};
+      
+      if (paymentData) {
+        setPaymentData({
+          ...paymentData,
+          status: logPagamento.payment_status || paymentData.status || 'pending'
+        });
+      }
+      
+      // Log de eventos para depuração
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_UPDATE,
+        LogLevel.INFO,
+        'Status do pagamento atualizado',
+        { pedidoId, status: logPagamento.payment_status || 'unknown' }
+      );
+      
+      setIsLoading(false);
+      return;
+      
+    } catch (err: any) {
+      console.error('Erro ao atualizar status do pagamento:', err);
+      setIsLoading(false);
+      
+      // Log do erro para depuração
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        `Erro ao atualizar status: ${err.message}`,
+        { pedidoId, error: String(err) }
+      );
     }
   };
-
+  
   return {
     isLoading,
     error,
@@ -183,5 +181,3 @@ export const usePixPayment = (pedidoId: string | null) => {
     refreshPaymentStatus
   };
 };
-
-export default usePixPayment;
