@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,85 +12,6 @@ export const useLoginForm = (redirectPath: string) => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Check auth status on component load
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Erro ao verificar sessão:', error);
-        } else if (data.session) {
-          console.log('Sessão encontrada:', data.session.user.email);
-          
-          // Check if user is admin and redirect accordingly
-          const userRole = await getUserRole(data.session.user.id);
-          if (userRole === 'admin' || userRole === 'super_admin') {
-            navigate('/admin');
-          } else {
-            navigate('/client/comprar');
-          }
-        }
-      } catch (err) {
-        console.error('Erro inesperado:', err);
-      }
-    };
-    
-    checkAuth();
-  }, [navigate]);
-
-  // Helper function to get user role with fallback
-  const getUserRole = async (userId: string): Promise<string | null> => {
-    try {
-      // First try to get from session metadata
-      const { data: sessionData } = await supabase.auth.getSession();
-      const metadataRole = sessionData.session?.user?.user_metadata?.role;
-      
-      if (metadataRole) {
-        console.log('Role encontrado nos metadados:', metadataRole);
-        return metadataRole;
-      }
-      
-      // Fallback: query users table
-      console.log('Role não encontrado nos metadados, consultando tabela users...');
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (error || !userData) {
-        console.error('Erro ao buscar role na tabela users:', error);
-        return null;
-      }
-      
-      console.log('Role encontrado na tabela users:', userData.role);
-      return userData.role;
-    } catch (err) {
-      console.error('Erro ao determinar role do usuário:', err);
-      return null;
-    }
-  };
-
-  // Function to recreate master admin user
-  const recreateMasterAdmin = async () => {
-    try {
-      console.log('Recriando usuário master admin...');
-      
-      const { data: recreateResult, error: recreateError } = await supabase.functions.invoke('recreate-master-admin');
-      
-      if (recreateError) {
-        console.error('Erro ao recriar master admin:', recreateError);
-        throw recreateError;
-      }
-      
-      console.log('Master admin recriado com sucesso:', recreateResult);
-      return recreateResult;
-    } catch (err) {
-      console.error('Erro na recriação do master admin:', err);
-      throw err;
-    }
-  };
-  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -99,52 +20,14 @@ export const useLoginForm = (redirectPath: string) => {
     try {
       console.log('Tentando fazer login com:', email);
       
-      // Clear any existing session first
-      await supabase.auth.signOut();
-      console.log('Sessão anterior limpa');
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
-        console.error('Erro de login detalhado:', error);
+        console.error('Erro de login:', error);
         
-        // For master admin with invalid credentials, try to recreate the user
-        if (email === 'jefersonstilver@gmail.com' && error.message.includes('Invalid login credentials')) {
-          console.log('Detectado erro de credenciais para master admin, tentando recriar usuário...');
-          
-          try {
-            await recreateMasterAdmin();
-            toast.success('Usuário master admin recriado! Tentando login novamente...');
-            
-            // Wait a moment for the user to be fully created
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Try login again after recreation
-            const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-              email,
-              password
-            });
-            
-            if (!retryError && retryData.session) {
-              console.log('Login bem-sucedido após recriação do usuário');
-              toast.success('Login realizado com sucesso após recriação do usuário!');
-              navigate('/admin');
-              return;
-            } else {
-              console.error('Login ainda falhou após recriação:', retryError);
-              setError('Falha no login mesmo após recriação do usuário. Contate o suporte.');
-            }
-          } catch (recreateErr) {
-            console.error('Erro na recriação automática:', recreateErr);
-            setError('Erro ao recriar usuário master admin. Contate o suporte.');
-          }
-          return;
-        }
-        
-        // Standard error handling
         if (error.message.includes('Invalid login credentials')) {
           setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.');
         } else if (error.message.includes('Email not confirmed')) {
@@ -161,17 +44,22 @@ export const useLoginForm = (redirectPath: string) => {
         console.log('Login bem-sucedido:', data.user.email);
         toast.success('Login realizado com sucesso!');
         
-        // Verificar role do usuário com fallback robusto
-        const userRole = await getUserRole(data.user.id);
-        console.log('Role determinado:', userRole);
+        // Get user role from users table (source of truth)
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
         
-        // Wait a bit to ensure session is properly established
+        const userRole = userData?.role;
+        console.log('Role do usuário:', userRole);
+        
+        // Redirect based on role
         setTimeout(() => {
           if (userRole === 'admin' || userRole === 'super_admin') {
             console.log('Redirecionando admin para: /admin');
             navigate('/admin');
           } else {
-            // Get redirect path from URL if present
             const searchParams = new URLSearchParams(location.search);
             const redirectTo = searchParams.get('redirect') || redirectPath;
             console.log('Redirecionando usuário para:', redirectTo);

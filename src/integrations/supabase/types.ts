@@ -558,6 +558,16 @@ export type Database = {
         Args: { p_panel_id: string; p_start_date: string; p_end_date: string }
         Returns: boolean
       }
+      check_user_data_integrity: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          email: string
+          users_role: string
+          metadata_role: string
+          is_consistent: boolean
+        }[]
+      }
       get_panels_by_location: {
         Args: { lat: number; lng: number; radius_meters: number }
         Returns: {

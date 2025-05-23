@@ -3,13 +3,12 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/layout/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Edit, Trash2, Shield, User, ShieldCheck } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Shield, User, ShieldCheck, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import AdminInitializer from '@/components/admin/setup/AdminInitializer';
-import UserSyncComponent from '@/components/admin/setup/UserSyncComponent';
+import MasterAdminFixer from '@/components/admin/setup/MasterAdminFixer';
 
 interface UserData {
   id: string;
@@ -43,6 +42,20 @@ const UserManagement = () => {
       toast.error('Erro ao carregar usuários: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkDataIntegrity = async () => {
+    try {
+      const { data, error } = await supabase.rpc('check_user_data_integrity');
+      
+      if (error) throw error;
+      
+      console.log('Verificação de integridade:', data);
+      toast.success('Verificação de integridade concluída. Verifique o console.');
+    } catch (error: any) {
+      console.error('Erro na verificação:', error);
+      toast.error('Erro na verificação: ' + error.message);
     }
   };
   
@@ -79,7 +92,6 @@ const UserManagement = () => {
     }
     
     try {
-      // First, check if it's not the logged-in user
       const { data: session } = await supabase.auth.getSession();
       if (session?.session?.user?.id === userId) {
         toast.error('Você não pode excluir seu próprio usuário!');
@@ -100,11 +112,19 @@ const UserManagement = () => {
           <div>
             <h1 className="text-2xl font-bold">Gerenciamento de Usuários</h1>
             <p className="text-muted-foreground">
-              Gerencie todos os usuários do sistema e suas permissões
+              Sistema simplificado com trigger automático de sincronização
             </p>
           </div>
           
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={checkDataIntegrity}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Verificar Integridade
+            </Button>
+            
             <Button 
               variant="outline" 
               onClick={fetchUsers}
@@ -123,21 +143,12 @@ const UserManagement = () => {
           </div>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="p-0">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-medium mb-4">Inicializar Admin Master</h3>
-              <AdminInitializer />
-            </CardContent>
-          </Card>
-          
-          <Card className="p-0">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-medium mb-4">Sincronizar Usuários</h3>
-              <UserSyncComponent />
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="p-0">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-medium mb-4">Ferramentas de Diagnóstico</h3>
+            <MasterAdminFixer />
+          </CardContent>
+        </Card>
         
         <div className="border rounded-md shadow-sm bg-white dark:bg-gray-800">
           <Table>

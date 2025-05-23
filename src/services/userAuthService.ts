@@ -1,10 +1,13 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, UserRole } from '@/types/userTypes';
-import { updateUserRoleInDB } from './userRoleService';
+
+/**
+ * Simplified user auth service - uses users table as source of truth
+ */
 
 /**
  * Logs out the current user
- * @returns Success status and any error
  */
 export const logoutUser = async (): Promise<{success: boolean, error?: any}> => {
   try {
@@ -14,10 +17,8 @@ export const logoutUser = async (): Promise<{success: boolean, error?: any}> => 
       return { success: false, error };
     }
     
-    // Clear local storage (carts, preferences, etc)
-    localStorage.removeItem('indexa_cart');
-    localStorage.removeItem('indexa_preferences');
-    localStorage.removeItem('panelCart'); // Make sure we clear any cart data
+    // Clear local storage
+    localStorage.clear();
     
     return { success: true };
   } catch (error) {
@@ -27,36 +28,29 @@ export const logoutUser = async (): Promise<{success: boolean, error?: any}> => 
 };
 
 /**
- * Updates a user's profile information
- * @param userProfile The profile data to update
- * @param currentUserId The ID of the current user
- * @returns Success status and any error
+ * Updates a user's profile information (simplified)
  */
 export const updateUserProfileData = async (
   userProfile: Partial<UserProfile>, 
   currentUserId?: string
 ): Promise<{success: boolean, error?: any}> => {
   try {
-    // Update auth metadata
-    const { data, error } = await supabase.auth.updateUser({
-      data: userProfile
-    });
-    
-    if (error) {
-      return { success: false, error };
+    if (!currentUserId) {
+      return { success: false, error: new Error('User ID required') };
     }
-    
-    // If trying to update role, we also need to update the users table
-    if (userProfile.role && currentUserId) {
-      const roleUpdateResult = await updateUserRoleInDB(currentUserId, userProfile.role);
+
+    // Update users table (source of truth)
+    if (userProfile.role) {
+      const { error } = await supabase
+        .from('users')
+        .update({ role: userProfile.role })
+        .eq('id', currentUserId);
       
-      if (!roleUpdateResult.success) {
-        return roleUpdateResult;
+      if (error) {
+        return { success: false, error };
       }
-    }
-    
-    if (!data.user) {
-      return { success: false, error: new Error('Failed to update user profile') };
+      
+      // Trigger will automatically sync metadata
     }
     
     return { success: true };
@@ -67,34 +61,21 @@ export const updateUserProfileData = async (
 };
 
 /**
- * Updates a user's role for both auth metadata and database
- * @param userId The ID of the user to update
- * @param role The new role to assign
- * @returns Success status and any error
+ * Sets a user's role (simplified - only updates users table, trigger handles sync)
  */
 export const setUserRoleData = async (
   userId: string, 
   role: UserRole
 ): Promise<{success: boolean, error?: any}> => {
   try {
-    // Update the users table (source of truth)
-    const dbUpdateResult = await updateUserRoleInDB(userId, role);
+    // Update users table - trigger will handle auth metadata sync
+    const { error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', userId);
       
-    if (!dbUpdateResult.success) {
-      return dbUpdateResult;
-    }
-    
-    // Also update auth metadata to keep them in sync
-    const { data, error } = await supabase.auth.updateUser({
-      data: { role }
-    });
-    
     if (error) {
       return { success: false, error };
-    }
-    
-    if (!data.user) {
-      return { success: false, error: new Error('Failed to update user role') };
     }
     
     return { success: true };
