@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { Panel } from '@/types/panel';
@@ -102,7 +101,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   
   togglePanelSelection: (panelId: string) => {
     set((state) => {
-      const currentSelection = Array.isArray(state.selectedPanels) ? state.selectedPanels : [];
+      const currentSelection = state.selectedPanels;
       if (currentSelection.includes(panelId)) {
         return {
           selectedPanels: currentSelection.filter(id => id !== panelId)
@@ -121,18 +120,18 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   
   isPanelSelected: (panelId: string) => {
     const selectedPanels = get().selectedPanels;
-    return Array.isArray(selectedPanels) ? selectedPanels.includes(panelId) : false;
+    return selectedPanels.includes(panelId);
   },
   
   getSelectedPanelCount: () => {
     const selectedPanels = get().selectedPanels;
-    return Array.isArray(selectedPanels) ? selectedPanels.length : 0;
+    return selectedPanels.length;
   },
   
   getSelectedPanels: () => {
     const selectedPanels = get().selectedPanels;
     const panels = get().panels;
-    return Array.isArray(selectedPanels) ? panels.filter(panel => selectedPanels.includes(panel.id)) : [];
+    return panels.filter(panel => selectedPanels.includes(panel.id));
   },
   
   handleSearch: async (location: string) => {
