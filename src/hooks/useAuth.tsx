@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile } from '@/types/userTypes';
+import { UserProfile, UserRole } from '@/types/userTypes';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -33,7 +33,7 @@ export const useAuth = () => {
                 setUserProfile({
                   id: userData.id,
                   email: userData.email,
-                  role: userData.role,
+                  role: userData.role as UserRole, // Type cast para UserRole
                   data_criacao: userData.data_criacao
                 });
               }
