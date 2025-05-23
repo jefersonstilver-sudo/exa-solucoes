@@ -30,7 +30,11 @@ export enum CheckoutEvent {
   PAYMENT_PROCESSING = 'payment_processing',
   PAYMENT_SUCCESS = 'payment_success',
   PAYMENT_ERROR = 'payment_error',
-  DEBUG_EVENT = 'debug_event'  // Debug event type
+  DEBUG_EVENT = 'debug_event',
+  // Add the missing event types
+  AUTH_EVENT = 'auth_event',
+  PAYMENT_EVENT = 'payment_event',
+  USER_ACTION = 'user_action'
 }
 
 interface CheckoutLog {
