@@ -31,7 +31,7 @@ export function useOrderDetails({ orderId }: UseOrderDetailsProps) {
       }
       
       try {
-        const { data, error } = await supabase
+        const { data: responseData, error } = await supabase
           .from('pedidos')
           .select('*, lista_paineis, plano_meses, data_inicio, data_fim, status, valor_total')
           .eq('id', filterEq(orderId))
@@ -39,21 +39,24 @@ export function useOrderDetails({ orderId }: UseOrderDetailsProps) {
           
         if (error) throw error;
         
-        // Verify we have valid data
-        const safeData = unwrapData(data);
-        if (!safeData) throw new Error('No data returned');
+        // Verify we have valid data and unwrap it
+        const data = unwrapData(responseData);
+        if (!data) throw new Error('No data returned');
         
-        setOrderDetails(safeData);
+        // Use type assertion for safer access
+        const typedData = data as any;
+        
+        setOrderDetails(typedData);
         
         // If we have an order, update its status if needed
-        if (safeData && safeData.status === 'pendente') {
-          const updateData: PedidoUpdate = {
+        if (typedData && typedData.status === 'pendente') {
+          const updateData = prepareForUpdate<PedidoUpdate>({
             status: 'pago'
-          };
+          });
           
           await supabase
             .from('pedidos')
-            .update(prepareForUpdate<PedidoUpdate>(updateData))
+            .update(updateData)
             .eq('id', filterEq(orderId));
             
           console.log('Order status updated to paid');

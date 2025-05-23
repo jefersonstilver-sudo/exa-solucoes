@@ -3,19 +3,29 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ensureArray } from '@/utils/supabaseUtils';
 
+interface CouponValidationResult {
+  valid: boolean;
+  message: string;
+  couponId: string | null;
+  discountPercent: number;
+}
+
 export function useCouponValidator() {
   const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<{
-    valid: boolean;
-    message: string;
-    couponId: string | null;
-    discountPercent: number;
-  }>({
+  const [validationResult, setValidationResult] = useState<CouponValidationResult>({
     valid: false,
     message: '',
     couponId: null,
     discountPercent: 0
   });
+  
+  // For compatibility with existing code
+  const [couponCode, setCouponCode] = useState<string>('');
+  const couponDiscount = validationResult.discountPercent;
+  const couponId = validationResult.couponId;
+  const isValidatingCoupon = isValidating;
+  const couponMessage = validationResult.message;
+  const couponValid = validationResult.valid;
 
   const validateCoupon = useCallback(async (code: string, selectedMonths: number) => {
     if (!code) {
@@ -31,7 +41,7 @@ export function useCouponValidator() {
     setIsValidating(true);
     
     try {
-      const { data, error } = await supabase
+      const { data: responseData, error } = await supabase
         .rpc('validate_cupom', { 
           p_codigo: code,
           p_meses: selectedMonths
@@ -40,7 +50,7 @@ export function useCouponValidator() {
       if (error) throw error;
       
       // Ensure data is an array
-      const resultsArray = ensureArray(data);
+      const resultsArray = ensureArray(responseData);
       
       if (resultsArray.length === 0) {
         setValidationResult({
@@ -52,16 +62,17 @@ export function useCouponValidator() {
         return false;
       }
       
-      const result = resultsArray[0];
+      // Type assertion for safer access
+      const result = resultsArray[0] as any;
       
       setValidationResult({
-        valid: result.valid,
-        message: result.message,
-        couponId: result.valid ? result.id : null,
-        discountPercent: result.valid ? result.desconto_percentual : 0
+        valid: result.valid === true,
+        message: result.message || 'Cupom processado',
+        couponId: result.valid === true ? result.id : null,
+        discountPercent: result.valid === true ? result.desconto_percentual : 0
       });
       
-      return result.valid;
+      return result.valid === true;
     } catch (error) {
       console.error('Erro ao validar cupom:', error);
       
@@ -81,6 +92,14 @@ export function useCouponValidator() {
   return {
     isValidating,
     validateCoupon,
-    validationResult
+    validationResult,
+    // Additional exported values for backward compatibility
+    couponCode,
+    setCouponCode,
+    couponDiscount,
+    couponId,
+    isValidatingCoupon,
+    couponMessage,
+    couponValid
   };
 }

@@ -68,8 +68,8 @@ export const useOrderCreation = () => {
       payment_method: 'mercado_pago'
     };
     
-    // Prepare the data with proper typing for insertion
-    const pedidoPayload: PedidoInsert = {
+    // Prepare the data for insertion with explicit type assertion
+    const pedidoPayload = prepareForInsert<PedidoInsert>({
       client_id: sessionUser.id,
       lista_paineis: validPanelIds as unknown as string[],
       duracao: selectedPlan * 30, // Converte meses para dias
@@ -81,12 +81,12 @@ export const useOrderCreation = () => {
       termos_aceitos: true,
       status: 'pendente',
       log_pagamento: logPagamento
-    };
+    });
     
     // Cria pedido no banco de dados com tipo correto
-    const { data, error: pedidoError } = await supabase
+    const { data: responseData, error: pedidoError } = await supabase
       .from('pedidos')
-      .insert(pedidoPayload as any)
+      .insert(pedidoPayload)
       .select()
       .single();
     
@@ -95,26 +95,27 @@ export const useOrderCreation = () => {
       throw pedidoError;
     }
     
-    // Check if we have valid data
-    const pedido = unwrapData(data);
-    if (!pedido) {
+    // Check if we have valid data and unwrap it safely
+    const data = unwrapData(responseData);
+    if (!data) {
       throw new Error('Erro ao criar pedido: dados não retornados');
     }
     
-    const pedidoTyped = pedido as any;
+    // Type assertion for safer access
+    const pedidoTyped = data as any;
     
     // Se um cupom foi aplicado, registra seu uso com tipo correto
     if (couponId && pedidoTyped && pedidoTyped.id) {
       try {
-        const cupomUsoPayload: CupomUsoInsert = {
+        const cupomUsoPayload = prepareForInsert<CupomUsoInsert>({
           cupom_id: couponId,
           user_id: sessionUser.id,
           pedido_id: pedidoTyped.id
-        };
+        });
         
         await supabase
           .from('cupom_usos')
-          .insert(cupomUsoPayload as any);
+          .insert(cupomUsoPayload);
       } catch (error) {
         console.error('Erro ao registrar uso do cupom:', error);
         // Não impedimos o fluxo se o registro do cupom falhar
@@ -138,13 +139,13 @@ export const useOrderCreation = () => {
           ...additionalLogInfo
         };
         
-        const updateData: PedidoUpdate = {
+        const updateData = prepareForUpdate<PedidoUpdate>({
           log_pagamento: updatedLogPagamento
-        };
+        });
 
         await supabase
           .from('pedidos')
-          .update(updateData as any)
+          .update(updateData)
           .eq('id', filterEq(pedidoTyped.id));
       } catch (updateError) {
         console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
@@ -152,40 +153,41 @@ export const useOrderCreation = () => {
       }
     }
       
-    return pedido;
+    return data;
   };
   
   // Função para criar campanhas após pagamento confirmado
   const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
     try {
       // Buscar detalhes do pedido
-      const { data, error: pedidoError } = await supabase
+      const { data: responseData, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
         .eq('id', filterEq(pedidoId))
         .single();
       
-      if (pedidoError || !data) {
+      if (pedidoError || !responseData) {
         console.error('Erro ao buscar detalhes do pedido:', pedidoError);
         throw pedidoError || new Error('Pedido não encontrado');
       }
       
-      // Unwrap data to ensure it's a valid order
-      const pedido = unwrapData(data);
-      if (!pedido) {
+      // Safely unwrap and properly type the data
+      const data = unwrapData(responseData);
+      if (!data) {
         throw new Error('Pedido inválido');
       }
       
-      const pedidoTyped = pedido as any;
+      // Type assertion for safer access
+      const pedidoTyped = data as any;
       
       // Atualizar status do pedido para 'pago'
-      const pedidoUpdateData: PedidoUpdate = {
+      const pedidoUpdateData = prepareForUpdate<PedidoUpdate>({
         status: 'pago'
-      };
+      });
       
       await supabase
         .from('pedidos')
-        .update(pedidoUpdateData as any)
+        .update(pedidoUpdateData)
         .eq('id', filterEq(pedidoId));
       
       // Buscar vídeo ativo do cliente (se houver)
@@ -202,21 +204,23 @@ export const useOrderCreation = () => {
       
       if (pedidoTyped && pedidoTyped.lista_paineis && Array.isArray(pedidoTyped.lista_paineis)) {
         // Criar campanhas para cada painel do pedido
-        const campanhasPayload = pedidoTyped.lista_paineis.map((painelId: string) => ({
-          client_id: userId,
-          video_id: videoId,
-          painel_id: painelId,
-          data_inicio: pedidoTyped.data_inicio,
-          data_fim: pedidoTyped.data_fim,
-          status: videoId ? 'pendente' : 'aguardando_video',
-          obs: `Criado a partir do pedido ${pedidoId}`
-        }));
+        const campanhasPayload = pedidoTyped.lista_paineis.map((painelId: string) => 
+          prepareForInsert<CampanhaInsert>({
+            client_id: userId,
+            video_id: videoId,
+            painel_id: painelId,
+            data_inicio: pedidoTyped.data_inicio,
+            data_fim: pedidoTyped.data_fim,
+            status: videoId ? 'pendente' : 'aguardando_video',
+            obs: `Criado a partir do pedido ${pedidoId}`
+          })
+        );
         
         // Inserir campanhas no banco de dados
         if (campanhasPayload.length > 0) {
           const { error: campanhasError } = await supabase
             .from('campanhas')
-            .insert(campanhasPayload as any);
+            .insert(campanhasPayload);
           
           if (campanhasError) {
             console.error('Erro ao criar campanhas:', campanhasError);

@@ -112,18 +112,21 @@ export const usePaymentFlow = () => {
         endDate
       });
       
-      // Ensure we have a valid order
+      // Ensure we have a valid order with type assertion
       const pedido = unwrapData(pedidoResult);
-      if (!pedido || !pedido.id) {
+      if (!pedido) {
         throw new Error("Falha ao criar pedido: dados inválidos retornados");
       }
       
+      // Type assertion for safer access
+      const pedidoTyped = pedido as any;
+      
       // Store order ID
-      setCreatedOrderId(pedido.id);
+      setCreatedOrderId(pedidoTyped.id);
       
       // Process payment with Edge Function
       const paymentResult = await processPaymentWithEdgeFunction({
-        pedidoId: pedido.id,
+        pedidoId: pedidoTyped.id,
         cartItems,
         selectedPlan,
         totalPrice,
@@ -135,7 +138,7 @@ export const usePaymentFlow = () => {
       // Store checkout info in localStorage
       if (paymentMethodNormalized === 'credit_card') {
         const { preferenceId, initPoint } = paymentResult;
-        storeCheckoutInfo(pedido.id, paymentMethodNormalized, preferenceId);
+        storeCheckoutInfo(pedidoTyped.id, paymentMethodNormalized, preferenceId);
         
         // Clear cart
         handleClearCart();
@@ -145,7 +148,7 @@ export const usePaymentFlow = () => {
         sonnerToast.dismiss();
         
         // IMPORTANT: Store the order ID in localStorage before redirecting
-        localStorage.setItem('lastCompletedOrderId', pedido.id);
+        localStorage.setItem('lastCompletedOrderId', pedidoTyped.id);
         
         // Redirect to MercadoPago with preference ID from the response
         redirectToMercadoPago(preferenceId, paymentMethodNormalized);

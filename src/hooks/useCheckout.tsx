@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
@@ -98,7 +99,7 @@ export const useCheckout = () => {
 
   // Adapta a função validateCoupon para a nova estrutura
   const handleValidateCoupon = () => {
-    validateCoupon(selectedPlan);
+    validateCoupon(couponCode, selectedPlan);
   };
 
   // Define handler for next step with explicit payment method

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -62,19 +63,19 @@ export function useVideoUpload(): UseVideoUploadResult {
         const duration = video.duration;
 
         // Create the video entry in the database
-        const videoPayload: VideoInsert = {
+        const videoPayload = prepareForInsert<VideoInsert>({
           client_id: userId,
           nome: videoName,
           url: fileUrl,
           duracao: duration,
           origem: 'upload',
           status: 'ativo'
-        };
+        });
       
-        // Insert as a single item, not an array
+        // Insert the record with proper typing
         const { data: videoData, error: videoError } = await supabase
           .from('videos')
-          .insert(prepareForInsert<VideoInsert>(videoPayload))
+          .insert(videoPayload)
           .select();
 
         if (videoError) {
