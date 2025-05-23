@@ -3,8 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { ensureSpreadable } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
 import { Database } from '@/integrations/supabase/types';
+import type { Json } from '@/integrations/supabase/types';
 
+// Define proper types for database inserts and updates
 type PedidoInsert = Database['public']['Tables']['pedidos']['Insert'];
+type PedidoUpdate = Database['public']['Tables']['pedidos']['Update'];
 type CupomUsoInsert = Database['public']['Tables']['cupom_usos']['Insert'];
 
 interface CartItem {
@@ -105,16 +108,18 @@ export const useOrderCreation = () => {
         // Ensure log_pagamento is an object before spreading
         const logPagamento = ensureSpreadable(pedido.log_pagamento);
         
+        const updateData: PedidoUpdate = {
+          log_pagamento: {
+            ...logPagamento,
+            order_created_at: new Date().toISOString(),
+            order_source: 'web_checkout',
+            client_email: sessionUser.email
+          }
+        };
+
         await supabase
           .from('pedidos')
-          .update({
-            log_pagamento: {
-              ...logPagamento,
-              order_created_at: new Date().toISOString(),
-              order_source: 'web_checkout',
-              client_email: sessionUser.email
-            }
-          } as PedidoInsert)
+          .update(updateData)
           .eq('id', pedido.id);
       } catch (updateError) {
         console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
@@ -141,9 +146,13 @@ export const useOrderCreation = () => {
       }
       
       // Atualizar status do pedido para 'pago'
+      const pedidoUpdateData: PedidoUpdate = {
+        status: 'pago'
+      };
+      
       await supabase
         .from('pedidos')
-        .update({ status: 'pago' } as PedidoInsert)
+        .update(pedidoUpdateData)
         .eq('id', pedidoId);
       
       // Buscar vídeo ativo do cliente (se houver)
