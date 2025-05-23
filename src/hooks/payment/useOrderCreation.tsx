@@ -62,7 +62,7 @@ export const useOrderCreation = () => {
     };
     
     // Prepare the data with proper typing for insertion
-    const pedidoData: PedidoInsert = {
+    const pedidoPayload: PedidoInsert = {
       client_id: sessionUser.id,
       lista_paineis: validPanelIds as unknown as string[],
       duracao: selectedPlan * 30, // Converte meses para dias
@@ -79,7 +79,7 @@ export const useOrderCreation = () => {
     // Cria pedido no banco de dados com tipo correto
     const { data: pedidoData, error: pedidoError } = await supabase
       .from('pedidos')
-      .insert(dbCast<PedidoInsert>(pedidoData))
+      .insert(dbCast<PedidoInsert>(pedidoPayload))
       .select()
       .single();
     
@@ -88,23 +88,23 @@ export const useOrderCreation = () => {
       throw pedidoError;
     }
     
-    const pedido = pedidoData;
-    if (!pedido) {
+    // Check if we have a valid result
+    if (!pedidoData) {
       throw new Error('Erro ao criar pedido: dados não retornados');
     }
     
     // Se um cupom foi aplicado, registra seu uso com tipo correto
-    if (couponId && pedido && pedido.id) {
+    if (couponId && pedidoData && pedidoData.id) {
       try {
-        const cupomUsoData: CupomUsoInsert = {
+        const cupomUsoPayload: CupomUsoInsert = {
           cupom_id: couponId,
           user_id: sessionUser.id,
-          pedido_id: pedido.id
+          pedido_id: pedidoData.id
         };
         
         await supabase
           .from('cupom_usos')
-          .insert(dbCast<CupomUsoInsert>(cupomUsoData));
+          .insert(dbCast<CupomUsoInsert>(cupomUsoPayload));
       } catch (error) {
         console.error('Erro ao registrar uso do cupom:', error);
         // Não impedimos o fluxo se o registro do cupom falhar
@@ -112,10 +112,10 @@ export const useOrderCreation = () => {
     }
     
     // Atualiza o pedido com informações adicionais
-    if (pedido && pedido.id) {
+    if (pedidoData && pedidoData.id) {
       try {
         // Ensure log_pagamento is an object before spreading
-        const logPagamentoObj = ensureSpreadable(pedido.log_pagamento);
+        const logPagamentoObj = ensureSpreadable(pedidoData.log_pagamento);
         
         const additionalLogInfo = {
           order_created_at: new Date().toISOString(),
@@ -135,32 +135,30 @@ export const useOrderCreation = () => {
         await supabase
           .from('pedidos')
           .update(dbCast<PedidoUpdate>(updateData))
-          .eq('id', toTypedId(pedido.id));
+          .eq('id', toTypedId(pedidoData.id));
       } catch (updateError) {
         console.error('Erro ao atualizar informações adicionais do pedido:', updateError);
         // Não impedimos o fluxo se a atualização falhar
       }
     }
       
-    return pedido;
+    return pedidoData;
   };
   
   // Função para criar campanhas após pagamento confirmado
   const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
     try {
       // Buscar detalhes do pedido
-      const { data, error: pedidoError } = await supabase
+      const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
         .eq('id', toTypedId(pedidoId))
         .single();
       
-      if (pedidoError || !data) {
+      if (pedidoError || !pedidoData) {
         console.error('Erro ao buscar detalhes do pedido:', pedidoError);
         throw pedidoError || new Error('Pedido não encontrado');
       }
-      
-      const pedido = data;
       
       // Atualizar status do pedido para 'pago'
       const pedidoUpdateData: PedidoUpdate = {
@@ -184,14 +182,14 @@ export const useOrderCreation = () => {
       // Determinar se o cliente tem um vídeo ou precisa cadastrar um
       const videoId = videos && videos.length > 0 ? videos[0].id : null;
       
-      if (pedido && pedido.lista_paineis && Array.isArray(pedido.lista_paineis)) {
+      if (pedidoData && pedidoData.lista_paineis && Array.isArray(pedidoData.lista_paineis)) {
         // Criar campanhas para cada painel do pedido
-        const campanhasInsert = pedido.lista_paineis.map((painelId: string) => ({
+        const campanhasInsert = pedidoData.lista_paineis.map((painelId: string) => ({
           client_id: userId,
           video_id: videoId,
           painel_id: painelId,
-          data_inicio: pedido.data_inicio,
-          data_fim: pedido.data_fim,
+          data_inicio: pedidoData.data_inicio,
+          data_fim: pedidoData.data_fim,
           status: videoId ? 'pendente' : 'aguardando_video',
           obs: `Criado a partir do pedido ${pedidoId}`
         }));
