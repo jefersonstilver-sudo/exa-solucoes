@@ -233,7 +233,11 @@ const PaymentGateway = ({
         {/* Debugger para ambos os métodos de pagamento */}
         {orderId && (
           <PixPaymentDebugger 
-            paymentData={pixData || null} 
+            paymentData={pixData ? {
+              ...pixData,
+              pedidoId: orderId,
+              valorTotal: totalAmount
+            } : null} 
             error={null}
             isLoading={isLoading}
             pedidoId={orderId}

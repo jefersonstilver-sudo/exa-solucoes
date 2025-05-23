@@ -1,204 +1,159 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { Json } from '@/integrations/supabase/types';
-import { useUserSession } from '@/hooks/useUserSession';
-import { filterEq, unwrapData } from '@/utils/supabaseUtils';
-
-// Define types for payment related data
-interface PixData {
-  qr_code?: string;
-  qr_code_base64?: string;
-  qrCode?: string;
-  qrCodeBase64?: string;
-  ticket_url?: string;
-}
-
-export interface PaymentLog {
-  payment_method: string;
-  payment_status: string;
-  payment_id: string;
-  pix_data?: PixData;
-}
+import { unwrapData } from '@/utils/supabaseUtils';
 
 export interface PixPaymentData {
-  pedidoId: string;
-  status: string;
-  qrCode: string;
   qrCodeBase64: string;
+  qrCode: string;
   paymentId: string;
+  status: string;
+  pedidoId: string;
   valorTotal: number;
 }
 
-export const usePixPayment = (pedidoId: string | null) => {
-  const navigate = useNavigate();
-  const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
-  
+interface UsePixPaymentResult {
+  isLoading: boolean;
+  error: string | null;
+  paymentData: PixPaymentData | null;
+  refreshPaymentStatus: () => Promise<void>;
+}
+
+export const usePixPayment = (pedidoId: string | null): UsePixPaymentResult => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<PixPaymentData | null>(null);
-  
-  // Fetch payment data from Supabase
-  const fetchPaymentData = async () => {
+
+  const fetchPaymentData = useCallback(async () => {
     if (!pedidoId) {
-      setError("ID do pedido não encontrado");
+      setError('ID do pedido não fornecido');
       setIsLoading(false);
       return;
     }
-    
+
     try {
-      const { data: rawData, error } = await supabase
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch order data
+      const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
-        .eq('id', filterEq(pedidoId))
-        .limit(1);
+        .eq('id', pedidoId)
+        .single();
+
+      if (pedidoError) throw pedidoError;
+
+      const pedido = unwrapData(pedidoData);
+      if (!pedido) throw new Error('Pedido não encontrado');
+
+      // Type assertion for safer access
+      const pedidoTyped = pedido as any;
+
+      // Check if we have payment data in log_pagamento
+      const paymentLog = pedidoTyped.log_pagamento;
       
-      if (error) throw error;
-      if (!rawData || rawData.length === 0) throw new Error("Pedido não encontrado");
-      
-      // Safely unwrap and type assert the data
-      const pedido = unwrapData(rawData[0]);
-      if (!pedido) throw new Error("Erro ao processar dados do pedido");
-      
-      // Type assertion for pedido
-      const typedPedido = pedido as any;
-      
-      // Check if user is authorized to view this payment
-      if (typedPedido.client_id !== user?.id) {
-        throw new Error("Você não tem permissão para visualizar este pagamento");
+      if (!paymentLog || typeof paymentLog !== 'object') {
+        throw new Error('Dados de pagamento PIX não encontrados');
       }
+
+      // Type assertion for payment log
+      const paymentLogTyped = paymentLog as any;
       
-      // We need to safely cast the log_pagamento to PaymentLog
-      const logPagamento = typedPedido.log_pagamento as unknown as PaymentLog;
-      
-      if (!logPagamento || logPagamento.payment_method !== 'pix') {
-        throw new Error("Método de pagamento inválido ou não encontrado");
-      }
-      
-      // Handle both naming conventions (new and old) for maximum compatibility
-      const pixData = logPagamento.pix_data || {};
-      
-      // Enhanced logging for debugging
-      console.log("[usePixPayment] Raw PIX data:", pixData);
-      
-      // Set the payment data, trying different field naming patterns
-      const qrCode = pixData.qrCode || pixData.qr_code || '';
-      const qrCodeBase64 = pixData.qrCodeBase64 || pixData.qr_code_base64 || '';
-      
-      console.log("[usePixPayment] Extracted QR data:", { 
-        qrCode: qrCode ? `${qrCode.substring(0, 20)}...` : 'Not found',
-        qrCodeBase64: qrCodeBase64 ? `${qrCodeBase64.substring(0, 20)}...` : 'Not found' 
-      });
-      
-      setPaymentData({
-        pedidoId: typedPedido.id,
-        status: logPagamento.payment_status || 'pending',
-        qrCode: qrCode,
-        qrCodeBase64: qrCodeBase64,
-        paymentId: logPagamento.payment_id || '',
-        valorTotal: typedPedido.valor_total || 0
-      });
-      
-      // If payment is already approved, redirect to confirmation page after a short delay
-      if (logPagamento.payment_status === 'approved') {
-        setTimeout(() => {
-          navigate(`/pedido-confirmado?id=${typedPedido.id}`);
-        }, 3000);
-      }
-      
-      setIsLoading(false);
-    } catch (err: any) {
-      console.error("Error fetching payment data:", err);
-      setError(err.message || "Erro ao carregar dados do pagamento");
-      setIsLoading(false);
-      
+      // Create the payment data object
+      const pixData: PixPaymentData = {
+        qrCodeBase64: paymentLogTyped.qr_code_base64 || '',
+        qrCode: paymentLogTyped.qr_code || '',
+        paymentId: paymentLogTyped.payment_id || '',
+        status: paymentLogTyped.status || 'pending',
+        pedidoId: pedidoTyped.id,
+        valorTotal: pedidoTyped.valor_total || 0
+      };
+
+      setPaymentData(pixData);
+
       logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.ERROR,
-        `Erro ao carregar dados do PIX: ${err.message}`,
-        { pedidoId, error: String(err) }
-      );
-    }
-  };
-  
-  // Refresh the payment status
-  const refreshPaymentStatus = async (): Promise<void> => {
-    if (!pedidoId) return;
-    
-    try {
-      const { data: rawData, error } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', filterEq(pedidoId))
-        .limit(1);
-      
-      if (error) throw error;
-      if (!rawData || rawData.length === 0) throw new Error("Pedido não encontrado");
-      
-      // Safely unwrap and type the data
-      const pedido = unwrapData(rawData[0]);
-      if (!pedido) throw new Error("Erro ao processar dados do pedido");
-      
-      // Type assertion for pedido
-      const typedPedido = pedido as any;
-      
-      // We need to safely cast the log_pagamento to PaymentLog
-      const logPagamento = typedPedido.log_pagamento as unknown as PaymentLog;
-      
-      // Update local payment data
-      setPaymentData(prev => prev ? ({
-        ...prev,
-        status: logPagamento.payment_status || 'pending',
-      }) : null);
-      
-      // If payment is approved, redirect to confirmation page
-      if (logPagamento.payment_status === 'approved') {
-        toast.success("Pagamento aprovado! Redirecionando...");
-        setTimeout(() => {
-          navigate(`/pedido-confirmado?id=${typedPedido.id}`);
-        }, 1500);
-      }
-      
-      // Log event for debugging
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
+        CheckoutEvent.PAYMENT_UPDATE,
         LogLevel.INFO,
-        'Status do pagamento atualizado',
-        { pedidoId, status: logPagamento.payment_status || 'unknown' }
+        'Dados de pagamento PIX carregados com sucesso',
+        { 
+          pedidoId,
+          status: pixData.status,
+          hasQRCode: !!pixData.qrCodeBase64
+        }
       );
-      
+
     } catch (err: any) {
-      console.error("Error refreshing payment status:", err);
-      toast.error("Erro ao atualizar status do pagamento");
+      console.error('Erro ao buscar dados de pagamento:', err);
+      setError(err.message || 'Erro ao carregar dados de pagamento PIX');
       
       logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
+        CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        `Erro ao atualizar status: ${err.message}`,
-        { pedidoId, error: String(err) }
+        'Erro ao buscar dados de pagamento PIX',
+        { 
+          pedidoId,
+          error: err.message 
+        }
       );
+    } finally {
+      setIsLoading(false);
     }
-  };
-  
-  // Check authentication and load payment data
+  }, [pedidoId]);
+
+  const refreshPaymentStatus = useCallback(async () => {
+    if (!pedidoId || !paymentData) return;
+
+    try {
+      // Check payment status in the database
+      const { data: pedidoData, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('log_pagamento, status')
+        .eq('id', pedidoId)
+        .single();
+
+      if (pedidoError) throw pedidoError;
+
+      const pedido = unwrapData(pedidoData);
+      if (!pedido) return;
+
+      // Type assertion for safer access
+      const pedidoTyped = pedido as any;
+      const paymentLog = pedidoTyped.log_pagamento;
+
+      if (paymentLog && typeof paymentLog === 'object') {
+        const paymentLogTyped = paymentLog as any;
+        
+        setPaymentData(prev => prev ? {
+          ...prev,
+          status: paymentLogTyped.status || prev.status
+        } : null);
+
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_UPDATE,
+          LogLevel.INFO,
+          'Status de pagamento atualizado',
+          { 
+            pedidoId,
+            newStatus: paymentLogTyped.status 
+          }
+        );
+      }
+
+    } catch (err: any) {
+      console.error('Erro ao atualizar status de pagamento:', err);
+    }
+  }, [pedidoId, paymentData]);
+
   useEffect(() => {
-    if (isSessionLoading) return;
-    
-    if (!isLoggedIn) {
-      navigate('/login?redirect=/checkout');
-      return;
-    }
-    
     fetchPaymentData();
-  }, [isSessionLoading, isLoggedIn, pedidoId]);
-  
+  }, [fetchPaymentData]);
+
   return {
     isLoading,
     error,
     paymentData,
-    refreshPaymentStatus,
+    refreshPaymentStatus
   };
 };
