@@ -8,6 +8,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
 import EmergencyAdminAccess from './EmergencyAdminAccess';
 import EmergencyPasswordReset from './EmergencyPasswordReset';
+import UserMetadataSync from './UserMetadataSync';
 
 const MasterAdminFixer = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -90,7 +91,7 @@ const MasterAdminFixer = () => {
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'jefersonstilver@gmail.com',
-        password: 'admin123456' // Nova senha padrão
+        password: '573039'
       });
       
       if (error) {
@@ -170,7 +171,7 @@ const MasterAdminFixer = () => {
               </p>
               <p className="text-xs text-gray-500">
                 Email: jefersonstilver@gmail.com<br />
-                Senha: admin123456 (nova senha padrão)
+                Senha: 573039
               </p>
             </div>
           )}
@@ -204,12 +205,15 @@ const MasterAdminFixer = () => {
               {isLoading ? (
                 <>Processando...</>
               ) : (
-                <>Login Direto com Nova Senha</>
+                <>Login Direto (Senha Original)</>
               )}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Sincronização de metadados */}
+      <UserMetadataSync />
 
       {/* Reset de senha de emergência */}
       <EmergencyPasswordReset />

@@ -33,7 +33,7 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
           console.log('Sessão encontrada:', data.session.user.email);
           
           // Check if user is admin and redirect accordingly
-          const userRole = data.session.user.user_metadata?.role;
+          const userRole = await getUserRole(data.session.user.id);
           if (userRole === 'admin' || userRole === 'super_admin') {
             navigate('/admin');
           } else {
@@ -47,6 +47,39 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
     
     checkAuth();
   }, [navigate]);
+
+  // Helper function to get user role with fallback
+  const getUserRole = async (userId: string): Promise<string | null> => {
+    try {
+      // First try to get from session metadata
+      const { data: sessionData } = await supabase.auth.getSession();
+      const metadataRole = sessionData.session?.user?.user_metadata?.role;
+      
+      if (metadataRole) {
+        console.log('Role encontrado nos metadados:', metadataRole);
+        return metadataRole;
+      }
+      
+      // Fallback: query users table
+      console.log('Role não encontrado nos metadados, consultando tabela users...');
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error || !userData) {
+        console.error('Erro ao buscar role na tabela users:', error);
+        return null;
+      }
+      
+      console.log('Role encontrado na tabela users:', userData.role);
+      return userData.role;
+    } catch (err) {
+      console.error('Erro ao determinar role do usuário:', err);
+      return null;
+    }
+  };
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,14 +118,14 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
         console.log('Login bem-sucedido:', data.user.email);
         toast.success('Login realizado com sucesso!');
         
-        // Verificar role do usuário e redirecionar adequadamente
-        const userRole = data.user.user_metadata?.role;
-        console.log('User role from metadata:', userRole);
+        // Verificar role do usuário com fallback robusto
+        const userRole = await getUserRole(data.user.id);
+        console.log('Role determinado:', userRole);
         
         // Wait a bit to ensure session is properly established
         setTimeout(() => {
           if (userRole === 'admin' || userRole === 'super_admin') {
-            console.log('Redirecionando admin para:/admin');
+            console.log('Redirecionando admin para: /admin');
             navigate('/admin');
           } else {
             // Get redirect path from URL if present
@@ -188,7 +221,7 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
         </Button>
       </form>
       
-      {/* Quick login button for admin with new password */}
+      {/* Quick login button for admin */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <Button
           type="button"
@@ -196,10 +229,10 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
           className="w-full text-xs"
           onClick={() => {
             setEmail('jefersonstilver@gmail.com');
-            setPassword('admin123456'); // Nova senha padrão
+            setPassword('573039');
           }}
         >
-          Login Rápido (Master Admin) - Nova Senha
+          Login Rápido (Master Admin)
         </Button>
       </div>
     </motion.div>
