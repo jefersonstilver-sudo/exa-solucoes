@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Sync, CheckCircle, AlertTriangle } from 'lucide-react';
+import { RotateCw, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const UserMetadataSync = () => {
   const [email, setEmail] = useState('jefersonstilver@gmail.com');
@@ -56,7 +56,7 @@ const UserMetadataSync = () => {
     <Card className="max-w-md mx-auto border-blue-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-blue-600">
-          <Sync className="h-5 w-5" />
+          <RotateCw className="h-5 w-5" />
           Sincronização de Metadados
         </CardTitle>
         <CardDescription>
@@ -107,12 +107,12 @@ const UserMetadataSync = () => {
           >
             {isLoading ? (
               <>
-                <Sync className="mr-2 h-4 w-4 animate-spin" />
+                <RotateCw className="mr-2 h-4 w-4 animate-spin" />
                 Sincronizando...
               </>
             ) : (
               <>
-                <Sync className="mr-2 h-4 w-4" />
+                <RotateCw className="mr-2 h-4 w-4" />
                 Sincronizar Metadados
               </>
             )}

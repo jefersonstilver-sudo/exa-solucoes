@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Shield, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUserSession } from '@/hooks/useUserSession';
+import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import AdminDiagnostics from './AdminDiagnostics';
+import AdminFixerStatus from './AdminFixerStatus';
+import AdminFixerActions from './AdminFixerActions';
 import EmergencyAdminAccess from './EmergencyAdminAccess';
 import EmergencyPasswordReset from './EmergencyPasswordReset';
 import UserMetadataSync from './UserMetadataSync';
@@ -15,7 +15,6 @@ const MasterAdminFixer = () => {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [localAuthCheck, setLocalAuthCheck] = useState<string | null>(null);
-  const { user } = useUserSession();
   
   // Check local auth session on component load
   useEffect(() => {
@@ -51,7 +50,6 @@ const MasterAdminFixer = () => {
         }
       });
       
-      // Log response status
       console.log('Status da resposta:', response.status);
       
       const data = await response.json();
@@ -120,105 +118,22 @@ const MasterAdminFixer = () => {
   
   return (
     <div className="space-y-6">
+      <AdminDiagnostics localAuthCheck={localAuthCheck} />
+      
       <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="text-blue-500" />
-            Diagnóstico do Sistema
-          </CardTitle>
-          <CardDescription>
-            Verificar e corrigir problemas de autenticação do usuário administrador master.
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          {localAuthCheck && (
-            <div className="text-xs bg-gray-100 p-2 rounded border border-gray-300 mb-2">
-              <p>Status da autenticação: {localAuthCheck}</p>
-              {user && (
-                <p>Usuário atual: {user.email} (Role: {user.role || 'desconhecido'})</p>
-              )}
-            </div>
-          )}
-          
-          {result ? (
-            <div className="flex items-center gap-2 text-green-500">
-              <CheckCircle className="h-5 w-5" />
-              <div>
-                <p className="font-medium">{result.message}</p>
-                <p className="text-sm text-gray-600">
-                  Email: {result.user?.email}
-                </p>
-                {result.confirmed !== undefined && (
-                  <p className="text-sm text-gray-600">
-                    Email confirmado: {result.confirmed ? 'Sim' : 'Não'}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : error ? (
-            <div className="flex items-start gap-2 text-red-500">
-              <AlertCircle className="h-5 w-5 mt-0.5" />
-              <div>
-                <p className="font-medium">Erro:</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center space-y-2">
-              <p className="text-sm text-gray-600">
-                Clique para verificar e corrigir o usuário master.
-              </p>
-              <p className="text-xs text-gray-500">
-                Email: jefersonstilver@gmail.com<br />
-                Senha: 573039
-              </p>
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Button 
-              onClick={fixMasterAdmin}
-              disabled={isLoading}
-              className="w-full"
-              variant={result ? "outline" : "default"}
-            >
-              {isLoading ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Verificando...
-                </>
-              ) : (
-                <>
-                  <Shield className="mr-2 h-4 w-4" />
-                  {result ? 'Verificar Novamente' : 'Corrigir Usuario Master'}
-                </>
-              )}
-            </Button>
-            
-            <Button 
-              onClick={loginDirectly}
-              disabled={isLoading}
-              className="w-full"
-              variant="secondary"
-            >
-              {isLoading ? (
-                <>Processando...</>
-              ) : (
-                <>Login Direto (Senha Original)</>
-              )}
-            </Button>
-          </div>
+        <CardContent className="space-y-4 pt-6">
+          <AdminFixerStatus result={result} error={error} />
+          <AdminFixerActions 
+            onFixMasterAdmin={fixMasterAdmin}
+            onLoginDirectly={loginDirectly}
+            isLoading={isLoading}
+            result={result}
+          />
         </CardContent>
       </Card>
 
-      {/* Sincronização de metadados */}
       <UserMetadataSync />
-
-      {/* Reset de senha de emergência */}
       <EmergencyPasswordReset />
-
-      {/* Emergency access tools */}
       <EmergencyAdminAccess />
     </div>
   );
