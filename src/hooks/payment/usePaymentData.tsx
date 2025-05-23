@@ -67,7 +67,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         const { data, error } = await supabase
           .from('pedidos')
           .select('*')
-          .eq('id', pedidoId)
+          .eq('id', pedidoId as any)
           .limit(1);
         
         if (error) throw error;
@@ -76,7 +76,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         const order = data[0];
         
         // Verify user permission
-        if (order.client_id !== user?.id) {
+        if (order && user && order.client_id !== user.id) {
           throw new Error("Você não tem permissão para visualizar este pedido");
         }
         
@@ -119,7 +119,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
     };
     
     fetchOrderData();
-  }, [isSessionLoading, isLoggedIn, pedidoId, user?.id, navigate, uiToast]);
+  }, [isSessionLoading, isLoggedIn, pedidoId, user, navigate, uiToast]);
   
   // Update payment status
   const refreshPaymentStatus = async (): Promise<void> => {
@@ -129,7 +129,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
       const { data, error } = await supabase
         .from('pedidos')
         .select('log_pagamento')
-        .eq('id', pedidoId)
+        .eq('id', pedidoId as any)
         .limit(1);
       
       if (error) throw error;

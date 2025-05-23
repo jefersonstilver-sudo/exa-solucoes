@@ -111,6 +111,10 @@ export const usePaymentFlow = () => {
         endDate
       });
       
+      if (!pedido || !pedido.id) {
+        throw new Error("Falha ao criar pedido: dados inválidos retornados");
+      }
+      
       // Store order ID
       setCreatedOrderId(pedido.id);
       
