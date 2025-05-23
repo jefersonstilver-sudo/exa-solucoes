@@ -356,6 +356,6 @@ export const useOrderCreation = () => {
     processPaymentWithEdgeFunction,
     storeCheckoutInfo,
     createCampaignsAfterPayment,
-    createOrder // Add the missing method
+    createOrder
   };
 };
