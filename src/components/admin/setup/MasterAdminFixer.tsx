@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -6,6 +5,7 @@ import { Shield, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
+import EmergencyAdminAccess from './EmergencyAdminAccess';
 
 const MasterAdminFixer = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -116,97 +116,102 @@ const MasterAdminFixer = () => {
   };
   
   return (
-    <Card className="max-w-md mx-auto my-4">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="text-red-500" />
-          Corrigir Usuário Master
-        </CardTitle>
-        <CardDescription>
-          Corrija problemas de autenticação do usuário administrador master.
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {localAuthCheck && (
-          <div className="text-xs bg-gray-100 p-2 rounded border border-gray-300 mb-2">
-            <p>Status da autenticação: {localAuthCheck}</p>
-            {user && (
-              <p>Usuário atual: {user.email} (Role: {user.role || 'desconhecido'})</p>
-            )}
-          </div>
-        )}
+    <div className="space-y-4">
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="text-red-500" />
+            Corrigir Usuário Master
+          </CardTitle>
+          <CardDescription>
+            Corrija problemas de autenticação do usuário administrador master.
+          </CardDescription>
+        </CardHeader>
         
-        {result ? (
-          <div className="flex items-center gap-2 text-green-500">
-            <CheckCircle className="h-5 w-5" />
-            <div>
-              <p className="font-medium">{result.message}</p>
-              <p className="text-sm text-gray-600">
-                Email: {result.user?.email}
-              </p>
-              {result.confirmed !== undefined && (
-                <p className="text-sm text-gray-600">
-                  Email confirmado: {result.confirmed ? 'Sim' : 'Não'}
-                </p>
+        <CardContent className="space-y-4">
+          {localAuthCheck && (
+            <div className="text-xs bg-gray-100 p-2 rounded border border-gray-300 mb-2">
+              <p>Status da autenticação: {localAuthCheck}</p>
+              {user && (
+                <p>Usuário atual: {user.email} (Role: {user.role || 'desconhecido'})</p>
               )}
             </div>
-          </div>
-        ) : error ? (
-          <div className="flex items-start gap-2 text-red-500">
-            <AlertCircle className="h-5 w-5 mt-0.5" />
-            <div>
-              <p className="font-medium">Erro:</p>
-              <p className="text-sm">{error}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center space-y-2">
-            <p className="text-sm text-gray-600">
-              Clique para verificar e corrigir o usuário master.
-            </p>
-            <p className="text-xs text-gray-500">
-              Email: jefersonstilver@gmail.com<br />
-              Senha: 573039
-            </p>
-          </div>
-        )}
-        
-        <div className="space-y-2">
-          <Button 
-            onClick={fixMasterAdmin}
-            disabled={isLoading}
-            className="w-full"
-            variant={result ? "outline" : "default"}
-          >
-            {isLoading ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              <>
-                <Shield className="mr-2 h-4 w-4" />
-                {result ? 'Verificar Novamente' : 'Corrigir Usuario Master'}
-              </>
-            )}
-          </Button>
+          )}
           
-          <Button 
-            onClick={loginDirectly}
-            disabled={isLoading}
-            className="w-full"
-            variant="secondary"
-          >
-            {isLoading ? (
-              <>Processando...</>
-            ) : (
-              <>Login Direto como Admin</>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          {result ? (
+            <div className="flex items-center gap-2 text-green-500">
+              <CheckCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">{result.message}</p>
+                <p className="text-sm text-gray-600">
+                  Email: {result.user?.email}
+                </p>
+                {result.confirmed !== undefined && (
+                  <p className="text-sm text-gray-600">
+                    Email confirmado: {result.confirmed ? 'Sim' : 'Não'}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-start gap-2 text-red-500">
+              <AlertCircle className="h-5 w-5 mt-0.5" />
+              <div>
+                <p className="font-medium">Erro:</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center space-y-2">
+              <p className="text-sm text-gray-600">
+                Clique para verificar e corrigir o usuário master.
+              </p>
+              <p className="text-xs text-gray-500">
+                Email: jefersonstilver@gmail.com<br />
+                Senha: 573039
+              </p>
+            </div>
+          )}
+          
+          <div className="space-y-2">
+            <Button 
+              onClick={fixMasterAdmin}
+              disabled={isLoading}
+              className="w-full"
+              variant={result ? "outline" : "default"}
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                <>
+                  <Shield className="mr-2 h-4 w-4" />
+                  {result ? 'Verificar Novamente' : 'Corrigir Usuario Master'}
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={loginDirectly}
+              disabled={isLoading}
+              className="w-full"
+              variant="secondary"
+            >
+              {isLoading ? (
+                <>Processando...</>
+              ) : (
+                <>Login Direto como Admin</>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Emergency access tools */}
+      <EmergencyAdminAccess />
+    </div>
   );
 };
 
