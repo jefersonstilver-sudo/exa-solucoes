@@ -116,7 +116,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   },
   
   clearSelectedPanels: () => {
-    set({ selectedPanels: [] });
+    set({ selectedPanels: [] as string[] });
   },
   
   isPanelSelected: (panelId: string) => {
