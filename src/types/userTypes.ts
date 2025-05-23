@@ -9,6 +9,7 @@ export interface UserProfile {
   name?: string;
   avatar_url?: string;
   role?: UserRole;
+  data_criacao?: string;
 }
 
 export interface UserSessionState {
