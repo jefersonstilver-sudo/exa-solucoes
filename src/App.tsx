@@ -12,6 +12,7 @@ import PixPayment from '@/pages/PixPayment';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 import Home from '@/pages/Home';
 import Pedidos from '@/pages/Pedidos';
+import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 
 const App = () => {
   return (
@@ -26,6 +27,9 @@ const App = () => {
         
         {/* Super Admin Routes - Acesso EXCLUSIVO para jefersonstilver@gmail.com */}
         <Route path="/super_admin/*" element={<SuperAdminPage />} />
+        
+        {/* Advertiser Dashboard - Para usuários regulares */}
+        <Route path="/anunciante" element={<AdvertiserDashboard />} />
         
         {/* Client Routes */}
         <Route path="/client/*" element={<ClientRoutes />} />

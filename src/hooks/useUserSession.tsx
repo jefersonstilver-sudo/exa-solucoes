@@ -5,11 +5,18 @@ import { useAuth } from './useAuth';
 export type { UserProfile } from '@/types/userTypes';
 
 /**
- * Main hook for managing user authentication session
- * Now simplified to use the new useAuth hook
+ * Simplified hook that consolidates authentication state
+ * Now uses only useAuth as the single source of truth
  */
 export const useUserSession = () => {
   const { user, session, userProfile, isLoading, isLoggedIn, logout, hasRole } = useAuth();
+
+  console.log('useUserSession - Estado atual:', {
+    userEmail: userProfile?.email,
+    userRole: userProfile?.role,
+    isLoggedIn,
+    isLoading
+  });
 
   return {
     user: userProfile, // Use userProfile as user for backward compatibility
@@ -18,8 +25,8 @@ export const useUserSession = () => {
     isLoading,
     isLoggedIn,
     logout,
-    updateUserProfile: async () => ({ success: true }), // Simplified - not needed anymore
+    updateUserProfile: async () => ({ success: true }), // Legacy - not needed
     hasRole,
-    setUserRole: async () => ({ success: true }) // Simplified - not needed anymore
+    setUserRole: async () => ({ success: true }) // Legacy - not needed
   };
 };

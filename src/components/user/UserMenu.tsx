@@ -38,6 +38,15 @@ const UserMenu = () => {
     toast.success('Sessão encerrada com sucesso!');
   };
 
+  // Verificação RIGOROSA do super admin
+  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+  
+  console.log('UserMenu - Verificação super admin:', {
+    userEmail: user?.email,
+    userRole: user?.role,
+    isSuperAdmin
+  });
+
   // Get user role from session metadata if available, or from user object
   const getUserRole = () => {
     if (!user) return null;
@@ -51,7 +60,6 @@ const UserMenu = () => {
   
   const userRole = getUserRole();
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && userRole === 'super_admin';
 
   // Generate avatar initials from name or email
   const getInitials = () => {
@@ -164,71 +172,87 @@ const UserMenu = () => {
                               {isSuperAdmin && (
                                 <ShieldCheck className="h-4 w-4 text-amber-400" />
                               )}
-                              {isAdmin && !isSuperAdmin && (
-                                <span className="text-xs bg-green-600/20 text-green-400 px-1.5 py-0.5 rounded-sm">
-                                  Admin
-                                </span>
-                              )}
                             </div>
                             <p className="text-xs text-white/70 leading-none truncate">
                               {user?.email}
                             </p>
+                            {isSuperAdmin && (
+                              <p className="text-xs text-amber-300 leading-none">
+                                Super Administrador
+                              </p>
+                            )}
                           </div>
                         </DropdownMenuLabel>
                         
                         <DropdownMenuGroup className="p-2">
-                          {/* Super Admin Panel - Apenas para jefersonstilver@gmail.com */}
-                          {isSuperAdmin && (
-                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/20 hover:text-amber-300 focus:bg-amber-500/20 focus:text-amber-300">
-                              <Link to="/super_admin" className="flex items-center">
-                                <ShieldCheck className="mr-3 h-5 w-5 text-amber-400" />
-                                <span className="font-medium">Super Admin Panel</span>
-                              </Link>
-                            </DropdownMenuItem>
+                          {/* Super Admin Panel - EXCLUSIVO para jefersonstilver@gmail.com */}
+                          {isSuperAdmin ? (
+                            <>
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/20 hover:text-amber-300 focus:bg-amber-500/20 focus:text-amber-300">
+                                <Link to="/super_admin" className="flex items-center">
+                                  <ShieldCheck className="mr-3 h-5 w-5 text-amber-400" />
+                                  <span className="font-medium">Super Admin Panel</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              
+                              <DropdownMenuItem 
+                                onClick={handleLogout} 
+                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
+                              >
+                                <LogOut className="mr-3 h-5 w-5" />
+                                <span className="font-medium">Sair</span>
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <>
+                              {/* Menu para usuários regulares - SEM super admin */}
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                                <Link to="/minhas-campanhas" className="flex items-center">
+                                  <ClipboardList className="mr-3 h-5 w-5" />
+                                  <span className="font-medium">Minhas Campanhas</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                                <Link to="/meus-pedidos" className="flex items-center">
+                                  <ListOrdered className="mr-3 h-5 w-5" />
+                                  <span className="font-medium">Meus Pedidos</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                                <Link to="/configuracoes" className="flex items-center">
+                                  <Settings className="mr-3 h-5 w-5" />
+                                  <span className="font-medium">Configurações da Conta</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                                <Link to="/alterar-senha" className="flex items-center">
+                                  <Lock className="mr-3 h-5 w-5" />
+                                  <span className="font-medium">Alterar Senha</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              
+                              <DropdownMenuItem 
+                                onClick={handleLogout} 
+                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
+                              >
+                                <LogOut className="mr-3 h-5 w-5" />
+                                <span className="font-medium">Sair</span>
+                              </DropdownMenuItem>
+                            </>
                           )}
-                          
-                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
-                            <Link to="/minhas-campanhas" className="flex items-center">
-                              <ClipboardList className="mr-3 h-5 w-5" />
-                              <span className="font-medium">Minhas Campanhas</span>
-                            </Link>
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
-                            <Link to="/meus-pedidos" className="flex items-center">
-                              <ListOrdered className="mr-3 h-5 w-5" />
-                              <span className="font-medium">Meus Pedidos</span>
-                            </Link>
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuSeparator className="my-2 bg-white/10" />
-                          
-                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
-                            <Link to="/configuracoes" className="flex items-center">
-                              <Settings className="mr-3 h-5 w-5" />
-                              <span className="font-medium">Configurações da Conta</span>
-                            </Link>
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
-                            <Link to="/alterar-senha" className="flex items-center">
-                              <Lock className="mr-3 h-5 w-5" />
-                              <span className="font-medium">Alterar Senha</span>
-                            </Link>
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuSeparator className="my-2 bg-white/10" />
-                          
-                          <DropdownMenuItem 
-                            onClick={handleLogout} 
-                            className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
-                          >
-                            <LogOut className="mr-3 h-5 w-5" />
-                            <span className="font-medium">Sair</span>
-                          </DropdownMenuItem>
                         </DropdownMenuGroup>
                       </>
                     ) : (
+                      // ... keep existing code (login form for non-authenticated users)
                       <>
                         <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
                           <div className="text-center space-y-1">

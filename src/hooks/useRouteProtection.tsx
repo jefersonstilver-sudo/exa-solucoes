@@ -29,6 +29,13 @@ export const useRouteProtection = ({
     // Wait until we know the authentication state
     if (isLoading) return;
     
+    console.log('useRouteProtection - Estado do usuário:', { 
+      isLoggedIn, 
+      userEmail: user?.email, 
+      userRole: user?.role, 
+      requiredRole 
+    });
+    
     if (requireLogin && !isLoggedIn) {
       // User needs to be logged in but isn't
       toast.error(message);
@@ -44,16 +51,21 @@ export const useRouteProtection = ({
     
     // Check role if required
     if (requiredRole && isLoggedIn) {
+      console.log('Verificando role:', { userRole: user?.role, requiredRole });
+      
       if (!hasRole(requiredRole)) {
         // User doesn't have the required role
         toast.error(`Você não tem permissão para acessar esta página. Acesso restrito para ${requiredRole}.`);
         
-        // Redirect based on the user's highest role
-        if (user?.role === 'super_admin') {
-          navigate('/admin');
+        // CORREÇÃO: Redirect baseado no papel do usuário
+        if (user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin') {
+          console.log('Redirecionando super admin para /super_admin');
+          navigate('/super_admin');
         } else if (user?.role === 'admin') {
-          navigate('/admin');
+          console.log('Redirecionando admin regular para /anunciante');
+          navigate('/anunciante');
         } else {
+          console.log('Redirecionando usuário comum para /anunciante');
           navigate('/anunciante');
         }
         return;
@@ -61,6 +73,7 @@ export const useRouteProtection = ({
     }
     
     // User has proper authorization for this page
+    console.log('Usuário autorizado para esta página');
     setIsAuthorized(true);
   }, [isLoggedIn, isLoading, navigate, redirectTo, message, requireLogin, requiredRole, hasRole, user]);
 

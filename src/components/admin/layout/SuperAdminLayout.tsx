@@ -15,6 +15,12 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
   const { userProfile, isLoading } = useAuth();
   const navigate = useNavigate();
   
+  console.log('SuperAdminLayout - Verificando acesso:', {
+    userEmail: userProfile?.email,
+    userRole: userProfile?.role,
+    isLoading
+  });
+  
   // Proteção específica para Super Admin
   const { isAuthorized } = useRouteProtection({
     redirectTo: '/login',
@@ -23,12 +29,21 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
     requiredRole: 'super_admin'
   });
 
-  // Verificação rigorosa: só permite jefersonstilver@gmail.com
+  // Verificação rigorosa: APENAS jefersonstilver@gmail.com
   React.useEffect(() => {
     if (!isLoading && userProfile) {
+      console.log('SuperAdminLayout - Verificação rigorosa:', {
+        email: userProfile.email,
+        role: userProfile.role,
+        isExpectedSuperAdmin: userProfile.email === 'jefersonstilver@gmail.com'
+      });
+      
       if (userProfile.email !== 'jefersonstilver@gmail.com' || userProfile.role !== 'super_admin') {
+        console.log('SuperAdminLayout - ACESSO NEGADO');
         toast.error('Acesso negado. Área restrita ao Super Administrador.');
         navigate('/login');
+      } else {
+        console.log('SuperAdminLayout - ACESSO AUTORIZADO');
       }
     }
   }, [userProfile, isLoading, navigate]);
@@ -42,9 +57,11 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
   }
 
   if (!isAuthorized || userProfile?.email !== 'jefersonstilver@gmail.com') {
+    console.log('SuperAdminLayout - Não autorizado, retornando null');
     return null;
   }
 
+  console.log('SuperAdminLayout - Renderizando layout do super admin');
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <AdminSidebar />
