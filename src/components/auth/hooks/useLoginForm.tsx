@@ -71,6 +71,43 @@ export const useLoginForm = (redirectPath: string) => {
       return null;
     }
   };
+
+  // Function to check if user exists and try to sync metadata
+  const checkAndSyncUser = async (email: string) => {
+    try {
+      console.log('Verificando se usuário existe na tabela users:', email);
+      
+      // Check if user exists in users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+      
+      if (userError || !userData) {
+        console.log('Usuário não encontrado na tabela users, tentando sincronizar...');
+        
+        // Try to sync user metadata
+        const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-user-metadata', {
+          body: { email }
+        });
+        
+        if (syncError) {
+          console.error('Erro ao sincronizar metadados:', syncError);
+          return false;
+        }
+        
+        console.log('Sincronização realizada:', syncResult);
+        return true;
+      }
+      
+      console.log('Usuário encontrado na tabela users:', userData);
+      return true;
+    } catch (err) {
+      console.error('Erro ao verificar/sincronizar usuário:', err);
+      return false;
+    }
+  };
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +117,13 @@ export const useLoginForm = (redirectPath: string) => {
     try {
       console.log('Tentando fazer login com:', email);
       
-      // Primeiro, tente limpar qualquer sessão existente
+      // First check if user exists and sync if needed
+      if (email === 'jefersonstilver@gmail.com') {
+        console.log('Detectado email do master admin, verificando sincronização...');
+        await checkAndSyncUser(email);
+      }
+      
+      // Clear any existing session first
       await supabase.auth.signOut();
       console.log('Sessão anterior limpa');
       
@@ -92,7 +135,37 @@ export const useLoginForm = (redirectPath: string) => {
       if (error) {
         console.error('Erro de login detalhado:', error);
         
-        // Tratamento específico de erros
+        // For master admin, try to fix the issue automatically
+        if (email === 'jefersonstilver@gmail.com' && error.message.includes('Invalid login credentials')) {
+          console.log('Tentando corrigir usuário master admin...');
+          
+          try {
+            const { data: fixResult, error: fixError } = await supabase.functions.invoke('fix-master-admin');
+            
+            if (fixError) {
+              console.error('Erro ao corrigir master admin:', fixError);
+            } else {
+              console.log('Correção do master admin realizada:', fixResult);
+              
+              // Try login again after fix
+              const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+              });
+              
+              if (!retryError && retryData.session) {
+                console.log('Login bem-sucedido após correção');
+                toast.success('Login realizado com sucesso após correção automática!');
+                navigate('/admin');
+                return;
+              }
+            }
+          } catch (fixErr) {
+            console.error('Erro na tentativa de correção automática:', fixErr);
+          }
+        }
+        
+        // Standard error handling
         if (error.message.includes('Invalid login credentials')) {
           setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.');
         } else if (error.message.includes('Email not confirmed')) {
