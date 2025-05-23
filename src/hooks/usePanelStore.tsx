@@ -44,7 +44,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   loading: false,
   isLoading: false, // Alias for loading
   error: null,
-  selectedPanels: [] as string[], // FIXED: Explicitly typed as string array
+  selectedPanels: [], // FIXED: Initialize as empty array
   searchRadius: 500,
   searchLocation: '',
   selectedLocation: null,
@@ -102,7 +102,7 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   
   togglePanelSelection: (panelId: string) => {
     set((state) => {
-      const currentSelection = state.selectedPanels || []; // Ensure it's an array
+      const currentSelection = Array.isArray(state.selectedPanels) ? state.selectedPanels : [];
       if (currentSelection.includes(panelId)) {
         return {
           selectedPanels: currentSelection.filter(id => id !== panelId)
@@ -120,18 +120,19 @@ export const usePanelStore = create<PanelStoreState>((set, get) => ({
   },
   
   isPanelSelected: (panelId: string) => {
-    const selectedPanels = get().selectedPanels || []; // Ensure it's an array
-    return selectedPanels.includes(panelId);
+    const selectedPanels = get().selectedPanels;
+    return Array.isArray(selectedPanels) ? selectedPanels.includes(panelId) : false;
   },
   
   getSelectedPanelCount: () => {
-    const selectedPanels = get().selectedPanels || []; // Ensure it's an array
-    return selectedPanels.length;
+    const selectedPanels = get().selectedPanels;
+    return Array.isArray(selectedPanels) ? selectedPanels.length : 0;
   },
   
   getSelectedPanels: () => {
-    const selectedPanels = get().selectedPanels || []; // Ensure it's an array
-    return get().panels.filter(panel => selectedPanels.includes(panel.id));
+    const selectedPanels = get().selectedPanels;
+    const panels = get().panels;
+    return Array.isArray(selectedPanels) ? panels.filter(panel => selectedPanels.includes(panel.id)) : [];
   },
   
   handleSearch: async (location: string) => {

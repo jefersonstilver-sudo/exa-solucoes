@@ -200,22 +200,25 @@ export const useOrderCreation = () => {
           ? updatedOrderTyped.lista_paineis 
           : [updatedOrderTyped.lista_paineis];
 
-        const campaignData = panelIds.map((panelId: string) => prepareForInsert({
-          client_id: sessionUser.id,
-          painel_id: panelId,
-          video_id: 'default_video_id', // This should come from user's uploaded video
-          data_inicio: updatedOrderTyped.data_inicio,
-          data_fim: updatedOrderTyped.data_fim,
-          status: 'ativa'
-        }));
+        // FIXED: Create campaigns one by one instead of using spread operator
+        for (const panelId of panelIds) {
+          const campaignData = prepareForInsert({
+            client_id: sessionUser.id,
+            painel_id: panelId,
+            video_id: 'default_video_id', // This should come from user's uploaded video
+            data_inicio: updatedOrderTyped.data_inicio,
+            data_fim: updatedOrderTyped.data_fim,
+            status: 'ativa'
+          });
 
-        const { error: campaignError } = await supabase
-          .from('campanhas')
-          .insert(campaignData as any);
+          const { error: campaignError } = await supabase
+            .from('campanhas')
+            .insert(campaignData as any);
 
-        if (campaignError) {
-          console.error('Erro ao criar campanhas:', campaignError);
-          // Don't fail the payment process for campaign creation errors
+          if (campaignError) {
+            console.error('Erro ao criar campanha:', campaignError);
+            // Don't fail the payment process for campaign creation errors
+          }
         }
       }
 
@@ -303,21 +306,24 @@ export const useOrderCreation = () => {
         throw new Error('Nenhum painel encontrado no pedido');
       }
       
-      const campaignData = panelIds.map(panelId => prepareForInsert({
-        client_id: userId,
-        painel_id: panelId,
-        video_id: 'default_video_id', // This should come from user's uploaded video
-        data_inicio: orderData.data_inicio,
-        data_fim: orderData.data_fim,
-        status: 'ativa'
-      }));
-      
-      const { error: campaignError } = await supabase
-        .from('campanhas')
-        .insert(campaignData as any);
-      
-      if (campaignError) {
-        throw new Error(`Erro ao criar campanhas: ${campaignError.message}`);
+      // FIXED: Create campaigns one by one instead of using spread operator
+      for (const panelId of panelIds) {
+        const campaignData = prepareForInsert({
+          client_id: userId,
+          painel_id: panelId,
+          video_id: 'default_video_id', // This should come from user's uploaded video
+          data_inicio: orderData.data_inicio,
+          data_fim: orderData.data_fim,
+          status: 'ativa'
+        });
+        
+        const { error: campaignError } = await supabase
+          .from('campanhas')
+          .insert(campaignData as any);
+        
+        if (campaignError) {
+          throw new Error(`Erro ao criar campanha: ${campaignError.message}`);
+        }
       }
       
       return { success: true, message: 'Campanhas criadas com sucesso' };
@@ -327,16 +333,10 @@ export const useOrderCreation = () => {
     }
   };
 
-  // Corrigido: Define a createOrder corretamente passando cada parâmetro individualmente
-  const createOrder = async (orderData: CreatePaymentOrderParams) => {
-    return createPaymentOrder(orderData);
-  };
-
   return {
     createPaymentOrder,
     processPaymentWithEdgeFunction,
     storeCheckoutInfo,
-    createCampaignsAfterPayment,
-    createOrder
+    createCampaignsAfterPayment
   };
 };

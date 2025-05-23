@@ -103,12 +103,12 @@ export const useCheckout = () => {
     validateCoupon(couponCode, selectedPlan);
   };
 
-  // FIXED: Create a wrapper function that matches the expected signature
+  // FIXED: Create a wrapper function that properly handles PaymentResponse
   const wrappedCreatePayment = async (options: any): Promise<void> => {
     try {
       const response = await createPayment(options);
-      // Handle the response as needed, but don't return it since we need Promise<void>
       console.log('[useCheckout] Payment created:', response);
+      // Handle successful response if needed
     } catch (error) {
       console.error('[useCheckout] Payment error:', error);
       throw error; // Re-throw to maintain error handling

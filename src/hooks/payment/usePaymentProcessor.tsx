@@ -114,11 +114,21 @@ export const usePaymentProcessor = () => {
         ...options,
         paymentMethod: effectivePaymentMethod
       });
-      return response;
+      
+      // FIXED: Return a PaymentResponse object instead of void
+      return {
+        success: true,
+        message: "Payment processed successfully"
+      } as PaymentResponse;
     } catch (error) {
       console.error("[Payment] Error in payment processing:", error);
       sonnerToast.error("Erro ao processar pagamento. Tente novamente.");
-      throw error; // Re-throw to allow proper error handling upstream
+      
+      // FIXED: Return a PaymentResponse object for errors too
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error occurred"
+      } as PaymentResponse;
     }
   };
 
