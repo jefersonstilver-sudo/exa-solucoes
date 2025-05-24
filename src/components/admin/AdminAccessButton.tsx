@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LockKeyhole, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Crown, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useUserSession } from '@/hooks/useUserSession';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import {
   Tooltip,
@@ -22,25 +22,40 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
   variant = 'default'
 }) => {
   const navigate = useNavigate();
-  const { isLoggedIn, user, hasRole } = useUserSession();
+  const { isLoggedIn, userProfile, hasRole } = useAuth();
 
-  // Check role from the user object (which now comes from the database)
-  const isSuperAdmin = user?.role === 'super_admin';
-  const isAdmin = hasRole('admin');
+  // CORREÇÃO CRÍTICA: Detectar super admin corretamente
+  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
+  const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
+  
+  console.log('🔍 AdminAccessButton - Estado:', {
+    userEmail: userProfile?.email,
+    userRole: userProfile?.role,
+    isSuperAdmin,
+    isRegularAdmin,
+    isLoggedIn
+  });
   
   const handleAdminAccess = () => {
     if (!isLoggedIn) {
       toast.error('Você precisa estar logado para acessar a área administrativa');
-      navigate('/login?redirect=/admin');
+      navigate('/login?redirect=/super_admin');
       return;
     }
     
-    if (!isAdmin) {
+    // REDIRECIONAMENTO CORRETO BASEADO NO TIPO DE ADMIN
+    if (isSuperAdmin) {
+      console.log('🚀 SUPER ADMIN DETECTADO - Redirecionando para /super_admin');
+      toast.success('Acessando Painel Super Administrativo');
+      navigate('/super_admin');
+    } else if (isRegularAdmin) {
+      console.log('👤 Admin regular detectado - Redirecionando para /anunciante');
+      toast.success('Acessando Área Administrativa');
+      navigate('/anunciante');
+    } else {
       toast.error('Você não tem permissão para acessar a área administrativa');
       return;
     }
-    
-    navigate('/admin');
   };
 
   if (variant === 'icon') {
@@ -55,14 +70,16 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
               className={`relative ${className}`}
             >
               {isSuperAdmin ? (
-                <ShieldCheck className="h-5 w-5 text-amber-500" />
+                <Crown className="h-5 w-5 text-amber-500" />
+              ) : isRegularAdmin ? (
+                <ShieldCheck className="h-5 w-5 text-green-500" />
               ) : (
-                <LockKeyhole className={`h-5 w-5 ${isAdmin ? 'text-green-500' : 'text-gray-400'}`} />
+                <Lock className="h-5 w-5 text-gray-400" />
               )}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {isAdmin ? 'Acessar área administrativa' : 'Acesso restrito'}
+            {isSuperAdmin ? 'Acessar Super Admin' : isRegularAdmin ? 'Acessar área administrativa' : 'Acesso restrito'}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -76,14 +93,16 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
         size="sm"
         onClick={handleAdminAccess}
         className={`flex items-center gap-2 text-sm ${className}`}
-        disabled={!isAdmin}
+        disabled={!isLoggedIn || (!isSuperAdmin && !isRegularAdmin)}
       >
         {isSuperAdmin ? (
-          <ShieldCheck className="h-4 w-4 text-amber-500" />
+          <Crown className="h-4 w-4 text-amber-500" />
+        ) : isRegularAdmin ? (
+          <ShieldCheck className="h-4 w-4 text-green-500" />
         ) : (
-          <LockKeyhole className={`h-4 w-4 ${isAdmin ? 'text-green-500' : 'text-gray-400'}`} />
+          <Lock className="h-4 w-4 text-gray-400" />
         )}
-        <span>Área Admin</span>
+        <span>{isSuperAdmin ? 'Super Admin' : 'Área Admin'}</span>
         <ArrowRight className="h-3 w-3" />
       </Button>
     );
@@ -91,18 +110,20 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
 
   return (
     <Button
-      variant="outline"
+      variant={isSuperAdmin ? "default" : "outline"}
       onClick={handleAdminAccess}
-      className={`flex items-center gap-2 ${className}`}
-      disabled={!isAdmin}
+      className={`flex items-center gap-2 ${isSuperAdmin ? 'bg-amber-500 hover:bg-amber-600 text-slate-900' : ''} ${className}`}
+      disabled={!isLoggedIn || (!isSuperAdmin && !isRegularAdmin)}
     >
       {isSuperAdmin ? (
-        <ShieldCheck className="h-5 w-5 text-amber-500" />
+        <Crown className="h-5 w-5" />
+      ) : isRegularAdmin ? (
+        <ShieldCheck className="h-5 w-5" />
       ) : (
-        <LockKeyhole className={`h-5 w-5 ${isAdmin ? 'text-green-500' : 'text-gray-400'}`} />
+        <Lock className="h-5 w-5" />
       )}
-      <span>Área Administrativa</span>
-      {isAdmin && <ArrowRight className="h-4 w-4 ml-1" />}
+      <span>{isSuperAdmin ? 'Super Administrativo' : 'Área Administrativa'}</span>
+      {(isSuperAdmin || isRegularAdmin) && <ArrowRight className="h-4 w-4 ml-1" />}
     </Button>
   );
 };

@@ -4,12 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { useUserSession } from '@/hooks/useUserSession';
+import { useAuth } from '@/hooks/useAuth';
+import AdminAccessButton from '@/components/admin/AdminAccessButton';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, hasRole, user } = useUserSession();
-  const isAdmin = hasRole('admin');
+  const { isLoggedIn, userProfile, hasRole } = useAuth();
+  
+  // CORREÇÃO: Usar apenas useAuth para verificações
+  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
+  const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
 
   return (
     <Layout>
@@ -57,16 +61,11 @@ const Home: React.FC = () => {
             </div>
           )}
           
-          {/* Admin panel access for logged admin users */}
-          {isLoggedIn && isAdmin && (
+          {/* CORREÇÃO CRÍTICA: Usar AdminAccessButton unificado */}
+          {isLoggedIn && (isSuperAdmin || isRegularAdmin) && (
             <div className="mt-8 pt-4 border-t border-gray-200">
               <div className="flex justify-center">
-                <Button
-                  onClick={() => navigate('/admin')}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  Acessar Painel Administrativo
-                </Button>
+                <AdminAccessButton />
               </div>
             </div>
           )}

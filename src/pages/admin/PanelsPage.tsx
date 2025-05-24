@@ -1,718 +1,261 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ImageIcon, 
-  Search, 
-  PlusCircle, 
-  RefreshCw, 
-  Filter, 
-  MoreVertical,
-  Edit,
-  Trash2,
-  Building,
-  ChevronDown,
-  AlertCircle
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
-import AdminLayout from '@/components/admin/layout/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { 
+  Search,
+  Filter,
+  Plus,
+  MonitorPlay,
+  MapPin,
+  Wifi,
+  WifiOff,
+  Settings,
+  Eye,
+  MoreHorizontal
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dropdown-menu";
 
-interface Panel {
-  id: string;
-  code: string;
-  status: string;
-  resolucao?: string;
-  modo?: string;
-  ultima_sync?: string;
-  building_id: string;
-  building?: {
-    nome: string;
-    endereco: string;
-    bairro: string;
-  };
-}
-
-interface Building {
-  id: string;
-  nome: string;
-  endereco: string;
-}
-
-const PanelsPage: React.FC = () => {
-  const navigate = useNavigate();
-  
-  const [panels, setPanels] = useState<Panel[]>([]);
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const PanelsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
-  
-  const [formData, setFormData] = useState({
-    code: '',
-    building_id: '',
-    status: 'offline',
-    resolucao: '',
-    modo: '',
-  });
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    fetchPanels();
-    fetchBuildings();
-  }, []);
-  
-  const fetchPanels = async () => {
-    try {
-      setIsLoading(true);
-      
-      const { data, error } = await supabase
-        .from('painels')
-        .select(`
-          *,
-          buildings (
-            id,
-            nome,
-            endereco,
-            bairro
-          )
-        `)
-        .order('code', { ascending: true });
-      
-      if (error) throw error;
-      
-      console.log('Panels loaded:', data);
-      setPanels(data || []);
-    } catch (error) {
-      console.error('Error loading panels:', error);
-      toast.error('Erro ao carregar painéis');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const fetchBuildings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('buildings')
-        .select('id, nome, endereco')
-        .eq('status', 'ativo')
-        .order('nome', { ascending: true });
-      
-      if (error) throw error;
-      
-      setBuildings(data || []);
-    } catch (error) {
-      console.error('Error loading buildings:', error);
-    }
-  };
-  
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-  
-  const handleFilterChange = (value: string | null) => {
-    setFilterStatus(value);
-  };
-  
-  const filteredPanels = panels.filter(panel => {
-    // Apply status filter
-    if (filterStatus && panel.status !== filterStatus) {
-      return false;
-    }
-    
-    // Apply search
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        panel.code.toLowerCase().includes(searchLower) ||
-        (panel.building?.nome && panel.building.nome.toLowerCase().includes(searchLower)) ||
-        (panel.building?.endereco && panel.building.endereco.toLowerCase().includes(searchLower))
-      );
-    }
-    
-    return true;
-  });
-  
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  const resetForm = () => {
-    setFormData({
-      code: '',
-      building_id: '',
+  // Mock data
+  const panels = [
+    {
+      id: '1',
+      code: 'P001',
+      name: 'Painel Shopping Center Norte',
+      building: 'Shopping Center Norte',
+      location: 'São Paulo, SP',
+      status: 'online',
+      resolution: '1920x1080',
+      lastSync: '2024-01-15 14:30',
+      campaigns: 3
+    },
+    {
+      id: '2',
+      code: 'P002',
+      name: 'Painel Av. Paulista',
+      building: 'Edifício Comercial Paulista',
+      location: 'São Paulo, SP',
       status: 'offline',
-      resolucao: '',
-      modo: '',
-    });
+      resolution: '1920x1080',
+      lastSync: '2024-01-14 10:15',
+      campaigns: 1
+    },
+    {
+      id: '3',
+      code: 'P003',
+      name: 'Painel Centro Comercial',
+      building: 'Centro Comercial Downtown',
+      location: 'São Paulo, SP',
+      status: 'maintenance',
+      resolution: '1366x768',
+      lastSync: '2024-01-13 16:45',
+      campaigns: 0
+    },
+  ];
+
+  const getStatusInfo = (status: string) => {
+    const statusMap: Record<string, { variant: any, label: string, icon: any, color: string }> = {
+      online: { variant: 'success', label: 'Online', icon: Wifi, color: 'text-green-400' },
+      offline: { variant: 'destructive', label: 'Offline', icon: WifiOff, color: 'text-red-400' },
+      maintenance: { variant: 'secondary', label: 'Manutenção', icon: Settings, color: 'text-orange-400' }
+    };
+    return statusMap[status] || statusMap.offline;
   };
-  
-  const handleAddPanel = async () => {
-    try {
-      // Validate required fields
-      if (!formData.code || !formData.building_id) {
-        toast.error('Preencha os campos obrigatórios');
-        return;
-      }
-      
-      // Check if code already exists
-      const { data: existingPanel, error: checkError } = await supabase
-        .from('painels')
-        .select('id')
-        .eq('code', formData.code)
-        .single();
-        
-      if (existingPanel) {
-        toast.error('Já existe um painel com este código');
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('painels')
-        .insert([formData])
-        .select();
-        
-      if (error) throw error;
-      
-      toast.success('Painel adicionado com sucesso');
-      setShowAddDialog(false);
-      resetForm();
-      fetchPanels();
-    } catch (error) {
-      console.error('Error adding panel:', error);
-      toast.error('Erro ao adicionar painel');
-    }
-  };
-  
-  const handleEditClick = (panel: Panel) => {
-    setSelectedPanel(panel);
-    setFormData({
-      code: panel.code || '',
-      building_id: panel.building_id || '',
-      status: panel.status || 'offline',
-      resolucao: panel.resolucao || '',
-      modo: panel.modo || '',
-    });
-    setShowEditDialog(true);
-  };
-  
-  const handleUpdatePanel = async () => {
-    if (!selectedPanel) return;
-    
-    try {
-      // Validate required fields
-      if (!formData.code || !formData.building_id) {
-        toast.error('Preencha os campos obrigatórios');
-        return;
-      }
-      
-      // If code changed, check if new code already exists
-      if (formData.code !== selectedPanel.code) {
-        const { data: existingPanel, error: checkError } = await supabase
-          .from('painels')
-          .select('id')
-          .eq('code', formData.code)
-          .single();
-          
-        if (existingPanel) {
-          toast.error('Já existe um painel com este código');
-          return;
-        }
-      }
-      
-      const { error } = await supabase
-        .from('painels')
-        .update(formData)
-        .eq('id', selectedPanel.id);
-        
-      if (error) throw error;
-      
-      toast.success('Painel atualizado com sucesso');
-      setShowEditDialog(false);
-      resetForm();
-      fetchPanels();
-    } catch (error) {
-      console.error('Error updating panel:', error);
-      toast.error('Erro ao atualizar painel');
-    }
-  };
-  
-  const handleDeleteClick = (panel: Panel) => {
-    setSelectedPanel(panel);
-    setShowDeleteDialog(true);
-  };
-  
-  const handleDeletePanel = async () => {
-    if (!selectedPanel) return;
-    
-    try {
-      // Check if panel is in use by campaigns
-      const { data: campaigns, error: checkError } = await supabase
-        .from('campanhas')
-        .select('id')
-        .eq('painel_id', selectedPanel.id)
-        .limit(1);
-        
-      if (campaigns && campaigns.length > 0) {
-        toast.error('Este painel está sendo usado em campanhas ativas');
-        setShowDeleteDialog(false);
-        return;
-      }
-      
-      const { error } = await supabase
-        .from('painels')
-        .delete()
-        .eq('id', selectedPanel.id);
-        
-      if (error) throw error;
-      
-      toast.success('Painel removido com sucesso');
-      setShowDeleteDialog(false);
-      fetchPanels();
-    } catch (error) {
-      console.error('Error deleting panel:', error);
-      toast.error('Erro ao remover painel');
-    }
-  };
-  
-  const getPanelStatusBadge = (status: string) => {
-    switch (status) {
-      case 'online':
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Online</Badge>;
-      case 'offline':
-        return <Badge className="bg-red-100 text-red-800 border-red-200">Offline</Badge>;
-      case 'maintenance':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Manutenção</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-  
-  const formatLastSync = (date?: string) => {
-    if (!date) return 'Nunca';
-    
-    const syncDate = new Date(date);
-    const now = new Date();
-    const diffMs = now.getTime() - syncDate.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffHours / 24);
-    
-    if (diffMins < 60) {
-      return `${diffMins} min atrás`;
-    } else if (diffHours < 24) {
-      return `${diffHours} h atrás`;
-    } else {
-      return `${diffDays} d atrás`;
-    }
-  };
+
+  const filteredPanels = panels.filter(panel => {
+    const matchesSearch = panel.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         panel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         panel.building.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || panel.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <AdminLayout title="Gestão de Painéis">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
-              <ImageIcon className="mr-2 h-6 w-6 text-indexa-purple" />
-              Gestão de Painéis
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Gerencie todos os painéis cadastrados no sistema
-            </p>
-          </motion.div>
-          
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchPanels} 
-              className="flex items-center"
-            >
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Atualizar
-            </Button>
-            <Button 
-              onClick={() => setShowAddDialog(true)}
-              className="flex items-center"
-            >
-              <PlusCircle className="h-4 w-4 mr-1" />
-              Adicionar Painel
-            </Button>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Gerenciar Painéis</h1>
+          <p className="text-slate-400">Monitore e gerencie todos os painéis digitais</p>
         </div>
-        
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center space-x-2 flex-1">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-              <Input 
-                placeholder="Buscar por código ou prédio..." 
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="pl-8"
-              />
-            </div>
-            <Button variant="outline" size="sm" className="flex items-center">
-              <Filter className="h-4 w-4 mr-1" />
-              Filtros
-              <ChevronDown className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Select
-              onValueChange={(value) => handleFilterChange(value === 'all' ? null : value)}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="online">Online</SelectItem>
-                <SelectItem value="offline">Offline</SelectItem>
-                <SelectItem value="maintenance">Manutenção</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Lista de Painéis</CardTitle>
+        <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900">
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Painel
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-300">Total de Painéis</CardTitle>
+            <MonitorPlay className="h-4 w-4 text-amber-400" />
           </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indexa-purple"></div>
-              </div>
-            ) : filteredPanels.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Prédio</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Última Sincronização</TableHead>
-                      <TableHead>Resolução</TableHead>
-                      <TableHead>Modo</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPanels.map((panel) => (
-                      <TableRow 
-                        key={panel.id} 
-                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                      >
-                        <TableCell 
-                          className="font-medium"
-                          onClick={() => navigate(`/admin/paineis/${panel.id}`)}
-                        >
-                          {panel.code}
-                        </TableCell>
-                        <TableCell
-                          onClick={() => navigate(`/admin/paineis/${panel.id}`)}
-                        >
-                          <div className="flex flex-col">
-                            <span>{panel.building?.nome || 'N/A'}</span>
-                            <span className="text-xs text-gray-500">
-                              {panel.building?.bairro || ''}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell
-                          onClick={() => navigate(`/admin/paineis/${panel.id}`)}
-                        >
-                          {getPanelStatusBadge(panel.status)}
-                        </TableCell>
-                        <TableCell
-                          onClick={() => navigate(`/admin/paineis/${panel.id}`)}
-                        >
-                          {formatLastSync(panel.ultima_sync)}
-                        </TableCell>
-                        <TableCell
-                          onClick={() => navigate(`/admin/paineis/${panel.id}`)}
-                        >
-                          {panel.resolucao || 'N/A'}
-                        </TableCell>
-                        <TableCell
-                          onClick={() => navigate(`/admin/paineis/${panel.id}`)}
-                        >
-                          {panel.modo || 'Normal'}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => navigate(`/admin/paineis/${panel.id}`)}>
-                                Ver Detalhes
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditClick(panel)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteClick(panel)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Remover
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                Nenhum painel encontrado com os filtros atuais
-              </div>
-            )}
+          <CardContent>
+            <div className="text-2xl font-bold text-white">89</div>
+            <p className="text-xs text-green-400">+5 este mês</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-300">Online</CardTitle>
+            <Wifi className="h-4 w-4 text-green-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">67</div>
+            <p className="text-xs text-green-400">75% operational</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-300">Offline</CardTitle>
+            <WifiOff className="h-4 w-4 text-red-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">15</div>
+            <p className="text-xs text-red-400">Requer atenção</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-300">Manutenção</CardTitle>
+            <Settings className="h-4 w-4 text-orange-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">7</div>
+            <p className="text-xs text-orange-400">Em manutenção</p>
           </CardContent>
         </Card>
       </div>
-      
-      {/* Add Panel Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Adicionar Novo Painel</DialogTitle>
-            <DialogDescription>
-              Preencha os campos abaixo para adicionar um novo painel ao sistema.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label htmlFor="code" className="mb-1">Código do Painel*</Label>
-              <Input
-                id="code"
-                name="code"
-                value={formData.code}
-                onChange={handleFormChange}
-                placeholder="Ex: PAINEL-001"
-              />
+
+      {/* Filters */}
+      <Card className="bg-slate-800/50 border-slate-700/50">
+        <CardHeader>
+          <CardTitle className="text-white">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Buscar por código, nome ou prédio..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="building_id" className="mb-1">Prédio*</Label>
-              <Select
-                value={formData.building_id}
-                onValueChange={(value) => handleSelectChange('building_id', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o prédio" />
-                </SelectTrigger>
-                <SelectContent>
-                  {buildings.map((building) => (
-                    <SelectItem key={building.id} value={building.id}>
-                      {building.nome} - {building.endereco}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="status" className="mb-1">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => handleSelectChange('status', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="offline">Offline</SelectItem>
-                  <SelectItem value="maintenance">Manutenção</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="resolucao" className="mb-1">Resolução</Label>
-              <Input
-                id="resolucao"
-                name="resolucao"
-                value={formData.resolucao}
-                onChange={handleFormChange}
-                placeholder="Ex: 1920x1080"
-              />
-            </div>
-            <div>
-              <Label htmlFor="modo" className="mb-1">Modo de Exibição</Label>
-              <Input
-                id="modo"
-                name="modo"
-                value={formData.modo}
-                onChange={handleFormChange}
-                placeholder="Ex: Fullscreen"
-              />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-slate-600 text-slate-300">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-slate-800 border-slate-700">
+                <DropdownMenuItem onClick={() => setStatusFilter('all')} className="text-slate-300">
+                  Todos
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter('online')} className="text-slate-300">
+                  Online
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter('offline')} className="text-slate-300">
+                  Offline
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter('maintenance')} className="text-slate-300">
+                  Manutenção
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
-            <Button onClick={handleAddPanel}>Adicionar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Panel Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Editar Painel</DialogTitle>
-            <DialogDescription>
-              Edite as informações do painel.
-            </DialogDescription>
-          </DialogHeader>
-          {/* Same form fields as Add Panel Dialog */}
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label htmlFor="edit-code" className="mb-1">Código do Painel*</Label>
-              <Input
-                id="edit-code"
-                name="code"
-                value={formData.code}
-                onChange={handleFormChange}
-                placeholder="Ex: PAINEL-001"
-              />
-            </div>
-            <div>
-              <Label htmlFor="building_id" className="mb-1">Prédio*</Label>
-              <Select
-                value={formData.building_id}
-                onValueChange={(value) => handleSelectChange('building_id', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o prédio" />
-                </SelectTrigger>
-                <SelectContent>
-                  {buildings.map((building) => (
-                    <SelectItem key={building.id} value={building.id}>
-                      {building.nome} - {building.endereco}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="status" className="mb-1">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => handleSelectChange('status', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="offline">Offline</SelectItem>
-                  <SelectItem value="maintenance">Manutenção</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="resolucao" className="mb-1">Resolução</Label>
-              <Input
-                id="resolucao"
-                name="resolucao"
-                value={formData.resolucao}
-                onChange={handleFormChange}
-                placeholder="Ex: 1920x1080"
-              />
-            </div>
-            <div>
-              <Label htmlFor="modo" className="mb-1">Modo de Exibição</Label>
-              <Input
-                id="modo"
-                name="modo"
-                value={formData.modo}
-                onChange={handleFormChange}
-                placeholder="Ex: Fullscreen"
-              />
-            </div>
+        </CardContent>
+      </Card>
+
+      {/* Panels List */}
+      <Card className="bg-slate-800/50 border-slate-700/50">
+        <CardHeader>
+          <CardTitle className="text-white">Lista de Painéis</CardTitle>
+          <CardDescription className="text-slate-400">
+            {filteredPanels.length} painéis encontrados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {filteredPanels.map((panel) => {
+              const statusInfo = getStatusInfo(panel.status);
+              const StatusIcon = statusInfo.icon;
+              
+              return (
+                <div key={panel.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                      <MonitorPlay className="h-6 w-6 text-amber-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-medium text-white">{panel.code}</h3>
+                        <Badge variant={statusInfo.variant} className="text-xs flex items-center gap-1">
+                          <StatusIcon className="h-3 w-3" />
+                          {statusInfo.label}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-slate-300">{panel.name}</p>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="h-3 w-3 text-slate-400" />
+                          <p className="text-xs text-slate-400">{panel.building}</p>
+                        </div>
+                        <p className="text-xs text-slate-400">Resolução: {panel.resolution}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="text-sm text-white">{panel.campaigns} campanhas ativas</p>
+                      <p className="text-xs text-slate-400">Última sync: {panel.lastSync}</p>
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-slate-800 border-slate-700">
+                        <DropdownMenuItem className="text-slate-300">
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-slate-300">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Configurar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
-            <Button onClick={handleUpdatePanel}>Atualizar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Panel Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Confirmar Remoção</DialogTitle>
-            <DialogDescription>
-              Você tem certeza que deseja remover o painel "{selectedPanel?.code}"? Esta ação não pode ser desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeletePanel}>Remover Painel</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </AdminLayout>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
