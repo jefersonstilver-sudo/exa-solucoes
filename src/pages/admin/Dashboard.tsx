@@ -1,276 +1,201 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  BuildingIcon, 
-  ImageIcon, 
-  ShoppingBag, 
-  ArrowUp, 
-  ArrowDown,
-  Users,
-  Calendar
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import AdminLayout from '@/components/admin/layout/AdminLayout';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { 
+  Users, 
+  ShoppingBag, 
+  MonitorPlay, 
+  Building2, 
+  TrendingUp, 
+  DollarSign,
+  Activity,
+  FileText,
+  Settings,
+  Crown,
+  Shield,
+  Bell
+} from 'lucide-react';
 
-// Types
-interface DashboardStats {
-  totalBuildings: number;
-  activePanels: number;
-  pendingOrders: number;
-  totalRevenue: number;
-  recentOrders: any[];
-}
+const Dashboard = () => {
+  const stats = [
+    {
+      title: 'Total de Usuários',
+      value: '2,543',
+      change: '+12%',
+      icon: Users,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50'
+    },
+    {
+      title: 'Pedidos Ativos',
+      value: '124',
+      change: '+8%',
+      icon: ShoppingBag,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    },
+    {
+      title: 'Painéis Online',
+      value: '89',
+      change: '+15%',
+      icon: MonitorPlay,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
+    },
+    {
+      title: 'Receita Mensal',
+      value: 'R$ 45.230',
+      change: '+23%',
+      icon: DollarSign,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50'
+    }
+  ];
 
-// Dummy data (will be replaced with real data)
-const fetchDashboardData = async (): Promise<DashboardStats> => {
-  try {
-    // Get buildings count
-    const { count: buildingsCount, error: buildingsError } = await supabase
-      .from('buildings')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'ativo');
-    
-    // Get panels count
-    const { count: panelsCount, error: panelsError } = await supabase
-      .from('painels')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'online');
-    
-    // Get pending orders
-    const { count: pendingOrdersCount, error: pendingOrdersError } = await supabase
-      .from('pedidos')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'pendente');
-    
-    // Get total revenue
-    const { data: revenueData, error: revenueError } = await supabase
-      .from('pedidos')
-      .select('valor_total')
-      .eq('status', 'pago');
-    
-    let totalRevenue = 0;
-    if (revenueData) {
-      totalRevenue = revenueData.reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0);
-    }
-    
-    // Get recent orders
-    const { data: recentOrders, error: recentOrdersError } = await supabase
-      .from('pedidos')
-      .select(`
-        id, 
-        created_at, 
-        valor_total, 
-        status, 
-        client_id,
-        plano_meses
-      `)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    
-    if (buildingsError || panelsError || pendingOrdersError || revenueError || recentOrdersError) {
-      console.error("Error fetching dashboard data:", { 
-        buildingsError, panelsError, pendingOrdersError, revenueError, recentOrdersError 
-      });
-      throw new Error("Failed to fetch dashboard data");
-    }
-    
-    return {
-      totalBuildings: buildingsCount || 0,
-      activePanels: panelsCount || 0,
-      pendingOrders: pendingOrdersCount || 0,
-      totalRevenue,
-      recentOrders: recentOrders || []
-    };
-  } catch (error) {
-    console.error("Error in fetchDashboardData:", error);
-    // Return default values if there's an error
-    return {
-      totalBuildings: 0,
-      activePanels: 0,
-      pendingOrders: 0,
-      totalRevenue: 0,
-      recentOrders: []
-    };
-  }
-};
-
-const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
-  
-  // Fetch dashboard data
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['dashboardData'],
-    queryFn: fetchDashboardData,
-    refetchInterval: 60000 // Refetch every minute
-  });
-  
-  // Format currency
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-  
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-  
-  // Handle status badge color
-  const getStatusBadge = (status: string) => {
-    switch(status.toLowerCase()) {
-      case 'pendente':
-      case 'false':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pendente</Badge>;
-      case 'pago':
-      case 'true':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Pago</Badge>;
-      case 'cancelado':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Cancelado</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  const recentActivities = [
+    { id: 1, action: 'Novo usuário registrado', user: 'João Silva', time: '5 min atrás', type: 'user' },
+    { id: 2, action: 'Pedido #1234 confirmado', user: 'Sistema', time: '10 min atrás', type: 'order' },
+    { id: 3, action: 'Painel P-001 atualizado', user: 'Sistema', time: '15 min atrás', type: 'panel' },
+    { id: 4, action: 'Backup realizado com sucesso', user: 'Sistema', time: '1 hora atrás', type: 'system' }
+  ];
 
   return (
-    <AdminLayout title="Dashboard">
-      <div className="space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Prédios Cadastrados</CardTitle>
-              <BuildingIcon className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : data?.totalBuildings}</div>
-              <p className="text-xs text-gray-500 mt-1">+2 no último mês</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Painéis Ativos</CardTitle>
-              <ImageIcon className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : data?.activePanels}</div>
-              <div className="flex items-center pt-1">
-                <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-xs text-green-500">+5% este mês</span>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pedidos Pendentes</CardTitle>
-              <ShoppingBag className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : data?.pendingOrders}</div>
-              <div className="flex items-center pt-1">
-                <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
-                <span className="text-xs text-red-500">Requer atenção</span>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-full text-xs justify-center"
-                onClick={() => navigate('/admin/pedidos/pendentes')}
-              >
-                Ver detalhes
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-              <Calendar className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoading ? '...' : formatCurrency(data?.totalRevenue || 0)}
-              </div>
-              <div className="flex items-center pt-1">
-                <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-xs text-green-500">+12% este mês</span>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="space-y-8">
+      {/* Header com boas-vindas */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl flex items-center justify-center">
+              <Crown className="h-6 w-6 text-slate-900" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Dashboard Super Admin</h1>
+              <p className="text-slate-400">Controle total do sistema INDEXA</p>
+            </div>
+          </div>
         </div>
+        <div className="flex items-center space-x-3">
+          <Badge variant="outline" className="border-amber-500/30 text-amber-300">
+            <Shield className="h-3 w-3 mr-1" />
+            Sistema Seguro
+          </Badge>
+          <Button variant="outline" size="sm">
+            <Bell className="h-4 w-4 mr-2" />
+            Notificações
+          </Button>
+        </div>
+      </div>
+
+      {/* Cards de estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, index) => (
+          <Card key={index} className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/70 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">
+                {stat.title}
+              </CardTitle>
+              <div className={`p-2 rounded-lg ${stat.bgColor}/10`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stat.value}</div>
+              <p className={`text-xs ${stat.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+                {stat.change} em relação ao mês passado
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Seção principal com gráficos e atividades */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Recent Orders */}
-        <Card>
+        {/* Atividades recentes */}
+        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Pedidos Recentes</CardTitle>
-            <CardDescription>Os 5 pedidos mais recentes do sistema</CardDescription>
+            <CardTitle className="text-white flex items-center">
+              <Activity className="h-5 w-5 mr-2 text-amber-400" />
+              Atividades Recentes
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Últimas ações no sistema
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indexa-purple"></div>
-              </div>
-            ) : data?.recentOrders && data.recentOrders.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID do Pedido</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Duração</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.recentOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        {order.id.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>{formatDate(order.created_at)}</TableCell>
-                      <TableCell>{getStatusBadge(order.status)}</TableCell>
-                      <TableCell>{formatCurrency(order.valor_total || 0)}</TableCell>
-                      <TableCell>
-                        {order.plano_meses || 1} {order.plano_meses === 1 ? 'mês' : 'meses'}
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => navigate(`/admin/pedidos/detalhes/${order.id}`)}
-                        >
-                          Detalhes
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                Nenhum pedido recente encontrado
-              </div>
-            )}
+            <div className="space-y-4">
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="flex items-center space-x-4 p-3 bg-slate-700/30 rounded-lg">
+                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white">{activity.action}</p>
+                    <p className="text-xs text-slate-400">{activity.user} • {activity.time}</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {activity.type}
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="ghost" onClick={() => refetch()}>Atualizar</Button>
-            <Button onClick={() => navigate('/admin/pedidos')}>Ver todos os pedidos</Button>
-          </CardFooter>
+        </Card>
+
+        {/* Ações rápidas */}
+        <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center">
+              <Settings className="h-5 w-5 mr-2 text-amber-400" />
+              Ações Rápidas
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Operações administrativas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-medium">
+              <Users className="h-4 w-4 mr-2" />
+              Gerenciar Usuários
+            </Button>
+            <Button variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-700">
+              <MonitorPlay className="h-4 w-4 mr-2" />
+              Monitorar Painéis
+            </Button>
+            <Button variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-700">
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Ver Pedidos
+            </Button>
+            <Button variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-700">
+              <FileText className="h-4 w-4 mr-2" />
+              Relatórios
+            </Button>
+          </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+
+      {/* Gráfico de performance */}
+      <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2 text-amber-400" />
+            Performance do Sistema
+          </CardTitle>
+          <CardDescription className="text-slate-400">
+            Métricas de desempenho em tempo real
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 flex items-center justify-center bg-slate-700/30 rounded-lg">
+            <div className="text-center">
+              <TrendingUp className="h-12 w-12 text-amber-400 mx-auto mb-4" />
+              <p className="text-slate-300">Gráfico de performance será implementado</p>
+              <p className="text-sm text-slate-500">Integração com dados em tempo real</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -35,8 +35,8 @@ export const useSuperAdminProtection = () => {
         duration: 2000
       });
       
-      // REDIRECIONAMENTO FORÇADO E IMEDIATO
-      window.location.href = '/super_admin';
+      // REDIRECIONAMENTO FORÇADO E IMEDIATO - Usar replace para evitar loop
+      navigate('/super_admin', { replace: true });
       return;
     }
 
@@ -66,7 +66,7 @@ export const useSuperAdminProtection = () => {
         duration: 3000
       });
       
-      window.location.href = '/super_admin';
+      navigate('/super_admin', { replace: true });
       return;
     }
 

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useSuperAdminProtection } from '@/hooks/useSuperAdminProtection';
 import SuperAdminLayout from '@/components/admin/layout/SuperAdminLayout';
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 import { Loader2, Shield, AlertTriangle, Crown } from 'lucide-react';
@@ -11,6 +12,9 @@ const SuperAdminPage = () => {
   const navigate = useNavigate();
   const { userProfile, isLoading, isLoggedIn } = useAuth();
   const [accessGranted, setAccessGranted] = useState(false);
+  
+  // Usar hook de proteção
+  const { isSuperAdmin } = useSuperAdminProtection();
 
   useEffect(() => {
     if (isLoading) {
@@ -22,13 +26,9 @@ const SuperAdminPage = () => {
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
       isLoggedIn,
-      expectedEmail: 'jefersonstilver@gmail.com',
-      isSuperAdmin: userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin'
+      isSuperAdmin,
+      expectedEmail: 'jefersonstilver@gmail.com'
     });
-
-    // VERIFICAÇÃO RIGOROSA: Apenas jefersonstilver@gmail.com com role super_admin
-    const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
-                        userProfile?.role === 'super_admin';
 
     if (!isLoggedIn) {
       console.log('🚫 USUÁRIO NÃO LOGADO - Redirecionando para login');
@@ -53,12 +53,12 @@ const SuperAdminPage = () => {
       return;
     }
 
-    console.log('✅ ACESSO AUTORIZADO - SuperAdminPage para:', userProfile.email);
+    console.log('✅ ACESSO AUTORIZADO - SuperAdminPage para:', userProfile?.email);
     toast.success('Bem-vindo ao Painel Super Administrativo!', {
       duration: 3000
     });
     setAccessGranted(true);
-  }, [userProfile, isLoading, isLoggedIn, navigate]);
+  }, [userProfile, isLoading, isLoggedIn, isSuperAdmin, navigate]);
 
   // Tela de carregamento sofisticada
   if (isLoading) {

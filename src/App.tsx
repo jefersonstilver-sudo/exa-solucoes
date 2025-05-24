@@ -22,10 +22,10 @@ const App = () => {
         <Route path="/super_admin/*" element={<SuperAdminPage />} />
         
         {/* REDIRECIONAMENTOS CRÍTICOS PARA SUPER ADMIN */}
-        <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
         <Route path="/admin/*" element={<Navigate to="/super_admin" replace />} />
-        <Route path="/administracao" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
         <Route path="/administracao/*" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/administracao" element={<Navigate to="/super_admin" replace />} />
         <Route path="/dashboard" element={<Navigate to="/super_admin" replace />} />
         <Route path="/painel" element={<Navigate to="/super_admin" replace />} />
         
@@ -34,7 +34,6 @@ const App = () => {
         
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/*" element={<PublicRoutes />} />
         
         {/* Advertiser Dashboard */}
         <Route path="/anunciante" element={<AdvertiserDashboard />} />
@@ -48,6 +47,9 @@ const App = () => {
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/meus-pedidos" element={<Pedidos />} />
+        
+        {/* Public Routes - must be after specific routes */}
+        <Route path="/*" element={<PublicRoutes />} />
         
         {/* Not Found */}
         <Route path="*" element={<NotFound />} />

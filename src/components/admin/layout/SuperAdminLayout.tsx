@@ -2,7 +2,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouteProtection } from '@/hooks/useRouteProtection';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
 import { toast } from 'sonner';
@@ -16,18 +15,10 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
   const { userProfile, isLoading } = useAuth();
   const navigate = useNavigate();
   
-  console.log('🏗️ SuperAdminLayout - Verificando acesso completo:', {
+  console.log('🏗️ SuperAdminLayout - Renderizando layout:', {
     userEmail: userProfile?.email,
     userRole: userProfile?.role,
     isLoading
-  });
-  
-  // Proteção específica para Super Admin
-  const { isAuthorized } = useRouteProtection({
-    redirectTo: '/login',
-    message: 'Acesso restrito ao Super Administrador',
-    requireLogin: true,
-    requiredRole: 'super_admin'
   });
 
   // Verificação rigorosa: APENAS jefersonstilver@gmail.com
@@ -48,7 +39,6 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
         navigate('/login');
       } else {
         console.log('✅ SuperAdminLayout - ACESSO AUTORIZADO FINAL - Renderizando layout completo');
-        toast.success('Painel Super Administrativo carregado com sucesso!');
       }
     }
   }, [userProfile, isLoading, navigate]);
@@ -67,7 +57,7 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
     );
   }
 
-  if (!isAuthorized || userProfile?.email !== 'jefersonstilver@gmail.com') {
+  if (userProfile?.email !== 'jefersonstilver@gmail.com' || userProfile?.role !== 'super_admin') {
     console.log('🚫 SuperAdminLayout - Não autorizado, retornando tela de erro');
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-900 to-slate-900">
@@ -82,7 +72,7 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
 
   console.log('🎨 SuperAdminLayout - Renderizando layout COMPLETO do super admin');
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex w-full">
       {/* Indicador de segurança - Barra superior dourada */}
       <div className="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 z-50 opacity-90 shadow-lg"></div>
       
