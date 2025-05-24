@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 /**
  * OPERAÇÃO PHOENIX MASTER - Hook de proteção OTIMIZADO para super admin
- * Garante que jefersonstilver@gmail.com sempre acesse /super_admin SEM LOOPS
+ * Agora usa JWT claims em vez de consultas à tabela users
  */
 export const useSuperAdminProtection = () => {
   const { userProfile, isLoading, isLoggedIn } = useAuth();
@@ -17,12 +17,12 @@ export const useSuperAdminProtection = () => {
   useEffect(() => {
     if (isLoading) return;
 
-    // VERIFICAÇÃO SUPER ADMIN PADRONIZADA
+    // VERIFICAÇÃO SUPER ADMIN BASEADA EM JWT CLAIMS
     const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
                         userProfile?.role === 'super_admin';
     const currentPath = location.pathname;
 
-    console.log('🛡️ PHOENIX PROTECTION - Verificação CRÍTICA:', {
+    console.log('🛡️ PHOENIX PROTECTION - Verificação baseada em JWT:', {
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
       isSuperAdmin,
@@ -33,7 +33,7 @@ export const useSuperAdminProtection = () => {
 
     // Evitar loops de redirecionamento
     if (redirectedRef.current) {
-      console.log('⚠️ Redirecionamento já realizado, ignorando...');
+      console.log('⚠️ PHOENIX: Redirecionamento já realizado, ignorando...');
       return;
     }
 

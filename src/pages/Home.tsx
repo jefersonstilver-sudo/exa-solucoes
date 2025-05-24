@@ -11,11 +11,11 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { isLoggedIn, userProfile, hasRole } = useAuth();
   
-  // CORREÇÃO: Verificação super admin padronizada
+  // PHOENIX: Verificação super admin baseada APENAS em JWT claims
   const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
 
-  console.log('🔧 Home - Estado de autenticação:', {
+  console.log('🔧 PHOENIX Home - Estado baseado em JWT:', {
     userEmail: userProfile?.email,
     userRole: userProfile?.role,
     isSuperAdmin,
@@ -69,7 +69,7 @@ const Home: React.FC = () => {
             </div>
           )}
           
-          {/* CORREÇÃO CRÍTICA: Usar AdminAccessButton unificado */}
+          {/* PHOENIX: AdminAccessButton unificado baseado em JWT */}
           {isLoggedIn && (isSuperAdmin || isRegularAdmin) && (
             <div className="mt-8 pt-4 border-t border-gray-200">
               <div className="flex justify-center">

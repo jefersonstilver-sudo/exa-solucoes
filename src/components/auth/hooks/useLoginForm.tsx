@@ -18,7 +18,7 @@ export const useLoginForm = (redirectPath: string) => {
     setIsLoading(true);
     
     try {
-      console.log('🔐 INÍCIO DO LOGIN - Email:', email);
+      console.log('🔐 PHOENIX LOGIN - Iniciando para:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -41,47 +41,48 @@ export const useLoginForm = (redirectPath: string) => {
       }
       
       if (data.session && data.user) {
-        console.log('✅ Login bem-sucedido para:', data.user.email);
+        console.log('✅ PHOENIX: Login bem-sucedido para:', data.user.email);
         
-        // Verificar role IMEDIATAMENTE após login
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
+        // OPERAÇÃO PHOENIX: Extrair role diretamente do JWT
+        let userRole = 'client';
+        try {
+          const payload = JSON.parse(atob(data.session.access_token.split('.')[1]));
+          userRole = payload.user_role || 'client';
+          console.log('🔍 PHOENIX: Role extraída do JWT:', userRole);
+        } catch (jwtError) {
+          console.error('❌ Erro ao extrair role do JWT:', jwtError);
+        }
 
-        const userRole = userData?.role;
-        
-        // VERIFICAÇÃO SUPER ADMIN PADRONIZADA E CRÍTICA
+        // VERIFICAÇÃO SUPER ADMIN CRÍTICA BASEADA EM JWT
         const isSuperAdmin = data.user.email === 'jefersonstilver@gmail.com' && userRole === 'super_admin';
         
-        console.log('📊 Dados do usuário após login:', {
+        console.log('📊 PHOENIX: Dados do usuário após login:', {
           email: data.user.email,
           role: userRole,
           isSuperAdmin
         });
 
         if (isSuperAdmin) {
-          console.log('🚀 SUPER ADMIN CONFIRMADO - Redirecionamento IMEDIATO para /super_admin');
+          console.log('🚀 PHOENIX: SUPER ADMIN CONFIRMADO - Redirecionamento IMEDIATO para /super_admin');
           toast.success('Login de Super Administrador realizado com sucesso!', {
             duration: 3000
           });
           
-          // REDIRECIONAMENTO IMEDIATO e FORÇADO para super admin
-          window.location.href = '/super_admin';
+          // REDIRECIONAMENTO IMEDIATO para super admin
+          navigate('/super_admin', { replace: true });
           return;
         } else {
           // Para usuários regulares
-          console.log('👤 Usuário regular detectado');
+          console.log('👤 PHOENIX: Usuário regular detectado');
           toast.success('Login realizado com sucesso!');
           
           if (userRole === 'admin' || userRole === 'client') {
-            console.log('🏢 Redirecionando usuário regular para: /anunciante');
+            console.log('🏢 PHOENIX: Redirecionando usuário regular para: /anunciante');
             navigate('/anunciante', { replace: true });
           } else {
             const searchParams = new URLSearchParams(location.search);
             const redirectTo = searchParams.get('redirect') || redirectPath;
-            console.log('🔄 Redirecionando para path solicitado:', redirectTo);
+            console.log('🔄 PHOENIX: Redirecionando para path solicitado:', redirectTo);
             navigate(redirectTo, { replace: true });
           }
         }

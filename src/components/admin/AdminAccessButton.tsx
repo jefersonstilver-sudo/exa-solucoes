@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Crown, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
@@ -24,11 +23,11 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
   const navigate = useNavigate();
   const { isLoggedIn, userProfile, hasRole } = useAuth();
 
-  // CORREÇÃO CRÍTICA: Verificação super admin padronizada
+  // PHOENIX: Verificação super admin baseada APENAS em JWT claims
   const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
   
-  console.log('🔧 AdminAccessButton - Estado padronizado:', {
+  console.log('🔧 PHOENIX AdminAccessButton - Estado baseado em JWT:', {
     userEmail: userProfile?.email,
     userRole: userProfile?.role,
     isSuperAdmin,
@@ -43,13 +42,13 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
       return;
     }
     
-    // REDIRECIONAMENTO CRÍTICO CORRIGIDO
+    // REDIRECIONAMENTO CRÍTICO BASEADO EM JWT
     if (isSuperAdmin) {
-      console.log('🚀 SUPER ADMIN CONFIRMADO - Redirecionando para /super_admin');
+      console.log('🚀 PHOENIX: SUPER ADMIN CONFIRMADO via JWT - Redirecionando para /super_admin');
       toast.success('Acessando Painel Super Administrativo');
       navigate('/super_admin');
     } else if (isRegularAdmin) {
-      console.log('👤 Admin regular detectado - Redirecionando para /anunciante');
+      console.log('👤 PHOENIX: Admin regular via JWT - Redirecionando para /anunciante');
       toast.success('Acessando Área Administrativa');
       navigate('/anunciante');
     } else {

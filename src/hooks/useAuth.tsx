@@ -10,39 +10,43 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserProfile = async (userId: string) => {
+  // FUNÇÃO CRÍTICA: Extrair role diretamente do JWT
+  const extractUserRoleFromJWT = (session: Session | null): UserRole | null => {
+    if (!session?.access_token) return null;
+    
     try {
-      console.log('🔍 Buscando perfil para usuário:', userId);
+      // Decodificar JWT sem verificação (já está validado pelo Supabase)
+      const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+      const userRole = payload.user_role as UserRole;
       
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (userData && !error) {
-        const profile: UserProfile = {
-          id: userData.id,
-          email: userData.email,
-          role: userData.role as UserRole,
-          data_criacao: userData.data_criacao
-        };
-        
-        console.log('✅ UserProfile carregado:', {
-          email: profile.email,
-          role: profile.role,
-          isSuperAdmin: profile.email === 'jefersonstilver@gmail.com' && profile.role === 'super_admin'
-        });
-        
-        setUserProfile(profile);
-        return profile;
-      } else {
-        console.error('❌ Erro ao buscar perfil:', error);
-      }
-    } catch (err) {
-      console.error('💥 Erro inesperado ao buscar perfil:', err);
+      console.log('🔍 PHOENIX: Role extraída do JWT:', userRole);
+      return userRole;
+    } catch (error) {
+      console.error('❌ Erro ao extrair role do JWT:', error);
+      return null;
     }
-    return null;
+  };
+
+  // FUNÇÃO OTIMIZADA: Criar UserProfile baseado apenas no JWT
+  const createUserProfileFromSession = (session: Session | null): UserProfile | null => {
+    if (!session?.user) return null;
+
+    const userRole = extractUserRoleFromJWT(session);
+    
+    const profile: UserProfile = {
+      id: session.user.id,
+      email: session.user.email || '',
+      role: userRole || 'client',
+      data_criacao: session.user.created_at
+    };
+
+    console.log('✅ PHOENIX: UserProfile criado do JWT:', {
+      email: profile.email,
+      role: profile.role,
+      isSuperAdmin: profile.email === 'jefersonstilver@gmail.com' && profile.role === 'super_admin'
+    });
+
+    return profile;
   };
 
   useEffect(() => {
@@ -54,12 +58,13 @@ export const useAuth = () => {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (initialSession?.user && mounted) {
-          console.log('🔍 Sessão inicial encontrada para:', initialSession.user.email);
+          console.log('🔍 PHOENIX: Sessão inicial encontrada para:', initialSession.user.email);
           setSession(initialSession);
           setUser(initialSession.user);
           
-          // Carregar perfil imediatamente
-          await fetchUserProfile(initialSession.user.id);
+          // Criar perfil APENAS baseado no JWT
+          const profile = createUserProfileFromSession(initialSession);
+          setUserProfile(profile);
         }
         
         if (mounted) {
@@ -78,14 +83,15 @@ export const useAuth = () => {
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        console.log('🔄 PHOENIX: Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Carregar perfil imediatamente quando há nova sessão
-          await fetchUserProfile(session.user.id);
+          // Criar perfil APENAS baseado no JWT (sem consultas à tabela)
+          const profile = createUserProfileFromSession(session);
+          setUserProfile(profile);
         } else {
           setUserProfile(null);
         }
@@ -104,14 +110,14 @@ export const useAuth = () => {
   }, []);
 
   const logout = async () => {
-    console.log('🚪 Fazendo logout...');
+    console.log('🚪 PHOENIX: Fazendo logout...');
     const { error } = await supabase.auth.signOut();
     if (!error) {
       setUser(null);
       setSession(null);
       setUserProfile(null);
       localStorage.clear();
-      console.log('✅ Logout realizado com sucesso');
+      console.log('✅ PHOENIX: Logout realizado com sucesso');
     } else {
       console.error('❌ Erro no logout:', error);
     }
