@@ -60,13 +60,13 @@ export const useLoginForm = (redirectPath: string) => {
         });
 
         if (isSuperAdmin) {
-          console.log('🚀 SUPER ADMIN CONFIRMADO - Redirecionamento para /super_admin');
+          console.log('🚀 SUPER ADMIN CONFIRMADO - Redirecionamento IMEDIATO para /super_admin');
           toast.success('Login de Super Administrador realizado com sucesso!', {
             duration: 3000
           });
           
-          // REDIRECIONAMENTO IMEDIATO para super admin
-          navigate('/super_admin', { replace: true });
+          // REDIRECIONAMENTO IMEDIATO e FORÇADO para super admin
+          window.location.href = '/super_admin';
           return;
         } else {
           // Para usuários regulares

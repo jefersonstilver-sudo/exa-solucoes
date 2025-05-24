@@ -18,15 +18,15 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/*" element={<PublicRoutes />} />
+        {/* SUPER ADMIN ROUTES - MÁXIMA PRECEDÊNCIA */}
+        <Route path="/super_admin/*" element={<SuperAdminPage />} />
         
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
         
-        {/* SUPER ADMIN ROUTES - PROTEÇÃO DIRETA */}
-        <Route path="/super_admin/*" element={<SuperAdminPage />} />
+        {/* Public Routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/*" element={<PublicRoutes />} />
         
         {/* Advertiser Dashboard */}
         <Route path="/anunciante" element={<AdvertiserDashboard />} />

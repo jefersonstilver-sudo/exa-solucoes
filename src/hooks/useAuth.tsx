@@ -12,6 +12,8 @@ export const useAuth = () => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('🔍 Buscando perfil para usuário:', userId);
+      
       const { data: userData, error } = await supabase
         .from('users')
         .select('*')
@@ -26,17 +28,19 @@ export const useAuth = () => {
           data_criacao: userData.data_criacao
         };
         
-        console.log('🔐 UserProfile carregado:', {
+        console.log('✅ UserProfile carregado:', {
           email: profile.email,
           role: profile.role,
-          isSuperAdmin: profile.email === 'jefersonstilver@gmail.com'
+          isSuperAdmin: profile.email === 'jefersonstilver@gmail.com' && profile.role === 'super_admin'
         });
         
         setUserProfile(profile);
         return profile;
+      } else {
+        console.error('❌ Erro ao buscar perfil:', error);
       }
     } catch (err) {
-      console.error('Erro ao buscar perfil do usuário:', err);
+      console.error('💥 Erro inesperado ao buscar perfil:', err);
     }
     return null;
   };
@@ -62,7 +66,7 @@ export const useAuth = () => {
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Erro na inicialização de auth:', error);
+        console.error('💥 Erro na inicialização de auth:', error);
         if (mounted) {
           setIsLoading(false);
         }
@@ -100,12 +104,16 @@ export const useAuth = () => {
   }, []);
 
   const logout = async () => {
+    console.log('🚪 Fazendo logout...');
     const { error } = await supabase.auth.signOut();
     if (!error) {
       setUser(null);
       setSession(null);
       setUserProfile(null);
       localStorage.clear();
+      console.log('✅ Logout realizado com sucesso');
+    } else {
+      console.error('❌ Erro no logout:', error);
     }
     return { success: !error, error };
   };

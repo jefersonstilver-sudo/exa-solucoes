@@ -25,12 +25,18 @@ const SuperAdminPage = () => {
       expectedEmail: 'jefersonstilver@gmail.com'
     });
 
-    // Verificação CRÍTICA: Apenas jefersonstilver@gmail.com com role super_admin
+    // VERIFICAÇÃO SIMPLIFICADA: Apenas jefersonstilver@gmail.com com role super_admin
     const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
                         userProfile?.role === 'super_admin';
 
-    if (!isLoggedIn || !isSuperAdmin) {
-      console.log('🚫 ACESSO NEGADO - SuperAdminPage');
+    if (!isLoggedIn) {
+      console.log('🚫 USUÁRIO NÃO LOGADO - Redirecionando para login');
+      navigate('/login?redirect=/super_admin', { replace: true });
+      return;
+    }
+
+    if (!isSuperAdmin) {
+      console.log('🚫 ACESSO NEGADO - Não é super admin');
       toast.error('Acesso negado. Área restrita ao Super Administrador.', {
         duration: 4000
       });
