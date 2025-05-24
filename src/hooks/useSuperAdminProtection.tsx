@@ -5,8 +5,8 @@ import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 /**
- * OPERAÇÃO PHOENIX MASTER - Hook de proteção OTIMIZADO para super admin
- * Agora usa JWT claims em vez de consultas à tabela users
+ * OPERAÇÃO PHOENIX MASTER - Hook de proteção EXCLUSIVAMENTE baseado em JWT claims
+ * Removido fallback por email para máxima segurança
  */
 export const useSuperAdminProtection = () => {
   const { userProfile, isLoading, isLoggedIn } = useAuth();
@@ -17,12 +17,11 @@ export const useSuperAdminProtection = () => {
   useEffect(() => {
     if (isLoading) return;
 
-    // VERIFICAÇÃO SUPER ADMIN BASEADA EM JWT CLAIMS
-    const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
-                        userProfile?.role === 'super_admin';
+    // VERIFICAÇÃO SUPER ADMIN BASEADA EXCLUSIVAMENTE EM JWT CLAIMS
+    const isSuperAdmin = userProfile?.role === 'super_admin';
     const currentPath = location.pathname;
 
-    console.log('🛡️ PHOENIX PROTECTION - Verificação baseada em JWT:', {
+    console.log('🛡️ OPERAÇÃO PHOENIX PROTECTION - Verificação JWT exclusiva:', {
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
       isSuperAdmin,
@@ -33,13 +32,13 @@ export const useSuperAdminProtection = () => {
 
     // Evitar loops de redirecionamento
     if (redirectedRef.current) {
-      console.log('⚠️ PHOENIX: Redirecionamento já realizado, ignorando...');
+      console.log('⚠️ OPERAÇÃO PHOENIX: Redirecionamento já realizado, ignorando...');
       return;
     }
 
     // REGRA CRÍTICA 1: Super admin fora do painel - REDIRECIONAR UMA VEZ
     if (isLoggedIn && isSuperAdmin && !currentPath.startsWith('/super_admin')) {
-      console.log('🚨 PHOENIX: Super admin fora da área - REDIRECIONAMENTO ÚNICO');
+      console.log('🚨 OPERAÇÃO PHOENIX: Super admin fora da área - REDIRECIONAMENTO ÚNICO');
       redirectedRef.current = true;
       
       toast.success('Bem-vindo ao Painel Super Administrativo!', {
@@ -52,7 +51,7 @@ export const useSuperAdminProtection = () => {
 
     // REGRA CRÍTICA 2: Não super admin tentando acessar /super_admin
     if (currentPath.startsWith('/super_admin') && (!isLoggedIn || !isSuperAdmin)) {
-      console.log('🚫 PHOENIX: Acesso negado ao super_admin');
+      console.log('🚫 OPERAÇÃO PHOENIX: Acesso negado ao super_admin - JWT sem role adequada');
       redirectedRef.current = true;
       
       toast.error('Acesso negado ao painel administrativo', {
@@ -70,7 +69,7 @@ export const useSuperAdminProtection = () => {
       currentPath === '/paineis-digitais/loja' ||
       currentPath.startsWith('/checkout')
     )) {
-      console.log('🚫 PHOENIX: Super admin em área inadequada');
+      console.log('🚫 OPERAÇÃO PHOENIX: Super admin em área inadequada');
       redirectedRef.current = true;
       
       toast.error('Super administrador deve usar o painel administrativo', {
@@ -93,7 +92,7 @@ export const useSuperAdminProtection = () => {
   }, [location.pathname]);
 
   return {
-    isSuperAdmin: userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin',
+    isSuperAdmin: userProfile?.role === 'super_admin',
     isProtected: true
   };
 };

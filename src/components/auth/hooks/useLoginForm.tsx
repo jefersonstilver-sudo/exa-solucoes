@@ -18,7 +18,7 @@ export const useLoginForm = (redirectPath: string) => {
     setIsLoading(true);
     
     try {
-      console.log('🔐 PHOENIX LOGIN - Iniciando para:', email);
+      console.log('🔐 OPERAÇÃO PHOENIX LOGIN - Iniciando para:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -41,50 +41,43 @@ export const useLoginForm = (redirectPath: string) => {
       }
       
       if (data.session && data.user) {
-        console.log('✅ PHOENIX: Login bem-sucedido para:', data.user.email);
+        console.log('✅ OPERAÇÃO PHOENIX: Login bem-sucedido para:', data.user.email);
         
-        // OPERAÇÃO PHOENIX: Extrair role diretamente do JWT
-        let userRole = 'client';
+        // OPERAÇÃO PHOENIX: Extrair role EXCLUSIVAMENTE do JWT
+        let userRole = null;
         try {
           const payload = JSON.parse(atob(data.session.access_token.split('.')[1]));
-          userRole = payload.user_role || 'client';
-          console.log('🔍 PHOENIX: Role extraída do JWT:', userRole);
+          userRole = payload.user_role;
+          console.log('🔍 OPERAÇÃO PHOENIX: Role extraída do JWT:', userRole);
         } catch (jwtError) {
           console.error('❌ Erro ao extrair role do JWT:', jwtError);
         }
 
-        // VERIFICAÇÃO SUPER ADMIN CRÍTICA BASEADA EM JWT
-        const isSuperAdmin = data.user.email === 'jefersonstilver@gmail.com' && userRole === 'super_admin';
-        
-        console.log('📊 PHOENIX: Dados do usuário após login:', {
-          email: data.user.email,
-          role: userRole,
-          isSuperAdmin
-        });
+        if (!userRole) {
+          console.warn('⚠️ ATENÇÃO: JWT sem user_role - redirecionando para área padrão');
+          toast.warning('Seu perfil está sendo configurado. Redirecionando...');
+          navigate('/anunciante', { replace: true });
+          return;
+        }
 
-        if (isSuperAdmin) {
-          console.log('🚀 PHOENIX: SUPER ADMIN CONFIRMADO - Redirecionamento IMEDIATO para /super_admin');
+        // REDIRECIONAMENTO BASEADO EXCLUSIVAMENTE EM JWT ROLE
+        if (userRole === 'super_admin') {
+          console.log('🚀 OPERAÇÃO PHOENIX: SUPER ADMIN CONFIRMADO via JWT - Redirecionamento para /super_admin');
           toast.success('Login de Super Administrador realizado com sucesso!', {
             duration: 3000
           });
           
-          // REDIRECIONAMENTO IMEDIATO para super admin
           navigate('/super_admin', { replace: true });
-          return;
-        } else {
-          // Para usuários regulares
-          console.log('👤 PHOENIX: Usuário regular detectado');
+        } else if (userRole === 'admin' || userRole === 'client') {
+          console.log('👤 OPERAÇÃO PHOENIX: Usuário regular detectado');
           toast.success('Login realizado com sucesso!');
-          
-          if (userRole === 'admin' || userRole === 'client') {
-            console.log('🏢 PHOENIX: Redirecionando usuário regular para: /anunciante');
-            navigate('/anunciante', { replace: true });
-          } else {
-            const searchParams = new URLSearchParams(location.search);
-            const redirectTo = searchParams.get('redirect') || redirectPath;
-            console.log('🔄 PHOENIX: Redirecionando para path solicitado:', redirectTo);
-            navigate(redirectTo, { replace: true });
-          }
+          navigate('/anunciante', { replace: true });
+        } else {
+          // Para outros roles ou casos não previstos
+          const searchParams = new URLSearchParams(location.search);
+          const redirectTo = searchParams.get('redirect') || redirectPath;
+          console.log('🔄 OPERAÇÃO PHOENIX: Redirecionando para path solicitado:', redirectTo);
+          navigate(redirectTo, { replace: true });
         }
         
       } else {

@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('🔥 PHOENIX AUTH HOOK - Interceptando token JWT');
+  console.log('🔥 AUTH HOOK EXECUTANDO - Interceptando token JWT');
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -84,6 +84,16 @@ Deno.serve(async (req) => {
       email: payload.user.email 
     });
 
+    // Log evento de autenticação para auditoria
+    await supabase
+      .from('log_eventos_sistema')
+      .insert({
+        tipo_evento: 'auth_token_hook',
+        descricao: `Auth Hook executado para usuário: ${payload.user.email}`,
+        ip: req.headers.get('x-forwarded-for') || 'unknown',
+        user_agent: req.headers.get('user-agent') || 'unknown'
+      });
+
     // Buscar role do usuário na tabela users
     const { data: userData, error } = await supabase
       .from('users')
@@ -93,17 +103,38 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error('❌ Erro ao buscar role do usuário:', error);
-      // Se não encontrar, define como 'client' por padrão
+      
+      // Log erro para auditoria
+      await supabase
+        .from('log_eventos_sistema')
+        .insert({
+          tipo_evento: 'auth_error',
+          descricao: `Erro ao buscar role para usuário ${payload.user.email}: ${error.message}`,
+          ip: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
+      
+      // Definir como 'client' por padrão se não encontrar
       payload.token.user_role = 'client';
     } else {
       payload.token.user_role = userData.role;
-      console.log('✅ Role encontrada e injetada:', userData.role);
+      console.log('✅ Role encontrada e injetada no JWT:', userData.role);
     }
 
-    // VERIFICAÇÃO CRÍTICA: Super Admin
+    // VERIFICAÇÃO ESPECÍFICA PARA SUPER ADMIN
     if (payload.user.email === 'jefersonstilver@gmail.com') {
       payload.token.user_role = 'super_admin';
       console.log('👑 SUPER ADMIN CONFIRMADO - Role forçada para super_admin');
+      
+      // Log evento super admin
+      await supabase
+        .from('log_eventos_sistema')
+        .insert({
+          tipo_evento: 'super_admin_access',
+          descricao: `Super Admin access granted to: ${payload.user.email}`,
+          ip: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
     }
 
     console.log('🚀 JWT modificado com user_role:', payload.token.user_role);
@@ -115,6 +146,25 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('💥 Erro no Auth Hook:', error);
+    
+    // Log erro crítico
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      await supabase
+        .from('log_eventos_sistema')
+        .insert({
+          tipo_evento: 'auth_hook_error',
+          descricao: `Auth Hook failure: ${error.message}`,
+          ip: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
+    } catch (logError) {
+      console.error('Erro ao registrar log:', logError);
+    }
+    
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

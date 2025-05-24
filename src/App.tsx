@@ -12,6 +12,7 @@ import PixPayment from '@/pages/PixPayment';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 import Home from '@/pages/Home';
 import Pedidos from '@/pages/Pedidos';
+import PainelStore from '@/pages/PainelStore';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 
 const App = () => {
@@ -35,6 +36,9 @@ const App = () => {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         
+        {/* Painéis Digitais - Loja Online */}
+        <Route path="/paineis-digitais/loja" element={<PainelStore />} />
+        
         {/* Advertiser Dashboard */}
         <Route path="/anunciante" element={<AdvertiserDashboard />} />
         
@@ -45,8 +49,10 @@ const App = () => {
         <Route path="/payment" element={<Payment />} />
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
+        
+        {/* Unified Pedidos Route - /meus-pedidos redirects to /pedidos */}
         <Route path="/pedidos" element={<Pedidos />} />
-        <Route path="/meus-pedidos" element={<Pedidos />} />
+        <Route path="/meus-pedidos" element={<Navigate to="/pedidos" replace />} />
         
         {/* Public Routes - must be after specific routes */}
         <Route path="/*" element={<PublicRoutes />} />

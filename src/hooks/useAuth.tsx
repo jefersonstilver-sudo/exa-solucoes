@@ -10,55 +10,49 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // FUNÇÃO CRÍTICA: Extrair role diretamente do JWT com fallback
+  // FUNÇÃO CRÍTICA: Extrair role EXCLUSIVAMENTE do JWT
   const extractUserRoleFromJWT = (session: Session | null): UserRole | null => {
     if (!session?.access_token) return null;
     
     try {
-      // Decodificar JWT sem verificação (já está validado pelo Supabase)
+      // Decodificar JWT
       const payload = JSON.parse(atob(session.access_token.split('.')[1]));
-      let userRole = payload.user_role as UserRole;
+      const userRole = payload.user_role as UserRole;
       
-      console.log('🔍 PHOENIX: Role extraída do JWT:', userRole);
+      console.log('🔍 OPERAÇÃO PHOENIX: Role extraída do JWT:', userRole);
       
-      // FALLBACK TEMPORÁRIO: Se user_role não está no JWT, verificar email
-      if (!userRole && session.user?.email === 'jefersonstilver@gmail.com') {
-        console.log('🚨 FALLBACK ATIVO: Forçando super_admin para jefersonstilver@gmail.com');
-        userRole = 'super_admin';
-      }
+      // REMOVIDO: Fallback baseado em email por segurança
+      // O sistema agora depende EXCLUSIVAMENTE do JWT claims
       
-      return userRole;
+      return userRole || null;
     } catch (error) {
       console.error('❌ Erro ao extrair role do JWT:', error);
-      
-      // FALLBACK CRÍTICO: Se JWT falhar completamente, verificar email
-      if (session?.user?.email === 'jefersonstilver@gmail.com') {
-        console.log('🚨 FALLBACK CRÍTICO: Forçando super_admin para jefersonstilver@gmail.com');
-        return 'super_admin';
-      }
-      
       return null;
     }
   };
 
-  // FUNÇÃO OTIMIZADA: Criar UserProfile baseado apenas no JWT
+  // FUNÇÃO OTIMIZADA: Criar UserProfile baseado exclusivamente no JWT
   const createUserProfileFromSession = (session: Session | null): UserProfile | null => {
     if (!session?.user) return null;
 
     const userRole = extractUserRoleFromJWT(session);
     
+    if (!userRole) {
+      console.warn('⚠️ ATENÇÃO: JWT sem user_role - usuário sem permissões definidas');
+      return null;
+    }
+    
     const profile: UserProfile = {
       id: session.user.id,
       email: session.user.email || '',
-      role: userRole || 'client',
+      role: userRole,
       data_criacao: session.user.created_at
     };
 
-    console.log('✅ PHOENIX: UserProfile criado do JWT:', {
+    console.log('✅ OPERAÇÃO PHOENIX: UserProfile criado do JWT:', {
       email: profile.email,
       role: profile.role,
-      isSuperAdmin: profile.email === 'jefersonstilver@gmail.com' && profile.role === 'super_admin',
-      fallbackUsed: !userRole && profile.email === 'jefersonstilver@gmail.com'
+      source: 'JWT_CLAIMS_ONLY'
     });
 
     return profile;
@@ -73,11 +67,11 @@ export const useAuth = () => {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (initialSession?.user && mounted) {
-          console.log('🔍 PHOENIX: Sessão inicial encontrada para:', initialSession.user.email);
+          console.log('🔍 OPERAÇÃO PHOENIX: Sessão inicial encontrada para:', initialSession.user.email);
           setSession(initialSession);
           setUser(initialSession.user);
           
-          // Criar perfil APENAS baseado no JWT
+          // Criar perfil EXCLUSIVAMENTE baseado no JWT
           const profile = createUserProfileFromSession(initialSession);
           setUserProfile(profile);
         }
@@ -98,13 +92,13 @@ export const useAuth = () => {
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('🔄 PHOENIX: Auth state changed:', event, session?.user?.email);
+        console.log('🔄 OPERAÇÃO PHOENIX: Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Criar perfil APENAS baseado no JWT (sem consultas à tabela)
+          // Criar perfil EXCLUSIVAMENTE baseado no JWT
           const profile = createUserProfileFromSession(session);
           setUserProfile(profile);
         } else {
@@ -125,14 +119,14 @@ export const useAuth = () => {
   }, []);
 
   const logout = async () => {
-    console.log('🚪 PHOENIX: Fazendo logout...');
+    console.log('🚪 OPERAÇÃO PHOENIX: Fazendo logout...');
     const { error } = await supabase.auth.signOut();
     if (!error) {
       setUser(null);
       setSession(null);
       setUserProfile(null);
       localStorage.clear();
-      console.log('✅ PHOENIX: Logout realizado com sucesso');
+      console.log('✅ OPERAÇÃO PHOENIX: Logout realizado com sucesso');
     } else {
       console.error('❌ Erro no logout:', error);
     }
@@ -154,7 +148,7 @@ export const useAuth = () => {
     session,
     userProfile,
     isLoading,
-    isLoggedIn: !!user && !!session,
+    isLoggedIn: !!user && !!session && !!userProfile,
     logout,
     hasRole
   };
