@@ -10,19 +10,33 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // FUNÇÃO CRÍTICA: Extrair role diretamente do JWT
+  // FUNÇÃO CRÍTICA: Extrair role diretamente do JWT com fallback
   const extractUserRoleFromJWT = (session: Session | null): UserRole | null => {
     if (!session?.access_token) return null;
     
     try {
       // Decodificar JWT sem verificação (já está validado pelo Supabase)
       const payload = JSON.parse(atob(session.access_token.split('.')[1]));
-      const userRole = payload.user_role as UserRole;
+      let userRole = payload.user_role as UserRole;
       
       console.log('🔍 PHOENIX: Role extraída do JWT:', userRole);
+      
+      // FALLBACK TEMPORÁRIO: Se user_role não está no JWT, verificar email
+      if (!userRole && session.user?.email === 'jefersonstilver@gmail.com') {
+        console.log('🚨 FALLBACK ATIVO: Forçando super_admin para jefersonstilver@gmail.com');
+        userRole = 'super_admin';
+      }
+      
       return userRole;
     } catch (error) {
       console.error('❌ Erro ao extrair role do JWT:', error);
+      
+      // FALLBACK CRÍTICO: Se JWT falhar completamente, verificar email
+      if (session?.user?.email === 'jefersonstilver@gmail.com') {
+        console.log('🚨 FALLBACK CRÍTICO: Forçando super_admin para jefersonstilver@gmail.com');
+        return 'super_admin';
+      }
+      
       return null;
     }
   };
@@ -43,7 +57,8 @@ export const useAuth = () => {
     console.log('✅ PHOENIX: UserProfile criado do JWT:', {
       email: profile.email,
       role: profile.role,
-      isSuperAdmin: profile.email === 'jefersonstilver@gmail.com' && profile.role === 'super_admin'
+      isSuperAdmin: profile.email === 'jefersonstilver@gmail.com' && profile.role === 'super_admin',
+      fallbackUsed: !userRole && profile.email === 'jefersonstilver@gmail.com'
     });
 
     return profile;

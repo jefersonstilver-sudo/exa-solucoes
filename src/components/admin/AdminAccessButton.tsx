@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Crown, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
@@ -24,7 +25,7 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
   const { isLoggedIn, userProfile, hasRole } = useAuth();
 
   // PHOENIX: Verificação super admin baseada APENAS em JWT claims
-  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
+  const isSuperAdmin = userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
   
   console.log('🔧 PHOENIX AdminAccessButton - Estado baseado em JWT:', {

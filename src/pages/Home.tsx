@@ -1,27 +1,61 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import AdminAccessButton from '@/components/admin/AdminAccessButton';
+import { toast } from 'sonner';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, userProfile, hasRole } = useAuth();
+  const { isLoggedIn, userProfile, hasRole, isLoading } = useAuth();
   
   // PHOENIX: Verificação super admin baseada APENAS em JWT claims
   const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
+
+  // REDIRECIONAMENTO AUTOMÁTICO PARA SUPER ADMIN
+  useEffect(() => {
+    if (!isLoading && isLoggedIn && isSuperAdmin) {
+      console.log('🚀 PHOENIX HOME: Super admin detectado - Redirecionamento automático para /super_admin');
+      
+      toast.success('Bem-vindo ao Painel Super Administrativo!', {
+        duration: 3000
+      });
+      
+      // Redirecionamento com delay mínimo para mostrar o toast
+      setTimeout(() => {
+        navigate('/super_admin', { replace: true });
+      }, 1000);
+    }
+  }, [isLoading, isLoggedIn, isSuperAdmin, navigate]);
 
   console.log('🔧 PHOENIX Home - Estado baseado em JWT:', {
     userEmail: userProfile?.email,
     userRole: userProfile?.role,
     isSuperAdmin,
     isRegularAdmin,
-    isLoggedIn
+    isLoggedIn,
+    isLoading
   });
+
+  // Mostrar loading enquanto está carregando ou durante redirecionamento
+  if (isLoading || (isLoggedIn && isSuperAdmin)) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indexa-purple mx-auto mb-4"></div>
+            <p className="text-gray-600">
+              {isSuperAdmin ? 'Redirecionando para painel administrativo...' : 'Carregando...'}
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -70,7 +104,7 @@ const Home: React.FC = () => {
           )}
           
           {/* PHOENIX: AdminAccessButton unificado baseado em JWT */}
-          {isLoggedIn && (isSuperAdmin || isRegularAdmin) && (
+          {isLoggedIn && isRegularAdmin && (
             <div className="mt-8 pt-4 border-t border-gray-200">
               <div className="flex justify-center">
                 <AdminAccessButton />
