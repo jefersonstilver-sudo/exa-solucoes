@@ -18,7 +18,7 @@ export const useLoginForm = (redirectPath: string) => {
     setIsLoading(true);
     
     try {
-      console.log('Tentando fazer login com:', email);
+      console.log('🔐 Iniciando login para:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -26,7 +26,7 @@ export const useLoginForm = (redirectPath: string) => {
       });
       
       if (error) {
-        console.error('Erro de login:', error);
+        console.error('❌ Erro de login:', error);
         
         if (error.message.includes('Invalid login credentials')) {
           setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.');
@@ -41,10 +41,37 @@ export const useLoginForm = (redirectPath: string) => {
       }
       
       if (data.session && data.user) {
-        console.log('Login bem-sucedido:', data.user.email);
+        console.log('✅ Login bem-sucedido para:', data.user.email);
         toast.success('Login realizado com sucesso!');
         
-        // Get user role from users table (source of truth)
+        // VERIFICAÇÃO RIGOROSA DO SUPER ADMIN
+        const isSuperAdmin = data.user.email === 'jefersonstilver@gmail.com';
+        
+        if (isSuperAdmin) {
+          console.log('👑 SUPER ADMIN DETECTADO - Verificando role na base de dados...');
+          
+          // Verificar role na base de dados
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+          
+          const userRole = userData?.role;
+          console.log('📊 Role do super admin na BD:', userRole);
+          
+          // GARANTIA TOTAL: Se é jefersonstilver@gmail.com, SEMPRE vai para super_admin
+          setTimeout(() => {
+            console.log('🚀 REDIRECIONAMENTO SUPER ADMIN: /super_admin');
+            navigate('/super_admin');
+          }, 500);
+          
+          return;
+        }
+        
+        // Para usuários NÃO super admin
+        console.log('👤 Usuário regular detectado - Verificando role...');
+        
         const { data: userData } = await supabase
           .from('users')
           .select('role')
@@ -52,33 +79,26 @@ export const useLoginForm = (redirectPath: string) => {
           .single();
         
         const userRole = userData?.role;
-        console.log('Role do usuário:', userRole);
+        console.log('📊 Role do usuário:', userRole);
         
-        // LÓGICA DE REDIRECIONAMENTO CORRIGIDA - Super Admin tem prioridade absoluta
+        // Redirecionamento para usuários regulares
         setTimeout(() => {
-          // PRIMEIRO: Verificar se é o super admin master
-          if (data.user.email === 'jefersonstilver@gmail.com') {
-            console.log('SUPER ADMIN DETECTADO - Redirecionando para: /super_admin');
-            navigate('/super_admin');
-            return;
-          }
-          
-          // SEGUNDO: Verificar roles para outros usuários
-          if (userRole === 'admin') {
-            console.log('Admin regular detectado - Redirecionando para: /anunciante');
+          if (userRole === 'admin' || userRole === 'client') {
+            console.log('🏢 Redirecionando para área do anunciante: /anunciante');
             navigate('/anunciante');
           } else {
             const searchParams = new URLSearchParams(location.search);
             const redirectTo = searchParams.get('redirect') || redirectPath;
-            console.log('Usuário comum - Redirecionando para:', redirectTo);
+            console.log('🔄 Redirecionando para:', redirectTo);
             navigate(redirectTo);
           }
         }, 500);
+        
       } else {
         setError('Falha na autenticação. Dados de sessão inválidos.');
       }
     } catch (err: any) {
-      console.error('Erro inesperado durante login:', err);
+      console.error('💥 Erro inesperado durante login:', err);
       setError('Ocorreu um erro inesperado. Tente novamente em alguns instantes.');
     } finally {
       setIsLoading(false);

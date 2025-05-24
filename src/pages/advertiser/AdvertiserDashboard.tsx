@@ -1,23 +1,60 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useRouteProtection } from '@/hooks/useRouteProtection';
-import { Loader2 } from 'lucide-react';
+import { useUserSession } from '@/hooks/useUserSession';
+import { Loader2, Shield } from 'lucide-react';
+import { toast } from 'sonner';
 
 const AdvertiserDashboard = () => {
-  const { isAuthorized, isLoading } = useRouteProtection({
+  const navigate = useNavigate();
+  const { user, isLoading } = useUserSession();
+  
+  // BLOQUEIO RIGOROSO: Super admin NÃO deve acessar área do anunciante
+  useEffect(() => {
+    if (!isLoading && user) {
+      console.log('🔍 AdvertiserDashboard - Verificando acesso:', {
+        email: user.email,
+        role: user.role
+      });
+      
+      // VERIFICAÇÃO CRÍTICA: Se é super admin, BLOQUEAR acesso
+      if (user.email === 'jefersonstilver@gmail.com' || user.role === 'super_admin') {
+        console.log('🚫 BLOQUEIO: Super admin tentando acessar área do anunciante');
+        toast.error('Super administrador deve usar o painel administrativo');
+        navigate('/super_admin');
+        return;
+      }
+    }
+  }, [user, isLoading, navigate]);
+  
+  const { isAuthorized, isLoading: routeLoading } = useRouteProtection({
     requireLogin: true,
     requiredRole: 'client',
     redirectTo: '/login',
     message: 'Você precisa estar logado para acessar a área do anunciante'
   });
   
-  if (isLoading) {
+  if (isLoading || routeLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
           <p className="ml-2 text-lg">Carregando...</p>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Verificação adicional de segurança
+  if (user?.email === 'jefersonstilver@gmail.com' || user?.role === 'super_admin') {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh] flex-col">
+          <Shield className="h-16 w-16 text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold text-red-500 mb-2">Acesso Negado</h1>
+          <p className="text-gray-600">Super administrador deve usar o painel administrativo</p>
         </div>
       </Layout>
     );

@@ -38,13 +38,14 @@ const UserMenu = () => {
     toast.success('Sessão encerrada com sucesso!');
   };
 
-  // Verificação RIGOROSA do super admin
+  // VERIFICAÇÃO RIGOROSA DO SUPER ADMIN
   const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
   
-  console.log('UserMenu - Verificação super admin:', {
+  console.log('👤 UserMenu - Verificação de usuário:', {
     userEmail: user?.email,
     userRole: user?.role,
-    isSuperAdmin
+    isSuperAdmin,
+    isLoggedIn
   });
 
   // Get user role from session metadata if available, or from user object
@@ -59,7 +60,6 @@ const UserMenu = () => {
   };
   
   const userRole = getUserRole();
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
   // Generate avatar initials from name or email
   const getInitials = () => {
@@ -136,7 +136,9 @@ const UserMenu = () => {
                     />
                     <AvatarFallback 
                       className={isLoggedIn 
-                        ? "bg-gradient-to-br from-[#3e1c85] to-[#4f28a1] text-white" 
+                        ? isSuperAdmin 
+                          ? "bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900" 
+                          : "bg-gradient-to-br from-[#3e1c85] to-[#4f28a1] text-white"
                         : "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700"
                       }
                     >
@@ -162,7 +164,10 @@ const UserMenu = () => {
                   exit="exit"
                   variants={dropdownVariants}
                 >
-                  <div className="bg-gradient-to-br from-[#2a0d5c] via-[#3e1c85] to-[#4f28a1] text-white">
+                  <div className={`${isSuperAdmin 
+                    ? "bg-gradient-to-br from-slate-800 via-slate-900 to-black text-white border border-amber-500/20"
+                    : "bg-gradient-to-br from-[#2a0d5c] via-[#3e1c85] to-[#4f28a1] text-white"
+                  }`}>
                     {isLoggedIn ? (
                       <>
                         <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
@@ -177,21 +182,25 @@ const UserMenu = () => {
                               {user?.email}
                             </p>
                             {isSuperAdmin && (
-                              <p className="text-xs text-amber-300 leading-none">
-                                Super Administrador
+                              <p className="text-xs text-amber-300 leading-none font-medium">
+                                🔒 Super Administrador Master
                               </p>
                             )}
                           </div>
                         </DropdownMenuLabel>
                         
                         <DropdownMenuGroup className="p-2">
-                          {/* Super Admin Panel - EXCLUSIVO para jefersonstilver@gmail.com */}
+                          {/* MENU EXCLUSIVO PARA SUPER ADMIN */}
                           {isSuperAdmin ? (
                             <>
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/20 hover:text-amber-300 focus:bg-amber-500/20 focus:text-amber-300">
+                              <DropdownMenuItem asChild className={`rounded-lg cursor-pointer p-3 transition-colors ${
+                                isSuperAdmin 
+                                  ? "hover:bg-amber-500/20 hover:text-amber-300 focus:bg-amber-500/20 focus:text-amber-300"
+                                  : "hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint"
+                              }`}>
                                 <Link to="/super_admin" className="flex items-center">
                                   <ShieldCheck className="mr-3 h-5 w-5 text-amber-400" />
-                                  <span className="font-medium">Super Admin Panel</span>
+                                  <span className="font-medium">🔒 Master Control Panel</span>
                                 </Link>
                               </DropdownMenuItem>
                               
@@ -202,14 +211,14 @@ const UserMenu = () => {
                                 className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
                               >
                                 <LogOut className="mr-3 h-5 w-5" />
-                                <span className="font-medium">Sair</span>
+                                <span className="font-medium">Sair do Sistema</span>
                               </DropdownMenuItem>
                             </>
                           ) : (
                             <>
-                              {/* Menu para usuários regulares - SEM super admin */}
+                              {/* MENU PARA USUÁRIOS REGULARES - SEM super admin */}
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
-                                <Link to="/minhas-campanhas" className="flex items-center">
+                                <Link to="/anunciante/campanhas" className="flex items-center">
                                   <ClipboardList className="mr-3 h-5 w-5" />
                                   <span className="font-medium">Minhas Campanhas</span>
                                 </Link>
@@ -252,7 +261,6 @@ const UserMenu = () => {
                         </DropdownMenuGroup>
                       </>
                     ) : (
-                      // ... keep existing code (login form for non-authenticated users)
                       <>
                         <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
                           <div className="text-center space-y-1">
