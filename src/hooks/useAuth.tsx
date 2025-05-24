@@ -12,17 +12,23 @@ export const useAuth = () => {
 
   // FUNÇÃO CRÍTICA: Extrair role EXCLUSIVAMENTE do JWT
   const extractUserRoleFromJWT = (session: Session | null): UserRole | null => {
-    if (!session?.access_token) return null;
+    if (!session?.access_token) {
+      console.log('🔍 OPERAÇÃO PHOENIX: Sessão sem access_token');
+      return null;
+    }
     
     try {
       // Decodificar JWT
       const payload = JSON.parse(atob(session.access_token.split('.')[1]));
       const userRole = payload.user_role as UserRole;
       
-      console.log('🔍 OPERAÇÃO PHOENIX: Role extraída do JWT:', userRole);
-      
-      // REMOVIDO: Fallback baseado em email por segurança
-      // O sistema agora depende EXCLUSIVAMENTE do JWT claims
+      console.log('🔍 OPERAÇÃO PHOENIX: JWT decodificado:', {
+        user_role: userRole,
+        email: payload.email,
+        sub: payload.sub,
+        iat: payload.iat,
+        exp: payload.exp
+      });
       
       return userRole || null;
     } catch (error) {
@@ -33,13 +39,23 @@ export const useAuth = () => {
 
   // FUNÇÃO OTIMIZADA: Criar UserProfile baseado exclusivamente no JWT
   const createUserProfileFromSession = (session: Session | null): UserProfile | null => {
-    if (!session?.user) return null;
+    if (!session?.user) {
+      console.log('🔍 OPERAÇÃO PHOENIX: Sessão sem usuário');
+      return null;
+    }
 
     const userRole = extractUserRoleFromJWT(session);
     
     if (!userRole) {
       console.warn('⚠️ ATENÇÃO: JWT sem user_role - usuário sem permissões definidas');
-      return null;
+      // Para debug, vamos ainda permitir criar o profile sem role
+      const profile: UserProfile = {
+        id: session.user.id,
+        email: session.user.email || '',
+        role: undefined, // Sem role definida
+        data_criacao: session.user.created_at
+      };
+      return profile;
     }
     
     const profile: UserProfile = {
@@ -63,6 +79,8 @@ export const useAuth = () => {
 
     const initializeAuth = async () => {
       try {
+        console.log('🔄 OPERAÇÃO PHOENIX: Inicializando autenticação...');
+        
         // Verificar sessão existente primeiro
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
@@ -74,6 +92,8 @@ export const useAuth = () => {
           // Criar perfil EXCLUSIVAMENTE baseado no JWT
           const profile = createUserProfileFromSession(initialSession);
           setUserProfile(profile);
+        } else {
+          console.log('🔍 OPERAÇÃO PHOENIX: Nenhuma sessão inicial encontrada');
         }
         
         if (mounted) {
@@ -134,13 +154,26 @@ export const useAuth = () => {
   };
 
   const hasRole = (requiredRole: string): boolean => {
-    if (!userProfile?.role) return false;
+    if (!userProfile?.role) {
+      console.log('🔍 hasRole: Usuário sem role definida');
+      return false;
+    }
     
     // Super admins têm acesso a tudo
-    if (userProfile.role === 'super_admin') return true;
+    if (userProfile.role === 'super_admin') {
+      console.log('✅ hasRole: Super admin tem acesso total');
+      return true;
+    }
     
     // Verificação direta de role
-    return userProfile.role === requiredRole;
+    const hasAccess = userProfile.role === requiredRole;
+    console.log('🔍 hasRole: Verificação de role:', {
+      userRole: userProfile.role,
+      requiredRole,
+      hasAccess
+    });
+    
+    return hasAccess;
   };
 
   return {

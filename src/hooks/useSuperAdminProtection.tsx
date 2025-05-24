@@ -15,7 +15,10 @@ export const useSuperAdminProtection = () => {
   const redirectedRef = useRef(false);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading) {
+      console.log('🛡️ OPERAÇÃO PHOENIX PROTECTION: Aguardando carregamento...');
+      return;
+    }
 
     // VERIFICAÇÃO SUPER ADMIN BASEADA EXCLUSIVAMENTE EM JWT CLAIMS
     const isSuperAdmin = userProfile?.role === 'super_admin';

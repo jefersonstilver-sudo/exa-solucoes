@@ -34,7 +34,7 @@ security_update_password_require_reauthentication = true
 
 [auth.hooks.custom_access_token]
 enabled = true
-uri = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/custom-access-token-hook"
+uri = "http://localhost:54321/functions/v1/custom-access-token-hook"
 
 [functions.custom-access-token-hook]
 verify_jwt = false

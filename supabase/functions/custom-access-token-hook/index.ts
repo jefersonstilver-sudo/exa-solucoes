@@ -26,6 +26,7 @@ interface WebhookPayload {
     aal?: string;
     amr?: Array<{ method: string; timestamp: number }>;
     session_id?: string;
+    user_role?: string; // Add this property
   };
   user: {
     id: string;
@@ -85,14 +86,18 @@ Deno.serve(async (req) => {
     });
 
     // Log evento de autenticação para auditoria
-    await supabase
-      .from('log_eventos_sistema')
-      .insert({
-        tipo_evento: 'auth_token_hook',
-        descricao: `Auth Hook executado para usuário: ${payload.user.email}`,
-        ip: req.headers.get('x-forwarded-for') || 'unknown',
-        user_agent: req.headers.get('user-agent') || 'unknown'
-      });
+    try {
+      await supabase
+        .from('log_eventos_sistema')
+        .insert({
+          tipo_evento: 'auth_token_hook',
+          descricao: `Auth Hook executado para usuário: ${payload.user.email}`,
+          ip: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
+    } catch (logError) {
+      console.error('Erro ao registrar log de auditoria:', logError);
+    }
 
     // Buscar role do usuário na tabela users
     const { data: userData, error } = await supabase
@@ -105,17 +110,22 @@ Deno.serve(async (req) => {
       console.error('❌ Erro ao buscar role do usuário:', error);
       
       // Log erro para auditoria
-      await supabase
-        .from('log_eventos_sistema')
-        .insert({
-          tipo_evento: 'auth_error',
-          descricao: `Erro ao buscar role para usuário ${payload.user.email}: ${error.message}`,
-          ip: req.headers.get('x-forwarded-for') || 'unknown',
-          user_agent: req.headers.get('user-agent') || 'unknown'
-        });
+      try {
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'auth_error',
+            descricao: `Erro ao buscar role para usuário ${payload.user.email}: ${error.message}`,
+            ip: req.headers.get('x-forwarded-for') || 'unknown',
+            user_agent: req.headers.get('user-agent') || 'unknown'
+          });
+      } catch (logError) {
+        console.error('Erro ao registrar log de erro:', logError);
+      }
       
       // Definir como 'client' por padrão se não encontrar
       payload.token.user_role = 'client';
+      console.log('⚠️ Role não encontrada, definindo como client por padrão');
     } else {
       payload.token.user_role = userData.role;
       console.log('✅ Role encontrada e injetada no JWT:', userData.role);
@@ -124,17 +134,21 @@ Deno.serve(async (req) => {
     // VERIFICAÇÃO ESPECÍFICA PARA SUPER ADMIN
     if (payload.user.email === 'jefersonstilver@gmail.com') {
       payload.token.user_role = 'super_admin';
-      console.log('👑 SUPER ADMIN CONFIRMADO - Role forçada para super_admin');
+      console.log('👑 SUPER ADMIN CONFIRMADO - Role forçada para super_admin via email');
       
       // Log evento super admin
-      await supabase
-        .from('log_eventos_sistema')
-        .insert({
-          tipo_evento: 'super_admin_access',
-          descricao: `Super Admin access granted to: ${payload.user.email}`,
-          ip: req.headers.get('x-forwarded-for') || 'unknown',
-          user_agent: req.headers.get('user-agent') || 'unknown'
-        });
+      try {
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'super_admin_access',
+            descricao: `Super Admin access granted to: ${payload.user.email}`,
+            ip: req.headers.get('x-forwarded-for') || 'unknown',
+            user_agent: req.headers.get('user-agent') || 'unknown'
+          });
+      } catch (logError) {
+        console.error('Erro ao registrar log super admin:', logError);
+      }
     }
 
     console.log('🚀 JWT modificado com user_role:', payload.token.user_role);
@@ -162,7 +176,7 @@ Deno.serve(async (req) => {
           user_agent: req.headers.get('user-agent') || 'unknown'
         });
     } catch (logError) {
-      console.error('Erro ao registrar log:', logError);
+      console.error('Erro ao registrar log crítico:', logError);
     }
     
     return new Response(JSON.stringify({ error: error.message }), {

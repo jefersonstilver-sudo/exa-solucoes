@@ -13,7 +13,7 @@ import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-export default function PanelStore() {
+export default function PainelStore() {
   // Use our custom hooks for state management
   const {
     panels,

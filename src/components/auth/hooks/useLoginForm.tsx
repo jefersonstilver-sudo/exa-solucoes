@@ -48,7 +48,14 @@ export const useLoginForm = (redirectPath: string) => {
         try {
           const payload = JSON.parse(atob(data.session.access_token.split('.')[1]));
           userRole = payload.user_role;
-          console.log('🔍 OPERAÇÃO PHOENIX: Role extraída do JWT:', userRole);
+          console.log('🔍 OPERAÇÃO PHOENIX: JWT completo decodificado:', {
+            user_role: userRole,
+            email: payload.email,
+            sub: payload.sub,
+            iat: new Date(payload.iat * 1000).toLocaleString(),
+            exp: new Date(payload.exp * 1000).toLocaleString(),
+            tokenValido: payload.exp > (Date.now() / 1000)
+          });
         } catch (jwtError) {
           console.error('❌ Erro ao extrair role do JWT:', jwtError);
         }
