@@ -17,11 +17,12 @@ export const useSuperAdminProtection = () => {
   useEffect(() => {
     if (isLoading) return;
 
+    // VERIFICAÇÃO SUPER ADMIN PADRONIZADA
     const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
                         userProfile?.role === 'super_admin';
     const currentPath = location.pathname;
 
-    console.log('🛡️ PHOENIX PROTECTION - Verificação OTIMIZADA:', {
+    console.log('🛡️ PHOENIX PROTECTION - Verificação CRÍTICA:', {
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
       isSuperAdmin,

@@ -5,13 +5,13 @@ import { useAuth } from './useAuth';
 export type { UserProfile } from '@/types/userTypes';
 
 /**
- * Simplified hook that consolidates authentication state
- * Now uses only useAuth as the single source of truth
+ * OPERAÇÃO PHOENIX MASTER - Hook simplificado que usa useAuth como fonte única
+ * Mantém compatibilidade mas redireciona para useAuth
  */
 export const useUserSession = () => {
   const { user, session, userProfile, isLoading, isLoggedIn, logout, hasRole } = useAuth();
 
-  console.log('useUserSession - Estado atual:', {
+  console.log('🔧 useUserSession - Redirecionando para useAuth:', {
     userEmail: userProfile?.email,
     userRole: userProfile?.role,
     isLoggedIn,

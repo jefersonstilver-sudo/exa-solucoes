@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useUserSession } from '@/hooks/useUserSession';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
@@ -8,10 +8,8 @@ import {
   Settings, 
   LogOut, 
   Sun, 
-  Moon, 
   Menu,
   User,
-  RefreshCw,
   Shield,
   Crown
 } from 'lucide-react';
@@ -24,18 +22,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useTheme } from '@/components/ui/theme-provider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ModeToggle } from '@/components/ui/mode-toggle';
 
 interface AdminHeaderProps {
   title?: string;
 }
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
-  const { setTheme } = useTheme();
-  const { user, session } = useUserSession();
+  const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
   
   // Mobile menu state
@@ -43,24 +38,30 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      toast.success('Logout realizado com sucesso');
-      navigate('/login');
+      const { success } = await logout();
+      if (success) {
+        toast.success('Logout realizado com sucesso');
+        navigate('/login');
+      } else {
+        toast.error('Erro ao realizar logout');
+      }
     } catch (error) {
       console.error('Erro ao realizar logout:', error);
       toast.error('Erro ao realizar logout');
     }
   };
 
-  // Get user name and role from session if available
-  const userName = session?.user?.user_metadata?.name || 
-                  (user && 'name' in user ? (user as any).name : user?.email) || 
-                  'Usuario';
-                  
-  const userRole = session?.user?.user_metadata?.role || 
-                  (user && 'role' in user ? (user as any).role : 'admin');
+  // Get user info from userProfile
+  const userName = userProfile?.email?.split('@')[0] || 'Usuario';
+  const userRole = userProfile?.role || 'admin';
+  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
 
-  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+  console.log('🔧 AdminHeader - Estado de autenticação:', {
+    userEmail: userProfile?.email,
+    userRole: userProfile?.role,
+    isSuperAdmin,
+    userName
+  });
 
   return (
     <header className="bg-gradient-to-r from-slate-800 to-slate-700 shadow-xl border-b border-slate-600/50 backdrop-blur-sm">

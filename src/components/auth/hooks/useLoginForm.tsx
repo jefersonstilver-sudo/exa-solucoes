@@ -51,6 +51,8 @@ export const useLoginForm = (redirectPath: string) => {
           .single();
 
         const userRole = userData?.role;
+        
+        // VERIFICAÇÃO SUPER ADMIN PADRONIZADA E CRÍTICA
         const isSuperAdmin = data.user.email === 'jefersonstilver@gmail.com' && userRole === 'super_admin';
         
         console.log('📊 Dados do usuário após login:', {

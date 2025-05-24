@@ -24,11 +24,11 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
   const navigate = useNavigate();
   const { isLoggedIn, userProfile, hasRole } = useAuth();
 
-  // CORREÇÃO CRÍTICA: Detectar super admin corretamente
+  // CORREÇÃO CRÍTICA: Verificação super admin padronizada
   const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
   
-  console.log('🔍 AdminAccessButton - Estado:', {
+  console.log('🔧 AdminAccessButton - Estado padronizado:', {
     userEmail: userProfile?.email,
     userRole: userProfile?.role,
     isSuperAdmin,
@@ -43,9 +43,9 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
       return;
     }
     
-    // REDIRECIONAMENTO CORRETO BASEADO NO TIPO DE ADMIN
+    // REDIRECIONAMENTO CRÍTICO CORRIGIDO
     if (isSuperAdmin) {
-      console.log('🚀 SUPER ADMIN DETECTADO - Redirecionando para /super_admin');
+      console.log('🚀 SUPER ADMIN CONFIRMADO - Redirecionando para /super_admin');
       toast.success('Acessando Painel Super Administrativo');
       navigate('/super_admin');
     } else if (isRegularAdmin) {

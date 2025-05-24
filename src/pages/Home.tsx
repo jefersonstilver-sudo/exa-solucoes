@@ -11,9 +11,17 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { isLoggedIn, userProfile, hasRole } = useAuth();
   
-  // CORREÇÃO: Usar apenas useAuth para verificações
+  // CORREÇÃO: Verificação super admin padronizada
   const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
+
+  console.log('🔧 Home - Estado de autenticação:', {
+    userEmail: userProfile?.email,
+    userRole: userProfile?.role,
+    isSuperAdmin,
+    isRegularAdmin,
+    isLoggedIn
+  });
 
   return (
     <Layout>

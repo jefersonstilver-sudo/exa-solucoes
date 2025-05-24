@@ -9,15 +9,20 @@ import {
   Settings, 
   Users, 
   Shield,
-  UserCog,
   Crown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUserSession } from '@/hooks/useUserSession';
+import { useAuth } from '@/hooks/useAuth';
 
 const AdminSidebar = () => {
-  const { user } = useUserSession();
-  const isSuperAdmin = user?.role === 'super_admin';
+  const { userProfile } = useAuth();
+  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
+  
+  console.log('🔧 AdminSidebar - Estado de autenticação:', {
+    userEmail: userProfile?.email,
+    userRole: userProfile?.role,
+    isSuperAdmin
+  });
   
   const navItems = [
     {
