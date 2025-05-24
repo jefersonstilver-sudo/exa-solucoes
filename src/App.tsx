@@ -21,6 +21,14 @@ const App = () => {
         {/* SUPER ADMIN ROUTES - MÁXIMA PRECEDÊNCIA */}
         <Route path="/super_admin/*" element={<SuperAdminPage />} />
         
+        {/* REDIRECIONAMENTOS CRÍTICOS PARA SUPER ADMIN */}
+        <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/admin/*" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/administracao" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/administracao/*" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/dashboard" element={<Navigate to="/super_admin" replace />} />
+        <Route path="/painel" element={<Navigate to="/super_admin" replace />} />
+        
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
         
@@ -40,10 +48,6 @@ const App = () => {
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/meus-pedidos" element={<Pedidos />} />
-        
-        {/* Redirecionamentos de segurança */}
-        <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
-        <Route path="/admin/*" element={<Navigate to="/super_admin" replace />} />
         
         {/* Not Found */}
         <Route path="*" element={<NotFound />} />

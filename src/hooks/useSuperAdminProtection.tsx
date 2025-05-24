@@ -1,27 +1,28 @@
 
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useUserSession } from './useUserSession';
+import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 /**
- * Hook de proteção específico para super admin
+ * Hook de proteção DEFINITIVO para super admin
  * Garante que jefersonstilver@gmail.com sempre acesse /super_admin
  */
 export const useSuperAdminProtection = () => {
-  const { user, isLoading, isLoggedIn } = useUserSession();
+  const { userProfile, isLoading, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     if (isLoading) return;
 
-    const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com';
+    const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
+                        userProfile?.role === 'super_admin';
     const currentPath = location.pathname;
 
-    console.log('🔒 SUPER ADMIN PROTECTION - Verificação:', {
-      userEmail: user?.email,
-      userRole: user?.role,
+    console.log('🛡️ SUPER ADMIN PROTECTION - Verificação COMPLETA:', {
+      userEmail: userProfile?.email,
+      userRole: userProfile?.role,
       isSuperAdmin,
       currentPath,
       isLoggedIn
@@ -29,30 +30,24 @@ export const useSuperAdminProtection = () => {
 
     // REGRA CRÍTICA 1: Se é super admin e NÃO está em /super_admin, redirecionar IMEDIATAMENTE
     if (isLoggedIn && isSuperAdmin && !currentPath.startsWith('/super_admin')) {
-      console.log('🚨 CRÍTICO: Super admin fora da área administrativa - REDIRECIONANDO');
-      toast.info('Redirecionando para o painel administrativo', {
+      console.log('🚨 CRÍTICO: Super admin fora da área administrativa - REDIRECIONANDO AGORA');
+      toast.success('Redirecionando para o painel administrativo completo', {
         duration: 2000
       });
       
-      // Força redirecionamento imediato
-      setTimeout(() => {
-        navigate('/super_admin', { replace: true });
-      }, 100);
-      
+      // REDIRECIONAMENTO FORÇADO E IMEDIATO
+      window.location.href = '/super_admin';
       return;
     }
 
-    // REGRA CRÍTICA 2: Se está em /super_admin mas NÃO é super admin, bloquear
+    // REGRA CRÍTICA 2: Se está em /super_admin mas NÃO é super admin, bloquear IMEDIATAMENTE
     if (currentPath.startsWith('/super_admin') && (!isLoggedIn || !isSuperAdmin)) {
       console.log('🚫 BLOQUEIO: Tentativa de acesso não autorizado ao painel admin');
-      toast.error('Acesso negado ao painel administrativo', {
-        duration: 3000
+      toast.error('Acesso negado ao painel administrativo - Apenas Super Admin', {
+        duration: 4000
       });
       
-      setTimeout(() => {
-        navigate('/login', { replace: true });
-      }, 100);
-      
+      navigate('/login?redirect=/super_admin', { replace: true });
       return;
     }
 
@@ -61,24 +56,24 @@ export const useSuperAdminProtection = () => {
       currentPath.startsWith('/anunciante') || 
       currentPath.startsWith('/client') ||
       currentPath === '/paineis-digitais/loja' ||
-      currentPath.startsWith('/checkout')
+      currentPath.startsWith('/checkout') ||
+      currentPath === '/admin' ||
+      currentPath === '/dashboard' ||
+      currentPath === '/painel'
     )) {
-      console.log('🚫 BLOQUEIO: Super admin tentando acessar área de cliente');
+      console.log('🚫 BLOQUEIO: Super admin tentando acessar área inadequada');
       toast.error('Super administrador deve usar apenas o painel administrativo', {
         duration: 3000
       });
       
-      setTimeout(() => {
-        navigate('/super_admin', { replace: true });
-      }, 100);
-      
+      window.location.href = '/super_admin';
       return;
     }
 
-  }, [user, isLoading, isLoggedIn, location.pathname, navigate]);
+  }, [userProfile, isLoading, isLoggedIn, location.pathname, navigate]);
 
   return {
-    isSuperAdmin: user?.email === 'jefersonstilver@gmail.com',
+    isSuperAdmin: userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin',
     isProtected: true
   };
 };
