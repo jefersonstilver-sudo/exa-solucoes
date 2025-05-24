@@ -12,16 +12,16 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { isLoggedIn, userProfile, hasRole, isLoading } = useAuth();
   
-  // PHOENIX: Verificação super admin baseada APENAS em JWT claims
-  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
+  // INDEXA: Verificação super admin baseada APENAS em JWT claims
+  const isSuperAdmin = userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
 
   // REDIRECIONAMENTO AUTOMÁTICO PARA SUPER ADMIN
   useEffect(() => {
     if (!isLoading && isLoggedIn && isSuperAdmin) {
-      console.log('🚀 PHOENIX HOME: Super admin detectado - Redirecionamento automático para /super_admin');
+      console.log('🚀 INDEXA HOME: Super admin detectado - Redirecionamento automático para /super_admin');
       
-      toast.success('Bem-vindo ao Painel Super Administrativo!', {
+      toast.success('Bem-vindo ao Painel Super Administrativo INDEXA!', {
         duration: 3000
       });
       
@@ -32,7 +32,7 @@ const Home: React.FC = () => {
     }
   }, [isLoading, isLoggedIn, isSuperAdmin, navigate]);
 
-  console.log('🔧 PHOENIX Home - Estado baseado em JWT:', {
+  console.log('🔧 INDEXA Home - Estado baseado em JWT:', {
     userEmail: userProfile?.email,
     userRole: userProfile?.role,
     isSuperAdmin,
@@ -74,7 +74,7 @@ const Home: React.FC = () => {
           </p>
           <div className="flex justify-center space-x-4">
             <Button
-              onClick={() => navigate('/client/comprar')}
+              onClick={() => navigate('/paineis-digitais/loja')}
               className="bg-indexa-purple hover:bg-indexa-purple/90 text-white px-8 py-2"
             >
               Começar agora
@@ -103,7 +103,7 @@ const Home: React.FC = () => {
             </div>
           )}
           
-          {/* PHOENIX: AdminAccessButton unificado baseado em JWT */}
+          {/* INDEXA: AdminAccessButton unificado baseado em JWT */}
           {isLoggedIn && isRegularAdmin && (
             <div className="mt-8 pt-4 border-t border-gray-200">
               <div className="flex justify-center">

@@ -13,7 +13,7 @@ export const useAuth = () => {
   // FUNÇÃO CRÍTICA: Extrair role EXCLUSIVAMENTE do JWT
   const extractUserRoleFromJWT = (session: Session | null): UserRole | null => {
     if (!session?.access_token) {
-      console.log('🔍 OPERAÇÃO PHOENIX: Sessão sem access_token');
+      console.log('🔍 INDEXA AUTH: Sessão sem access_token');
       return null;
     }
     
@@ -22,12 +22,13 @@ export const useAuth = () => {
       const payload = JSON.parse(atob(session.access_token.split('.')[1]));
       const userRole = payload.user_role as UserRole;
       
-      console.log('🔍 OPERAÇÃO PHOENIX: JWT decodificado:', {
+      console.log('🔍 INDEXA AUTH: JWT decodificado:', {
         user_role: userRole,
         email: payload.email,
         sub: payload.sub,
-        iat: payload.iat,
-        exp: payload.exp
+        iat: new Date(payload.iat * 1000).toLocaleString(),
+        exp: new Date(payload.exp * 1000).toLocaleString(),
+        tokenValido: payload.exp > (Date.now() / 1000)
       });
       
       return userRole || null;
@@ -40,23 +41,11 @@ export const useAuth = () => {
   // FUNÇÃO OTIMIZADA: Criar UserProfile baseado exclusivamente no JWT
   const createUserProfileFromSession = (session: Session | null): UserProfile | null => {
     if (!session?.user) {
-      console.log('🔍 OPERAÇÃO PHOENIX: Sessão sem usuário');
+      console.log('🔍 INDEXA AUTH: Sessão sem usuário');
       return null;
     }
 
     const userRole = extractUserRoleFromJWT(session);
-    
-    if (!userRole) {
-      console.warn('⚠️ ATENÇÃO: JWT sem user_role - usuário sem permissões definidas');
-      // Para debug, vamos ainda permitir criar o profile sem role
-      const profile: UserProfile = {
-        id: session.user.id,
-        email: session.user.email || '',
-        role: undefined, // Sem role definida
-        data_criacao: session.user.created_at
-      };
-      return profile;
-    }
     
     const profile: UserProfile = {
       id: session.user.id,
@@ -65,10 +54,11 @@ export const useAuth = () => {
       data_criacao: session.user.created_at
     };
 
-    console.log('✅ OPERAÇÃO PHOENIX: UserProfile criado do JWT:', {
+    console.log('✅ INDEXA AUTH: UserProfile criado do JWT:', {
       email: profile.email,
       role: profile.role,
-      source: 'JWT_CLAIMS_ONLY'
+      source: 'JWT_CLAIMS_ONLY',
+      timestamp: new Date().toISOString()
     });
 
     return profile;
@@ -79,13 +69,13 @@ export const useAuth = () => {
 
     const initializeAuth = async () => {
       try {
-        console.log('🔄 OPERAÇÃO PHOENIX: Inicializando autenticação...');
+        console.log('🔄 INDEXA AUTH: Inicializando autenticação...');
         
         // Verificar sessão existente primeiro
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (initialSession?.user && mounted) {
-          console.log('🔍 OPERAÇÃO PHOENIX: Sessão inicial encontrada para:', initialSession.user.email);
+          console.log('🔍 INDEXA AUTH: Sessão inicial encontrada para:', initialSession.user.email);
           setSession(initialSession);
           setUser(initialSession.user);
           
@@ -93,7 +83,7 @@ export const useAuth = () => {
           const profile = createUserProfileFromSession(initialSession);
           setUserProfile(profile);
         } else {
-          console.log('🔍 OPERAÇÃO PHOENIX: Nenhuma sessão inicial encontrada');
+          console.log('🔍 INDEXA AUTH: Nenhuma sessão inicial encontrada');
         }
         
         if (mounted) {
@@ -112,7 +102,7 @@ export const useAuth = () => {
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('🔄 OPERAÇÃO PHOENIX: Auth state changed:', event, session?.user?.email);
+        console.log('🔄 INDEXA AUTH: Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -139,14 +129,14 @@ export const useAuth = () => {
   }, []);
 
   const logout = async () => {
-    console.log('🚪 OPERAÇÃO PHOENIX: Fazendo logout...');
+    console.log('🚪 INDEXA AUTH: Fazendo logout...');
     const { error } = await supabase.auth.signOut();
     if (!error) {
       setUser(null);
       setSession(null);
       setUserProfile(null);
       localStorage.clear();
-      console.log('✅ OPERAÇÃO PHOENIX: Logout realizado com sucesso');
+      console.log('✅ INDEXA AUTH: Logout realizado com sucesso');
     } else {
       console.error('❌ Erro no logout:', error);
     }

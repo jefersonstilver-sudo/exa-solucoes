@@ -18,11 +18,11 @@ const SuperAdminPage = () => {
 
   useEffect(() => {
     if (isLoading) {
-      console.log('🔄 SuperAdminPage: Aguardando carregamento da autenticação...');
+      console.log('🔄 INDEXA SUPER ADMIN: Aguardando carregamento da autenticação...');
       return;
     }
 
-    console.log('🔍 SuperAdminPage - Verificação COMPLETA de acesso:', {
+    console.log('🔍 INDEXA SUPER ADMIN - Verificação COMPLETA de acesso:', {
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
       isLoggedIn,
@@ -53,8 +53,8 @@ const SuperAdminPage = () => {
       return;
     }
 
-    console.log('✅ ACESSO AUTORIZADO - SuperAdminPage para:', userProfile?.email);
-    toast.success('Bem-vindo ao Painel Super Administrativo!', {
+    console.log('✅ INDEXA SUPER ADMIN - ACESSO AUTORIZADO para:', userProfile?.email);
+    toast.success('Bem-vindo ao Painel Super Administrativo INDEXA!', {
       duration: 3000
     });
     setAccessGranted(true);
@@ -63,20 +63,20 @@ const SuperAdminPage = () => {
   // Tela de carregamento sofisticada
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indexa-purple-dark via-indexa-purple to-indexa-purple-dark">
         <div className="flex flex-col items-center space-y-6 max-w-md text-center">
           <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-400/30 border-t-amber-400"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indexa-mint/30 border-t-indexa-mint"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <Crown className="h-8 w-8 text-amber-400 animate-pulse" />
+              <Crown className="h-8 w-8 text-indexa-mint animate-pulse" />
             </div>
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-white">INDEXA Master Control</h2>
             <p className="text-slate-300 font-medium">Verificando credenciais de super administrador...</p>
             <div className="flex items-center justify-center space-x-2 mt-4">
-              <Shield className="h-4 w-4 text-amber-400" />
-              <span className="text-xs text-amber-400 font-medium">SISTEMA SEGURO</span>
+              <Shield className="h-4 w-4 text-indexa-mint" />
+              <span className="text-xs text-indexa-mint font-medium">SISTEMA SEGURO</span>
             </div>
           </div>
         </div>
@@ -87,7 +87,7 @@ const SuperAdminPage = () => {
   // Tela de acesso negado sofisticada
   if (!accessGranted) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-900 via-slate-900 to-slate-900">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-900 via-indexa-purple-dark to-indexa-purple-dark">
         <div className="flex flex-col items-center space-y-6 text-center max-w-lg p-8">
           <div className="relative">
             <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center border-2 border-red-500/30">
@@ -103,7 +103,7 @@ const SuperAdminPage = () => {
               Apenas credenciais autorizadas têm acesso a este painel.
             </p>
           </div>
-          <div className="bg-slate-800/50 p-4 rounded-lg border border-red-500/20">
+          <div className="bg-indexa-purple-dark/50 p-4 rounded-lg border border-red-500/20">
             <p className="text-red-300 text-sm">
               🚨 Tentativa de acesso não autorizado registrada
             </p>
@@ -114,7 +114,7 @@ const SuperAdminPage = () => {
   }
 
   // Renderização autorizada do painel super admin COMPLETO
-  console.log('🎯 RENDERIZANDO SuperAdminPage COMPLETO para usuário autorizado:', userProfile?.email);
+  console.log('🎯 RENDERIZANDO INDEXA SuperAdminPage COMPLETO para usuário autorizado:', userProfile?.email);
   
   return (
     <SuperAdminLayout>

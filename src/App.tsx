@@ -32,12 +32,14 @@ const App = () => {
         
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
+        <Route path="/login" element={<AuthRoutes />} />
         
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         
         {/* Painéis Digitais - Loja Online */}
         <Route path="/paineis-digitais/loja" element={<PainelStore />} />
+        <Route path="/paineis-digitais" element={<Navigate to="/paineis-digitais/loja" replace />} />
         
         {/* Advertiser Dashboard */}
         <Route path="/anunciante" element={<AdvertiserDashboard />} />
@@ -50,7 +52,7 @@ const App = () => {
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         
-        {/* Unified Pedidos Route - /meus-pedidos redirects to /pedidos */}
+        {/* Unified Pedidos Route */}
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/meus-pedidos" element={<Navigate to="/pedidos" replace />} />
         

@@ -26,7 +26,7 @@ interface WebhookPayload {
     aal?: string;
     amr?: Array<{ method: string; timestamp: number }>;
     session_id?: string;
-    user_role?: string; // Add this property
+    user_role?: string;
   };
   user: {
     id: string;
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('🔥 AUTH HOOK EXECUTANDO - Interceptando token JWT');
+  console.log('🚀 INDEXA AUTH HOOK - Interceptando token JWT');
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -79,79 +79,79 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const payload: WebhookPayload = await req.json();
-    console.log('📦 Payload recebido:', { 
+    
+    console.log('📦 INDEXA AUTH - Payload recebido:', { 
       type: payload.type, 
       userId: payload.user.id, 
-      email: payload.user.email 
+      email: payload.user.email,
+      timestamp: new Date().toISOString()
     });
 
     // Log evento de autenticação para auditoria
-    try {
-      await supabase
-        .from('log_eventos_sistema')
-        .insert({
-          tipo_evento: 'auth_token_hook',
-          descricao: `Auth Hook executado para usuário: ${payload.user.email}`,
-          ip: req.headers.get('x-forwarded-for') || 'unknown',
-          user_agent: req.headers.get('user-agent') || 'unknown'
-        });
-    } catch (logError) {
-      console.error('Erro ao registrar log de auditoria:', logError);
-    }
+    await supabase
+      .from('log_eventos_sistema')
+      .insert({
+        tipo_evento: 'auth_hook_execution',
+        descricao: `Auth Hook executado para usuário: ${payload.user.email}`,
+        ip: req.headers.get('x-forwarded-for') || 'unknown',
+        user_agent: req.headers.get('user-agent') || 'unknown'
+      });
 
     // Buscar role do usuário na tabela users
     const { data: userData, error } = await supabase
       .from('users')
-      .select('role')
+      .select('role, email')
       .eq('id', payload.user.id)
       .single();
 
     if (error) {
-      console.error('❌ Erro ao buscar role do usuário:', error);
+      console.error('❌ INDEXA AUTH - Erro ao buscar role:', error);
       
       // Log erro para auditoria
-      try {
-        await supabase
-          .from('log_eventos_sistema')
-          .insert({
-            tipo_evento: 'auth_error',
-            descricao: `Erro ao buscar role para usuário ${payload.user.email}: ${error.message}`,
-            ip: req.headers.get('x-forwarded-for') || 'unknown',
-            user_agent: req.headers.get('user-agent') || 'unknown'
-          });
-      } catch (logError) {
-        console.error('Erro ao registrar log de erro:', logError);
-      }
+      await supabase
+        .from('log_eventos_sistema')
+        .insert({
+          tipo_evento: 'auth_error',
+          descricao: `Erro ao buscar role para usuário ${payload.user.email}: ${error.message}`,
+          ip: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
       
       // Definir como 'client' por padrão se não encontrar
       payload.token.user_role = 'client';
       console.log('⚠️ Role não encontrada, definindo como client por padrão');
     } else {
       payload.token.user_role = userData.role;
-      console.log('✅ Role encontrada e injetada no JWT:', userData.role);
+      console.log('✅ INDEXA AUTH - Role encontrada e injetada no JWT:', {
+        email: userData.email,
+        role: userData.role,
+        userId: payload.user.id
+      });
     }
 
-    // VERIFICAÇÃO ESPECÍFICA PARA SUPER ADMIN
+    // VERIFICAÇÃO ESPECÍFICA PARA SUPER ADMIN INDEXA
     if (payload.user.email === 'jefersonstilver@gmail.com') {
       payload.token.user_role = 'super_admin';
-      console.log('👑 SUPER ADMIN CONFIRMADO - Role forçada para super_admin via email');
+      console.log('👑 INDEXA SUPER ADMIN - Role forçada para super_admin:', payload.user.email);
       
       // Log evento super admin
-      try {
-        await supabase
-          .from('log_eventos_sistema')
-          .insert({
-            tipo_evento: 'super_admin_access',
-            descricao: `Super Admin access granted to: ${payload.user.email}`,
-            ip: req.headers.get('x-forwarded-for') || 'unknown',
-            user_agent: req.headers.get('user-agent') || 'unknown'
-          });
-      } catch (logError) {
-        console.error('Erro ao registrar log super admin:', logError);
-      }
+      await supabase
+        .from('log_eventos_sistema')
+        .insert({
+          tipo_evento: 'super_admin_access',
+          descricao: `INDEXA Super Admin access granted to: ${payload.user.email}`,
+          ip: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
     }
 
-    console.log('🚀 JWT modificado com user_role:', payload.token.user_role);
+    // Log final do JWT modificado
+    console.log('🎯 INDEXA AUTH - JWT Final:', {
+      user_role: payload.token.user_role,
+      email: payload.user.email,
+      user_id: payload.user.id,
+      timestamp: new Date().toISOString()
+    });
 
     return new Response(JSON.stringify(payload), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('💥 Erro no Auth Hook:', error);
+    console.error('💥 INDEXA AUTH HOOK - Erro crítico:', error);
     
     // Log erro crítico
     try {
@@ -170,8 +170,8 @@ Deno.serve(async (req) => {
       await supabase
         .from('log_eventos_sistema')
         .insert({
-          tipo_evento: 'auth_hook_error',
-          descricao: `Auth Hook failure: ${error.message}`,
+          tipo_evento: 'auth_hook_critical_error',
+          descricao: `INDEXA Auth Hook failure: ${error.message}`,
           ip: req.headers.get('x-forwarded-for') || 'unknown',
           user_agent: req.headers.get('user-agent') || 'unknown'
         });

@@ -18,7 +18,7 @@ export const useLoginForm = (redirectPath: string) => {
     setIsLoading(true);
     
     try {
-      console.log('🔐 OPERAÇÃO PHOENIX LOGIN - Iniciando para:', email);
+      console.log('🔐 INDEXA LOGIN - Iniciando para:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -41,14 +41,14 @@ export const useLoginForm = (redirectPath: string) => {
       }
       
       if (data.session && data.user) {
-        console.log('✅ OPERAÇÃO PHOENIX: Login bem-sucedido para:', data.user.email);
+        console.log('✅ INDEXA LOGIN: Login bem-sucedido para:', data.user.email);
         
-        // OPERAÇÃO PHOENIX: Extrair role EXCLUSIVAMENTE do JWT
+        // INDEXA: Extrair role EXCLUSIVAMENTE do JWT
         let userRole = null;
         try {
           const payload = JSON.parse(atob(data.session.access_token.split('.')[1]));
           userRole = payload.user_role;
-          console.log('🔍 OPERAÇÃO PHOENIX: JWT completo decodificado:', {
+          console.log('🔍 INDEXA LOGIN: JWT completo decodificado:', {
             user_role: userRole,
             email: payload.email,
             sub: payload.sub,
@@ -60,30 +60,28 @@ export const useLoginForm = (redirectPath: string) => {
           console.error('❌ Erro ao extrair role do JWT:', jwtError);
         }
 
-        if (!userRole) {
-          console.warn('⚠️ ATENÇÃO: JWT sem user_role - redirecionando para área padrão');
-          toast.warning('Seu perfil está sendo configurado. Redirecionando...');
-          navigate('/anunciante', { replace: true });
-          return;
-        }
-
-        // REDIRECIONAMENTO BASEADO EXCLUSIVAMENTE EM JWT ROLE
+        // REDIRECIONAMENTO INTELIGENTE BASEADO EM ROLE
         if (userRole === 'super_admin') {
-          console.log('🚀 OPERAÇÃO PHOENIX: SUPER ADMIN CONFIRMADO via JWT - Redirecionamento para /super_admin');
+          console.log('🚀 INDEXA LOGIN: SUPER ADMIN CONFIRMADO via JWT - Redirecionamento para /super_admin');
           toast.success('Login de Super Administrador realizado com sucesso!', {
             duration: 3000
           });
           
           navigate('/super_admin', { replace: true });
-        } else if (userRole === 'admin' || userRole === 'client') {
-          console.log('👤 OPERAÇÃO PHOENIX: Usuário regular detectado');
+        } else if (userRole === 'admin') {
+          console.log('👤 INDEXA LOGIN: Admin detectado - Redirecionamento para /admin');
+          toast.success('Login de Administrador realizado com sucesso!');
+          navigate('/admin', { replace: true });
+        } else if (userRole === 'client') {
+          console.log('👤 INDEXA LOGIN: Cliente detectado - Redirecionamento para /paineis-digitais/loja');
           toast.success('Login realizado com sucesso!');
-          navigate('/anunciante', { replace: true });
+          navigate('/paineis-digitais/loja', { replace: true });
         } else {
-          // Para outros roles ou casos não previstos
+          // Para casos sem role ou role não reconhecida
           const searchParams = new URLSearchParams(location.search);
           const redirectTo = searchParams.get('redirect') || redirectPath;
-          console.log('🔄 OPERAÇÃO PHOENIX: Redirecionando para path solicitado:', redirectTo);
+          console.log('🔄 INDEXA LOGIN: Redirecionando para path solicitado:', redirectTo);
+          toast.success('Login realizado com sucesso!');
           navigate(redirectTo, { replace: true });
         }
         
