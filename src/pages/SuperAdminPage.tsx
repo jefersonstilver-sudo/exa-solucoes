@@ -1,8 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserSession } from '@/hooks/useUserSession';
-import { useSuperAdminProtection } from '@/hooks/useSuperAdminProtection';
+import { useAuth } from '@/hooks/useAuth';
 import SuperAdminLayout from '@/components/admin/layout/SuperAdminLayout';
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
@@ -10,37 +9,41 @@ import { toast } from 'sonner';
 
 const SuperAdminPage = () => {
   const navigate = useNavigate();
-  const { user, isLoading, isLoggedIn } = useUserSession();
-  const { isSuperAdmin } = useSuperAdminProtection();
+  const { userProfile, isLoading, isLoggedIn } = useAuth();
+  const [accessGranted, setAccessGranted] = useState(false);
 
-  // VERIFICAÇÃO CRÍTICA DE SEGURANÇA
   useEffect(() => {
-    if (!isLoading) {
-      console.log('🔍 SuperAdminPage - Verificação de acesso crítica:', {
-        userEmail: user?.email,
-        userRole: user?.role,
-        isLoggedIn,
-        isSuperAdmin,
-        expectedEmail: 'jefersonstilver@gmail.com'
-      });
-
-      // BLOQUEIO ABSOLUTO: Se não é super admin, negar acesso
-      if (!isLoggedIn || !isSuperAdmin || user?.email !== 'jefersonstilver@gmail.com') {
-        console.log('🚫 ACESSO NEGADO - SuperAdminPage');
-        toast.error('Acesso negado. Área restrita ao Super Administrador.', {
-          duration: 4000
-        });
-        
-        setTimeout(() => {
-          navigate('/login', { replace: true });
-        }, 1000);
-      } else {
-        console.log('✅ ACESSO AUTORIZADO - SuperAdminPage para:', user.email);
-      }
+    if (isLoading) {
+      console.log('🔄 SuperAdminPage: Aguardando carregamento da autenticação...');
+      return;
     }
-  }, [user, isLoading, isLoggedIn, isSuperAdmin, navigate]);
 
-  // Tela de carregamento com indicador de segurança
+    console.log('🔍 SuperAdminPage - Verificação de acesso:', {
+      userEmail: userProfile?.email,
+      userRole: userProfile?.role,
+      isLoggedIn,
+      expectedEmail: 'jefersonstilver@gmail.com'
+    });
+
+    // Verificação CRÍTICA: Apenas jefersonstilver@gmail.com com role super_admin
+    const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
+                        userProfile?.role === 'super_admin';
+
+    if (!isLoggedIn || !isSuperAdmin) {
+      console.log('🚫 ACESSO NEGADO - SuperAdminPage');
+      toast.error('Acesso negado. Área restrita ao Super Administrador.', {
+        duration: 4000
+      });
+      
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    console.log('✅ ACESSO AUTORIZADO - SuperAdminPage para:', userProfile.email);
+    setAccessGranted(true);
+  }, [userProfile, isLoading, isLoggedIn, navigate]);
+
+  // Tela de carregamento
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
@@ -56,7 +59,7 @@ const SuperAdminPage = () => {
   }
 
   // Tela de acesso negado
-  if (!isLoggedIn || !isSuperAdmin || user?.email !== 'jefersonstilver@gmail.com') {
+  if (!accessGranted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-900 to-slate-900">
         <div className="flex flex-col items-center space-y-4 text-center max-w-md">
@@ -74,7 +77,7 @@ const SuperAdminPage = () => {
   }
 
   // Renderização autorizada do painel super admin
-  console.log('🎯 RENDERIZANDO SuperAdminPage para usuário autorizado:', user.email);
+  console.log('🎯 RENDERIZANDO SuperAdminPage para usuário autorizado:', userProfile?.email);
   
   return (
     <SuperAdminLayout>

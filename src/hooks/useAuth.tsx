@@ -10,37 +10,78 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (userData && !error) {
+        const profile: UserProfile = {
+          id: userData.id,
+          email: userData.email,
+          role: userData.role as UserRole,
+          data_criacao: userData.data_criacao
+        };
+        
+        console.log('🔐 UserProfile carregado:', {
+          email: profile.email,
+          role: profile.role,
+          isSuperAdmin: profile.email === 'jefersonstilver@gmail.com'
+        });
+        
+        setUserProfile(profile);
+        return profile;
+      }
+    } catch (err) {
+      console.error('Erro ao buscar perfil do usuário:', err);
+    }
+    return null;
+  };
+
   useEffect(() => {
-    // Set up auth state listener
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Verificar sessão existente primeiro
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (initialSession?.user && mounted) {
+          console.log('🔍 Sessão inicial encontrada para:', initialSession.user.email);
+          setSession(initialSession);
+          setUser(initialSession.user);
+          
+          // Carregar perfil imediatamente
+          await fetchUserProfile(initialSession.user.id);
+        }
+        
+        if (mounted) {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Erro na inicialização de auth:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        if (!mounted) return;
+        
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile from users table (source of truth for role)
-          setTimeout(async () => {
-            try {
-              const { data: userData, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (userData && !error) {
-                setUserProfile({
-                  id: userData.id,
-                  email: userData.email,
-                  role: userData.role as UserRole, // Type cast para UserRole
-                  data_criacao: userData.data_criacao
-                });
-              }
-            } catch (err) {
-              console.error('Error fetching user profile:', err);
-            }
-          }, 0);
+          // Carregar perfil imediatamente quando há nova sessão
+          await fetchUserProfile(session.user.id);
         } else {
           setUserProfile(null);
         }
@@ -49,15 +90,13 @@ export const useAuth = () => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    // Inicializar
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const logout = async () => {
@@ -74,10 +113,10 @@ export const useAuth = () => {
   const hasRole = (requiredRole: string): boolean => {
     if (!userProfile?.role) return false;
     
-    // Super admins can access everything
+    // Super admins têm acesso a tudo
     if (userProfile.role === 'super_admin') return true;
     
-    // Direct role match
+    // Verificação direta de role
     return userProfile.role === requiredRole;
   };
 

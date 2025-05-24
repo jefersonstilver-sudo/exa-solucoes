@@ -13,12 +13,8 @@ import OrderConfirmation from '@/pages/OrderConfirmation';
 import Home from '@/pages/Home';
 import Pedidos from '@/pages/Pedidos';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
-import { useSuperAdminProtection } from '@/hooks/useSuperAdminProtection';
 
 const App = () => {
-  // Ativa proteção global do super admin
-  useSuperAdminProtection();
-
   return (
     <Router>
       <Routes>
@@ -29,25 +25,23 @@ const App = () => {
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
         
-        {/* SUPER ADMIN ROUTES - PROTEÇÃO MÁXIMA */}
-        {/* Acesso EXCLUSIVO para jefersonstilver@gmail.com */}
+        {/* SUPER ADMIN ROUTES - PROTEÇÃO DIRETA */}
         <Route path="/super_admin/*" element={<SuperAdminPage />} />
         
-        {/* Advertiser Dashboard - BLOQUEADO para super admin */}
+        {/* Advertiser Dashboard */}
         <Route path="/anunciante" element={<AdvertiserDashboard />} />
         
-        {/* Client Routes - BLOQUEADO para super admin */}
+        {/* Client Routes */}
         <Route path="/client/*" element={<ClientRoutes />} />
         
-        {/* Payment Routes - BLOQUEADO para super admin */}
+        {/* Payment Routes */}
         <Route path="/payment" element={<Payment />} />
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/meus-pedidos" element={<Pedidos />} />
         
-        {/* REDIRECIONAMENTOS DE SEGURANÇA */}
-        {/* Todas as rotas admin antigas redirecionam para super_admin */}
+        {/* Redirecionamentos de segurança */}
         <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
         <Route path="/admin/*" element={<Navigate to="/super_admin" replace />} />
         

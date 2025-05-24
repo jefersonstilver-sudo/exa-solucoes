@@ -1,42 +1,49 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { useRouteProtection } from '@/hooks/useRouteProtection';
-import { useUserSession } from '@/hooks/useUserSession';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdvertiserDashboard = () => {
   const navigate = useNavigate();
-  const { user, isLoading } = useUserSession();
+  const { userProfile, isLoading, isLoggedIn } = useAuth();
   
-  // BLOQUEIO RIGOROSO: Super admin NÃO deve acessar área do anunciante
   useEffect(() => {
-    if (!isLoading && user) {
-      console.log('🔍 AdvertiserDashboard - Verificando acesso:', {
-        email: user.email,
-        role: user.role
-      });
-      
-      // VERIFICAÇÃO CRÍTICA: Se é super admin, BLOQUEAR acesso
-      if (user.email === 'jefersonstilver@gmail.com' || user.role === 'super_admin') {
-        console.log('🚫 BLOQUEIO: Super admin tentando acessar área do anunciante');
-        toast.error('Super administrador deve usar o painel administrativo');
-        navigate('/super_admin');
-        return;
-      }
+    if (isLoading) return;
+
+    console.log('🔍 AdvertiserDashboard - Verificando acesso:', {
+      email: userProfile?.email,
+      role: userProfile?.role,
+      isLoggedIn
+    });
+    
+    // BLOQUEIO: Super admin não deve acessar área do anunciante
+    if (userProfile?.email === 'jefersonstilver@gmail.com' || userProfile?.role === 'super_admin') {
+      console.log('🚫 BLOQUEIO: Super admin tentando acessar área do anunciante');
+      toast.error('Super administrador deve usar o painel administrativo');
+      navigate('/super_admin', { replace: true });
+      return;
     }
-  }, [user, isLoading, navigate]);
+
+    // Verificar se está logado
+    if (!isLoggedIn) {
+      console.log('🔐 Usuário não autenticado - redirecionando para login');
+      toast.error('Você precisa estar logado para acessar a área do anunciante');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // Verificar role adequada
+    if (userProfile?.role !== 'client' && userProfile?.role !== 'admin') {
+      console.log('🚫 Role inadequada para área do anunciante');
+      toast.error('Você não tem permissão para acessar esta área');
+      navigate('/login', { replace: true });
+      return;
+    }
+  }, [userProfile, isLoading, isLoggedIn, navigate]);
   
-  const { isAuthorized, isLoading: routeLoading } = useRouteProtection({
-    requireLogin: true,
-    requiredRole: 'client',
-    redirectTo: '/login',
-    message: 'Você precisa estar logado para acessar a área do anunciante'
-  });
-  
-  if (isLoading || routeLoading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -48,7 +55,7 @@ const AdvertiserDashboard = () => {
   }
   
   // Verificação adicional de segurança
-  if (user?.email === 'jefersonstilver@gmail.com' || user?.role === 'super_admin') {
+  if (userProfile?.email === 'jefersonstilver@gmail.com' || userProfile?.role === 'super_admin') {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh] flex-col">
@@ -59,9 +66,9 @@ const AdvertiserDashboard = () => {
       </Layout>
     );
   }
-  
-  if (!isAuthorized) {
-    return null; // The hook will handle redirection
+
+  if (!isLoggedIn || (userProfile?.role !== 'client' && userProfile?.role !== 'admin')) {
+    return null; // Redirecionamento já foi feito no useEffect
   }
   
   return (
