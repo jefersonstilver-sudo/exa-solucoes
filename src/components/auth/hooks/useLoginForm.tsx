@@ -18,7 +18,14 @@ export const useLoginForm = (redirectPath: string) => {
     setIsLoading(true);
     
     try {
-      console.log('🔐 Iniciando login para:', email);
+      console.log('🔐 INÍCIO DO LOGIN - Email:', email);
+      
+      // VERIFICAÇÃO CRÍTICA PRÉVIA: Se é super admin, preparar para redirecionamento especial
+      const isSuperAdminEmail = email === 'jefersonstilver@gmail.com';
+      
+      if (isSuperAdminEmail) {
+        console.log('👑 DETECTADO: Tentativa de login do Super Admin');
+      }
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -42,15 +49,38 @@ export const useLoginForm = (redirectPath: string) => {
       
       if (data.session && data.user) {
         console.log('✅ Login bem-sucedido para:', data.user.email);
-        toast.success('Login realizado com sucesso!');
         
-        // VERIFICAÇÃO RIGOROSA DO SUPER ADMIN
-        const isSuperAdmin = data.user.email === 'jefersonstilver@gmail.com';
+        // LÓGICA CRÍTICA DE REDIRECIONAMENTO
+        const isConfirmedSuperAdmin = data.user.email === 'jefersonstilver@gmail.com';
         
-        if (isSuperAdmin) {
-          console.log('👑 SUPER ADMIN DETECTADO - Verificando role na base de dados...');
+        if (isConfirmedSuperAdmin) {
+          console.log('🚀 SUPER ADMIN CONFIRMADO - Redirecionamento para /super_admin');
+          toast.success('Login de Super Administrador realizado com sucesso!', {
+            duration: 3000
+          });
           
-          // Verificar role na base de dados
+          // Verificar role na base de dados para garantia adicional
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+          
+          console.log('📊 Role confirmada na BD:', userData?.role);
+          
+          // REDIRECIONAMENTO FORÇADO E IMEDIATO para super admin
+          setTimeout(() => {
+            console.log('🎯 EXECUTANDO REDIRECIONAMENTO: /super_admin');
+            navigate('/super_admin', { replace: true });
+          }, 500);
+          
+          return;
+        } else {
+          // Para usuários regulares (NÃO super admin)
+          console.log('👤 Usuário regular detectado');
+          toast.success('Login realizado com sucesso!');
+          
+          // Verificar role para usuários regulares
           const { data: userData } = await supabase
             .from('users')
             .select('role')
@@ -58,41 +88,21 @@ export const useLoginForm = (redirectPath: string) => {
             .single();
           
           const userRole = userData?.role;
-          console.log('📊 Role do super admin na BD:', userRole);
+          console.log('📊 Role do usuário regular:', userRole);
           
-          // GARANTIA TOTAL: Se é jefersonstilver@gmail.com, SEMPRE vai para super_admin
+          // Redirecionamento para usuários regulares
           setTimeout(() => {
-            console.log('🚀 REDIRECIONAMENTO SUPER ADMIN: /super_admin');
-            navigate('/super_admin');
+            if (userRole === 'admin' || userRole === 'client') {
+              console.log('🏢 Redirecionando usuário regular para: /anunciante');
+              navigate('/anunciante', { replace: true });
+            } else {
+              const searchParams = new URLSearchParams(location.search);
+              const redirectTo = searchParams.get('redirect') || redirectPath;
+              console.log('🔄 Redirecionando para path solicitado:', redirectTo);
+              navigate(redirectTo, { replace: true });
+            }
           }, 500);
-          
-          return;
         }
-        
-        // Para usuários NÃO super admin
-        console.log('👤 Usuário regular detectado - Verificando role...');
-        
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-        
-        const userRole = userData?.role;
-        console.log('📊 Role do usuário:', userRole);
-        
-        // Redirecionamento para usuários regulares
-        setTimeout(() => {
-          if (userRole === 'admin' || userRole === 'client') {
-            console.log('🏢 Redirecionando para área do anunciante: /anunciante');
-            navigate('/anunciante');
-          } else {
-            const searchParams = new URLSearchParams(location.search);
-            const redirectTo = searchParams.get('redirect') || redirectPath;
-            console.log('🔄 Redirecionando para:', redirectTo);
-            navigate(redirectTo);
-          }
-        }, 500);
         
       } else {
         setError('Falha na autenticação. Dados de sessão inválidos.');

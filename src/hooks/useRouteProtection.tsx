@@ -13,7 +13,8 @@ interface UseRouteProtectionProps {
 }
 
 /**
- * Hook to protect routes that require authentication and specific roles
+ * Hook de proteção de rotas com segurança aprimorada
+ * Inclui verificação específica para super admin
  */
 export const useRouteProtection = ({
   redirectTo = '/login',
@@ -26,84 +27,100 @@ export const useRouteProtection = ({
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Wait until we know the authentication state
+    // Aguardar carregamento do estado de autenticação
     if (isLoading) return;
     
-    console.log('🔐 useRouteProtection - Verificação de acesso:', { 
+    const currentPath = window.location.pathname;
+    const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+    
+    console.log('🔐 ROUTE PROTECTION - Análise de acesso:', { 
+      currentPath,
       isLoggedIn, 
       userEmail: user?.email, 
       userRole: user?.role, 
       requiredRole,
-      currentPath: window.location.pathname
+      isSuperAdmin,
+      requireLogin
     });
     
-    // VERIFICAÇÃO CRÍTICA: Super admin sempre deve ir para /super_admin
-    if (isLoggedIn && user?.email === 'jefersonstilver@gmail.com') {
-      const currentPath = window.location.pathname;
-      
-      // Se super admin está em qualquer lugar que não seja /super_admin, redirecionar
+    // VERIFICAÇÃO CRÍTICA 1: Super admin deve SEMPRE ir para /super_admin
+    if (isLoggedIn && isSuperAdmin) {
+      // Se super admin está fora do painel administrativo, redirecionar
       if (!currentPath.startsWith('/super_admin')) {
-        console.log('🚨 REDIRECIONAMENTO CRÍTICO: Super admin fora do painel administrativo');
+        console.log('🚨 CRÍTICO: Super admin detectado fora do painel - REDIRECIONANDO');
         toast.info('Redirecionando para o painel administrativo');
-        navigate('/super_admin');
+        navigate('/super_admin', { replace: true });
+        return;
+      }
+      
+      // Se está no painel correto, autorizar
+      if (currentPath.startsWith('/super_admin')) {
+        console.log('✅ Super admin no painel correto - AUTORIZADO');
+        setIsAuthorized(true);
         return;
       }
     }
     
+    // VERIFICAÇÃO CRÍTICA 2: Proteção da rota /super_admin
+    if (currentPath.startsWith('/super_admin')) {
+      if (!isLoggedIn || !isSuperAdmin) {
+        console.log('🚫 BLOQUEIO: Tentativa de acesso não autorizado ao super_admin');
+        toast.error('Acesso negado ao painel administrativo');
+        navigate('/login', { replace: true });
+        return;
+      }
+    }
+    
+    // VERIFICAÇÃO 3: Usuário precisa estar logado
     if (requireLogin && !isLoggedIn) {
-      // User needs to be logged in but isn't
       console.log('❌ Usuário não autenticado tentando acessar área protegida');
       toast.error(message);
-      navigate(`${redirectTo}?redirect=${encodeURIComponent(window.location.pathname)}`);
+      navigate(`${redirectTo}?redirect=${encodeURIComponent(currentPath)}`);
       return;
     } 
     
+    // VERIFICAÇÃO 4: Página para usuários anônimos apenas
     if (!requireLogin && isLoggedIn) {
-      // User is logged in but page is for anonymous users only
       console.log('🔄 Usuário logado tentando acessar página anônima');
       
-      // VERIFICAÇÃO ESPECIAL: Super admin vai para /super_admin
-      if (user?.email === 'jefersonstilver@gmail.com') {
-        navigate('/super_admin');
+      // Super admin vai para /super_admin
+      if (isSuperAdmin) {
+        navigate('/super_admin', { replace: true });
       } else {
-        navigate('/anunciante');
+        navigate('/anunciante', { replace: true });
       }
       return;
     }
     
-    // Check role if required
+    // VERIFICAÇÃO 5: Role específica necessária
     if (requiredRole && isLoggedIn) {
-      console.log('🔍 Verificando role:', { userRole: user?.role, requiredRole });
+      console.log('🔍 Verificando role específica:', { userRole: user?.role, requiredRole });
       
-      // VERIFICAÇÃO ESPECIAL: Super admin tentando acessar área não-admin
-      if (user?.email === 'jefersonstilver@gmail.com' && requiredRole !== 'super_admin') {
+      // Super admin tentando acessar área inadequada
+      if (isSuperAdmin && requiredRole !== 'super_admin') {
         console.log('🚫 Super admin tentando acessar área inadequada');
         toast.error('Super administrador deve usar o painel administrativo');
-        navigate('/super_admin');
+        navigate('/super_admin', { replace: true });
         return;
       }
       
       if (!hasRole(requiredRole)) {
-        // User doesn't have the required role
         console.log('❌ Role insuficiente para acesso');
         toast.error(`Você não tem permissão para acessar esta página. Acesso restrito para ${requiredRole}.`);
         
         // Redirecionamento baseado no papel do usuário
-        if (user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin') {
-          console.log('🔄 Redirecionando super admin para /super_admin');
-          navigate('/super_admin');
+        if (isSuperAdmin) {
+          navigate('/super_admin', { replace: true });
         } else if (user?.role === 'admin' || user?.role === 'client') {
-          console.log('🔄 Redirecionando usuário para /anunciante');
-          navigate('/anunciante');
+          navigate('/anunciante', { replace: true });
         } else {
-          console.log('🔄 Redirecionando para login');
-          navigate('/login');
+          navigate('/login', { replace: true });
         }
         return;
       }
     }
     
-    // User has proper authorization for this page
+    // Usuário tem autorização adequada
     console.log('✅ Usuário autorizado para esta página');
     setIsAuthorized(true);
   }, [isLoggedIn, isLoading, navigate, redirectTo, message, requireLogin, requiredRole, hasRole, user]);
