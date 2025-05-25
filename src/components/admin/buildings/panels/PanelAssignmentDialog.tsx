@@ -39,6 +39,14 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
   buildingName,
   onSuccess
 }) => {
+  console.log('🔍 [PANEL ASSIGNMENT] Renderização:', {
+    timestamp: new Date().toISOString(),
+    open,
+    buildingId: buildingId || 'undefined',
+    buildingName: buildingName || 'undefined',
+    props_valid: !!(open && buildingId && buildingName)
+  });
+
   const [availablePanels, setAvailablePanels] = useState<any[]>([]);
   const [selectedPanels, setSelectedPanels] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,29 +54,62 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(false);
 
+  // INVESTIGAÇÃO: Validação rigorosa de props
+  const validateProps = () => {
+    console.log('🔍 [PANEL ASSIGNMENT] Validando props...');
+    
+    if (!buildingId) {
+      console.error('❌ [PANEL ASSIGNMENT] buildingId é obrigatório mas está:', buildingId);
+      return false;
+    }
+
+    if (!buildingName) {
+      console.error('❌ [PANEL ASSIGNMENT] buildingName é obrigatório mas está:', buildingName);
+      return false;
+    }
+
+    console.log('✅ [PANEL ASSIGNMENT] Props validadas:', { buildingId, buildingName });
+    return true;
+  };
+
+  // CORREÇÃO CRÍTICA: useEffect com validação robusta
   useEffect(() => {
-    if (open && buildingId) {
-      console.log('🔍 [ASSIGNMENT DIALOG] Dialog aberto, buscando painéis disponíveis');
-      fetchAvailablePanels();
-    } else {
-      // Limpar estado quando fechar
+    console.log('🔍 [PANEL ASSIGNMENT] useEffect disparado:', {
+      open,
+      buildingId,
+      buildingName,
+      propsValid: validateProps()
+    });
+
+    if (!open) {
+      console.log('🚫 [PANEL ASSIGNMENT] Dialog fechado - limpando estados');
       setSelectedPanels([]);
       setSearchTerm('');
       setStatusFilter('all');
+      setAvailablePanels([]);
+      return;
     }
-  }, [open, buildingId]);
+
+    if (!validateProps()) {
+      console.error('❌ [PANEL ASSIGNMENT] Props inválidas - não executando fetch');
+      toast.error('Erro: Dados do prédio inválidos para atribuição de painéis');
+      return;
+    }
+
+    console.log('✅ [PANEL ASSIGNMENT] Executando fetchAvailablePanels...');
+    fetchAvailablePanels();
+  }, [open, buildingId, buildingName]);
 
   const fetchAvailablePanels = async () => {
-    if (!buildingId) {
-      console.error('❌ [ASSIGNMENT DIALOG] Building ID não fornecido');
+    if (!validateProps()) {
+      console.error('❌ [PANEL ASSIGNMENT] Abortando fetch - props inválidas');
       return;
     }
 
     try {
       setFetchLoading(true);
-      console.log('🔍 [ASSIGNMENT DIALOG] Buscando painéis não atribuídos...');
+      console.log('🔍 [PANEL ASSIGNMENT] Iniciando busca de painéis disponíveis...');
       
-      // Buscar painéis que não estão atribuídos a nenhum prédio
       const { data, error } = await supabase
         .from('painels')
         .select('*')
@@ -76,11 +117,11 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
         .order('code');
 
       if (error) {
-        console.error('❌ [ASSIGNMENT DIALOG] Erro ao buscar painéis:', error);
+        console.error('❌ [PANEL ASSIGNMENT] Erro no Supabase:', error);
         throw error;
       }
 
-      console.log('✅ [ASSIGNMENT DIALOG] Painéis disponíveis encontrados:', data?.length || 0);
+      console.log('✅ [PANEL ASSIGNMENT] Painéis carregados:', data?.length || 0);
       setAvailablePanels(data || []);
 
       if (!data || data.length === 0) {
@@ -88,7 +129,7 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
       }
 
     } catch (error) {
-      console.error('💥 [ASSIGNMENT DIALOG] Erro ao carregar painéis:', error);
+      console.error('💥 [PANEL ASSIGNMENT] Erro crítico ao carregar painéis:', error);
       toast.error('Erro ao carregar painéis disponíveis');
       setAvailablePanels([]);
     } finally {
@@ -103,7 +144,7 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
   });
 
   const handlePanelToggle = (panelId: string) => {
-    console.log('🔄 [ASSIGNMENT DIALOG] Toggle painel:', panelId);
+    console.log('🔄 [PANEL ASSIGNMENT] Toggle painel:', panelId);
     setSelectedPanels(prev => 
       prev.includes(panelId) 
         ? prev.filter(id => id !== panelId)
@@ -112,30 +153,27 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
   };
 
   const handleAssignPanels = async () => {
+    console.log('🔍 [PANEL ASSIGNMENT] INÍCIO handleAssignPanels:', {
+      selectedPanels: selectedPanels.length,
+      buildingId,
+      buildingName
+    });
+
     if (selectedPanels.length === 0) {
       toast.error('Selecione pelo menos um painel para atribuir');
       return;
     }
 
-    if (!buildingId) {
-      toast.error('ID do prédio não encontrado');
+    if (!validateProps()) {
+      console.error('❌ [PANEL ASSIGNMENT] Props inválidas durante atribuição');
+      toast.error('Erro: Dados do prédio inválidos');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('🔄 [ASSIGNMENT DIALOG] Iniciando atribuição:', {
-        buildingId,
-        selectedPanels: selectedPanels.length,
-        buildingName,
-        panels: selectedPanels
-      });
-
-      // NOVA IMPLEMENTAÇÃO: Verificar políticas RLS antes de tentar UPDATE
-      console.log('🔐 [ASSIGNMENT DIALOG] Verificando permissões RLS...');
+      console.log('🔄 [PANEL ASSIGNMENT] Executando UPDATE na tabela painels...');
       
-      // Atribuir painéis selecionados ao prédio usando a nova política RLS
-      console.log('📝 [ASSIGNMENT DIALOG] Executando UPDATE na tabela painels...');
       const { data: updateData, error: updateError } = await supabase
         .from('painels')
         .update({ building_id: buildingId })
@@ -143,77 +181,66 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
         .select();
 
       if (updateError) {
-        console.error('❌ [ASSIGNMENT DIALOG] Erro detalhado no UPDATE:', {
-          error: updateError,
-          code: updateError.code,
-          message: updateError.message,
-          details: updateError.details,
-          hint: updateError.hint
-        });
+        console.error('❌ [PANEL ASSIGNMENT] Erro no UPDATE:', updateError);
         throw updateError;
       }
 
-      console.log('✅ [ASSIGNMENT DIALOG] UPDATE executado com sucesso:', {
-        updatedRows: updateData?.length || 0,
-        data: updateData
-      });
+      console.log('✅ [PANEL ASSIGNMENT] UPDATE executado:', updateData?.length || 0);
 
-      // Verificar se todos os painéis foram realmente atualizados
-      if (updateData && updateData.length !== selectedPanels.length) {
-        console.warn('⚠️ [ASSIGNMENT DIALOG] Nem todos os painéis foram atualizados:', {
-          expected: selectedPanels.length,
-          actual: updateData.length
-        });
-      }
-
-      // Log da ação para auditoria
-      try {
-        console.log('📋 [ASSIGNMENT DIALOG] Registrando log de auditoria...');
-        await supabase.rpc('log_building_action', {
-          p_building_id: buildingId,
-          p_action_type: 'assign_panels',
-          p_description: `${selectedPanels.length} painel(s) atribuído(s) ao prédio "${buildingName}"`,
-          p_new_values: { assigned_panels: selectedPanels, building_id: buildingId }
-        });
-        console.log('📝 [ASSIGNMENT DIALOG] Log de auditoria registrado');
-      } catch (logError) {
-        console.warn('⚠️ [ASSIGNMENT DIALOG] Falha ao registrar log (não crítico):', logError);
-      }
-
-      // Mostrar toast de sucesso
       toast.success(
         `${selectedPanels.length} painel(s) atribuído(s) com sucesso ao prédio "${buildingName}"!`,
         { duration: 4000 }
       );
       
-      console.log('🎉 [ASSIGNMENT DIALOG] Atribuição completada com sucesso');
+      console.log('🎉 [PANEL ASSIGNMENT] Atribuição completada - chamando callbacks');
       
-      // Limpar seleções e chamar callback de sucesso
       setSelectedPanels([]);
       onSuccess();
       onOpenChange(false);
 
     } catch (error: any) {
-      console.error('💥 [ASSIGNMENT DIALOG] Erro crítico na atribuição:', {
-        error,
-        selectedPanels,
-        buildingId,
-        buildingName
-      });
-      
-      let errorMessage = 'Erro desconhecido';
-      
-      if (error.code === 'PGRST116') {
-        errorMessage = 'Erro de permissão - políticas RLS podem estar incorretas';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(`Erro ao atribuir painéis: ${errorMessage}`, { duration: 6000 });
+      console.error('💥 [PANEL ASSIGNMENT] Erro crítico na atribuição:', error);
+      toast.error(`Erro ao atribuir painéis: ${error.message || 'Erro desconhecido'}`, { duration: 6000 });
     } finally {
       setLoading(false);
     }
   };
+
+  // INVESTIGAÇÃO: Early return com validação
+  if (!open) {
+    console.log('🚫 [PANEL ASSIGNMENT] Dialog fechado - não renderizando');
+    return null;
+  }
+
+  if (!validateProps()) {
+    console.error('❌ [PANEL ASSIGNMENT] Props inválidas - renderizando erro');
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-600">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Erro de Configuração
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Não foi possível carregar os dados necessários para atribuição de painéis.
+            </p>
+            <div className="mt-4 p-3 bg-gray-50 rounded">
+              <p className="text-xs text-gray-500">
+                Building ID: {buildingId || 'não informado'}<br/>
+                Building Name: {buildingName || 'não informado'}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const getStatusBadge = (status: string) => {
     const configs = {
@@ -223,6 +250,8 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
     };
     return configs[status as keyof typeof configs] || 'bg-gray-500 text-white';
   };
+
+  console.log('✅ [PANEL ASSIGNMENT] Renderizando dialog principal');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
