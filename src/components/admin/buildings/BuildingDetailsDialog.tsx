@@ -35,6 +35,12 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
     handleViewPanelDetails
   } = useBuildingDetailsData({ building, open });
 
+  console.log('🏗️ [BUILDING DETAILS] Dialog renderizado para:', building?.nome, {
+    open,
+    panelsCount: panels.length,
+    loading
+  });
+
   // Limpar estado quando o dialog principal fechar
   useEffect(() => {
     if (!open) {
@@ -42,12 +48,6 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
       setAssignmentDialogOpen(false);
     }
   }, [open]);
-
-  // Simplified remove panel handler (not used anymore, handled by BuildingPanelsTab)
-  const handleRemovePanel = (panel: any) => {
-    console.log('🗑️ [BUILDING DETAILS] Remoção delegada para BuildingPanelsTab:', panel?.code);
-    // This is now handled by BuildingPanelsTab directly
-  };
 
   const handleAssignmentSuccess = () => {
     console.log('✅ [BUILDING DETAILS] Atribuição bem-sucedida, atualizando dados');
@@ -88,7 +88,6 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
             loading={loading}
             onRefresh={fetchBuildingData}
             onAssignPanel={() => setAssignmentDialogOpen(true)}
-            onRemovePanel={handleRemovePanel}
             onSyncPanel={handleSyncPanel}
             onViewPanelDetails={handleViewPanelDetails}
           />

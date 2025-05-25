@@ -14,7 +14,6 @@ interface BuildingDetailsTabsContentProps {
   loading: boolean;
   onRefresh: () => void;
   onAssignPanel: () => void;
-  onRemovePanel: (panel: any) => void;
   onSyncPanel: (panelId: string) => Promise<void>;
   onViewPanelDetails: (panelId: string) => void;
 }
@@ -27,10 +26,11 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
   loading,
   onRefresh,
   onAssignPanel,
-  onRemovePanel,
   onSyncPanel,
   onViewPanelDetails
 }) => {
+  console.log('🏗️ [BUILDING DETAILS TABS] Renderizando tabs para:', building?.nome);
+
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -52,7 +52,6 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
           loading={loading}
           onRefresh={onRefresh}
           onAssignPanel={onAssignPanel}
-          onRemovePanel={onRemovePanel}
           onSyncPanel={onSyncPanel}
           onViewPanelDetails={onViewPanelDetails}
           buildingName={building?.nome}

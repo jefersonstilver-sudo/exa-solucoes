@@ -34,22 +34,10 @@ const SimplePanelRemovalAlert: React.FC<SimplePanelRemovalAlertProps> = ({
   console.log('🚨 [PANEL REMOVAL ALERT] Renderizando:', { 
     open, 
     panelCode, 
+    buildingName,
     loading,
     isProcessing: isProcessingRef.current 
   });
-
-  // Não renderizar se não há código do painel e dialog está aberto
-  if (!panelCode && open) {
-    console.warn('⚠️ [PANEL REMOVAL ALERT] Código do painel ausente');
-    // Fechar dialog automaticamente se não há dados válidos
-    setTimeout(() => onOpenChange(false), 0);
-    return null;
-  }
-
-  // Não renderizar se não há dados básicos
-  if (!panelCode || !buildingName) {
-    return null;
-  }
 
   const handleConfirm = useCallback(() => {
     if (isProcessingRef.current || loading) {
@@ -76,7 +64,7 @@ const SimplePanelRemovalAlert: React.FC<SimplePanelRemovalAlertProps> = ({
         clearTimeout(timeoutRef.current);
       }
     }
-  }, [onConfirm, loading]);
+  }, [onConfirm, loading, onOpenChange]);
 
   const handleCancel = useCallback(() => {
     console.log('❌ [PANEL REMOVAL ALERT] Cancelamento de remoção');
@@ -108,6 +96,12 @@ const SimplePanelRemovalAlert: React.FC<SimplePanelRemovalAlertProps> = ({
       }
     };
   }, [open]);
+
+  // Não renderizar se dados essenciais estão ausentes
+  if (!panelCode || !buildingName) {
+    console.warn('⚠️ [PANEL REMOVAL ALERT] Dados essenciais ausentes:', { panelCode, buildingName });
+    return null;
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

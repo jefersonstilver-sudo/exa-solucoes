@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import {
   Clock,
   Eye
 } from 'lucide-react';
-import { AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface PanelCardProps {
   panel: {
@@ -27,7 +27,7 @@ interface PanelCardProps {
   onSync: (panelId: string) => void;
   onViewDetails: (panelId: string) => void;
   canManage?: boolean;
-  disabled?: boolean; // Added disabled prop
+  disabled?: boolean;
 }
 
 const PanelCard: React.FC<PanelCardProps> = ({
@@ -36,13 +36,17 @@ const PanelCard: React.FC<PanelCardProps> = ({
   onSync,
   onViewDetails,
   canManage = true,
-  disabled = false // Added disabled prop with default value
+  disabled = false
 }) => {
+  const operationInProgressRef = useRef(false);
+  const lastActionTimeRef = useRef(0);
+
   console.log('🎯 [PANEL CARD] Renderizando painel:', {
     id: panel.id,
     code: panel.code,
     status: panel.status,
-    disabled
+    disabled,
+    operationInProgress: operationInProgressRef.current
   });
 
   const getStatusConfig = (status: string) => {
@@ -100,28 +104,69 @@ const PanelCard: React.FC<PanelCardProps> = ({
     return `${diffDays}d atrás`;
   };
 
-  const handleRemove = () => {
-    if (disabled) return; // Prevent action if disabled
-    console.log('🗑️ [PANEL CARD] Iniciando remoção:', panel);
-    onRemove(panel);
-  };
+  // Debounce function para evitar cliques múltiplos
+  const debounceAction = useCallback((action: () => void, actionName: string) => {
+    const now = Date.now();
+    const timeSinceLastAction = now - lastActionTimeRef.current;
+    
+    if (timeSinceLastAction < 1000) { // 1 segundo de debounce
+      console.log(`⏳ [PANEL CARD] Ação "${actionName}" ignorada por debounce`);
+      return;
+    }
 
-  const handleSync = () => {
-    if (disabled) return; // Prevent action if disabled
-    onSync(panel.id);
-  };
+    if (operationInProgressRef.current) {
+      console.log(`⏳ [PANEL CARD] Ação "${actionName}" ignorada - operação em andamento`);
+      return;
+    }
 
-  const handleViewDetails = () => {
-    if (disabled) return; // Prevent action if disabled
-    onViewDetails(panel.id);
-  };
+    lastActionTimeRef.current = now;
+    operationInProgressRef.current = true;
+    
+    console.log(`🚀 [PANEL CARD] Executando ação "${actionName}" para painel:`, panel.code);
+    
+    // Reset flag após um tempo
+    setTimeout(() => {
+      operationInProgressRef.current = false;
+    }, 2000);
+    
+    action();
+  }, [panel.code]);
+
+  const handleRemove = useCallback(() => {
+    if (disabled) return;
+    
+    debounceAction(() => {
+      console.log('🗑️ [PANEL CARD] Iniciando remoção:', panel);
+      onRemove(panel);
+    }, 'REMOVE');
+  }, [disabled, panel, onRemove, debounceAction]);
+
+  const handleSync = useCallback(() => {
+    if (disabled) return;
+    
+    debounceAction(() => {
+      console.log('🔄 [PANEL CARD] Iniciando sincronização:', panel.id);
+      onSync(panel.id);
+    }, 'SYNC');
+  }, [disabled, panel.id, onSync, debounceAction]);
+
+  const handleViewDetails = useCallback(() => {
+    if (disabled) return;
+    
+    debounceAction(() => {
+      console.log('👁️ [PANEL CARD] Visualizando detalhes:', panel.id);
+      onViewDetails(panel.id);
+    }, 'VIEW_DETAILS');
+  }, [disabled, panel.id, onViewDetails, debounceAction]);
+
+  const isActionDisabled = disabled || operationInProgressRef.current;
 
   return (
     <Card className={`
       hover:shadow-lg transition-all duration-300 hover:scale-[1.02]
       bg-gradient-to-br ${statusConfig.bgGradient}
       border-2 ${statusConfig.borderColor}
-      ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+      ${isActionDisabled ? 'opacity-50 cursor-not-allowed' : ''}
     `}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -170,7 +215,7 @@ const PanelCard: React.FC<PanelCardProps> = ({
               size="sm"
               variant="outline"
               onClick={handleViewDetails}
-              disabled={disabled}
+              disabled={isActionDisabled}
               className="flex-1 bg-white/80 hover:bg-white"
             >
               <Eye className="h-3 w-3 mr-1" />
@@ -180,7 +225,7 @@ const PanelCard: React.FC<PanelCardProps> = ({
               size="sm"
               variant="outline"
               onClick={handleSync}
-              disabled={disabled}
+              disabled={isActionDisabled}
               className="bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
             >
               <RefreshCw className="h-3 w-3" />
@@ -189,7 +234,7 @@ const PanelCard: React.FC<PanelCardProps> = ({
               size="sm"
               variant="outline"
               onClick={handleRemove}
-              disabled={disabled}
+              disabled={isActionDisabled}
               className="bg-red-500 text-white hover:bg-red-600 border-red-500"
             >
               <Trash2 className="h-3 w-3" />
