@@ -24,6 +24,8 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   onSyncPanel,
   onViewPanelDetails
 }) => {
+  console.log('🏢 [BUILDING PANELS TAB] Renderizando com painéis:', panels);
+
   const getPanelStatusSummary = () => {
     const summary = panels.reduce((acc, panel) => {
       acc[panel.status] = (acc[panel.status] || 0) + 1;
@@ -34,6 +36,11 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   };
 
   const statusSummary = getPanelStatusSummary();
+
+  const handleRemovePanel = (panel: any) => {
+    console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção recebida:', panel);
+    onRemovePanel(panel);
+  };
 
   return (
     <div className="space-y-6">
@@ -95,15 +102,18 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
           {/* Lista de Painéis */}
           {panels.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {panels.map((panel: any) => (
-                <PanelCard
-                  key={panel.id}
-                  panel={panel}
-                  onRemove={() => onRemovePanel(panel)}
-                  onSync={onSyncPanel}
-                  onViewDetails={onViewPanelDetails}
-                />
-              ))}
+              {panels.map((panel: any) => {
+                console.log('🎯 [BUILDING PANELS TAB] Renderizando card para painel:', panel.code);
+                return (
+                  <PanelCard
+                    key={panel.id}
+                    panel={panel}
+                    onRemove={handleRemovePanel}
+                    onSync={onSyncPanel}
+                    onViewDetails={onViewPanelDetails}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">

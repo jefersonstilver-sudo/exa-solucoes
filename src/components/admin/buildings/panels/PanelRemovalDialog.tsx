@@ -37,10 +37,23 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
   const [loading, setLoading] = useState(false);
 
   const handleRemovePanel = async () => {
-    if (!panel) return;
+    console.log('🗑️ [REMOVE DIALOG] Iniciando remoção do painel:', panel);
+    
+    if (!panel) {
+      console.error('❌ [REMOVE DIALOG] Painel não encontrado');
+      toast.error('Erro: Painel não encontrado');
+      return;
+    }
+
+    if (!panel.id) {
+      console.error('❌ [REMOVE DIALOG] ID do painel inválido:', panel);
+      toast.error('Erro: ID do painel inválido');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('🔍 [REMOVE DIALOG] Verificando campanhas ativas para o painel:', panel.id);
 
       // Primeiro verificar se o painel está sendo usado em campanhas ativas
       const { data: activeCampaigns, error: campaignsError } = await supabase
@@ -49,12 +62,20 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
         .eq('painel_id', panel.id)
         .in('status', ['pendente', 'ativo']);
 
-      if (campaignsError) throw campaignsError;
+      if (campaignsError) {
+        console.error('❌ [REMOVE DIALOG] Erro ao verificar campanhas:', campaignsError);
+        throw campaignsError;
+      }
+
+      console.log('📊 [REMOVE DIALOG] Campanhas ativas encontradas:', activeCampaigns?.length || 0);
 
       if (activeCampaigns && activeCampaigns.length > 0) {
+        console.warn('⚠️ [REMOVE DIALOG] Painel tem campanhas ativas, não pode ser removido');
         toast.error('Este painel não pode ser removido pois está sendo usado em campanhas ativas');
         return;
       }
+
+      console.log('🔄 [REMOVE DIALOG] Removendo atribuição do painel (definindo building_id como null)');
 
       // Remover atribuição do painel (definir building_id como null)
       const { error } = await supabase
@@ -62,28 +83,42 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
         .update({ building_id: null })
         .eq('id', panel.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [REMOVE DIALOG] Erro ao atualizar painel:', error);
+        throw error;
+      }
 
-      // Log da ação
-      await supabase.rpc('log_building_action', {
-        p_building_id: null, // Será obtido via contexto
-        p_action_type: 'unassign_panel',
-        p_description: `Painel "${panel.code}" removido do prédio "${buildingName}"`,
-        p_old_values: { panel_id: panel.id, panel_code: panel.code }
-      });
+      console.log('✅ [REMOVE DIALOG] Painel removido com sucesso');
+
+      // Log da ação (tentativa - pode falhar se a função não existir)
+      try {
+        await supabase.rpc('log_building_action', {
+          p_building_id: null,
+          p_action_type: 'unassign_panel',
+          p_description: `Painel "${panel.code}" removido do prédio "${buildingName}"`,
+          p_old_values: { panel_id: panel.id, panel_code: panel.code }
+        });
+        console.log('📝 [REMOVE DIALOG] Log da ação registrado');
+      } catch (logError) {
+        console.warn('⚠️ [REMOVE DIALOG] Falha ao registrar log (não crítico):', logError);
+      }
 
       toast.success(`Painel "${panel.code}" removido com sucesso!`);
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao remover painel:', error);
-      toast.error('Erro ao remover painel');
+      console.error('💥 [REMOVE DIALOG] Erro crítico ao remover painel:', error);
+      toast.error('Erro ao remover painel: ' + (error as any)?.message || 'Erro desconhecido');
     } finally {
       setLoading(false);
+      console.log('🏁 [REMOVE DIALOG] Processo de remoção finalizado');
     }
   };
 
-  if (!panel) return null;
+  if (!panel) {
+    console.warn('⚠️ [REMOVE DIALOG] Dialog aberto sem painel definido');
+    return null;
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {

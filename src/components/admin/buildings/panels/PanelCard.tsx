@@ -23,7 +23,7 @@ interface PanelCardProps {
     modo?: string;
     ultima_sync?: string;
   };
-  onRemove: (panelId: string) => void;
+  onRemove: (panel: any) => void; // Changed from (panelId: string) to (panel: any)
   onSync: (panelId: string) => void;
   onViewDetails: (panelId: string) => void;
   canManage?: boolean;
@@ -36,6 +36,12 @@ const PanelCard: React.FC<PanelCardProps> = ({
   onViewDetails,
   canManage = true
 }) => {
+  console.log('🎯 [PANEL CARD] Renderizando painel:', {
+    id: panel.id,
+    code: panel.code,
+    status: panel.status
+  });
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'online':
@@ -89,6 +95,11 @@ const PanelCard: React.FC<PanelCardProps> = ({
     if (diffMins < 60) return `${diffMins}min atrás`;
     if (diffHours < 24) return `${diffHours}h atrás`;
     return `${diffDays}d atrás`;
+  };
+
+  const handleRemove = () => {
+    console.log('🗑️ [REMOVE] Iniciando remoção do painel:', panel);
+    onRemove(panel); // Pass the full panel object
   };
 
   return (
@@ -160,7 +171,7 @@ const PanelCard: React.FC<PanelCardProps> = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onRemove(panel.id)}
+              onClick={handleRemove}
               className="bg-red-500 text-white hover:bg-red-600 border-red-500"
             >
               <Trash2 className="h-3 w-3" />
