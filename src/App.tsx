@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
@@ -14,6 +15,7 @@ import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AuthHookTest from '@/pages/AuthHookTest';
+import AuthDiagnosticPage from '@/pages/AuthDiagnosticPage';
 
 const App = () => {
   return (
@@ -30,8 +32,9 @@ const App = () => {
         <Route path="/dashboard" element={<Navigate to="/super_admin" replace />} />
         <Route path="/painel" element={<Navigate to="/super_admin" replace />} />
         
-        {/* Auth Hook Test Route - DEBUG TEMPORÁRIO */}
+        {/* Debug Routes - TEMPORÁRIO */}
         <Route path="/auth-hook-test" element={<AuthHookTest />} />
+        <Route path="/auth-diagnostic" element={<AuthDiagnosticPage />} />
         
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
