@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
-import UserAccessButton from '@/components/auth/UserAccessButton';
+import UserMenu from '@/components/user/UserMenu';
 import HeaderLogo from './header/HeaderLogo';
 import DesktopNavigation from './header/DesktopNavigation';
 import CartButton from './header/CartButton';
@@ -75,8 +75,8 @@ const Header = () => {
               {/* Online Store Button */}
               <OnlineStoreButton />
 
-              {/* User Access Button */}
-              <UserAccessButton />
+              {/* User Menu */}
+              <UserMenu />
 
               {/* Cart Button */}
               <CartButton cartItemsCount={totalCartItems} />
