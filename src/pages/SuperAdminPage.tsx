@@ -13,15 +13,6 @@ const SuperAdminPage = () => {
   const { userProfile, isLoading, isLoggedIn } = useAuth();
   const [accessGranted, setAccessGranted] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
-  const [debugTimer, setDebugTimer] = useState(0);
-
-  // Debug timer para rastrear timing
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDebugTimer(prev => prev + 1);
-    }, 100);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     console.log('🔄 SUPER ADMIN PAGE - Estado atual:', {
@@ -30,8 +21,7 @@ const SuperAdminPage = () => {
       hasChecked,
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
-      currentPath: location.pathname,
-      debugTimer: debugTimer * 100 + 'ms'
+      currentPath: location.pathname
     });
 
     // CRÍTICO: Aguardar que o loading termine ANTES de verificar
@@ -57,7 +47,7 @@ const SuperAdminPage = () => {
       return;
     }
 
-    // Verificação de super admin
+    // Verificação de super admin RIGOROSA
     const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
                         userProfile?.role === 'super_admin';
 
@@ -88,22 +78,22 @@ const SuperAdminPage = () => {
     
     setAccessGranted(true);
     setHasChecked(true);
-  }, [userProfile, isLoading, isLoggedIn, navigate, hasChecked, location.pathname, debugTimer]);
+  }, [userProfile, isLoading, isLoggedIn, navigate, hasChecked, location.pathname]);
 
   // Timeout de segurança para evitar loading infinito
   useEffect(() => {
     const securityTimeout = setTimeout(() => {
       if (isLoading && !hasChecked) {
-        console.log('⚠️ TIMEOUT DE SEGURANÇA: Forçando verificação após 5s');
+        console.log('⚠️ TIMEOUT DE SEGURANÇA: Forçando verificação após 3s');
         toast.warning('Verificação de acesso demorou muito. Tentando novamente...');
         setHasChecked(false); // Força nova verificação
       }
-    }, 5000);
+    }, 3000); // Reduzido para 3s
 
     return () => clearTimeout(securityTimeout);
   }, [isLoading, hasChecked]);
 
-  // Loading state melhorado
+  // Loading state otimizado
   if (isLoading || !hasChecked) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indexa-purple to-purple-800">
@@ -120,7 +110,7 @@ const SuperAdminPage = () => {
               <span className="text-sm text-indexa-purple font-medium">Sistema Seguro</span>
             </div>
             <div className="text-xs text-gray-500 mt-2">
-              Verificando credenciais... ({debugTimer * 100}ms)
+              Verificando credenciais de Super Admin...
             </div>
           </div>
         </div>
@@ -148,7 +138,7 @@ const SuperAdminPage = () => {
           </div>
           <button
             onClick={() => navigate('/login', { replace: true })}
-            className="px-6 py-3 bg-indexa-purple text-white rounded-lg hover:bg-indexa-purple-dark transition-colors"
+            className="px-6 py-3 bg-indexa-purple text-white rounded-lg hover:bg-indexa-purple/90 transition-colors"
           >
             Voltar ao Login
           </button>

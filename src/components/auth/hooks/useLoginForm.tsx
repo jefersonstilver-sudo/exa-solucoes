@@ -60,17 +60,15 @@ export const useLoginForm = (redirectPath: string) => {
           console.error('❌ Erro ao extrair role do JWT:', jwtError);
         }
 
-        // REDIRECIONAMENTO ESPECÍFICO PARA SUPER ADMIN
+        // REDIRECIONAMENTO IMEDIATO PARA SUPER ADMIN - SEM DELAYS
         if (userRole === 'super_admin' && data.user.email === 'jefersonstilver@gmail.com') {
-          console.log('🚀 INDEXA LOGIN: SUPER ADMIN CONFIRMADO - Redirecionamento DIRETO para /super_admin');
-          toast.success('Login de Super Administrador realizado com sucesso!', {
-            duration: 3000
+          console.log('🚀 INDEXA LOGIN: SUPER ADMIN CONFIRMADO - Redirecionamento IMEDIATO para /super_admin');
+          toast.success('Bem-vindo ao Painel Super Administrativo!', {
+            duration: 2000
           });
           
-          // Aguardar um pouco para garantir que o estado do auth seja atualizado
-          setTimeout(() => {
-            navigate('/super_admin', { replace: true });
-          }, 100);
+          // Redirecionamento IMEDIATO sem timeout
+          navigate('/super_admin', { replace: true });
           
         } else if (userRole === 'admin') {
           console.log('👤 INDEXA LOGIN: Admin detectado - Redirecionamento para /admin');

@@ -16,19 +16,14 @@ const Home: React.FC = () => {
   const isSuperAdmin = userProfile?.role === 'super_admin';
   const isRegularAdmin = hasRole('admin') && !isSuperAdmin;
 
-  // REDIRECIONAMENTO AUTOMÁTICO PARA SUPER ADMIN
+  // REDIRECIONAMENTO AUTOMÁTICO PARA SUPER ADMIN - IMEDIATO
   useEffect(() => {
+    // Só executa se não estiver carregando e o usuário estiver logado
     if (!isLoading && isLoggedIn && isSuperAdmin) {
-      console.log('🚀 INDEXA HOME: Super admin detectado - Redirecionamento automático para /super_admin');
+      console.log('🚀 INDEXA HOME: Super admin detectado - Redirecionamento IMEDIATO para /super_admin');
       
-      toast.success('Bem-vindo ao Painel Super Administrativo INDEXA!', {
-        duration: 3000
-      });
-      
-      // Redirecionamento com delay mínimo para mostrar o toast
-      setTimeout(() => {
-        navigate('/super_admin', { replace: true });
-      }, 1000);
+      // Redirecionamento IMEDIATO sem delay nem toast
+      navigate('/super_admin', { replace: true });
     }
   }, [isLoading, isLoggedIn, isSuperAdmin, navigate]);
 
@@ -41,20 +36,23 @@ const Home: React.FC = () => {
     isLoading
   });
 
-  // Mostrar loading enquanto está carregando ou durante redirecionamento
-  if (isLoading || (isLoggedIn && isSuperAdmin)) {
+  // Mostrar loading apenas durante carregamento inicial
+  if (isLoading) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[50vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indexa-purple mx-auto mb-4"></div>
-            <p className="text-gray-600">
-              {isSuperAdmin ? 'Redirecionando para painel administrativo...' : 'Carregando...'}
-            </p>
+            <p className="text-gray-600">Carregando...</p>
           </div>
         </div>
       </Layout>
     );
+  }
+
+  // Se é super admin, não renderiza nada (vai ser redirecionado)
+  if (isLoggedIn && isSuperAdmin) {
+    return null;
   }
 
   return (
@@ -103,7 +101,7 @@ const Home: React.FC = () => {
             </div>
           )}
           
-          {/* INDEXA: AdminAccessButton unificado baseado em JWT */}
+          {/* INDEXA: AdminAccessButton unificado baseado em JWT - apenas para admins regulares */}
           {isLoggedIn && isRegularAdmin && (
             <div className="mt-8 pt-4 border-t border-gray-200">
               <div className="flex justify-center">
