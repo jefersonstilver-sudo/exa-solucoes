@@ -2,7 +2,6 @@
 import React from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
-import CartDrawer from '@/components/cart/CartDrawer';
 import { Panel } from '@/types/panel';
 
 interface LayoutProps {
@@ -37,17 +36,6 @@ const Layout: React.FC<LayoutProps> = ({
         {children}
       </main>
       <MobileOptimizedFooter />
-      
-      {/* Cart Drawer */}
-      {cartItems.length > 0 && (
-        <CartDrawer
-          cartItems={cartItems}
-          onRemoveFromCart={onRemoveFromCart}
-          onClearCart={onClearCart}
-          onChangeDuration={onChangeDuration}
-          onProceedToCheckout={onProceedToCheckout}
-        />
-      )}
     </div>
   );
 };

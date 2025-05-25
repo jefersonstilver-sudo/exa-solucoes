@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCartStore } from '@/store/cartStore';
+import { useCartManager } from '@/hooks/useCartManager';
 import UserAccessButton from '@/components/auth/UserAccessButton';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { cartItems } = useCartStore();
+  const { cartItems } = useCartManager();
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -41,7 +41,7 @@ const Header = () => {
     };
   }, [isMenuOpen]);
 
-  const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const totalCartItems = cartItems.length;
 
   const navItems = [
     { to: "/", label: "Home" },
@@ -94,10 +94,10 @@ const Header = () => {
       <header className="bg-gradient-to-r from-indexa-purple to-indexa-purple/95 text-white shadow-xl relative z-40">
         <div className="container mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between h-16 md:h-20">
-            {/* Logo - Responsive sizing */}
+            {/* Logo - Mobile optimized sizing */}
             <Link 
               to="/" 
-              className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200"
+              className="flex items-center space-x-2 md:space-x-3 hover:opacity-80 transition-opacity duration-200"
             >
               <div className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center">
                 <img 
@@ -106,19 +106,19 @@ const Header = () => {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <span className="text-lg md:text-2xl font-bold tracking-tight">
+              <span className="text-base md:text-2xl font-bold tracking-tight">
                 INDEXA
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
+            <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
               {navItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "text-sm font-medium transition-all duration-200 relative group",
+                    "text-sm font-medium transition-all duration-200 relative group px-2 py-1",
                     location.pathname === item.to
                       ? "text-indexa-mint"
                       : "text-white/90 hover:text-white"
@@ -131,16 +131,16 @@ const Header = () => {
             </nav>
 
             {/* Right Side - Cart + User + Mobile Menu */}
-            <div className="flex items-center space-x-2 md:space-x-4">
-              {/* Cart Button - Enhanced for mobile */}
+            <div className="flex items-center space-x-1 md:space-x-3">
+              {/* Cart Button - Mobile optimized */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12"
+                className="relative text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12 transition-all duration-200"
                 onClick={handleCartClick}
                 aria-label={`Carrinho com ${totalCartItems} itens`}
               >
-                <ShoppingCart className="h-5 w-5 md:h-6 md:w-6" />
+                <ShoppingCart className="h-4 w-4 md:h-6 md:w-6" />
                 {totalCartItems > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -172,7 +172,7 @@ const Header = () => {
                       exit={{ rotate: 90, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <X className="h-6 w-6" />
+                      <X className="h-5 w-5" />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -182,7 +182,7 @@ const Header = () => {
                       exit={{ rotate: -90, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Menu className="h-6 w-6" />
+                      <Menu className="h-5 w-5" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -215,7 +215,7 @@ const Header = () => {
               className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-b from-indexa-purple to-indexa-purple-dark shadow-2xl z-50 lg:hidden"
             >
               {/* Mobile Menu Header */}
-              <div className="flex items-center justify-between p-6 border-b border-white/20">
+              <div className="flex items-center justify-between p-4 border-b border-white/20">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 flex items-center justify-center">
                     <img 
@@ -232,12 +232,12 @@ const Header = () => {
                   className="text-white hover:bg-white/20 rounded-full"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5" />
                 </Button>
               </div>
 
               {/* Mobile Navigation */}
-              <nav className="flex flex-col p-6 space-y-2">
+              <nav className="flex flex-col p-4 space-y-1">
                 {navItems.map((item, index) => (
                   <motion.div
                     key={item.to}
@@ -251,7 +251,7 @@ const Header = () => {
                     <Link
                       to={item.to}
                       className={cn(
-                        "flex items-center py-4 px-4 rounded-xl text-base font-medium transition-all duration-200",
+                        "flex items-center py-3 px-4 rounded-xl text-base font-medium transition-all duration-200",
                         location.pathname === item.to
                           ? "bg-white/20 text-indexa-mint border-l-4 border-indexa-mint"
                           : "text-white/90 hover:bg-white/10 hover:text-white"
@@ -270,7 +270,7 @@ const Header = () => {
               </nav>
 
               {/* Mobile Menu Footer */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-white/20">
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/20">
                 <div className="text-center">
                   <p className="text-white/60 text-sm mb-2">
                     Transformando ideias em resultados
