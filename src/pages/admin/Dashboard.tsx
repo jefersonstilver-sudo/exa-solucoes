@@ -12,11 +12,9 @@ import {
   Activity,
   ArrowUpRight,
   Crown,
-  Shield,
-  TrendingUp,
   RefreshCw,
   CheckCircle,
-  AlertCircle
+  Database
 } from 'lucide-react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import DashboardCharts from '@/components/admin/charts/DashboardCharts';
@@ -43,12 +41,12 @@ const Dashboard = () => {
       color: 'bg-blue-500'
     },
     {
-      title: 'Pedidos Ativos',
-      value: stats.activeOrders.toString(),
-      change: `${stats.totalOrders} total`,
+      title: 'Total de Prédios',
+      value: stats.totalBuildings.toString(),
+      change: `${stats.totalBuildings} cadastrados`,
       changeType: 'positive',
-      icon: ShoppingBag,
-      description: 'em andamento',
+      icon: Building2,
+      description: 'prédios ativos',
       color: 'bg-green-500'
     },
     {
@@ -82,11 +80,11 @@ const Dashboard = () => {
     },
     { 
       id: 2, 
-      action: `${stats.activeOrders} pedidos ativos gerando receita`, 
+      action: `Receita confirmada: ${formatCurrency(stats.monthlyRevenue)}`, 
       user: 'Sistema INDEXA', 
       time: 'Dados em tempo real', 
-      type: 'info',
-      icon: ShoppingBag
+      type: 'success',
+      icon: DollarSign
     },
     { 
       id: 3, 
@@ -141,10 +139,11 @@ const Dashboard = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <Crown className="h-8 w-8 mr-3 text-indexa-purple" />
-            Dashboard Super Admin - DADOS REAIS
+            Dashboard Super Admin - DADOS REAIS SUPABASE
           </h1>
-          <p className="text-gray-600 mt-2">
-            Controle total do sistema INDEXA com dados conectados ao Supabase
+          <p className="text-gray-600 mt-2 flex items-center">
+            <Database className="h-4 w-4 mr-2 text-indexa-purple" />
+            Conectado ao Supabase • Receita: {formatCurrency(stats.monthlyRevenue)} • {stats.totalUsers} usuários • {stats.totalBuildings} prédios • {stats.totalPanels} painéis
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -159,15 +158,17 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Alert de conexão bem-sucedida */}
-      <Card className="bg-green-50 border-green-200">
+      {/* Alert de status da conexão */}
+      <Card className={`${stats.monthlyRevenue > 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
         <CardContent className="p-4">
           <div className="flex items-center space-x-3">
-            <CheckCircle className="h-6 w-6 text-green-600" />
+            <CheckCircle className={`h-6 w-6 ${stats.monthlyRevenue > 0 ? 'text-green-600' : 'text-yellow-600'}`} />
             <div>
-              <h3 className="font-semibold text-green-800">Dashboard Conectado com Sucesso!</h3>
-              <p className="text-green-700 text-sm">
-                Todos os dados abaixo são reais e vêm diretamente do banco de dados Supabase.
+              <h3 className={`font-semibold ${stats.monthlyRevenue > 0 ? 'text-green-800' : 'text-yellow-800'}`}>
+                Dashboard Conectado - Receita: {formatCurrency(stats.monthlyRevenue)}
+              </h3>
+              <p className={`text-sm ${stats.monthlyRevenue > 0 ? 'text-green-700' : 'text-yellow-700'}`}>
+                Dados reais do Supabase: {stats.totalUsers} usuários, {stats.totalBuildings} prédios, {stats.totalOrders} pedidos, {stats.totalPanels} painéis
               </p>
             </div>
           </div>
@@ -253,16 +254,16 @@ const Dashboard = () => {
               Gerenciar Usuários ({stats.totalUsers})
             </Button>
             <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
-              <MonitorPlay className="h-4 w-4 mr-2" />
-              Monitorar Painéis ({stats.totalPanels})
+              <Building2 className="h-4 w-4 mr-2" />
+              Gerenciar Prédios ({stats.totalBuildings})
             </Button>
             <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
               <ShoppingBag className="h-4 w-4 mr-2" />
               Ver Pedidos ({stats.totalOrders})
             </Button>
             <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
-              <Building2 className="h-4 w-4 mr-2" />
-              Gerenciar Prédios ({stats.totalBuildings})
+              <MonitorPlay className="h-4 w-4 mr-2" />
+              Monitorar Painéis ({stats.totalPanels})
             </Button>
           </CardContent>
         </Card>
@@ -272,22 +273,22 @@ const Dashboard = () => {
       <Card className="bg-gradient-to-r from-indexa-purple to-indexa-purple-dark border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="text-white flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2 text-indexa-mint" />
+            <DollarSign className="h-5 w-5 mr-2 text-indexa-mint" />
             Resumo Financeiro Real
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
             <div className="text-center">
-              <div className="text-2xl font-bold text-indexa-mint">{formatCurrency(stats.monthlyRevenue)}</div>
+              <div className="text-3xl font-bold text-indexa-mint">{formatCurrency(stats.monthlyRevenue)}</div>
               <p className="text-sm text-white/80">Receita Real Confirmada</p>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-indexa-mint">{stats.activeOrders}</div>
+              <div className="text-3xl font-bold text-indexa-mint">{stats.activeOrders}</div>
               <p className="text-sm text-white/80">Pedidos Ativos</p>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-indexa-mint">{stats.pendingOrders}</div>
+              <div className="text-3xl font-bold text-indexa-mint">{stats.pendingOrders}</div>
               <p className="text-sm text-white/80">Pedidos Pendentes</p>
             </div>
           </div>

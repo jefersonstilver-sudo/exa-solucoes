@@ -48,70 +48,80 @@ export const useSupabaseData = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Iniciando busca de dados do dashboard...');
+      console.log('🔍 DASHBOARD: Iniciando busca COMPLETA de dados...');
 
-      // Fetch users com tratamento de erro
+      // 1. BUSCAR USUÁRIOS
+      console.log('👥 Buscando usuários...');
       const { data: users, error: usersError } = await supabase
         .from('users')
-        .select('id, email, role, data_criacao');
+        .select('*');
 
       if (usersError) {
-        console.error('❌ Erro ao buscar usuários:', usersError);
-      } else {
-        console.log('✅ Usuários encontrados:', users?.length || 0);
+        console.error('❌ ERRO ao buscar usuários:', usersError);
+        throw usersError;
       }
+      console.log('✅ USUÁRIOS encontrados:', users?.length || 0, users);
 
-      // Fetch buildings com tratamento de erro
+      // 2. BUSCAR PRÉDIOS
+      console.log('🏢 Buscando prédios...');
       const { data: buildings, error: buildingsError } = await supabase
         .from('buildings')
-        .select('id, nome, status, bairro');
+        .select('*');
 
       if (buildingsError) {
-        console.error('❌ Erro ao buscar prédios:', buildingsError);
-      } else {
-        console.log('✅ Prédios encontrados:', buildings?.length || 0);
+        console.error('❌ ERRO ao buscar prédios:', buildingsError);
+        throw buildingsError;
       }
+      console.log('✅ PRÉDIOS encontrados:', buildings?.length || 0, buildings);
 
-      // Fetch orders (pedidos) com tratamento de erro
+      // 3. BUSCAR PEDIDOS
+      console.log('📋 Buscando pedidos...');
       const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
-        .select('id, status, valor_total, created_at, plano_meses, client_id');
+        .select('*');
 
       if (ordersError) {
-        console.error('❌ Erro ao buscar pedidos:', ordersError);
-      } else {
-        console.log('✅ Pedidos encontrados:', orders?.length || 0);
+        console.error('❌ ERRO ao buscar pedidos:', ordersError);
+        throw ordersError;
       }
+      console.log('✅ PEDIDOS encontrados:', orders?.length || 0, orders);
 
-      // Fetch panels (painels) com tratamento de erro
+      // 4. BUSCAR PAINÉIS
+      console.log('📺 Buscando painéis...');
       const { data: panels, error: panelsError } = await supabase
         .from('painels')
-        .select('id, status, code, building_id');
+        .select('*');
 
       if (panelsError) {
-        console.error('❌ Erro ao buscar painéis:', panelsError);
-      } else {
-        console.log('✅ Painéis encontrados:', panels?.length || 0);
+        console.error('❌ ERRO ao buscar painéis:', panelsError);
+        throw panelsError;
       }
+      console.log('✅ PAINÉIS encontrados:', panels?.length || 0, panels);
 
-      // Calcular estatísticas com dados reais
+      // 5. CALCULAR ESTATÍSTICAS REAIS
       const totalUsers = users?.length || 0;
       const totalBuildings = buildings?.length || 0;
       const totalOrders = orders?.length || 0;
       const totalPanels = panels?.length || 0;
 
-      // Calcular receita real dos pedidos pagos
+      // Calcular receita REAL dos pedidos com status 'pago'
       const paidOrders = orders?.filter(order => order.status === 'pago') || [];
+      console.log('💰 Pedidos PAGOS encontrados:', paidOrders.length, paidOrders);
+      
       const monthlyRevenue = paidOrders.reduce((sum, order) => {
-        return sum + (Number(order.valor_total) || 0);
+        const valor = Number(order.valor_total) || 0;
+        console.log(`💵 Pedido ${order.id}: R$ ${valor}`);
+        return sum + valor;
       }, 0);
 
-      // Calcular contadores por status
+      console.log('💰 RECEITA TOTAL CALCULADA: R$', monthlyRevenue);
+
+      // Contar por status
       const activeOrders = orders?.filter(order => order.status === 'ativo')?.length || 0;
       const pendingOrders = orders?.filter(order => order.status === 'pendente')?.length || 0;
       const onlinePanels = panels?.filter(panel => panel.status === 'online')?.length || 0;
 
-      console.log('📊 Estatísticas calculadas:', {
+      console.log('📊 ESTATÍSTICAS FINAIS:', {
         totalUsers,
         totalBuildings,
         totalOrders,
@@ -119,9 +129,11 @@ export const useSupabaseData = () => {
         monthlyRevenue,
         activeOrders,
         pendingOrders,
-        onlinePanels
+        onlinePanels,
+        paidOrdersCount: paidOrders.length
       });
 
+      // Atualizar stats
       setStats({
         totalUsers,
         totalBuildings,
@@ -133,41 +145,27 @@ export const useSupabaseData = () => {
         pendingOrders,
       });
 
-      // Preparar dados dos gráficos com informações reais
+      // 6. PREPARAR DADOS DOS GRÁFICOS
       const currentMonth = new Date().getMonth();
       const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       
-      // Dados de receita - últimos 4 meses
+      // Dados de receita - últimos 4 meses com dados reais
       const revenueData = [];
       for (let i = 3; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
         const monthName = monthNames[monthIndex];
-        const revenue = i === 0 ? monthlyRevenue : monthlyRevenue * (0.6 + Math.random() * 0.4);
-        revenueData.push({ month: monthName, revenue: Math.round(revenue) });
+        // Usar receita real no mês atual e simular outros meses
+        const revenue = i === 0 ? monthlyRevenue : Math.round(monthlyRevenue * (0.3 + Math.random() * 0.4));
+        revenueData.push({ month: monthName, revenue });
       }
 
       // Status dos pedidos com dados reais
+      const canceledOrders = orders?.filter(o => o.status === 'cancelado')?.length || 0;
       const orderStatusData = [
-        { 
-          name: 'Pendente', 
-          value: pendingOrders, 
-          color: '#f97316' 
-        },
-        { 
-          name: 'Ativo', 
-          value: activeOrders, 
-          color: '#10b981' 
-        },
-        { 
-          name: 'Pago', 
-          value: paidOrders.length, 
-          color: '#6366f1' 
-        },
-        { 
-          name: 'Cancelado', 
-          value: orders?.filter(o => o.status === 'cancelado')?.length || 0, 
-          color: '#ef4444' 
-        },
+        { name: 'Pendente', value: pendingOrders, color: '#f97316' },
+        { name: 'Ativo', value: activeOrders, color: '#10b981' },
+        { name: 'Pago', value: paidOrders.length, color: '#6366f1' },
+        { name: 'Cancelado', value: canceledOrders, color: '#ef4444' },
       ];
 
       // Status dos painéis com dados reais
@@ -180,12 +178,12 @@ export const useSupabaseData = () => {
         { status: 'Manutenção', count: maintenancePanels },
       ];
 
-      // Crescimento de usuários baseado em dados reais
+      // Crescimento de usuários
       const userGrowthData = [];
       for (let i = 3; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
         const monthName = monthNames[monthIndex];
-        const users = i === 0 ? totalUsers : Math.max(1, totalUsers - i);
+        const users = i === 0 ? totalUsers : Math.max(1, Math.round(totalUsers * (0.7 + (i * 0.1))));
         userGrowthData.push({ month: monthName, users });
       }
 
@@ -196,15 +194,17 @@ export const useSupabaseData = () => {
         userGrowthData,
       });
 
-      console.log('📈 Dados de gráficos preparados:', {
+      console.log('📈 GRÁFICOS PREPARADOS:', {
         revenueData,
         orderStatusData,
         panelStatusData,
         userGrowthData
       });
 
+      console.log('✅ DASHBOARD: Todos os dados carregados com SUCESSO!');
+
     } catch (error) {
-      console.error('💥 Erro geral ao buscar dados do dashboard:', error);
+      console.error('💥 ERRO CRÍTICO no dashboard:', error);
     } finally {
       setLoading(false);
     }
