@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Calculator, Users, Eye, Monitor, Building2 } from 'lucide-react';
+import { X, Building2, Camera, Upload, Star, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -71,10 +72,37 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     monthly_traffic: 0
   });
   const [loading, setLoading] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Cálculos automáticos
-  const publicoEstimado = formData.numero_unidades * 3;
-  const visualizacoesMes = 0 * 7350; // Será calculado automaticamente pelo trigger
+  // Construir array de imagens usando os campos individuais
+  const imageSlots = Array.from({ length: 4 }, (_, index) => {
+    let imageUrl = null;
+    
+    if (building) {
+      if (index === 0 && building.imagem_principal) {
+        imageUrl = building.imagem_principal;
+      } else if (index === 1 && building.imagem_2) {
+        imageUrl = building.imagem_2;
+      } else if (index === 2 && building.imagem_3) {
+        imageUrl = building.imagem_3;
+      } else if (index === 3 && building.imagem_4) {
+        imageUrl = building.imagem_4;
+      } else if (building.image_urls && building.image_urls[index]) {
+        imageUrl = building.image_urls[index];
+      }
+    }
+    
+    return {
+      index,
+      imageUrl: imageUrl ? getImageUrl(imageUrl) : null
+    };
+  });
+
+  function getImageUrl(path: string) {
+    if (path.startsWith('http')) return path;
+    return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
+  }
 
   useEffect(() => {
     if (building) {
@@ -128,20 +156,149 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     }));
   };
 
+  const handleImageUpload = async (index: number, file: File) => {
+    if (!building && !formData.nome) {
+      toast.error('Salve o prédio primeiro antes de fazer upload de imagens');
+      return;
+    }
+
+    setUploadingIndex(index);
+
+    try {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor, selecione apenas arquivos de imagem');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('A imagem deve ter no máximo 5MB');
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const buildingId = building?.id || 'temp';
+      const fileName = `${buildingId}-${index + 1}-${Date.now()}.${fileExt}`;
+      const filePath = `predios/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('building-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Se temos um building existente, atualizar no banco
+      if (building) {
+        const updateData: any = {};
+        const currentImageUrls = building.image_urls || [];
+        const newImageUrls = [...currentImageUrls];
+        
+        if (index === 0) {
+          updateData.imagem_principal = filePath;
+        } else if (index === 1) {
+          updateData.imagem_2 = filePath;
+        } else if (index === 2) {
+          updateData.imagem_3 = filePath;
+        } else if (index === 3) {
+          updateData.imagem_4 = filePath;
+        }
+        
+        newImageUrls[index] = filePath;
+        updateData.image_urls = newImageUrls;
+
+        const { error: updateError } = await supabase
+          .from('buildings')
+          .update(updateData)
+          .eq('id', building.id);
+
+        if (updateError) throw updateError;
+
+        await supabase.rpc('log_building_action', {
+          p_building_id: building.id,
+          p_action_type: 'image_upload',
+          p_description: `Imagem ${index + 1} ${index === 0 ? '(principal)' : ''} adicionada/atualizada`,
+          p_new_values: { image_slot: index + 1, file_path: filePath }
+        });
+      }
+
+      toast.success(`Imagem ${index + 1} enviada com sucesso!`);
+      onSuccess();
+
+    } catch (error: any) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error(error.message || 'Erro ao enviar imagem');
+    } finally {
+      setUploadingIndex(null);
+    }
+  };
+
+  const handleRemoveImage = async (index: number) => {
+    if (!building) return;
+
+    try {
+      const updateData: any = {};
+      const currentImageUrls = building.image_urls || [];
+      const newImageUrls = [...currentImageUrls];
+      
+      let imagePath = null;
+      if (index === 0 && building.imagem_principal) {
+        imagePath = building.imagem_principal;
+        updateData.imagem_principal = null;
+      } else if (index === 1 && building.imagem_2) {
+        imagePath = building.imagem_2;
+        updateData.imagem_2 = null;
+      } else if (index === 2 && building.imagem_3) {
+        imagePath = building.imagem_3;
+        updateData.imagem_3 = null;
+      } else if (index === 3 && building.imagem_4) {
+        imagePath = building.imagem_4;
+        updateData.imagem_4 = null;
+      } else if (newImageUrls[index]) {
+        imagePath = newImageUrls[index];
+      }
+      
+      if (imagePath && !imagePath.startsWith('http')) {
+        await supabase.storage
+          .from('building-images')
+          .remove([imagePath]);
+      }
+
+      newImageUrls[index] = null;
+      updateData.image_urls = newImageUrls;
+
+      const { error } = await supabase
+        .from('buildings')
+        .update(updateData)
+        .eq('id', building.id);
+
+      if (error) throw error;
+
+      await supabase.rpc('log_building_action', {
+        p_building_id: building.id,
+        p_action_type: 'image_remove',
+        p_description: `Imagem ${index + 1} ${index === 0 ? '(principal)' : ''} removida`,
+        p_new_values: { image_slot: index + 1 }
+      });
+
+      toast.success(`Imagem ${index + 1} removida com sucesso!`);
+      onSuccess();
+
+    } catch (error: any) {
+      console.error('Erro ao remover imagem:', error);
+      toast.error('Erro ao remover imagem');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Preparar dados para salvar (também salvar em amenities para compatibilidade)
       const dataToSave = {
         ...formData,
-        amenities: formData.caracteristicas, // Manter compatibilidade
-        // O publico_estimado e visualizacoes_mes são calculados automaticamente pelo banco
+        amenities: formData.caracteristicas,
       };
 
       if (building) {
-        // Atualizar prédio existente
         const { error } = await supabase
           .from('buildings')
           .update(dataToSave)
@@ -149,7 +306,6 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
 
         if (error) throw error;
 
-        // Log da ação
         await supabase.rpc('log_building_action', {
           p_building_id: building.id,
           p_action_type: 'update',
@@ -159,7 +315,6 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
 
         toast.success('Prédio atualizado com sucesso!');
       } else {
-        // Criar novo prédio
         const { data, error } = await supabase
           .from('buildings')
           .insert([dataToSave])
@@ -168,7 +323,6 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
 
         if (error) throw error;
 
-        // Log da ação
         await supabase.rpc('log_building_action', {
           p_building_id: data.id,
           p_action_type: 'create',
@@ -201,10 +355,10 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Coluna 1: Dados Básicos */}
-            <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Coluna 1: Dados Básicos e Comerciais */}
+            <div className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -258,6 +412,22 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                     </div>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="location_type">Tipo de Local *</Label>
+                    <Select
+                      value={formData.location_type}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, location_type: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="residential">Residencial</SelectItem>
+                        <SelectItem value="commercial">Comercial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="latitude">Latitude</Label>
@@ -286,10 +456,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Calculator className="h-5 w-5 mr-2" />
-                    Dados Comerciais
-                  </CardTitle>
+                  <CardTitle>Dados Comerciais</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -371,14 +538,14 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
               </Card>
             </div>
 
-            {/* Coluna 2: Características e Métricas */}
-            <div className="space-y-6">
+            {/* Coluna 2: Características e Galeria */}
+            <div className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Características de Lazer</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {CARACTERISTICAS_OPTIONS.map((caracteristica) => (
                       <Button
                         key={caracteristica}
@@ -392,7 +559,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                             handleAddCaracteristica(caracteristica);
                           }
                         }}
-                        className="justify-start text-xs h-8"
+                        className="justify-start text-xs h-8 px-2"
                       >
                         {caracteristica}
                       </Button>
@@ -400,19 +567,12 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                   </div>
                   
                   {formData.caracteristicas.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Características Selecionadas:</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {formData.caracteristicas.map((caracteristica) => (
-                          <Badge key={caracteristica} variant="secondary" className="flex items-center gap-1">
-                            {caracteristica}
-                            <X 
-                              className="h-3 w-3 cursor-pointer" 
-                              onClick={() => handleRemoveCaracteristica(caracteristica)}
-                            />
-                          </Badge>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-1">
+                      {formData.caracteristicas.map((caracteristica) => (
+                        <Badge key={caracteristica} variant="secondary" className="text-xs">
+                          {caracteristica}
+                        </Badge>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -421,30 +581,99 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Calculator className="h-5 w-5 mr-2" />
-                    Métricas Automáticas
+                    <Camera className="h-5 w-5 mr-2" />
+                    Galeria de Fotos
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <Users className="h-6 w-6 mx-auto mb-2 text-blue-600" />
-                      <div className="text-2xl font-bold text-blue-600">{publicoEstimado}</div>
-                      <div className="text-xs text-blue-600">Público Estimado</div>
-                      <div className="text-xs text-gray-500 mt-1">Unidades × 3</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <Eye className="h-6 w-6 mx-auto mb-2 text-purple-600" />
-                      <div className="text-2xl font-bold text-purple-600">Auto</div>
-                      <div className="text-xs text-purple-600">Visualizações/Mês</div>
-                      <div className="text-xs text-gray-500 mt-1">Painéis × 7.350</div>
-                    </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {imageSlots.map(({ index, imageUrl }) => (
+                      <div key={index} className={`relative border-2 border-dashed rounded-lg p-2 ${index === 0 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'}`}>
+                        <div className="text-center mb-2">
+                          <div className="text-xs font-medium flex items-center justify-center">
+                            {index === 0 && <Star className="h-3 w-3 mr-1 text-yellow-500" />}
+                            Foto {index + 1}
+                            {index === 0 && <span className="text-yellow-600 ml-1">(Principal)</span>}
+                          </div>
+                        </div>
+
+                        <div className="aspect-video bg-gray-100 rounded relative overflow-hidden">
+                          {imageUrl ? (
+                            <>
+                              <img
+                                src={imageUrl}
+                                alt={`Foto ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div className="flex space-x-1">
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => fileInputRefs.current[index]?.click()}
+                                    disabled={uploadingIndex === index}
+                                    className="h-8 px-2"
+                                  >
+                                    <Upload className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleRemoveImage(index)}
+                                    disabled={uploadingIndex === index}
+                                    className="h-8 px-2"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                              <ImageIcon className="h-8 w-8 mb-1" />
+                              <p className="text-xs">Sem foto</p>
+                            </div>
+                          )}
+
+                          {uploadingIndex === index && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <div className="text-white text-xs">Enviando...</div>
+                            </div>
+                          )}
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2 h-7 text-xs"
+                          onClick={() => fileInputRefs.current[index]?.click()}
+                          disabled={uploadingIndex === index}
+                        >
+                          <Upload className="h-3 w-3 mr-1" />
+                          {imageUrl ? 'Trocar' : 'Adicionar'}
+                        </Button>
+
+                        <input
+                          ref={(el) => {
+                            fileInputRefs.current[index] = el;
+                          }}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageUpload(index, file);
+                            }
+                          }}
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">
-                      <Monitor className="h-4 w-4 inline mr-1" />
-                      Quantidade de painéis será calculada automaticamente quando painéis forem atribuídos
-                    </div>
+                  <div className="mt-3 text-xs text-gray-500">
+                    <p>• Primeira foto ⭐ é principal na loja online</p>
+                    <p>• Máximo 5MB por imagem • Formatos: JPG, PNG, WebP</p>
                   </div>
                 </CardContent>
               </Card>
