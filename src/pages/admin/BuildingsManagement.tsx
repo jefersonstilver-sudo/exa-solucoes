@@ -1,31 +1,17 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { 
   Building2, 
   Plus, 
   Search, 
   RefreshCw,
-  Eye,
-  Edit,
   Users,
   DollarSign,
   Monitor,
   TrendingUp,
-  MapPin,
-  Camera,
-  Trash2,
-  Star,
   Calculator
 } from 'lucide-react';
 import { useBuildingsData } from '@/hooks/useBuildingsData';
@@ -33,6 +19,7 @@ import BuildingFormDialog from '@/components/admin/buildings/BuildingFormDialog'
 import BuildingDetailsDialog from '@/components/admin/buildings/BuildingDetailsDialog';
 import BuildingImageManager from '@/components/admin/buildings/BuildingImageManager';
 import BuildingFilters from '@/components/admin/buildings/BuildingFilters';
+import BuildingCard from '@/components/admin/buildings/BuildingCard';
 
 const BuildingsManagement = () => {
   const { buildings, stats, loading, refetch, deleteBuilding } = useBuildingsData();
@@ -46,43 +33,6 @@ const BuildingsManagement = () => {
     bairro: 'all',
     padrao_publico: 'all'
   });
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ativo':
-        return (
-          <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
-            Ativo
-          </Badge>
-        );
-      case 'inativo':
-        return (
-          <Badge variant="secondary">
-            Inativo
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            {status}
-          </Badge>
-        );
-    }
-  };
-
-  const getPadraoPublicoBadge = (padrao: string) => {
-    const styles = {
-      alto: 'bg-purple-500/20 text-purple-600 border-purple-500/30',
-      medio: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
-      normal: 'bg-gray-500/20 text-gray-600 border-gray-500/30'
-    };
-    
-    return (
-      <Badge className={styles[padrao as keyof typeof styles] || styles.normal}>
-        {padrao.charAt(0).toUpperCase() + padrao.slice(1)}
-      </Badge>
-    );
-  };
 
   const filteredBuildings = buildings.filter(building => {
     const matchesSearch = building.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -187,7 +137,7 @@ const BuildingsManagement = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Público</CardTitle>
-            <Eye className="h-4 w-4 text-purple-600" />
+            <Users className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.totalPublic}</div>
@@ -265,7 +215,7 @@ const BuildingsManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Tabela Completa */}
+      {/* Grid de Cards */}
       <Card>
         <CardHeader>
           <CardTitle>Prédios Cadastrados ({filteredBuildings.length})</CardTitle>
@@ -274,131 +224,39 @@ const BuildingsManagement = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Prédio</TableHead>
-                <TableHead>Localização</TableHead>
-                <TableHead>Unidades</TableHead>
-                <TableHead>Público</TableHead>
-                <TableHead>Painéis</TableHead>
-                <TableHead>Visualizações</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Padrão</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          {filteredBuildings.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum prédio encontrado</h3>
+              <p className="text-gray-500">
+                {searchTerm || filters.status !== 'all' || filters.bairro !== 'all' || filters.padrao_publico !== 'all'
+                  ? 'Tente ajustar os filtros de busca.'
+                  : 'Comece criando seu primeiro prédio.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredBuildings.map((building) => (
-                <TableRow key={building.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-indexa-purple/10 rounded-lg flex items-center justify-center relative">
-                        <Building2 className="h-6 w-6 text-indexa-purple" />
-                        {building.imagem_principal && (
-                          <Star className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium">{building.nome}</div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Camera className="h-3 w-3 mr-1" />
-                          {[building.imagem_principal, building.imagem_2, building.imagem_3, building.imagem_4].filter(Boolean).length} fotos
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="h-3 w-3 text-gray-400" />
-                      <span className="text-sm">{building.bairro}</span>
-                    </div>
-                    <div className="text-xs text-gray-500 max-w-[200px] truncate">
-                      {building.endereco}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-center">
-                      <div className="font-semibold">{building.numero_unidades}</div>
-                      <div className="text-xs text-gray-500">apartamentos</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-center">
-                      <div className="font-semibold text-purple-600">{building.publico_estimado}</div>
-                      <div className="text-xs text-gray-500">pessoas</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-center">
-                      <div className="font-semibold text-blue-600">{building.quantidade_telas}</div>
-                      <div className="text-xs text-gray-500">telas</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-center">
-                      <div className="font-semibold text-orange-600">{building.visualizacoes_mes?.toLocaleString() || '0'}</div>
-                      <div className="text-xs text-gray-500">por mês</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-semibold text-green-600">
-                      {formatPrice(building.preco_base)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {getPadraoPublicoBadge(building.padrao_publico)}
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(building.status)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedBuilding(building);
-                          setIsDetailsOpen(true);
-                        }}
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedBuilding(building);
-                          setIsFormOpen(true);
-                        }}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedBuilding(building);
-                          setIsImageManagerOpen(true);
-                        }}
-                      >
-                        <Camera className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteBuilding(building)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <BuildingCard
+                  key={building.id}
+                  building={building}
+                  onView={(building) => {
+                    setSelectedBuilding(building);
+                    setIsDetailsOpen(true);
+                  }}
+                  onEdit={(building) => {
+                    setSelectedBuilding(building);
+                    setIsFormOpen(true);
+                  }}
+                  onImageManager={(building) => {
+                    setSelectedBuilding(building);
+                    setIsImageManagerOpen(true);
+                  }}
+                  onDelete={handleDeleteBuilding}
+                />
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -60,7 +60,7 @@ export const useBuildingsData = () => {
   const fetchBuildings = async () => {
     try {
       setLoading(true);
-      console.log('🏢 Buscando prédios com estrutura completa...');
+      console.log('🏢 Buscando prédios com contagem real de painéis...');
       
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -76,6 +76,7 @@ export const useBuildingsData = () => {
         return;
       }
 
+      // Query com JOIN para obter contagem real de painéis
       const { data, error } = await supabase
         .from('buildings')
         .select(`
@@ -95,14 +96,13 @@ export const useBuildingsData = () => {
           image_urls,
           amenities,
           padrao_publico,
-          quantidade_telas,
-          visualizacoes_mes,
           imagem_principal,
           imagem_2,
           imagem_3,
           imagem_4,
           caracteristicas,
-          created_at
+          created_at,
+          painels!inner(count)
         `)
         .order('created_at', { ascending: false });
 
@@ -114,22 +114,27 @@ export const useBuildingsData = () => {
 
       console.log('✅ Prédios carregados:', data?.length);
       
-      // Processar dados com valores padrão e migração de campos antigos
-      const typedBuildings = (data || []).map(building => ({
-        ...building,
-        padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
-        image_urls: building.image_urls || buildImageUrlsArray(building),
-        amenities: building.amenities || building.caracteristicas || [],
-        caracteristicas: building.caracteristicas || building.amenities || [],
-        numero_unidades: building.numero_unidades || 0,
-        publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
-        preco_base: building.preco_base || 0,
-        quantidade_telas: building.quantidade_telas || 0,
-        visualizacoes_mes: building.visualizacoes_mes || (building.quantidade_telas * 7350) || 0,
-        monthly_traffic: building.monthly_traffic || 0,
-        latitude: building.latitude || 0,
-        longitude: building.longitude || 0
-      }));
+      // Processar dados com contagem real de painéis
+      const typedBuildings = (data || []).map(building => {
+        // Contar painéis reais associados ao prédio
+        const realPanelCount = building.painels?.length || 0;
+        
+        return {
+          ...building,
+          padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
+          image_urls: building.image_urls || buildImageUrlsArray(building),
+          amenities: building.amenities || building.caracteristicas || [],
+          caracteristicas: building.caracteristicas || building.amenities || [],
+          numero_unidades: building.numero_unidades || 0,
+          publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
+          preco_base: building.preco_base || 0,
+          quantidade_telas: realPanelCount, // Usar contagem real
+          visualizacoes_mes: realPanelCount * 7350 || 0, // Calcular baseado na contagem real
+          monthly_traffic: building.monthly_traffic || 0,
+          latitude: building.latitude || 0,
+          longitude: building.longitude || 0
+        };
+      });
       
       setBuildings(typedBuildings);
       
