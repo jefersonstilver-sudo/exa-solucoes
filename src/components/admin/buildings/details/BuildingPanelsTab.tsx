@@ -61,32 +61,22 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
       operationInProgress: operationRef.current.inProgress
     });
     
-    // Validação rigorosa dos dados do painel
     if (!panel?.id || !panel?.code) {
       console.error('❌ [BUILDING PANELS TAB] Panel inválido:', panel);
       toast.error('Erro: Dados do painel inválidos');
       return;
     }
 
-    // Verificar se já há operação em andamento
     if (operationRef.current.inProgress) {
       console.log('⏳ [BUILDING PANELS TAB] Operação já em andamento, ignorando:', operationRef.current);
       toast.warning('Aguarde a operação anterior finalizar');
       return;
     }
 
-    // Verificar se o dialog já está aberto para este painel
-    if (removalState.isOpen && removalState.panel?.id === panel.id) {
-      console.log('⚠️ [BUILDING PANELS TAB] Dialog já aberto para este painel');
-      return;
-    }
-
-    // Verificar se já há dialog aberto
     if (removalState.isOpen) {
       console.log('⚠️ [BUILDING PANELS TAB] Fechando dialog anterior antes de abrir novo');
       setRemovalState({ isOpen: false, panel: null, loading: false });
       
-      // Aguardar um momento para o dialog fechar
       setTimeout(() => {
         operationRef.current = { inProgress: false, operationId };
         setRemovalState({
@@ -125,7 +115,6 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
       return;
     }
 
-    // Verificar se operação já está em andamento
     if (operationRef.current.inProgress) {
       console.log('⏳ [BUILDING PANELS TAB] Operação já em andamento');
       return;
@@ -135,7 +124,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
     setRemovalState(prev => ({ ...prev, loading: true }));
 
     try {
-      // Verificar campanhas ativas antes da remoção
+      // Verificar campanhas ativas
       console.log('🔍 [BUILDING PANELS TAB] Verificando campanhas ativas...');
       const { data: activeCampaigns, error: campaignsError } = await supabase
         .from('campanhas')
@@ -156,42 +145,18 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
         return;
       }
 
-      // Executar remoção com retry melhorado
+      // Executar remoção
       console.log('🔄 [BUILDING PANELS TAB] Removendo atribuição do painel...');
-      let success = false;
-      let lastError = null;
-      const maxAttempts = 3;
+      const { error: updateError } = await supabase
+        .from('painels')
+        .update({ building_id: null })
+        .eq('id', panel.id);
 
-      for (let attempt = 1; attempt <= maxAttempts && !success; attempt++) {
-        console.log(`🔄 [BUILDING PANELS TAB] Tentativa ${attempt}/${maxAttempts} - Operação: ${currentOperation.operationId}`);
-
-        try {
-          const { error: updateError } = await supabase
-            .from('painels')
-            .update({ building_id: null })
-            .eq('id', panel.id);
-
-          if (updateError) {
-            lastError = updateError;
-            console.error(`❌ [BUILDING PANELS TAB] Tentativa ${attempt} falhou:`, updateError);
-            
-            if (attempt < maxAttempts) {
-              // Aguardar progressivamente mais tempo entre tentativas
-              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            }
-          } else {
-            success = true;
-            console.log(`✅ [BUILDING PANELS TAB] Sucesso na tentativa ${attempt} - Operação: ${currentOperation.operationId}`);
-          }
-        } catch (error) {
-          lastError = error;
-          console.error(`💥 [BUILDING PANELS TAB] Erro na tentativa ${attempt}:`, error);
-        }
+      if (updateError) {
+        throw updateError;
       }
 
-      if (!success) {
-        throw new Error('Falha ao remover painel após ' + maxAttempts + ' tentativas: ' + (lastError as any)?.message);
-      }
+      console.log(`✅ [BUILDING PANELS TAB] Sucesso - Operação: ${currentOperation.operationId}`);
 
       // Log da ação (não crítico)
       try {
@@ -208,11 +173,11 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
       toast.success(`Painel "${panel.code}" removido com sucesso!`);
       
-      // Fechar dialog primeiro
+      // Fechar dialog e resetar estados
       setRemovalState({ isOpen: false, panel: null, loading: false });
       operationRef.current.inProgress = false;
       
-      // Aguardar um momento antes de atualizar para garantir que a UI se estabilize
+      // Atualizar lista
       setTimeout(() => {
         console.log('🔄 [BUILDING PANELS TAB] Atualizando lista de painéis após remoção');
         onRefresh();
@@ -230,19 +195,20 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
     console.log('🔄 [BUILDING PANELS TAB] Fechando alert de remoção:', {
       open,
       operationInProgress: operationRef.current.inProgress,
+      loading: removalState.loading,
       currentPanel: removalState.panel?.code
     });
     
     if (!open) {
       // Só fechar se não há operação em andamento
-      if (!operationRef.current.inProgress) {
+      if (!operationRef.current.inProgress && !removalState.loading) {
         setRemovalState({ isOpen: false, panel: null, loading: false });
         operationRef.current = { inProgress: false };
       } else {
         console.log('⏳ [BUILDING PANELS TAB] Não é possível fechar dialog - operação em andamento');
       }
     }
-  }, [removalState.panel]);
+  }, [removalState.loading]);
 
   const isGlobalOperationInProgress = operationRef.current.inProgress || loading;
 
@@ -340,7 +306,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
         </CardContent>
       </Card>
 
-      {/* AlertDialog para confirmação de remoção */}
+      {/* AlertDialog unificado para confirmação de remoção */}
       <SimplePanelRemovalAlert
         open={removalState.isOpen}
         onOpenChange={handleCloseAlert}

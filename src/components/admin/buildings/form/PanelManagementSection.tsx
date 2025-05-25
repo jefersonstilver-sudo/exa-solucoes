@@ -1,127 +1,109 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Monitor, 
-  Plus, 
-  RefreshCw, 
-  Trash2,
-  Wifi,
-  WifiOff,
-  Settings
-} from 'lucide-react';
+import { Monitor, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import PanelAssignmentDialog from '../panels/PanelAssignmentDialog';
-import PanelRemovalDialog from '../panels/PanelRemovalDialog';
+import SimplePanelRemovalAlert from '../panels/SimplePanelRemovalAlert';
 
 interface PanelManagementSectionProps {
-  buildingId?: string;
-  buildingName?: string;
-  onPanelsChange?: () => void;
+  panels: any[];
+  buildingId: string;
+  onPanelsChange: (panels: any[]) => void;
+  onAssignPanel: () => void;
 }
 
 const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
+  panels,
   buildingId,
-  buildingName,
-  onPanelsChange
+  onPanelsChange,
+  onAssignPanel
 }) => {
-  const [panels, setPanels] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
-  const [removalDialogOpen, setRemovalDialogOpen] = useState(false);
-  const [selectedPanelForRemoval, setSelectedPanelForRemoval] = useState(null);
+  const [removalState, setRemovalState] = useState({
+    isOpen: false,
+    panel: null as any,
+    loading: false
+  });
 
-  useEffect(() => {
-    if (buildingId) {
-      fetchPanels();
-    }
-  }, [buildingId]);
+  console.log('🔧 [PANEL MANAGEMENT] Renderizando com painéis:', panels.length);
 
-  const fetchPanels = async () => {
-    if (!buildingId) return;
+  const handleRemoveRequest = useCallback((panel: any) => {
+    console.log('🗑️ [PANEL MANAGEMENT] Solicitação de remoção:', panel.code);
     
+    if (!panel?.id || !panel?.code) {
+      console.error('❌ [PANEL MANAGEMENT] Panel inválido:', panel);
+      toast.error('Erro: Dados do painel inválidos');
+      return;
+    }
+
+    if (removalState.isOpen) {
+      console.log('⚠️ [PANEL MANAGEMENT] Dialog já aberto, fechando primeiro');
+      setRemovalState({ isOpen: false, panel: null, loading: false });
+      
+      setTimeout(() => {
+        setRemovalState({
+          isOpen: true,
+          panel: panel,
+          loading: false
+        });
+      }, 200);
+      return;
+    }
+
+    setRemovalState({
+      isOpen: true,
+      panel: panel,
+      loading: false
+    });
+  }, [removalState.isOpen]);
+
+  const handleConfirmRemoval = useCallback(async () => {
+    const { panel } = removalState;
+    
+    console.log('🔄 [PANEL MANAGEMENT] Confirmando remoção:', panel?.code);
+    
+    if (!panel?.id) {
+      console.error('❌ [PANEL MANAGEMENT] Panel não encontrado');
+      toast.error('Erro: Painel não encontrado');
+      setRemovalState({ isOpen: false, panel: null, loading: false });
+      return;
+    }
+
+    setRemovalState(prev => ({ ...prev, loading: true }));
+
     try {
-      setLoading(true);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('painels')
-        .select('*')
-        .eq('building_id', buildingId)
-        .order('code');
+        .update({ building_id: null })
+        .eq('id', panel.id);
 
-      if (error) throw error;
-      setPanels(data || []);
+      if (error) {
+        throw error;
+      }
+
+      toast.success(`Painel "${panel.code}" removido com sucesso!`);
+      
+      const updatedPanels = panels.filter(p => p.id !== panel.id);
+      onPanelsChange(updatedPanels);
+      
+      setRemovalState({ isOpen: false, panel: null, loading: false });
+      
     } catch (error) {
-      console.error('Erro ao buscar painéis:', error);
-      toast.error('Erro ao carregar painéis do prédio');
-    } finally {
-      setLoading(false);
+      console.error('💥 [PANEL MANAGEMENT] Erro na remoção:', error);
+      toast.error('Erro ao remover painel: ' + (error as any)?.message);
+      setRemovalState({ isOpen: false, panel: null, loading: false });
     }
-  };
+  }, [removalState.panel, panels, onPanelsChange]);
 
-  const handleAssignmentSuccess = () => {
-    fetchPanels();
-    onPanelsChange?.();
-  };
-
-  const handleRemovePanel = (panel: any) => {
-    setSelectedPanelForRemoval(panel);
-    setRemovalDialogOpen(true);
-  };
-
-  const handleRemovalSuccess = () => {
-    fetchPanels();
-    onPanelsChange?.();
-  };
-
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'online':
-        return {
-          badge: 'bg-green-500 text-white',
-          icon: <Wifi className="h-3 w-3" />,
-          label: 'Online'
-        };
-      case 'offline':
-        return {
-          badge: 'bg-red-500 text-white',
-          icon: <WifiOff className="h-3 w-3" />,
-          label: 'Offline'
-        };
-      case 'maintenance':
-        return {
-          badge: 'bg-yellow-500 text-white',
-          icon: <Settings className="h-3 w-3" />,
-          label: 'Manutenção'
-        };
-      default:
-        return {
-          badge: 'bg-gray-500 text-white',
-          icon: <Monitor className="h-3 w-3" />,
-          label: 'Desconhecido'
-        };
+  const handleCloseAlert = useCallback((open: boolean) => {
+    console.log('🔄 [PANEL MANAGEMENT] Fechando alert:', open);
+    
+    if (!open && !removalState.loading) {
+      setRemovalState({ isOpen: false, panel: null, loading: false });
     }
-  };
-
-  if (!buildingId) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Monitor className="h-5 w-5 mr-2" />
-            Painéis Atribuídos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-500 text-center py-8">
-            Salve o prédio primeiro para gerenciar painéis
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  }, [removalState.loading]);
 
   return (
     <>
@@ -132,78 +114,57 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
               <Monitor className="h-5 w-5 mr-2" />
               Painéis Atribuídos ({panels.length})
             </div>
-            <div className="flex space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={fetchPanels}
-                disabled={loading}
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setAssignmentDialogOpen(true)}
-                className="bg-indexa-purple hover:bg-indexa-purple-dark"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Atribuir
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              onClick={onAssignPanel}
+              disabled={removalState.loading}
+              className="bg-indexa-purple hover:bg-indexa-purple-dark"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Atribuir Painel
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-              <span className="ml-2 text-gray-500">Carregando painéis...</span>
-            </div>
-          ) : panels.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3">
-              {panels.map((panel) => {
-                const statusConfig = getStatusConfig(panel.status);
-                return (
-                  <div
-                    key={panel.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2">
-                        {statusConfig.icon}
-                        <span className="font-medium">{panel.code}</span>
-                      </div>
-                      <Badge className={statusConfig.badge}>
-                        {statusConfig.label}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-2">
+          {panels.length > 0 ? (
+            <div className="space-y-3">
+              {panels.map((panel: any) => (
+                <div key={panel.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <Monitor className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <div className="font-medium">{panel.code}</div>
                       <div className="text-sm text-gray-500">
-                        {panel.resolucao || 'N/A'}
+                        Status: 
+                        <Badge 
+                          variant={panel.status === 'online' ? 'default' : 'destructive'}
+                          className="ml-1"
+                        >
+                          {panel.status || 'offline'}
+                        </Badge>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleRemovePanel(panel)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
                     </div>
                   </div>
-                );
-              })}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleRemoveRequest(panel)}
+                    disabled={removalState.loading}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Remover
+                  </Button>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum painel atribuído
-              </h3>
-              <p className="text-gray-500 mb-4">
-                Este prédio ainda não possui painéis atribuídos.
-              </p>
+              <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-500 mb-4">Nenhum painel atribuído a este prédio</p>
               <Button
-                onClick={() => setAssignmentDialogOpen(true)}
+                onClick={onAssignPanel}
+                disabled={removalState.loading}
                 className="bg-indexa-purple hover:bg-indexa-purple-dark"
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -214,20 +175,13 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
         </CardContent>
       </Card>
 
-      <PanelAssignmentDialog
-        open={assignmentDialogOpen}
-        onOpenChange={setAssignmentDialogOpen}
-        buildingId={buildingId}
-        buildingName={buildingName || ''}
-        onSuccess={handleAssignmentSuccess}
-      />
-
-      <PanelRemovalDialog
-        open={removalDialogOpen}
-        onOpenChange={setRemovalDialogOpen}
-        panel={selectedPanelForRemoval}
-        buildingName={buildingName || ''}
-        onSuccess={handleRemovalSuccess}
+      <SimplePanelRemovalAlert
+        open={removalState.isOpen}
+        onOpenChange={handleCloseAlert}
+        panelCode={removalState.panel?.code || ''}
+        buildingName=""
+        onConfirm={handleConfirmRemoval}
+        loading={removalState.loading}
       />
     </>
   );
