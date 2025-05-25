@@ -60,25 +60,12 @@ const AdminSidebar = () => {
   return (
     <aside className="w-64 min-h-screen bg-indexa-purple shadow-lg">
       <div className="flex flex-col h-full">
-        {/* Header da sidebar */}
-        <div className="p-6 border-b border-indexa-purple-light">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-indexa-purple font-bold text-lg">I</span>
-            </div>
-            <div>
-              <h1 className="text-white font-bold text-lg">INDEXA</h1>
-              <p className="text-indexa-mint text-xs">ADMIN PANEL</p>
-            </div>
-          </div>
-        </div>
-        
         {/* Status do usuário */}
         {isSuperAdmin && (
-          <div className="p-4 bg-indexa-purple-light/20">
+          <div className="p-6 border-b border-indexa-purple-light">
             <div className="flex items-center space-x-2 text-indexa-mint">
-              <Crown className="h-4 w-4" />
-              <span className="text-sm font-semibold">Super Admin</span>
+              <Crown className="h-5 w-5" />
+              <span className="text-sm font-bold">Super Admin Access</span>
             </div>
           </div>
         )}
@@ -95,14 +82,14 @@ const AdminSidebar = () => {
                 key={item.href}
                 to={item.href}
                 className={({ isActive }) => cn(
-                  "flex items-center px-4 py-3 text-white/80 rounded-lg hover:bg-indexa-purple-light hover:text-white transition-all duration-200",
-                  isActive ? "bg-white text-indexa-purple font-semibold shadow-sm" : ""
+                  "flex items-center px-4 py-3 text-white rounded-lg hover:bg-indexa-purple-light hover:text-white transition-all duration-200 font-medium",
+                  isActive ? "bg-white text-indexa-purple font-bold shadow-sm" : ""
                 )}
               >
                 <div className="mr-3">
                   {item.icon}
                 </div>
-                <span className="font-medium">{item.label}</span>
+                <span>{item.label}</span>
               </NavLink>
             );
           })}
@@ -110,7 +97,7 @@ const AdminSidebar = () => {
         
         {/* Footer da sidebar */}
         <div className="p-4 border-t border-indexa-purple-light">
-          <div className="flex items-center space-x-2 text-white/60 text-sm">
+          <div className="flex items-center space-x-2 text-white text-sm">
             <Shield className="h-4 w-4" />
             <span>Sistema Seguro</span>
           </div>

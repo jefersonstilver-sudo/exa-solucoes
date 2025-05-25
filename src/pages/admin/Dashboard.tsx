@@ -65,15 +65,15 @@ const Dashboard = () => {
       {/* Header com boas-vindas */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <Crown className="h-6 w-6 mr-2 text-indexa-purple" />
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <Crown className="h-8 w-8 mr-3 text-indexa-purple" />
             Dashboard Super Admin
           </h1>
-          <p className="text-gray-600 mt-1">Controle total do sistema INDEXA</p>
+          <p className="text-gray-600 mt-2">Controle total do sistema INDEXA</p>
         </div>
         <div className="flex items-center space-x-3">
           <Badge variant="outline" className="border-indexa-purple text-indexa-purple">
-            <Shield className="h-3 w-3 mr-1" />
+            <Shield className="h-4 w-4 mr-1" />
             Sistema Seguro
           </Badge>
         </div>

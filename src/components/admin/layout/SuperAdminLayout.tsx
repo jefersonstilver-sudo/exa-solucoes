@@ -22,7 +22,7 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
       <AdminSidebar />
       
       <div className="flex-1 flex flex-col">
-        {/* Header corporativo */}
+        {/* Header corporativo com cor escura diferente */}
         <AdminHeader />
         
         {/* Conteúdo principal com fundo branco */}
