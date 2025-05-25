@@ -6,7 +6,7 @@ import ReviewStep from '@/components/checkout/ReviewStep';
 import PlanSelector from '@/components/checkout/PlanSelector';
 import CouponStep from '@/components/checkout/CouponStep';
 import PaymentStep from '@/components/checkout/PaymentStep';
-import UploadStep from '@/components/checkout/UploadStep'; // Vamos criar este componente
+import UploadStep from '@/components/checkout/UploadStep';
 import TrustIndicators from '@/components/checkout/TrustIndicators';
 import { Panel } from '@/types/panel';
 import { Plan, PlanKey } from '@/types/checkout';
@@ -108,10 +108,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
           variants={pageVariants}
           transition={{ duration: 0.4 }}
         >
-          <ReviewStep 
-            cartItems={cartItems} 
-            unavailablePanels={unavailablePanels} 
-          />
+          <ReviewStep />
           <TrustIndicators />
         </motion.div>
       );
