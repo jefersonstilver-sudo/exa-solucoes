@@ -5,7 +5,6 @@ import ContactInfoForm from './ContactInfoForm';
 import CommercialDataForm from './CommercialDataForm';
 import CharacteristicsSelector from './CharacteristicsSelector';
 import ImageGallery from './ImageGallery';
-import PanelManagementSection from './PanelManagementSection';
 
 interface BuildingFormLayoutProps {
   formData: any;
@@ -66,7 +65,7 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
         />
       </div>
 
-      {/* Segunda coluna - Características, galeria de fotos e gestão de painéis */}
+      {/* Segunda coluna - Características e galeria de fotos */}
       <div className="space-y-4">
         <CharacteristicsSelector
           selectedCharacteristics={formData.caracteristicas}
@@ -77,16 +76,6 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
           building={building}
           onSuccess={onSuccess}
         />
-
-        {/* Só mostrar PanelManagementSection se temos buildingId (editando) */}
-        {building?.id && (
-          <PanelManagementSection
-            panels={panels}
-            buildingId={building.id}
-            buildingName={formData.nome || building?.nome}
-            onPanelsChange={onPanelsChange || (() => {})}
-          />
-        )}
       </div>
     </div>
   );

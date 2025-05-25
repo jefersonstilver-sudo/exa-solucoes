@@ -2,7 +2,6 @@
 import React from 'react';
 import BuildingHeader from './BuildingHeader';
 import BuildingMetrics from './BuildingMetrics';
-import BuildingPanelStatus from './BuildingPanelStatus';
 import BuildingContactInfo from './BuildingContactInfo';
 import BuildingPriceSection from './BuildingPriceSection';
 import BuildingActions from './BuildingActions';
@@ -41,8 +40,6 @@ const BuildingInfoSection: React.FC<BuildingInfoSectionProps> = ({
         <BuildingHeader building={building} />
         
         <BuildingMetrics building={building} panelStats={panelStats} />
-        
-        <BuildingPanelStatus panelStats={panelStats} />
         
         <BuildingContactInfo building={building} />
         
