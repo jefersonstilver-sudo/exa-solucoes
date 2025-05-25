@@ -57,43 +57,55 @@ export const useBuildingsData = () => {
   const fetchBuildings = async () => {
     try {
       setLoading(true);
-      console.log('🏢 Buscando prédios...');
+      console.log('🏢 [BUILDINGS DATA] Iniciando busca de prédios...');
       
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError) {
-        console.error('❌ Erro de autenticação:', authError);
+        console.error('❌ [BUILDINGS DATA] Erro de autenticação:', authError);
         toast.error('Erro de autenticação. Faça login novamente.');
         return;
       }
 
       if (!user) {
-        console.error('❌ Usuário não autenticado');
+        console.error('❌ [BUILDINGS DATA] Usuário não autenticado');
         toast.error('Acesso negado. Faça login como administrador.');
         return;
       }
 
-      // Query para buscar prédios
-      const { data: buildingsData, error: buildingsError } = await supabase
+      // Query para buscar prédios com timeout
+      const buildingsPromise = supabase
         .from('buildings')
         .select('*')
         .order('created_at', { ascending: false });
 
+      const panelsPromise = supabase
+        .from('painels')
+        .select('building_id');
+
+      // Implementar timeout de 10 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na busca de dados')), 10000);
+      });
+
+      const [buildingsResult, panelsResult] = await Promise.race([
+        Promise.all([buildingsPromise, panelsPromise]),
+        timeoutPromise
+      ]) as any;
+
+      const { data: buildingsData, error: buildingsError } = buildingsResult;
+      const { data: panelsData, error: panelsError } = panelsResult;
+
       if (buildingsError) {
-        console.error('❌ Erro ao buscar prédios:', buildingsError);
+        console.error('❌ [BUILDINGS DATA] Erro ao buscar prédios:', buildingsError);
         toast.error(`Erro ao carregar prédios: ${buildingsError.message}`);
         return;
       }
 
-      console.log('✅ Prédios carregados:', buildingsData?.length);
-
-      // Query separada para contar painéis por prédio
-      const { data: panelsData, error: panelsError } = await supabase
-        .from('painels')
-        .select('building_id');
+      console.log('✅ [BUILDINGS DATA] Prédios carregados:', buildingsData?.length || 0);
 
       if (panelsError) {
-        console.error('⚠️ Erro ao buscar painéis (não crítico):', panelsError);
+        console.error('⚠️ [BUILDINGS DATA] Erro ao buscar painéis (não crítico):', panelsError);
       }
 
       // Criar mapa de contagem de painéis por prédio
@@ -101,36 +113,41 @@ export const useBuildingsData = () => {
       if (panelsData) {
         panelsData.forEach(panel => {
           const buildingId = panel.building_id;
-          panelCountMap.set(buildingId, (panelCountMap.get(buildingId) || 0) + 1);
+          if (buildingId) {
+            panelCountMap.set(buildingId, (panelCountMap.get(buildingId) || 0) + 1);
+          }
         });
       }
       
-      // Processar dados dos prédios - SEMPRE garantir Residencial como padrão
-      const typedBuildings = (buildingsData || []).map(building => {
-        const panelCount = panelCountMap.get(building.id) || 0;
-        
-        return {
-          ...building,
-          // GARANTIR RESIDENCIAL COMO PADRÃO se venue_type não estiver definido ou for inválido
-          venue_type: (building.venue_type === 'Residencial' || building.venue_type === 'Comercial') 
-            ? building.venue_type 
-            : 'Residencial',
-          location_type: building.location_type || 'residential',
-          padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
-          image_urls: building.image_urls || buildImageUrlsArray(building),
-          amenities: building.amenities || building.caracteristicas || [],
-          caracteristicas: building.caracteristicas || building.amenities || [],
-          numero_unidades: building.numero_unidades || 0,
-          publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
-          preco_base: building.preco_base || 0,
-          quantidade_telas: panelCount,
-          visualizacoes_mes: panelCount * 7350 || 0,
-          monthly_traffic: building.monthly_traffic || 0,
-          latitude: building.latitude || 0,
-          longitude: building.longitude || 0
-        };
-      });
+      // Processar dados dos prédios com validação robusta
+      const typedBuildings = (buildingsData || [])
+        .filter(building => building && building.id && building.nome) // Filtrar dados inválidos
+        .map(building => {
+          const panelCount = panelCountMap.get(building.id) || 0;
+          
+          return {
+            ...building,
+            // GARANTIR RESIDENCIAL COMO PADRÃO se venue_type não estiver definido ou for inválido
+            venue_type: (building.venue_type === 'Residencial' || building.venue_type === 'Comercial') 
+              ? building.venue_type 
+              : 'Residencial',
+            location_type: building.location_type || 'residential',
+            padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
+            image_urls: building.image_urls || buildImageUrlsArray(building),
+            amenities: building.amenities || building.caracteristicas || [],
+            caracteristicas: building.caracteristicas || building.amenities || [],
+            numero_unidades: building.numero_unidades || 0,
+            publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
+            preco_base: building.preco_base || 0,
+            quantidade_telas: panelCount,
+            visualizacoes_mes: panelCount * 7350 || 0,
+            monthly_traffic: building.monthly_traffic || 0,
+            latitude: building.latitude || 0,
+            longitude: building.longitude || 0
+          };
+        });
       
+      console.log('📊 [BUILDINGS DATA] Prédios processados:', typedBuildings.length);
       setBuildings(typedBuildings);
       
       // Calcular estatísticas
@@ -148,9 +165,14 @@ export const useBuildingsData = () => {
         totalPanels 
       });
       
-    } catch (error) {
-      console.error('💥 Erro crítico ao carregar prédios:', error);
-      toast.error('Erro crítico. Verifique sua conexão e tente novamente.');
+    } catch (error: any) {
+      console.error('💥 [BUILDINGS DATA] Erro crítico ao carregar prédios:', error);
+      
+      if (error.message === 'Timeout na busca de dados') {
+        toast.error('Timeout ao carregar dados. Tente novamente.');
+      } else {
+        toast.error('Erro crítico. Verifique sua conexão e tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
