@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,15 +35,15 @@
  
     --radius: 0.5rem;
     
-    /* Sidebar variables */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222.2 84% 4.9%;
+    /* Modern INDEXA Sidebar with Purple Gradient */
+    --sidebar-background: 284 100% 12%;
+    --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 284 100% 22%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96.1%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 222.2 84% 4.9%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 284 80% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 284 60% 25%;
+    --sidebar-ring: 284 100% 50%;
   }
  
   .dark {
@@ -74,15 +75,15 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
     
-    /* Sidebar variables in dark mode */
-    --sidebar-background: 217.2 32.6% 12%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 284 70% 70%;
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 20%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 25%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+    /* Dark mode maintains the purple gradient theme */
+    --sidebar-background: 284 100% 8%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 284 100% 18%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 284 80% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 284 60% 20%;
+    --sidebar-ring: 284 100% 50%;
   }
 }
  
@@ -93,6 +94,26 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Modern INDEXA Sidebar Gradient */
+.indexa-sidebar-gradient {
+  background: linear-gradient(145deg, #4A0968 0%, #6A1888 50%, #4A0968 100%);
+}
+
+.indexa-header-gradient {
+  background: linear-gradient(90deg, #4A0968 0%, #6A1888 100%);
+}
+
+.indexa-sidebar-hover {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.indexa-sidebar-active {
+  background: rgba(88, 227, 171, 0.2);
+  border-left: 3px solid #58E3AB;
 }
 
 /* Custom drawer styles for right side placement */
