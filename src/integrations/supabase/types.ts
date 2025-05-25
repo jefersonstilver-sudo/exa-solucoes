@@ -753,6 +753,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_emergency_mode: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -766,6 +770,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin_simple: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_super_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

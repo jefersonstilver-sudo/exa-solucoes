@@ -35,6 +35,7 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
     try {
       console.log('🔍 [AVAILABLE PANELS] Buscando painéis disponíveis...');
 
+      // Buscar painéis que não estão atribuídos a nenhum prédio
       const { data, error } = await supabase
         .from('painels')
         .select('*')
@@ -42,14 +43,26 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error('❌ [AVAILABLE PANELS] Erro na consulta:', error);
         throw error;
       }
 
       console.log('✅ [AVAILABLE PANELS] Painéis encontrados:', data?.length || 0);
+      console.log('📊 [AVAILABLE PANELS] Dados dos painéis:', data);
+      
       setPanels(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 [AVAILABLE PANELS] Erro ao buscar painéis:', error);
-      toast.error('Erro ao carregar painéis disponíveis');
+      
+      // Mensagem de erro mais específica
+      let errorMessage = 'Erro ao carregar painéis disponíveis';
+      if (error?.message?.includes('permission denied')) {
+        errorMessage = 'Erro de permissão: Verifique se você tem acesso para visualizar painéis';
+      } else if (error?.message) {
+        errorMessage = `Erro ao carregar painéis: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
       setPanels([]);
     } finally {
       setLoading(false);
@@ -77,6 +90,14 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
     if (orientationFilter !== 'all') {
       filtered = filtered.filter(panel => panel.orientacao === orientationFilter);
     }
+
+    console.log('🔍 [AVAILABLE PANELS] Aplicando filtros:', {
+      total: panels.length,
+      filtered: filtered.length,
+      searchTerm,
+      statusFilter,
+      orientationFilter
+    });
 
     setFilteredPanels(filtered);
   }, [panels, searchTerm, statusFilter, orientationFilter]);

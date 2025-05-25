@@ -26,7 +26,8 @@ export const usePanelAssignment = ({ buildingId, buildingName, onSuccess }: UseA
       console.log('🔄 [PANEL ASSIGNMENT] Iniciando atribuição de painéis:', {
         buildingId,
         buildingName,
-        panelCount: panelIds.length
+        panelCount: panelIds.length,
+        panelIds
       });
 
       // Verificar se algum painel já está atribuído
@@ -37,6 +38,7 @@ export const usePanelAssignment = ({ buildingId, buildingName, onSuccess }: UseA
         .not('building_id', 'is', null);
 
       if (checkError) {
+        console.error('❌ [PANEL ASSIGNMENT] Erro ao verificar painéis:', checkError);
         throw new Error('Erro ao verificar painéis: ' + checkError.message);
       }
 
@@ -46,15 +48,21 @@ export const usePanelAssignment = ({ buildingId, buildingName, onSuccess }: UseA
         return false;
       }
 
+      console.log('✅ [PANEL ASSIGNMENT] Painéis validados, procedendo com atribuição...');
+
       // Atribuir painéis ao prédio
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('painels')
         .update({ building_id: buildingId })
-        .in('id', panelIds);
+        .in('id', panelIds)
+        .select('id, code, building_id');
 
       if (updateError) {
-        throw updateError;
+        console.error('❌ [PANEL ASSIGNMENT] Erro na atribuição:', updateError);
+        throw new Error('Erro ao atribuir painéis: ' + updateError.message);
       }
+
+      console.log('✅ [PANEL ASSIGNMENT] Painéis atribuídos com sucesso:', updateData);
 
       // Buscar códigos dos painéis para o log
       const { data: panelData } = await supabase
@@ -76,6 +84,7 @@ export const usePanelAssignment = ({ buildingId, buildingName, onSuccess }: UseA
             building_name: buildingName 
           }
         });
+        console.log('📝 [PANEL ASSIGNMENT] Log da ação registrado com sucesso');
       } catch (logError) {
         console.warn('⚠️ [PANEL ASSIGNMENT] Falha ao registrar log (não crítico):', logError);
       }
@@ -84,9 +93,20 @@ export const usePanelAssignment = ({ buildingId, buildingName, onSuccess }: UseA
       onSuccess();
       return true;
 
-    } catch (error) {
-      console.error('💥 [PANEL ASSIGNMENT] Erro na atribuição:', error);
-      toast.error('Erro ao atribuir painéis: ' + (error as any)?.message || 'Erro desconhecido');
+    } catch (error: any) {
+      console.error('💥 [PANEL ASSIGNMENT] Erro crítico na atribuição:', error);
+      
+      // Mensagem de erro mais específica
+      let errorMessage = 'Erro desconhecido';
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      toast.error(`Erro ao atribuir painéis: ${errorMessage}`);
       return false;
     } finally {
       setLoading(false);
