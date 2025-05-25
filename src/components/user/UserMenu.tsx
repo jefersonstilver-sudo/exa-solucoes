@@ -137,8 +137,8 @@ const UserMenu = () => {
                         ? isSuperAdmin 
                           ? "bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900" 
                           : isAdmin
-                            ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
-                            : "bg-gradient-to-br from-[#3e1c85] to-[#4f28a1] text-white"
+                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                            : "bg-gradient-to-br from-gray-400 to-gray-500 text-white"
                         : "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700"
                       }
                     >
@@ -153,7 +153,7 @@ const UserMenu = () => {
           <AnimatePresence>
             {open && (
               <DropdownMenuContent 
-                className="w-[280px] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-lg"
+                className="w-[280px] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-lg bg-white border border-gray-200"
                 align="end" 
                 forceMount
                 asChild
@@ -164,36 +164,31 @@ const UserMenu = () => {
                   exit="exit"
                   variants={dropdownVariants}
                 >
-                  <div className={`${isSuperAdmin 
-                    ? "bg-gradient-to-br from-slate-800 via-slate-900 to-black text-white border border-amber-500/20"
-                    : isAdmin
-                      ? "bg-gradient-to-br from-purple-800 via-purple-900 to-purple-950 text-white border border-purple-500/20"
-                      : "bg-gradient-to-br from-[#2a0d5c] via-[#3e1c85] to-[#4f28a1] text-white"
-                  }`}>
+                  <div className="bg-white text-gray-900">
                     {isLoggedIn ? (
                       <>
-                        <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
+                        <DropdownMenuLabel className="font-normal p-4 border-b border-gray-200">
                           <div className="flex flex-col space-y-1">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold leading-none">{user?.name || "Usuário"}</p>
+                              <p className="text-sm font-bold leading-none text-gray-900">{user?.name || "Usuário"}</p>
                               {isSuperAdmin && (
-                                <ShieldCheck className="h-4 w-4 text-amber-400" />
+                                <ShieldCheck className="h-4 w-4 text-amber-600" />
                               )}
                               {isAdmin && (
-                                <ShieldCheck className="h-4 w-4 text-purple-400" />
+                                <ShieldCheck className="h-4 w-4 text-blue-600" />
                               )}
                             </div>
-                            <p className="text-xs text-white/70 leading-none truncate">
+                            <p className="text-xs text-gray-600 leading-none truncate">
                               {user?.email}
                             </p>
                             {isSuperAdmin && (
-                              <p className="text-xs text-amber-300 leading-none font-medium">
-                                🔒 Super Administrador Master
+                              <p className="text-xs text-amber-700 leading-none font-medium">
+                                Super Administrador Master
                               </p>
                             )}
                             {isAdmin && (
-                              <p className="text-xs text-purple-300 leading-none font-medium">
-                                👑 Administrador
+                              <p className="text-xs text-blue-700 leading-none font-medium">
+                                Administrador
                               </p>
                             )}
                           </div>
@@ -203,81 +198,81 @@ const UserMenu = () => {
                           {/* MENU PARA SUPER ADMIN */}
                           {isSuperAdmin && (
                             <>
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/20 hover:text-amber-300 focus:bg-amber-500/20 focus:text-amber-300">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin" className="flex items-center">
-                                  <ShieldCheck className="mr-3 h-5 w-5 text-amber-400" />
-                                  <span className="font-medium">🔒 Master Control Panel</span>
+                                  <ShieldCheck className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Master Control Panel</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin/dashboard" className="flex items-center">
-                                  <LayoutDashboard className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📊 Dashboard Administrativo</span>
+                                  <LayoutDashboard className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Dashboard Administrativo</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin/users" className="flex items-center">
-                                  <Users className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">👥 Gerenciar Usuários</span>
+                                  <Users className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Gerenciar Usuários</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin/orders" className="flex items-center">
-                                  <Package className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📋 Gerenciar Pedidos</span>
+                                  <Package className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Gerenciar Pedidos</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin/buildings" className="flex items-center">
-                                  <Building className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">🏢 Gerenciar Prédios</span>
+                                  <Building className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Gerenciar Prédios</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin/panels" className="flex items-center">
-                                  <Monitor className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📺 Gerenciar Painéis</span>
+                                  <Monitor className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Gerenciar Painéis</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin/approvals" className="flex items-center">
-                                  <CheckCircle className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">✅ Aprovações</span>
+                                  <CheckCircle className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Aprovações</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/super_admin/configuracoes" className="flex items-center">
-                                  <Settings className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">⚙️ Configurações do Sistema</span>
+                                  <Settings className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Configurações do Sistema</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-500/10 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
                                 <Link to="/alterar-senha" className="flex items-center">
-                                  <Lock className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">🔒 Alterar Senha</span>
+                                  <Lock className="mr-3 h-5 w-5 text-amber-600" />
+                                  <span className="font-medium">Alterar Senha</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
                               <DropdownMenuItem 
                                 onClick={handleLogout} 
-                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
+                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-50 text-red-600 focus:bg-red-50 focus:text-red-700"
                               >
                                 <LogOut className="mr-3 h-5 w-5" />
-                                <span className="font-medium">🚪 Sair do Sistema</span>
+                                <span className="font-medium">Sair do Sistema</span>
                               </DropdownMenuItem>
                             </>
                           )}
@@ -285,65 +280,65 @@ const UserMenu = () => {
                           {/* MENU PARA ADMIN REGULAR */}
                           {isAdmin && !isSuperAdmin && (
                             <>
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-500/20 hover:text-purple-200 focus:bg-purple-500/20 focus:text-purple-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/super_admin/dashboard" className="flex items-center">
-                                  <LayoutDashboard className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📊 Dashboard Administrativo</span>
+                                  <LayoutDashboard className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Dashboard Administrativo</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-500/20 hover:text-purple-200 focus:bg-purple-500/20 focus:text-purple-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/super_admin/orders" className="flex items-center">
-                                  <Package className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📋 Gerenciar Pedidos</span>
+                                  <Package className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Gerenciar Pedidos</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-500/20 hover:text-purple-200 focus:bg-purple-500/20 focus:text-purple-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/super_admin/buildings" className="flex items-center">
-                                  <Building className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">🏢 Gerenciar Prédios</span>
+                                  <Building className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Gerenciar Prédios</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-500/20 hover:text-purple-200 focus:bg-purple-500/20 focus:text-purple-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/super_admin/panels" className="flex items-center">
-                                  <Monitor className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📺 Gerenciar Painéis</span>
+                                  <Monitor className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Gerenciar Painéis</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-500/20 hover:text-purple-200 focus:bg-purple-500/20 focus:text-purple-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/super_admin/approvals" className="flex items-center">
-                                  <CheckCircle className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">✅ Aprovações</span>
+                                  <CheckCircle className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Aprovações</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-500/20 hover:text-purple-200 focus:bg-purple-500/20 focus:text-purple-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/configuracoes" className="flex items-center">
-                                  <Settings className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">⚙️ Configurações</span>
+                                  <Settings className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Configurações</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-500/20 hover:text-purple-200 focus:bg-purple-500/20 focus:text-purple-200">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/alterar-senha" className="flex items-center">
-                                  <Lock className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">🔒 Alterar Senha</span>
+                                  <Lock className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Alterar Senha</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
                               <DropdownMenuItem 
                                 onClick={handleLogout} 
-                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
+                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-50 text-red-600 focus:bg-red-50 focus:text-red-700"
                               >
                                 <LogOut className="mr-3 h-5 w-5" />
-                                <span className="font-medium">🚪 Sair</span>
+                                <span className="font-medium">Sair</span>
                               </DropdownMenuItem>
                             </>
                           )}
@@ -351,44 +346,44 @@ const UserMenu = () => {
                           {/* MENU PARA CLIENT */}
                           {isClient && (
                             <>
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-50 text-gray-900 hover:text-gray-700 focus:bg-gray-50 focus:text-gray-700">
                                 <Link to="/anunciante/campanhas" className="flex items-center">
-                                  <ClipboardList className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📺 Minhas Campanhas</span>
+                                  <ClipboardList className="mr-3 h-5 w-5 text-gray-600" />
+                                  <span className="font-medium">Minhas Campanhas</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-50 text-gray-900 hover:text-gray-700 focus:bg-gray-50 focus:text-gray-700">
                                 <Link to="/meus-pedidos" className="flex items-center">
-                                  <ListOrdered className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">📋 Meus Pedidos</span>
+                                  <ListOrdered className="mr-3 h-5 w-5 text-gray-600" />
+                                  <span className="font-medium">Meus Pedidos</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-50 text-gray-900 hover:text-gray-700 focus:bg-gray-50 focus:text-gray-700">
                                 <Link to="/configuracoes" className="flex items-center">
-                                  <Settings className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">⚙️ Configurações da Conta</span>
+                                  <Settings className="mr-3 h-5 w-5 text-gray-600" />
+                                  <span className="font-medium">Configurações da Conta</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-white/10 hover:text-indexa-mint focus:bg-white/10 focus:text-indexa-mint">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-50 text-gray-900 hover:text-gray-700 focus:bg-gray-50 focus:text-gray-700">
                                 <Link to="/alterar-senha" className="flex items-center">
-                                  <Lock className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">🔒 Alterar Senha</span>
+                                  <Lock className="mr-3 h-5 w-5 text-gray-600" />
+                                  <span className="font-medium">Alterar Senha</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuSeparator className="my-2 bg-white/10" />
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
                               <DropdownMenuItem 
                                 onClick={handleLogout} 
-                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-500/30 text-red-200 focus:bg-red-500/30 focus:text-red-200"
+                                className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-50 text-red-600 focus:bg-red-50 focus:text-red-700"
                               >
                                 <LogOut className="mr-3 h-5 w-5" />
-                                <span className="font-medium">🚪 Sair</span>
+                                <span className="font-medium">Sair</span>
                               </DropdownMenuItem>
                             </>
                           )}
@@ -396,10 +391,10 @@ const UserMenu = () => {
                       </>
                     ) : (
                       <>
-                        <DropdownMenuLabel className="font-normal p-4 border-b border-white/10">
+                        <DropdownMenuLabel className="font-normal p-4 border-b border-gray-200">
                           <div className="text-center space-y-1">
-                            <p className="text-lg font-bold">Bem-vindo à Indexa</p>
-                            <p className="text-xs text-white/70">
+                            <p className="text-lg font-bold text-gray-900">Bem-vindo à Indexa</p>
+                            <p className="text-xs text-gray-600">
                               Entre para acessar todos os recursos
                             </p>
                           </div>
@@ -408,7 +403,7 @@ const UserMenu = () => {
                         <div className="p-3 space-y-2">
                           <Link 
                             to="/login" 
-                            className="flex items-center justify-center p-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors w-full"
+                            className="flex items-center justify-center p-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors w-full"
                             onClick={() => setOpen(false)}
                           >
                             <LogIn className="mr-2 h-5 w-5" />
@@ -417,7 +412,7 @@ const UserMenu = () => {
                           
                           <Link 
                             to="/cadastro" 
-                            className="flex items-center justify-center p-3 bg-indexa-mint hover:bg-indexa-mint-dark text-indexa-purple font-medium rounded-lg transition-colors w-full"
+                            className="flex items-center justify-center p-3 bg-indexa-purple hover:bg-indexa-purple-dark text-white font-medium rounded-lg transition-colors w-full"
                             onClick={() => setOpen(false)}
                           >
                             <UserPlus className="mr-2 h-5 w-5" />
