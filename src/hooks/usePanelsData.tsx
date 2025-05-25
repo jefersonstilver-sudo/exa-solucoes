@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -42,7 +43,7 @@ export const usePanelsData = () => {
   const fetchPanels = async () => {
     try {
       setLoading(true);
-      console.log('📺 Buscando painéis...');
+      console.log('🔍 [DEBUG] Iniciando busca de painéis...');
       
       const { data, error } = await supabase
         .from('painels')
@@ -58,12 +59,43 @@ export const usePanelsData = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Erro ao buscar painéis:', error);
+        console.error('❌ [ERROR] Erro ao buscar painéis:', error);
         toast.error('Erro ao carregar painéis');
         return;
       }
 
-      console.log('✅ Painéis carregados:', data?.length);
+      console.log('📊 [DEBUG] Dados brutos recebidos do Supabase:', data);
+      console.log('📊 [DEBUG] Quantidade de painéis:', data?.length);
+      
+      // Log detalhado dos primeiros 3 painéis para debug
+      if (data && data.length > 0) {
+        console.log('🔍 [DEBUG] Primeiros painéis (máx 3):');
+        data.slice(0, 3).forEach((panel, index) => {
+          console.log(`Panel ${index + 1}:`, {
+            code: panel.code,
+            polegada: panel.polegada,
+            resolucao: panel.resolucao,
+            orientacao: panel.orientacao,
+            sistema_operacional: panel.sistema_operacional
+          });
+        });
+
+        // Verificar se há painéis com configurações incorretas
+        const incorrectPanels = data.filter(p => 
+          p.polegada !== '22' || 
+          p.resolucao !== '1080x1920' || 
+          p.orientacao !== 'vertical' || 
+          p.sistema_operacional !== 'linux'
+        );
+        
+        if (incorrectPanels.length > 0) {
+          console.warn('⚠️ [WARNING] Painéis com configurações incorretas encontrados:', incorrectPanels);
+        } else {
+          console.log('✅ [SUCCESS] Todos os painéis estão com configurações corretas');
+        }
+      }
+
+      console.log('✅ [SUCCESS] Painéis carregados com sucesso');
       setPanels(data || []);
       
       // Calcular estatísticas
@@ -72,20 +104,24 @@ export const usePanelsData = () => {
       const offline = data?.filter(p => p.status === 'offline').length || 0;
       const maintenance = data?.filter(p => p.status === 'maintenance').length || 0;
 
+      console.log('📈 [DEBUG] Estatísticas calculadas:', { total, online, offline, maintenance });
       setStats({ total, online, offline, maintenance });
       
     } catch (error) {
-      console.error('💥 Erro crítico ao carregar painéis:', error);
+      console.error('💥 [CRITICAL] Erro crítico ao carregar painéis:', error);
       toast.error('Erro crítico ao carregar painéis');
     } finally {
       setLoading(false);
+      console.log('🏁 [DEBUG] Busca de painéis finalizada');
     }
   };
 
   useEffect(() => {
+    console.log('🚀 [DEBUG] Hook usePanelsData montado, iniciando fetch...');
     fetchPanels();
 
     // Configurar inscrição em tempo real
+    console.log('📡 [DEBUG] Configurando real-time subscription...');
     const channel = supabase
       .channel('panels-changes')
       .on('postgres_changes', 
@@ -95,16 +131,24 @@ export const usePanelsData = () => {
           table: 'painels' 
         }, 
         (payload) => {
-          console.log('📺 Mudança nos painéis detectada:', payload);
+          console.log('📺 [REALTIME] Mudança nos painéis detectada:', payload);
+          console.log('🔄 [REALTIME] Recarregando dados...');
           fetchPanels();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('🔌 [DEBUG] Removendo subscription...');
       supabase.removeChannel(channel);
     };
   }, []);
 
-  return { panels, stats, loading, refetch: fetchPanels };
+  // Force refresh function with explicit logging
+  const forceRefresh = async () => {
+    console.log('🔄 [FORCE REFRESH] Usuário solicitou refresh forçado');
+    await fetchPanels();
+  };
+
+  return { panels, stats, loading, refetch: forceRefresh };
 };

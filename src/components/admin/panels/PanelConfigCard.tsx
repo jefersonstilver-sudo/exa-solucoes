@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,15 @@ const PanelConfigCard: React.FC<PanelConfigCardProps> = ({
   onEdit,
   onDelete
 }) => {
+  // Debug logging for panel data
+  console.log('🎯 [PANEL CARD] Renderizando painel:', {
+    code: panel.code,
+    polegada: panel.polegada,
+    resolucao: panel.resolucao,
+    orientacao: panel.orientacao,
+    sistema_operacional: panel.sistema_operacional
+  });
+
   const getStatusInfo = (status: string) => {
     const statusMap: Record<string, { variant: any, label: string, icon: any, color: string }> = {
       online: { variant: 'success', label: 'Online', icon: Wifi, color: 'text-green-600' },
@@ -105,27 +115,43 @@ const PanelConfigCard: React.FC<PanelConfigCardProps> = ({
         </div>
 
         <div className="space-y-3">
-          {/* Informações Técnicas */}
+          {/* Informações Técnicas com Debug */}
           <div className="grid grid-cols-2 gap-2 text-sm">
             {panel.polegada && (
               <div>
                 <span className="text-gray-500">Tamanho:</span>
                 <span className="ml-1 font-medium">{panel.polegada}"</span>
+                {panel.polegada !== '22' && (
+                  <span className="ml-1 text-red-500 text-xs">[DEBUG: ≠22]</span>
+                )}
               </div>
             )}
             {panel.resolucao && (
               <div>
                 <span className="text-gray-500">Resolução:</span>
                 <span className="ml-1 font-medium">{panel.resolucao}</span>
+                {panel.resolucao !== '1080x1920' && (
+                  <span className="ml-1 text-red-500 text-xs">[DEBUG: ≠1080x1920]</span>
+                )}
               </div>
             )}
             {panel.sistema_operacional && (
               <div>
                 <span className="text-gray-500">SO:</span>
                 <span className="ml-1 font-medium capitalize">{panel.sistema_operacional}</span>
+                {panel.sistema_operacional !== 'linux' && (
+                  <span className="ml-1 text-red-500 text-xs">[DEBUG: ≠linux]</span>
+                )}
               </div>
             )}
           </div>
+
+          {/* Debug info for orientation */}
+          {panel.orientacao !== 'vertical' && (
+            <div className="text-xs text-red-500 bg-red-50 p-1 rounded">
+              DEBUG: Orientação = {panel.orientacao} (deveria ser vertical)
+            </div>
+          )}
 
           {/* Localização e Prédio */}
           <div className="space-y-1">
