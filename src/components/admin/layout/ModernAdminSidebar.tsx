@@ -97,22 +97,19 @@ const ModernAdminSidebar = () => {
   return (
     <Sidebar className="border-r border-gray-200 bg-gradient-to-b from-indexa-purple to-indexa-purple/95 shadow-xl">
       <SidebarHeader className="p-6 border-b border-white/20 bg-indexa-purple/80 backdrop-blur-sm">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="flex flex-col items-center space-y-3">
+          <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center p-3 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <img 
               src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
               alt="Indexa Logo"
               className="w-full h-full object-contain"
             />
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">INDEXA</h2>
-            <div className="flex items-center space-x-2 mt-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <p className="text-xs text-white/90 font-medium">
-                {getRoleText(userProfile?.role)}
-              </p>
-            </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <p className="text-xs text-white/90 font-medium text-center">
+              {getRoleText(userProfile?.role)}
+            </p>
           </div>
         </div>
       </SidebarHeader>
