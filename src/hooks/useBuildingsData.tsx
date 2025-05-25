@@ -21,6 +21,12 @@ interface Building {
   amenities: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
   quantidade_telas: number;
+  visualizacoes_mes: number;
+  imagem_principal: string;
+  imagem_2: string;
+  imagem_3: string;
+  imagem_4: string;
+  caracteristicas: string[];
   created_at: string;
 }
 
@@ -30,7 +36,10 @@ interface BuildingStats {
   inactive: number;
   totalTraffic: number;
   totalUnits: number;
+  totalPublic: number;
   averagePrice: number;
+  totalScreens: number;
+  totalViews: number;
 }
 
 export const useBuildingsData = () => {
@@ -42,13 +51,16 @@ export const useBuildingsData = () => {
     inactive: 0,
     totalTraffic: 0,
     totalUnits: 0,
-    averagePrice: 0
+    totalPublic: 0,
+    averagePrice: 0,
+    totalScreens: 0,
+    totalViews: 0
   });
 
   const fetchBuildings = async () => {
     try {
       setLoading(true);
-      console.log('🏢 Buscando prédios com novos campos...');
+      console.log('🏢 Buscando prédios com estrutura completa...');
       
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -84,6 +96,12 @@ export const useBuildingsData = () => {
           amenities,
           padrao_publico,
           quantidade_telas,
+          visualizacoes_mes,
+          imagem_principal,
+          imagem_2,
+          imagem_3,
+          imagem_4,
+          caracteristicas,
           created_at
         `)
         .order('created_at', { ascending: false });
@@ -96,16 +114,18 @@ export const useBuildingsData = () => {
 
       console.log('✅ Prédios carregados:', data?.length);
       
-      // Type cast para garantir que padrao_publico está no formato correto
+      // Processar dados com valores padrão e migração de campos antigos
       const typedBuildings = (data || []).map(building => ({
         ...building,
         padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
-        image_urls: building.image_urls || [],
-        amenities: building.amenities || [],
+        image_urls: building.image_urls || buildImageUrlsArray(building),
+        amenities: building.amenities || building.caracteristicas || [],
+        caracteristicas: building.caracteristicas || building.amenities || [],
         numero_unidades: building.numero_unidades || 0,
-        publico_estimado: building.publico_estimado || 0,
+        publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
         preco_base: building.preco_base || 0,
         quantidade_telas: building.quantidade_telas || 0,
+        visualizacoes_mes: building.visualizacoes_mes || (building.quantidade_telas * 7350) || 0,
         monthly_traffic: building.monthly_traffic || 0,
         latitude: building.latitude || 0,
         longitude: building.longitude || 0
@@ -113,7 +133,7 @@ export const useBuildingsData = () => {
       
       setBuildings(typedBuildings);
       
-      // Calcular estatísticas
+      // Calcular estatísticas completas
       const total = typedBuildings.length;
       const active = typedBuildings.filter(b => b.status === 'ativo').length;
       const inactive = typedBuildings.filter(b => b.status === 'inativo').length;
@@ -123,11 +143,30 @@ export const useBuildingsData = () => {
       const totalUnits = typedBuildings.reduce((sum, building) => 
         sum + (building.numero_unidades || 0), 0
       );
+      const totalPublic = typedBuildings.reduce((sum, building) => 
+        sum + (building.publico_estimado || 0), 0
+      );
+      const totalScreens = typedBuildings.reduce((sum, building) => 
+        sum + (building.quantidade_telas || 0), 0
+      );
+      const totalViews = typedBuildings.reduce((sum, building) => 
+        sum + (building.visualizacoes_mes || 0), 0
+      );
       const averagePrice = typedBuildings.length > 0 
         ? typedBuildings.reduce((sum, building) => sum + (building.preco_base || 0), 0) / typedBuildings.length
         : 0;
 
-      setStats({ total, active, inactive, totalTraffic, totalUnits, averagePrice });
+      setStats({ 
+        total, 
+        active, 
+        inactive, 
+        totalTraffic, 
+        totalUnits, 
+        totalPublic,
+        averagePrice, 
+        totalScreens,
+        totalViews 
+      });
       
     } catch (error) {
       console.error('💥 Erro crítico ao carregar prédios:', error);
@@ -135,6 +174,16 @@ export const useBuildingsData = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para construir array de URLs a partir dos campos individuais
+  const buildImageUrlsArray = (building: any) => {
+    const urls = [];
+    if (building.imagem_principal) urls.push(building.imagem_principal);
+    if (building.imagem_2) urls.push(building.imagem_2);
+    if (building.imagem_3) urls.push(building.imagem_3);
+    if (building.imagem_4) urls.push(building.imagem_4);
+    return urls;
   };
 
   const updateBuilding = async (id: string, updates: Partial<Building>) => {
@@ -150,7 +199,7 @@ export const useBuildingsData = () => {
       await supabase.rpc('log_building_action', {
         p_building_id: id,
         p_action_type: 'update',
-        p_description: 'Prédio atualizado',
+        p_description: 'Prédio atualizado via gerenciamento completo',
         p_new_values: updates
       });
 
@@ -159,6 +208,31 @@ export const useBuildingsData = () => {
     } catch (error) {
       console.error('Erro ao atualizar prédio:', error);
       toast.error('Erro ao atualizar prédio');
+    }
+  };
+
+  const deleteBuilding = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('buildings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Log da ação
+      await supabase.rpc('log_building_action', {
+        p_building_id: id,
+        p_action_type: 'delete',
+        p_description: 'Prédio excluído',
+        p_new_values: {}
+      });
+
+      toast.success('Prédio excluído com sucesso!');
+      fetchBuildings();
+    } catch (error) {
+      console.error('Erro ao excluir prédio:', error);
+      toast.error('Erro ao excluir prédio');
     }
   };
 
@@ -185,5 +259,12 @@ export const useBuildingsData = () => {
     };
   }, []);
 
-  return { buildings, stats, loading, refetch: fetchBuildings, updateBuilding };
+  return { 
+    buildings, 
+    stats, 
+    loading, 
+    refetch: fetchBuildings, 
+    updateBuilding,
+    deleteBuilding 
+  };
 };

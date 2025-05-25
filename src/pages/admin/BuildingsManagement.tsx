@@ -19,27 +19,29 @@ import {
   RefreshCw,
   Eye,
   Edit,
-  Settings,
   Users,
   DollarSign,
   Monitor,
   TrendingUp,
   MapPin,
-  Camera
+  Camera,
+  Trash2,
+  Star,
+  Calculator
 } from 'lucide-react';
 import { useBuildingsData } from '@/hooks/useBuildingsData';
 import BuildingFormDialog from '@/components/admin/buildings/BuildingFormDialog';
 import BuildingDetailsDialog from '@/components/admin/buildings/BuildingDetailsDialog';
-import BuildingImageGallery from '@/components/admin/buildings/BuildingImageGallery';
+import BuildingImageManager from '@/components/admin/buildings/BuildingImageManager';
 import BuildingFilters from '@/components/admin/buildings/BuildingFilters';
 
 const BuildingsManagement = () => {
-  const { buildings, stats, loading, refetch } = useBuildingsData();
+  const { buildings, stats, loading, refetch, deleteBuilding } = useBuildingsData();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBuilding, setSelectedBuilding] = useState<any>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isImageGalleryOpen, setIsImageGalleryOpen] = useState(false);
+  const [isImageManagerOpen, setIsImageManagerOpen] = useState(false);
   const [filters, setFilters] = useState({
     status: '',
     bairro: '',
@@ -71,9 +73,9 @@ const BuildingsManagement = () => {
 
   const getPadraoPublicoBadge = (padrao: string) => {
     const styles = {
-      alto: 'bg-purple-500/20 text-purple-600',
-      medio: 'bg-blue-500/20 text-blue-600',
-      normal: 'bg-gray-500/20 text-gray-600'
+      alto: 'bg-purple-500/20 text-purple-600 border-purple-500/30',
+      medio: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
+      normal: 'bg-gray-500/20 text-gray-600 border-gray-500/30'
     };
     
     return (
@@ -102,26 +104,32 @@ const BuildingsManagement = () => {
     }).format(price);
   };
 
+  const handleDeleteBuilding = async (building: any) => {
+    if (window.confirm(`Tem certeza que deseja excluir o prédio "${building.nome}"? Esta ação não pode ser desfeita.`)) {
+      await deleteBuilding(building.id);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
-        <span className="ml-2 text-indexa-purple">Carregando prédios...</span>
+        <span className="ml-2 text-indexa-purple">Carregando sistema completo...</span>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header Aprimorado */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <Building2 className="h-8 w-8 mr-3 text-indexa-purple" />
-            Gerenciamento Completo de Prédios
+            Sistema Completo de Prédios
           </h1>
           <p className="text-gray-600 mt-2">
-            Sistema integrado com cálculos automáticos e galeria de imagens
+            Gerenciamento completo com galeria de imagens, cálculos automáticos e integração total
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -131,7 +139,10 @@ const BuildingsManagement = () => {
           </Button>
           <Button 
             className="bg-indexa-purple hover:bg-indexa-purple-dark"
-            onClick={() => setIsFormOpen(true)}
+            onClick={() => {
+              setSelectedBuilding(null);
+              setIsFormOpen(true);
+            }}
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Prédio
@@ -139,15 +150,16 @@ const BuildingsManagement = () => {
         </div>
       </div>
 
-      {/* Estatísticas Avançadas */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+      {/* Estatísticas Completas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Prédios</CardTitle>
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">prédios</p>
           </CardContent>
         </Card>
 
@@ -158,53 +170,78 @@ const BuildingsManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+            <p className="text-xs text-green-600">operacionais</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Unidades</CardTitle>
+            <CardTitle className="text-sm font-medium">Unidades</CardTitle>
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.totalUnits}</div>
+            <p className="text-xs text-blue-600">apartamentos</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Público Total</CardTitle>
+            <CardTitle className="text-sm font-medium">Público</CardTitle>
             <Eye className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.totalUnits * 3}</div>
+            <div className="text-2xl font-bold text-purple-600">{stats.totalPublic}</div>
+            <p className="text-xs text-purple-600">pessoas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Painéis</CardTitle>
+            <Monitor className="h-4 w-4 text-indigo-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-indigo-600">{stats.totalScreens}</div>
+            <p className="text-xs text-indigo-600">telas ativas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Visualizações</CardTitle>
+            <Calculator className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold text-orange-600">{stats.totalViews.toLocaleString()}</div>
+            <p className="text-xs text-orange-600">por mês</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Preço Médio</CardTitle>
-            <DollarSign className="h-4 w-4 text-orange-600" />
+            <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{formatPrice(stats.averagePrice)}</div>
+            <div className="text-lg font-bold text-green-600">{formatPrice(stats.averagePrice)}</div>
+            <p className="text-xs text-green-600">média</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Telas Ativas</CardTitle>
-            <Monitor className="h-4 w-4 text-indigo-600" />
+            <CardTitle className="text-sm font-medium">Tráfego</CardTitle>
+            <TrendingUp className="h-4 w-4 text-cyan-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-600">
-              {buildings.reduce((sum, b) => sum + b.quantidade_telas, 0)}
-            </div>
+            <div className="text-xl font-bold text-cyan-600">{stats.totalTraffic.toLocaleString()}</div>
+            <p className="text-xs text-cyan-600">mensal</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros Avançados */}
       <BuildingFilters 
         filters={filters} 
         onFiltersChange={setFilters}
@@ -229,12 +266,12 @@ const BuildingsManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Tabela Melhorada */}
+      {/* Tabela Completa */}
       <Card>
         <CardHeader>
           <CardTitle>Prédios Cadastrados ({filteredBuildings.length})</CardTitle>
           <CardDescription>
-            Gestão completa com informações detalhadas e ações em tempo real
+            Sistema completo com todas as funcionalidades implementadas
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -245,8 +282,9 @@ const BuildingsManagement = () => {
                 <TableHead>Localização</TableHead>
                 <TableHead>Unidades</TableHead>
                 <TableHead>Público</TableHead>
-                <TableHead>Telas</TableHead>
-                <TableHead>Preço Base</TableHead>
+                <TableHead>Painéis</TableHead>
+                <TableHead>Visualizações</TableHead>
+                <TableHead>Preço</TableHead>
                 <TableHead>Padrão</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
@@ -257,14 +295,17 @@ const BuildingsManagement = () => {
                 <TableRow key={building.id}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
-                        <Building2 className="h-5 w-5 text-indexa-purple" />
+                      <div className="w-12 h-12 bg-indexa-purple/10 rounded-lg flex items-center justify-center relative">
+                        <Building2 className="h-6 w-6 text-indexa-purple" />
+                        {building.imagem_principal && (
+                          <Star className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500" />
+                        )}
                       </div>
                       <div>
                         <div className="font-medium">{building.nome}</div>
                         <div className="text-sm text-gray-500 flex items-center">
                           <Camera className="h-3 w-3 mr-1" />
-                          {building.image_urls?.length || 0} fotos
+                          {[building.imagem_principal, building.imagem_2, building.imagem_3, building.imagem_4].filter(Boolean).length} fotos
                         </div>
                       </div>
                     </div>
@@ -293,7 +334,13 @@ const BuildingsManagement = () => {
                   <TableCell>
                     <div className="text-center">
                       <div className="font-semibold text-blue-600">{building.quantidade_telas}</div>
-                      <div className="text-xs text-gray-500">painéis</div>
+                      <div className="text-xs text-gray-500">telas</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-center">
+                      <div className="font-semibold text-orange-600">{building.visualizacoes_mes?.toLocaleString() || '0'}</div>
+                      <div className="text-xs text-gray-500">por mês</div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -308,7 +355,7 @@ const BuildingsManagement = () => {
                     {getStatusBadge(building.status)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <Button
                         size="sm"
                         variant="outline"
@@ -334,10 +381,18 @@ const BuildingsManagement = () => {
                         variant="outline"
                         onClick={() => {
                           setSelectedBuilding(building);
-                          setIsImageGalleryOpen(true);
+                          setIsImageManagerOpen(true);
                         }}
                       >
                         <Camera className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteBuilding(building)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>
@@ -366,9 +421,9 @@ const BuildingsManagement = () => {
         building={selectedBuilding}
       />
 
-      <BuildingImageGallery
-        open={isImageGalleryOpen}
-        onOpenChange={setIsImageGalleryOpen}
+      <BuildingImageManager
+        open={isImageManagerOpen}
+        onOpenChange={setIsImageManagerOpen}
         building={selectedBuilding}
         onImagesUpdate={refetch}
       />

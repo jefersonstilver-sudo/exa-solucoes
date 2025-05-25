@@ -55,10 +55,15 @@ export type Database = {
           amenities: string[] | null
           audience_profile: string[] | null
           bairro: string
+          caracteristicas: string[] | null
           created_at: string | null
           endereco: string
           id: string
           image_urls: string[] | null
+          imagem_2: string | null
+          imagem_3: string | null
+          imagem_4: string | null
+          imagem_principal: string | null
           imageurl: string | null
           latitude: number | null
           location_type: string
@@ -73,15 +78,21 @@ export type Database = {
           quantidade_telas: number | null
           status: string
           venue_type: string | null
+          visualizacoes_mes: number | null
         }
         Insert: {
           amenities?: string[] | null
           audience_profile?: string[] | null
           bairro: string
+          caracteristicas?: string[] | null
           created_at?: string | null
           endereco: string
           id?: string
           image_urls?: string[] | null
+          imagem_2?: string | null
+          imagem_3?: string | null
+          imagem_4?: string | null
+          imagem_principal?: string | null
           imageurl?: string | null
           latitude?: number | null
           location_type?: string
@@ -96,15 +107,21 @@ export type Database = {
           quantidade_telas?: number | null
           status?: string
           venue_type?: string | null
+          visualizacoes_mes?: number | null
         }
         Update: {
           amenities?: string[] | null
           audience_profile?: string[] | null
           bairro?: string
+          caracteristicas?: string[] | null
           created_at?: string | null
           endereco?: string
           id?: string
           image_urls?: string[] | null
+          imagem_2?: string | null
+          imagem_3?: string | null
+          imagem_4?: string | null
+          imagem_principal?: string | null
           imageurl?: string | null
           latitude?: number | null
           location_type?: string
@@ -119,6 +136,7 @@ export type Database = {
           quantidade_telas?: number | null
           status?: string
           venue_type?: string | null
+          visualizacoes_mes?: number | null
         }
         Relationships: []
       }
