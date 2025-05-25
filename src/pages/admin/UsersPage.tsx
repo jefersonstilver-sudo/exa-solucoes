@@ -1,61 +1,86 @@
 
 import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Crown, 
-  Shield, 
-  UserCheck, 
-  RefreshCw,
-  Mail
-} from 'lucide-react';
+import { Crown, Users, Database, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import IndexaTeamSection from '@/components/admin/users/IndexaTeamSection';
+import ClientsSection from '@/components/admin/users/ClientsSection';
 
 interface User {
   id: string;
   email: string;
   role: string;
   data_criacao: string;
+  email_confirmed_at?: string;
+  last_sign_in_at?: string;
+  raw_user_meta_data?: any;
+  banned_until?: string;
 }
 
 const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('indexa');
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       console.log('👥 USERS PAGE: Buscando todos os usuários do Supabase...');
       
-      const { data, error } = await supabase
+      // Buscar dados da tabela users (nossa tabela)
+      const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('*')
         .order('data_criacao', { ascending: false });
 
-      if (error) {
-        console.error('❌ ERRO ao buscar usuários:', error);
+      if (usersError) {
+        console.error('❌ ERRO ao buscar usuários:', usersError);
         toast.error('Erro ao carregar usuários');
         return;
       }
 
-      console.log('✅ USUÁRIOS CARREGADOS:', data?.length, data);
-      setUsers(data || []);
-      toast.success(`${data?.length || 0} usuários carregados com sucesso`);
+      // Buscar dados adicionais do auth.users para cada usuário
+      const enrichedUsers = await Promise.all(
+        (usersData || []).map(async (user) => {
+          try {
+            const { data: authData, error: authError } = await supabase.auth.admin.getUserById(user.id);
+            
+            if (authError) {
+              console.warn(`Erro ao buscar dados auth para ${user.email}:`, authError);
+              return {
+                ...user,
+                email_confirmed_at: null,
+                last_sign_in_at: null,
+                raw_user_meta_data: {},
+                banned_until: null
+              };
+            }
+
+            return {
+              ...user,
+              email_confirmed_at: authData.user?.email_confirmed_at,
+              last_sign_in_at: authData.user?.last_sign_in_at,
+              raw_user_meta_data: authData.user?.user_metadata || {},
+              banned_until: authData.user?.user_metadata?.banned_until
+            };
+          } catch (error) {
+            console.warn(`Erro ao enriquecer dados para ${user.email}:`, error);
+            return {
+              ...user,
+              email_confirmed_at: null,
+              last_sign_in_at: null,
+              raw_user_meta_data: {},
+              banned_until: null
+            };
+          }
+        })
+      );
+
+      console.log('✅ USUÁRIOS CARREGADOS E ENRIQUECIDOS:', enrichedUsers.length, enrichedUsers);
+      setUsers(enrichedUsers);
+      toast.success(`${enrichedUsers.length} usuários carregados com sucesso`);
     } catch (error) {
       console.error('💥 ERRO CRÍTICO:', error);
       toast.error('Erro crítico ao carregar usuários');
@@ -68,227 +93,113 @@ const UsersPage = () => {
     fetchUsers();
   }, []);
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return <Crown className="h-4 w-4 text-indexa-purple" />;
-      case 'admin':
-        return <Shield className="h-4 w-4 text-blue-500" />;
-      default:
-        return <UserCheck className="h-4 w-4 text-gray-400" />;
-    }
-  };
-
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return (
-          <Badge className="bg-indexa-purple/10 text-indexa-purple border-indexa-purple/20">
-            <Crown className="h-3 w-3 mr-1" />
-            Super Admin
-          </Badge>
-        );
-      case 'admin':
-        return (
-          <Badge className="bg-blue-50 text-blue-600 border-blue-200">
-            <Shield className="h-3 w-3 mr-1" />
-            Admin
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary">
-            <UserCheck className="h-3 w-3 mr-1" />
-            Cliente
-          </Badge>
-        );
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(new Date(dateString));
-  };
-
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  const indexaTeam = users.filter(user => 
+    user.role === 'super_admin' || user.role === 'admin'
   );
+  
+  const clients = users.filter(user => user.role === 'client');
 
-  const stats = {
+  const totalStats = {
     total: users.length,
-    superAdmins: users.filter(u => u.role === 'super_admin').length,
-    admins: users.filter(u => u.role === 'admin').length,
-    clients: users.filter(u => u.role === 'client').length,
+    indexaTeam: indexaTeam.length,
+    clients: clients.length,
+    verified: users.filter(u => u.email_confirmed_at).length,
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Principal */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <Users className="h-6 w-6 mr-2 text-indexa-purple" />
-            Gestão de Usuários
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <Database className="h-8 w-8 mr-3 text-indexa-purple" />
+            Sistema de Gestão de Usuários
           </h1>
-          <p className="text-gray-600 mt-1">
-            Gerencie usuários do sistema INDEXA
+          <p className="text-gray-600 mt-2">
+            Gestão completa da equipe INDEXA e base de clientes
           </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
-            onClick={fetchUsers} 
-            disabled={loading}
-            className="flex items-center"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-          <Button className="bg-indexa-purple hover:bg-indexa-purple/90">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Usuário
-          </Button>
         </div>
       </div>
 
-      {/* Estatísticas */}
+      {/* Status da Conexão e Estatísticas Gerais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+              <div>
+                <h3 className="font-semibold text-green-800">Sistema Online</h3>
+                <p className="text-green-700 text-sm">
+                  Conectado ao Supabase
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
             <Users className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-gray-500 mt-1">usuários registrados</p>
+            <div className="text-2xl font-bold">{totalStats.total}</div>
+            <p className="text-xs text-gray-500 mt-1">usuários no sistema</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
+            <CardTitle className="text-sm font-medium">Equipe INDEXA</CardTitle>
             <Crown className="h-4 w-4 text-indexa-purple" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indexa-purple">{stats.superAdmins}</div>
-            <p className="text-xs text-gray-500 mt-1">acesso total</p>
+            <div className="text-2xl font-bold text-indexa-purple">{totalStats.indexaTeam}</div>
+            <p className="text-xs text-gray-500 mt-1">administradores</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Administradores</CardTitle>
-            <Shield className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">Base de Clientes</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">{stats.admins}</div>
-            <p className="text-xs text-gray-500 mt-1">acesso limitado</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
-            <UserCheck className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500">{stats.clients}</div>
-            <p className="text-xs text-gray-500 mt-1">usuários finais</p>
+            <div className="text-2xl font-bold text-blue-500">{totalStats.clients}</div>
+            <p className="text-xs text-gray-500 mt-1">clientes ativos</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Busca */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Search className="h-5 w-5 mr-2" />
-            Buscar Usuários
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input
-            placeholder="Buscar por email ou função..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-md"
-          />
-        </CardContent>
-      </Card>
+      {/* Tabs para Separação */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="indexa" className="flex items-center space-x-2">
+            <Crown className="h-4 w-4" />
+            <span>Equipe INDEXA ({indexaTeam.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="clients" className="flex items-center space-x-2">
+            <Users className="h-4 w-4" />
+            <span>Base de Clientes ({clients.length})</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Tabela de usuários */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Lista de Usuários</CardTitle>
-          <CardDescription>
-            {filteredUsers.length} usuário(s) encontrado(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
-              <span className="ml-3 text-gray-600">Carregando usuários...</span>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Função</TableHead>
-                  <TableHead>Data de Criação</TableHead>
-                  <TableHead>ID</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-12 text-gray-500">
-                      {users.length === 0 ? 'Nenhum usuário encontrado' : 'Nenhum usuário corresponde à busca'}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                            {getRoleIcon(user.role)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{user.email}</p>
-                            <p className="text-sm text-gray-500 flex items-center">
-                              <Mail className="h-3 w-3 mr-1" />
-                              Email verificado
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getRoleBadge(user.role)}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {formatDate(user.data_criacao)}
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                          {user.id.substring(0, 8)}...
-                        </code>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="indexa" className="mt-6">
+          <IndexaTeamSection 
+            users={users} 
+            loading={loading} 
+            onRefresh={fetchUsers} 
+          />
+        </TabsContent>
+
+        <TabsContent value="clients" className="mt-6">
+          <ClientsSection 
+            users={users} 
+            loading={loading} 
+            onRefresh={fetchUsers} 
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
