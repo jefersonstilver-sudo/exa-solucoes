@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -35,10 +36,10 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
     code: '',
     building_id: '',
     status: 'offline',
-    resolucao: '',
-    polegada: '',
-    orientacao: 'horizontal',
-    sistema_operacional: 'windows',
+    resolucao: '1080x1920',
+    polegada: '22',
+    orientacao: 'vertical',
+    sistema_operacional: 'linux',
     codigo_anydesk: '',
     senha_anydesk: '',
     modelo: '',
@@ -61,10 +62,10 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
           code: panel.code || '',
           building_id: panel.building_id || '',
           status: panel.status || 'offline',
-          resolucao: panel.resolucao || '',
-          polegada: panel.polegada || '',
-          orientacao: panel.orientacao || 'horizontal',
-          sistema_operacional: panel.sistema_operacional || 'windows',
+          resolucao: panel.resolucao || '1080x1920',
+          polegada: panel.polegada || '22',
+          orientacao: panel.orientacao || 'vertical',
+          sistema_operacional: panel.sistema_operacional || 'linux',
           codigo_anydesk: panel.codigo_anydesk || '',
           senha_anydesk: panel.senha_anydesk || '',
           modelo: panel.modelo || '',
@@ -79,10 +80,10 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
           code: '',
           building_id: '',
           status: 'offline',
-          resolucao: '1920x1080',
-          polegada: '',
-          orientacao: 'horizontal',
-          sistema_operacional: 'windows',
+          resolucao: '1080x1920',
+          polegada: '22',
+          orientacao: 'vertical',
+          sistema_operacional: 'linux',
           codigo_anydesk: '',
           senha_anydesk: '',
           modelo: '',
@@ -185,7 +186,7 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
             {panel ? 'Editar Painel' : 'Novo Painel'}
           </DialogTitle>
           <DialogDescription>
-            {panel ? 'Edite as configurações do painel' : 'Configure um novo painel digital'}
+            {panel ? 'Edite as configurações do painel' : 'Configure um novo painel digital (Padrão: 22", 1080x1920, Vertical, Linux)'}
           </DialogDescription>
         </DialogHeader>
 
@@ -274,7 +275,7 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
               <Card>
                 <CardHeader>
                   <CardTitle>Especificações Técnicas</CardTitle>
-                  <CardDescription>Configure as especificações técnicas do painel</CardDescription>
+                  <CardDescription>Especificações padrão: 22", 1080x1920 (Vertical), Linux</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -293,14 +294,23 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
                       id="polegada"
                       value={formData.polegada}
                       onChange={(e) => handleFormUpdate('polegada', e.target.value)}
-                      placeholder="Ex: 55, 43, 32"
+                      placeholder="Padrão: 22"
+                      disabled={!panel}
+                      className={!panel ? "bg-gray-100" : ""}
                     />
+                    {!panel && (
+                      <p className="text-xs text-gray-500">Padrão fixo: 22 polegadas</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="orientacao">Orientação</Label>
-                    <Select value={formData.orientacao} onValueChange={(value) => handleFormUpdate('orientacao', value)}>
-                      <SelectTrigger>
+                    <Select 
+                      value={formData.orientacao} 
+                      onValueChange={(value) => handleFormUpdate('orientacao', value)}
+                      disabled={!panel}
+                    >
+                      <SelectTrigger className={!panel ? "bg-gray-100" : ""}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -308,12 +318,19 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
                         <SelectItem value="vertical">Vertical (Retrato)</SelectItem>
                       </SelectContent>
                     </Select>
+                    {!panel && (
+                      <p className="text-xs text-gray-500">Padrão fixo: Vertical</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="resolucao">Resolução</Label>
-                    <Select value={formData.resolucao} onValueChange={(value) => handleFormUpdate('resolucao', value)}>
-                      <SelectTrigger>
+                    <Select 
+                      value={formData.resolucao} 
+                      onValueChange={(value) => handleFormUpdate('resolucao', value)}
+                      disabled={!panel}
+                    >
+                      <SelectTrigger className={!panel ? "bg-gray-100" : ""}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -324,12 +341,19 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
                         <SelectItem value="2160x3840">4K UHD Vertical (2160x3840)</SelectItem>
                       </SelectContent>
                     </Select>
+                    {!panel && (
+                      <p className="text-xs text-gray-500">Padrão fixo: 1080x1920 (Vertical)</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="sistema_operacional">Sistema Operacional</Label>
-                    <Select value={formData.sistema_operacional} onValueChange={(value) => handleFormUpdate('sistema_operacional', value)}>
-                      <SelectTrigger>
+                    <Select 
+                      value={formData.sistema_operacional} 
+                      onValueChange={(value) => handleFormUpdate('sistema_operacional', value)}
+                      disabled={!panel}
+                    >
+                      <SelectTrigger className={!panel ? "bg-gray-100" : ""}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -338,6 +362,9 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
                         <SelectItem value="android">Android</SelectItem>
                       </SelectContent>
                     </Select>
+                    {!panel && (
+                      <p className="text-xs text-gray-500">Padrão fixo: Linux</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
