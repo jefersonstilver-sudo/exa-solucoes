@@ -18,7 +18,7 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
   });
 
   return (
-    <div className="min-h-screen bg-white flex w-full">
+    <div className="min-h-screen bg-gradient-to-br from-indexa-purple-dark via-indexa-purple to-indexa-purple-light flex w-full">
       {/* Barra superior premium com gradiente */}
       <div className="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-indexa-mint via-indexa-mint-light to-indexa-mint z-50 shadow-xl"></div>
       
@@ -41,15 +41,15 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
           </div>
         </div>
         
-        {/* Conteúdo principal com fundo branco */}
-        <main className="flex-1 p-8 relative overflow-auto bg-white">
+        {/* Conteúdo principal com glassmorphism */}
+        <main className="flex-1 p-8 relative overflow-auto">
           {/* Background pattern sutil */}
-          <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,_rgba(88,227,171,0.15)_1px,_transparent_0)] bg-[length:24px_24px]"></div>
           </div>
           
           {/* Container premium com glassmorphism */}
-          <div className="relative bg-gray-50/50 backdrop-blur-xl rounded-2xl border border-gray-200 shadow-2xl shadow-gray-500/10 min-h-full">
+          <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl shadow-indexa-purple-dark/30 min-h-full">
             {/* Glow interno */}
             <div className="absolute inset-0 bg-gradient-to-br from-indexa-mint/5 via-transparent to-indexa-purple/5 rounded-2xl"></div>
             
@@ -61,15 +61,15 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
         </main>
         
         {/* Footer premium INDEXA */}
-        <footer className="bg-gray-100 border-t border-gray-200 p-6">
+        <footer className="bg-indexa-purple-dark/30 backdrop-blur-sm border-t border-white/10 p-6">
           <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4 text-indexa-purple">
-              <Shield className="h-5 w-5 text-indexa-purple" />
+            <div className="flex items-center space-x-4 text-indexa-mint">
+              <Shield className="h-5 w-5 text-indexa-mint animate-pulse" />
               <span className="font-medium">Sistema Ultra Seguro</span>
-              <span className="text-gray-400">•</span>
-              <span className="text-gray-600">INDEXA Master Control Panel</span>
+              <span className="text-white/30">•</span>
+              <span className="text-white/80">INDEXA Master Control Panel</span>
             </div>
-            <div className="text-gray-500 flex items-center space-x-2">
+            <div className="text-white/60 flex items-center space-x-2">
               <span>© 2024 INDEXA</span>
               <span className="text-indexa-mint">•</span>
               <span className="text-indexa-mint font-medium">Super Admin Edition v3.0</span>
