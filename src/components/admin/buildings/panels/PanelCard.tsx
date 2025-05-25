@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +27,7 @@ interface PanelCardProps {
   onSync: (panelId: string) => void;
   onViewDetails: (panelId: string) => void;
   canManage?: boolean;
+  disabled?: boolean; // Added disabled prop
 }
 
 const PanelCard: React.FC<PanelCardProps> = ({
@@ -35,12 +35,14 @@ const PanelCard: React.FC<PanelCardProps> = ({
   onRemove,
   onSync,
   onViewDetails,
-  canManage = true
+  canManage = true,
+  disabled = false // Added disabled prop with default value
 }) => {
   console.log('🎯 [PANEL CARD] Renderizando painel:', {
     id: panel.id,
     code: panel.code,
-    status: panel.status
+    status: panel.status,
+    disabled
   });
 
   const getStatusConfig = (status: string) => {
@@ -99,8 +101,19 @@ const PanelCard: React.FC<PanelCardProps> = ({
   };
 
   const handleRemove = () => {
+    if (disabled) return; // Prevent action if disabled
     console.log('🗑️ [PANEL CARD] Iniciando remoção:', panel);
     onRemove(panel);
+  };
+
+  const handleSync = () => {
+    if (disabled) return; // Prevent action if disabled
+    onSync(panel.id);
+  };
+
+  const handleViewDetails = () => {
+    if (disabled) return; // Prevent action if disabled
+    onViewDetails(panel.id);
   };
 
   return (
@@ -108,6 +121,7 @@ const PanelCard: React.FC<PanelCardProps> = ({
       hover:shadow-lg transition-all duration-300 hover:scale-[1.02]
       bg-gradient-to-br ${statusConfig.bgGradient}
       border-2 ${statusConfig.borderColor}
+      ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
     `}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -155,7 +169,8 @@ const PanelCard: React.FC<PanelCardProps> = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onViewDetails(panel.id)}
+              onClick={handleViewDetails}
+              disabled={disabled}
               className="flex-1 bg-white/80 hover:bg-white"
             >
               <Eye className="h-3 w-3 mr-1" />
@@ -164,7 +179,8 @@ const PanelCard: React.FC<PanelCardProps> = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onSync(panel.id)}
+              onClick={handleSync}
+              disabled={disabled}
               className="bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
             >
               <RefreshCw className="h-3 w-3" />
@@ -173,6 +189,7 @@ const PanelCard: React.FC<PanelCardProps> = ({
               size="sm"
               variant="outline"
               onClick={handleRemove}
+              disabled={disabled}
               className="bg-red-500 text-white hover:bg-red-600 border-red-500"
             >
               <Trash2 className="h-3 w-3" />
