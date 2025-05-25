@@ -63,7 +63,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     preco_base: 0,
     padrao_publico: 'normal' as 'alto' | 'medio' | 'normal',
     status: 'ativo',
-    venue_type: 'Residencial', // Garantir padrão Residencial
+    venue_type: 'Residencial', // SEMPRE INICIAR COMO RESIDENCIAL
     location_type: 'residential',
     latitude: 0,
     longitude: 0,
@@ -120,7 +120,10 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: building.preco_base || 0,
         padrao_publico: building.padrao_publico || 'normal',
         status: building.status || 'ativo',
-        venue_type: building.venue_type || 'Residencial', // Sempre garantir Residencial como padrão
+        // GARANTIR que venue_type seja sempre válido ou Residencial como padrão
+        venue_type: (building.venue_type === 'Residencial' || building.venue_type === 'Comercial') 
+          ? building.venue_type 
+          : 'Residencial',
         location_type: building.location_type || 'residential',
         latitude: building.latitude || 0,
         longitude: building.longitude || 0,
@@ -135,7 +138,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         numero_contato_predio: building.numero_contato_predio || ''
       });
     } else {
-      // Para novos prédios, sempre iniciar como Residencial
+      // Para novos prédios, SEMPRE iniciar como Residencial
       setFormData({
         nome: '',
         endereco: '',
@@ -144,7 +147,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: 0,
         padrao_publico: 'normal',
         status: 'ativo',
-        venue_type: 'Residencial', // PADRÃO RESIDENCIAL
+        venue_type: 'Residencial', // PADRÃO RESIDENCIAL GARANTIDO
         location_type: 'residential',
         latitude: 0,
         longitude: 0,
@@ -317,7 +320,10 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
       const dataToSave = {
         ...formData,
         amenities: formData.caracteristicas,
-        venue_type: formData.venue_type || 'Residencial', // Garantir que sempre salve como Residencial se vazio
+        // GARANTIR que venue_type seja sempre válido antes de salvar
+        venue_type: (formData.venue_type === 'Residencial' || formData.venue_type === 'Comercial') 
+          ? formData.venue_type 
+          : 'Residencial',
       };
 
       if (building) {
@@ -331,7 +337,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         await supabase.rpc('log_building_action', {
           p_building_id: building.id,
           p_action_type: 'update',
-          p_description: `Prédio "${formData.nome}" atualizado - Tipo: ${formData.venue_type}`,
+          p_description: `Prédio "${formData.nome}" atualizado - Tipo: ${dataToSave.venue_type}`,
           p_new_values: dataToSave
         });
 
@@ -348,7 +354,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         await supabase.rpc('log_building_action', {
           p_building_id: data.id,
           p_action_type: 'create',
-          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${formData.venue_type}`,
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type}`,
           p_new_values: dataToSave
         });
 
@@ -431,8 +437,8 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                         <SelectContent className="bg-white z-50">
-                          <SelectItem value="Residencial">Residencial</SelectItem>
-                          <SelectItem value="Comercial">Comercial</SelectItem>
+                          <SelectItem value="Residencial">🏠 Residencial</SelectItem>
+                          <SelectItem value="Comercial">🏢 Comercial</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -110,8 +111,10 @@ export const useBuildingsData = () => {
         
         return {
           ...building,
-          // GARANTIR RESIDENCIAL COMO PADRÃO ABSOLUTO
-          venue_type: building.venue_type || 'Residencial',
+          // GARANTIR RESIDENCIAL COMO PADRÃO se venue_type não estiver definido ou for inválido
+          venue_type: (building.venue_type === 'Residencial' || building.venue_type === 'Comercial') 
+            ? building.venue_type 
+            : 'Residencial',
           location_type: building.location_type || 'residential',
           padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
           image_urls: building.image_urls || buildImageUrlsArray(building),
@@ -165,10 +168,12 @@ export const useBuildingsData = () => {
 
   const updateBuilding = async (id: string, updates: Partial<Building>) => {
     try {
-      // Garantir que venue_type seja sempre Residencial se não especificado
+      // Garantir que venue_type seja sempre válido (Residencial ou Comercial)
       const updatesWithDefaults = {
         ...updates,
-        venue_type: updates.venue_type || 'Residencial'
+        venue_type: (updates.venue_type === 'Residencial' || updates.venue_type === 'Comercial') 
+          ? updates.venue_type 
+          : 'Residencial'
       };
 
       const { error } = await supabase
