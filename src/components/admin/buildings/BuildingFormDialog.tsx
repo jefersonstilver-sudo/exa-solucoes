@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -65,14 +64,9 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     }
   };
 
-  const handleAssignPanel = () => {
-    // TODO: Implementar dialog de atribuição de painel
-    console.log('Atribuir painel não implementado ainda');
-  };
-
   const handlePanelsChange = (updatedPanels: any[]) => {
     setPanels(updatedPanels);
-    // Opcionalmente recarregar a lista
+    // Recarregar a lista completa
     loadPanels();
   };
 
@@ -100,7 +94,6 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
             onFormUpdate={handleFormUpdate}
             onCharacteristicToggle={handleCharacteristicToggle}
             onSuccess={onSuccess}
-            onAssignPanel={handleAssignPanel}
             onPanelsChange={handlePanelsChange}
           />
 

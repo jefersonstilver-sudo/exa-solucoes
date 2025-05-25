@@ -14,7 +14,6 @@ interface BuildingFormLayoutProps {
   onFormUpdate: (updates: any) => void;
   onCharacteristicToggle: (caracteristica: string) => void;
   onSuccess: () => void;
-  onAssignPanel?: () => void;
   onPanelsChange?: (panels: any[]) => void;
 }
 
@@ -25,7 +24,6 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
   onFormUpdate,
   onCharacteristicToggle,
   onSuccess,
-  onAssignPanel,
   onPanelsChange
 }) => {
   return (
@@ -87,7 +85,6 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
             buildingId={building.id}
             buildingName={formData.nome || building?.nome}
             onPanelsChange={onPanelsChange || (() => {})}
-            onAssignPanel={onAssignPanel || (() => {})}
           />
         )}
       </div>

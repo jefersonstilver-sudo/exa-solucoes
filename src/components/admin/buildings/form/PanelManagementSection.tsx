@@ -7,27 +7,28 @@ import { Monitor, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import SimplePanelRemovalAlert from '../panels/SimplePanelRemovalAlert';
+import PanelAssignmentDialog from '../panels/PanelAssignmentDialog';
 
 interface PanelManagementSectionProps {
   panels: any[];
   buildingId: string;
   buildingName?: string;
   onPanelsChange: (panels: any[]) => void;
-  onAssignPanel: () => void;
 }
 
 const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
   panels,
   buildingId,
   buildingName = '',
-  onPanelsChange,
-  onAssignPanel
+  onPanelsChange
 }) => {
   const [removalState, setRemovalState] = useState({
     isOpen: false,
     panel: null as any,
     loading: false
   });
+
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
 
   console.log('🔧 [PANEL MANAGEMENT] Renderizando com painéis:', panels.length);
 
@@ -107,6 +108,18 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
     }
   }, [removalState.loading]);
 
+  const handleAssignPanel = useCallback(() => {
+    console.log('➕ [PANEL MANAGEMENT] Abrindo dialog de atribuição');
+    setAssignmentDialogOpen(true);
+  }, []);
+
+  const handleAssignmentSuccess = useCallback(() => {
+    console.log('✅ [PANEL MANAGEMENT] Atribuição realizada com sucesso');
+    setAssignmentDialogOpen(false);
+    // Recarregar painéis do prédio
+    onPanelsChange([]);
+  }, [onPanelsChange]);
+
   return (
     <>
       <Card>
@@ -118,7 +131,7 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
             </div>
             <Button
               size="sm"
-              onClick={onAssignPanel}
+              onClick={handleAssignPanel}
               disabled={removalState.loading}
               className="bg-indexa-purple hover:bg-indexa-purple-dark"
             >
@@ -165,7 +178,7 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
               <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-500 mb-4">Nenhum painel atribuído a este prédio</p>
               <Button
-                onClick={onAssignPanel}
+                onClick={handleAssignPanel}
                 disabled={removalState.loading}
                 className="bg-indexa-purple hover:bg-indexa-purple-dark"
               >
@@ -184,6 +197,14 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
         buildingName={buildingName}
         onConfirm={handleConfirmRemoval}
         loading={removalState.loading}
+      />
+
+      <PanelAssignmentDialog
+        open={assignmentDialogOpen}
+        onOpenChange={setAssignmentDialogOpen}
+        buildingId={buildingId}
+        buildingName={buildingName}
+        onSuccess={handleAssignmentSuccess}
       />
     </>
   );
