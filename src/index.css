@@ -35,6 +35,12 @@
  
     --radius: 0.5rem;
     
+    /* INDEXA Purple Theme Variables */
+    --indexa-purple: #4A0968;
+    --indexa-purple-dark: #3C1361;
+    --indexa-purple-light: #6A1888;
+    --indexa-mint: #58E3AB;
+    
     /* Modern INDEXA Sidebar with Purple Gradient */
     --sidebar-background: 284 100% 12%;
     --sidebar-foreground: 0 0% 100%;
@@ -96,6 +102,27 @@
   }
 }
 
+/* INDEXA Purple Theme Classes */
+.indexa-purple {
+  color: var(--indexa-purple);
+}
+
+.bg-indexa-purple {
+  background-color: var(--indexa-purple);
+}
+
+.border-indexa-purple {
+  border-color: var(--indexa-purple);
+}
+
+.hover\:bg-indexa-purple:hover {
+  background-color: var(--indexa-purple);
+}
+
+.hover\:bg-indexa-purple-dark:hover {
+  background-color: var(--indexa-purple-dark);
+}
+
 /* Modern INDEXA Sidebar Gradient */
 .indexa-sidebar-gradient {
   background: linear-gradient(145deg, #4A0968 0%, #6A1888 50%, #4A0968 100%);
@@ -114,6 +141,12 @@
 .indexa-sidebar-active {
   background: rgba(88, 227, 171, 0.2);
   border-left: 3px solid #58E3AB;
+}
+
+/* Success Badge Variant */
+.badge-success {
+  background-color: #dcfce7;
+  color: #166534;
 }
 
 /* Custom drawer styles for right side placement */
@@ -174,4 +207,74 @@ body.drawer-open .drawer-overlay {
   border-color: #3C1361;
   border-width: 2px;
   border-radius: 1rem;
+}
+
+/* Search Results Styling */
+.search-results {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+}
+
+/* Loading States */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Grid Adjustments */
+@media (max-width: 768px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Card Hover Effects */
+.admin-card {
+  transition: all 0.2s ease-in-out;
+  border: 1px solid rgba(74, 9, 104, 0.1);
+}
+
+.admin-card:hover {
+  border-color: rgba(74, 9, 104, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(74, 9, 104, 0.1);
+}
+
+/* Button Variants */
+.btn-indexa {
+  background-color: var(--indexa-purple);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-indexa:hover {
+  background-color: var(--indexa-purple-dark);
+  transform: translateY(-1px);
+}
+
+/* Status Indicators */
+.status-online {
+  color: #10b981;
+  background-color: #d1fae5;
+}
+
+.status-offline {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.status-maintenance {
+  color: #f59e0b;
+  background-color: #fef3c7;
 }

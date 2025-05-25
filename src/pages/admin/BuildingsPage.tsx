@@ -13,7 +13,8 @@ import {
   Users,
   Eye,
   Edit,
-  MoreHorizontal
+  MoreHorizontal,
+  RefreshCw
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -21,217 +22,208 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useBuildingsData } from '@/hooks/useBuildingsData';
 
 const BuildingsPage = () => {
+  const { buildings, stats, loading, refetch } = useBuildingsData();
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Mock data
-  const buildings = [
-    {
-      id: '1',
-      name: 'Shopping Center Norte',
-      address: 'Av. Otto Baumgart, 500 - Vila Guilherme, São Paulo - SP',
-      type: 'Shopping',
-      panelsCount: 12,
-      activeFlights: 8,
-      totalCapacity: 50000,
-      coordinates: { lat: -23.5041, lng: -46.6193 },
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Edifício Comercial Paulista',
-      address: 'Av. Paulista, 1000 - Bela Vista, São Paulo - SP',
-      type: 'Edifício Comercial',
-      panelsCount: 8,
-      activeFlights: 5,
-      totalCapacity: 30000,
-      coordinates: { lat: -23.5605, lng: -46.6566 },
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Centro Comercial Downtown',
-      address: 'R. XV de Novembro, 200 - Centro, São Paulo - SP',
-      type: 'Centro Comercial',
-      panelsCount: 6,
-      activeFlights: 2,
-      totalCapacity: 20000,
-      coordinates: { lat: -23.5431, lng: -46.6291 },
-      status: 'maintenance'
-    },
-  ];
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any, label: string }> = {
-      active: { variant: 'success', label: 'Ativo' },
-      maintenance: { variant: 'secondary', label: 'Manutenção' },
-      inactive: { variant: 'destructive', label: 'Inativo' }
+      ativo: { variant: 'success', label: 'Ativo' },
+      inativo: { variant: 'secondary', label: 'Inativo' },
+      manutencao: { variant: 'destructive', label: 'Manutenção' }
     };
     return variants[status] || { variant: 'secondary', label: status };
   };
 
   const filteredBuildings = buildings.filter(building =>
-    building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    building.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    building.type.toLowerCase().includes(searchTerm.toLowerCase())
+    building.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    building.endereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    building.bairro.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
+          <span className="ml-2 text-indexa-purple">Carregando prédios...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Gerenciar Prédios</h1>
-          <p className="text-slate-400">Cadastre e gerencie locais dos painéis digitais</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Prédios</h1>
+          <p className="text-gray-600">Cadastre e gerencie locais dos painéis digitais</p>
         </div>
-        <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900">
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Prédio
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button variant="outline" onClick={refetch} disabled={loading}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+          <Button className="bg-indexa-purple hover:bg-indexa-purple-dark text-white">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Prédio
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50">
+        <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Total de Prédios</CardTitle>
-            <Building2 className="h-4 w-4 text-amber-400" />
+            <CardTitle className="text-sm font-medium text-gray-700">Total de Prédios</CardTitle>
+            <Building2 className="h-4 w-4 text-indexa-purple" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">24</div>
-            <p className="text-xs text-green-400">+3 este mês</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+            <p className="text-xs text-green-600">Sistema conectado</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50">
+        <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Painéis Instalados</CardTitle>
-            <MonitorPlay className="h-4 w-4 text-blue-400" />
+            <CardTitle className="text-sm font-medium text-gray-700">Prédios Ativos</CardTitle>
+            <MonitorPlay className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">89</div>
-            <p className="text-xs text-blue-400">Média 3.7 por prédio</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.active}</div>
+            <p className="text-xs text-blue-600">Operacionais</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50">
+        <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Campanha Ativas</CardTitle>
-            <Users className="h-4 w-4 text-green-400" />
+            <CardTitle className="text-sm font-medium text-gray-700">Inativos</CardTitle>
+            <Users className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">156</div>
-            <p className="text-xs text-green-400">Em 18 prédios</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.inactive}</div>
+            <p className="text-xs text-orange-500">Requer atenção</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50">
+        <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Capacidade Total</CardTitle>
-            <Eye className="h-4 w-4 text-purple-400" />
+            <CardTitle className="text-sm font-medium text-gray-700">Tráfego Total</CardTitle>
+            <Eye className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">2.4M</div>
-            <p className="text-xs text-purple-400">visualizações/mês</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.totalTraffic.toLocaleString()}</div>
+            <p className="text-xs text-purple-600">visitantes/mês</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Search */}
-      <Card className="bg-slate-800/50 border-slate-700/50">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Buscar Prédios</CardTitle>
+          <CardTitle className="text-gray-900">Buscar Prédios</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar por nome, endereço ou tipo..."
+              placeholder="Buscar por nome, endereço ou bairro..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-slate-700/50 border-slate-600 text-white"
+              className="pl-10"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Buildings List */}
-      <Card className="bg-slate-800/50 border-slate-700/50">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Lista de Prédios</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-gray-900">Lista de Prédios</CardTitle>
+          <CardDescription className="text-gray-600">
             {filteredBuildings.length} prédios encontrados
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredBuildings.map((building) => {
-              const statusInfo = getStatusBadge(building.status);
-              
-              return (
-                <div key={building.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                      <Building2 className="h-6 w-6 text-amber-400" />
+            {filteredBuildings.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p>Nenhum prédio encontrado</p>
+              </div>
+            ) : (
+              filteredBuildings.map((building) => {
+                const statusInfo = getStatusBadge(building.status);
+                
+                return (
+                  <div key={building.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
+                        <Building2 className="h-6 w-6 text-indexa-purple" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className="font-medium text-gray-900">{building.nome}</h3>
+                          <Badge variant={statusInfo.variant} className="text-xs">
+                            {statusInfo.label}
+                          </Badge>
+                          {building.venue_type && (
+                            <Badge variant="outline" className="text-xs">
+                              {building.venue_type}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1 mb-2">
+                          <MapPin className="h-3 w-3 text-gray-400" />
+                          <p className="text-sm text-gray-600">{building.endereco}, {building.bairro}</p>
+                        </div>
+                        <div className="flex items-center space-x-6">
+                          {building.monthly_traffic && (
+                            <div className="flex items-center space-x-1">
+                              <Eye className="h-3 w-3 text-purple-600" />
+                              <span className="text-xs text-gray-500">{building.monthly_traffic.toLocaleString()} visitantes/mês</span>
+                            </div>
+                          )}
+                          {building.latitude && building.longitude && (
+                            <div className="flex items-center space-x-1">
+                              <MapPin className="h-3 w-3 text-blue-600" />
+                              <span className="text-xs text-gray-500">Geolocalizado</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-medium text-white">{building.name}</h3>
-                        <Badge variant={statusInfo.variant} className="text-xs">
-                          {statusInfo.label}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs text-slate-400 border-slate-600">
-                          {building.type}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center space-x-1 mb-2">
-                        <MapPin className="h-3 w-3 text-slate-400" />
-                        <p className="text-sm text-slate-400">{building.address}</p>
-                      </div>
-                      <div className="flex items-center space-x-6">
-                        <div className="flex items-center space-x-1">
-                          <MonitorPlay className="h-3 w-3 text-blue-400" />
-                          <span className="text-xs text-slate-400">{building.panelsCount} painéis</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Users className="h-3 w-3 text-green-400" />
-                          <span className="text-xs text-slate-400">{building.activeFlights} campanhas ativas</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-3 w-3 text-purple-400" />
-                          <span className="text-xs text-slate-400">{building.totalCapacity.toLocaleString()} visualizações/mês</span>
-                        </div>
-                      </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <MapPin className="h-4 w-4 mr-2" />
+                            Ver no Mapa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-slate-800 border-slate-700">
-                        <DropdownMenuItem className="text-slate-300">
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-slate-300">
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-slate-300">
-                          <MapPin className="h-4 w-4 mr-2" />
-                          Ver no Mapa
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </CardContent>
       </Card>
