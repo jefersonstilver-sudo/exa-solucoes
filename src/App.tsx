@@ -22,10 +22,10 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        {/* SUPER ADMIN ROUTES - MÁXIMA PRECEDÊNCIA */}
+        {/* SUPER ADMIN ROUTES - ACESSO DIRETO */}
         <Route path="/super_admin/*" element={<SuperAdminPage />} />
         
-        {/* REDIRECIONAMENTOS CRÍTICOS PARA SUPER ADMIN */}
+        {/* REDIRECIONAMENTOS PARA SUPER ADMIN */}
         <Route path="/admin/*" element={<Navigate to="/super_admin" replace />} />
         <Route path="/admin" element={<Navigate to="/super_admin" replace />} />
         <Route path="/administracao/*" element={<Navigate to="/super_admin" replace />} />
@@ -33,7 +33,7 @@ const App = () => {
         <Route path="/dashboard" element={<Navigate to="/super_admin" replace />} />
         <Route path="/painel" element={<Navigate to="/super_admin" replace />} />
         
-        {/* Debug Routes - SISTEMA DE DIAGNÓSTICO COMPLETO */}
+        {/* Debug Routes */}
         <Route path="/auth-hook-diagnostic" element={<AuthHookDiagnosticPage />} />
         <Route path="/auth-hook-test" element={<AuthHookTest />} />
         <Route path="/auth-diagnostic" element={<AuthDiagnosticPage />} />
