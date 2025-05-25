@@ -385,7 +385,7 @@ export type Database = {
       }
       painels: {
         Row: {
-          building_id: string
+          building_id: string | null
           code: string
           codigo_anydesk: string | null
           created_at: string | null
@@ -407,7 +407,7 @@ export type Database = {
           versao_firmware: string | null
         }
         Insert: {
-          building_id: string
+          building_id?: string | null
           code: string
           codigo_anydesk?: string | null
           created_at?: string | null
@@ -429,7 +429,7 @@ export type Database = {
           versao_firmware?: string | null
         }
         Update: {
-          building_id?: string
+          building_id?: string | null
           code?: string
           codigo_anydesk?: string | null
           created_at?: string | null

@@ -37,21 +37,16 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
   const [loading, setLoading] = useState(false);
 
   const handleRemovePanel = async () => {
-    console.log('🗑️ [REMOVE DIALOG] Iniciando processo de remoção:', {
-      panel,
-      buildingName,
-      dialogOpen: open
+    console.log('🗑️ [REMOVE DIALOG] Iniciando remoção do painel:', {
+      panelId: panel?.id,
+      panelCode: panel?.code,
+      buildingName
     });
     
-    if (!panel) {
-      console.error('❌ [REMOVE DIALOG] Painel não encontrado');
-      toast.error('Erro: Painel não encontrado');
-      return;
-    }
-
-    if (!panel.id) {
-      console.error('❌ [REMOVE DIALOG] ID do painel inválido:', panel);
-      toast.error('Erro: ID do painel inválido');
+    // Validações robustas
+    if (!panel?.id) {
+      console.error('❌ [REMOVE DIALOG] Painel ou ID inválido:', panel);
+      toast.error('Erro: Dados do painel inválidos');
       return;
     }
 
@@ -59,7 +54,7 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
       setLoading(true);
       console.log('🔍 [REMOVE DIALOG] Verificando campanhas ativas para o painel:', panel.id);
 
-      // Primeiro verificar se o painel está sendo usado em campanhas ativas
+      // Verificar campanhas ativas
       const { data: activeCampaigns, error: campaignsError } = await supabase
         .from('campanhas')
         .select('id')
@@ -74,27 +69,27 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
       console.log('📊 [REMOVE DIALOG] Campanhas ativas encontradas:', activeCampaigns?.length || 0);
 
       if (activeCampaigns && activeCampaigns.length > 0) {
-        console.warn('⚠️ [REMOVE DIALOG] Painel tem campanhas ativas, não pode ser removido');
+        console.warn('⚠️ [REMOVE DIALOG] Painel tem campanhas ativas');
         toast.error('Este painel não pode ser removido pois está sendo usado em campanhas ativas');
         return;
       }
 
-      console.log('🔄 [REMOVE DIALOG] Removendo atribuição do painel (definindo building_id como null)');
+      console.log('🔄 [REMOVE DIALOG] Removendo atribuição do painel');
 
-      // Remover atribuição do painel (definir building_id como null)
-      const { error } = await supabase
+      // Remover atribuição (definir building_id como null)
+      const { error: updateError } = await supabase
         .from('painels')
         .update({ building_id: null })
         .eq('id', panel.id);
 
-      if (error) {
-        console.error('❌ [REMOVE DIALOG] Erro ao atualizar painel:', error);
-        throw error;
+      if (updateError) {
+        console.error('❌ [REMOVE DIALOG] Erro ao atualizar painel:', updateError);
+        throw updateError;
       }
 
       console.log('✅ [REMOVE DIALOG] Painel removido com sucesso');
 
-      // Log da ação (tentativa - pode falhar se a função não existir)
+      // Log da ação
       try {
         await supabase.rpc('log_building_action', {
           p_building_id: null,
@@ -102,44 +97,29 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
           p_description: `Painel "${panel.code}" removido do prédio "${buildingName}"`,
           p_old_values: { panel_id: panel.id, panel_code: panel.code }
         });
-        console.log('📝 [REMOVE DIALOG] Log da ação registrado');
+        console.log('📝 [REMOVE DIALOG] Log registrado');
       } catch (logError) {
-        console.warn('⚠️ [REMOVE DIALOG] Falha ao registrar log (não crítico):', logError);
+        console.warn('⚠️ [REMOVE DIALOG] Falha ao registrar log:', logError);
       }
 
       toast.success(`Painel "${panel.code}" removido com sucesso!`);
       
-      // Chamar onSuccess antes de fechar o dialog para garantir que os dados sejam atualizados
-      console.log('🔄 [REMOVE DIALOG] Chamando onSuccess para atualizar dados');
+      // Atualizar dados e fechar dialog
       onSuccess();
-      
-      // Fechar o dialog
-      console.log('🔄 [REMOVE DIALOG] Fechando dialog');
       onOpenChange(false);
       
     } catch (error) {
-      console.error('💥 [REMOVE DIALOG] Erro crítico ao remover painel:', error);
+      console.error('💥 [REMOVE DIALOG] Erro na remoção:', error);
       toast.error('Erro ao remover painel: ' + (error as any)?.message || 'Erro desconhecido');
     } finally {
       setLoading(false);
-      console.log('🏁 [REMOVE DIALOG] Processo de remoção finalizado');
     }
   };
 
-  // Adicionar validação para evitar renderização com painel nulo
-  if (!panel) {
-    console.warn('⚠️ [REMOVE DIALOG] Dialog renderizado sem painel, fechando automaticamente');
+  // Validações de renderização
+  if (!panel?.id) {
+    console.warn('⚠️ [REMOVE DIALOG] Dialog renderizado com painel inválido');
     if (open) {
-      onOpenChange(false);
-    }
-    return null;
-  }
-
-  // Validação adicional do ID do painel
-  if (!panel.id) {
-    console.error('❌ [REMOVE DIALOG] Dialog renderizado com painel sem ID válido:', panel);
-    if (open) {
-      toast.error('Erro: Painel com dados inválidos');
       onOpenChange(false);
     }
     return null;
@@ -153,12 +133,6 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
       default: return 'bg-gray-500 text-white';
     }
   };
-
-  console.log('🎨 [REMOVE DIALOG] Renderizando dialog para painel:', {
-    panelId: panel.id,
-    panelCode: panel.code,
-    open
-  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

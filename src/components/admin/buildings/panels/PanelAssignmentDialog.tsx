@@ -16,9 +16,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { 
   Search, 
   Monitor, 
-  Filter,
   Plus,
-  Check
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,16 +43,29 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && buildingId) {
+      console.log('🔍 [ASSIGNMENT DIALOG] Dialog aberto, buscando painéis disponíveis');
       fetchAvailablePanels();
+    } else {
+      // Limpar estado quando fechar
+      setSelectedPanels([]);
+      setSearchTerm('');
+      setStatusFilter('all');
     }
-  }, [open]);
+  }, [open, buildingId]);
 
   const fetchAvailablePanels = async () => {
+    if (!buildingId) {
+      console.error('❌ [ASSIGNMENT DIALOG] Building ID não fornecido');
+      return;
+    }
+
     try {
-      setLoading(true);
+      setFetchLoading(true);
+      console.log('🔍 [ASSIGNMENT DIALOG] Buscando painéis não atribuídos...');
       
       // Buscar painéis que não estão atribuídos a nenhum prédio
       const { data, error } = await supabase
@@ -61,14 +74,24 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
         .is('building_id', null)
         .order('code');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [ASSIGNMENT DIALOG] Erro ao buscar painéis:', error);
+        throw error;
+      }
 
+      console.log('✅ [ASSIGNMENT DIALOG] Painéis disponíveis encontrados:', data?.length || 0);
       setAvailablePanels(data || []);
+
+      if (!data || data.length === 0) {
+        toast.info('Nenhum painel disponível para atribuição encontrado');
+      }
+
     } catch (error) {
-      console.error('Erro ao buscar painéis disponíveis:', error);
+      console.error('💥 [ASSIGNMENT DIALOG] Erro ao carregar painéis:', error);
       toast.error('Erro ao carregar painéis disponíveis');
+      setAvailablePanels([]);
     } finally {
-      setLoading(false);
+      setFetchLoading(false);
     }
   };
 
@@ -79,6 +102,7 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
   });
 
   const handlePanelToggle = (panelId: string) => {
+    console.log('🔄 [ASSIGNMENT DIALOG] Toggle painel:', panelId);
     setSelectedPanels(prev => 
       prev.includes(panelId) 
         ? prev.filter(id => id !== panelId)
@@ -92,32 +116,55 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
       return;
     }
 
+    if (!buildingId) {
+      toast.error('ID do prédio não encontrado');
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('🔄 [ASSIGNMENT DIALOG] Atribuindo painéis:', {
+        buildingId,
+        selectedPanels: selectedPanels.length,
+        buildingName
+      });
 
       // Atribuir painéis selecionados ao prédio
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('painels')
         .update({ building_id: buildingId })
         .in('id', selectedPanels);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('❌ [ASSIGNMENT DIALOG] Erro ao atribuir painéis:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ [ASSIGNMENT DIALOG] Painéis atribuídos com sucesso');
 
       // Log da ação
-      await supabase.rpc('log_building_action', {
-        p_building_id: buildingId,
-        p_action_type: 'assign_panels',
-        p_description: `${selectedPanels.length} painel(s) atribuído(s) ao prédio "${buildingName}"`,
-        p_new_values: { assigned_panels: selectedPanels }
-      });
+      try {
+        await supabase.rpc('log_building_action', {
+          p_building_id: buildingId,
+          p_action_type: 'assign_panels',
+          p_description: `${selectedPanels.length} painel(s) atribuído(s) ao prédio "${buildingName}"`,
+          p_new_values: { assigned_panels: selectedPanels }
+        });
+        console.log('📝 [ASSIGNMENT DIALOG] Log registrado');
+      } catch (logError) {
+        console.warn('⚠️ [ASSIGNMENT DIALOG] Falha ao registrar log:', logError);
+      }
 
       toast.success(`${selectedPanels.length} painel(s) atribuído(s) com sucesso!`);
+      
+      // Limpar seleções e chamar callback de sucesso
+      setSelectedPanels([]);
       onSuccess();
       onOpenChange(false);
-      setSelectedPanels([]);
+
     } catch (error) {
-      console.error('Erro ao atribuir painéis:', error);
-      toast.error('Erro ao atribuir painéis');
+      console.error('💥 [ASSIGNMENT DIALOG] Erro na atribuição:', error);
+      toast.error('Erro ao atribuir painéis: ' + (error as any)?.message || 'Erro desconhecido');
     } finally {
       setLoading(false);
     }
@@ -180,7 +227,7 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
 
           {/* Lista de Painéis */}
           <div className="flex-1 overflow-y-auto">
-            {loading ? (
+            {fetchLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <Monitor className="h-8 w-8 animate-pulse text-gray-400 mx-auto mb-2" />
@@ -189,12 +236,29 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
               </div>
             ) : filteredPanels.length === 0 ? (
               <div className="text-center py-8">
-                <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">
-                  {availablePanels.length === 0 
-                    ? 'Nenhum painel disponível para atribuição' 
-                    : 'Nenhum painel encontrado com os filtros aplicados'}
-                </p>
+                <div className="flex flex-col items-center space-y-3">
+                  {availablePanels.length === 0 ? (
+                    <>
+                      <AlertCircle className="h-12 w-12 text-orange-400" />
+                      <div className="space-y-2">
+                        <p className="font-medium text-gray-900">Nenhum painel disponível</p>
+                        <p className="text-sm text-gray-500">
+                          Todos os painéis já estão atribuídos a prédios ou não há painéis cadastrados no sistema.
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Monitor className="h-12 w-12 text-gray-400" />
+                      <div className="space-y-2">
+                        <p className="font-medium text-gray-900">Nenhum painel encontrado</p>
+                        <p className="text-sm text-gray-500">
+                          Tente ajustar os filtros de busca para encontrar painéis disponíveis.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

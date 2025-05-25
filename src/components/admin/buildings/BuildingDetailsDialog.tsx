@@ -33,38 +33,39 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   const [sales, setSales] = useState([]);
   const [panels, setPanels] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // State management simplificado para dialogs
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [removalDialogOpen, setRemovalDialogOpen] = useState(false);
-  const [selectedPanelForRemoval, setSelectedPanelForRemoval] = useState(null);
+  const [selectedPanelForRemoval, setSelectedPanelForRemoval] = useState<any>(null);
 
   useEffect(() => {
     if (building && open) {
+      console.log('🏢 [BUILDING DETAILS] Carregando dados do prédio:', building.nome);
       fetchBuildingData();
     }
   }, [building, open]);
 
-  // Clear selected panel when dialog closes
+  // Limpar estado quando o dialog principal fechar
   useEffect(() => {
     if (!open) {
-      console.log('🔄 [BUILDING DETAILS] Dialog fechado, limpando estado do painel selecionado');
+      console.log('🔄 [BUILDING DETAILS] Dialog principal fechado, limpando estados');
       setSelectedPanelForRemoval(null);
       setRemovalDialogOpen(false);
+      setAssignmentDialogOpen(false);
     }
   }, [open]);
 
-  // Clear selected panel when removal dialog closes
-  useEffect(() => {
-    if (!removalDialogOpen) {
-      console.log('🔄 [BUILDING DETAILS] Dialog de remoção fechado, limpando painel selecionado');
-      setSelectedPanelForRemoval(null);
-    }
-  }, [removalDialogOpen]);
-
   const fetchBuildingData = async () => {
-    if (!building) return;
+    if (!building?.id) {
+      console.error('❌ [BUILDING DETAILS] ID do prédio não encontrado');
+      return;
+    }
     
     setLoading(true);
     try {
+      console.log('🔍 [BUILDING DETAILS] Buscando dados para prédio ID:', building.id);
+
       // Buscar logs de ações
       const { data: logsData } = await supabase
         .from('building_action_logs')
@@ -88,24 +89,37 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
       setSales(salesData || []);
 
       // Buscar painéis do prédio
-      const { data: panelsData } = await supabase
+      const { data: panelsData, error: panelsError } = await supabase
         .from('painels')
         .select('*')
         .eq('building_id', building.id)
         .order('code');
 
-      setPanels(panelsData || []);
+      if (panelsError) {
+        console.error('❌ [BUILDING DETAILS] Erro ao buscar painéis:', panelsError);
+        toast.error('Erro ao carregar painéis do prédio');
+      } else {
+        console.log('✅ [BUILDING DETAILS] Painéis carregados:', panelsData?.length || 0);
+        setPanels(panelsData || []);
+      }
 
     } catch (error) {
-      console.error('Erro ao carregar dados do prédio:', error);
+      console.error('💥 [BUILDING DETAILS] Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados do prédio');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSyncPanel = async (panelId: string) => {
+    if (!panelId) {
+      toast.error('ID do painel inválido');
+      return;
+    }
+
     try {
-      // Simular sincronização do painel
+      console.log('🔄 [BUILDING DETAILS] Sincronizando painel:', panelId);
+      
       const { error } = await supabase
         .from('painels')
         .update({ ultima_sync: new Date().toISOString() })
@@ -114,58 +128,86 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
       if (error) throw error;
 
       toast.success('Painel sincronizado com sucesso!');
-      fetchBuildingData(); // Recarregar dados
+      fetchBuildingData();
     } catch (error) {
-      console.error('Erro ao sincronizar painel:', error);
+      console.error('❌ [BUILDING DETAILS] Erro ao sincronizar painel:', error);
       toast.error('Erro ao sincronizar painel');
     }
   };
 
   const handleRemovePanel = (panel: any) => {
-    console.log('🗑️ [BUILDING DETAILS] Solicitação de remoção de painel recebida:', {
+    console.log('🗑️ [BUILDING DETAILS] Iniciando remoção de painel:', {
       panelId: panel?.id,
       panelCode: panel?.code,
-      hasPanel: !!panel
+      buildingName: building?.nome
     });
 
+    // Validações robustas
     if (!panel) {
-      console.error('❌ [BUILDING DETAILS] Painel não definido para remoção');
-      toast.error('Erro: Painel não encontrado para remoção');
+      console.error('❌ [BUILDING DETAILS] Painel não definido');
+      toast.error('Erro: Painel não encontrado');
       return;
     }
 
     if (!panel.id) {
-      console.error('❌ [BUILDING DETAILS] Painel sem ID válido:', panel);
-      toast.error('Erro: Painel com ID inválido');
+      console.error('❌ [BUILDING DETAILS] ID do painel inválido:', panel);
+      toast.error('Erro: ID do painel inválido');
       return;
     }
 
-    console.log('✅ [BUILDING DETAILS] Definindo painel para remoção e abrindo dialog');
+    if (!building?.id) {
+      console.error('❌ [BUILDING DETAILS] ID do prédio não encontrado');
+      toast.error('Erro: Prédio não identificado');
+      return;
+    }
+
+    // Definir estado e abrir dialog
+    console.log('✅ [BUILDING DETAILS] Abrindo dialog de remoção');
     setSelectedPanelForRemoval(panel);
     setRemovalDialogOpen(true);
   };
 
   const handleViewPanelDetails = (panelId: string) => {
-    // Implementar visualização de detalhes do painel
+    if (!panelId) {
+      toast.error('ID do painel inválido');
+      return;
+    }
+    
+    console.log('👁️ [BUILDING DETAILS] Visualizar detalhes do painel:', panelId);
     toast.info('Funcionalidade de detalhes do painel em desenvolvimento');
   };
 
+  const handleAssignmentSuccess = () => {
+    console.log('✅ [BUILDING DETAILS] Atribuição bem-sucedida, atualizando dados');
+    fetchBuildingData();
+    setAssignmentDialogOpen(false);
+  };
+
   const handleRemovalSuccess = () => {
-    console.log('✅ [BUILDING DETAILS] Remoção de painel bem-sucedida, recarregando dados');
+    console.log('✅ [BUILDING DETAILS] Remoção bem-sucedida, atualizando dados');
     fetchBuildingData();
     setSelectedPanelForRemoval(null);
     setRemovalDialogOpen(false);
   };
 
   const handleRemovalDialogClose = (open: boolean) => {
-    console.log('🔄 [BUILDING DETAILS] Dialog de remoção alterado para:', open);
+    console.log('🔄 [BUILDING DETAILS] Estado do dialog de remoção:', open);
     setRemovalDialogOpen(open);
     if (!open) {
       setSelectedPanelForRemoval(null);
     }
   };
 
-  if (!building) return null;
+  const handleAssignmentDialogClose = (open: boolean) => {
+    console.log('🔄 [BUILDING DETAILS] Estado do dialog de atribuição:', open);
+    setAssignmentDialogOpen(open);
+  };
+
+  // Validação antes de renderizar
+  if (!building) {
+    console.warn('⚠️ [BUILDING DETAILS] Componente renderizado sem prédio');
+    return null;
+  }
 
   return (
     <>
@@ -218,14 +260,16 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Dialog de Atribuição */}
       <PanelAssignmentDialog
         open={assignmentDialogOpen}
-        onOpenChange={setAssignmentDialogOpen}
+        onOpenChange={handleAssignmentDialogClose}
         buildingId={building?.id}
         buildingName={building?.nome}
-        onSuccess={fetchBuildingData}
+        onSuccess={handleAssignmentSuccess}
       />
 
+      {/* Dialog de Remoção - Renderizar apenas quando há painel selecionado */}
       {selectedPanelForRemoval && (
         <PanelRemovalDialog
           open={removalDialogOpen}
