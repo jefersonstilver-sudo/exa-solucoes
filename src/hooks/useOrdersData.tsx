@@ -29,8 +29,26 @@ export const useOrdersData = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      console.log('🛒 Buscando pedidos...');
+      console.log('🛒 Buscando pedidos com novas políticas RLS...');
       
+      // Verificar autenticação
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('❌ Erro de autenticação:', authError);
+        toast.error('Erro de autenticação. Faça login novamente.');
+        return;
+      }
+
+      if (!user) {
+        console.error('❌ Usuário não autenticado');
+        toast.error('Acesso negado. Faça login como administrador.');
+        return;
+      }
+
+      console.log('✅ Usuário autenticado:', user.email);
+
+      // Tentar buscar pedidos com a nova política RLS
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
@@ -38,26 +56,54 @@ export const useOrdersData = () => {
 
       if (error) {
         console.error('❌ Erro ao buscar pedidos:', error);
-        toast.error('Erro ao carregar pedidos');
-        return;
-      }
+        console.error('❌ Código do erro:', error.code);
+        console.error('❌ Detalhes:', error.details);
+        
+        // Fallback: tentar busca mais simples
+        console.log('🔄 Tentando busca simplificada...');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('pedidos')
+          .select('id, created_at, status, valor_total, client_id')
+          .limit(10);
+          
+        if (fallbackError) {
+          console.error('❌ Fallback também falhou:', fallbackError);
+          toast.error(`Erro ao carregar pedidos: ${error.message}`);
+          return;
+        }
+        
+        console.log('⚠️ Usando dados de fallback:', fallbackData);
+        toast.warning('Pedidos carregados em modo simplificado');
+        setOrders(fallbackData || []);
+      } else {
+        console.log('✅ Pedidos carregados com sucesso:', data);
+        console.log('✅ Total de pedidos:', data?.length || 0);
+        
+        if (!data || data.length === 0) {
+          console.log('⚠️ Nenhum pedido encontrado');
+          toast.info('Nenhum pedido encontrado na base de dados');
+        } else {
+          console.log('🎉 Pedidos carregados:', data.map(p => `${p.id.substring(0, 8)} (${p.status})`));
+          toast.success(`${data.length} pedidos carregados com sucesso`);
+        }
 
-      console.log('✅ Pedidos carregados:', data?.length);
-      setOrders(data || []);
+        setOrders(data || []);
+      }
       
       // Calcular estatísticas
-      const total = data?.length || 0;
-      const pending = data?.filter(o => o.status === 'pendente').length || 0;
-      const completed = data?.filter(o => o.status === 'pago').length || 0;
-      const cancelled = data?.filter(o => o.status === 'cancelado').length || 0;
-      const revenue = data?.filter(o => o.status === 'pago')
-        .reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0) || 0;
+      const ordersList = data || [];
+      const total = ordersList.length;
+      const pending = ordersList.filter(o => o.status === 'pendente').length;
+      const completed = ordersList.filter(o => o.status === 'pago').length;
+      const cancelled = ordersList.filter(o => o.status === 'cancelado').length;
+      const revenue = ordersList.filter(o => o.status === 'pago')
+        .reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0);
 
       setStats({ total, pending, completed, cancelled, revenue });
       
     } catch (error) {
       console.error('💥 Erro crítico ao carregar pedidos:', error);
-      toast.error('Erro crítico ao carregar pedidos');
+      toast.error('Erro crítico. Verifique sua conexão e tente novamente.');
     } finally {
       setLoading(false);
     }

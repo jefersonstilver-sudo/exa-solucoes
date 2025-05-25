@@ -605,6 +605,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_super_admin_simple: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }
         Returns: {
