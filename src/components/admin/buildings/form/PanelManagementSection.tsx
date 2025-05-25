@@ -11,6 +11,7 @@ import SimplePanelRemovalAlert from '../panels/SimplePanelRemovalAlert';
 interface PanelManagementSectionProps {
   panels: any[];
   buildingId: string;
+  buildingName?: string;
   onPanelsChange: (panels: any[]) => void;
   onAssignPanel: () => void;
 }
@@ -18,6 +19,7 @@ interface PanelManagementSectionProps {
 const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
   panels,
   buildingId,
+  buildingName = '',
   onPanelsChange,
   onAssignPanel
 }) => {
@@ -179,7 +181,7 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
         open={removalState.isOpen}
         onOpenChange={handleCloseAlert}
         panelCode={removalState.panel?.code || ''}
-        buildingName=""
+        buildingName={buildingName}
         onConfirm={handleConfirmRemoval}
         loading={removalState.loading}
       />
