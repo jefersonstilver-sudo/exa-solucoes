@@ -84,7 +84,7 @@ export const useSupabaseData = () => {
         };
 
         setStats(stats);
-        await generateChartData(stats);
+        await generateRealChartData(stats);
       } else {
         await fetchDataIndividually();
       }
@@ -128,55 +128,63 @@ export const useSupabaseData = () => {
       };
 
       setStats(stats);
-      await generateChartData(stats);
+      await generateRealChartData(stats);
 
     } catch (error) {
       console.error('Erro no fallback:', error);
     }
   };
 
-  const generateChartData = async (stats: DashboardStats) => {
+  const generateRealChartData = async (stats: DashboardStats) => {
     try {
-      const { data: orders } = await supabase.from('pedidos').select('*');
-      const { data: panels } = await supabase.from('painels').select('*');
+      // Buscar dados reais com datas
+      const [ordersResult, panelsResult, usersResult] = await Promise.all([
+        supabase.from('pedidos').select('*').order('created_at'),
+        supabase.from('painels').select('*'),
+        supabase.from('users').select('*').order('data_criacao')
+      ]);
 
-      const currentMonth = new Date().getMonth();
-      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      
-      const revenueData = [];
-      for (let i = 3; i >= 0; i--) {
-        const monthIndex = (currentMonth - i + 12) % 12;
-        const monthName = monthNames[monthIndex];
-        const revenue = i === 0 ? stats.monthlyRevenue : Math.round(stats.monthlyRevenue * (0.4 + Math.random() * 0.3));
-        revenueData.push({ month: monthName, revenue });
-      }
+      const orders = ordersResult.data || [];
+      const panels = panelsResult.data || [];
+      const users = usersResult.data || [];
 
-      const paidOrders = orders?.filter(o => o.status === 'pago')?.length || 0;
-      const canceledOrders = orders?.filter(o => o.status === 'cancelado')?.length || 0;
+      // Receita baseada em dados reais (apenas se houver pedidos pagos)
+      const paidOrders = orders.filter(o => o.status === 'pago');
+      const revenueData = paidOrders.length > 0 ? [
+        { 
+          month: 'Total Real', 
+          revenue: paidOrders.reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0)
+        }
+      ] : [];
+
+      // Status dos pedidos baseado em dados reais
+      const pendingCount = orders.filter(o => o.status === 'pendente').length;
+      const activeCount = orders.filter(o => o.status === 'ativo').length;
+      const paidCount = paidOrders.length;
+      const canceledCount = orders.filter(o => o.status === 'cancelado').length;
       
       const orderStatusData = [
-        { name: 'Pendente', value: stats.pendingOrders, color: '#f97316' },
-        { name: 'Ativo', value: stats.activeOrders, color: '#10b981' },
-        { name: 'Pago', value: paidOrders, color: '#6366f1' },
-        { name: 'Cancelado', value: canceledOrders, color: '#ef4444' },
-      ];
+        { name: 'Pendente', value: pendingCount, color: '#f97316' },
+        { name: 'Ativo', value: activeCount, color: '#10b981' },
+        { name: 'Pago', value: paidCount, color: '#6366f1' },
+        { name: 'Cancelado', value: canceledCount, color: '#ef4444' },
+      ].filter(item => item.value > 0); // Mostrar apenas status que existem
 
-      const offlinePanels = panels?.filter(p => p.status === 'offline')?.length || 0;
-      const maintenancePanels = panels?.filter(p => p.status === 'maintenance')?.length || 0;
+      // Status dos painéis baseado em dados reais
+      const onlineCount = panels.filter(p => p.status === 'online').length;
+      const offlineCount = panels.filter(p => p.status === 'offline').length;
+      const maintenanceCount = panels.filter(p => p.status === 'maintenance').length;
       
       const panelStatusData = [
-        { status: 'Online', count: stats.onlinePanels },
-        { status: 'Offline', count: offlinePanels },
-        { status: 'Manutenção', count: maintenancePanels },
-      ];
+        { status: 'Online', count: onlineCount },
+        { status: 'Offline', count: offlineCount },
+        { status: 'Manutenção', count: maintenanceCount },
+      ].filter(item => item.count > 0); // Mostrar apenas status que existem
 
-      const userGrowthData = [];
-      for (let i = 3; i >= 0; i--) {
-        const monthIndex = (currentMonth - i + 12) % 12;
-        const monthName = monthNames[monthIndex];
-        const users = i === 0 ? stats.totalUsers : Math.max(1, Math.round(stats.totalUsers * (0.7 + (i * 0.1))));
-        userGrowthData.push({ month: monthName, users });
-      }
+      // Crescimento de usuários baseado em dados reais
+      const userGrowthData = users.length > 0 ? [
+        { month: 'Total Atual', users: users.length }
+      ] : [];
 
       setChartData({
         revenueData,
@@ -186,7 +194,14 @@ export const useSupabaseData = () => {
       });
 
     } catch (error) {
-      console.error('Erro ao gerar gráficos:', error);
+      console.error('Erro ao gerar gráficos com dados reais:', error);
+      // Se houver erro, definir dados vazios
+      setChartData({
+        revenueData: [],
+        orderStatusData: [],
+        panelStatusData: [],
+        userGrowthData: [],
+      });
     }
   };
 

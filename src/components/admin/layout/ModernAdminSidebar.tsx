@@ -72,11 +72,9 @@ const ModernAdminSidebar = () => {
     <Sidebar className="indexa-sidebar-gradient shadow-2xl">
       <SidebarHeader className="border-b border-white/10 bg-black/10">
         <div className="flex items-center justify-center p-6">
-          <img 
-            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjciLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODEzOTI0MiwiZXhwIjoxNzc5Njc1MjQyfQ.dqaDCSgJZ6uvgjOGu1i_OVwQuETQfU3xtvuGxtYjaA4" 
-            alt="INDEXA" 
-            className="h-12 w-auto drop-shadow-lg"
-          />
+          <div className="text-white text-2xl font-bold tracking-wider">
+            INDEXA
+          </div>
         </div>
         {isSuperAdmin && (
           <div className="px-4 pb-4">
