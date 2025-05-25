@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Monitor, Plus, RefreshCw } from 'lucide-react';
@@ -37,6 +36,10 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
     loading: false
   });
 
+  const operationRef = useRef<{ inProgress: boolean; panelId?: string }>({
+    inProgress: false
+  });
+
   const getPanelStatusSummary = () => {
     const summary = panels.reduce((acc, panel) => {
       acc[panel.status] = (acc[panel.status] || 0) + 1;
@@ -51,9 +54,23 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   const handleRemoveRequest = useCallback((panel: any) => {
     console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção:', panel.code);
     
-    if (!panel?.id) {
+    // Validação rigorosa dos dados do painel
+    if (!panel?.id || !panel?.code) {
       console.error('❌ [BUILDING PANELS TAB] Panel inválido:', panel);
       toast.error('Erro: Dados do painel inválidos');
+      return;
+    }
+
+    // Verificar se já há operação em andamento
+    if (operationRef.current.inProgress) {
+      console.log('⏳ [BUILDING PANELS TAB] Operação já em andamento, ignorando');
+      toast.warning('Aguarde a operação anterior finalizar');
+      return;
+    }
+
+    // Verificar se o dialog já está aberto para este painel
+    if (removalState.isOpen && removalState.panel?.id === panel.id) {
+      console.log('⚠️ [BUILDING PANELS TAB] Dialog já aberto para este painel');
       return;
     }
 
@@ -62,7 +79,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
       panel: panel,
       loading: false
     });
-  }, []);
+  }, [removalState.isOpen, removalState.panel]);
 
   const handleConfirmRemoval = useCallback(async () => {
     const { panel } = removalState;
@@ -74,8 +91,15 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
       return;
     }
 
+    // Verificar se operação já está em andamento
+    if (operationRef.current.inProgress) {
+      console.log('⏳ [BUILDING PANELS TAB] Operação já em andamento');
+      return;
+    }
+
     console.log('🔄 [BUILDING PANELS TAB] Iniciando remoção do painel:', panel.code);
     
+    operationRef.current = { inProgress: true, panelId: panel.id };
     setRemovalState(prev => ({ ...prev, loading: true }));
 
     try {
@@ -96,18 +120,18 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
         console.warn('⚠️ [BUILDING PANELS TAB] Painel tem campanhas ativas:', activeCampaigns.length);
         toast.error(`Este painel não pode ser removido pois possui ${activeCampaigns.length} campanhas ativas`);
         setRemovalState({ isOpen: false, panel: null, loading: false });
+        operationRef.current.inProgress = false;
         return;
       }
 
-      // Executar remoção com retry
+      // Executar remoção com retry melhorado
       console.log('🔄 [BUILDING PANELS TAB] Removendo atribuição do painel...');
       let success = false;
-      let attempts = 0;
+      let lastError = null;
       const maxAttempts = 3;
 
-      while (!success && attempts < maxAttempts) {
-        attempts++;
-        console.log(`🔄 [BUILDING PANELS TAB] Tentativa ${attempts}/${maxAttempts}`);
+      for (let attempt = 1; attempt <= maxAttempts && !success; attempt++) {
+        console.log(`🔄 [BUILDING PANELS TAB] Tentativa ${attempt}/${maxAttempts}`);
 
         try {
           const { error: updateError } = await supabase
@@ -116,25 +140,28 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
             .eq('id', panel.id);
 
           if (updateError) {
-            console.error(`❌ [BUILDING PANELS TAB] Tentativa ${attempts} falhou:`, updateError);
-            if (attempts === maxAttempts) {
-              throw new Error('Falha ao remover painel após ' + maxAttempts + ' tentativas: ' + updateError.message);
+            lastError = updateError;
+            console.error(`❌ [BUILDING PANELS TAB] Tentativa ${attempt} falhou:`, updateError);
+            
+            if (attempt < maxAttempts) {
+              // Aguardar progressivamente mais tempo entre tentativas
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
             }
-            // Aguardar antes da próxima tentativa
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
           } else {
             success = true;
-            console.log(`✅ [BUILDING PANELS TAB] Sucesso na tentativa ${attempts}`);
+            console.log(`✅ [BUILDING PANELS TAB] Sucesso na tentativa ${attempt}`);
           }
         } catch (error) {
-          console.error(`💥 [BUILDING PANELS TAB] Erro na tentativa ${attempts}:`, error);
-          if (attempts === maxAttempts) {
-            throw error;
-          }
+          lastError = error;
+          console.error(`💥 [BUILDING PANELS TAB] Erro na tentativa ${attempt}:`, error);
         }
       }
 
-      // Log da ação
+      if (!success) {
+        throw new Error('Falha ao remover painel após ' + maxAttempts + ' tentativas: ' + (lastError as any)?.message);
+      }
+
+      // Log da ação (não crítico)
       try {
         await supabase.rpc('log_building_action', {
           p_building_id: null,
@@ -149,24 +176,32 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
       toast.success(`Painel "${panel.code}" removido com sucesso!`);
       
-      // Fechar dialog e atualizar dados
+      // Fechar dialog primeiro
       setRemovalState({ isOpen: false, panel: null, loading: false });
+      operationRef.current.inProgress = false;
       
       // Aguardar um momento antes de atualizar para garantir que a UI se estabilize
       setTimeout(() => {
         onRefresh();
-      }, 100);
+      }, 300);
       
     } catch (error) {
       console.error('💥 [BUILDING PANELS TAB] Erro crítico na remoção:', error);
       toast.error('Erro ao remover painel: ' + (error as any)?.message || 'Erro desconhecido');
       setRemovalState({ isOpen: false, panel: null, loading: false });
+      operationRef.current.inProgress = false;
     }
   }, [removalState.panel, buildingName, onRefresh]);
 
-  const handleCloseAlert = useCallback(() => {
-    console.log('🔄 [BUILDING PANELS TAB] Fechando alert de remoção');
-    setRemovalState({ isOpen: false, panel: null, loading: false });
+  const handleCloseAlert = useCallback((open: boolean) => {
+    console.log('🔄 [BUILDING PANELS TAB] Fechando alert de remoção:', open);
+    
+    if (!open) {
+      // Só fechar se não há operação em andamento
+      if (!operationRef.current.inProgress) {
+        setRemovalState({ isOpen: false, panel: null, loading: false });
+      }
+    }
   }, []);
 
   return (
@@ -183,13 +218,14 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={onRefresh}
-                disabled={loading}
+                disabled={loading || operationRef.current.inProgress}
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
               <Button
                 size="sm"
                 onClick={onAssignPanel}
+                disabled={operationRef.current.inProgress}
                 className="bg-indexa-purple hover:bg-indexa-purple-dark"
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -236,6 +272,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
                   onRemove={handleRemoveRequest}
                   onSync={onSyncPanel}
                   onViewDetails={onViewPanelDetails}
+                  disabled={operationRef.current.inProgress}
                 />
               ))}
             </div>
@@ -250,6 +287,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
               </p>
               <Button
                 onClick={onAssignPanel}
+                disabled={operationRef.current.inProgress}
                 className="bg-indexa-purple hover:bg-indexa-purple-dark"
               >
                 <Plus className="h-4 w-4 mr-1" />

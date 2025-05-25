@@ -8,6 +8,7 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isImageManagerOpen, setIsImageManagerOpen] = useState(false);
   const [operationLoading, setOperationLoading] = useState(false);
+  const [dialogTransitioning, setDialogTransitioning] = useState(false);
 
   const handleDeleteBuilding = async (building: any) => {
     if (!building?.id) {
@@ -25,12 +26,14 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
         // Fechar qualquer dialog aberto antes da exclusão
         if (isDetailsOpen) {
           console.log('🔄 [BUILDING ACTIONS] Fechando dialog de detalhes antes da exclusão');
+          setDialogTransitioning(true);
           setIsDetailsOpen(false);
           setSelectedBuilding(null);
+          
+          // Aguardar um momento para o dialog fechar completamente
+          await new Promise(resolve => setTimeout(resolve, 200));
+          setDialogTransitioning(false);
         }
-
-        // Aguardar um momento para o dialog fechar
-        await new Promise(resolve => setTimeout(resolve, 100));
 
         console.log('🔄 [BUILDING ACTIONS] Executando exclusão...');
         await deleteBuilding(building.id);
@@ -46,13 +49,16 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
         toast.error('Erro ao excluir prédio: ' + (error as any)?.message || 'Erro desconhecido');
       } finally {
         setOperationLoading(false);
+        setDialogTransitioning(false);
       }
     }
   };
 
   const handleNewBuilding = () => {
     console.log('➕ [BUILDING ACTIONS] Criando novo prédio');
+    // Garantir estado limpo
     setSelectedBuilding(null);
+    setIsDetailsOpen(false);
     setIsFormOpen(true);
   };
 
@@ -65,15 +71,25 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
       return;
     }
 
-    // Limpar estado anterior antes de abrir novo
+    // Prevenir transições múltiplas
+    if (dialogTransitioning) {
+      console.log('⏳ [BUILDING ACTIONS] Aguardando transição anterior');
+      return;
+    }
+
+    setDialogTransitioning(true);
+    
+    // Limpar estado anterior
     setSelectedBuilding(null);
     setIsDetailsOpen(false);
+    setIsFormOpen(false);
     
-    // Aguardar um momento antes de definir novo prédio
+    // Aguardar um momento antes de definir novo estado
     setTimeout(() => {
       setSelectedBuilding(building);
       setIsDetailsOpen(true);
-    }, 50);
+      setDialogTransitioning(false);
+    }, 100);
   };
 
   const handleEditBuilding = (building: any) => {
@@ -85,6 +101,8 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
       return;
     }
 
+    // Garantir estado limpo antes de editar
+    setIsDetailsOpen(false);
     setSelectedBuilding(building);
     setIsFormOpen(true);
   };
@@ -111,12 +129,18 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
 
   const handleCloseDetails = (open: boolean) => {
     console.log('🔄 [BUILDING ACTIONS] Fechando detalhes:', open);
-    setIsDetailsOpen(open);
-    if (!open) {
+    
+    if (!open && !dialogTransitioning) {
+      setDialogTransitioning(true);
+      setIsDetailsOpen(false);
+      
       // Aguardar um momento antes de limpar o building selecionado
       setTimeout(() => {
         setSelectedBuilding(null);
-      }, 100);
+        setDialogTransitioning(false);
+      }, 150);
+    } else if (open) {
+      setIsDetailsOpen(true);
     }
   };
 
@@ -128,6 +152,7 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
     isImageManagerOpen,
     setIsImageManagerOpen,
     operationLoading,
+    dialogTransitioning,
     handleDeleteBuilding,
     handleNewBuilding,
     handleViewBuilding,
