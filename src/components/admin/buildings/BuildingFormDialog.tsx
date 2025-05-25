@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
@@ -438,17 +437,20 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="location_type">Categoria</Label>
+                    <Label htmlFor="padrao_publico">Categoria</Label>
                     <Select
-                      value={formData.location_type}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, location_type: value }))}
+                      value={formData.padrao_publico}
+                      onValueChange={(value: 'alto' | 'medio' | 'normal') => 
+                        setFormData(prev => ({ ...prev, padrao_publico: value }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="residential">Residential</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="medio">Intermediário</SelectItem>
+                        <SelectItem value="alto">Alto Padrão</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -589,41 +591,20 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="padrao_publico">Padrão do Público</Label>
-                      <Select
-                        value={formData.padrao_publico}
-                        onValueChange={(value: 'alto' | 'medio' | 'normal') => 
-                          setFormData(prev => ({ ...prev, padrao_publico: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="alto">Alto</SelectItem>
-                          <SelectItem value="medio">Médio</SelectItem>
-                          <SelectItem value="normal">Normal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ativo">Ativo</SelectItem>
-                          <SelectItem value="inativo">Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ativo">Ativo</SelectItem>
+                        <SelectItem value="inativo">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
