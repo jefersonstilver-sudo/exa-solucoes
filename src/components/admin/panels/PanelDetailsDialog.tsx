@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -142,10 +141,6 @@ const PanelDetailsDialog: React.FC<PanelDetailsDialogProps> = ({
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium text-sm text-gray-700">Marca</h4>
-                        <p className="text-sm">{panel.marca || 'Não informado'}</p>
-                      </div>
-                      <div>
                         <h4 className="font-medium text-sm text-gray-700">Modelo</h4>
                         <p className="text-sm">{panel.modelo || 'Não informado'}</p>
                       </div>
@@ -166,10 +161,6 @@ const PanelDetailsDialog: React.FC<PanelDetailsDialogProps> = ({
                       <div>
                         <h4 className="font-medium text-sm text-gray-700">Sistema Operacional</h4>
                         <p className="text-sm capitalize">{panel.sistema_operacional || 'Não informado'}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-sm text-gray-700">Modo de Exibição</h4>
-                        <p className="text-sm capitalize">{panel.modo || 'Não informado'}</p>
                       </div>
                       <div>
                         <h4 className="font-medium text-sm text-gray-700">Versão do Firmware</h4>

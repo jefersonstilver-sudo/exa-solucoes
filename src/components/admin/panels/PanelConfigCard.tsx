@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +53,9 @@ const PanelConfigCard: React.FC<PanelConfigCardProps> = ({
   const OrientationIcon = getOrientationIcon(panel.orientacao);
 
   return (
-    <Card className="hover:shadow-lg transition-shadow border border-gray-200">
+    <Card className={`
+      hover:shadow-lg transition-shadow border border-gray-200
+    `}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -106,12 +107,6 @@ const PanelConfigCard: React.FC<PanelConfigCardProps> = ({
         <div className="space-y-3">
           {/* Informações Técnicas */}
           <div className="grid grid-cols-2 gap-2 text-sm">
-            {panel.marca && (
-              <div>
-                <span className="text-gray-500">Marca:</span>
-                <span className="ml-1 font-medium">{panel.marca}</span>
-              </div>
-            )}
             {panel.polegada && (
               <div>
                 <span className="text-gray-500">Tamanho:</span>

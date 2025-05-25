@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -9,7 +8,6 @@ interface Panel {
   building_id: string;
   status: string;
   resolucao: string;
-  modo: string;
   ultima_sync: string;
   created_at: string;
   polegada: string;
@@ -18,7 +16,6 @@ interface Panel {
   codigo_anydesk: string;
   senha_anydesk: string;
   modelo: string;
-  marca: string;
   versao_firmware: string;
   ip_interno: string;
   mac_address: string;

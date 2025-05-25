@@ -34,7 +34,6 @@ export interface Panel {
   status?: string;
   ultima_sync?: string;
   resolucao?: string;
-  modo?: string;
   
   // Novos campos técnicos
   polegada?: string;
@@ -43,7 +42,6 @@ export interface Panel {
   codigo_anydesk?: string;
   senha_anydesk?: string;
   modelo?: string;
-  marca?: string;
   versao_firmware?: string;
   ip_interno?: string;
   mac_address?: string;

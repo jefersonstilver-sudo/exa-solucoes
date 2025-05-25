@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -37,14 +36,12 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
     building_id: '',
     status: 'offline',
     resolucao: '',
-    modo: '',
     polegada: '',
     orientacao: 'horizontal',
     sistema_operacional: 'windows',
     codigo_anydesk: '',
     senha_anydesk: '',
     modelo: '',
-    marca: '',
     versao_firmware: '',
     ip_interno: '',
     mac_address: '',
@@ -65,14 +62,12 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
           building_id: panel.building_id || '',
           status: panel.status || 'offline',
           resolucao: panel.resolucao || '',
-          modo: panel.modo || '',
           polegada: panel.polegada || '',
           orientacao: panel.orientacao || 'horizontal',
           sistema_operacional: panel.sistema_operacional || 'windows',
           codigo_anydesk: panel.codigo_anydesk || '',
           senha_anydesk: panel.senha_anydesk || '',
           modelo: panel.modelo || '',
-          marca: panel.marca || '',
           versao_firmware: panel.versao_firmware || '',
           ip_interno: panel.ip_interno || '',
           mac_address: panel.mac_address || '',
@@ -85,14 +80,12 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
           building_id: '',
           status: 'offline',
           resolucao: '1920x1080',
-          modo: 'portrait',
           polegada: '',
           orientacao: 'horizontal',
           sistema_operacional: 'windows',
           codigo_anydesk: '',
           senha_anydesk: '',
           modelo: '',
-          marca: '',
           versao_firmware: '',
           ip_interno: '',
           mac_address: '',
@@ -285,16 +278,6 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="marca">Marca</Label>
-                    <Input
-                      id="marca"
-                      value={formData.marca}
-                      onChange={(e) => handleFormUpdate('marca', e.target.value)}
-                      placeholder="Ex: Samsung, LG, Philips"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="modelo">Modelo</Label>
                     <Input
                       id="modelo"
@@ -365,20 +348,6 @@ const PanelFormDialog: React.FC<PanelFormDialogProps> = ({
                       onChange={(e) => handleFormUpdate('versao_firmware', e.target.value)}
                       placeholder="Ex: 1.2.3, v2.0.1"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="modo">Modo de Exibição</Label>
-                    <Select value={formData.modo} onValueChange={(value) => handleFormUpdate('modo', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="portrait">Retrato</SelectItem>
-                        <SelectItem value="landscape">Paisagem</SelectItem>
-                        <SelectItem value="auto">Automático</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </CardContent>
               </Card>

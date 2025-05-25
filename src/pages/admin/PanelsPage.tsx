@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -94,8 +93,7 @@ const PanelsPage = () => {
   const filteredPanels = panels.filter(panel => {
     const matchesSearch = panel.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          panel.buildings?.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         panel.modelo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         panel.marca?.toLowerCase().includes(searchTerm.toLowerCase());
+                         panel.modelo?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || panel.status === statusFilter;
     const matchesOs = osFilter === 'all' || panel.sistema_operacional === osFilter;
@@ -354,9 +352,6 @@ const PanelsPage = () => {
                           </Badge>
                         </div>
                         <div className="flex items-center space-x-6 mt-2">
-                          {panel.marca && (
-                            <p className="text-sm text-gray-500">Marca: {panel.marca}</p>
-                          )}
                           {panel.polegada && (
                             <p className="text-sm text-gray-500">Tamanho: {panel.polegada}"</p>
                           )}
