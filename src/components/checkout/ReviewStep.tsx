@@ -1,161 +1,153 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Building, AlertTriangle } from 'lucide-react';
-import { Panel } from '@/types/panel';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/utils/priceUtils';
-import { getPanelPrice } from '@/utils/checkoutUtils';
+import { Button } from '@/components/ui/button';
+import { MapPin, Calendar, Clock, CreditCard, Tag, ChevronRight } from 'lucide-react';
+import { useCheckout } from '@/hooks/useCheckout';
+import { formatPrice } from '@/utils/formatters';
 
-interface ReviewStepProps {
-  cartItems: { panel: Panel; duration: number }[];
-  unavailablePanels: string[];
-}
+const ReviewStep = () => {
+  const { 
+    selectedPanels, 
+    selectedMonths, 
+    finalPrice, 
+    appliedCoupon, 
+    nextStep 
+  } = useCheckout();
 
-const ReviewStep: React.FC<ReviewStepProps> = ({ cartItems, unavailablePanels }) => {
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+  const formatPanelInfo = (panel: any) => {
+    const info = [];
+    
+    if (panel.buildings?.nome) {
+      info.push(panel.buildings.nome);
     }
+    
+    if (panel.buildings?.bairro) {
+      info.push(panel.buildings.bairro);
+    }
+    
+    return info.join(' - ');
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+  const totalOriginalPrice = selectedPanels.reduce((sum, panel) => {
+    return sum + (panel.buildings?.basePrice || 0);
+  }, 0) * selectedMonths;
 
-  // Função para calcular o preço de exibição do painel
-  const calculatePanelDisplayPrice = (panel: Panel, duration: number) => {
-    return getPanelPrice(panel, duration);
-  };
+  const discount = appliedCoupon ? totalOriginalPrice - finalPrice : 0;
 
   return (
     <div className="space-y-6">
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="space-y-2"
-      >
-        <h2 className="text-xl font-semibold flex items-center text-gray-900">
-          <span className="mr-2 text-2xl">📋</span>
-          Revisão do Pedido
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Confira os painéis selecionados para sua campanha
-        </p>
-      </motion.div>
-      
-      {unavailablePanels.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="bg-orange-50 p-4 border border-orange-200 rounded-xl shadow-sm"
-        >
-          <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-orange-800">
-                Painéis indisponíveis para o período selecionado
-              </h3>
-              <div className="mt-2 text-sm text-orange-700">
-                <p>
-                  {unavailablePanels.length} {unavailablePanels.length === 1 ? 'painel' : 'painéis'} não {unavailablePanels.length === 1 ? 'está' : 'estão'} disponível para o período selecionado.
-                  Por favor, ajuste o período ou selecione outros painéis.
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-      
-      <motion.div 
-        className="space-y-4"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {cartItems.map((item) => {
-          const isPanelUnavailable = unavailablePanels.includes(item.panel.id);
-          const panelPrice = calculatePanelDisplayPrice(item.panel, item.duration);
-          const months = Math.round(item.duration / 30);
-          
-          return (
-            <motion.div
-              key={item.panel.id}
-              variants={itemVariants}
-              transition={{ duration: 0.4 }}
-            >
-              <Card className={`overflow-hidden ${isPanelUnavailable ? 'border-orange-300' : 'hover:shadow-md transition-shadow'}`}>
-                <CardContent className="p-4">
-                  <div className="flex gap-4">
-                    <div className="flex-shrink-0 w-20 h-20 overflow-hidden rounded-xl bg-gray-100">
-                      {item.panel.buildings?.imageUrl ? (
-                        <img 
-                          src={item.panel.buildings.imageUrl} 
-                          alt={item.panel.buildings?.nome || 'Building image'}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                          <Building className="h-8 w-8 text-gray-400" />
-                        </div>
-                      )}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Revisão do Pedido</h2>
+        <p className="text-gray-600">Confirme os detalhes do seu pedido antes de prosseguir</p>
+      </div>
+
+      {/* Selected Panels */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <MapPin className="h-5 w-5 mr-2" />
+            Painéis Selecionados ({selectedPanels.length})
+          </CardTitle>
+          <CardDescription>
+            Painéis que serão utilizados em sua campanha
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {selectedPanels.map((panel) => (
+              <div key={panel.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
+                      <MapPin className="h-6 w-6 text-indexa-purple" />
                     </div>
-                    
-                    <div className="flex-grow">
-                      <div className="flex justify-between">
-                        <h4 className="font-medium text-gray-900">
-                          {item.panel.buildings?.nome || 'Painel Digital'}
-                        </h4>
-                        
-                        <div className="text-right">
-                          <span className="text-indexa-purple font-semibold">
-                            {formatCurrency(panelPrice)}
-                          </span>
-                          <p className="text-xs text-gray-500">
-                            {months} {months === 1 ? 'mês' : 'meses'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-gray-500 mt-1">
-                        {item.panel.buildings?.endereco || 'Endereço não disponível'}
-                      </p>
-                      
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant={isPanelUnavailable ? 'destructive' : 'outline'} className="text-xs">
-                          {item.panel.buildings?.bairro || 'Localização não disponível'}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {item.panel.modo || 'indoor'}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {item.panel.resolucao || 'HD'}
-                        </Badge>
-                      </div>
-                      
-                      {isPanelUnavailable && (
-                        <p className="mt-2 text-xs text-orange-600 flex items-center">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Indisponível para o período selecionado
-                        </p>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{formatPanelInfo(panel)}</h4>
+                      <p className="text-sm text-gray-500">{panel.code}</p>
+                      {panel.localizacao && (
+                        <p className="text-xs text-gray-400">{panel.localizacao}</p>
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-gray-900">
+                    {formatPrice(panel.buildings?.basePrice || 0)}/mês
+                  </p>
+                  <Badge variant="outline" className="text-xs">
+                    {panel.resolucao || 'Resolução não informada'}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Duration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Calendar className="h-5 w-5 mr-2" />
+            Duração da Campanha
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-3">
+            <Clock className="h-5 w-5 text-gray-400" />
+            <span className="text-lg font-medium">
+              {selectedMonths} {selectedMonths === 1 ? 'mês' : 'meses'}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pricing Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <CreditCard className="h-5 w-5 mr-2" />
+            Resumo de Preços
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal ({selectedPanels.length} painéis × {selectedMonths} meses)</span>
+              <span className="font-medium">{formatPrice(totalOriginalPrice)}</span>
+            </div>
+            
+            {appliedCoupon && (
+              <div className="flex justify-between text-green-600">
+                <span className="flex items-center">
+                  <Tag className="h-4 w-4 mr-1" />
+                  Desconto ({appliedCoupon.codigo})
+                </span>
+                <span className="font-medium">-{formatPrice(discount)}</span>
+              </div>
+            )}
+            
+            <div className="border-t pt-3">
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span className="text-indexa-purple">{formatPrice(finalPrice)}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Continue Button */}
+      <Button 
+        onClick={nextStep}
+        className="w-full bg-indexa-purple hover:bg-indexa-purple-dark text-white py-3"
+        size="lg"
+      >
+        Continuar para Pagamento
+        <ChevronRight className="h-4 w-4 ml-2" />
+      </Button>
     </div>
   );
 };
