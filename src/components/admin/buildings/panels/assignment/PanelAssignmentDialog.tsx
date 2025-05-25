@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,14 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
 }) => {
   const [selectedPanels, setSelectedPanels] = useState<string[]>([]);
 
+  console.log('🏢 [PANEL ASSIGNMENT DIALOG] Renderizando:', {
+    open,
+    buildingId,
+    buildingName,
+    selectedPanelsCount: selectedPanels.length,
+    timestamp: new Date().toISOString()
+  });
+
   const {
     panels,
     loading: loadingPanels,
@@ -52,47 +60,108 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
     buildingId,
     buildingName,
     onSuccess: () => {
+      console.log('✅ [PANEL ASSIGNMENT DIALOG] Atribuição concluída com sucesso');
       onSuccess();
       setSelectedPanels([]);
-      onOpenChange(false);
+      
+      // Aguardar um pouco antes de fechar para garantir que o usuário veja a mensagem de sucesso
+      setTimeout(() => {
+        console.log('🚪 [PANEL ASSIGNMENT DIALOG] Fechando dialog após sucesso');
+        onOpenChange(false);
+      }, 1000);
     }
   });
 
-  console.log('🏢 [PANEL ASSIGNMENT DIALOG] Renderizando para:', {
-    buildingName,
-    panelsAvailable: panels.length,
-    selectedCount: selectedPanels.length,
-    open
-  });
+  // Debug: Log quando o estado muda
+  useEffect(() => {
+    console.log('📊 [PANEL ASSIGNMENT DIALOG] Estado atualizado:', {
+      open,
+      panelsAvailable: panels.length,
+      selectedCount: selectedPanels.length,
+      loadingPanels,
+      assigning,
+      buildingId,
+      buildingName
+    });
+  }, [open, panels.length, selectedPanels.length, loadingPanels, assigning, buildingId, buildingName]);
+
+  // Reset selected panels when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      console.log('🧹 [PANEL ASSIGNMENT DIALOG] Dialog fechado, limpando seleções');
+      setSelectedPanels([]);
+    }
+  }, [open]);
 
   const handleSelectPanel = (panelId: string) => {
-    setSelectedPanels(prev =>
-      prev.includes(panelId)
+    console.log('🎯 [PANEL ASSIGNMENT DIALOG] Selecionando/deselecionando painel:', panelId);
+    setSelectedPanels(prev => {
+      const newSelection = prev.includes(panelId)
         ? prev.filter(id => id !== panelId)
-        : [...prev, panelId]
-    );
+        : [...prev, panelId];
+      
+      console.log('📋 [PANEL ASSIGNMENT DIALOG] Nova seleção:', {
+        previous: prev,
+        new: newSelection,
+        action: prev.includes(panelId) ? 'removed' : 'added',
+        panelId
+      });
+      
+      return newSelection;
+    });
   };
 
   const handleSelectAll = () => {
-    if (selectedPanels.length === panels.length) {
-      setSelectedPanels([]);
-    } else {
-      setSelectedPanels(panels.map(p => p.id));
-    }
+    console.log('🎯 [PANEL ASSIGNMENT DIALOG] Selecionando/deselecionando todos');
+    const allSelected = selectedPanels.length === panels.length;
+    const newSelection = allSelected ? [] : panels.map(p => p.id);
+    
+    console.log('📋 [PANEL ASSIGNMENT DIALOG] Seleção de todos:', {
+      wasAllSelected: allSelected,
+      newSelection: newSelection.length,
+      totalPanels: panels.length
+    });
+    
+    setSelectedPanels(newSelection);
   };
 
   const handleAssign = async () => {
-    await assignPanelsToBuilding(selectedPanels);
+    console.log('🚀 [PANEL ASSIGNMENT DIALOG] Iniciando atribuição:', {
+      selectedPanels,
+      buildingId,
+      buildingName
+    });
+    
+    if (selectedPanels.length === 0) {
+      console.warn('⚠️ [PANEL ASSIGNMENT DIALOG] Nenhum painel selecionado');
+      return;
+    }
+
+    try {
+      const success = await assignPanelsToBuilding(selectedPanels);
+      console.log('📊 [PANEL ASSIGNMENT DIALOG] Resultado da atribuição:', success);
+    } catch (error) {
+      console.error('💥 [PANEL ASSIGNMENT DIALOG] Erro na atribuição:', error);
+    }
   };
 
   const handleClose = () => {
     if (!assigning) {
+      console.log('🚪 [PANEL ASSIGNMENT DIALOG] Fechando dialog (usuário)');
       setSelectedPanels([]);
       onOpenChange(false);
+    } else {
+      console.log('⏳ [PANEL ASSIGNMENT DIALOG] Não é possível fechar - operação em andamento');
     }
   };
 
   const isOperationInProgress = loadingPanels || assigning;
+
+  console.log('🎭 [PANEL ASSIGNMENT DIALOG] Estado final antes do render:', {
+    isOperationInProgress,
+    selectedPanels: selectedPanels.length,
+    totalPanels: panels.length
+  });
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

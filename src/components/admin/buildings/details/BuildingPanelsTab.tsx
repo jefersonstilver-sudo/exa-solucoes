@@ -33,7 +33,13 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
   const { loading: removing, removePanel } = useSharedPanelOperations();
 
-  console.log('🏢 [BUILDING PANELS TAB] Renderizando com painéis:', panels.length);
+  console.log('🏢 [BUILDING PANELS TAB] Renderizando:', {
+    panelsCount: panels.length,
+    loading,
+    removing,
+    buildingName,
+    showAssignmentDialog
+  });
 
   const getPanelStatusSummary = () => {
     const summary = panels.reduce((acc, panel) => {
@@ -46,7 +52,11 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   const statusSummary = getPanelStatusSummary();
 
   const handleRemoveRequest = useCallback((panel: any) => {
-    console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção:', panel.code);
+    console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção:', {
+      panelId: panel.id,
+      panelCode: panel.code,
+      buildingName
+    });
     
     if (!panel?.id || !panel?.code) {
       console.error('❌ [BUILDING PANELS TAB] Panel inválido:', panel);
@@ -55,14 +65,20 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
     setSelectedPanel(panel);
     setShowRemovalAlert(true);
-  }, []);
+  }, [buildingName]);
 
   const handleConfirmRemoval = useCallback(async () => {
-    if (!selectedPanel) return;
+    if (!selectedPanel) {
+      console.warn('⚠️ [BUILDING PANELS TAB] Nenhum painel selecionado para remoção');
+      return;
+    }
 
+    console.log('🗑️ [BUILDING PANELS TAB] Confirmando remoção:', selectedPanel.code);
+    
     const success = await removePanel(selectedPanel.id, selectedPanel.code, buildingName);
     
     if (success) {
+      console.log('✅ [BUILDING PANELS TAB] Remoção bem-sucedida, atualizando interface');
       setShowRemovalAlert(false);
       setSelectedPanel(null);
       
@@ -74,20 +90,38 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
   const handleCloseAlert = useCallback((open: boolean) => {
     if (!open && !removing) {
+      console.log('🚪 [BUILDING PANELS TAB] Fechando alert de remoção');
       setShowRemovalAlert(false);
       setSelectedPanel(null);
     }
   }, [removing]);
 
   const handleAssignmentSuccess = useCallback(() => {
-    console.log('✅ [BUILDING PANELS TAB] Atribuição realizada com sucesso');
+    console.log('✅ [BUILDING PANELS TAB] Atribuição realizada, atualizando dados');
     onRefresh();
   }, [onRefresh]);
+
+  const handleOpenAssignmentDialog = useCallback(() => {
+    console.log('🚀 [BUILDING PANELS TAB] Abrindo dialog de atribuição');
+    setShowAssignmentDialog(true);
+  }, []);
+
+  const handleCloseAssignmentDialog = useCallback((open: boolean) => {
+    console.log('🚪 [BUILDING PANELS TAB] Fechando dialog de atribuição:', open);
+    setShowAssignmentDialog(open);
+  }, []);
 
   const isGlobalOperationInProgress = removing || loading;
 
   // Extrair buildingId do primeiro painel (assumindo que todos pertencem ao mesmo prédio)
   const buildingId = panels.length > 0 ? panels[0].building_id : '';
+
+  console.log('🏗️ [BUILDING PANELS TAB] Estado do componente:', {
+    buildingId,
+    isGlobalOperationInProgress,
+    showAssignmentDialog,
+    showRemovalAlert
+  });
 
   return (
     <>
@@ -110,7 +144,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => setShowAssignmentDialog(true)}
+                  onClick={handleOpenAssignmentDialog}
                   disabled={isGlobalOperationInProgress}
                   className="bg-blue-500 hover:bg-blue-600 text-white"
                 >
@@ -170,7 +204,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
                   Este prédio ainda não possui painéis atribuídos.
                 </p>
                 <Button
-                  onClick={() => setShowAssignmentDialog(true)}
+                  onClick={handleOpenAssignmentDialog}
                   disabled={isGlobalOperationInProgress}
                   className="bg-blue-500 hover:bg-blue-600 text-white"
                 >
@@ -195,7 +229,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
       {buildingId && (
         <PanelAssignmentDialog
           open={showAssignmentDialog}
-          onOpenChange={setShowAssignmentDialog}
+          onOpenChange={handleCloseAssignmentDialog}
           buildingId={buildingId}
           buildingName={buildingName}
           onSuccess={handleAssignmentSuccess}

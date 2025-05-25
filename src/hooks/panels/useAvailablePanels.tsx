@@ -29,13 +29,27 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
   const [orientationFilter, setOrientationFilter] = useState('all');
 
   const fetchAvailablePanels = useCallback(async () => {
-    if (!open) return;
+    if (!open) {
+      console.log('🚫 [AVAILABLE PANELS] Dialog fechado, não buscando painéis');
+      return;
+    }
 
     setLoading(true);
+    console.log('🔍 [AVAILABLE PANELS] Iniciando busca de painéis disponíveis...');
+
     try {
-      console.log('🔍 [AVAILABLE PANELS] Buscando painéis disponíveis...');
+      // Verificar se o usuário está autenticado
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('❌ [AVAILABLE PANELS] Usuário não autenticado:', userError);
+        throw new Error('Usuário não autenticado');
+      }
+
+      console.log('👤 [AVAILABLE PANELS] Usuário autenticado:', user.email);
 
       // Buscar painéis que não estão atribuídos a nenhum prédio
+      console.log('📊 [AVAILABLE PANELS] Executando query...');
       const { data, error } = await supabase
         .from('painels')
         .select('*')
@@ -43,18 +57,47 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ [AVAILABLE PANELS] Erro na consulta:', error);
+        console.error('❌ [AVAILABLE PANELS] Erro na consulta:', {
+          error,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 
-      console.log('✅ [AVAILABLE PANELS] Painéis encontrados:', data?.length || 0);
-      console.log('📊 [AVAILABLE PANELS] Dados dos painéis:', data);
+      console.log('✅ [AVAILABLE PANELS] Query executada com sucesso');
+      console.log('📊 [AVAILABLE PANELS] Painéis encontrados:', {
+        total: data?.length || 0,
+        painelCodes: data?.map(p => p.code) || []
+      });
       
       setPanels(data || []);
+
+      if (data && data.length > 0) {
+        console.log('🔍 [AVAILABLE PANELS] Detalhes dos primeiros painéis:');
+        data.slice(0, 3).forEach((panel, index) => {
+          console.log(`Panel ${index + 1}:`, {
+            id: panel.id,
+            code: panel.code,
+            status: panel.status,
+            building_id: panel.building_id,
+            polegada: panel.polegada,
+            resolucao: panel.resolucao
+          });
+        });
+      }
+
     } catch (error: any) {
-      console.error('💥 [AVAILABLE PANELS] Erro ao buscar painéis:', error);
+      console.error('💥 [AVAILABLE PANELS] Erro crítico:', {
+        error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code
+      });
       
-      // Mensagem de erro mais específica
       let errorMessage = 'Erro ao carregar painéis disponíveis';
       if (error?.message?.includes('permission denied')) {
         errorMessage = 'Erro de permissão: Verifique se você tem acesso para visualizar painéis';
@@ -66,12 +109,20 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
       setPanels([]);
     } finally {
       setLoading(false);
+      console.log('🏁 [AVAILABLE PANELS] Busca finalizada');
     }
   }, [open]);
 
   // Aplicar filtros
   useEffect(() => {
     let filtered = panels;
+
+    console.log('🔍 [AVAILABLE PANELS] Aplicando filtros:', {
+      totalPanels: panels.length,
+      searchTerm,
+      statusFilter,
+      orientationFilter
+    });
 
     // Filtro de busca
     if (searchTerm) {
@@ -91,12 +142,9 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
       filtered = filtered.filter(panel => panel.orientacao === orientationFilter);
     }
 
-    console.log('🔍 [AVAILABLE PANELS] Aplicando filtros:', {
-      total: panels.length,
-      filtered: filtered.length,
-      searchTerm,
-      statusFilter,
-      orientationFilter
+    console.log('📋 [AVAILABLE PANELS] Filtros aplicados:', {
+      filteredCount: filtered.length,
+      filteredCodes: filtered.map(p => p.code)
     });
 
     setFilteredPanels(filtered);
@@ -107,6 +155,7 @@ export const useAvailablePanels = ({ open }: UseAvailablePanelsProps) => {
   }, [fetchAvailablePanels]);
 
   const clearFilters = useCallback(() => {
+    console.log('🧹 [AVAILABLE PANELS] Limpando filtros');
     setSearchTerm('');
     setStatusFilter('all');
     setOrientationFilter('all');
