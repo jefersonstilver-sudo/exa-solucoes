@@ -568,6 +568,15 @@ export type Database = {
           is_consistent: boolean
         }[]
       }
+      get_approvals_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          pago_pendente_video: number
+          video_enviado: number
+          video_aprovado: number
+          video_rejeitado: number
+        }[]
+      }
       get_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -583,6 +592,23 @@ export type Database = {
           resolucao: string
           modo: string
           buildings: Json
+        }[]
+      }
+      get_pedidos_com_clientes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          created_at: string
+          status: string
+          valor_total: number
+          lista_paineis: string[]
+          plano_meses: number
+          data_inicio: string
+          data_fim: string
+          client_id: string
+          client_email: string
+          client_name: string
+          video_status: string
         }[]
       }
       get_real_revenue: {

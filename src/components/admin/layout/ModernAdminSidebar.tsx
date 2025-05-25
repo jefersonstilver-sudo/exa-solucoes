@@ -80,22 +80,22 @@ const ModernAdminSidebar = () => {
   };
 
   return (
-    <Sidebar className="border-r border-gray-200">
-      <SidebarHeader className="p-6 border-b border-gray-200">
+    <Sidebar className="border-r border-gray-200 bg-indexa-purple">
+      <SidebarHeader className="p-6 border-b border-white/20 bg-indexa-purple">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-indexa-purple rounded-lg flex items-center justify-center">
-            <LayoutDashboard className="h-6 w-6 text-white" />
+          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+            <LayoutDashboard className="h-6 w-6 text-indexa-purple" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">INDEXA</h2>
-            <p className="text-xs text-gray-600">Super Admin</p>
+            <h2 className="text-lg font-bold text-white">INDEXA MEDIA</h2>
+            <p className="text-xs text-white/80">Super Admin</p>
           </div>
         </div>
       </SidebarHeader>
       
-      <SidebarContent className="p-4">
+      <SidebarContent className="p-4 bg-indexa-purple">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          <SidebarGroupLabel className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-3">
             Navegação Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -109,13 +109,13 @@ const ModernAdminSidebar = () => {
                       className={`
                         w-full justify-start px-3 py-2 rounded-lg transition-all duration-200 group
                         ${isActive 
-                          ? 'bg-indexa-purple text-white shadow-md' 
-                          : 'text-gray-700 hover:bg-gray-100 hover:text-indexa-purple'
+                          ? 'bg-white text-indexa-purple shadow-md' 
+                          : 'text-white hover:bg-white/10 hover:text-white'
                         }
                       `}
                     >
                       <div className="flex items-center space-x-3 w-full">
-                        <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-indexa-purple'}`} />
+                        <item.icon className={`h-5 w-5 ${isActive ? 'text-indexa-purple' : 'text-white'}`} />
                         <div className="flex-1">
                           <span className="font-medium">{item.title}</span>
                         </div>

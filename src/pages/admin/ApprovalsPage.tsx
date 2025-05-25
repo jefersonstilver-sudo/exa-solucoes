@@ -1,16 +1,16 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Video, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import { useApprovalsData } from '@/hooks/useApprovalsData';
+import { useApprovalsDataComplete } from '@/hooks/useApprovalsDataComplete';
 import PaidOrdersSection from '@/components/admin/approvals/PaidOrdersSection';
 import PendingVideosSection from '@/components/admin/approvals/PendingVideosSection';
 import ApprovedVideosSection from '@/components/admin/approvals/ApprovedVideosSection';
 
 const ApprovalsPage = () => {
   const [activeTab, setActiveTab] = useState('pending-orders');
-  const { stats, loading, refetch } = useApprovalsData();
+  const { stats, loading, refetch } = useApprovalsDataComplete();
 
   return (
     <div className="space-y-6">

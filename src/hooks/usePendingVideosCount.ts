@@ -7,18 +7,20 @@ export const usePendingVideosCount = () => {
 
   const fetchPendingCount = async () => {
     try {
-      // Contar pedidos com vídeo enviado aguardando aprovação
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('id', { count: 'exact' })
-        .eq('status', 'video_enviado');
+      // Usar a nova função para contar vídeos pendentes
+      const { data, error } = await supabase.rpc('get_approvals_stats');
 
       if (error) {
-        console.error('Erro ao buscar vídeos pendentes:', error);
+        console.error('Erro ao buscar estatísticas de vídeos pendentes:', error);
         return;
       }
 
-      setPendingCount(data?.length || 0);
+      if (data && data.length > 0) {
+        const stats = data[0];
+        // Somar aguardando vídeo + vídeos enviados para aprovação
+        const totalPending = Number(stats.pago_pendente_video || 0) + Number(stats.video_enviado || 0);
+        setPendingCount(totalPending);
+      }
     } catch (error) {
       console.error('Erro ao buscar contagem de vídeos pendentes:', error);
     }
@@ -29,7 +31,7 @@ export const usePendingVideosCount = () => {
 
     // Configurar inscrição em tempo real
     const channel = supabase
-      .channel('pending-videos-count')
+      .channel('pending-videos-count-complete')
       .on('postgres_changes', 
         { 
           event: '*', 
