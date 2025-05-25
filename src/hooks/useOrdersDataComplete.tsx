@@ -36,7 +36,7 @@ export const useOrdersDataComplete = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      console.log('🛒 Buscando pedidos completos com dados dos clientes...');
+      console.log('🛒 Iniciando busca de pedidos completos...');
       
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -48,22 +48,48 @@ export const useOrdersDataComplete = () => {
 
       console.log('✅ Usuário autenticado:', user.email);
 
-      // Usar a função do banco para buscar pedidos com dados dos clientes
+      // Usar a função corrigida do banco
       const { data, error } = await supabase.rpc('get_pedidos_com_clientes');
 
       if (error) {
-        console.error('❌ Erro ao buscar pedidos completos:', error);
+        console.error('❌ Erro detalhado ao buscar pedidos:', error);
         toast.error(`Erro ao carregar pedidos: ${error.message}`);
         return;
       }
 
-      console.log('✅ Pedidos completos carregados:', data?.length || 0);
+      console.log('📊 Dados brutos retornados:', data);
+      console.log('📊 Número de pedidos encontrados:', data?.length || 0);
       
       if (!data || data.length === 0) {
-        console.log('⚠️ Nenhum pedido encontrado');
+        console.log('⚠️ Nenhum pedido encontrado na função RPC');
+        
+        // Fazer uma verificação direta na tabela pedidos como fallback
+        const { data: directData, error: directError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (directError) {
+          console.error('❌ Erro no fallback direto:', directError);
+        } else {
+          console.log('📋 Dados diretos da tabela pedidos:', directData);
+          console.log('📋 Número de pedidos na tabela:', directData?.length || 0);
+        }
+        
         toast.info('Nenhum pedido encontrado na base de dados');
       } else {
-        console.log('🎉 Pedidos com clientes:', data.map(p => `${p.client_name} (${p.video_status})`));
+        console.log('🎉 Pedidos carregados com sucesso:');
+        data.forEach((pedido, index) => {
+          console.log(`📦 Pedido ${index + 1}:`, {
+            id: pedido.id,
+            cliente: pedido.client_name,
+            email: pedido.client_email,
+            valor: pedido.valor_total,
+            status: pedido.status,
+            video_status: pedido.video_status
+          });
+        });
+        
         toast.success(`${data.length} pedidos carregados com dados dos clientes`);
       }
 
@@ -73,9 +99,10 @@ export const useOrdersDataComplete = () => {
       const ordersList = data || [];
       const total = ordersList.length;
       const pending = ordersList.filter(o => o.status === 'pendente').length;
-      const completed = ordersList.filter(o => o.status === 'pago' || o.status === 'ativo').length;
+      const completed = ordersList.filter(o => ['pago', 'video_aprovado', 'ativo'].includes(o.status)).length;
       const cancelled = ordersList.filter(o => o.status === 'cancelado').length;
-      const revenue = ordersList.filter(o => ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(o.status))
+      const revenue = ordersList
+        .filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(o.status))
         .reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0);
       
       // Estatísticas de vídeo
@@ -84,7 +111,7 @@ export const useOrdersDataComplete = () => {
       const video_approved = ordersList.filter(o => o.status === 'video_aprovado').length;
       const video_rejected = ordersList.filter(o => o.status === 'video_rejeitado').length;
 
-      setStats({ 
+      const statsCalculated = { 
         total, 
         pending, 
         completed, 
@@ -94,10 +121,13 @@ export const useOrdersDataComplete = () => {
         video_sent,
         video_approved,
         video_rejected
-      });
+      };
+      
+      console.log('📈 Estatísticas calculadas:', statsCalculated);
+      setStats(statsCalculated);
       
     } catch (error) {
-      console.error('💥 Erro crítico ao carregar pedidos completos:', error);
+      console.error('💥 Erro crítico ao carregar pedidos:', error);
       toast.error('Erro crítico. Verifique sua conexão e tente novamente.');
     } finally {
       setLoading(false);
