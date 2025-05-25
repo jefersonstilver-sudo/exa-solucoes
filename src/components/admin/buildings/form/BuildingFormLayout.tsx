@@ -10,17 +10,23 @@ import PanelManagementSection from './PanelManagementSection';
 interface BuildingFormLayoutProps {
   formData: any;
   building?: any;
+  panels?: any[];
   onFormUpdate: (updates: any) => void;
   onCharacteristicToggle: (caracteristica: string) => void;
   onSuccess: () => void;
+  onAssignPanel?: () => void;
+  onPanelsChange?: (panels: any[]) => void;
 }
 
 const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
   formData,
   building,
+  panels = [],
   onFormUpdate,
   onCharacteristicToggle,
-  onSuccess
+  onSuccess,
+  onAssignPanel,
+  onPanelsChange
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -74,11 +80,16 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
           onSuccess={onSuccess}
         />
 
-        <PanelManagementSection
-          buildingId={building?.id}
-          buildingName={formData.nome || building?.nome}
-          onPanelsChange={onSuccess}
-        />
+        {/* Só mostrar PanelManagementSection se temos buildingId (editando) */}
+        {building?.id && (
+          <PanelManagementSection
+            panels={panels}
+            buildingId={building.id}
+            buildingName={formData.nome || building?.nome}
+            onPanelsChange={onPanelsChange || (() => {})}
+            onAssignPanel={onAssignPanel || (() => {})}
+          />
+        )}
       </div>
     </div>
   );
