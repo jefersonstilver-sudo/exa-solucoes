@@ -25,22 +25,14 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   const {
     actionLogs,
     sales,
-    panels,
     loading,
-    fetchBuildingData,
-    handleSyncPanel,
-    handleViewPanelDetails
+    fetchBuildingData
   } = useBuildingDetailsData({ building, open });
 
   console.log('🏗️ [BUILDING DETAILS] Dialog renderizado para:', building?.nome, {
     open,
-    panelsCount: panels.length,
     loading
   });
-
-  const handleAssignmentPlaceholder = () => {
-    console.log('🚧 [BUILDING DETAILS] Funcionalidade de atribuição em reconstrução');
-  };
 
   if (!building) {
     console.warn('⚠️ [BUILDING DETAILS] Componente renderizado sem prédio');
@@ -62,14 +54,10 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
 
         <BuildingDetailsTabsContent
           building={building}
-          panels={panels}
           sales={sales}
           actionLogs={actionLogs}
           loading={loading}
           onRefresh={fetchBuildingData}
-          onAssignPanel={handleAssignmentPlaceholder}
-          onSyncPanel={handleSyncPanel}
-          onViewPanelDetails={handleViewPanelDetails}
         />
       </DialogContent>
     </Dialog>

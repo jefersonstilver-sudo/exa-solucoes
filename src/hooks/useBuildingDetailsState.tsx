@@ -1,28 +1,24 @@
 
 import { useState, useCallback } from 'react';
 
+interface BuildingDetailsData {
+  actionLogs: any[];
+  sales: any[];
+}
+
 export const useBuildingDetailsState = () => {
-  const [actionLogs, setActionLogs] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [panels, setPanels] = useState([]);
+  const [actionLogs, setActionLogs] = useState<any[]>([]);
+  const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const updateActionLogs = useCallback((logs: any[]) => {
-    setActionLogs(logs);
-  }, []);
+  const updateAllData = useCallback((data: BuildingDetailsData) => {
+    console.log('📊 [BUILDING DETAILS STATE] Atualizando dados:', {
+      actionLogsCount: data.actionLogs?.length || 0,
+      salesCount: data.sales?.length || 0
+    });
 
-  const updateSales = useCallback((salesData: any[]) => {
-    setSales(salesData);
-  }, []);
-
-  const updatePanels = useCallback((panelsData: any[]) => {
-    setPanels(panelsData);
-  }, []);
-
-  const updateAllData = useCallback((data: { actionLogs: any[], sales: any[], panels: any[] }) => {
-    setActionLogs(data.actionLogs);
-    setSales(data.sales);
-    setPanels(data.panels);
+    setActionLogs(data.actionLogs || []);
+    setSales(data.sales || []);
   }, []);
 
   const setLoadingState = useCallback((isLoading: boolean) => {
@@ -30,19 +26,16 @@ export const useBuildingDetailsState = () => {
   }, []);
 
   const clearData = useCallback(() => {
+    console.log('🧹 [BUILDING DETAILS STATE] Limpando dados');
     setActionLogs([]);
     setSales([]);
-    setPanels([]);
+    setLoading(false);
   }, []);
 
   return {
     actionLogs,
     sales,
-    panels,
     loading,
-    updateActionLogs,
-    updateSales,
-    updatePanels,
     updateAllData,
     setLoadingState,
     clearData

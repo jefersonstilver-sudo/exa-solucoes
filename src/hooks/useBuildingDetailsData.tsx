@@ -1,7 +1,6 @@
 
 import { useEffect, useCallback } from 'react';
 import { fetchAllBuildingData } from '@/services/buildingDetailsService';
-import { syncPanel, viewPanelDetails } from '@/services/buildingPanelOperations';
 import { useBuildingDetailsState } from './useBuildingDetailsState';
 
 interface UseBuildingDetailsDataProps {
@@ -13,7 +12,6 @@ export const useBuildingDetailsData = ({ building, open }: UseBuildingDetailsDat
   const {
     actionLogs,
     sales,
-    panels,
     loading,
     updateAllData,
     setLoadingState,
@@ -47,26 +45,10 @@ export const useBuildingDetailsData = ({ building, open }: UseBuildingDetailsDat
     }
   }, [building, open, fetchBuildingData, clearData]);
 
-  const handleSyncPanel = useCallback(async (panelId: string) => {
-    try {
-      await syncPanel(panelId);
-      fetchBuildingData();
-    } catch (error) {
-      // Error already handled in syncPanel
-    }
-  }, [fetchBuildingData]);
-
-  const handleViewPanelDetails = useCallback((panelId: string) => {
-    viewPanelDetails(panelId);
-  }, []);
-
   return {
     actionLogs,
     sales,
-    panels,
     loading,
-    fetchBuildingData,
-    handleSyncPanel,
-    handleViewPanelDetails
+    fetchBuildingData
   };
 };
