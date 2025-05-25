@@ -56,6 +56,8 @@ export type Database = {
           audience_profile: string[] | null
           bairro: string
           caracteristicas: string[] | null
+          contato_sindico: string | null
+          contato_vice_sindico: string | null
           created_at: string | null
           endereco: string
           id: string
@@ -70,6 +72,10 @@ export type Database = {
           longitude: number | null
           monthly_traffic: number | null
           nome: string
+          nome_contato_predio: string | null
+          nome_sindico: string | null
+          nome_vice_sindico: string | null
+          numero_contato_predio: string | null
           numero_unidades: number | null
           padrao_publico: string | null
           peak_hours: string | null
@@ -85,6 +91,8 @@ export type Database = {
           audience_profile?: string[] | null
           bairro: string
           caracteristicas?: string[] | null
+          contato_sindico?: string | null
+          contato_vice_sindico?: string | null
           created_at?: string | null
           endereco: string
           id?: string
@@ -99,6 +107,10 @@ export type Database = {
           longitude?: number | null
           monthly_traffic?: number | null
           nome: string
+          nome_contato_predio?: string | null
+          nome_sindico?: string | null
+          nome_vice_sindico?: string | null
+          numero_contato_predio?: string | null
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null
@@ -114,6 +126,8 @@ export type Database = {
           audience_profile?: string[] | null
           bairro?: string
           caracteristicas?: string[] | null
+          contato_sindico?: string | null
+          contato_vice_sindico?: string | null
           created_at?: string | null
           endereco?: string
           id?: string
@@ -128,6 +142,10 @@ export type Database = {
           longitude?: number | null
           monthly_traffic?: number | null
           nome?: string
+          nome_contato_predio?: string | null
+          nome_sindico?: string | null
+          nome_vice_sindico?: string | null
+          numero_contato_predio?: string | null
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
@@ -20,7 +21,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Building2, Camera, Upload, Star, Image as ImageIcon } from 'lucide-react';
+import { X, Building2, Camera, Upload, Star, Image as ImageIcon, UserCircle, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -63,12 +64,19 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     preco_base: 0,
     padrao_publico: 'normal' as 'alto' | 'medio' | 'normal',
     status: 'ativo',
-    venue_type: 'Residencial', // Padrão Residencial
+    venue_type: 'Residencial',
     location_type: 'residential',
     latitude: 0,
     longitude: 0,
     caracteristicas: [] as string[],
-    monthly_traffic: 0
+    monthly_traffic: 0,
+    // Novos campos de contato
+    nome_sindico: '',
+    contato_sindico: '',
+    nome_vice_sindico: '',
+    contato_vice_sindico: '',
+    nome_contato_predio: '',
+    numero_contato_predio: ''
   });
   const [loading, setLoading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
@@ -113,12 +121,19 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: building.preco_base || 0,
         padrao_publico: building.padrao_publico || 'normal',
         status: building.status || 'ativo',
-        venue_type: building.venue_type || 'Residencial', // Padrão Residencial
+        venue_type: building.venue_type || 'Residencial',
         location_type: building.location_type || 'residential',
         latitude: building.latitude || 0,
         longitude: building.longitude || 0,
         caracteristicas: building.caracteristicas || building.amenities || [],
-        monthly_traffic: building.monthly_traffic || 0
+        monthly_traffic: building.monthly_traffic || 0,
+        // Novos campos de contato
+        nome_sindico: building.nome_sindico || '',
+        contato_sindico: building.contato_sindico || '',
+        nome_vice_sindico: building.nome_vice_sindico || '',
+        contato_vice_sindico: building.contato_vice_sindico || '',
+        nome_contato_predio: building.nome_contato_predio || '',
+        numero_contato_predio: building.numero_contato_predio || ''
       });
     } else {
       setFormData({
@@ -129,12 +144,19 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: 0,
         padrao_publico: 'normal',
         status: 'ativo',
-        venue_type: 'Residencial', // Sempre Residencial por padrão
+        venue_type: 'Residencial',
         location_type: 'residential',
         latitude: 0,
         longitude: 0,
         caracteristicas: [],
-        monthly_traffic: 0
+        monthly_traffic: 0,
+        // Novos campos de contato
+        nome_sindico: '',
+        contato_sindico: '',
+        nome_vice_sindico: '',
+        contato_vice_sindico: '',
+        nome_contato_predio: '',
+        numero_contato_predio: ''
       });
     }
   }, [building, open]);
@@ -350,7 +372,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
             {building ? 'Editar Prédio' : 'Novo Prédio'}
           </DialogTitle>
           <DialogDescription>
-            {building ? 'Edite as informações completas do prédio' : 'Cadastre um novo prédio com todos os detalhes'}
+            {building ? 'Edite as informações do prédio' : 'Cadastre um novo prédio'} - Todos os campos são opcionais
           </DialogDescription>
         </DialogHeader>
 
@@ -367,41 +389,39 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nome">Nome do Prédio *</Label>
+                    <Label htmlFor="nome">Nome do Prédio</Label>
                     <Input
                       id="nome"
                       value={formData.nome}
                       onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                      required
-                      placeholder="Ex: Residencial Solar do Jardim"
+                      placeholder="Ex: Residencial Solar do Jardim (opcional)"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endereco">Endereço Completo *</Label>
+                    <Label htmlFor="endereco">Endereço Completo</Label>
                     <Textarea
                       id="endereco"
                       value={formData.endereco}
                       onChange={(e) => setFormData(prev => ({ ...prev, endereco: e.target.value }))}
-                      required
-                      placeholder="Rua, número, complemento..."
+                      placeholder="Rua, número, complemento... (opcional)"
                       rows={2}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="bairro">Bairro *</Label>
+                      <Label htmlFor="bairro">Bairro</Label>
                       <Input
                         id="bairro"
                         value={formData.bairro}
                         onChange={(e) => setFormData(prev => ({ ...prev, bairro: e.target.value }))}
-                        required
+                        placeholder="Bairro (opcional)"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="venue_type">Tipo de Prédio *</Label>
+                      <Label htmlFor="venue_type">Tipo de Prédio</Label>
                       <Select
                         value={formData.venue_type}
                         onValueChange={(value) => setFormData(prev => ({ ...prev, venue_type: value }))}
@@ -418,7 +438,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="location_type">Categoria *</Label>
+                    <Label htmlFor="location_type">Categoria</Label>
                     <Select
                       value={formData.location_type}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, location_type: value }))}
@@ -442,6 +462,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                         step="any"
                         value={formData.latitude}
                         onChange={(e) => setFormData(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))}
+                        placeholder="Coordenada (opcional)"
                       />
                     </div>
 
@@ -453,6 +474,83 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                         step="any"
                         value={formData.longitude}
                         onChange={(e) => setFormData(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
+                        placeholder="Coordenada (opcional)"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <UserCircle className="h-5 w-5 mr-2" />
+                    Contatos do Prédio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome_sindico">Nome do Síndico</Label>
+                      <Input
+                        id="nome_sindico"
+                        value={formData.nome_sindico}
+                        onChange={(e) => setFormData(prev => ({ ...prev, nome_sindico: e.target.value }))}
+                        placeholder="Nome completo (opcional)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contato_sindico">Contato do Síndico</Label>
+                      <Input
+                        id="contato_sindico"
+                        value={formData.contato_sindico}
+                        onChange={(e) => setFormData(prev => ({ ...prev, contato_sindico: e.target.value }))}
+                        placeholder="Telefone/Email (opcional)"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome_vice_sindico">Nome do Vice-Síndico</Label>
+                      <Input
+                        id="nome_vice_sindico"
+                        value={formData.nome_vice_sindico}
+                        onChange={(e) => setFormData(prev => ({ ...prev, nome_vice_sindico: e.target.value }))}
+                        placeholder="Nome completo (opcional)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contato_vice_sindico">Contato do Vice-Síndico</Label>
+                      <Input
+                        id="contato_vice_sindico"
+                        value={formData.contato_vice_sindico}
+                        onChange={(e) => setFormData(prev => ({ ...prev, contato_vice_sindico: e.target.value }))}
+                        placeholder="Telefone/Email (opcional)"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome_contato_predio">Contato do Prédio</Label>
+                      <Input
+                        id="nome_contato_predio"
+                        value={formData.nome_contato_predio}
+                        onChange={(e) => setFormData(prev => ({ ...prev, nome_contato_predio: e.target.value }))}
+                        placeholder="Portaria/Administração (opcional)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="numero_contato_predio">Número do Prédio</Label>
+                      <Input
+                        id="numero_contato_predio"
+                        value={formData.numero_contato_predio}
+                        onChange={(e) => setFormData(prev => ({ ...prev, numero_contato_predio: e.target.value }))}
+                        placeholder="Telefone principal (opcional)"
                       />
                     </div>
                   </div>
@@ -466,27 +564,27 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="numero_unidades">Número de Unidades *</Label>
+                      <Label htmlFor="numero_unidades">Número de Unidades</Label>
                       <Input
                         id="numero_unidades"
                         type="number"
                         value={formData.numero_unidades}
                         onChange={(e) => setFormData(prev => ({ ...prev, numero_unidades: parseInt(e.target.value) || 0 }))}
-                        required
-                        min="1"
+                        min="0"
+                        placeholder="Ex: 120 (opcional)"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="preco_base">Preço Base (R$) *</Label>
+                      <Label htmlFor="preco_base">Preço Base (R$)</Label>
                       <Input
                         id="preco_base"
                         type="number"
                         step="0.01"
                         value={formData.preco_base}
                         onChange={(e) => setFormData(prev => ({ ...prev, preco_base: parseFloat(e.target.value) || 0 }))}
-                        required
                         min="0"
+                        placeholder="Ex: 1500.00 (opcional)"
                       />
                     </div>
                   </div>
@@ -536,7 +634,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                       value={formData.monthly_traffic}
                       onChange={(e) => setFormData(prev => ({ ...prev, monthly_traffic: parseInt(e.target.value) || 0 }))}
                       min="0"
-                      placeholder="Visitantes por mês"
+                      placeholder="Visitantes por mês (opcional)"
                     />
                   </div>
                 </CardContent>

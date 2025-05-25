@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +27,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useBuildingsData } from '@/hooks/useBuildingsData';
 import { useAuth } from '@/hooks/useAuth';
+import BuildingFormDialog from '@/components/admin/buildings/BuildingFormDialog';
+import BuildingCard from '@/components/admin/buildings/BuildingCard';
 
 const BuildingsPage = () => {
   const { buildings, stats, loading, refetch } = useBuildingsData();
   const { userProfile } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFormDialog, setShowFormDialog] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any, label: string }> = {
@@ -48,6 +51,28 @@ const BuildingsPage = () => {
     building.endereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
     building.bairro.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleNewBuilding = () => {
+    setSelectedBuilding(null);
+    setShowFormDialog(true);
+  };
+
+  const handleEditBuilding = (building: any) => {
+    setSelectedBuilding(building);
+    setShowFormDialog(true);
+  };
+
+  const handleViewBuilding = (building: any) => {
+    console.log('Ver detalhes do prédio:', building);
+  };
+
+  const handleImageManager = (building: any) => {
+    console.log('Gerenciar imagens do prédio:', building);
+  };
+
+  const handleDeleteBuilding = (building: any) => {
+    console.log('Excluir prédio:', building);
+  };
 
   if (loading) {
     return (
@@ -73,7 +98,10 @@ const BuildingsPage = () => {
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
-          <Button className="bg-indexa-purple hover:bg-indexa-purple-dark text-white">
+          <Button 
+            className="bg-indexa-purple hover:bg-indexa-purple-dark text-white"
+            onClick={handleNewBuilding}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Novo Prédio
           </Button>
@@ -198,74 +226,28 @@ const BuildingsPage = () => {
                 )}
               </div>
             ) : (
-              filteredBuildings.map((building) => {
-                const statusInfo = getStatusBadge(building.status);
-                
-                return (
-                  <div key={building.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
-                        <Building2 className="h-6 w-6 text-indexa-purple" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-medium text-gray-900">{building.nome}</h3>
-                          <Badge variant={statusInfo.variant} className="text-xs">
-                            {statusInfo.label}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            Residencial
-                          </Badge>
-                        </div>
-                        <div className="flex items-center space-x-1 mb-2">
-                          <MapPin className="h-3 w-3 text-gray-400" />
-                          <p className="text-sm text-gray-600">{building.endereco}, {building.bairro}</p>
-                        </div>
-                        <div className="flex items-center space-x-6">
-                          <div className="flex items-center space-x-1">
-                            <Eye className="h-3 w-3 text-purple-600" />
-                            <span className="text-xs text-gray-500">{building.quantidade_telas || 0} painéis</span>
-                          </div>
-                          {building.latitude && building.longitude && (
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="h-3 w-3 text-blue-600" />
-                              <span className="text-xs text-gray-500">Geolocalizado</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <MapPin className="h-4 w-4 mr-2" />
-                            Ver no Mapa
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                );
-              })
+              filteredBuildings.map((building) => (
+                <BuildingCard
+                  key={building.id}
+                  building={building}
+                  onView={handleViewBuilding}
+                  onEdit={handleEditBuilding}
+                  onImageManager={handleImageManager}
+                  onDelete={handleDeleteBuilding}
+                />
+              ))
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Form Dialog */}
+      <BuildingFormDialog
+        open={showFormDialog}
+        onOpenChange={setShowFormDialog}
+        building={selectedBuilding}
+        onSuccess={refetch}
+      />
     </div>
   );
 };

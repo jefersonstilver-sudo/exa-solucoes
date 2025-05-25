@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,6 +27,13 @@ interface Building {
   imagem_4: string;
   caracteristicas: string[];
   created_at: string;
+  // Novos campos de contato
+  nome_sindico: string;
+  contato_sindico: string;
+  nome_vice_sindico: string;
+  contato_vice_sindico: string;
+  nome_contato_predio: string;
+  numero_contato_predio: string;
 }
 
 interface BuildingStats {
