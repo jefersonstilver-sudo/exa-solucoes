@@ -95,21 +95,36 @@ export const useBuildingsData = () => {
       }
 
       console.log('✅ Prédios carregados:', data?.length);
-      setBuildings(data || []);
+      
+      // Type cast para garantir que padrao_publico está no formato correto
+      const typedBuildings = (data || []).map(building => ({
+        ...building,
+        padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
+        image_urls: building.image_urls || [],
+        amenities: building.amenities || [],
+        numero_unidades: building.numero_unidades || 0,
+        publico_estimado: building.publico_estimado || 0,
+        preco_base: building.preco_base || 0,
+        quantidade_telas: building.quantidade_telas || 0,
+        monthly_traffic: building.monthly_traffic || 0,
+        latitude: building.latitude || 0,
+        longitude: building.longitude || 0
+      }));
+      
+      setBuildings(typedBuildings);
       
       // Calcular estatísticas
-      const buildingsList = data || [];
-      const total = buildingsList.length;
-      const active = buildingsList.filter(b => b.status === 'ativo').length;
-      const inactive = buildingsList.filter(b => b.status === 'inativo').length;
-      const totalTraffic = buildingsList.reduce((sum, building) => 
+      const total = typedBuildings.length;
+      const active = typedBuildings.filter(b => b.status === 'ativo').length;
+      const inactive = typedBuildings.filter(b => b.status === 'inativo').length;
+      const totalTraffic = typedBuildings.reduce((sum, building) => 
         sum + (building.monthly_traffic || 0), 0
       );
-      const totalUnits = buildingsList.reduce((sum, building) => 
+      const totalUnits = typedBuildings.reduce((sum, building) => 
         sum + (building.numero_unidades || 0), 0
       );
-      const averagePrice = buildingsList.length > 0 
-        ? buildingsList.reduce((sum, building) => sum + (building.preco_base || 0), 0) / buildingsList.length
+      const averagePrice = typedBuildings.length > 0 
+        ? typedBuildings.reduce((sum, building) => sum + (building.preco_base || 0), 0) / typedBuildings.length
         : 0;
 
       setStats({ total, active, inactive, totalTraffic, totalUnits, averagePrice });

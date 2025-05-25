@@ -229,7 +229,9 @@ const BuildingImageGallery: React.FC<BuildingImageGalleryProps> = ({
                 </div>
 
                 <input
-                  ref={(el) => fileInputRefs.current[index] = el}
+                  ref={(el) => {
+                    fileInputRefs.current[index] = el;
+                  }}
                   type="file"
                   accept="image/*"
                   className="hidden"
