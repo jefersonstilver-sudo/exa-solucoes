@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
@@ -14,6 +13,7 @@ import Home from '@/pages/Home';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
+import AuthHookTest from '@/pages/AuthHookTest';
 
 const App = () => {
   return (
@@ -29,6 +29,9 @@ const App = () => {
         <Route path="/administracao" element={<Navigate to="/super_admin" replace />} />
         <Route path="/dashboard" element={<Navigate to="/super_admin" replace />} />
         <Route path="/painel" element={<Navigate to="/super_admin" replace />} />
+        
+        {/* Auth Hook Test Route - DEBUG TEMPORÁRIO */}
+        <Route path="/auth-hook-test" element={<AuthHookTest />} />
         
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
