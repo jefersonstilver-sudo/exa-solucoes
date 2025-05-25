@@ -12,7 +12,6 @@ import { Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PanelAssignmentDialog from './panels/PanelAssignmentDialog';
-import PanelRemovalDialog from './panels/PanelRemovalDialog';
 import BuildingOverviewTab from './details/BuildingOverviewTab';
 import BuildingPanelsTab from './details/BuildingPanelsTab';
 import BuildingSalesTab from './details/BuildingSalesTab';
@@ -36,8 +35,6 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   
   // State management simplificado para dialogs
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
-  const [removalDialogOpen, setRemovalDialogOpen] = useState(false);
-  const [selectedPanelForRemoval, setSelectedPanelForRemoval] = useState<any>(null);
 
   useEffect(() => {
     if (building && open) {
@@ -50,8 +47,6 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   useEffect(() => {
     if (!open) {
       console.log('🔄 [BUILDING DETAILS] Dialog principal fechado, limpando estados');
-      setSelectedPanelForRemoval(null);
-      setRemovalDialogOpen(false);
       setAssignmentDialogOpen(false);
     }
   }, [open]);
@@ -135,36 +130,10 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
     }
   };
 
+  // Simplified remove panel handler (not used anymore, handled by BuildingPanelsTab)
   const handleRemovePanel = (panel: any) => {
-    console.log('🗑️ [BUILDING DETAILS] Iniciando remoção de painel:', {
-      panelId: panel?.id,
-      panelCode: panel?.code,
-      buildingName: building?.nome
-    });
-
-    // Validações robustas
-    if (!panel) {
-      console.error('❌ [BUILDING DETAILS] Painel não definido');
-      toast.error('Erro: Painel não encontrado');
-      return;
-    }
-
-    if (!panel.id) {
-      console.error('❌ [BUILDING DETAILS] ID do painel inválido:', panel);
-      toast.error('Erro: ID do painel inválido');
-      return;
-    }
-
-    if (!building?.id) {
-      console.error('❌ [BUILDING DETAILS] ID do prédio não encontrado');
-      toast.error('Erro: Prédio não identificado');
-      return;
-    }
-
-    // Definir estado e abrir dialog
-    console.log('✅ [BUILDING DETAILS] Abrindo dialog de remoção');
-    setSelectedPanelForRemoval(panel);
-    setRemovalDialogOpen(true);
+    console.log('🗑️ [BUILDING DETAILS] Remoção delegada para BuildingPanelsTab:', panel?.code);
+    // This is now handled by BuildingPanelsTab directly
   };
 
   const handleViewPanelDetails = (panelId: string) => {
@@ -181,21 +150,6 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
     console.log('✅ [BUILDING DETAILS] Atribuição bem-sucedida, atualizando dados');
     fetchBuildingData();
     setAssignmentDialogOpen(false);
-  };
-
-  const handleRemovalSuccess = () => {
-    console.log('✅ [BUILDING DETAILS] Remoção bem-sucedida, atualizando dados');
-    fetchBuildingData();
-    setSelectedPanelForRemoval(null);
-    setRemovalDialogOpen(false);
-  };
-
-  const handleRemovalDialogClose = (open: boolean) => {
-    console.log('🔄 [BUILDING DETAILS] Estado do dialog de remoção:', open);
-    setRemovalDialogOpen(open);
-    if (!open) {
-      setSelectedPanelForRemoval(null);
-    }
   };
 
   const handleAssignmentDialogClose = (open: boolean) => {
@@ -246,6 +200,7 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
                 onRemovePanel={handleRemovePanel}
                 onSyncPanel={handleSyncPanel}
                 onViewPanelDetails={handleViewPanelDetails}
+                buildingName={building?.nome}
               />
             </TabsContent>
 
@@ -268,17 +223,6 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
         buildingName={building?.nome}
         onSuccess={handleAssignmentSuccess}
       />
-
-      {/* Dialog de Remoção - Renderizar apenas quando há painel selecionado */}
-      {selectedPanelForRemoval && (
-        <PanelRemovalDialog
-          open={removalDialogOpen}
-          onOpenChange={handleRemovalDialogClose}
-          panel={selectedPanelForRemoval}
-          buildingName={building?.nome}
-          onSuccess={handleRemovalSuccess}
-        />
-      )}
     </>
   );
 };

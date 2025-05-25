@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   Clock,
   Eye
 } from 'lucide-react';
+import { AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface PanelCardProps {
   panel: {
@@ -23,7 +24,7 @@ interface PanelCardProps {
     modo?: string;
     ultima_sync?: string;
   };
-  onRemove: (panel: any) => void; // Changed from (panelId: string) to (panel: any)
+  onRemove: (panel: any) => void;
   onSync: (panelId: string) => void;
   onViewDetails: (panelId: string) => void;
   canManage?: boolean;
@@ -98,8 +99,8 @@ const PanelCard: React.FC<PanelCardProps> = ({
   };
 
   const handleRemove = () => {
-    console.log('🗑️ [REMOVE] Iniciando remoção do painel:', panel);
-    onRemove(panel); // Pass the full panel object
+    console.log('🗑️ [PANEL CARD] Iniciando remoção:', panel);
+    onRemove(panel);
   };
 
   return (
