@@ -121,11 +121,6 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navItems }) =>
                     onClick={onClose}
                   >
                     {item.label}
-                    {item.to === "/paineis-digitais/loja" && (
-                      <span className="ml-auto bg-indexa-mint text-indexa-purple text-xs px-2 py-1 rounded-full font-bold">
-                        Loja
-                      </span>
-                    )}
                   </Link>
                 </motion.div>
               ))}

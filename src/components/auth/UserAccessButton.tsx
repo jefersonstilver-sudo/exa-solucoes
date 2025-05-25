@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import LoginSelector from './LoginSelector';
 import { ClientOnly } from '@/components/ui/client-only';
-import AdminAccessButton from '@/components/admin/AdminAccessButton';
 
 const UserAccessButton = () => {
   const { isLoggedIn, user, isLoading } = useUserSession();
@@ -35,6 +34,9 @@ const UserAccessButton = () => {
     );
   }
 
+  // Verificar se é super admin
+  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+
   return (
     <ClientOnly fallback={
       <div className="w-10 h-10 flex items-center justify-center">
@@ -45,20 +47,17 @@ const UserAccessButton = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="relative text-white hover:bg-white/20 rounded-full group"
+          className="relative text-white hover:bg-white/20 rounded-full group h-10 w-10 md:h-12 md:w-12"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Login"
         >
-          <User className={`h-6 w-6 ${isLoggedIn ? 'text-indexa-mint' : 'text-gray-300'}`} />
-          {isLoggedIn && (
-            <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center"></span>
-          )}
-          {user?.role === 'admin' && (
-            <span className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center"></span>
-          )}
-          {user?.role === 'super_admin' && (
-            <span className="absolute -bottom-1 -right-1 bg-amber-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center"></span>
-          )}
+          <User className={`h-5 w-5 md:h-6 md:w-6 ${
+            isSuperAdmin 
+              ? 'text-amber-500' 
+              : isLoggedIn 
+                ? 'text-indexa-mint' 
+                : 'text-gray-300'
+          }`} />
         </Button>
         
         {isOpen && !isLoggedIn && (

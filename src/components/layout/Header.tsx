@@ -8,6 +8,7 @@ import DesktopNavigation from './header/DesktopNavigation';
 import CartButton from './header/CartButton';
 import MobileMenuButton from './header/MobileMenuButton';
 import MobileMenu from './header/MobileMenu';
+import OnlineStoreButton from './header/OnlineStoreButton';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,7 +46,6 @@ const Header = () => {
 
   const navItems = [
     { to: "/", label: "Home" },
-    { to: "/paineis-digitais/loja", label: "Loja Online" },
     { to: "/planos", label: "Planos" },
     { to: "/sobre", label: "Sobre" },
     { to: "/contato", label: "Contato" }
@@ -70,13 +70,16 @@ const Header = () => {
             {/* Desktop Navigation */}
             <DesktopNavigation navItems={navItems} />
 
-            {/* Right Side - Cart + User + Mobile Menu */}
-            <div className="flex items-center space-x-1 md:space-x-3">
-              {/* Cart Button */}
-              <CartButton cartItemsCount={totalCartItems} />
+            {/* Right Side - Loja Online + User + Cart + Mobile Menu */}
+            <div className="flex items-center space-x-2 md:space-x-3">
+              {/* Online Store Button */}
+              <OnlineStoreButton />
 
               {/* User Access Button */}
               <UserAccessButton />
+
+              {/* Cart Button */}
+              <CartButton cartItemsCount={totalCartItems} />
 
               {/* Mobile Menu Button */}
               <MobileMenuButton 
