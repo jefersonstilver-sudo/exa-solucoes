@@ -75,8 +75,8 @@ export const useSupabaseData = () => {
       if (dashboardStats) {
         console.log('✅ ESTATÍSTICAS OBTIDAS via função:', dashboardStats);
         
-        // Tipar corretamente o retorno da função RPC
-        const typedStats = dashboardStats as DashboardStatsResponse;
+        // Tipar corretamente o retorno da função RPC usando unknown primeiro
+        const typedStats = dashboardStats as unknown as DashboardStatsResponse;
         
         const stats = {
           totalUsers: typedStats.total_users || 0,
