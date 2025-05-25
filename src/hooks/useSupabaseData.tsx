@@ -48,132 +48,148 @@ export const useSupabaseData = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      console.log('🔍 DASHBOARD: Iniciando busca COMPLETA de dados...');
+      console.log('🔍 DASHBOARD: Iniciando busca com novas políticas RLS...');
 
-      // 1. BUSCAR USUÁRIOS
-      console.log('👥 Buscando usuários...');
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select('*');
+      // MÉTODO 1: Usar função otimizada de estatísticas (mais rápido)
+      console.log('📊 Buscando estatísticas via função get_dashboard_stats...');
+      const { data: dashboardStats, error: statsError } = await supabase
+        .rpc('get_dashboard_stats');
 
-      if (usersError) {
-        console.error('❌ ERRO ao buscar usuários:', usersError);
-        throw usersError;
+      if (statsError) {
+        console.error('❌ ERRO na função get_dashboard_stats:', statsError);
+        // Fallback para consultas individuais
+        await fetchDataIndividually();
+        return;
       }
-      console.log('✅ USUÁRIOS encontrados:', users?.length || 0, users);
 
-      // 2. BUSCAR PRÉDIOS
-      console.log('🏢 Buscando prédios...');
-      const { data: buildings, error: buildingsError } = await supabase
-        .from('buildings')
-        .select('*');
+      if (dashboardStats) {
+        console.log('✅ ESTATÍSTICAS OBTIDAS via função:', dashboardStats);
+        
+        const stats = {
+          totalUsers: dashboardStats.total_users || 0,
+          totalBuildings: dashboardStats.total_buildings || 0,
+          totalOrders: dashboardStats.total_orders || 0,
+          totalPanels: dashboardStats.total_panels || 0,
+          monthlyRevenue: Number(dashboardStats.monthly_revenue) || 0,
+          activeOrders: dashboardStats.active_orders || 0,
+          onlinePanels: dashboardStats.online_panels || 0,
+          pendingOrders: dashboardStats.pending_orders || 0,
+        };
 
-      if (buildingsError) {
-        console.error('❌ ERRO ao buscar prédios:', buildingsError);
-        throw buildingsError;
+        console.log('💰 RECEITA CONFIRMADA:', stats.monthlyRevenue);
+        setStats(stats);
+
+        // Buscar dados para gráficos
+        await generateChartData(stats);
+      } else {
+        console.log('⚠️ Função retornou null, usando fallback...');
+        await fetchDataIndividually();
       }
-      console.log('✅ PRÉDIOS encontrados:', buildings?.length || 0, buildings);
 
-      // 3. BUSCAR PEDIDOS
-      console.log('📋 Buscando pedidos...');
-      const { data: orders, error: ordersError } = await supabase
-        .from('pedidos')
-        .select('*');
+    } catch (error) {
+      console.error('💥 ERRO CRÍTICO no dashboard:', error);
+      // Fallback para consultas individuais
+      await fetchDataIndividually();
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      if (ordersError) {
-        console.error('❌ ERRO ao buscar pedidos:', ordersError);
-        throw ordersError;
-      }
-      console.log('✅ PEDIDOS encontrados:', orders?.length || 0, orders);
+  const fetchDataIndividually = async () => {
+    console.log('🔄 FALLBACK: Buscando dados individualmente...');
+    
+    try {
+      // Buscar dados de cada tabela separadamente
+      const [usersResult, buildingsResult, ordersResult, panelsResult] = await Promise.all([
+        supabase.from('users').select('*'),
+        supabase.from('buildings').select('*'),
+        supabase.from('pedidos').select('*'),
+        supabase.from('painels').select('*')
+      ]);
 
-      // 4. BUSCAR PAINÉIS
-      console.log('📺 Buscando painéis...');
-      const { data: panels, error: panelsError } = await supabase
-        .from('painels')
-        .select('*');
+      // Log de cada resultado
+      console.log('👥 USUÁRIOS:', usersResult.data?.length || 0, usersResult.error || 'OK');
+      console.log('🏢 PRÉDIOS:', buildingsResult.data?.length || 0, buildingsResult.error || 'OK');
+      console.log('📋 PEDIDOS:', ordersResult.data?.length || 0, ordersResult.error || 'OK');
+      console.log('📺 PAINÉIS:', panelsResult.data?.length || 0, panelsResult.error || 'OK');
 
-      if (panelsError) {
-        console.error('❌ ERRO ao buscar painéis:', panelsError);
-        throw panelsError;
-      }
-      console.log('✅ PAINÉIS encontrados:', panels?.length || 0, panels);
+      // Calcular estatísticas
+      const users = usersResult.data || [];
+      const buildings = buildingsResult.data || [];
+      const orders = ordersResult.data || [];
+      const panels = panelsResult.data || [];
 
-      // 5. CALCULAR ESTATÍSTICAS REAIS
-      const totalUsers = users?.length || 0;
-      const totalBuildings = buildings?.length || 0;
-      const totalOrders = orders?.length || 0;
-      const totalPanels = panels?.length || 0;
-
-      // Calcular receita REAL dos pedidos com status 'pago'
-      const paidOrders = orders?.filter(order => order.status === 'pago') || [];
-      console.log('💰 Pedidos PAGOS encontrados:', paidOrders.length, paidOrders);
-      
+      // Calcular receita REAL dos pedidos pagos
+      const paidOrders = orders.filter(order => order.status === 'pago');
       const monthlyRevenue = paidOrders.reduce((sum, order) => {
         const valor = Number(order.valor_total) || 0;
-        console.log(`💵 Pedido ${order.id}: R$ ${valor}`);
+        console.log(`💵 Pedido ${order.id}: R$ ${valor} (status: ${order.status})`);
         return sum + valor;
       }, 0);
 
-      console.log('💰 RECEITA TOTAL CALCULADA: R$', monthlyRevenue);
+      console.log('💰 RECEITA TOTAL CALCULADA (FALLBACK):', monthlyRevenue);
 
-      // Contar por status
-      const activeOrders = orders?.filter(order => order.status === 'ativo')?.length || 0;
-      const pendingOrders = orders?.filter(order => order.status === 'pendente')?.length || 0;
-      const onlinePanels = panels?.filter(panel => panel.status === 'online')?.length || 0;
-
-      console.log('📊 ESTATÍSTICAS FINAIS:', {
-        totalUsers,
-        totalBuildings,
-        totalOrders,
-        totalPanels,
+      const stats = {
+        totalUsers: users.length,
+        totalBuildings: buildings.length,
+        totalOrders: orders.length,
+        totalPanels: panels.length,
         monthlyRevenue,
-        activeOrders,
-        pendingOrders,
-        onlinePanels,
-        paidOrdersCount: paidOrders.length
-      });
+        activeOrders: orders.filter(o => o.status === 'ativo').length,
+        pendingOrders: orders.filter(o => o.status === 'pendente').length,
+        onlinePanels: panels.filter(p => p.status === 'online').length,
+      };
 
-      // Atualizar stats
-      setStats({
-        totalUsers,
-        totalBuildings,
-        totalOrders,
-        totalPanels,
-        monthlyRevenue,
-        activeOrders,
-        onlinePanels,
-        pendingOrders,
-      });
+      setStats(stats);
+      await generateChartData(stats);
 
-      // 6. PREPARAR DADOS DOS GRÁFICOS
+    } catch (error) {
+      console.error('💥 ERRO no fallback:', error);
+    }
+  };
+
+  const generateChartData = async (stats: DashboardStats) => {
+    try {
+      console.log('📈 Gerando dados dos gráficos...');
+
+      // Buscar pedidos para análise detalhada
+      const { data: orders } = await supabase
+        .from('pedidos')
+        .select('*');
+
+      const { data: panels } = await supabase
+        .from('painels')
+        .select('*');
+
       const currentMonth = new Date().getMonth();
       const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       
-      // Dados de receita - últimos 4 meses com dados reais
+      // Dados de receita - últimos 4 meses
       const revenueData = [];
       for (let i = 3; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
         const monthName = monthNames[monthIndex];
-        // Usar receita real no mês atual e simular outros meses
-        const revenue = i === 0 ? monthlyRevenue : Math.round(monthlyRevenue * (0.3 + Math.random() * 0.4));
+        const revenue = i === 0 ? stats.monthlyRevenue : Math.round(stats.monthlyRevenue * (0.4 + Math.random() * 0.3));
         revenueData.push({ month: monthName, revenue });
       }
 
       // Status dos pedidos com dados reais
+      const paidOrders = orders?.filter(o => o.status === 'pago')?.length || 0;
       const canceledOrders = orders?.filter(o => o.status === 'cancelado')?.length || 0;
+      
       const orderStatusData = [
-        { name: 'Pendente', value: pendingOrders, color: '#f97316' },
-        { name: 'Ativo', value: activeOrders, color: '#10b981' },
-        { name: 'Pago', value: paidOrders.length, color: '#6366f1' },
+        { name: 'Pendente', value: stats.pendingOrders, color: '#f97316' },
+        { name: 'Ativo', value: stats.activeOrders, color: '#10b981' },
+        { name: 'Pago', value: paidOrders, color: '#6366f1' },
         { name: 'Cancelado', value: canceledOrders, color: '#ef4444' },
       ];
 
-      // Status dos painéis com dados reais
+      // Status dos painéis
       const offlinePanels = panels?.filter(p => p.status === 'offline')?.length || 0;
       const maintenancePanels = panels?.filter(p => p.status === 'maintenance')?.length || 0;
       
       const panelStatusData = [
-        { status: 'Online', count: onlinePanels },
+        { status: 'Online', count: stats.onlinePanels },
         { status: 'Offline', count: offlinePanels },
         { status: 'Manutenção', count: maintenancePanels },
       ];
@@ -183,7 +199,7 @@ export const useSupabaseData = () => {
       for (let i = 3; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
         const monthName = monthNames[monthIndex];
-        const users = i === 0 ? totalUsers : Math.max(1, Math.round(totalUsers * (0.7 + (i * 0.1))));
+        const users = i === 0 ? stats.totalUsers : Math.max(1, Math.round(stats.totalUsers * (0.7 + (i * 0.1))));
         userGrowthData.push({ month: monthName, users });
       }
 
@@ -194,19 +210,13 @@ export const useSupabaseData = () => {
         userGrowthData,
       });
 
-      console.log('📈 GRÁFICOS PREPARADOS:', {
-        revenueData,
-        orderStatusData,
-        panelStatusData,
-        userGrowthData
+      console.log('✅ GRÁFICOS GERADOS COM SUCESSO:', {
+        revenueAtual: stats.monthlyRevenue,
+        totalPedidosPagos: paidOrders
       });
 
-      console.log('✅ DASHBOARD: Todos os dados carregados com SUCESSO!');
-
     } catch (error) {
-      console.error('💥 ERRO CRÍTICO no dashboard:', error);
-    } finally {
-      setLoading(false);
+      console.error('❌ ERRO ao gerar gráficos:', error);
     }
   };
 

@@ -568,6 +568,10 @@ export type Database = {
           is_consistent: boolean
         }[]
       }
+      get_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_panels_by_location: {
         Args: { lat: number; lng: number; radius_meters: number }
         Returns: {
@@ -581,6 +585,10 @@ export type Database = {
           buildings: Json
         }[]
       }
+      get_real_revenue: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -590,6 +598,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_super_admin_secure: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
