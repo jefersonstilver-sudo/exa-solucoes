@@ -35,6 +35,21 @@ export interface Panel {
   ultima_sync?: string;
   resolucao?: string;
   modo?: string;
+  
+  // Novos campos técnicos
+  polegada?: string;
+  orientacao?: 'horizontal' | 'vertical';
+  sistema_operacional?: 'windows' | 'linux' | 'android';
+  codigo_anydesk?: string;
+  senha_anydesk?: string;
+  modelo?: string;
+  marca?: string;
+  versao_firmware?: string;
+  ip_interno?: string;
+  mac_address?: string;
+  observacoes?: string;
+  localizacao?: string;
+  
   buildings?: Building;
   distance?: number;
 }

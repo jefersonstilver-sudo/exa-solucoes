@@ -387,32 +387,68 @@ export type Database = {
         Row: {
           building_id: string
           code: string
+          codigo_anydesk: string | null
           created_at: string | null
           id: string
+          ip_interno: string | null
+          localizacao: string | null
+          mac_address: string | null
+          marca: string | null
+          modelo: string | null
           modo: string | null
+          observacoes: string | null
+          orientacao: string | null
+          polegada: string | null
           resolucao: string | null
+          senha_anydesk: string | null
+          sistema_operacional: string | null
           status: string
           ultima_sync: string | null
+          versao_firmware: string | null
         }
         Insert: {
           building_id: string
           code: string
+          codigo_anydesk?: string | null
           created_at?: string | null
           id?: string
+          ip_interno?: string | null
+          localizacao?: string | null
+          mac_address?: string | null
+          marca?: string | null
+          modelo?: string | null
           modo?: string | null
+          observacoes?: string | null
+          orientacao?: string | null
+          polegada?: string | null
           resolucao?: string | null
+          senha_anydesk?: string | null
+          sistema_operacional?: string | null
           status?: string
           ultima_sync?: string | null
+          versao_firmware?: string | null
         }
         Update: {
           building_id?: string
           code?: string
+          codigo_anydesk?: string | null
           created_at?: string | null
           id?: string
+          ip_interno?: string | null
+          localizacao?: string | null
+          mac_address?: string | null
+          marca?: string | null
+          modelo?: string | null
           modo?: string | null
+          observacoes?: string | null
+          orientacao?: string | null
+          polegada?: string | null
           resolucao?: string | null
+          senha_anydesk?: string | null
+          sistema_operacional?: string | null
           status?: string
           ultima_sync?: string | null
+          versao_firmware?: string | null
         }
         Relationships: [
           {

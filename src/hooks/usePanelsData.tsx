@@ -12,6 +12,24 @@ interface Panel {
   modo: string;
   ultima_sync: string;
   created_at: string;
+  polegada: string;
+  orientacao: string;
+  sistema_operacional: string;
+  codigo_anydesk: string;
+  senha_anydesk: string;
+  modelo: string;
+  marca: string;
+  versao_firmware: string;
+  ip_interno: string;
+  mac_address: string;
+  observacoes: string;
+  localizacao: string;
+  buildings?: {
+    id: string;
+    nome: string;
+    endereco: string;
+    bairro: string;
+  };
 }
 
 export const usePanelsData = () => {
@@ -31,7 +49,15 @@ export const usePanelsData = () => {
       
       const { data, error } = await supabase
         .from('painels')
-        .select('*')
+        .select(`
+          *,
+          buildings (
+            id,
+            nome,
+            endereco,
+            bairro
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
