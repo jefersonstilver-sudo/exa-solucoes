@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +17,17 @@ export interface ChartData {
   orderStatusData: Array<{ name: string; value: number; color: string }>;
   panelStatusData: Array<{ status: string; count: number }>;
   userGrowthData: Array<{ month: string; users: number }>;
+}
+
+interface DashboardStatsResponse {
+  total_users: number;
+  total_buildings: number;
+  total_orders: number;
+  total_panels: number;
+  monthly_revenue: number;
+  active_orders: number;
+  pending_orders: number;
+  online_panels: number;
 }
 
 export const useSupabaseData = () => {
@@ -65,15 +75,18 @@ export const useSupabaseData = () => {
       if (dashboardStats) {
         console.log('✅ ESTATÍSTICAS OBTIDAS via função:', dashboardStats);
         
+        // Tipar corretamente o retorno da função RPC
+        const typedStats = dashboardStats as DashboardStatsResponse;
+        
         const stats = {
-          totalUsers: dashboardStats.total_users || 0,
-          totalBuildings: dashboardStats.total_buildings || 0,
-          totalOrders: dashboardStats.total_orders || 0,
-          totalPanels: dashboardStats.total_panels || 0,
-          monthlyRevenue: Number(dashboardStats.monthly_revenue) || 0,
-          activeOrders: dashboardStats.active_orders || 0,
-          onlinePanels: dashboardStats.online_panels || 0,
-          pendingOrders: dashboardStats.pending_orders || 0,
+          totalUsers: typedStats.total_users || 0,
+          totalBuildings: typedStats.total_buildings || 0,
+          totalOrders: typedStats.total_orders || 0,
+          totalPanels: typedStats.total_panels || 0,
+          monthlyRevenue: Number(typedStats.monthly_revenue) || 0,
+          activeOrders: typedStats.active_orders || 0,
+          onlinePanels: typedStats.online_panels || 0,
+          pendingOrders: typedStats.pending_orders || 0,
         };
 
         console.log('💰 RECEITA CONFIRMADA:', stats.monthlyRevenue);

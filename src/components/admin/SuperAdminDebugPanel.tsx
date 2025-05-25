@@ -24,13 +24,13 @@ const SuperAdminDebugPanel = () => {
     setLoading(true);
     const results: DatabaseStatus[] = [];
     
-    const tables = ['users', 'buildings', 'pedidos', 'painels'];
+    const tables = ['users', 'buildings', 'pedidos', 'painels'] as const;
     
     for (const table of tables) {
       try {
         console.log(`🔍 Testando tabela: ${table}`);
         const { data, error } = await supabase
-          .from(table)
+          .from(table as any)
           .select('*');
           
         if (error) {
