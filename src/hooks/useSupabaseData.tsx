@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -58,24 +59,17 @@ export const useSupabaseData = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      console.log('🔍 DASHBOARD: Iniciando busca com novas políticas RLS...');
 
-      // MÉTODO 1: Usar função otimizada de estatísticas (mais rápido)
-      console.log('📊 Buscando estatísticas via função get_dashboard_stats...');
       const { data: dashboardStats, error: statsError } = await supabase
         .rpc('get_dashboard_stats');
 
       if (statsError) {
-        console.error('❌ ERRO na função get_dashboard_stats:', statsError);
-        // Fallback para consultas individuais
+        console.error('Erro na função get_dashboard_stats:', statsError);
         await fetchDataIndividually();
         return;
       }
 
       if (dashboardStats) {
-        console.log('✅ ESTATÍSTICAS OBTIDAS via função:', dashboardStats);
-        
-        // Tipar corretamente o retorno da função RPC usando unknown primeiro
         const typedStats = dashboardStats as unknown as DashboardStatsResponse;
         
         const stats = {
@@ -89,19 +83,14 @@ export const useSupabaseData = () => {
           pendingOrders: typedStats.pending_orders || 0,
         };
 
-        console.log('💰 RECEITA CONFIRMADA:', stats.monthlyRevenue);
         setStats(stats);
-
-        // Buscar dados para gráficos
         await generateChartData(stats);
       } else {
-        console.log('⚠️ Função retornou null, usando fallback...');
         await fetchDataIndividually();
       }
 
     } catch (error) {
-      console.error('💥 ERRO CRÍTICO no dashboard:', error);
-      // Fallback para consultas individuais
+      console.error('Erro crítico no dashboard:', error);
       await fetchDataIndividually();
     } finally {
       setLoading(false);
@@ -109,10 +98,7 @@ export const useSupabaseData = () => {
   };
 
   const fetchDataIndividually = async () => {
-    console.log('🔄 FALLBACK: Buscando dados individualmente...');
-    
     try {
-      // Buscar dados de cada tabela separadamente
       const [usersResult, buildingsResult, ordersResult, panelsResult] = await Promise.all([
         supabase.from('users').select('*'),
         supabase.from('buildings').select('*'),
@@ -120,27 +106,15 @@ export const useSupabaseData = () => {
         supabase.from('painels').select('*')
       ]);
 
-      // Log de cada resultado
-      console.log('👥 USUÁRIOS:', usersResult.data?.length || 0, usersResult.error || 'OK');
-      console.log('🏢 PRÉDIOS:', buildingsResult.data?.length || 0, buildingsResult.error || 'OK');
-      console.log('📋 PEDIDOS:', ordersResult.data?.length || 0, ordersResult.error || 'OK');
-      console.log('📺 PAINÉIS:', panelsResult.data?.length || 0, panelsResult.error || 'OK');
-
-      // Calcular estatísticas
       const users = usersResult.data || [];
       const buildings = buildingsResult.data || [];
       const orders = ordersResult.data || [];
       const panels = panelsResult.data || [];
 
-      // Calcular receita REAL dos pedidos pagos
       const paidOrders = orders.filter(order => order.status === 'pago');
       const monthlyRevenue = paidOrders.reduce((sum, order) => {
-        const valor = Number(order.valor_total) || 0;
-        console.log(`💵 Pedido ${order.id}: R$ ${valor} (status: ${order.status})`);
-        return sum + valor;
+        return sum + (Number(order.valor_total) || 0);
       }, 0);
-
-      console.log('💰 RECEITA TOTAL CALCULADA (FALLBACK):', monthlyRevenue);
 
       const stats = {
         totalUsers: users.length,
@@ -157,27 +131,18 @@ export const useSupabaseData = () => {
       await generateChartData(stats);
 
     } catch (error) {
-      console.error('💥 ERRO no fallback:', error);
+      console.error('Erro no fallback:', error);
     }
   };
 
   const generateChartData = async (stats: DashboardStats) => {
     try {
-      console.log('📈 Gerando dados dos gráficos...');
-
-      // Buscar pedidos para análise detalhada
-      const { data: orders } = await supabase
-        .from('pedidos')
-        .select('*');
-
-      const { data: panels } = await supabase
-        .from('painels')
-        .select('*');
+      const { data: orders } = await supabase.from('pedidos').select('*');
+      const { data: panels } = await supabase.from('painels').select('*');
 
       const currentMonth = new Date().getMonth();
       const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       
-      // Dados de receita - últimos 4 meses
       const revenueData = [];
       for (let i = 3; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
@@ -186,7 +151,6 @@ export const useSupabaseData = () => {
         revenueData.push({ month: monthName, revenue });
       }
 
-      // Status dos pedidos com dados reais
       const paidOrders = orders?.filter(o => o.status === 'pago')?.length || 0;
       const canceledOrders = orders?.filter(o => o.status === 'cancelado')?.length || 0;
       
@@ -197,7 +161,6 @@ export const useSupabaseData = () => {
         { name: 'Cancelado', value: canceledOrders, color: '#ef4444' },
       ];
 
-      // Status dos painéis
       const offlinePanels = panels?.filter(p => p.status === 'offline')?.length || 0;
       const maintenancePanels = panels?.filter(p => p.status === 'maintenance')?.length || 0;
       
@@ -207,7 +170,6 @@ export const useSupabaseData = () => {
         { status: 'Manutenção', count: maintenancePanels },
       ];
 
-      // Crescimento de usuários
       const userGrowthData = [];
       for (let i = 3; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
@@ -223,13 +185,8 @@ export const useSupabaseData = () => {
         userGrowthData,
       });
 
-      console.log('✅ GRÁFICOS GERADOS COM SUCESSO:', {
-        revenueAtual: stats.monthlyRevenue,
-        totalPedidosPagos: paidOrders
-      });
-
     } catch (error) {
-      console.error('❌ ERRO ao gerar gráficos:', error);
+      console.error('Erro ao gerar gráficos:', error);
     }
   };
 
