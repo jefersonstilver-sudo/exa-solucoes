@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -16,6 +15,7 @@ import ContactInfoForm from './form/ContactInfoForm';
 import CommercialDataForm from './form/CommercialDataForm';
 import CharacteristicsSelector from './form/CharacteristicsSelector';
 import ImageGallery from './form/ImageGallery';
+import PanelManagementSection from './form/PanelManagementSection';
 
 interface BuildingFormDialogProps {
   open: boolean;
@@ -181,7 +181,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">
             {building ? 'Editar Prédio' : 'Novo Prédio'}
@@ -192,7 +192,8 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Primeira coluna - Informações básicas */}
             <div className="space-y-4">
               <BasicInfoForm
                 formData={{
@@ -230,6 +231,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
               />
             </div>
 
+            {/* Segunda coluna - Características e Imagens */}
             <div className="space-y-4">
               <CharacteristicsSelector
                 selectedCharacteristics={formData.caracteristicas}
@@ -239,6 +241,15 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
               <ImageGallery
                 building={building}
                 onSuccess={onSuccess}
+              />
+            </div>
+
+            {/* Terceira coluna - Gestão de Painéis */}
+            <div className="space-y-4">
+              <PanelManagementSection
+                buildingId={building?.id}
+                buildingName={formData.nome || building?.nome}
+                onPanelsChange={onSuccess}
               />
             </div>
           </div>
