@@ -1,10 +1,9 @@
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Monitor, Plus, RefreshCw, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { Monitor, RefreshCw } from 'lucide-react';
+import { usePanelOperations } from '@/hooks/panels/usePanelOperations';
 import PanelCard from '../panels/PanelCard';
 import SimplePanelRemovalAlert from '../panels/SimplePanelRemovalAlert';
 
@@ -27,191 +26,63 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   onViewPanelDetails,
   buildingName = ''
 }) => {
+  const [selectedPanel, setSelectedPanel] = useState<any>(null);
+  const [showRemovalAlert, setShowRemovalAlert] = useState(false);
+
+  const { loading: removing, removePanel } = usePanelOperations();
+
   console.log('🏢 [BUILDING PANELS TAB] Renderizando com painéis:', panels.length);
-
-  const [removalState, setRemovalState] = useState({
-    isOpen: false,
-    panel: null as any,
-    loading: false
-  });
-
-  const operationRef = useRef<{ inProgress: boolean; panelId?: string; operationId?: string }>({
-    inProgress: false
-  });
 
   const getPanelStatusSummary = () => {
     const summary = panels.reduce((acc, panel) => {
       acc[panel.status] = (acc[panel.status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
     return summary;
   };
 
   const statusSummary = getPanelStatusSummary();
 
-  const handleAssignPanelPlaceholder = () => {
-    console.log('🚧 [BUILDING PANELS TAB] Funcionalidade de atribuição em reconstrução');
-    toast.info('Funcionalidade de atribuição de painéis será reimplementada em breve', {
-      description: 'O módulo está sendo reconstruído para melhor estabilidade'
-    });
-  };
-
   const handleRemoveRequest = useCallback((panel: any) => {
-    const operationId = `remove_${panel.id}_${Date.now()}`;
-    
-    console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção:', {
-      panelCode: panel.code,
-      panelId: panel.id,
-      operationId,
-      currentState: removalState,
-      operationInProgress: operationRef.current.inProgress
-    });
+    console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção:', panel.code);
     
     if (!panel?.id || !panel?.code) {
       console.error('❌ [BUILDING PANELS TAB] Panel inválido:', panel);
-      toast.error('Erro: Dados do painel inválidos');
       return;
     }
 
-    if (operationRef.current.inProgress) {
-      console.log('⏳ [BUILDING PANELS TAB] Operação já em andamento, ignorando:', operationRef.current);
-      toast.warning('Aguarde a operação anterior finalizar');
-      return;
-    }
-
-    if (removalState.isOpen) {
-      console.log('⚠️ [BUILDING PANELS TAB] Fechando dialog anterior antes de abrir novo');
-      setRemovalState({ isOpen: false, panel: null, loading: false });
-      
-      setTimeout(() => {
-        operationRef.current = { inProgress: false, operationId };
-        setRemovalState({
-          isOpen: true,
-          panel: panel,
-          loading: false
-        });
-      }, 200);
-      return;
-    }
-
-    operationRef.current = { inProgress: false, panelId: panel.id, operationId };
-    setRemovalState({
-      isOpen: true,
-      panel: panel,
-      loading: false
-    });
-  }, [removalState]);
+    setSelectedPanel(panel);
+    setShowRemovalAlert(true);
+  }, []);
 
   const handleConfirmRemoval = useCallback(async () => {
-    const { panel } = removalState;
-    const currentOperation = operationRef.current;
+    if (!selectedPanel) return;
+
+    const success = await removePanel(selectedPanel.id, selectedPanel.code, buildingName);
     
-    console.log('🔄 [BUILDING PANELS TAB] Iniciando confirmação de remoção:', {
-      panel: panel?.code,
-      panelId: panel?.id,
-      currentOperation,
-      buildingName
-    });
-    
-    if (!panel?.id) {
-      console.error('❌ [BUILDING PANELS TAB] Panel não encontrado para remoção');
-      toast.error('Erro: Painel não encontrado');
-      setRemovalState({ isOpen: false, panel: null, loading: false });
-      operationRef.current.inProgress = false;
-      return;
-    }
-
-    if (operationRef.current.inProgress) {
-      console.log('⏳ [BUILDING PANELS TAB] Operação já em andamento');
-      return;
-    }
-
-    operationRef.current.inProgress = true;
-    setRemovalState(prev => ({ ...prev, loading: true }));
-
-    try {
-      console.log('🔍 [BUILDING PANELS TAB] Verificando campanhas ativas...');
-      const { data: activeCampaigns, error: campaignsError } = await supabase
-        .from('campanhas')
-        .select('id')
-        .eq('painel_id', panel.id)
-        .in('status', ['pendente', 'ativo']);
-
-      if (campaignsError) {
-        console.error('❌ [BUILDING PANELS TAB] Erro ao verificar campanhas:', campaignsError);
-        throw new Error('Erro ao verificar campanhas ativas: ' + campaignsError.message);
-      }
-
-      if (activeCampaigns && activeCampaigns.length > 0) {
-        console.warn('⚠️ [BUILDING PANELS TAB] Painel tem campanhas ativas:', activeCampaigns.length);
-        toast.error(`Este painel não pode ser removido pois possui ${activeCampaigns.length} campanhas ativas`);
-        setRemovalState({ isOpen: false, panel: null, loading: false });
-        operationRef.current.inProgress = false;
-        return;
-      }
-
-      console.log('🔄 [BUILDING PANELS TAB] Removendo atribuição do painel...');
-      const { error: updateError } = await supabase
-        .from('painels')
-        .update({ building_id: null })
-        .eq('id', panel.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      console.log(`✅ [BUILDING PANELS TAB] Sucesso - Operação: ${currentOperation.operationId}`);
-
-      try {
-        await supabase.rpc('log_building_action', {
-          p_building_id: null,
-          p_action_type: 'unassign_panel',
-          p_description: `Painel "${panel.code}" removido do prédio "${buildingName}" - Operação: ${currentOperation.operationId}`,
-          p_old_values: { panel_id: panel.id, panel_code: panel.code, building_name: buildingName }
-        });
-        console.log('📝 [BUILDING PANELS TAB] Log da ação registrado');
-      } catch (logError) {
-        console.warn('⚠️ [BUILDING PANELS TAB] Falha ao registrar log (não crítico):', logError);
-      }
-
-      toast.success(`Painel "${panel.code}" removido com sucesso!`);
-      
-      setRemovalState({ isOpen: false, panel: null, loading: false });
-      operationRef.current.inProgress = false;
+    if (success) {
+      setShowRemovalAlert(false);
+      setSelectedPanel(null);
       
       setTimeout(() => {
-        console.log('🔄 [BUILDING PANELS TAB] Atualizando lista de painéis após remoção');
         onRefresh();
       }, 300);
-      
-    } catch (error) {
-      console.error('💥 [BUILDING PANELS TAB] Erro crítico na remoção:', error);
-      toast.error('Erro ao remover painel: ' + (error as any)?.message || 'Erro desconhecido');
-      setRemovalState({ isOpen: false, panel: null, loading: false });
-      operationRef.current.inProgress = false;
     }
-  }, [removalState.panel, buildingName, onRefresh]);
+  }, [selectedPanel, removePanel, buildingName, onRefresh]);
 
   const handleCloseAlert = useCallback((open: boolean) => {
-    console.log('🔄 [BUILDING PANELS TAB] Fechando alert de remoção:', {
-      open,
-      operationInProgress: operationRef.current.inProgress,
-      loading: removalState.loading,
-      currentPanel: removalState.panel?.code
-    });
-    
-    if (!open) {
-      if (!operationRef.current.inProgress && !removalState.loading) {
-        setRemovalState({ isOpen: false, panel: null, loading: false });
-        operationRef.current = { inProgress: false };
-      } else {
-        console.log('⏳ [BUILDING PANELS TAB] Não é possível fechar dialog - operação em andamento');
-      }
+    if (!open && !removing) {
+      setShowRemovalAlert(false);
+      setSelectedPanel(null);
     }
-  }, [removalState.loading]);
+  }, [removing]);
 
-  const isGlobalOperationInProgress = operationRef.current.inProgress || loading;
+  const handleAssignPanelPlaceholder = useCallback(() => {
+    console.log('🚧 [BUILDING PANELS TAB] Novo módulo de atribuição será implementado');
+    alert('Novo módulo de atribuição de painéis será implementado em breve!');
+  }, []);
+
+  const isGlobalOperationInProgress = removing || loading;
 
   return (
     <div className="space-y-6">
@@ -235,10 +106,10 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
                 size="sm"
                 onClick={handleAssignPanelPlaceholder}
                 disabled={isGlobalOperationInProgress}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                className="bg-blue-500 hover:bg-blue-600 text-white"
               >
-                <AlertTriangle className="h-4 w-4 mr-1" />
-                Em Reconstrução
+                <Monitor className="h-4 w-4 mr-1" />
+                Atribuir Painéis
               </Button>
             </div>
           </CardTitle>
@@ -295,10 +166,10 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
               <Button
                 onClick={handleAssignPanelPlaceholder}
                 disabled={isGlobalOperationInProgress}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                className="bg-blue-500 hover:bg-blue-600 text-white"
               >
-                <AlertTriangle className="h-4 w-4 mr-1" />
-                Atribuição em Reconstrução
+                <Monitor className="h-4 w-4 mr-1" />
+                Atribuir Painéis
               </Button>
             </div>
           )}
@@ -306,12 +177,12 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
       </Card>
 
       <SimplePanelRemovalAlert
-        open={removalState.isOpen}
+        open={showRemovalAlert}
         onOpenChange={handleCloseAlert}
-        panelCode={removalState.panel?.code || ''}
+        panelCode={selectedPanel?.code || ''}
         buildingName={buildingName}
         onConfirm={handleConfirmRemoval}
-        loading={removalState.loading}
+        loading={removing}
       />
     </div>
   );
