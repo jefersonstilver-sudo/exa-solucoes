@@ -3,11 +3,10 @@ import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Monitor, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Monitor, Plus, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import SimplePanelRemovalAlert from '../panels/SimplePanelRemovalAlert';
-import PanelAssignmentDialog from '../panels/PanelAssignmentDialog';
 
 interface PanelManagementSectionProps {
   panels: any[];
@@ -28,12 +27,10 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
     loading: false
   });
 
-  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   console.log('🔧 [PANEL MANAGEMENT] Renderizando com painéis:', panels.length);
 
-  // CORREÇÃO CRÍTICA: Função para recarregar painéis do banco
   const reloadPanelsFromDatabase = useCallback(async () => {
     if (!buildingId) {
       console.warn('⚠️ [PANEL MANAGEMENT] Building ID não disponível para reload');
@@ -126,7 +123,6 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
       
       setRemovalState({ isOpen: false, panel: null, loading: false });
       
-      // CORREÇÃO: Recarregar do banco ao invés de filtrar localmente
       setTimeout(() => {
         console.log('🔄 [PANEL MANAGEMENT] Recarregando após remoção...');
         reloadPanelsFromDatabase();
@@ -148,21 +144,11 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
   }, [removalState.loading]);
 
   const handleAssignPanel = useCallback(() => {
-    console.log('➕ [PANEL MANAGEMENT] Abrindo dialog de atribuição');
-    setAssignmentDialogOpen(true);
+    console.log('🚧 [PANEL MANAGEMENT] Funcionalidade de atribuição em reconstrução');
+    toast.info('Funcionalidade de atribuição de painéis será reimplementada em breve', {
+      description: 'O módulo está sendo reconstruído para melhor estabilidade'
+    });
   }, []);
-
-  // CORREÇÃO CRÍTICA: Callback que realmente recarrega os dados
-  const handleAssignmentSuccess = useCallback(() => {
-    console.log('✅ [PANEL MANAGEMENT] Atribuição realizada com sucesso - RECARREGANDO DO BANCO');
-    setAssignmentDialogOpen(false);
-    
-    // CORREÇÃO: Recarregar do banco ao invés de limpar a lista
-    setTimeout(() => {
-      console.log('🔄 [PANEL MANAGEMENT] Executando reload após atribuição...');
-      reloadPanelsFromDatabase();
-    }, 500);
-  }, [reloadPanelsFromDatabase]);
 
   return (
     <>
@@ -187,10 +173,10 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
                 size="sm"
                 onClick={handleAssignPanel}
                 disabled={removalState.loading || refreshing}
-                className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Atribuir Painel
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Em Reconstrução
               </Button>
             </div>
           </CardTitle>
@@ -240,10 +226,10 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
               <Button
                 onClick={handleAssignPanel}
                 disabled={removalState.loading || refreshing}
-                className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Atribuir Primeiro Painel
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Atribuição em Reconstrução
               </Button>
             </div>
           )}
@@ -257,14 +243,6 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
         buildingName={buildingName}
         onConfirm={handleConfirmRemoval}
         loading={removalState.loading}
-      />
-
-      <PanelAssignmentDialog
-        open={assignmentDialogOpen}
-        onOpenChange={setAssignmentDialogOpen}
-        buildingId={buildingId}
-        buildingName={buildingName}
-        onSuccess={handleAssignmentSuccess}
       />
     </>
   );

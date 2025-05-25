@@ -10,7 +10,6 @@ import {
 import { Building2 } from 'lucide-react';
 import { useBuildingDetailsData } from '@/hooks/useBuildingDetailsData';
 import BuildingDetailsTabsContent from './details/BuildingDetailsTabsContent';
-import BuildingAssignmentDialogWrapper from './details/BuildingAssignmentDialogWrapper';
 
 interface BuildingDetailsDialogProps {
   open: boolean;
@@ -23,8 +22,6 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   onOpenChange,
   building
 }) => {
-  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
-
   const {
     actionLogs,
     sales,
@@ -41,66 +38,41 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
     loading
   });
 
-  // Limpar estado quando o dialog principal fechar
-  useEffect(() => {
-    if (!open) {
-      console.log('🔄 [BUILDING DETAILS] Dialog principal fechado, limpando estados');
-      setAssignmentDialogOpen(false);
-    }
-  }, [open]);
-
-  const handleAssignmentSuccess = () => {
-    console.log('✅ [BUILDING DETAILS] Atribuição bem-sucedida, atualizando dados');
-    fetchBuildingData();
-    setAssignmentDialogOpen(false);
+  const handleAssignmentPlaceholder = () => {
+    console.log('🚧 [BUILDING DETAILS] Funcionalidade de atribuição em reconstrução');
   };
 
-  const handleAssignmentDialogClose = (open: boolean) => {
-    console.log('🔄 [BUILDING DETAILS] Estado do dialog de atribuição:', open);
-    setAssignmentDialogOpen(open);
-  };
-
-  // Validação antes de renderizar
   if (!building) {
     console.warn('⚠️ [BUILDING DETAILS] Componente renderizado sem prédio');
     return null;
   }
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <Building2 className="h-6 w-6 mr-2 text-indexa-purple" />
-              {building.nome}
-            </DialogTitle>
-            <DialogDescription>
-              Informações detalhadas e histórico completo do prédio
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Building2 className="h-6 w-6 mr-2 text-indexa-purple" />
+            {building.nome}
+          </DialogTitle>
+          <DialogDescription>
+            Informações detalhadas e histórico completo do prédio
+          </DialogDescription>
+        </DialogHeader>
 
-          <BuildingDetailsTabsContent
-            building={building}
-            panels={panels}
-            sales={sales}
-            actionLogs={actionLogs}
-            loading={loading}
-            onRefresh={fetchBuildingData}
-            onAssignPanel={() => setAssignmentDialogOpen(true)}
-            onSyncPanel={handleSyncPanel}
-            onViewPanelDetails={handleViewPanelDetails}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <BuildingAssignmentDialogWrapper
-        open={assignmentDialogOpen}
-        onOpenChange={handleAssignmentDialogClose}
-        building={building}
-        onSuccess={handleAssignmentSuccess}
-      />
-    </>
+        <BuildingDetailsTabsContent
+          building={building}
+          panels={panels}
+          sales={sales}
+          actionLogs={actionLogs}
+          loading={loading}
+          onRefresh={fetchBuildingData}
+          onAssignPanel={handleAssignmentPlaceholder}
+          onSyncPanel={handleSyncPanel}
+          onViewPanelDetails={handleViewPanelDetails}
+        />
+      </DialogContent>
+    </Dialog>
   );
 };
 

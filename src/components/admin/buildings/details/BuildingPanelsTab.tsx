@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Monitor, Plus, RefreshCw } from 'lucide-react';
+import { Monitor, Plus, RefreshCw, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PanelCard from '../panels/PanelCard';
@@ -49,6 +49,13 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   };
 
   const statusSummary = getPanelStatusSummary();
+
+  const handleAssignPanelPlaceholder = () => {
+    console.log('🚧 [BUILDING PANELS TAB] Funcionalidade de atribuição em reconstrução');
+    toast.info('Funcionalidade de atribuição de painéis será reimplementada em breve', {
+      description: 'O módulo está sendo reconstruído para melhor estabilidade'
+    });
+  };
 
   const handleRemoveRequest = useCallback((panel: any) => {
     const operationId = `remove_${panel.id}_${Date.now()}`;
@@ -124,7 +131,6 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
     setRemovalState(prev => ({ ...prev, loading: true }));
 
     try {
-      // Verificar campanhas ativas
       console.log('🔍 [BUILDING PANELS TAB] Verificando campanhas ativas...');
       const { data: activeCampaigns, error: campaignsError } = await supabase
         .from('campanhas')
@@ -145,7 +151,6 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
         return;
       }
 
-      // Executar remoção
       console.log('🔄 [BUILDING PANELS TAB] Removendo atribuição do painel...');
       const { error: updateError } = await supabase
         .from('painels')
@@ -158,7 +163,6 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
       console.log(`✅ [BUILDING PANELS TAB] Sucesso - Operação: ${currentOperation.operationId}`);
 
-      // Log da ação (não crítico)
       try {
         await supabase.rpc('log_building_action', {
           p_building_id: null,
@@ -173,11 +177,9 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
       toast.success(`Painel "${panel.code}" removido com sucesso!`);
       
-      // Fechar dialog e resetar estados
       setRemovalState({ isOpen: false, panel: null, loading: false });
       operationRef.current.inProgress = false;
       
-      // Atualizar lista
       setTimeout(() => {
         console.log('🔄 [BUILDING PANELS TAB] Atualizando lista de painéis após remoção');
         onRefresh();
@@ -200,7 +202,6 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
     });
     
     if (!open) {
-      // Só fechar se não há operação em andamento
       if (!operationRef.current.inProgress && !removalState.loading) {
         setRemovalState({ isOpen: false, panel: null, loading: false });
         operationRef.current = { inProgress: false };
@@ -232,18 +233,17 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
               </Button>
               <Button
                 size="sm"
-                onClick={onAssignPanel}
+                onClick={handleAssignPanelPlaceholder}
                 disabled={isGlobalOperationInProgress}
-                className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Atribuir Painel
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Em Reconstrução
               </Button>
             </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Resumo de Status */}
           {panels.length > 0 && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <h4 className="font-medium mb-3">Status dos Painéis</h4>
@@ -270,7 +270,6 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
             </div>
           )}
 
-          {/* Lista de Painéis */}
           {panels.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {panels.map((panel: any) => (
@@ -294,19 +293,18 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
                 Este prédio ainda não possui painéis atribuídos.
               </p>
               <Button
-                onClick={onAssignPanel}
+                onClick={handleAssignPanelPlaceholder}
                 disabled={isGlobalOperationInProgress}
-                className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Atribuir Primeiro Painel
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Atribuição em Reconstrução
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* AlertDialog unificado para confirmação de remoção */}
       <SimplePanelRemovalAlert
         open={removalState.isOpen}
         onOpenChange={handleCloseAlert}
