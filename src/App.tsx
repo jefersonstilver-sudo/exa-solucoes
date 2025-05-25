@@ -16,6 +16,7 @@ import PainelStore from '@/pages/PainelStore';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AuthHookTest from '@/pages/AuthHookTest';
 import AuthDiagnosticPage from '@/pages/AuthDiagnosticPage';
+import AuthHookDiagnosticPage from '@/pages/AuthHookDiagnosticPage';
 
 const App = () => {
   return (
@@ -32,7 +33,8 @@ const App = () => {
         <Route path="/dashboard" element={<Navigate to="/super_admin" replace />} />
         <Route path="/painel" element={<Navigate to="/super_admin" replace />} />
         
-        {/* Debug Routes - TEMPORÁRIO */}
+        {/* Debug Routes - SISTEMA DE DIAGNÓSTICO COMPLETO */}
+        <Route path="/auth-hook-diagnostic" element={<AuthHookDiagnosticPage />} />
         <Route path="/auth-hook-test" element={<AuthHookTest />} />
         <Route path="/auth-diagnostic" element={<AuthDiagnosticPage />} />
         
