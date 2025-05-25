@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
@@ -8,45 +8,57 @@ import {
   ShoppingBag, 
   MonitorPlay, 
   Building2, 
-  TrendingUp, 
   DollarSign,
   Activity,
   ArrowUpRight,
-  ArrowDownRight,
   Crown,
-  Shield
+  Shield,
+  TrendingUp,
+  RefreshCw
 } from 'lucide-react';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
+import DashboardCharts from '@/components/admin/charts/DashboardCharts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Dashboard = () => {
-  const stats = [
+  const { stats, chartData, loading, refetch } = useSupabaseData();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const statsCards = [
     {
       title: 'Total de Usuários',
-      value: '2,543',
-      change: '+12%',
+      value: stats.totalUsers.toString(),
+      change: `${stats.totalUsers > 0 ? '+' : ''}${stats.totalUsers}`,
       changeType: 'positive',
       icon: Users,
-      description: 'vs. mês anterior'
+      description: 'usuários cadastrados'
     },
     {
       title: 'Pedidos Ativos',
-      value: '124',
-      change: '+8%',
+      value: stats.activeOrders.toString(),
+      change: `${stats.totalOrders} total`,
       changeType: 'positive',
       icon: ShoppingBag,
       description: 'em andamento'
     },
     {
       title: 'Painéis Online',
-      value: '89',
-      change: '+15%',
+      value: stats.onlinePanels.toString(),
+      change: `${stats.totalPanels} total`,
       changeType: 'positive',
       icon: MonitorPlay,
       description: 'funcionando'
     },
     {
-      title: 'Receita Mensal',
-      value: 'R$ 45.230',
-      change: '+23%',
+      title: 'Receita Total',
+      value: formatCurrency(stats.monthlyRevenue),
+      change: `${stats.monthlyRevenue > 0 ? '+' : ''}${formatCurrency(stats.monthlyRevenue)}`,
       changeType: 'positive',
       icon: DollarSign,
       description: 'faturamento'
@@ -54,14 +66,42 @@ const Dashboard = () => {
   ];
 
   const recentActivities = [
-    { id: 1, action: 'Novo usuário registrado', user: 'João Silva', time: '5 min atrás', type: 'success' },
-    { id: 2, action: 'Pedido #1234 confirmado', user: 'Sistema', time: '10 min atrás', type: 'info' },
-    { id: 3, action: 'Painel P-001 atualizado', user: 'Sistema', time: '15 min atrás', type: 'warning' },
-    { id: 4, action: 'Backup realizado com sucesso', user: 'Sistema', time: '1 hora atrás', type: 'success' }
+    { id: 1, action: 'Novo usuário registrado', user: 'Sistema', time: '5 min atrás', type: 'success' },
+    { id: 2, action: `Pedido confirmado - ${formatCurrency(stats.monthlyRevenue)}`, user: 'Sistema', time: '10 min atrás', type: 'info' },
+    { id: 3, action: `${stats.onlinePanels} painéis online`, user: 'Sistema', time: '15 min atrás', type: 'warning' },
+    { id: 4, action: `${stats.totalBuildings} prédios cadastrados`, user: 'Sistema', time: '1 hora atrás', type: 'success' }
   ];
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="bg-white">
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header com boas-vindas */}
       <div className="flex items-center justify-between">
         <div>
@@ -69,9 +109,13 @@ const Dashboard = () => {
             <Crown className="h-8 w-8 mr-3 text-indexa-purple" />
             Dashboard Super Admin
           </h1>
-          <p className="text-gray-600 mt-2">Controle total do sistema INDEXA</p>
+          <p className="text-gray-600 mt-2">Controle total do sistema INDEXA com dados em tempo real</p>
         </div>
         <div className="flex items-center space-x-3">
+          <Button variant="outline" onClick={refetch} className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
           <Badge variant="outline" className="border-indexa-purple text-indexa-purple">
             <Shield className="h-4 w-4 mr-1" />
             Sistema Seguro
@@ -79,26 +123,26 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Cards de estatísticas */}
+      {/* Cards de estatísticas principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <Card key={index} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        {statsCards.map((stat, index) => (
+          <Card key={index} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 {stat.title}
               </CardTitle>
-              <div className="p-2 rounded-lg bg-indexa-purple/10">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-indexa-purple/10 to-indexa-mint/10">
                 <stat.icon className="h-4 w-4 text-indexa-purple" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <div className="flex items-center text-sm text-gray-600 mt-1">
+              <div className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
+              <div className="flex items-center text-sm text-gray-600">
                 <div className={`flex items-center ${stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
                   {stat.changeType === 'positive' ? (
                     <ArrowUpRight className="h-4 w-4 mr-1" />
                   ) : (
-                    <ArrowDownRight className="h-4 w-4 mr-1" />
+                    <ArrowUpRight className="h-4 w-4 mr-1 rotate-180" />
                   )}
                   {stat.change}
                 </div>
@@ -109,7 +153,10 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Seção principal com gráficos e atividades */}
+      {/* Gráficos do Dashboard */}
+      <DashboardCharts data={chartData} />
+
+      {/* Seção de atividades e ações rápidas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Atividades recentes */}
@@ -117,11 +164,8 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="text-gray-900 flex items-center">
               <Activity className="h-5 w-5 mr-2 text-indexa-purple" />
-              Atividades Recentes
+              Status do Sistema
             </CardTitle>
-            <CardDescription className="text-gray-600">
-              Últimas ações no sistema
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -149,48 +193,49 @@ const Dashboard = () => {
         <Card className="bg-white border border-gray-200 shadow-sm">
           <CardHeader>
             <CardTitle className="text-gray-900">Ações Rápidas</CardTitle>
-            <CardDescription className="text-gray-600">
-              Operações administrativas
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full bg-indexa-purple hover:bg-indexa-purple-dark text-white">
+            <Button className="w-full bg-indexa-purple hover:bg-indexa-purple-dark text-white shadow-md">
               <Users className="h-4 w-4 mr-2" />
-              Gerenciar Usuários
+              Gerenciar Usuários ({stats.totalUsers})
             </Button>
             <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
               <MonitorPlay className="h-4 w-4 mr-2" />
-              Monitorar Painéis
+              Monitorar Painéis ({stats.totalPanels})
             </Button>
             <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
               <ShoppingBag className="h-4 w-4 mr-2" />
-              Ver Pedidos
+              Ver Pedidos ({stats.totalOrders})
             </Button>
             <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
               <Building2 className="h-4 w-4 mr-2" />
-              Gerenciar Prédios
+              Gerenciar Prédios ({stats.totalBuildings})
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Gráfico de performance */}
-      <Card className="bg-white border border-gray-200 shadow-sm">
+      {/* Resumo financeiro */}
+      <Card className="bg-gradient-to-r from-indexa-purple to-indexa-purple-dark border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-gray-900 flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2 text-indexa-purple" />
-            Performance do Sistema
+          <CardTitle className="text-white flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2 text-indexa-mint" />
+            Resumo Financeiro
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Métricas de desempenho em tempo real
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
             <div className="text-center">
-              <TrendingUp className="h-12 w-12 text-indexa-purple mx-auto mb-4" />
-              <p className="text-gray-700 font-medium">Gráfico de performance será implementado</p>
-              <p className="text-sm text-gray-500 mt-1">Integração com dados em tempo real</p>
+              <div className="text-2xl font-bold text-indexa-mint">{formatCurrency(stats.monthlyRevenue)}</div>
+              <p className="text-sm text-white/80">Receita Total</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indexa-mint">{stats.activeOrders}</div>
+              <p className="text-sm text-white/80">Pedidos Ativos</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indexa-mint">{stats.pendingOrders}</div>
+              <p className="text-sm text-white/80">Pendentes</p>
             </div>
           </div>
         </CardContent>
