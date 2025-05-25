@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,8 @@ const PanelAssignmentList: React.FC<PanelAssignmentListProps> = ({
   loading,
   disabled
 }) => {
+  const selectAllCheckboxRef = useRef<HTMLButtonElement>(null);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online': return 'bg-green-500';
@@ -45,6 +47,16 @@ const PanelAssignmentList: React.FC<PanelAssignmentListProps> = ({
 
   const isAllSelected = panels.length > 0 && selectedPanels.length === panels.length;
   const isSomeSelected = selectedPanels.length > 0 && selectedPanels.length < panels.length;
+
+  // Set indeterminate state using useEffect
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      const element = selectAllCheckboxRef.current.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      if (element) {
+        element.indeterminate = isSomeSelected;
+      }
+    }
+  }, [isSomeSelected]);
 
   if (loading) {
     return (
@@ -74,10 +86,8 @@ const PanelAssignmentList: React.FC<PanelAssignmentListProps> = ({
       <div className="bg-gray-50 p-3 border-b flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Checkbox
+            ref={selectAllCheckboxRef}
             checked={isAllSelected}
-            ref={(el) => {
-              if (el) el.indeterminate = isSomeSelected;
-            }}
             onCheckedChange={onSelectAll}
             disabled={disabled}
           />
