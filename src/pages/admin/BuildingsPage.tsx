@@ -14,7 +14,10 @@ import {
   Eye,
   Edit,
   MoreHorizontal,
-  RefreshCw
+  RefreshCw,
+  Database,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,9 +26,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useBuildingsData } from '@/hooks/useBuildingsData';
+import { useAuth } from '@/hooks/useAuth';
 
 const BuildingsPage = () => {
   const { buildings, stats, loading, refetch } = useBuildingsData();
+  const { userProfile } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
   const getStatusBadge = (status: string) => {
@@ -74,6 +79,35 @@ const BuildingsPage = () => {
         </div>
       </div>
 
+      {/* Status da conexão e dados */}
+      <Card className={`${buildings.length > 0 ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'}`}>
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-3">
+            {buildings.length > 0 ? (
+              <>
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                <div>
+                  <h3 className="font-semibold text-green-800">Conectado ao Supabase com Sucesso!</h3>
+                  <p className="text-green-700 text-sm">
+                    {stats.total} prédios encontrados na base de dados • Usuário: {userProfile?.email}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-6 w-6 text-orange-600" />
+                <div>
+                  <h3 className="font-semibold text-orange-800">Conectado ao Supabase</h3>
+                  <p className="text-orange-700 text-sm">
+                    Nenhum prédio encontrado na base de dados • Usuário: {userProfile?.email}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-indexa-purple/20">
@@ -83,7 +117,10 @@ const BuildingsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <p className="text-xs text-green-600">Sistema conectado</p>
+            <p className="text-xs text-gray-600">
+              <Database className="h-3 w-3 inline mr-1" />
+              Dados do Supabase
+            </p>
           </CardContent>
         </Card>
 
@@ -152,7 +189,17 @@ const BuildingsPage = () => {
             {filteredBuildings.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>Nenhum prédio encontrado</p>
+                {buildings.length === 0 ? (
+                  <div>
+                    <p className="text-lg font-medium mb-2">Nenhum prédio encontrado na base de dados</p>
+                    <p className="text-sm text-gray-400">
+                      As políticas RLS foram corrigidas. Se você esperava ver prédios aqui, 
+                      verifique se existem dados na tabela 'buildings' do Supabase.
+                    </p>
+                  </div>
+                ) : (
+                  <p>Nenhum prédio corresponde à busca "{searchTerm}"</p>
+                )}
               </div>
             ) : (
               filteredBuildings.map((building) => {

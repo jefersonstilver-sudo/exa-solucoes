@@ -29,8 +29,26 @@ export const useBuildingsData = () => {
   const fetchBuildings = async () => {
     try {
       setLoading(true);
-      console.log('🏢 Buscando prédios...');
+      console.log('🏢 Iniciando busca de prédios...');
       
+      // Primeiro, verificar se o usuário está autenticado
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('❌ Erro de autenticação:', authError);
+        toast.error('Erro de autenticação');
+        return;
+      }
+
+      if (!user) {
+        console.error('❌ Usuário não autenticado');
+        toast.error('Usuário não autenticado');
+        return;
+      }
+
+      console.log('✅ Usuário autenticado:', user.email);
+
+      // Buscar prédios
       const { data, error } = await supabase
         .from('buildings')
         .select('*')
@@ -38,11 +56,22 @@ export const useBuildingsData = () => {
 
       if (error) {
         console.error('❌ Erro ao buscar prédios:', error);
-        toast.error('Erro ao carregar prédios');
+        console.error('❌ Detalhes do erro:', error.message, error.details, error.code);
+        toast.error(`Erro ao carregar prédios: ${error.message}`);
         return;
       }
 
-      console.log('✅ Prédios carregados:', data?.length);
+      console.log('✅ Dados retornados do Supabase:', data);
+      console.log('✅ Total de prédios encontrados:', data?.length || 0);
+      
+      if (!data || data.length === 0) {
+        console.log('⚠️ Nenhum prédio encontrado na base de dados');
+        toast.info('Nenhum prédio encontrado na base de dados');
+      } else {
+        console.log('🎉 Prédios carregados com sucesso:', data.map(b => b.nome));
+        toast.success(`${data.length} prédios carregados com sucesso`);
+      }
+
       setBuildings(data || []);
       
       // Calcular estatísticas
