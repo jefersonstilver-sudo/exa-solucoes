@@ -1,117 +1,130 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  ShoppingBag, 
+  Users, 
   Building2, 
-  MonitorPlay, 
-  Settings, 
-  Users,
-  Shield,
-  Crown
+  Package, 
+  Settings,
+  Video,
+  ShoppingBag
 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
 } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks/useAuth';
+import { Badge } from '@/components/ui/badge';
+import { usePendingVideosCount } from '@/hooks/usePendingVideosCount';
 
 const ModernAdminSidebar = () => {
-  const { userProfile } = useAuth();
-  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
-  
-  const navItems = [
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { pendingCount } = usePendingVideosCount();
+
+  const menuItems = [
     {
-      title: 'Dashboard',
+      title: "Dashboard",
       icon: LayoutDashboard,
-      href: '/super_admin',
-      requireSuperAdmin: false,
+      url: "/super_admin",
+      description: "Visão geral do sistema"
     },
     {
-      title: 'Pedidos',
+      title: "Pedidos",
       icon: ShoppingBag,
-      href: '/super_admin/pedidos',
-      requireSuperAdmin: false,
+      url: "/super_admin/pedidos",
+      description: "Gerenciar pedidos"
     },
     {
-      title: 'Prédios',
+      title: "Aprovações",
+      icon: Video,
+      url: "/super_admin/aprovacoes",
+      description: "Aprovar vídeos dos clientes",
+      badge: pendingCount > 0 ? pendingCount : null
+    },
+    {
+      title: "Prédios",
       icon: Building2,
-      href: '/super_admin/predios',
-      requireSuperAdmin: false,
+      url: "/super_admin/predios",
+      description: "Gerenciar prédios"
     },
     {
-      title: 'Painéis',
-      icon: MonitorPlay,
-      href: '/super_admin/paineis',
-      requireSuperAdmin: false,
+      title: "Painéis",
+      icon: Package,
+      url: "/super_admin/paineis",
+      description: "Gerenciar painéis"
     },
     {
-      title: 'Usuários',
+      title: "Usuários",
       icon: Users,
-      href: '/super_admin/usuarios',
-      requireSuperAdmin: true,
+      url: "/super_admin/usuarios",
+      description: "Gerenciar usuários"
     },
     {
-      title: 'Configurações',
+      title: "Configurações",
       icon: Settings,
-      href: '/super_admin/configuracoes',
-      requireSuperAdmin: true,
-    },
+      url: "/super_admin/configuracoes",
+      description: "Configurações do sistema"
+    }
   ];
-  
+
+  const handleNavigate = (url: string) => {
+    navigate(url);
+  };
+
   return (
-    <Sidebar className="indexa-sidebar-gradient shadow-2xl">
-      <SidebarHeader className="border-b border-white/10 bg-black/10">
-        <div className="flex items-center justify-center p-6">
-          <div className="text-white text-2xl font-bold tracking-wider">
-            INDEXA
+    <Sidebar className="border-r border-gray-200">
+      <SidebarHeader className="p-6 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-indexa-purple rounded-lg flex items-center justify-center">
+            <LayoutDashboard className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">INDEXA</h2>
+            <p className="text-xs text-gray-600">Super Admin</p>
           </div>
         </div>
-        {isSuperAdmin && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center justify-center space-x-2 text-xs bg-gradient-to-r from-yellow-400/20 to-yellow-300/20 backdrop-blur-sm text-yellow-200 px-3 py-2 rounded-lg border border-yellow-300/30">
-              <Crown className="h-3 w-3 text-yellow-300" />
-              <span className="font-medium">Super Admin</span>
-            </div>
-          </div>
-        )}
       </SidebarHeader>
       
-      <SidebarContent className="bg-gradient-to-b from-transparent to-black/10">
+      <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white/70 font-medium">Navegação</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            Navegação Principal
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => {
-                if (item.requireSuperAdmin && !isSuperAdmin) {
-                  return null;
-                }
-                
+            <SidebarMenu className="space-y-2">
+              {menuItems.map((item) => {
+                const isActive = location.pathname === item.url;
                 return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild className="data-[active=true]:indexa-sidebar-active hover:indexa-sidebar-hover text-white/90 hover:text-white transition-all duration-300">
-                      <NavLink
-                        to={item.href}
-                        className={({ isActive }) => 
-                          `flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium ${
-                            isActive 
-                              ? "bg-gradient-to-r from-emerald-400/20 to-emerald-300/20 text-emerald-200 border-l-2 border-emerald-300" 
-                              : "hover:bg-white/10"
-                          }`
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      onClick={() => handleNavigate(item.url)}
+                      className={`
+                        w-full justify-start px-3 py-2 rounded-lg transition-all duration-200 group
+                        ${isActive 
+                          ? 'bg-indexa-purple text-white shadow-md' 
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-indexa-purple'
                         }
-                      >
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{item.title}</span>
-                      </NavLink>
+                      `}
+                    >
+                      <div className="flex items-center space-x-3 w-full">
+                        <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-indexa-purple'}`} />
+                        <div className="flex-1">
+                          <span className="font-medium">{item.title}</span>
+                        </div>
+                        {item.badge && (
+                          <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -120,13 +133,6 @@ const ModernAdminSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
-      <SidebarFooter className="border-t border-white/10 bg-black/10">
-        <div className="flex items-center space-x-2 p-4 text-xs text-white/70">
-          <Shield className="h-3 w-3 text-emerald-300" />
-          <span>Sistema Seguro</span>
-        </div>
-      </SidebarFooter>
     </Sidebar>
   );
 };

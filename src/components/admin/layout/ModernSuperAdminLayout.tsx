@@ -9,13 +9,13 @@ interface ModernSuperAdminLayoutProps {
   title?: string;
 }
 
-const ModernSuperAdminLayout = ({ children, title }: ModernSuperAdminLayoutProps) => {
+const ModernSuperAdminLayout = ({ children }: ModernSuperAdminLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <ModernAdminSidebar />
         <SidebarInset>
-          <ModernAdminHeader title={title} />
+          <ModernAdminHeader />
           <main className="flex-1 p-6">
             <div className="max-w-7xl mx-auto">
               {children}
