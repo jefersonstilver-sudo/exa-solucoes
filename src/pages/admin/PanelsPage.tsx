@@ -116,14 +116,12 @@ const PanelsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Painéis</h1>
-          <p className="text-gray-600">Monitore e gerencie todos os painéis digitais</p>
-        </div>
-        <div className="flex items-center space-x-3">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Gerenciar Painéis</h1>
+        <p className="text-gray-600 mt-2">Monitore e gerencie todos os painéis digitais</p>
+        <div className="flex flex-col sm:flex-row gap-3 mt-4">
           <Button variant="outline" onClick={refetch} disabled={loading}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar
@@ -139,48 +137,49 @@ const PanelsPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Total de Painéis</CardTitle>
-            <MonitorPlay className="h-4 w-4 text-indexa-purple" />
+            <CardTitle className="text-lg font-medium text-gray-700">Total de Painéis</CardTitle>
+            <MonitorPlay className="h-6 w-6 text-indexa-purple" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <p className="text-xs text-green-600">Sistema conectado</p>
+            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+            <div className="flex items-center space-x-4 mt-2">
+              <div className="flex items-center">
+                <Wifi className="h-4 w-4 text-green-600 mr-1" />
+                <span className="text-sm text-green-600">{stats.online} Online</span>
+              </div>
+              <div className="flex items-center">
+                <WifiOff className="h-4 w-4 text-red-600 mr-1" />
+                <span className="text-sm text-red-600">{stats.offline} Offline</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Online</CardTitle>
-            <Wifi className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-lg font-medium text-gray-700">Status Geral</CardTitle>
+            <Settings className="h-6 w-6 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.online}</div>
-            <p className="text-xs text-green-600">{stats.total > 0 ? Math.round((stats.online / stats.total) * 100) : 0}% operacional</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-indexa-purple/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Offline</CardTitle>
-            <WifiOff className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.offline}</div>
-            <p className="text-xs text-red-600">Requer atenção</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-indexa-purple/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Manutenção</CardTitle>
-            <Settings className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.maintenance}</div>
-            <p className="text-xs text-orange-500">Em manutenção</p>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Operacional:</span>
+                <span className="text-sm font-medium text-green-600">
+                  {stats.total > 0 ? Math.round((stats.online / stats.total) * 100) : 0}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Manutenção:</span>
+                <span className="text-sm font-medium text-orange-500">{stats.maintenance}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Offline:</span>
+                <span className="text-sm font-medium text-red-600">{stats.offline}</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -188,43 +187,27 @@ const PanelsPage = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-gray-900">Filtros</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
+          <CardTitle className="text-gray-900">Filtros e Busca</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Search Bar */}
+          <div className="w-full">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por código, prédio, modelo ou marca..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por código, prédio, modelo ou marca..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
+          
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="flex-1 min-w-[120px]">
                   <Filter className="h-4 w-4 mr-2" />
                   Status: {statusFilter === 'all' ? 'Todos' : statusFilter}
                 </Button>
@@ -247,7 +230,7 @@ const PanelsPage = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="flex-1 min-w-[120px]">
                   SO: {osFilter === 'all' ? 'Todos' : osFilter}
                 </Button>
               </DropdownMenuTrigger>
@@ -269,7 +252,7 @@ const PanelsPage = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="flex-1 min-w-[120px]">
                   Orientação: {orientationFilter === 'all' ? 'Todas' : orientationFilter}
                 </Button>
               </DropdownMenuTrigger>
@@ -286,13 +269,34 @@ const PanelsPage = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Visualização:</span>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3X3 className="h-4 w-4 mr-1" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4 mr-1" />
+              Lista
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Panels Display */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-gray-900">Lista de Painéis</CardTitle>
+          <CardTitle className="text-gray-900">Painéis</CardTitle>
           <CardDescription className="text-gray-600">
             {filteredPanels.length} painéis encontrados
           </CardDescription>
@@ -318,7 +322,7 @@ const PanelsPage = () => {
               )}
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredPanels.map((panel) => (
                 <PanelConfigCard
                   key={panel.id}
@@ -336,35 +340,35 @@ const PanelsPage = () => {
                 const StatusIcon = statusInfo.icon;
                 
                 return (
-                  <div key={panel.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div key={panel.id} className="flex items-center justify-between p-6 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
                         <MonitorPlay className="h-6 w-6 text-indexa-purple" />
                       </div>
                       <div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <h3 className="font-medium text-gray-900">{panel.code}</h3>
                           <Badge variant={statusInfo.variant} className="text-xs flex items-center gap-1">
                             <StatusIcon className="h-3 w-3" />
                             {statusInfo.label}
                           </Badge>
                         </div>
-                        <div className="flex items-center space-x-4 mt-1">
+                        <div className="flex items-center space-x-6 mt-2">
                           {panel.marca && (
-                            <p className="text-xs text-gray-500">Marca: {panel.marca}</p>
+                            <p className="text-sm text-gray-500">Marca: {panel.marca}</p>
                           )}
                           {panel.polegada && (
-                            <p className="text-xs text-gray-500">Tamanho: {panel.polegada}"</p>
+                            <p className="text-sm text-gray-500">Tamanho: {panel.polegada}"</p>
                           )}
                           {panel.resolucao && (
-                            <p className="text-xs text-gray-500">Resolução: {panel.resolucao}</p>
+                            <p className="text-sm text-gray-500">Resolução: {panel.resolucao}</p>
                           )}
                           {panel.sistema_operacional && (
-                            <p className="text-xs text-gray-500">SO: {panel.sistema_operacional}</p>
+                            <p className="text-sm text-gray-500">SO: {panel.sistema_operacional}</p>
                           )}
                         </div>
                         {panel.buildings?.nome && (
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-sm text-gray-400 mt-1">
                             📍 {panel.buildings.nome}
                           </p>
                         )}
