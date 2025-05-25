@@ -29,7 +29,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   onViewPanelDetails,
   buildingName = ''
 }) => {
-  console.log('🏢 [BUILDING PANELS TAB] Renderizando com painéis:', panels);
+  console.log('🏢 [BUILDING PANELS TAB] Renderizando com painéis:', panels.length);
 
   const [removalState, setRemovalState] = useState({
     isOpen: false,
@@ -49,7 +49,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
   const statusSummary = getPanelStatusSummary();
 
   const handleRemoveRequest = useCallback((panel: any) => {
-    console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção:', panel);
+    console.log('🗑️ [BUILDING PANELS TAB] Solicitação de remoção:', panel.code);
     
     if (!panel?.id) {
       console.error('❌ [BUILDING PANELS TAB] Panel inválido:', panel);
@@ -68,17 +68,19 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
     const { panel } = removalState;
     
     if (!panel?.id) {
-      console.error('❌ [BUILDING PANELS TAB] Panel não encontrado');
+      console.error('❌ [BUILDING PANELS TAB] Panel não encontrado para remoção');
       toast.error('Erro: Painel não encontrado');
+      setRemovalState({ isOpen: false, panel: null, loading: false });
       return;
     }
 
-    console.log('🔄 [BUILDING PANELS TAB] Iniciando remoção:', panel.code);
+    console.log('🔄 [BUILDING PANELS TAB] Iniciando remoção do painel:', panel.code);
     
     setRemovalState(prev => ({ ...prev, loading: true }));
 
     try {
-      // Verificar campanhas ativas
+      // Verificar campanhas ativas antes da remoção
+      console.log('🔍 [BUILDING PANELS TAB] Verificando campanhas ativas...');
       const { data: activeCampaigns, error: campaignsError } = await supabase
         .from('campanhas')
         .select('id')
@@ -87,16 +89,18 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
 
       if (campaignsError) {
         console.error('❌ [BUILDING PANELS TAB] Erro ao verificar campanhas:', campaignsError);
-        throw campaignsError;
+        throw new Error('Erro ao verificar campanhas ativas: ' + campaignsError.message);
       }
 
       if (activeCampaigns && activeCampaigns.length > 0) {
-        console.warn('⚠️ [BUILDING PANELS TAB] Painel tem campanhas ativas');
-        toast.error('Este painel não pode ser removido pois está sendo usado em campanhas ativas');
+        console.warn('⚠️ [BUILDING PANELS TAB] Painel tem campanhas ativas:', activeCampaigns.length);
+        toast.error(`Este painel não pode ser removido pois possui ${activeCampaigns.length} campanhas ativas`);
+        setRemovalState({ isOpen: false, panel: null, loading: false });
         return;
       }
 
-      // Tentar com retry
+      // Executar remoção com retry
+      console.log('🔄 [BUILDING PANELS TAB] Removendo atribuição do painel...');
       let success = false;
       let attempts = 0;
       const maxAttempts = 3;
@@ -114,7 +118,7 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
           if (updateError) {
             console.error(`❌ [BUILDING PANELS TAB] Tentativa ${attempts} falhou:`, updateError);
             if (attempts === maxAttempts) {
-              throw updateError;
+              throw new Error('Falha ao remover painel após ' + maxAttempts + ' tentativas: ' + updateError.message);
             }
             // Aguardar antes da próxima tentativa
             await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
@@ -138,26 +142,30 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
           p_description: `Painel "${panel.code}" removido do prédio "${buildingName}"`,
           p_old_values: { panel_id: panel.id, panel_code: panel.code }
         });
-        console.log('📝 [BUILDING PANELS TAB] Log registrado');
+        console.log('📝 [BUILDING PANELS TAB] Log da ação registrado');
       } catch (logError) {
-        console.warn('⚠️ [BUILDING PANELS TAB] Falha ao registrar log:', logError);
+        console.warn('⚠️ [BUILDING PANELS TAB] Falha ao registrar log (não crítico):', logError);
       }
 
       toast.success(`Painel "${panel.code}" removido com sucesso!`);
       
       // Fechar dialog e atualizar dados
       setRemovalState({ isOpen: false, panel: null, loading: false });
-      onRefresh();
+      
+      // Aguardar um momento antes de atualizar para garantir que a UI se estabilize
+      setTimeout(() => {
+        onRefresh();
+      }, 100);
       
     } catch (error) {
-      console.error('💥 [BUILDING PANELS TAB] Erro na remoção:', error);
+      console.error('💥 [BUILDING PANELS TAB] Erro crítico na remoção:', error);
       toast.error('Erro ao remover painel: ' + (error as any)?.message || 'Erro desconhecido');
-    } finally {
-      setRemovalState(prev => ({ ...prev, loading: false }));
+      setRemovalState({ isOpen: false, panel: null, loading: false });
     }
   }, [removalState.panel, buildingName, onRefresh]);
 
   const handleCloseAlert = useCallback(() => {
+    console.log('🔄 [BUILDING PANELS TAB] Fechando alert de remoção');
     setRemovalState({ isOpen: false, panel: null, loading: false });
   }, []);
 
@@ -221,18 +229,15 @@ const BuildingPanelsTab: React.FC<BuildingPanelsTabProps> = ({
           {/* Lista de Painéis */}
           {panels.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {panels.map((panel: any) => {
-                console.log('🎯 [BUILDING PANELS TAB] Renderizando card para painel:', panel.code);
-                return (
-                  <PanelCard
-                    key={panel.id}
-                    panel={panel}
-                    onRemove={handleRemoveRequest}
-                    onSync={onSyncPanel}
-                    onViewDetails={onViewPanelDetails}
-                  />
-                );
-              })}
+              {panels.map((panel: any) => (
+                <PanelCard
+                  key={panel.id}
+                  panel={panel}
+                  onRemove={handleRemoveRequest}
+                  onSync={onSyncPanel}
+                  onViewDetails={onViewPanelDetails}
+                />
+              ))}
             </div>
           ) : (
             <div className="text-center py-12">

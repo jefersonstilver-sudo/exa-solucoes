@@ -19,30 +19,32 @@ const SafeBuildingDetailsDialog: React.FC<SafeBuildingDetailsDialogProps> = ({
   onOpenChange,
   building
 }) => {
-  console.log('🛡️ [SAFE BUILDING DETAILS] Iniciando validação:', { open, building });
+  console.log('🛡️ [SAFE BUILDING DETAILS] Renderização:', { open, building: building?.nome || 'null' });
 
-  // Validar dados do prédio
+  // CRÍTICO: Se dialog não está aberto, não renderizar nada
+  if (!open) {
+    console.log('🚫 [SAFE BUILDING DETAILS] Dialog fechado - não renderizando');
+    return null;
+  }
+
+  // Validar dados do prédio apenas quando dialog está aberto
   const buildingValidation = useDataValidation(
     building,
     (data) => {
       return !!(data?.id && data?.nome);
     },
     {
-      required: true,
-      timeout: 8000,
-      retryAttempts: 3
+      required: false, // Mudança crítica: não obrigatório para evitar loops
+      timeout: 3000,   // Timeout reduzido
+      retryAttempts: 1 // Menos tentativas
     }
   );
 
   console.log('🔍 [SAFE BUILDING DETAILS] Resultado da validação:', buildingValidation);
 
-  // Se o dialog não está aberto, não renderizar nada
-  if (!open) {
-    return null;
-  }
-
   // Fallback para dados inválidos
-  if (!buildingValidation.isLoading && !buildingValidation.isValid) {
+  if (!buildingValidation.isLoading && !buildingValidation.isValid && building) {
+    console.warn('⚠️ [SAFE BUILDING DETAILS] Dados inválidos detectados');
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
@@ -55,7 +57,7 @@ const SafeBuildingDetailsDialog: React.FC<SafeBuildingDetailsDialogProps> = ({
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                {buildingValidation.error || 'Não foi possível carregar os dados do prédio.'}
+                Não foi possível carregar os dados do prédio selecionado.
               </p>
               <p className="text-sm text-gray-500">
                 Tente fechar este dialog e selecionar o prédio novamente.
@@ -67,8 +69,8 @@ const SafeBuildingDetailsDialog: React.FC<SafeBuildingDetailsDialogProps> = ({
     );
   }
 
-  // Loading state
-  if (buildingValidation.isLoading) {
+  // Loading state apenas se necessário
+  if (buildingValidation.isLoading && building) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
@@ -92,7 +94,14 @@ const SafeBuildingDetailsDialog: React.FC<SafeBuildingDetailsDialogProps> = ({
     );
   }
 
+  // Se não há dados do prédio, não renderizar
+  if (!building) {
+    console.log('🚫 [SAFE BUILDING DETAILS] Sem dados de prédio - não renderizando');
+    return null;
+  }
+
   // Dados válidos - renderizar o dialog original
+  console.log('✅ [SAFE BUILDING DETAILS] Renderizando dialog principal');
   return (
     <ErrorBoundary
       onError={(error) => {
@@ -103,7 +112,7 @@ const SafeBuildingDetailsDialog: React.FC<SafeBuildingDetailsDialogProps> = ({
       <BuildingDetailsDialog
         open={open}
         onOpenChange={onOpenChange}
-        building={buildingValidation.data}
+        building={building}
       />
     </ErrorBoundary>
   );

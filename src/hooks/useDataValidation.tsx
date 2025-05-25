@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 interface ValidationResult<T> {
@@ -33,18 +33,49 @@ export const useDataValidation = <T,>(
     isLoading: true
   });
 
-  const [attempts, setAttempts] = useState(0);
+  const attemptsRef = useRef(0);
+  const timeoutRef = useRef<NodeJS.Timeout>();
+  const validationRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    const validateData = () => {
-      console.log('🔍 [DATA VALIDATION] Validando dados:', { data, attempts });
+    // Reset attempts when data changes
+    attemptsRef.current = 0;
+    
+    // Clear existing timeouts
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (validationRef.current) {
+      clearTimeout(validationRef.current);
+    }
 
-      // Verificar se dados existem quando obrigatórios
+    const validateData = () => {
+      console.log('🔍 [DATA VALIDATION] Validando dados:', { 
+        data: data ? 'presente' : 'ausente', 
+        attempts: attemptsRef.current,
+        required 
+      });
+
+      // Se dados não são obrigatórios e estão ausentes, considerar válido
+      if (!required && (!data || data === null || data === undefined)) {
+        console.log('✅ [DATA VALIDATION] Dados opcionais ausentes - considerando válido');
+        setState({
+          isValid: true,
+          data: null,
+          error: null,
+          isLoading: false
+        });
+        return;
+      }
+
+      // Se dados são obrigatórios mas estão ausentes
       if (required && (!data || data === null || data === undefined)) {
-        if (attempts < retryAttempts) {
-          console.log(`⏳ [DATA VALIDATION] Tentativa ${attempts + 1}/${retryAttempts}`);
-          setAttempts(prev => prev + 1);
-          setTimeout(validateData, 1000 * (attempts + 1)); // Delay crescente
+        if (attemptsRef.current < retryAttempts) {
+          console.log(`⏳ [DATA VALIDATION] Tentativa ${attemptsRef.current + 1}/${retryAttempts}`);
+          attemptsRef.current++;
+          
+          // Delay crescente entre tentativas
+          validationRef.current = setTimeout(validateData, 1000 * attemptsRef.current);
           return;
         }
 
@@ -53,17 +84,6 @@ export const useDataValidation = <T,>(
           isValid: false,
           data: null,
           error: 'Dados obrigatórios não encontrados',
-          isLoading: false
-        });
-        return;
-      }
-
-      // Se dados não são obrigatórios e estão ausentes
-      if (!required && (!data || data === null || data === undefined)) {
-        setState({
-          isValid: true,
-          data: null,
-          error: null,
           isLoading: false
         });
         return;
@@ -91,28 +111,37 @@ export const useDataValidation = <T,>(
       });
     };
 
+    // Iniciar validação
     setState(prev => ({ ...prev, isLoading: true }));
     
     // Timeout de segurança
-    const timeoutId = setTimeout(() => {
-      if (state.isLoading) {
-        console.error('⏰ [DATA VALIDATION] Timeout na validação');
-        setState({
-          isValid: false,
-          data: null,
-          error: 'Timeout na validação de dados',
-          isLoading: false
-        });
-        toast.error('Timeout ao carregar dados');
+    timeoutRef.current = setTimeout(() => {
+      console.error('⏰ [DATA VALIDATION] Timeout na validação');
+      setState({
+        isValid: false,
+        data: null,
+        error: 'Timeout na validação de dados',
+        isLoading: false
+      });
+      if (!required) {
+        // Para dados opcionais, não mostrar toast de erro
+        return;
       }
+      toast.error('Timeout ao carregar dados');
     }, timeout);
 
-    validateData();
+    // Executar validação com pequeno delay para evitar execução excessiva
+    validationRef.current = setTimeout(validateData, 100);
 
     return () => {
-      clearTimeout(timeoutId);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (validationRef.current) {
+        clearTimeout(validationRef.current);
+      }
     };
-  }, [data, attempts, required, timeout, retryAttempts, validator]);
+  }, [data, required, timeout, retryAttempts, validator]);
 
   return state;
 };
