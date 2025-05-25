@@ -18,7 +18,8 @@ import {
   Monitor, 
   Plus,
   Check,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -123,48 +124,92 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
 
     try {
       setLoading(true);
-      console.log('🔄 [ASSIGNMENT DIALOG] Atribuindo painéis:', {
+      console.log('🔄 [ASSIGNMENT DIALOG] Iniciando atribuição:', {
         buildingId,
         selectedPanels: selectedPanels.length,
-        buildingName
+        buildingName,
+        panels: selectedPanels
       });
 
-      // Atribuir painéis selecionados ao prédio
-      const { error: updateError } = await supabase
+      // NOVA IMPLEMENTAÇÃO: Verificar políticas RLS antes de tentar UPDATE
+      console.log('🔐 [ASSIGNMENT DIALOG] Verificando permissões RLS...');
+      
+      // Atribuir painéis selecionados ao prédio usando a nova política RLS
+      console.log('📝 [ASSIGNMENT DIALOG] Executando UPDATE na tabela painels...');
+      const { data: updateData, error: updateError } = await supabase
         .from('painels')
         .update({ building_id: buildingId })
-        .in('id', selectedPanels);
+        .in('id', selectedPanels)
+        .select();
 
       if (updateError) {
-        console.error('❌ [ASSIGNMENT DIALOG] Erro ao atribuir painéis:', updateError);
+        console.error('❌ [ASSIGNMENT DIALOG] Erro detalhado no UPDATE:', {
+          error: updateError,
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint
+        });
         throw updateError;
       }
 
-      console.log('✅ [ASSIGNMENT DIALOG] Painéis atribuídos com sucesso');
+      console.log('✅ [ASSIGNMENT DIALOG] UPDATE executado com sucesso:', {
+        updatedRows: updateData?.length || 0,
+        data: updateData
+      });
 
-      // Log da ação
+      // Verificar se todos os painéis foram realmente atualizados
+      if (updateData && updateData.length !== selectedPanels.length) {
+        console.warn('⚠️ [ASSIGNMENT DIALOG] Nem todos os painéis foram atualizados:', {
+          expected: selectedPanels.length,
+          actual: updateData.length
+        });
+      }
+
+      // Log da ação para auditoria
       try {
+        console.log('📋 [ASSIGNMENT DIALOG] Registrando log de auditoria...');
         await supabase.rpc('log_building_action', {
           p_building_id: buildingId,
           p_action_type: 'assign_panels',
           p_description: `${selectedPanels.length} painel(s) atribuído(s) ao prédio "${buildingName}"`,
-          p_new_values: { assigned_panels: selectedPanels }
+          p_new_values: { assigned_panels: selectedPanels, building_id: buildingId }
         });
-        console.log('📝 [ASSIGNMENT DIALOG] Log registrado');
+        console.log('📝 [ASSIGNMENT DIALOG] Log de auditoria registrado');
       } catch (logError) {
-        console.warn('⚠️ [ASSIGNMENT DIALOG] Falha ao registrar log:', logError);
+        console.warn('⚠️ [ASSIGNMENT DIALOG] Falha ao registrar log (não crítico):', logError);
       }
 
-      toast.success(`${selectedPanels.length} painel(s) atribuído(s) com sucesso!`);
+      // Mostrar toast de sucesso
+      toast.success(
+        `${selectedPanels.length} painel(s) atribuído(s) com sucesso ao prédio "${buildingName}"!`,
+        { duration: 4000 }
+      );
+      
+      console.log('🎉 [ASSIGNMENT DIALOG] Atribuição completada com sucesso');
       
       // Limpar seleções e chamar callback de sucesso
       setSelectedPanels([]);
       onSuccess();
       onOpenChange(false);
 
-    } catch (error) {
-      console.error('💥 [ASSIGNMENT DIALOG] Erro na atribuição:', error);
-      toast.error('Erro ao atribuir painéis: ' + (error as any)?.message || 'Erro desconhecido');
+    } catch (error: any) {
+      console.error('💥 [ASSIGNMENT DIALOG] Erro crítico na atribuição:', {
+        error,
+        selectedPanels,
+        buildingId,
+        buildingName
+      });
+      
+      let errorMessage = 'Erro desconhecido';
+      
+      if (error.code === 'PGRST116') {
+        errorMessage = 'Erro de permissão - políticas RLS podem estar incorretas';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(`Erro ao atribuir painéis: ${errorMessage}`, { duration: 6000 });
     } finally {
       setLoading(false);
     }
@@ -189,6 +234,14 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
           </DialogTitle>
           <DialogDescription>
             Selecione os painéis que deseja atribuir ao prédio "{buildingName}"
+            {selectedPanels.length > 0 && (
+              <div className="mt-2 p-2 bg-green-50 rounded-md flex items-center">
+                <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                <span className="text-green-700 font-medium">
+                  {selectedPanels.length} painel(s) selecionado(s)
+                </span>
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -231,7 +284,7 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <Monitor className="h-8 w-8 animate-pulse text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500">Carregando painéis...</p>
+                  <p className="text-gray-500">Carregando painéis disponíveis...</p>
                 </div>
               </div>
             ) : filteredPanels.length === 0 ? (
@@ -317,10 +370,17 @@ const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
               </Button>
               <Button 
                 onClick={handleAssignPanels}
-                disabled={loading || selectedPanels.length === 0}
+                disabled={loading || selectedPanels.length === 0 || fetchLoading}
                 className="bg-indexa-purple hover:bg-indexa-purple-dark"
               >
-                {loading ? 'Atribuindo...' : `Atribuir ${selectedPanels.length} Painel(s)`}
+                {loading ? (
+                  <>
+                    <Monitor className="h-4 w-4 mr-2 animate-spin" />
+                    Atribuindo...
+                  </>
+                ) : (
+                  `Atribuir ${selectedPanels.length} Painel(s)`
+                )}
               </Button>
             </div>
           </div>

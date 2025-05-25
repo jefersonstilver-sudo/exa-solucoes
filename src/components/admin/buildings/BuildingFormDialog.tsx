@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -50,24 +51,41 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     
     setLoadingPanels(true);
     try {
+      console.log('🔄 [BUILDING FORM] Carregando painéis para building:', building.id);
+      
       const { data, error } = await supabase
         .from('painels')
         .select('*')
-        .eq('building_id', building.id);
+        .eq('building_id', building.id)
+        .order('code');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [BUILDING FORM] Erro ao carregar painéis:', error);
+        throw error;
+      }
+      
+      console.log('✅ [BUILDING FORM] Painéis carregados:', data?.length || 0);
       setPanels(data || []);
     } catch (error) {
-      console.error('Erro ao carregar painéis:', error);
+      console.error('💥 [BUILDING FORM] Erro crítico ao carregar painéis:', error);
     } finally {
       setLoadingPanels(false);
     }
   };
 
-  const handlePanelsChange = (updatedPanels: any[]) => {
-    setPanels(updatedPanels);
-    // Recarregar a lista completa
-    loadPanels();
+  // CORREÇÃO: Função que realmente recarrega os painéis
+  const handlePanelsChange = (updatedPanels?: any[]) => {
+    console.log('🔄 [BUILDING FORM] Solicitação de recarga de painéis');
+    
+    // Se foram passados painéis atualizados, usar eles
+    if (updatedPanels) {
+      console.log('📝 [BUILDING FORM] Usando painéis atualizados:', updatedPanels.length);
+      setPanels(updatedPanels);
+    } else {
+      // Caso contrário, recarregar do banco
+      console.log('🔄 [BUILDING FORM] Recarregando painéis do banco...');
+      loadPanels();
+    }
   };
 
   const onSubmit = (e: React.FormEvent) => {
@@ -101,7 +119,11 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || loadingPanels} className="bg-indexa-purple hover:bg-indexa-purple-dark">
+            <Button 
+              type="submit" 
+              disabled={loading || loadingPanels} 
+              className="bg-indexa-purple hover:bg-indexa-purple-dark"
+            >
               {loading ? 'Salvando...' : (building ? 'Atualizar Prédio' : 'Criar Prédio')}
             </Button>
           </DialogFooter>
