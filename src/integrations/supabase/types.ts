@@ -9,52 +9,114 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      building_action_logs: {
+        Row: {
+          action_description: string | null
+          action_type: string
+          building_id: string | null
+          created_at: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action_description?: string | null
+          action_type: string
+          building_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action_description?: string | null
+          action_type?: string
+          building_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "building_action_logs_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buildings: {
         Row: {
+          amenities: string[] | null
           audience_profile: string[] | null
           bairro: string
           created_at: string | null
           endereco: string
           id: string
+          image_urls: string[] | null
           imageurl: string | null
           latitude: number | null
           location_type: string
           longitude: number | null
           monthly_traffic: number | null
           nome: string
+          numero_unidades: number | null
+          padrao_publico: string | null
           peak_hours: string | null
+          preco_base: number | null
+          publico_estimado: number | null
+          quantidade_telas: number | null
           status: string
           venue_type: string | null
         }
         Insert: {
+          amenities?: string[] | null
           audience_profile?: string[] | null
           bairro: string
           created_at?: string | null
           endereco: string
           id?: string
+          image_urls?: string[] | null
           imageurl?: string | null
           latitude?: number | null
           location_type?: string
           longitude?: number | null
           monthly_traffic?: number | null
           nome: string
+          numero_unidades?: number | null
+          padrao_publico?: string | null
           peak_hours?: string | null
+          preco_base?: number | null
+          publico_estimado?: number | null
+          quantidade_telas?: number | null
           status?: string
           venue_type?: string | null
         }
         Update: {
+          amenities?: string[] | null
           audience_profile?: string[] | null
           bairro?: string
           created_at?: string | null
           endereco?: string
           id?: string
+          image_urls?: string[] | null
           imageurl?: string | null
           latitude?: number | null
           location_type?: string
           longitude?: number | null
           monthly_traffic?: number | null
           nome?: string
+          numero_unidades?: number | null
+          padrao_publico?: string | null
           peak_hours?: string | null
+          preco_base?: number | null
+          publico_estimado?: number | null
+          quantidade_telas?: number | null
           status?: string
           venue_type?: string | null
         }
@@ -634,6 +696,16 @@ export type Database = {
       is_super_admin_simple: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_building_action: {
+        Args: {
+          p_building_id: string
+          p_action_type: string
+          p_description: string
+          p_old_values?: Json
+          p_new_values?: Json
+        }
+        Returns: string
       }
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }

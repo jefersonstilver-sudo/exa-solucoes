@@ -10,28 +10,46 @@ interface Building {
   bairro: string;
   status: string;
   venue_type: string;
+  location_type: string;
   monthly_traffic: number;
   latitude: number;
   longitude: number;
+  numero_unidades: number;
+  publico_estimado: number;
+  preco_base: number;
+  image_urls: string[];
+  amenities: string[];
+  padrao_publico: 'alto' | 'medio' | 'normal';
+  quantidade_telas: number;
   created_at: string;
+}
+
+interface BuildingStats {
+  total: number;
+  active: number;
+  inactive: number;
+  totalTraffic: number;
+  totalUnits: number;
+  averagePrice: number;
 }
 
 export const useBuildingsData = () => {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<BuildingStats>({
     total: 0,
     active: 0,
     inactive: 0,
-    totalTraffic: 0
+    totalTraffic: 0,
+    totalUnits: 0,
+    averagePrice: 0
   });
 
   const fetchBuildings = async () => {
     try {
       setLoading(true);
-      console.log('🏢 Iniciando busca de prédios com novas políticas RLS...');
+      console.log('🏢 Buscando prédios com novos campos...');
       
-      // Verificar autenticação
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError) {
@@ -46,64 +64,38 @@ export const useBuildingsData = () => {
         return;
       }
 
-      console.log('✅ Usuário autenticado:', user.email);
-
-      // Tentar buscar prédios com a nova política RLS
       const { data, error } = await supabase
         .from('buildings')
-        .select('*')
+        .select(`
+          id,
+          nome,
+          endereco,
+          bairro,
+          status,
+          venue_type,
+          location_type,
+          monthly_traffic,
+          latitude,
+          longitude,
+          numero_unidades,
+          publico_estimado,
+          preco_base,
+          image_urls,
+          amenities,
+          padrao_publico,
+          quantidade_telas,
+          created_at
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('❌ Erro ao buscar prédios:', error);
-        console.error('❌ Código do erro:', error.code);
-        console.error('❌ Detalhes:', error.details);
-        
-        // Fallback: tentar busca mais simples
-        console.log('🔄 Tentando busca simplificada...');
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('buildings')
-          .select('id, nome, endereco, bairro, status, venue_type, monthly_traffic, latitude, longitude, created_at')
-          .limit(10);
-          
-        if (fallbackError) {
-          console.error('❌ Fallback também falhou:', fallbackError);
-          toast.error(`Erro ao carregar prédios: ${error.message}`);
-          return;
-        }
-        
-        console.log('⚠️ Usando dados de fallback:', fallbackData);
-        toast.warning('Dados carregados em modo simplificado');
-        
-        // Garantir que os dados de fallback tenham todas as propriedades obrigatórias
-        const processedFallbackData = (fallbackData || []).map(building => ({
-          id: building.id,
-          nome: building.nome,
-          endereco: building.endereco,
-          bairro: building.bairro,
-          status: building.status,
-          venue_type: building.venue_type || '',
-          monthly_traffic: building.monthly_traffic || 0,
-          latitude: building.latitude || 0,
-          longitude: building.longitude || 0,
-          created_at: building.created_at || new Date().toISOString()
-        }));
-        
-        setBuildings(processedFallbackData);
-      } else {
-        console.log('✅ Dados carregados com sucesso:', data);
-        console.log('✅ Total de prédios:', data?.length || 0);
-        
-        if (!data || data.length === 0) {
-          console.log('⚠️ Nenhum prédio encontrado');
-          toast.info('Nenhum prédio encontrado. Verifique as permissões.');
-        } else {
-          console.log('🎉 Prédios carregados:', data.map(b => `${b.nome} (${b.status})`));
-          toast.success(`${data.length} prédios carregados com sucesso`);
-        }
-
-        setBuildings(data || []);
+        toast.error(`Erro ao carregar prédios: ${error.message}`);
+        return;
       }
+
+      console.log('✅ Prédios carregados:', data?.length);
+      setBuildings(data || []);
       
       // Calcular estatísticas
       const buildingsList = data || [];
@@ -113,8 +105,14 @@ export const useBuildingsData = () => {
       const totalTraffic = buildingsList.reduce((sum, building) => 
         sum + (building.monthly_traffic || 0), 0
       );
+      const totalUnits = buildingsList.reduce((sum, building) => 
+        sum + (building.numero_unidades || 0), 0
+      );
+      const averagePrice = buildingsList.length > 0 
+        ? buildingsList.reduce((sum, building) => sum + (building.preco_base || 0), 0) / buildingsList.length
+        : 0;
 
-      setStats({ total, active, inactive, totalTraffic });
+      setStats({ total, active, inactive, totalTraffic, totalUnits, averagePrice });
       
     } catch (error) {
       console.error('💥 Erro crítico ao carregar prédios:', error);
@@ -124,10 +122,34 @@ export const useBuildingsData = () => {
     }
   };
 
+  const updateBuilding = async (id: string, updates: Partial<Building>) => {
+    try {
+      const { error } = await supabase
+        .from('buildings')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Log da ação
+      await supabase.rpc('log_building_action', {
+        p_building_id: id,
+        p_action_type: 'update',
+        p_description: 'Prédio atualizado',
+        p_new_values: updates
+      });
+
+      toast.success('Prédio atualizado com sucesso!');
+      fetchBuildings();
+    } catch (error) {
+      console.error('Erro ao atualizar prédio:', error);
+      toast.error('Erro ao atualizar prédio');
+    }
+  };
+
   useEffect(() => {
     fetchBuildings();
 
-    // Configurar inscrição em tempo real
     const channel = supabase
       .channel('buildings-changes')
       .on('postgres_changes', 
@@ -148,5 +170,5 @@ export const useBuildingsData = () => {
     };
   }, []);
 
-  return { buildings, stats, loading, refetch: fetchBuildings };
+  return { buildings, stats, loading, refetch: fetchBuildings, updateBuilding };
 };
