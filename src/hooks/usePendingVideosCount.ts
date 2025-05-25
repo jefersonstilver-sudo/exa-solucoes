@@ -17,8 +17,8 @@ export const usePendingVideosCount = () => {
 
       if (data && data.length > 0) {
         const stats = data[0];
-        // Somar aguardando vídeo + vídeos enviados para aprovação
-        const totalPending = Number(stats.pago_pendente_video || 0) + Number(stats.video_enviado || 0);
+        // Contar apenas vídeos enviados que aguardam aprovação do admin
+        const totalPending = Number(stats.video_enviado || 0);
         setPendingCount(totalPending);
       }
     } catch (error) {
