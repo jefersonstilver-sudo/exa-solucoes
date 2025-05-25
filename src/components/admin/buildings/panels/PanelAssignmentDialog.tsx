@@ -1,0 +1,269 @@
+
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { 
+  Search, 
+  Monitor, 
+  Filter,
+  Plus,
+  Check
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface PanelAssignmentDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  buildingId: string;
+  buildingName: string;
+  onSuccess: () => void;
+}
+
+const PanelAssignmentDialog: React.FC<PanelAssignmentDialogProps> = ({
+  open,
+  onOpenChange,
+  buildingId,
+  buildingName,
+  onSuccess
+}) => {
+  const [availablePanels, setAvailablePanels] = useState<any[]>([]);
+  const [selectedPanels, setSelectedPanels] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      fetchAvailablePanels();
+    }
+  }, [open]);
+
+  const fetchAvailablePanels = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar painéis que não estão atribuídos a nenhum prédio
+      const { data, error } = await supabase
+        .from('painels')
+        .select('*')
+        .is('building_id', null)
+        .order('code');
+
+      if (error) throw error;
+
+      setAvailablePanels(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar painéis disponíveis:', error);
+      toast.error('Erro ao carregar painéis disponíveis');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredPanels = availablePanels.filter(panel => {
+    const matchesSearch = panel.code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || panel.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const handlePanelToggle = (panelId: string) => {
+    setSelectedPanels(prev => 
+      prev.includes(panelId) 
+        ? prev.filter(id => id !== panelId)
+        : [...prev, panelId]
+    );
+  };
+
+  const handleAssignPanels = async () => {
+    if (selectedPanels.length === 0) {
+      toast.error('Selecione pelo menos um painel para atribuir');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Atribuir painéis selecionados ao prédio
+      const { error } = await supabase
+        .from('painels')
+        .update({ building_id: buildingId })
+        .in('id', selectedPanels);
+
+      if (error) throw error;
+
+      // Log da ação
+      await supabase.rpc('log_building_action', {
+        p_building_id: buildingId,
+        p_action_type: 'assign_panels',
+        p_description: `${selectedPanels.length} painel(s) atribuído(s) ao prédio "${buildingName}"`,
+        p_new_values: { assigned_panels: selectedPanels }
+      });
+
+      toast.success(`${selectedPanels.length} painel(s) atribuído(s) com sucesso!`);
+      onSuccess();
+      onOpenChange(false);
+      setSelectedPanels([]);
+    } catch (error) {
+      console.error('Erro ao atribuir painéis:', error);
+      toast.error('Erro ao atribuir painéis');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const configs = {
+      online: 'bg-green-500 text-white',
+      offline: 'bg-red-500 text-white',
+      maintenance: 'bg-yellow-500 text-white'
+    };
+    return configs[status as keyof typeof configs] || 'bg-gray-500 text-white';
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Plus className="h-5 w-5 mr-2 text-indexa-purple" />
+            Atribuir Painéis ao Prédio
+          </DialogTitle>
+          <DialogDescription>
+            Selecione os painéis que deseja atribuir ao prédio "{buildingName}"
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+          {/* Filtros */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="search">Buscar por código</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  id="search"
+                  placeholder="Digite o código do painel..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Filtrar por status</Label>
+              <select
+                id="status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indexa-purple"
+              >
+                <option value="all">Todos os status</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+                <option value="maintenance">Manutenção</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Lista de Painéis */}
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <Monitor className="h-8 w-8 animate-pulse text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">Carregando painéis...</p>
+                </div>
+              </div>
+            ) : filteredPanels.length === 0 ? (
+              <div className="text-center py-8">
+                <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">
+                  {availablePanels.length === 0 
+                    ? 'Nenhum painel disponível para atribuição' 
+                    : 'Nenhum painel encontrado com os filtros aplicados'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredPanels.map((panel) => (
+                  <Card 
+                    key={panel.id}
+                    className={`
+                      cursor-pointer transition-all duration-200
+                      ${selectedPanels.includes(panel.id) 
+                        ? 'ring-2 ring-indexa-purple bg-purple-50' 
+                        : 'hover:shadow-md'
+                      }
+                    `}
+                    onClick={() => handlePanelToggle(panel.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Monitor className="h-4 w-4 text-gray-600" />
+                          <span className="font-medium">{panel.code}</span>
+                        </div>
+                        {selectedPanels.includes(panel.id) && (
+                          <Check className="h-5 w-5 text-indexa-purple" />
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Badge className={getStatusBadge(panel.status)}>
+                          {panel.status}
+                        </Badge>
+                        <div className="text-sm text-gray-500">
+                          {panel.resolucao || 'N/A'}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <div className="flex items-center justify-between w-full">
+            <div className="text-sm text-gray-600">
+              {selectedPanels.length} painel(s) selecionado(s)
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAssignPanels}
+                disabled={loading || selectedPanels.length === 0}
+                className="bg-indexa-purple hover:bg-indexa-purple-dark"
+              >
+                {loading ? 'Atribuindo...' : `Atribuir ${selectedPanels.length} Painel(s)`}
+              </Button>
+            </div>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default PanelAssignmentDialog;
