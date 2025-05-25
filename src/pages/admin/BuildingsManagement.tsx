@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,9 +42,9 @@ const BuildingsManagement = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isImageManagerOpen, setIsImageManagerOpen] = useState(false);
   const [filters, setFilters] = useState({
-    status: '',
-    bairro: '',
-    padrao_publico: ''
+    status: 'all',
+    bairro: 'all',
+    padrao_publico: 'all'
   });
 
   const getStatusBadge = (status: string) => {
@@ -90,9 +89,9 @@ const BuildingsManagement = () => {
                          building.endereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          building.bairro.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = !filters.status || building.status === filters.status;
-    const matchesBairro = !filters.bairro || building.bairro === filters.bairro;
-    const matchesPadrao = !filters.padrao_publico || building.padrao_publico === filters.padrao_publico;
+    const matchesStatus = filters.status === 'all' || building.status === filters.status;
+    const matchesBairro = filters.bairro === 'all' || building.bairro === filters.bairro;
+    const matchesPadrao = filters.padrao_publico === 'all' || building.padrao_publico === filters.padrao_publico;
     
     return matchesSearch && matchesStatus && matchesBairro && matchesPadrao;
   });

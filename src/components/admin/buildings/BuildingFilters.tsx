@@ -30,13 +30,13 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
   
   const clearFilters = () => {
     onFiltersChange({
-      status: '',
-      bairro: '',
-      padrao_publico: ''
+      status: 'all',
+      bairro: 'all',
+      padrao_publico: 'all'
     });
   };
 
-  const hasActiveFilters = filters.status || filters.bairro || filters.padrao_publico;
+  const hasActiveFilters = filters.status !== 'all' || filters.bairro !== 'all' || filters.padrao_publico !== 'all';
 
   return (
     <Card>
@@ -59,14 +59,14 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
           <div className="space-y-2">
             <label className="text-sm font-medium">Status</label>
             <Select
-              value={filters.status}
+              value={filters.status || 'all'}
               onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="ativo">Ativo</SelectItem>
                 <SelectItem value="inativo">Inativo</SelectItem>
               </SelectContent>
@@ -76,14 +76,14 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
           <div className="space-y-2">
             <label className="text-sm font-medium">Bairro</label>
             <Select
-              value={filters.bairro}
+              value={filters.bairro || 'all'}
               onValueChange={(value) => onFiltersChange({ ...filters, bairro: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os bairros" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os bairros</SelectItem>
+                <SelectItem value="all">Todos os bairros</SelectItem>
                 {uniqueBairros.map((bairro) => (
                   <SelectItem key={bairro} value={bairro}>
                     {bairro}
@@ -96,14 +96,14 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
           <div className="space-y-2">
             <label className="text-sm font-medium">Padrão do Público</label>
             <Select
-              value={filters.padrao_publico}
+              value={filters.padrao_publico || 'all'}
               onValueChange={(value) => onFiltersChange({ ...filters, padrao_publico: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os padrões" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os padrões</SelectItem>
+                <SelectItem value="all">Todos os padrões</SelectItem>
                 <SelectItem value="alto">Alto</SelectItem>
                 <SelectItem value="medio">Médio</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
