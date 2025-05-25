@@ -3,9 +3,10 @@ import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Monitor, RefreshCw, AlertTriangle, Trash2 } from 'lucide-react';
-import { usePanelOperations } from '@/hooks/panels/usePanelOperations';
+import { Monitor, RefreshCw, Trash2 } from 'lucide-react';
+import { useSharedPanelOperations } from '@/hooks/panels/useSharedPanelOperations';
 import SimplePanelRemovalAlert from '../panels/SimplePanelRemovalAlert';
+import PanelAssignmentDialog from '../panels/assignment/PanelAssignmentDialog';
 
 interface PanelManagementSectionProps {
   panels: any[];
@@ -22,9 +23,10 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
 }) => {
   const [selectedPanel, setSelectedPanel] = useState<any>(null);
   const [showRemovalAlert, setShowRemovalAlert] = useState(false);
+  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { loading, removePanel } = usePanelOperations();
+  const { loading, removePanel } = useSharedPanelOperations();
 
   console.log('🔧 [PANEL MANAGEMENT] Renderizando com painéis:', panels.length);
 
@@ -35,7 +37,7 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
       setRefreshing(true);
       console.log('🔄 [PANEL MANAGEMENT] Recarregando painéis...');
       
-      // Aqui seria a lógica de reload - será implementada no novo módulo
+      // Simular reload - será implementado no futuro
       setTimeout(() => {
         setRefreshing(false);
         console.log('✅ [PANEL MANAGEMENT] Refresh concluído');
@@ -68,7 +70,6 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
       setShowRemovalAlert(false);
       setSelectedPanel(null);
       
-      // Recarregar painéis após remoção
       setTimeout(() => {
         handleRefresh();
       }, 300);
@@ -82,10 +83,10 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
     }
   }, [loading]);
 
-  const handleAssignPanel = useCallback(() => {
-    console.log('🚧 [PANEL MANAGEMENT] Novo módulo de atribuição será implementado');
-    alert('Novo módulo de atribuição de painéis será implementado em breve!');
-  }, []);
+  const handleAssignmentSuccess = useCallback(() => {
+    console.log('✅ [PANEL MANAGEMENT] Atribuição realizada com sucesso');
+    handleRefresh();
+  }, [handleRefresh]);
 
   const isDisabled = loading || refreshing;
 
@@ -110,7 +111,7 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
               </Button>
               <Button
                 size="sm"
-                onClick={handleAssignPanel}
+                onClick={() => setShowAssignmentDialog(true)}
                 disabled={isDisabled}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
@@ -163,7 +164,7 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
               <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-500 mb-4">Nenhum painel atribuído a este prédio</p>
               <Button
-                onClick={handleAssignPanel}
+                onClick={() => setShowAssignmentDialog(true)}
                 disabled={isDisabled}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
@@ -182,6 +183,14 @@ const PanelManagementSection: React.FC<PanelManagementSectionProps> = ({
         buildingName={buildingName}
         onConfirm={handleConfirmRemoval}
         loading={loading}
+      />
+
+      <PanelAssignmentDialog
+        open={showAssignmentDialog}
+        onOpenChange={setShowAssignmentDialog}
+        buildingId={buildingId}
+        buildingName={buildingName}
+        onSuccess={handleAssignmentSuccess}
       />
     </>
   );
