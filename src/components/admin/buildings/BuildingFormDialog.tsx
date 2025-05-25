@@ -181,7 +181,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">
             {building ? 'Editar Prédio' : 'Novo Prédio'}
@@ -192,8 +192,8 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Primeira coluna - Informações básicas */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Primeira coluna - Informações básicas, contato e dados comerciais */}
             <div className="space-y-4">
               <BasicInfoForm
                 formData={{
@@ -231,7 +231,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
               />
             </div>
 
-            {/* Segunda coluna - Características e Imagens */}
+            {/* Segunda coluna - Características, galeria de fotos e gestão de painéis */}
             <div className="space-y-4">
               <CharacteristicsSelector
                 selectedCharacteristics={formData.caracteristicas}
@@ -242,10 +242,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                 building={building}
                 onSuccess={onSuccess}
               />
-            </div>
 
-            {/* Terceira coluna - Gestão de Painéis */}
-            <div className="space-y-4">
               <PanelManagementSection
                 buildingId={building?.id}
                 buildingName={formData.nome || building?.nome}
