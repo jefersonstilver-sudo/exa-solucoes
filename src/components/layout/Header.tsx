@@ -1,201 +1,292 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Menu, X } from 'lucide-react';
-import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '@/components/ui/drawer';
-import PanelCart from '@/components/panels/PanelCart';
-import UserMenu from '@/components/user/UserMenu';
-import UserAccessButton from '@/components/auth/UserAccessButton';
-import AdminAccessButton from '@/components/admin/AdminAccessButton';
+import { Menu, X, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useUserSession } from '@/hooks/useUserSession';
+import { useCartStore } from '@/store/cartStore';
+import UserAccessButton from '@/components/auth/UserAccessButton';
+import { cn } from '@/lib/utils';
 
-interface HeaderProps {
-  cartItems?: {panel: any, duration: number}[];
-  onRemoveFromCart?: (id: string) => void;
-  onClearCart?: () => void;
-  onChangeDuration?: (id: string, duration: number) => void;
-  onProceedToCheckout?: () => void;
-  cartItemCount?: number;
-  setDrawerOpen?: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-const Header: React.FC<HeaderProps> = ({ 
-  cartItems = [], 
-  onRemoveFromCart = () => {}, 
-  onClearCart = () => {}, 
-  onChangeDuration = () => {},
-  onProceedToCheckout = () => {},
-  cartItemCount,
-  setDrawerOpen
-}) => {
+const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cartAnimating, setCartAnimating] = useState(false);
-  const { isLoggedIn, hasRole } = useUserSession();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { cartItems } = useCartStore();
 
-  // Add animation when cart items change
+  // Close mobile menu when route changes
   useEffect(() => {
-    if (cartItems.length > 0) {
-      setCartAnimating(true);
-      const timer = setTimeout(() => setCartAnimating(false), 800);
-      return () => clearTimeout(timer);
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when menu is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
-  }, [cartItems.length]);
-  
-  // Handle menu toggle
-  const handleMenuOpen = () => {
-    const newMenuState = !isMenuOpen;
-    setIsMenuOpen(newMenuState);
-    
-    // Close cart when menu is opened
-    if (newMenuState) {
-      setIsCartOpen(false);
-      if (setDrawerOpen) setDrawerOpen(false);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
+
+  const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+
+  const navItems = [
+    { to: "/", label: "Home" },
+    { to: "/paineis-digitais/loja", label: "Loja Online" },
+    { to: "/planos", label: "Planos" },
+    { to: "/sobre", label: "Sobre" },
+    { to: "/contato", label: "Contato" }
+  ];
+
+  const handleCartClick = () => {
+    navigate('/paineis-digitais/loja');
+  };
+
+  const menuVariants = {
+    closed: {
+      opacity: 0,
+      x: "100%",
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    },
+    open: {
+      opacity: 1,
+      x: "0%",
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
     }
   };
 
-  // Handle cart open/close
-  const handleCartOpen = (open: boolean) => {
-    setIsCartOpen(open);
-    
-    // Sync with parent drawer state if provided
-    if (setDrawerOpen) setDrawerOpen(open);
-    
-    // Close menu when cart is opened
-    if (open) {
-      setIsMenuOpen(false);
+  const overlayVariants = {
+    closed: {
+      opacity: 0,
+      transition: {
+        duration: 0.3
+      }
+    },
+    open: {
+      opacity: 1,
+      transition: {
+        duration: 0.3
+      }
     }
   };
 
   return (
-    <header className="w-full py-4 px-4 md:px-8 flex items-center justify-between bg-gradient-to-r from-indexa-purple-dark to-indexa-purple shadow-md border-b border-purple-800/30">
-      <div className="flex items-center">
-        <Link to="/" className="text-white text-lg font-semibold transition-colors">
-          <img 
-            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0NjkwNDYyMSwiZXhwIjoxOTA0NTg0NjIxfQ.GhdBh5KsL81Lijtsj7neVCyZfgMd-ExXWOZoTTwJ_Cg" 
-            alt="Indexa Logo" 
-            className="h-14 w-auto object-contain" 
-          />
-        </Link>
-        
-        <div className="hidden md:flex gap-6 ml-12">
-          <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
-            Produtora
-          </Link>
-          <Link to="/" className="text-white/90 font-medium hover:text-white transition-colors">
-            Marketing
-          </Link>
-          <Link to="/paineis-digitais" className="text-white/90 font-medium hover:text-white transition-colors">
-            Painéis Digitais
-          </Link>
-        </div>
-      </div>
-      
-      <div className="flex items-center gap-4">
-        <Link to="/paineis-digitais/loja" className="hidden md:block">
-          <Button 
-            variant="outline" 
-            className="bg-indexa-mint text-indexa-purple-dark rounded-full border-none hover:bg-opacity-90 text-base font-medium"
-          >
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            Loja Online
-          </Button>
-        </Link>
+    <>
+      <header className="bg-gradient-to-r from-indexa-purple to-indexa-purple/95 text-white shadow-xl relative z-40">
+        <div className="container mx-auto px-4 lg:px-6">
+          <div className="flex items-center justify-between h-16 md:h-20">
+            {/* Logo - Responsive sizing */}
+            <Link 
+              to="/" 
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200"
+            >
+              <div className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center">
+                <img 
+                  src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
+                  alt="Indexa Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-lg md:text-2xl font-bold tracking-tight">
+                INDEXA
+              </span>
+            </Link>
 
-        <div className="flex items-center gap-3">
-          {/* Botão de acesso unificado */}
-          <UserAccessButton />
-          
-          {/* Botão de acesso admin (apenas para admins) */}
-          {isLoggedIn && (hasRole('admin') || hasRole('super_admin')) && (
-            <AdminAccessButton variant="icon" />
-          )}
-          
-          {/* Mostrar UserMenu apenas quando logado */}
-          {isLoggedIn && <UserMenu />}
-          
-          {/* Shopping cart drawer */}
-          <Drawer open={isCartOpen} onOpenChange={handleCartOpen}>
-            <DrawerTrigger asChild>
-              <motion.div
-                animate={cartAnimating ? { 
-                  scale: [1, 1.2, 1],
-                  rotate: [0, 15, -15, 0],
-                  filter: ["brightness(1)", "brightness(1.5)", "brightness(1)"]
-                } : {}}
-                transition={{ duration: 0.6 }}
-                aria-label={`Abrir carrinho com ${cartItemCount || cartItems.length} itens`}
-                className="relative"
-              >
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="relative text-white hover:bg-white/20 rounded-full group"
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-8">
+              {navItems.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "text-sm font-medium transition-all duration-200 relative group",
+                    location.pathname === item.to
+                      ? "text-indexa-mint"
+                      : "text-white/90 hover:text-white"
+                  )}
                 >
-                  <ShoppingCart className="h-6 w-6 text-indexa-mint group-hover:text-[#00FFAB] transition-colors" /> 
-                  <AnimatePresence>
-                    {(cartItemCount || cartItems.length) > 0 && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                      >
-                        {cartItemCount || cartItems.length}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Button>
-              </motion.div>
-            </DrawerTrigger>
-            <DrawerContent className="h-full">
-              <PanelCart 
-                cartItems={cartItems} 
-                onRemove={onRemoveFromCart} 
-                onClear={onClearCart} 
-                onChangeDuration={onChangeDuration}
-                onProceedToCheckout={onProceedToCheckout}
-              />
-              <DrawerClose className="sr-only">Close</DrawerClose>
-            </DrawerContent>
-          </Drawer>
-        </div>
-        
-        {/* Mobile menu button */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={handleMenuOpen} 
-          className="text-white hover:bg-white/20 md:hidden"
-          aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
-          aria-expanded={isMenuOpen}
-        >
-          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
-      </div>
-      
-      {/* Mobile menu with conditional rendering */}
-      {isMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-indexa-purple-dark/95 shadow-lg z-50 md:hidden">
-          <div className="flex flex-col p-4 gap-4">
-            <Link to="/" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
-              Produtora
-            </Link>
-            <Link to="/" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
-              Marketing
-            </Link>
-            <Link to="/paineis-digitais" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>
-              Painéis Digitais
-            </Link>
-            <Link to="/paineis-digitais/loja" className="text-white/90 font-medium p-2 hover:bg-white/10 rounded-md bg-indexa-mint/20" onClick={() => setIsMenuOpen(false)}>
-              Loja Online
-            </Link>
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-indexa-mint transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              ))}
+            </nav>
+
+            {/* Right Side - Cart + User + Mobile Menu */}
+            <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Cart Button - Enhanced for mobile */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12"
+                onClick={handleCartClick}
+                aria-label={`Carrinho com ${totalCartItems} itens`}
+              >
+                <ShoppingCart className="h-5 w-5 md:h-6 md:w-6" />
+                {totalCartItems > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 bg-indexa-mint text-indexa-purple text-xs font-bold rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center min-w-[20px] md:min-w-[24px]"
+                  >
+                    {totalCartItems > 99 ? '99+' : totalCartItems}
+                  </motion.span>
+                )}
+              </Button>
+
+              {/* User Access Button */}
+              <UserAccessButton />
+
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-white hover:bg-white/20 rounded-full h-10 w-10"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label="Menu de navegação"
+              >
+                <AnimatePresence mode="wait">
+                  {isMenuOpen ? (
+                    <motion.div
+                      key="close"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <X className="h-6 w-6" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="menu"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Menu className="h-6 w-6" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Button>
+            </div>
           </div>
         </div>
-      )}
-    </header>
+      </header>
+
+      {/* Mobile Menu Overlay and Panel */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              variants={overlayVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 lg:hidden"
+              onClick={() => setIsMenuOpen(false)}
+            />
+
+            {/* Mobile Menu Panel */}
+            <motion.div
+              variants={menuVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-b from-indexa-purple to-indexa-purple-dark shadow-2xl z-50 lg:hidden"
+            >
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/20">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    <img 
+                      src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
+                      alt="Indexa Logo"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <span className="text-lg font-bold text-white">Menu</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 rounded-full"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+
+              {/* Mobile Navigation */}
+              <nav className="flex flex-col p-6 space-y-2">
+                {navItems.map((item, index) => (
+                  <motion.div
+                    key={item.to}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ 
+                      opacity: 1, 
+                      x: 0,
+                      transition: { delay: index * 0.1 }
+                    }}
+                  >
+                    <Link
+                      to={item.to}
+                      className={cn(
+                        "flex items-center py-4 px-4 rounded-xl text-base font-medium transition-all duration-200",
+                        location.pathname === item.to
+                          ? "bg-white/20 text-indexa-mint border-l-4 border-indexa-mint"
+                          : "text-white/90 hover:bg-white/10 hover:text-white"
+                      )}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.label}
+                      {item.to === "/paineis-digitais/loja" && (
+                        <span className="ml-auto bg-indexa-mint text-indexa-purple text-xs px-2 py-1 rounded-full font-bold">
+                          Loja
+                        </span>
+                      )}
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
+
+              {/* Mobile Menu Footer */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-white/20">
+                <div className="text-center">
+                  <p className="text-white/60 text-sm mb-2">
+                    Transformando ideias em resultados
+                  </p>
+                  <div className="flex justify-center space-x-4">
+                    <div className="w-2 h-2 bg-indexa-mint rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-indexa-mint rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-indexa-mint rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
