@@ -104,13 +104,14 @@ export const useBuildingsData = () => {
         });
       }
       
-      // Processar dados dos prédios - TODOS como Residencial por padrão
+      // Processar dados dos prédios - SEMPRE garantir Residencial como padrão
       const typedBuildings = (buildingsData || []).map(building => {
         const panelCount = panelCountMap.get(building.id) || 0;
         
         return {
           ...building,
-          venue_type: building.venue_type || 'Residencial', // Padrão Residencial
+          // GARANTIR RESIDENCIAL COMO PADRÃO ABSOLUTO
+          venue_type: building.venue_type || 'Residencial',
           location_type: building.location_type || 'residential',
           padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
           image_urls: building.image_urls || buildImageUrlsArray(building),
@@ -164,9 +165,15 @@ export const useBuildingsData = () => {
 
   const updateBuilding = async (id: string, updates: Partial<Building>) => {
     try {
+      // Garantir que venue_type seja sempre Residencial se não especificado
+      const updatesWithDefaults = {
+        ...updates,
+        venue_type: updates.venue_type || 'Residencial'
+      };
+
       const { error } = await supabase
         .from('buildings')
-        .update(updates)
+        .update(updatesWithDefaults)
         .eq('id', id);
 
       if (error) throw error;
@@ -176,7 +183,7 @@ export const useBuildingsData = () => {
         p_building_id: id,
         p_action_type: 'update',
         p_description: 'Prédio atualizado via gerenciamento completo',
-        p_new_values: updates
+        p_new_values: updatesWithDefaults
       });
 
       toast.success('Prédio atualizado com sucesso!');

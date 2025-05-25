@@ -63,7 +63,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     preco_base: 0,
     padrao_publico: 'normal' as 'alto' | 'medio' | 'normal',
     status: 'ativo',
-    venue_type: 'Residencial',
+    venue_type: 'Residencial', // Garantir padrão Residencial
     location_type: 'residential',
     latitude: 0,
     longitude: 0,
@@ -120,7 +120,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: building.preco_base || 0,
         padrao_publico: building.padrao_publico || 'normal',
         status: building.status || 'ativo',
-        venue_type: building.venue_type || 'Residencial',
+        venue_type: building.venue_type || 'Residencial', // Sempre garantir Residencial como padrão
         location_type: building.location_type || 'residential',
         latitude: building.latitude || 0,
         longitude: building.longitude || 0,
@@ -135,6 +135,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         numero_contato_predio: building.numero_contato_predio || ''
       });
     } else {
+      // Para novos prédios, sempre iniciar como Residencial
       setFormData({
         nome: '',
         endereco: '',
@@ -143,7 +144,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: 0,
         padrao_publico: 'normal',
         status: 'ativo',
-        venue_type: 'Residencial',
+        venue_type: 'Residencial', // PADRÃO RESIDENCIAL
         location_type: 'residential',
         latitude: 0,
         longitude: 0,
@@ -316,6 +317,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
       const dataToSave = {
         ...formData,
         amenities: formData.caracteristicas,
+        venue_type: formData.venue_type || 'Residencial', // Garantir que sempre salve como Residencial se vazio
       };
 
       if (building) {
@@ -426,9 +428,9 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                         onValueChange={(value) => setFormData(prev => ({ ...prev, venue_type: value }))}
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white z-50">
                           <SelectItem value="Residencial">Residencial</SelectItem>
                           <SelectItem value="Comercial">Comercial</SelectItem>
                         </SelectContent>
@@ -445,9 +447,9 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Selecione a categoria" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         <SelectItem value="normal">Normal</SelectItem>
                         <SelectItem value="medio">Intermediário</SelectItem>
                         <SelectItem value="alto">Alto Padrão</SelectItem>
@@ -600,7 +602,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         <SelectItem value="ativo">Ativo</SelectItem>
                         <SelectItem value="inativo">Inativo</SelectItem>
                       </SelectContent>
