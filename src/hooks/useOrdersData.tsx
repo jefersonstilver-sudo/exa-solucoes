@@ -63,7 +63,7 @@ export const useOrdersData = () => {
         console.log('🔄 Tentando busca simplificada...');
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('pedidos')
-          .select('id, created_at, status, valor_total, client_id')
+          .select('id, created_at, status, valor_total, client_id, lista_paineis, plano_meses, data_inicio, data_fim')
           .limit(10);
           
         if (fallbackError) {
@@ -74,7 +74,21 @@ export const useOrdersData = () => {
         
         console.log('⚠️ Usando dados de fallback:', fallbackData);
         toast.warning('Pedidos carregados em modo simplificado');
-        setOrders(fallbackData || []);
+        
+        // Garantir que os dados de fallback tenham todas as propriedades obrigatórias
+        const processedFallbackData = (fallbackData || []).map(order => ({
+          id: order.id,
+          created_at: order.created_at || new Date().toISOString(),
+          status: order.status,
+          valor_total: order.valor_total || 0,
+          lista_paineis: order.lista_paineis || [],
+          plano_meses: order.plano_meses || 1,
+          data_inicio: order.data_inicio || new Date().toISOString(),
+          data_fim: order.data_fim || new Date().toISOString(),
+          client_id: order.client_id
+        }));
+        
+        setOrders(processedFallbackData);
       } else {
         console.log('✅ Pedidos carregados com sucesso:', data);
         console.log('✅ Total de pedidos:', data?.length || 0);

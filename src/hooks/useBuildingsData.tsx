@@ -63,7 +63,7 @@ export const useBuildingsData = () => {
         console.log('🔄 Tentando busca simplificada...');
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('buildings')
-          .select('id, nome, endereco, bairro, status')
+          .select('id, nome, endereco, bairro, status, venue_type, monthly_traffic, latitude, longitude, created_at')
           .limit(10);
           
         if (fallbackError) {
@@ -74,7 +74,22 @@ export const useBuildingsData = () => {
         
         console.log('⚠️ Usando dados de fallback:', fallbackData);
         toast.warning('Dados carregados em modo simplificado');
-        setBuildings(fallbackData || []);
+        
+        // Garantir que os dados de fallback tenham todas as propriedades obrigatórias
+        const processedFallbackData = (fallbackData || []).map(building => ({
+          id: building.id,
+          nome: building.nome,
+          endereco: building.endereco,
+          bairro: building.bairro,
+          status: building.status,
+          venue_type: building.venue_type || '',
+          monthly_traffic: building.monthly_traffic || 0,
+          latitude: building.latitude || 0,
+          longitude: building.longitude || 0,
+          created_at: building.created_at || new Date().toISOString()
+        }));
+        
+        setBuildings(processedFallbackData);
       } else {
         console.log('✅ Dados carregados com sucesso:', data);
         console.log('✅ Total de prédios:', data?.length || 0);
