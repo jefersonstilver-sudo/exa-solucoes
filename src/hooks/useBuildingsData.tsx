@@ -34,12 +34,7 @@ interface BuildingStats {
   total: number;
   active: number;
   inactive: number;
-  totalTraffic: number;
-  totalUnits: number;
-  totalPublic: number;
-  averagePrice: number;
-  totalScreens: number;
-  totalViews: number;
+  totalPanels: number;
 }
 
 export const useBuildingsData = () => {
@@ -49,18 +44,13 @@ export const useBuildingsData = () => {
     total: 0,
     active: 0,
     inactive: 0,
-    totalTraffic: 0,
-    totalUnits: 0,
-    totalPublic: 0,
-    averagePrice: 0,
-    totalScreens: 0,
-    totalViews: 0
+    totalPanels: 0
   });
 
   const fetchBuildings = async () => {
     try {
       setLoading(true);
-      console.log('🏢 Buscando prédios com contagem real de painéis...');
+      console.log('🏢 Buscando prédios sem JOIN problemático...');
       
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -76,48 +66,41 @@ export const useBuildingsData = () => {
         return;
       }
 
-      // Query com JOIN para obter contagem real de painéis
-      const { data, error } = await supabase
+      // Query simples para buscar apenas prédios
+      const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
-        .select(`
-          id,
-          nome,
-          endereco,
-          bairro,
-          status,
-          venue_type,
-          location_type,
-          monthly_traffic,
-          latitude,
-          longitude,
-          numero_unidades,
-          publico_estimado,
-          preco_base,
-          image_urls,
-          amenities,
-          padrao_publico,
-          imagem_principal,
-          imagem_2,
-          imagem_3,
-          imagem_4,
-          caracteristicas,
-          created_at,
-          painels!inner(count)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('❌ Erro ao buscar prédios:', error);
-        toast.error(`Erro ao carregar prédios: ${error.message}`);
+      if (buildingsError) {
+        console.error('❌ Erro ao buscar prédios:', buildingsError);
+        toast.error(`Erro ao carregar prédios: ${buildingsError.message}`);
         return;
       }
 
-      console.log('✅ Prédios carregados:', data?.length);
+      console.log('✅ Prédios carregados:', buildingsData?.length);
+
+      // Query separada para contar painéis por prédio
+      const { data: panelsData, error: panelsError } = await supabase
+        .from('painels')
+        .select('building_id');
+
+      if (panelsError) {
+        console.error('⚠️ Erro ao buscar painéis (não crítico):', panelsError);
+      }
+
+      // Criar mapa de contagem de painéis por prédio
+      const panelCountMap = new Map();
+      if (panelsData) {
+        panelsData.forEach(panel => {
+          const buildingId = panel.building_id;
+          panelCountMap.set(buildingId, (panelCountMap.get(buildingId) || 0) + 1);
+        });
+      }
       
-      // Processar dados com contagem real de painéis
-      const typedBuildings = (data || []).map(building => {
-        // Contar painéis reais associados ao prédio
-        const realPanelCount = building.painels?.length || 0;
+      // Processar dados dos prédios
+      const typedBuildings = (buildingsData || []).map(building => {
+        const panelCount = panelCountMap.get(building.id) || 0;
         
         return {
           ...building,
@@ -128,8 +111,8 @@ export const useBuildingsData = () => {
           numero_unidades: building.numero_unidades || 0,
           publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
           preco_base: building.preco_base || 0,
-          quantidade_telas: realPanelCount, // Usar contagem real
-          visualizacoes_mes: realPanelCount * 7350 || 0, // Calcular baseado na contagem real
+          quantidade_telas: panelCount, // Usar contagem real de painéis
+          visualizacoes_mes: panelCount * 7350 || 0,
           monthly_traffic: building.monthly_traffic || 0,
           latitude: building.latitude || 0,
           longitude: building.longitude || 0
@@ -138,39 +121,19 @@ export const useBuildingsData = () => {
       
       setBuildings(typedBuildings);
       
-      // Calcular estatísticas completas
+      // Calcular estatísticas simplificadas
       const total = typedBuildings.length;
       const active = typedBuildings.filter(b => b.status === 'ativo').length;
       const inactive = typedBuildings.filter(b => b.status === 'inativo').length;
-      const totalTraffic = typedBuildings.reduce((sum, building) => 
-        sum + (building.monthly_traffic || 0), 0
-      );
-      const totalUnits = typedBuildings.reduce((sum, building) => 
-        sum + (building.numero_unidades || 0), 0
-      );
-      const totalPublic = typedBuildings.reduce((sum, building) => 
-        sum + (building.publico_estimado || 0), 0
-      );
-      const totalScreens = typedBuildings.reduce((sum, building) => 
+      const totalPanels = typedBuildings.reduce((sum, building) => 
         sum + (building.quantidade_telas || 0), 0
       );
-      const totalViews = typedBuildings.reduce((sum, building) => 
-        sum + (building.visualizacoes_mes || 0), 0
-      );
-      const averagePrice = typedBuildings.length > 0 
-        ? typedBuildings.reduce((sum, building) => sum + (building.preco_base || 0), 0) / typedBuildings.length
-        : 0;
 
       setStats({ 
         total, 
         active, 
         inactive, 
-        totalTraffic, 
-        totalUnits, 
-        totalPublic,
-        averagePrice, 
-        totalScreens,
-        totalViews 
+        totalPanels 
       });
       
     } catch (error) {
