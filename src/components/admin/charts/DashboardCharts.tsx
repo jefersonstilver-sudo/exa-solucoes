@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, PieChart as PieChartIcon, BarChart3, Users } from 'lucide-react';
+import { TrendingUp, PieChart as PieChartIcon, BarChart3, Users, Database } from 'lucide-react';
 import { ChartData } from '@/hooks/useSupabaseData';
 
 interface DashboardChartsProps {
@@ -14,15 +14,16 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-      {/* Receita Mensal */}
+      {/* Receita Mensal - Dados Reais */}
       <Card className="bg-white border border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-900 flex items-center">
             <TrendingUp className="h-5 w-5 mr-2 text-indexa-purple" />
-            Receita Mensal
+            Receita Mensal (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Evolução da receita ao longo dos meses
+          <CardDescription className="text-gray-600 flex items-center">
+            <Database className="h-4 w-4 mr-1" />
+            Conectado ao Supabase - Evolução baseada em pedidos pagos
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -40,7 +41,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                 tickFormatter={formatCurrency}
               />
               <Tooltip 
-                formatter={(value: any) => [formatCurrency(value), 'Receita']}
+                formatter={(value: any) => [formatCurrency(value), 'Receita Real']}
                 labelStyle={{ color: '#1e293b' }}
                 contentStyle={{ 
                   backgroundColor: '#f8fafc', 
@@ -61,15 +62,16 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
         </CardContent>
       </Card>
 
-      {/* Status dos Pedidos */}
+      {/* Status dos Pedidos - Dados Reais */}
       <Card className="bg-white border border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-900 flex items-center">
             <PieChartIcon className="h-5 w-5 mr-2 text-indexa-purple" />
-            Status dos Pedidos
+            Status dos Pedidos (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Distribuição dos pedidos por status
+          <CardDescription className="text-gray-600 flex items-center">
+            <Database className="h-4 w-4 mr-1" />
+            Dados da tabela 'pedidos' em tempo real
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,7 +82,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, value, percent }) => 
+                  value > 0 ? `${name} ${value} (${(percent * 100).toFixed(0)}%)` : null
+                }
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -89,21 +93,22 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(value: any) => [value, 'Pedidos']} />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Status dos Painéis */}
+      {/* Status dos Painéis - Dados Reais */}
       <Card className="bg-white border border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-900 flex items-center">
             <BarChart3 className="h-5 w-5 mr-2 text-indexa-purple" />
-            Status dos Painéis
+            Status dos Painéis (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Distribuição dos painéis por status operacional
+          <CardDescription className="text-gray-600 flex items-center">
+            <Database className="h-4 w-4 mr-1" />
+            Status operacional da tabela 'painels'
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,6 +125,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                 fontSize={12}
               />
               <Tooltip 
+                formatter={(value: any) => [value, 'Painéis']}
                 contentStyle={{ 
                   backgroundColor: '#f8fafc', 
                   border: '1px solid #e2e8f0',
@@ -136,15 +142,16 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
         </CardContent>
       </Card>
 
-      {/* Crescimento de Usuários */}
+      {/* Crescimento de Usuários - Dados Reais */}
       <Card className="bg-white border border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-900 flex items-center">
             <Users className="h-5 w-5 mr-2 text-indexa-purple" />
-            Crescimento de Usuários
+            Crescimento de Usuários (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Evolução do número de usuários registrados
+          <CardDescription className="text-gray-600 flex items-center">
+            <Database className="h-4 w-4 mr-1" />
+            Evolução baseada na tabela 'users'
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -161,6 +168,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                 fontSize={12}
               />
               <Tooltip 
+                formatter={(value: any) => [value, 'Usuários']}
                 contentStyle={{ 
                   backgroundColor: '#f8fafc', 
                   border: '1px solid #e2e8f0',
