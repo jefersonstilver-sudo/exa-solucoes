@@ -43,6 +43,23 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
     }
   }, [building, open]);
 
+  // Clear selected panel when dialog closes
+  useEffect(() => {
+    if (!open) {
+      console.log('🔄 [BUILDING DETAILS] Dialog fechado, limpando estado do painel selecionado');
+      setSelectedPanelForRemoval(null);
+      setRemovalDialogOpen(false);
+    }
+  }, [open]);
+
+  // Clear selected panel when removal dialog closes
+  useEffect(() => {
+    if (!removalDialogOpen) {
+      console.log('🔄 [BUILDING DETAILS] Dialog de remoção fechado, limpando painel selecionado');
+      setSelectedPanelForRemoval(null);
+    }
+  }, [removalDialogOpen]);
+
   const fetchBuildingData = async () => {
     if (!building) return;
     
@@ -105,6 +122,25 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   };
 
   const handleRemovePanel = (panel: any) => {
+    console.log('🗑️ [BUILDING DETAILS] Solicitação de remoção de painel recebida:', {
+      panelId: panel?.id,
+      panelCode: panel?.code,
+      hasPanel: !!panel
+    });
+
+    if (!panel) {
+      console.error('❌ [BUILDING DETAILS] Painel não definido para remoção');
+      toast.error('Erro: Painel não encontrado para remoção');
+      return;
+    }
+
+    if (!panel.id) {
+      console.error('❌ [BUILDING DETAILS] Painel sem ID válido:', panel);
+      toast.error('Erro: Painel com ID inválido');
+      return;
+    }
+
+    console.log('✅ [BUILDING DETAILS] Definindo painel para remoção e abrindo dialog');
     setSelectedPanelForRemoval(panel);
     setRemovalDialogOpen(true);
   };
@@ -112,6 +148,21 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   const handleViewPanelDetails = (panelId: string) => {
     // Implementar visualização de detalhes do painel
     toast.info('Funcionalidade de detalhes do painel em desenvolvimento');
+  };
+
+  const handleRemovalSuccess = () => {
+    console.log('✅ [BUILDING DETAILS] Remoção de painel bem-sucedida, recarregando dados');
+    fetchBuildingData();
+    setSelectedPanelForRemoval(null);
+    setRemovalDialogOpen(false);
+  };
+
+  const handleRemovalDialogClose = (open: boolean) => {
+    console.log('🔄 [BUILDING DETAILS] Dialog de remoção alterado para:', open);
+    setRemovalDialogOpen(open);
+    if (!open) {
+      setSelectedPanelForRemoval(null);
+    }
   };
 
   if (!building) return null;
@@ -175,13 +226,15 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
         onSuccess={fetchBuildingData}
       />
 
-      <PanelRemovalDialog
-        open={removalDialogOpen}
-        onOpenChange={setRemovalDialogOpen}
-        panel={selectedPanelForRemoval}
-        buildingName={building?.nome}
-        onSuccess={fetchBuildingData}
-      />
+      {selectedPanelForRemoval && (
+        <PanelRemovalDialog
+          open={removalDialogOpen}
+          onOpenChange={handleRemovalDialogClose}
+          panel={selectedPanelForRemoval}
+          buildingName={building?.nome}
+          onSuccess={handleRemovalSuccess}
+        />
+      )}
     </>
   );
 };

@@ -37,7 +37,11 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
   const [loading, setLoading] = useState(false);
 
   const handleRemovePanel = async () => {
-    console.log('🗑️ [REMOVE DIALOG] Iniciando remoção do painel:', panel);
+    console.log('🗑️ [REMOVE DIALOG] Iniciando processo de remoção:', {
+      panel,
+      buildingName,
+      dialogOpen: open
+    });
     
     if (!panel) {
       console.error('❌ [REMOVE DIALOG] Painel não encontrado');
@@ -104,8 +108,15 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
       }
 
       toast.success(`Painel "${panel.code}" removido com sucesso!`);
+      
+      // Chamar onSuccess antes de fechar o dialog para garantir que os dados sejam atualizados
+      console.log('🔄 [REMOVE DIALOG] Chamando onSuccess para atualizar dados');
       onSuccess();
+      
+      // Fechar o dialog
+      console.log('🔄 [REMOVE DIALOG] Fechando dialog');
       onOpenChange(false);
+      
     } catch (error) {
       console.error('💥 [REMOVE DIALOG] Erro crítico ao remover painel:', error);
       toast.error('Erro ao remover painel: ' + (error as any)?.message || 'Erro desconhecido');
@@ -115,8 +126,22 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
     }
   };
 
+  // Adicionar validação para evitar renderização com painel nulo
   if (!panel) {
-    console.warn('⚠️ [REMOVE DIALOG] Dialog aberto sem painel definido');
+    console.warn('⚠️ [REMOVE DIALOG] Dialog renderizado sem painel, fechando automaticamente');
+    if (open) {
+      onOpenChange(false);
+    }
+    return null;
+  }
+
+  // Validação adicional do ID do painel
+  if (!panel.id) {
+    console.error('❌ [REMOVE DIALOG] Dialog renderizado com painel sem ID válido:', panel);
+    if (open) {
+      toast.error('Erro: Painel com dados inválidos');
+      onOpenChange(false);
+    }
     return null;
   }
 
@@ -128,6 +153,12 @@ const PanelRemovalDialog: React.FC<PanelRemovalDialogProps> = ({
       default: return 'bg-gray-500 text-white';
     }
   };
+
+  console.log('🎨 [REMOVE DIALOG] Renderizando dialog para painel:', {
+    panelId: panel.id,
+    panelCode: panel.code,
+    open
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
