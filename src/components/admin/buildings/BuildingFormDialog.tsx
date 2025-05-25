@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -21,7 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Calculator, Users, Eye, Monitor } from 'lucide-react';
+import { X, Calculator, Users, Eye, Monitor, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -209,7 +208,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Building className="h-5 w-5 mr-2" />
+                    <Building2 className="h-5 w-5 mr-2" />
                     Dados Básicos
                   </CardTitle>
                 </CardHeader>
