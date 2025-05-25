@@ -50,7 +50,7 @@ export const useBuildingsData = () => {
   const fetchBuildings = async () => {
     try {
       setLoading(true);
-      console.log('🏢 Buscando prédios sem JOIN problemático...');
+      console.log('🏢 Buscando prédios...');
       
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -66,7 +66,7 @@ export const useBuildingsData = () => {
         return;
       }
 
-      // Query simples para buscar apenas prédios
+      // Query para buscar prédios
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
         .select('*')
@@ -98,12 +98,14 @@ export const useBuildingsData = () => {
         });
       }
       
-      // Processar dados dos prédios
+      // Processar dados dos prédios - TODOS como Residencial por padrão
       const typedBuildings = (buildingsData || []).map(building => {
         const panelCount = panelCountMap.get(building.id) || 0;
         
         return {
           ...building,
+          venue_type: building.venue_type || 'Residencial', // Padrão Residencial
+          location_type: building.location_type || 'residential',
           padrao_publico: (building.padrao_publico as 'alto' | 'medio' | 'normal') || 'normal',
           image_urls: building.image_urls || buildImageUrlsArray(building),
           amenities: building.amenities || building.caracteristicas || [],
@@ -111,7 +113,7 @@ export const useBuildingsData = () => {
           numero_unidades: building.numero_unidades || 0,
           publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
           preco_base: building.preco_base || 0,
-          quantidade_telas: panelCount, // Usar contagem real de painéis
+          quantidade_telas: panelCount,
           visualizacoes_mes: panelCount * 7350 || 0,
           monthly_traffic: building.monthly_traffic || 0,
           latitude: building.latitude || 0,
@@ -121,7 +123,7 @@ export const useBuildingsData = () => {
       
       setBuildings(typedBuildings);
       
-      // Calcular estatísticas simplificadas
+      // Calcular estatísticas
       const total = typedBuildings.length;
       const active = typedBuildings.filter(b => b.status === 'ativo').length;
       const inactive = typedBuildings.filter(b => b.status === 'inativo').length;

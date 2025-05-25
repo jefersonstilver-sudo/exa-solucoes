@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
@@ -64,7 +63,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     preco_base: 0,
     padrao_publico: 'normal' as 'alto' | 'medio' | 'normal',
     status: 'ativo',
-    venue_type: '',
+    venue_type: 'Residencial', // Padrão Residencial
     location_type: 'residential',
     latitude: 0,
     longitude: 0,
@@ -114,7 +113,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: building.preco_base || 0,
         padrao_publico: building.padrao_publico || 'normal',
         status: building.status || 'ativo',
-        venue_type: building.venue_type || '',
+        venue_type: building.venue_type || 'Residencial', // Padrão Residencial
         location_type: building.location_type || 'residential',
         latitude: building.latitude || 0,
         longitude: building.longitude || 0,
@@ -130,7 +129,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         preco_base: 0,
         padrao_publico: 'normal',
         status: 'ativo',
-        venue_type: '',
+        venue_type: 'Residencial', // Sempre Residencial por padrão
         location_type: 'residential',
         latitude: 0,
         longitude: 0,
@@ -309,7 +308,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         await supabase.rpc('log_building_action', {
           p_building_id: building.id,
           p_action_type: 'update',
-          p_description: `Prédio "${formData.nome}" atualizado com estrutura completa`,
+          p_description: `Prédio "${formData.nome}" atualizado - Tipo: ${formData.venue_type}`,
           p_new_values: dataToSave
         });
 
@@ -326,7 +325,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
         await supabase.rpc('log_building_action', {
           p_building_id: data.id,
           p_action_type: 'create',
-          p_description: `Novo prédio "${formData.nome}" criado com estrutura completa`,
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${formData.venue_type}`,
           p_new_values: dataToSave
         });
 
@@ -402,18 +401,24 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="venue_type">Tipo de Venue</Label>
-                      <Input
-                        id="venue_type"
+                      <Label htmlFor="venue_type">Tipo de Prédio *</Label>
+                      <Select
                         value={formData.venue_type}
-                        onChange={(e) => setFormData(prev => ({ ...prev, venue_type: e.target.value }))}
-                        placeholder="Ex: Condomínio"
-                      />
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, venue_type: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Residencial">Residencial</SelectItem>
+                          <SelectItem value="Comercial">Comercial</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="location_type">Tipo de Local *</Label>
+                    <Label htmlFor="location_type">Categoria *</Label>
                     <Select
                       value={formData.location_type}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, location_type: value }))}
@@ -422,8 +427,8 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="residential">Residencial</SelectItem>
-                        <SelectItem value="commercial">Comercial</SelectItem>
+                        <SelectItem value="residential">Residential</SelectItem>
+                        <SelectItem value="commercial">Commercial</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

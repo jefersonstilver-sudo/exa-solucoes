@@ -112,8 +112,8 @@ const BuildingsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Stats Cards - Apenas 3 cards essenciais */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-700">Total de Prédios</CardTitle>
@@ -141,23 +141,12 @@ const BuildingsPage = () => {
 
         <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Inativos</CardTitle>
-            <Users className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium text-gray-700">Total de Painéis</CardTitle>
+            <Users className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.inactive}</div>
-            <p className="text-xs text-orange-500">Requer atenção</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-indexa-purple/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Tráfego Total</CardTitle>
-            <Eye className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalTraffic.toLocaleString()}</div>
-            <p className="text-xs text-purple-600">visitantes/mês</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.totalPanels}</div>
+            <p className="text-xs text-purple-600">telas ativas</p>
           </CardContent>
         </Card>
       </div>
@@ -224,23 +213,19 @@ const BuildingsPage = () => {
                           <Badge variant={statusInfo.variant} className="text-xs">
                             {statusInfo.label}
                           </Badge>
-                          {building.venue_type && (
-                            <Badge variant="outline" className="text-xs">
-                              {building.venue_type}
-                            </Badge>
-                          )}
+                          <Badge variant="outline" className="text-xs">
+                            Residencial
+                          </Badge>
                         </div>
                         <div className="flex items-center space-x-1 mb-2">
                           <MapPin className="h-3 w-3 text-gray-400" />
                           <p className="text-sm text-gray-600">{building.endereco}, {building.bairro}</p>
                         </div>
                         <div className="flex items-center space-x-6">
-                          {building.monthly_traffic && (
-                            <div className="flex items-center space-x-1">
-                              <Eye className="h-3 w-3 text-purple-600" />
-                              <span className="text-xs text-gray-500">{building.monthly_traffic.toLocaleString()} visitantes/mês</span>
-                            </div>
-                          )}
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-3 w-3 text-purple-600" />
+                            <span className="text-xs text-gray-500">{building.quantidade_telas || 0} painéis</span>
+                          </div>
                           {building.latitude && building.longitude && (
                             <div className="flex items-center space-x-1">
                               <MapPin className="h-3 w-3 text-blue-600" />
