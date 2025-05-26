@@ -32,6 +32,8 @@ interface BuildingStoreState {
   applyFilters: () => void;
   disableFilters: boolean;
   toggleFilters: () => void;
+  initialized: boolean;
+  initializeStore: () => Promise<void>;
 }
 
 // CORREÇÃO: Filtros padrão mais permissivos para garantir que prédios apareçam
@@ -56,6 +58,21 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   isSearching: false,
   filters: { ...defaultFilters },
   disableFilters: false,
+  initialized: false,
+  
+  initializeStore: async () => {
+    const state = get();
+    if (state.initialized) {
+      console.log('🔄 [BUILDING STORE] Store já inicializado, pulando...');
+      return;
+    }
+    
+    console.log('🚀 [BUILDING STORE] === INICIALIZANDO STORE ===');
+    set({ initialized: true });
+    
+    // CORREÇÃO CRÍTICA: Sempre carregar todos os prédios ativos na inicialização
+    await get().fetchBuildings();
+  },
   
   setSearchLocation: (location: string) => {
     console.log('🔄 [BUILDING STORE] setSearchLocation:', location);
@@ -129,15 +146,18 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
         console.log(`📊 [BUILDING STORE] Prédio ${index + 1}: ${building.nome} (Status: ${building.status}, Público: ${building.publico_estimado})`);
       });
       
-      console.log('🔄 [BUILDING STORE] Atualizando estado com prédios...');
+      // CORREÇÃO CRÍTICA: Garantir que o estado seja atualizado corretamente
+      const activeBuildings = buildings.filter(building => building.status === 'ativo');
+      console.log('🔄 [BUILDING STORE] Prédios ativos encontrados:', activeBuildings.length);
+      
       set({ 
         allBuildings: buildings as BuildingStore[],
+        buildings: activeBuildings as BuildingStore[], // CORREÇÃO: Definir buildings diretamente também
         loading: false, 
         isLoading: false 
       });
       
-      console.log('🔄 [BUILDING STORE] Aplicando filtros aos novos dados...');
-      get().applyFilters();
+      console.log('✅ [BUILDING STORE] Estado atualizado com sucesso');
       
       // Log final do estado
       setTimeout(() => {

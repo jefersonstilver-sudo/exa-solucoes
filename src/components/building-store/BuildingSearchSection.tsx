@@ -31,6 +31,10 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
 }) => {
   // LOGS para debug do contador
   console.log('🔍 [BUILDING SEARCH] buildingsCount recebido:', buildingsCount);
+  console.log('🔍 [BUILDING SEARCH] Vai exibir:', buildingsCount > 0 
+    ? `${buildingsCount} ${buildingsCount === 1 ? 'prédio encontrado' : 'prédios encontrados'}`
+    : 'Busque por localização ou explore todos os prédios disponíveis'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

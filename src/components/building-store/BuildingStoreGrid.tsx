@@ -49,6 +49,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   
   console.log('🏢 [BUILDING STORE GRID] buildingsArray:', buildingsArray);
   console.log('🏢 [BUILDING STORE GRID] hasBuildings:', hasBuildings);
+  console.log('🏢 [BUILDING STORE GRID] DECISÃO: Vai mostrar', hasBuildings ? 'PRÉDIOS' : 'EMPTY STATE');
 
   // Só mostrar empty state se realmente não há prédios
   if (!hasBuildings) {
@@ -76,7 +77,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   }
 
   // CORREÇÃO: Sempre mostrar prédios quando disponíveis
-  console.log('✅ [BUILDING STORE GRID] Renderizando', buildingsArray.length, 'prédios');
+  console.log('✅ [BUILDING STORE GRID] EXIBINDO', buildingsArray.length, 'prédios');
   
   return (
     <div className="space-y-6">

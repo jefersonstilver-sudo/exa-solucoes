@@ -44,7 +44,7 @@ export default function PanelStore() {
     handleFilterChange: handleBuildingFilterChange,
     handleSearch: handleBuildingSearch,
     handleClearLocation: handleBuildingClearLocation,
-    fetchBuildings
+    initializeStore
   } = useBuildingStore();
 
   const {
@@ -62,17 +62,17 @@ export default function PanelStore() {
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
 
-  // CORREÇÃO: Garantir carregamento automático de TODOS os prédios
+  // CORREÇÃO CRÍTICA: Inicializar o store automaticamente
   useEffect(() => {
     console.log('🔄 [PANEL STORE] === EFFECT INICIAL EXECUTADO ===');
     console.log('🔄 [PANEL STORE] buildingId:', buildingId);
     
     if (!buildingId) {
-      console.log('🔄 [PANEL STORE] Sem buildingId - FORÇANDO carregamento de todos os prédios');
-      // CORREÇÃO: Sempre forçar carregamento de todos os prédios ativos
-      fetchBuildings();
+      console.log('🔄 [PANEL STORE] Sem buildingId - INICIALIZANDO store de prédios');
+      // CORREÇÃO: Usar initializeStore para garantir carregamento
+      initializeStore();
     }
-  }, [buildingId, fetchBuildings]);
+  }, [buildingId, initializeStore]);
 
   // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
