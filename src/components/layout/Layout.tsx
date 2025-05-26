@@ -2,6 +2,8 @@
 import React from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
+import CartDrawer from '@/components/cart/CartDrawer';
+import { useCartManager } from '@/hooks/useCartManager';
 import { Panel } from '@/types/panel';
 
 interface LayoutProps {
@@ -23,6 +25,13 @@ const Layout: React.FC<LayoutProps> = ({
   onChangeDuration,
   onProceedToCheckout
 }) => {
+  // Get cart state from useCartManager
+  const { cartOpen, setCartOpen } = useCartManager();
+
+  // Use cart items from props if provided, otherwise fall back to cartManager
+  const { cartItems: managerCartItems } = useCartManager();
+  const effectiveCartItems = cartItems.length > 0 ? cartItems : managerCartItems;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -36,6 +45,17 @@ const Layout: React.FC<LayoutProps> = ({
         {children}
       </main>
       <MobileOptimizedFooter />
+      
+      {/* Cart Drawer */}
+      <CartDrawer
+        cartItems={effectiveCartItems}
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+        onRemoveFromCart={onRemoveFromCart}
+        onClearCart={onClearCart}
+        onChangeDuration={onChangeDuration}
+        onProceedToCheckout={onProceedToCheckout}
+      />
     </div>
   );
 };
