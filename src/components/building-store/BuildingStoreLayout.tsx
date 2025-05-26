@@ -19,7 +19,6 @@ interface BuildingStoreLayoutProps {
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
-  onViewPanels: (building: BuildingStore) => void;
   onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
@@ -34,7 +33,6 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   handleFilterChange,
   handleSearch,
   handleClearLocation,
-  onViewPanels,
   onAddToCart
 }) => {
   return (
@@ -70,7 +68,6 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
             buildings={buildings}
             isLoading={isLoading}
             isSearching={isSearching}
-            onViewPanels={onViewPanels}
             onAddToCart={onAddToCart}
             selectedLocation={selectedLocation}
           />

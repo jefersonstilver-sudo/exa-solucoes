@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
-  ArrowRight,
   ShoppingCart,
   Check
 } from 'lucide-react';
@@ -12,13 +11,11 @@ import { Panel } from '@/types/panel';
 
 interface BuildingCardActionsProps {
   building: BuildingStore;
-  onViewPanels: (building: BuildingStore) => void;
   onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ 
   building, 
-  onViewPanels,
   onAddToCart 
 }) => {
   const [isAdded, setIsAdded] = useState(false);
@@ -55,10 +52,6 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
     }
   };
 
-  const handleViewPanels = () => {
-    onViewPanels(building);
-  };
-
   return (
     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between pt-6 border-t border-gray-100">
       <div className="mb-4 lg:mb-0">
@@ -72,18 +65,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
         </p>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Botão Ver Painéis */}
-        <Button
-          onClick={handleViewPanels}
-          variant="outline"
-          size="lg"
-          className="px-6 py-3 text-base font-semibold border-2 border-indexa-purple text-indexa-purple hover:bg-indexa-purple/5 transition-all duration-300"
-        >
-          <ArrowRight className="h-5 w-5 mr-2" />
-          Ver Painéis
-        </Button>
-
+      <div className="flex justify-center lg:justify-end">
         {/* Botão Adicionar ao Carrinho */}
         <motion.div
           animate={isAnimating ? { scale: [1, 1.1, 1] } : {}}
@@ -93,7 +75,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
             onClick={handleAddToCart}
             size="lg"
             disabled={isAdded}
-            className={`px-6 py-3 text-base font-semibold transition-all duration-300 ${
+            className={`px-8 py-3 text-base font-semibold transition-all duration-300 ${
               isAdded 
                 ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
                 : 'bg-indexa-purple hover:bg-indexa-purple-dark text-white hover:scale-105'
@@ -107,7 +89,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
             ) : (
               <>
                 <ShoppingCart className="h-5 w-5 mr-2" />
-                Adicionar
+                Adicionar ao Carrinho
               </>
             )}
           </Button>

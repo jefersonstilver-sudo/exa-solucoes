@@ -1,18 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useBuildingStore } from '@/hooks/useBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
-import { BuildingStore } from '@/services/buildingStoreService';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 
 export default function BuildingStorePage() {
-  const navigate = useNavigate();
-  
   // Building store state
   const {
     buildings,
@@ -54,12 +50,6 @@ export default function BuildingStorePage() {
       setShowPromotion(true);
     }
   }, [isLoggedIn, cartItems.length]);
-
-  // Handle viewing panels of a specific building
-  const handleViewPanels = (building: BuildingStore) => {
-    // Navigate to panel selection page for this building
-    navigate(`/paineis-digitais/loja?building_id=${building.id}`);
-  };
 
   if (error) {
     return (
@@ -114,7 +104,6 @@ export default function BuildingStorePage() {
           handleFilterChange={handleFilterChange}
           handleSearch={handleSearch}
           handleClearLocation={handleClearLocation}
-          onViewPanels={handleViewPanels}
           onAddToCart={handleAddToCart}
         />
       </motion.div>

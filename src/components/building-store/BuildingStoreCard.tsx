@@ -12,13 +12,11 @@ import BuildingCardActions from './card/BuildingCardActions';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
-  onViewPanels: (building: BuildingStore) => void;
   onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
   building, 
-  onViewPanels,
   onAddToCart 
 }) => {
   return (
@@ -52,7 +50,6 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
               {/* Preço e Ações */}
               <BuildingCardActions 
                 building={building}
-                onViewPanels={onViewPanels}
                 onAddToCart={onAddToCart}
               />
             </div>
