@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Plan, PlanKey } from '@/types/checkout';
@@ -29,11 +28,8 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
 }) => {
   const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
   
-  // Handler específico para o botão de cupom com logs detalhados
-  const handleCouponClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  // Handler específico para o botão de cupom - sem parâmetros
+  const handleCouponClick = () => {
     console.log("🎯 BUTTON CLICK: Botão 'Ir para Cupom' foi clicado");
     console.log("🎯 BUTTON CLICK: onGoToCoupon existe?", !!onGoToCoupon);
     console.log("🎯 BUTTON CLICK: selectedPlan:", selectedPlan);
@@ -46,11 +42,8 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
     }
   };
 
-  // Handler específico para o botão de prosseguir
-  const handleProceedClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  // Handler específico para o botão de prosseguir - sem parâmetros  
+  const handleProceedClick = () => {
     console.log("🎯 BUTTON CLICK: Botão 'Prosseguir' foi clicado");
     console.log("🎯 BUTTON CLICK: onProceed existe?", !!onProceed);
     console.log("🎯 BUTTON CLICK: selectedPlan:", selectedPlan);
@@ -129,7 +122,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         })}
       </motion.div>
       
-      {/* Botões de navegação com handlers específicos */}
+      {/* Botões de navegação com handlers corrigidos */}
       <div className="space-y-3">
         {/* Botão Ir para Cupom */}
         {onGoToCoupon && (
