@@ -1,9 +1,7 @@
 
 import { CartItem } from '@/types/cart';
 import { validateCartForCheckout, saveCartForCheckout } from '@/services/cartValidationService';
-import { useCheckoutNavigation } from '@/services/checkoutNavigationService';
 import { useCheckoutState } from '@/hooks/cart/useCheckoutState';
-import { isCurrentPath, navigateSafely } from '@/services/navigationService';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,7 +18,6 @@ export const useCartCheckout = ({
 }: UseCartCheckoutProps) => {
   const { isLoggedIn } = useUserSession();
   const navigate = useNavigate();
-  const { navigateToCheckout } = useCheckoutNavigation();
   const {
     isCheckoutProcessed,
     preventMultipleCheckout,
@@ -57,40 +54,39 @@ export const useCartCheckout = ({
       // Save cart with validation
       saveCartForCheckout(cartItems);
       
-      // FIXED: Navigation based on authentication status with immediate navigation
-      if (!isLoggedIn) {
-        console.log('🛒 Cart Checkout: Usuário não logado, redirecionando para login');
-        window.location.href = '/login?redirect=/selecionar-plano';
-      } else {
-        console.log('🛒 Cart Checkout: Usuário logado, indo para seleção de planos');
-        
-        // Don't navigate if already on the target page
-        if (isCurrentPath('/selecionar-plano')) {
-          showAlreadyOnPageToast();
-          resetCheckoutProcess();
-          setIsNavigating(false);
-          return;
-        }
-        
-        // Force navigation using window.location for immediate redirect
-        window.location.href = '/selecionar-plano';
+      // Check if already on target page
+      if (window.location.pathname === '/selecionar-plano') {
+        showAlreadyOnPageToast();
+        resetCheckoutProcess();
+        setIsNavigating(false);
+        return;
       }
       
-      // Reset processing state after navigation attempt
+      // Navigate based on authentication status
+      if (!isLoggedIn) {
+        console.log('🛒 Cart Checkout: Usuário não logado, redirecionando para login');
+        navigate('/login?redirect=/selecionar-plano');
+      } else {
+        console.log('🛒 Cart Checkout: Usuário logado, indo para seleção de planos');
+        navigate('/selecionar-plano');
+      }
+      
+      // Reset processing state after a short delay
       setTimeout(() => {
         resetCheckoutProcess();
         setIsNavigating(false);
-      }, 500);
+      }, 1000);
 
     } catch (error) {
+      console.error('Erro no checkout:', error);
       handleCheckoutError(error);
       setIsNavigating(false);
       
-      // Last resort - direct navigation based on auth status
+      // Fallback navigation
       if (!isLoggedIn) {
-        window.location.href = '/login?redirect=/selecionar-plano';
+        navigate('/login?redirect=/selecionar-plano');
       } else {
-        window.location.href = '/selecionar-plano';
+        navigate('/selecionar-plano');
       }
     }
   };

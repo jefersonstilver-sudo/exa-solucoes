@@ -22,8 +22,10 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
   const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
   const totalItems = cartItems.length;
 
-  // FIXED: Dynamic button text based on authentication status
   const getButtonText = () => {
+    if (isCheckoutLoading) {
+      return "Redirecionando...";
+    }
     if (!isLoggedIn) {
       return "Fazer Login para Continuar";
     }
@@ -31,6 +33,9 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
   };
 
   const getButtonIcon = () => {
+    if (isCheckoutLoading) {
+      return <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />;
+    }
     if (!isLoggedIn) {
       return <ArrowRight className="h-4 w-4" />;
     }
@@ -58,19 +63,12 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
         <Button
           onClick={onProceedToCheckout}
           disabled={cartItems.length === 0 || isCheckoutLoading}
-          className="w-full bg-[#3C1361] hover:bg-[#3C1361]/90 text-white py-3 text-sm font-medium transition-colors"
+          className="w-full bg-[#3C1361] hover:bg-[#3C1361]/90 text-white py-3 text-sm font-medium transition-colors disabled:opacity-50"
         >
-          {isCheckoutLoading ? (
-            <>
-              Processando...
-              <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            </>
-          ) : (
-            <>
-              {getButtonText()}
-              {getButtonIcon()}
-            </>
-          )}
+          <span className="flex items-center justify-center">
+            {getButtonText()}
+            {getButtonIcon()}
+          </span>
         </Button>
       </div>
     </motion.div>
