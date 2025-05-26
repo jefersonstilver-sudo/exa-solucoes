@@ -15,11 +15,16 @@ const ModernSuperAdminLayout = ({ children }: ModernSuperAdminLayoutProps) => {
   const {
     cartItems,
     cartOpen,
+    setCartOpen,
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
     handleProceedToCheckout
   } = useCartManager();
+
+  const handleCloseCart = () => {
+    setCartOpen(false);
+  };
 
   return (
     <SidebarProvider>
@@ -47,15 +52,15 @@ const ModernSuperAdminLayout = ({ children }: ModernSuperAdminLayoutProps) => {
         </SidebarInset>
 
         {/* Cart Drawer */}
-        {cartOpen && (
-          <CartDrawer
-            cartItems={cartItems}
-            onRemoveFromCart={handleRemoveFromCart}
-            onClearCart={handleClearCart}
-            onChangeDuration={handleChangeDuration}
-            onProceedToCheckout={handleProceedToCheckout}
-          />
-        )}
+        <CartDrawer
+          cartItems={cartItems}
+          isOpen={cartOpen}
+          onClose={handleCloseCart}
+          onRemoveFromCart={handleRemoveFromCart}
+          onClearCart={handleClearCart}
+          onChangeDuration={handleChangeDuration}
+          onProceedToCheckout={handleProceedToCheckout}
+        />
       </div>
     </SidebarProvider>
   );

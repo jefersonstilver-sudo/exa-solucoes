@@ -8,6 +8,8 @@ import PanelCart from '@/components/panels/PanelCart';
 
 interface CartDrawerProps {
   cartItems: CartItem[];
+  isOpen: boolean;
+  onClose: () => void;
   onRemoveFromCart?: (panelId: string) => void;
   onClearCart?: () => void;
   onChangeDuration?: (panelId: string, duration: number) => void;
@@ -16,15 +18,15 @@ interface CartDrawerProps {
 
 const CartDrawer: React.FC<CartDrawerProps> = ({
   cartItems,
+  isOpen,
+  onClose,
   onRemoveFromCart,
   onClearCart,
   onChangeDuration,
   onProceedToCheckout
 }) => {
-  const [isOpen, setIsOpen] = React.useState(true);
-
   const handleClose = () => {
-    setIsOpen(false);
+    onClose();
   };
 
   return (
