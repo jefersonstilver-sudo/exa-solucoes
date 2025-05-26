@@ -148,7 +148,7 @@ export const useCartCheckout = ({
       // Log checkout start
       logCheckoutStart(cartItems.length);
       
-      // Convert CartItem[] to legacy format for saveCartToStorage
+      // CORREÇÃO: Converter CartItem[] para o formato legado esperado por saveCartToStorage
       const legacyCartItems = cartItems.map(item => ({
         panel: item.panel,
         duration: item.duration
