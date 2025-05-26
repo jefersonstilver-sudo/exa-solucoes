@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -16,12 +15,6 @@ import { BuildingStore } from '@/services/buildingStoreService';
 export default function PanelStore() {
   const [searchParams] = useSearchParams();
   const buildingId = searchParams.get('building_id');
-  
-  // Determinar se estamos na loja de prédios (sem building_id) ou na loja de painéis (com building_id)
-  const isStoreView = !buildingId; // Loja de prédios quando não há building_id
-  const isPanelView = !!buildingId; // Loja de painéis quando há building_id
-  
-  console.log('🏪 [PANEL STORE] Contexto da loja:', { isStoreView, isPanelView, buildingId });
   
   // Panel store state (for when viewing specific building panels)
   const {
@@ -71,15 +64,12 @@ export default function PanelStore() {
 
   // Load appropriate data based on whether we're viewing a specific building or the main store
   useEffect(() => {
-    console.log('🔄 [PANEL STORE] useEffect disparado:', { buildingId, isStoreView });
-    
-    if (isStoreView) {
+    if (!buildingId) {
       // Load buildings for main store view
-      console.log('📋 [PANEL STORE] Carregando prédios para loja principal');
       fetchBuildings();
     }
     // Panel loading will be handled by the panel store hook when buildingId is present
-  }, [buildingId, fetchBuildings, isStoreView]);
+  }, [buildingId, fetchBuildings]);
 
   // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
@@ -92,7 +82,6 @@ export default function PanelStore() {
 
   // Handle viewing panels of a specific building
   const handleViewPanels = (building: BuildingStore) => {
-    console.log('👁️ [PANEL STORE] Visualizando painéis do prédio:', building.nome);
     // Update URL with building_id parameter
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('building_id', building.id);
@@ -101,33 +90,9 @@ export default function PanelStore() {
 
   // Handle going back to building list
   const handleBackToBuildings = () => {
-    console.log('⬅️ [PANEL STORE] Voltando para lista de prédios');
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.delete('building_id');
     window.history.pushState({}, '', newUrl.toString());
-  };
-
-  // Enhanced handleAddToCart with debug logging
-  const handleAddToCartWithLogging = (panel: any, duration?: number) => {
-    console.log('🛒 [PANEL STORE] Adicionando ao carrinho:', { 
-      panelId: panel.id, 
-      panelName: panel.buildings?.nome || panel.code, // Fixed: use panel.code instead of panel.nome
-      duration: duration || 30,
-      cartItemsBefore: cartItems.length 
-    });
-    
-    handleAddToCart(panel, duration);
-    
-    // Log após um pequeno delay para ver o estado atualizado
-    setTimeout(() => {
-      console.log('🛒 [PANEL STORE] Carrinho após adição:', { 
-        cartItemsAfter: cartItems.length,
-        cartItems: cartItems.map(item => ({
-          id: item.panel.id,
-          name: item.panel.buildings?.nome || item.panel.code // Fixed: use panel.code instead of panel.nome
-        }))
-      });
-    }, 100);
   };
 
   // Log quando handleProceedToCheckout é chamado
@@ -142,17 +107,17 @@ export default function PanelStore() {
   };
 
   // Determine which error to show
-  const error = isPanelView ? panelsError : buildingsError;
+  const error = buildingId ? panelsError : buildingsError;
 
   if (error) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
           <h2 className="text-2xl font-semibold text-red-500 mb-4">
-            Erro ao carregar {isPanelView ? 'painéis' : 'prédios'}
+            Erro ao carregar {buildingId ? 'painéis' : 'prédios'}
           </h2>
           <p className="text-muted-foreground mb-6">
-            Ocorreu um problema ao buscar os {isPanelView ? 'painéis' : 'prédios'} disponíveis. Por favor, tente novamente.
+            Ocorreu um problema ao buscar os {buildingId ? 'painéis' : 'prédios'} disponíveis. Por favor, tente novamente.
           </p>
           <button 
             onClick={() => window.location.reload()} 
@@ -164,14 +129,6 @@ export default function PanelStore() {
       </Layout>
     );
   }
-
-  console.log('🎨 [PANEL STORE] Renderizando:', { 
-    isStoreView, 
-    isPanelView, 
-    buildingsCount: buildings?.length || 0,
-    panelsCount: panels?.length || 0,
-    cartItemsCount: cartItems.length
-  });
 
   return (
     <Layout 
@@ -196,7 +153,7 @@ export default function PanelStore() {
         </AnimatePresence>
         
         {/* Conditional rendering based on whether we're viewing a specific building or the main store */}
-        {isPanelView ? (
+        {buildingId ? (
           // Show panel selection for specific building
           <StoreLayout 
             panels={panels}
@@ -210,7 +167,7 @@ export default function PanelStore() {
             handleSearch={handlePanelSearch}
             handleClearLocation={handlePanelClearLocation}
             cartItems={cartItems}
-            onAddToCart={handleAddToCartWithLogging}
+            onAddToCart={handleAddToCart}
           />
         ) : (
           // Show building selection (main store view)
@@ -226,7 +183,7 @@ export default function PanelStore() {
             handleSearch={handleBuildingSearch}
             handleClearLocation={handleBuildingClearLocation}
             onViewPanels={handleViewPanels}
-            onAddToCart={handleAddToCartWithLogging}
+            onAddToCart={handleAddToCart}
           />
         )}
       </motion.div>
