@@ -1,96 +1,95 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Shield, Zap } from 'lucide-react';
+import { ArrowRight, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/utils/formatters';
+import { CartItem } from '@/types/cart';
+import { useUserSession } from '@/hooks/useUserSession';
 
 interface ModernCartSummaryProps {
-  itemCount: number;
-  totalPrice: number;
+  cartItems: CartItem[];
   onProceedToCheckout: () => void;
-  isLoading?: boolean;
+  isCheckoutLoading?: boolean;
 }
 
 const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
-  itemCount,
-  totalPrice,
+  cartItems,
   onProceedToCheckout,
-  isLoading = false
+  isCheckoutLoading = false
 }) => {
+  const { isLoggedIn } = useUserSession();
+  
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+  const totalItems = cartItems.length;
+
+  // FIXED: Dynamic button text based on authentication status
+  const getButtonText = () => {
+    if (!isLoggedIn) {
+      return "Fazer Login para Continuar";
+    }
+    return "Ir para Seleção de Plano";
+  };
+
+  const getButtonIcon = () => {
+    if (!isLoggedIn) {
+      return <ArrowRight className="h-4 w-4" />;
+    }
+    return <ShoppingBag className="h-4 w-4" />;
+  };
+
   return (
-    <div className="bg-white border-t border-gray-200 p-6 shadow-lg">
-      {/* Resumo de preços */}
-      <div className="space-y-3 mb-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="sticky bottom-0 bg-white border-t border-gray-100 p-4 sm:p-6"
+    >
+      <div className="space-y-4">
+        {/* Summary */}
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600">
-            Subtotal ({itemCount} {itemCount === 1 ? 'painel' : 'painéis'})
+            {totalItems} {totalItems === 1 ? 'item' : 'itens'}
           </span>
-          <span className="font-medium">{formatCurrency(totalPrice)}</span>
+          <span className="font-semibold text-lg text-gray-900">
+            R$ {totalPrice.toFixed(2)}
+          </span>
         </div>
-        
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">Taxa de processamento</span>
-          <Badge variant="secondary" className="bg-green-100 text-green-700 border-none">
-            Grátis
-          </Badge>
-        </div>
-        
-        <hr className="border-gray-200" />
-        
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-bold text-gray-900">Total</span>
-          <motion.span 
-            className="text-2xl font-bold text-[#3C1361]"
-            key={totalPrice}
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            {formatCurrency(totalPrice)}
-          </motion.span>
-        </div>
-      </div>
 
-      {/* Botão de checkout */}
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
+        {/* Checkout Button */}
         <Button
           onClick={onProceedToCheckout}
-          disabled={isLoading || itemCount === 0}
-          className="w-full bg-gradient-to-r from-[#3C1361] to-[#4A1A6B] hover:from-[#4A1A6B] hover:to-[#3C1361] text-white py-4 rounded-xl font-semibold text-lg shadow-lg transition-all duration-300 disabled:opacity-50"
+          disabled={cartItems.length === 0 || isCheckoutLoading}
+          className="w-full bg-[#3C1361] hover:bg-[#3C1361]/90 text-white py-3 text-sm font-medium transition-colors"
         >
-          {isLoading ? (
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="mr-2"
-            >
-              <Zap className="h-5 w-5" />
-            </motion.div>
+          {isCheckoutLoading ? (
+            <>
+              Processando...
+              <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            </>
           ) : (
-            <CreditCard className="h-5 w-5 mr-2" />
+            <>
+              {getButtonText()}
+              {getButtonIcon()}
+            </>
           )}
-          {isLoading ? 'Processando...' : 'Finalizar Compra'}
         </Button>
-      </motion.div>
 
-      {/* Indicadores de confiança */}
-      <div className="mt-4 flex items-center justify-center space-x-4 text-xs text-gray-500">
-        <div className="flex items-center space-x-1">
-          <Shield className="h-3 w-3 text-green-500" />
-          <span>Pagamento seguro</span>
-        </div>
-        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-        <div className="flex items-center space-x-1">
-          <Zap className="h-3 w-3 text-blue-500" />
-          <span>Ativação imediata</span>
+        {/* Trust indicators */}
+        <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
+          <span className="flex items-center">
+            <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+            Seguro
+          </span>
+          <span className="flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+            Rápido
+          </span>
+          <span className="flex items-center">
+            <span className="w-2 h-2 bg-purple-500 rounded-full mr-1"></span>
+            Confiável
+          </span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

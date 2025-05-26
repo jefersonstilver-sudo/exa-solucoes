@@ -1,106 +1,91 @@
 
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-export const useLoginForm = (redirectPath: string) => {
+export const useLoginForm = (redirectPath: string = '/paineis-digitais/loja') => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-    
-    try {
-      console.log('🔐 INDEXA LOGIN - Iniciando para:', email);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        console.error('❌ Erro de login:', error);
-        
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.');
-        } else if (error.message.includes('Email not confirmed')) {
-          setError('Sua conta ainda não foi confirmada. Verifique seu email.');
-        } else if (error.message.includes('Too many requests')) {
-          setError('Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.');
-        } else {
-          setError(`Erro de autenticação: ${error.message}`);
-        }
-        return;
-      }
-      
-      if (data.session && data.user) {
-        console.log('✅ INDEXA LOGIN: Login bem-sucedido para:', data.user.email);
-        
-        // INDEXA: Extrair role EXCLUSIVAMENTE do JWT
-        let userRole = null;
-        try {
-          const payload = JSON.parse(atob(data.session.access_token.split('.')[1]));
-          userRole = payload.user_role;
-          console.log('🔍 INDEXA LOGIN: JWT completo decodificado:', {
-            user_role: userRole,
-            email: payload.email,
-            sub: payload.sub,
-            iat: new Date(payload.iat * 1000).toLocaleString(),
-            exp: new Date(payload.exp * 1000).toLocaleString(),
-            tokenValido: payload.exp > (Date.now() / 1000)
-          });
-        } catch (jwtError) {
-          console.error('❌ Erro ao extrair role do JWT:', jwtError);
-        }
 
-        // REDIRECIONAMENTO IMEDIATO PARA SUPER ADMIN - SEM DELAYS
-        if (userRole === 'super_admin' && data.user.email === 'jefersonstilver@gmail.com') {
-          console.log('🚀 INDEXA LOGIN: SUPER ADMIN CONFIRMADO - Redirecionamento IMEDIATO para /super_admin');
-          toast.success('Bem-vindo ao Painel Super Administrativo!', {
-            duration: 2000
-          });
-          
-          // Redirecionamento IMEDIATO sem timeout
-          navigate('/super_admin', { replace: true });
-          
-        } else if (userRole === 'admin') {
-          console.log('👤 INDEXA LOGIN: Admin detectado - Redirecionamento para /admin');
-          toast.success('Login de Administrador realizado com sucesso!');
-          navigate('/admin', { replace: true });
-        } else if (userRole === 'client') {
-          console.log('👤 INDEXA LOGIN: Cliente detectado - Redirecionamento para /paineis-digitais/loja');
-          toast.success('Login realizado com sucesso!');
-          navigate('/paineis-digitais/loja', { replace: true });
-        } else {
-          // Para casos sem role ou role não reconhecida
-          const searchParams = new URLSearchParams(location.search);
-          const redirectTo = searchParams.get('redirect') || redirectPath;
-          console.log('🔄 INDEXA LOGIN: Redirecionando para path solicitado:', redirectTo);
-          toast.success('Login realizado com sucesso!');
-          navigate(redirectTo, { replace: true });
-        }
-        
-      } else {
-        setError('Falha na autenticação. Dados de sessão inválidos.');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      console.log('🔐 LoginForm: Tentando fazer login para email:', email);
+      
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (authError) {
+        console.error('🔐 LoginForm: Erro de autenticação:', authError);
+        throw authError;
       }
-    } catch (err: any) {
-      console.error('💥 Erro inesperado durante login:', err);
-      setError('Ocorreu um erro inesperado. Tente novamente em alguns instantes.');
+
+      if (data.user) {
+        console.log('🔐 LoginForm: Login bem-sucedido, redirecionando para:', redirectPath);
+        
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT,
+          LogLevel.SUCCESS,
+          'Login realizado com sucesso via formulário',
+          { 
+            userId: data.user.id, 
+            email: data.user.email,
+            redirectPath,
+            timestamp: new Date().toISOString() 
+          }
+        );
+
+        toast.success('Login realizado com sucesso!');
+        
+        // FIXED: Use the redirectPath passed from props
+        navigate(redirectPath);
+      }
+    } catch (error: any) {
+      console.error('🔐 LoginForm: Erro no login:', error);
+      
+      logCheckoutEvent(
+        CheckoutEvent.AUTH_EVENT,
+        LogLevel.ERROR,
+        `Erro no login: ${error.message}`,
+        { 
+          email,
+          error: error.message,
+          redirectPath,
+          timestamp: new Date().toISOString() 
+        }
+      );
+
+      let errorMessage = 'Erro ao fazer login';
+      
+      if (error.message === 'Invalid login credentials') {
+        errorMessage = 'Email ou senha incorretos';
+      } else if (error.message === 'Email not confirmed') {
+        errorMessage = 'Por favor, confirme seu email antes de fazer login';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const setQuickLogin = () => {
-    setEmail('jefersonstilver@gmail.com');
-    setPassword('573039');
   };
 
   return {
@@ -110,7 +95,6 @@ export const useLoginForm = (redirectPath: string) => {
     setPassword,
     isLoading,
     error,
-    handleLogin,
-    setQuickLogin
+    handleSubmit
   };
 };

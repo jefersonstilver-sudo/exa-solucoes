@@ -55,7 +55,7 @@ export const usePlanSelection = (hasCart: boolean) => {
     return totalPanels * pricePerPanelPerMonth * months;
   };
 
-  // FIXED: Navigate to coupon step instead of checkout
+  // FIXED: Navigate to coupon step with improved authentication handling
   const handleProceed = async () => {
     console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
     

@@ -19,17 +19,24 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get the redirect path from query params
+  // FIXED: Get the redirect path from query params with better fallback
   const searchParams = new URLSearchParams(location.search);
   const redirectPath = searchParams.get('redirect') || '/paineis-digitais/loja';
+  
+  console.log('🔐 Login: Redirect path configurado para:', redirectPath);
   
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        // User is already logged in, redirect
-        navigate(redirectPath);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          console.log('🔐 Login: Usuário já logado, redirecionando para:', redirectPath);
+          // User is already logged in, redirect
+          navigate(redirectPath);
+        }
+      } catch (error) {
+        console.error('🔐 Login: Erro ao verificar sessão:', error);
       }
     };
     

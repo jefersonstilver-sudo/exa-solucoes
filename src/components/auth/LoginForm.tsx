@@ -1,16 +1,15 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useLoginForm } from './hooks/useLoginForm';
-import { LoginFormFields } from './LoginFormFields';
-import { LoginFormActions } from './LoginFormActions';
+import { useLoginForm } from '@/components/auth/hooks/useLoginForm';
+import { LoginFormFields } from '@/components/auth/LoginFormFields';
+import { LoginFormActions } from '@/components/auth/LoginFormActions';
 
 interface LoginFormProps {
   redirectPath: string;
-  setIsResetMode: (value: boolean) => void;
+  setIsResetMode: (isResetMode: boolean) => void;
 }
 
-export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ redirectPath, setIsResetMode }) => {
   const {
     email,
     setEmail,
@@ -18,32 +17,29 @@ export const LoginForm = ({ redirectPath, setIsResetMode }: LoginFormProps) => {
     setPassword,
     isLoading,
     error,
-    handleLogin,
-    setQuickLogin
-  } = useLoginForm(redirectPath);
+    handleSubmit
+  } = useLoginForm(redirectPath); // FIXED: Pass redirectPath to hook
 
   return (
-    <motion.div
+    <motion.form
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ delay: 0.2, duration: 0.5 }}
+      onSubmit={handleSubmit}
+      className="space-y-4"
     >
-      <form onSubmit={handleLogin} className="space-y-4">
-        <LoginFormFields
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          isLoading={isLoading}
-          error={error}
-          setIsResetMode={setIsResetMode}
-        />
-        
-        <LoginFormActions
-          isLoading={isLoading}
-          onQuickLogin={setQuickLogin}
-        />
-      </form>
-    </motion.div>
+      <LoginFormFields
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        error={error}
+      />
+      
+      <LoginFormActions
+        isLoading={isLoading}
+        setIsResetMode={setIsResetMode}
+      />
+    </motion.form>
   );
 };
