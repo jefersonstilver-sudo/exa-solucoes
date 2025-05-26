@@ -1,8 +1,22 @@
+
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Building2, 
+  DollarSign, 
+  Users, 
+  Star,
+  Wifi,
+  Car,
+  Shield,
+  Gamepad2,
+  Dumbbell,
+  MapPin
+} from 'lucide-react';
 import type { BuildingFilters } from '@/hooks/useBuildingStore';
 
 interface BuildingFiltersProps {
@@ -19,50 +33,68 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
   compact = false
 }) => {
   const venueTypes = [
-    { value: 'Residencial', label: 'Residencial' },
-    { value: 'Comercial', label: 'Comercial' },
-    { value: 'Misto', label: 'Misto' }
+    { value: 'Residencial', label: 'Residencial', icon: Building2 },
+    { value: 'Comercial', label: 'Comercial', icon: Building2 },
+    { value: 'Misto', label: 'Misto', icon: Building2 }
   ];
 
   const standardProfiles = [
-    { value: 'alto', label: 'Alto Padrão' },
-    { value: 'medio', label: 'Médio Padrão' },
-    { value: 'normal', label: 'Padrão Normal' }
+    { value: 'alto', label: 'Alto Padrão', color: 'bg-purple-100 text-purple-800' },
+    { value: 'medio', label: 'Médio Padrão', color: 'bg-blue-100 text-blue-800' },
+    { value: 'normal', label: 'Padrão Normal', color: 'bg-gray-100 text-gray-800' }
   ];
 
   const amenitiesList = [
-    { value: 'wifi', label: 'Wi-Fi' },
-    { value: 'estacionamento', label: 'Estacionamento' },
-    { value: 'seguranca', label: 'Segurança 24h' },
-    { value: 'area_lazer', label: 'Área de Lazer' },
-    { value: 'academia', label: 'Academia' },
-    { value: 'piscina', label: 'Piscina' },
-    { value: 'playground', label: 'Playground' },
-    { value: 'salao_festas', label: 'Salão de Festas' }
+    { value: 'wifi', label: 'Wi-Fi', icon: Wifi },
+    { value: 'estacionamento', label: 'Estacionamento', icon: Car },
+    { value: 'seguranca', label: 'Segurança 24h', icon: Shield },
+    { value: 'area_lazer', label: 'Área de Lazer', icon: Gamepad2 },
+    { value: 'academia', label: 'Academia', icon: Dumbbell }
   ];
+
+  const FilterSection = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Icon className="h-5 w-5 text-[#3C1361]" />
+        <Label className="text-base font-semibold text-gray-900">{title}</Label>
+      </div>
+      {children}
+      <Separator className="my-4" />
+    </div>
+  );
 
   return (
     <div className={`space-y-6 ${compact ? 'text-sm' : ''}`}>
       {/* Raio de Busca */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">Raio de busca: {filters.radius/1000}km</Label>
-        <Slider
-          value={[filters.radius]}
-          onValueChange={(value) => onFilterChange({ radius: value[0] })}
-          max={20000}
-          min={1000}
-          step={1000}
-          className="w-full"
-          disabled={loading}
-        />
-      </div>
+      <FilterSection title="Raio de Busca" icon={MapPin}>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Distância máxima</span>
+            <Badge variant="secondary" className="bg-[#3C1361]/10 text-[#3C1361]">
+              {filters.radius/1000}km
+            </Badge>
+          </div>
+          <Slider
+            value={[filters.radius]}
+            onValueChange={(value) => onFilterChange({ radius: value[0] })}
+            max={20000}
+            min={1000}
+            step={1000}
+            className="w-full"
+            disabled={loading}
+          />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>1km</span>
+            <span>20km</span>
+          </div>
+        </div>
+      </FilterSection>
 
       {/* Tipo de Prédio */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">Tipo de Prédio</Label>
-        <div className="space-y-2">
+      <FilterSection title="Tipo de Prédio" icon={Building2}>
+        <div className="space-y-3">
           {venueTypes.map((type) => (
-            <div key={type.value} className="flex items-center space-x-2">
+            <label key={type.value} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
               <Checkbox
                 id={`venue-${type.value}`}
                 checked={filters.venueType.includes(type.value)}
@@ -79,20 +111,20 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
                 }}
                 disabled={loading}
               />
-              <Label htmlFor={`venue-${type.value}`} className="text-sm">
+              <type.icon className="h-4 w-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
                 {type.label}
-              </Label>
-            </div>
+              </span>
+            </label>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
       {/* Padrão do Público */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">Padrão do Público</Label>
-        <div className="space-y-2">
+      <FilterSection title="Padrão do Público" icon={Star}>
+        <div className="space-y-3">
           {standardProfiles.map((profile) => (
-            <div key={profile.value} className="flex items-center space-x-2">
+            <label key={profile.value} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
               <Checkbox
                 id={`profile-${profile.value}`}
                 checked={filters.standardProfile.includes(profile.value)}
@@ -109,54 +141,75 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
                 }}
                 disabled={loading}
               />
-              <Label htmlFor={`profile-${profile.value}`} className="text-sm">
+              <Badge className={`${profile.color} border-0 text-xs`}>
                 {profile.label}
-              </Label>
-            </div>
+              </Badge>
+            </label>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
       {/* Faixa de Preço */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">
-          Faixa de Preço: R$ {filters.priceRange[0]} - R$ {filters.priceRange[1]}
-        </Label>
-        <div className="px-2">
+      <FilterSection title="Faixa de Preço" icon={DollarSign}>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Preço mensal</span>
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              R$ {filters.priceRange[0]} - R$ {filters.priceRange[1]}
+            </Badge>
+          </div>
+          <div className="px-2">
+            <Slider
+              value={filters.priceRange}
+              onValueChange={(value) => onFilterChange({ priceRange: value as [number, number] })}
+              max={1000}
+              min={0}
+              step={50}
+              className="w-full"
+              disabled={loading}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>R$ 0</span>
+            <span>R$ 1.000+</span>
+          </div>
+        </div>
+      </FilterSection>
+
+      {/* Público Mínimo */}
+      <FilterSection title="Público Mínimo" icon={Users}>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Audiência mínima</span>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              {filters.audienceMin.toLocaleString()} pessoas
+            </Badge>
+          </div>
           <Slider
-            value={filters.priceRange}
-            onValueChange={(value) => onFilterChange({ priceRange: value as [number, number] })}
-            max={1000}
+            value={[filters.audienceMin]}
+            onValueChange={(value) => onFilterChange({ audienceMin: value[0] })}
+            max={50000}
             min={0}
-            step={50}
+            step={1000}
             className="w-full"
             disabled={loading}
           />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>0</span>
+            <span>50K+</span>
+          </div>
         </div>
-      </div>
-
-      {/* Público Mínimo */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">
-          Público Mínimo: {filters.audienceMin.toLocaleString()}
-        </Label>
-        <Slider
-          value={[filters.audienceMin]}
-          onValueChange={(value) => onFilterChange({ audienceMin: value[0] })}
-          max={50000}
-          min={0}
-          step={1000}
-          className="w-full"
-          disabled={loading}
-        />
-      </div>
+      </FilterSection>
 
       {/* Comodidades */}
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">Comodidades</Label>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Wifi className="h-5 w-5 text-[#3C1361]" />
+          <Label className="text-base font-semibold text-gray-900">Comodidades</Label>
+        </div>
+        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
           {amenitiesList.map((amenity) => (
-            <div key={amenity.value} className="flex items-center space-x-2">
+            <label key={amenity.value} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
               <Checkbox
                 id={`amenity-${amenity.value}`}
                 checked={filters.amenities.includes(amenity.value)}
@@ -173,10 +226,11 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
                 }}
                 disabled={loading}
               />
-              <Label htmlFor={`amenity-${amenity.value}`} className="text-sm">
+              <amenity.icon className="h-4 w-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
                 {amenity.label}
-              </Label>
-            </div>
+              </span>
+            </label>
           ))}
         </div>
       </div>

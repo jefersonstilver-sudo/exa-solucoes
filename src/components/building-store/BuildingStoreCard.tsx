@@ -14,7 +14,10 @@ import {
   Car,
   Shield,
   Gamepad2,
-  Dumbbell
+  Dumbbell,
+  Phone,
+  Mail,
+  Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BuildingStore, getBuildingImageUrls } from '@/services/buildingStoreService';
@@ -77,127 +80,140 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
       className="w-full"
     >
       <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 bg-white">
-        <div className="relative">
-          {/* Imagem Principal */}
-          <div className="relative h-64 bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/5">
-            {primaryImage ? (
-              <img
-                src={primaryImage}
-                alt={building.nome}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Building2 className="h-16 w-16 text-indexa-purple/30" />
+        <CardContent className="p-0">
+          <div className="flex flex-col lg:flex-row">
+            {/* Imagem Principal - Lado Esquerdo */}
+            <div className="relative lg:w-2/5 h-64 lg:h-80">
+              {primaryImage ? (
+                <img
+                  src={primaryImage}
+                  alt={building.nome}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/5">
+                  <Building2 className="h-16 w-16 text-indexa-purple/30" />
+                </div>
+              )}
+              
+              {/* Badges no topo da imagem */}
+              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                <Badge className={getPadraoColor(building.padrao_publico)}>
+                  {building.padrao_publico.charAt(0).toUpperCase() + building.padrao_publico.slice(1)}
+                </Badge>
+                <Badge className="bg-indigo-500/90 text-white border-0">
+                  {building.venue_type || 'Residencial'}
+                </Badge>
               </div>
-            )}
-            
-            {/* Badge de Padrão */}
-            <div className="absolute top-4 left-4">
-              <Badge className={getPadraoColor(building.padrao_publico)}>
-                {building.padrao_publico.charAt(0).toUpperCase() + building.padrao_publico.slice(1)}
-              </Badge>
+              
+              {/* Contador de fotos */}
+              {totalImages > 0 && (
+                <div className="absolute bottom-4 left-4 flex items-center bg-black/60 text-white px-3 py-2 rounded-lg">
+                  <Camera className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">{totalImages} fotos</span>
+                </div>
+              )}
             </div>
-            
-            {/* Badge de Tipo */}
-            <div className="absolute top-4 right-4">
-              <Badge className="bg-indigo-500/90 text-white border-0">
-                {building.venue_type || 'Residencial'}
-              </Badge>
-            </div>
-            
-            {/* Contador de fotos */}
-            {totalImages > 0 && (
-              <div className="absolute bottom-4 left-4 flex items-center bg-black/60 text-white px-2 py-1 rounded-lg">
-                <Camera className="h-3 w-3 mr-1" />
-                <span className="text-xs">{totalImages}</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        <CardContent className="p-6">
-          {/* Nome e Localização */}
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {building.nome}
-            </h3>
-            <div className="flex items-center text-gray-600 mb-3">
-              <MapPin className="h-4 w-4 mr-1" />
-              <span className="text-sm">{building.bairro}</span>
-            </div>
-          </div>
-
-          {/* Métricas Principais */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <div className="flex items-center mb-1">
-                <Users className="h-4 w-4 text-blue-600 mr-1" />
-                <span className="text-xs text-blue-600 font-medium">Público</span>
+            {/* Informações - Lado Direito */}
+            <div className="lg:w-3/5 p-6 lg:p-8">
+              {/* Header com Nome e Localização */}
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  {building.nome}
+                </h3>
+                <div className="flex items-center text-gray-600 mb-4">
+                  <MapPin className="h-5 w-5 mr-2" />
+                  <span className="text-base">{building.bairro}</span>
+                </div>
+                <p className="text-gray-600 text-sm">
+                  {building.endereco}
+                </p>
               </div>
-              <p className="text-lg font-bold text-blue-900">
-                {formatNumber(building.publico_estimado)}
-              </p>
-            </div>
-            
-            <div className="bg-green-50 p-3 rounded-lg">
-              <div className="flex items-center mb-1">
-                <Eye className="h-4 w-4 text-green-600 mr-1" />
-                <span className="text-xs text-green-600 font-medium">Views/mês</span>
-              </div>
-              <p className="text-lg font-bold text-green-900">
-                {formatNumber(building.visualizacoes_mes)}
-              </p>
-            </div>
-          </div>
 
-          {/* Amenities */}
-          {building.amenities && building.amenities.length > 0 && (
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Comodidades:</p>
-              <div className="flex flex-wrap gap-2">
-                {building.amenities.slice(0, 4).map((amenity, index) => {
-                  const IconComponent = getAmenityIcon(amenity);
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center bg-gray-100 px-2 py-1 rounded-full"
-                    >
-                      <IconComponent className="h-3 w-3 mr-1 text-gray-600" />
-                      <span className="text-xs text-gray-700 capitalize">
-                        {amenity.replace('_', ' ')}
+              {/* Métricas Principais */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-xl">
+                  <div className="flex items-center mb-2">
+                    <Users className="h-5 w-5 text-blue-600 mr-2" />
+                    <span className="text-sm text-blue-600 font-medium">Público</span>
+                  </div>
+                  <p className="text-xl font-bold text-blue-900">
+                    {formatNumber(building.publico_estimado)}
+                  </p>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-xl">
+                  <div className="flex items-center mb-2">
+                    <Eye className="h-5 w-5 text-green-600 mr-2" />
+                    <span className="text-sm text-green-600 font-medium">Views/mês</span>
+                  </div>
+                  <p className="text-xl font-bold text-green-900">
+                    {formatNumber(building.visualizacoes_mes)}
+                  </p>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-xl col-span-2 lg:col-span-1">
+                  <div className="flex items-center mb-2">
+                    <Building2 className="h-5 w-5 text-purple-600 mr-2" />
+                    <span className="text-sm text-purple-600 font-medium">Painéis</span>
+                  </div>
+                  <p className="text-xl font-bold text-purple-900">
+                    {building.quantidade_telas}
+                  </p>
+                </div>
+              </div>
+
+              {/* Amenities */}
+              {building.amenities && building.amenities.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">Comodidades disponíveis:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {building.amenities.slice(0, 6).map((amenity, index) => {
+                      const IconComponent = getAmenityIcon(amenity);
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center bg-gray-100 hover:bg-gray-200 transition-colors px-3 py-2 rounded-full"
+                        >
+                          <IconComponent className="h-4 w-4 mr-2 text-gray-600" />
+                          <span className="text-sm text-gray-700 capitalize">
+                            {amenity.replace('_', ' ')}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {building.amenities.length > 6 && (
+                      <span className="text-sm text-gray-500 px-3 py-2 bg-gray-50 rounded-full">
+                        +{building.amenities.length - 6} mais
                       </span>
-                    </div>
-                  );
-                })}
-                {building.amenities.length > 4 && (
-                  <span className="text-xs text-gray-500 px-2 py-1">
-                    +{building.amenities.length - 4} mais
-                  </span>
-                )}
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Preço e Ação */}
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between pt-6 border-t border-gray-100">
+                <div className="mb-4 lg:mb-0">
+                  <p className="text-sm text-gray-600 mb-1">A partir de</p>
+                  <p className="text-3xl font-bold text-indexa-purple">
+                    R$ {building.preco_base || 280}
+                    <span className="text-lg font-normal text-gray-500">/mês</span>
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
+                  </p>
+                </div>
+                
+                <Button
+                  onClick={() => onViewPanels(building)}
+                  size="lg"
+                  className="bg-indexa-purple hover:bg-indexa-purple-dark text-white px-8 py-3 text-base font-semibold"
+                >
+                  Ver Painéis Disponíveis
+                </Button>
               </div>
             </div>
-          )}
-
-          {/* Preço e Painéis */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div>
-              <p className="text-sm text-gray-600">A partir de</p>
-              <p className="text-2xl font-bold text-indexa-purple">
-                R$ {building.preco_base || 280}
-                <span className="text-sm font-normal text-gray-500">/mês</span>
-              </p>
-              <p className="text-xs text-gray-500">
-                {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
-              </p>
-            </div>
-            
-            <Button
-              onClick={() => onViewPanels(building)}
-              className="bg-indexa-purple hover:bg-indexa-purple-dark text-white px-6 py-2"
-            >
-              Ver Painéis
-            </Button>
           </div>
         </CardContent>
       </Card>
