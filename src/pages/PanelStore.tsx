@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { usePanelStore } from '@/hooks/usePanelStore';
+import { useBuildingStore } from '@/hooks/useBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -11,23 +13,44 @@ import { useDebugCheckout } from '@/hooks/useDebugCheckout';
 import PanelDebugActions from '@/components/panel-store/PanelDebugActions';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
+import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { BuildingStore } from '@/services/buildingStoreService';
 
 export default function PanelStore() {
-  // Use our custom hooks for state management
+  const [searchParams] = useSearchParams();
+  const buildingId = searchParams.get('building_id');
+  
+  // Panel store state (for when viewing specific building panels)
   const {
     panels,
-    isLoading,
-    error,
-    searchLocation,
-    setSearchLocation,
-    selectedLocation,
-    isSearching,
-    filters,
-    handleFilterChange,
-    handleSearch,
-    handleClearLocation
+    isLoading: panelsLoading,
+    error: panelsError,
+    searchLocation: panelSearchLocation,
+    setSearchLocation: setPanelSearchLocation,
+    selectedLocation: panelSelectedLocation,
+    isSearching: panelsSearching,
+    filters: panelFilters,
+    handleFilterChange: handlePanelFilterChange,
+    handleSearch: handlePanelSearch,
+    handleClearLocation: handlePanelClearLocation
   } = usePanelStore();
+
+  // Building store state (for main store view)
+  const {
+    buildings,
+    isLoading: buildingsLoading,
+    error: buildingsError,
+    searchLocation: buildingSearchLocation,
+    setSearchLocation: setBuildingSearchLocation,
+    selectedLocation: buildingSelectedLocation,
+    isSearching: buildingsSearching,
+    filters: buildingFilters,
+    handleFilterChange: handleBuildingFilterChange,
+    handleSearch: handleBuildingSearch,
+    handleClearLocation: handleBuildingClearLocation,
+    fetchBuildings
+  } = useBuildingStore();
 
   const {
     cartItems,
@@ -51,6 +74,15 @@ export default function PanelStore() {
     directGoToCheckout 
   } = useDebugCheckout(cartItems);
 
+  // Load appropriate data based on whether we're viewing a specific building or the main store
+  useEffect(() => {
+    if (!buildingId) {
+      // Load buildings for main store view
+      fetchBuildings();
+    }
+    // Panel loading will be handled by the panel store hook when buildingId is present
+  }, [buildingId, fetchBuildings]);
+
   // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
     if (isLoggedIn || cartItems.length > 0) {
@@ -59,6 +91,21 @@ export default function PanelStore() {
       setShowPromotion(true);
     }
   }, [isLoggedIn, cartItems.length]);
+
+  // Handle viewing panels of a specific building
+  const handleViewPanels = (building: BuildingStore) => {
+    // Update URL with building_id parameter
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('building_id', building.id);
+    window.history.pushState({}, '', newUrl.toString());
+  };
+
+  // Handle going back to building list
+  const handleBackToBuildings = () => {
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('building_id');
+    window.history.pushState({}, '', newUrl.toString());
+  };
 
   // Log quando handleProceedToCheckout é chamado
   const handleCheckoutStart = () => {
@@ -83,13 +130,18 @@ export default function PanelStore() {
     setDebugModalOpen(true);
   };
 
+  // Determine which error to show
+  const error = buildingId ? panelsError : buildingsError;
+
   if (error) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
-          <h2 className="text-2xl font-semibold text-red-500 mb-4">Erro ao carregar painéis</h2>
+          <h2 className="text-2xl font-semibold text-red-500 mb-4">
+            Erro ao carregar {buildingId ? 'painéis' : 'prédios'}
+          </h2>
           <p className="text-muted-foreground mb-6">
-            Ocorreu um problema ao buscar os painéis disponíveis. Por favor, tente novamente.
+            Ocorreu um problema ao buscar os {buildingId ? 'painéis' : 'prédios'} disponíveis. Por favor, tente novamente.
           </p>
           <button 
             onClick={() => window.location.reload()} 
@@ -132,21 +184,39 @@ export default function PanelStore() {
           />
         </AnimatePresence>
         
-        {/* Store Layout - Search, Filter Sidebar, and Panel Cards */}
-        <StoreLayout 
-          panels={panels}
-          isLoading={isLoading}
-          isSearching={isSearching}
-          searchLocation={searchLocation}
-          setSearchLocation={setSearchLocation}
-          selectedLocation={selectedLocation}
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          handleSearch={handleSearch}
-          handleClearLocation={handleClearLocation}
-          cartItems={cartItems}
-          onAddToCart={handleAddToCart}
-        />
+        {/* Conditional rendering based on whether we're viewing a specific building or the main store */}
+        {buildingId ? (
+          // Show panel selection for specific building
+          <StoreLayout 
+            panels={panels}
+            isLoading={panelsLoading}
+            isSearching={panelsSearching}
+            searchLocation={panelSearchLocation}
+            setSearchLocation={setPanelSearchLocation}
+            selectedLocation={panelSelectedLocation}
+            filters={panelFilters}
+            handleFilterChange={handlePanelFilterChange}
+            handleSearch={handlePanelSearch}
+            handleClearLocation={handlePanelClearLocation}
+            cartItems={cartItems}
+            onAddToCart={handleAddToCart}
+          />
+        ) : (
+          // Show building selection (main store view)
+          <BuildingStoreLayout 
+            buildings={buildings}
+            isLoading={buildingsLoading}
+            isSearching={buildingsSearching}
+            searchLocation={buildingSearchLocation}
+            setSearchLocation={setBuildingSearchLocation}
+            selectedLocation={buildingSelectedLocation}
+            filters={buildingFilters}
+            handleFilterChange={handleBuildingFilterChange}
+            handleSearch={handleBuildingSearch}
+            handleClearLocation={handleBuildingClearLocation}
+            onViewPanels={handleViewPanels}
+          />
+        )}
       </motion.div>
       
       {/* Modal de diagnóstico - Fixed with proper accessibility attributes */}
