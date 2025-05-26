@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,11 +36,6 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
 }) => {
   const [isAdded, setIsAdded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-
-  console.log('🏢 [BUILDING STORE CARD] Props recebidas para', building.nome, ':', {
-    hasOnAddToCart: !!onAddToCart,
-    isAdded
-  });
 
   const getImageUrl = (path: string) => {
     if (!path) return null;
@@ -81,7 +77,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   const convertBuildingToPanel = (building: BuildingStore): Panel => {
     return {
       id: `building-${building.id}`,
-      code: `BUILD-${building.id.slice(0, 8).toUpperCase()}`,
+      code: `BUILD-${building.id.slice(0, 8).toUpperCase()}`, // Adicionando o campo 'code' obrigatório
       building_id: building.id,
       nome: `Pacote - ${building.nome}`,
       tipo: 'led',
@@ -96,47 +92,30 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
         nome: building.nome,
         endereco: building.endereco,
         bairro: building.bairro,
-        cep: '',
-        cidade: '',
-        estado: '',
+        cep: '', // Campo não existe em BuildingStore, usando valor padrão
+        cidade: '', // Campo não existe em BuildingStore, usando valor padrão  
+        estado: '', // Campo não existe em BuildingStore, usando valor padrão
         latitude: building.latitude || 0,
         longitude: building.longitude || 0,
         publico_estimado: building.publico_estimado,
         padrao_publico: building.padrao_publico,
         venue_type: building.venue_type,
-        ativo: building.status === 'ativo',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        ativo: building.status === 'ativo', // Convertendo status para ativo boolean
+        created_at: new Date().toISOString(), // Campo não existe, usando valor padrão
+        updated_at: new Date().toISOString() // Campo não existe, usando valor padrão
       }
     } as Panel;
   };
 
   const handleAddToCart = () => {
-    console.log('🛒 [BUILDING STORE CARD] handleAddToCart chamado para:', building.nome, {
-      isAdded,
-      hasOnAddToCart: !!onAddToCart
-    });
-
-    if (isAdded) {
-      console.log('⚠️ [BUILDING STORE CARD] Item já foi adicionado, ignorando');
-      return;
-    }
-    
-    if (!onAddToCart) {
-      console.error('❌ [BUILDING STORE CARD] onAddToCart não foi fornecido!');
-      return;
-    }
+    if (isAdded) return;
     
     setIsAnimating(true);
     setIsAdded(true);
     
     // Converter o prédio em um painel e adicionar ao carrinho
     const panelFromBuilding = convertBuildingToPanel(building);
-    console.log('🔄 [BUILDING STORE CARD] Convertido building para panel:', panelFromBuilding);
-    
     onAddToCart(panelFromBuilding, 30); // 30 dias por padrão
-    
-    console.log('✅ [BUILDING STORE CARD] onAddToCart executado com sucesso');
     
     // Animação de feedback
     setTimeout(() => {

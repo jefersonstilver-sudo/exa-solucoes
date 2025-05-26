@@ -29,13 +29,6 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
 }) => {
   const [sortOption, setSortOption] = useState('distance');
 
-  console.log('🏢 [BUILDING STORE GRID] Props recebidas:', {
-    buildingsCount: buildings?.length,
-    hasOnAddToCart: !!onAddToCart,
-    isLoading,
-    isSearching
-  });
-
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -160,23 +153,19 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
           animate="show"
           className="space-y-8"
         >
-          {sortedBuildings.map((building, index) => {
-            console.log('🏗️ [BUILDING STORE GRID] Renderizando prédio:', building.nome, 'com onAddToCart:', !!onAddToCart);
-            
-            return (
-              <motion.div
-                key={building.id}
-                variants={itemVariants}
-                className="w-full"
-              >
-                <BuildingStoreCard
-                  building={building}
-                  onViewPanels={onViewPanels}
-                  onAddToCart={onAddToCart}
-                />
-              </motion.div>
-            );
-          })}
+          {sortedBuildings.map((building, index) => (
+            <motion.div
+              key={building.id}
+              variants={itemVariants}
+              className="w-full"
+            >
+              <BuildingStoreCard
+                building={building}
+                onViewPanels={onViewPanels}
+                onAddToCart={onAddToCart}
+              />
+            </motion.div>
+          ))}
         </motion.div>
       )}
     </div>
