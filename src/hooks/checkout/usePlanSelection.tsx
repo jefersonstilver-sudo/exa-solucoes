@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useCheckout } from '@/hooks/useCheckout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { supabase } from '@/integrations/supabase/client';
 import { PlanKey } from '@/types/checkout';
 
 export const usePlanSelection = (hasCart: boolean) => {
@@ -55,188 +54,36 @@ export const usePlanSelection = (hasCart: boolean) => {
     return totalPanels * pricePerPanelPerMonth * months;
   };
 
-  // Função de correção - navega para cupom
-  const handleCorrection = async () => {
-    console.log("PlanSelection: Correção - navegando para cupom");
+  // Função simplificada para ir direto para cupom
+  const handleGoToCoupon = () => {
+    console.log("PlanSelection: Ir para cupom - plano selecionado:", selectedPlan);
     
-    try {
-      // Verificar sessão atual explicitamente
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !sessionData.session) {
-        logCheckoutEvent(
-          CheckoutEvent.AUTH_EVENT, 
-          LogLevel.WARNING, 
-          "Tentativa de correção sem sessão válida", 
-          { timestamp: Date.now() }
-        );
-        
-        toast({
-          title: "Login necessário",
-          description: "Faça login para continuar.",
-          variant: "destructive"
-        });
-        
-        navigate('/login?redirect=/selecionar-plano');
-        return;
-      }
-
-      if (!hasCart) {
-        toast({
-          title: "Carrinho vazio",
-          description: "Adicione itens ao carrinho primeiro.",
-          variant: "destructive"
-        });
-        navigate('/paineis-digitais/loja');
-        return;
-      }
-
-      // Salvar plano se selecionado
-      if (selectedPlan) {
-        localStorage.setItem('selectedPlan', String(selectedPlan));
-      }
-
-      logCheckoutEvent(
-        CheckoutEvent.NAVIGATION_EVENT, 
-        LogLevel.INFO, 
-        "Correção: Navegando para cupom", 
-        { timestamp: Date.now() }
-      );
-      
-      navigate('/checkout/cupom');
-    } catch (error) {
-      console.error("Erro na correção:", error);
+    if (!selectedPlan) {
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro. Tente novamente.",
+        title: "Selecione um plano",
+        description: "Escolha um plano antes de prosseguir.",
         variant: "destructive"
       });
-    }
-  };
-
-  // Função para pular etapas - navega diretamente para resumo
-  const handleSkipStages = async () => {
-    console.log("PlanSelection: Pulando etapas - navegando para resumo");
-    
-    try {
-      // Verificar sessão atual explicitamente
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !sessionData.session) {
-        logCheckoutEvent(
-          CheckoutEvent.AUTH_EVENT, 
-          LogLevel.WARNING, 
-          "Tentativa de pular etapas sem sessão válida", 
-          { timestamp: Date.now() }
-        );
-        
-        toast({
-          title: "Login necessário",
-          description: "Faça login para continuar.",
-          variant: "destructive"
-        });
-        
-        navigate('/login?redirect=/selecionar-plano');
-        return;
-      }
-
-      if (!selectedPlan) {
-        toast({
-          title: "Selecione um plano",
-          description: "Escolha um plano antes de prosseguir.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!hasCart) {
-        toast({
-          title: "Carrinho vazio",
-          description: "Adicione itens ao carrinho primeiro.",
-          variant: "destructive"
-        });
-        navigate('/paineis-digitais/loja');
-        return;
-      }
-
-      // Salvar plano selecionado
-      localStorage.setItem('selectedPlan', String(selectedPlan));
-
-      logCheckoutEvent(
-        CheckoutEvent.NAVIGATION_EVENT, 
-        LogLevel.INFO, 
-        "Pulando etapas: Navegando para resumo", 
-        { timestamp: Date.now() }
-      );
-      
-      navigate('/checkout/resumo');
-    } catch (error) {
-      console.error("Erro ao pular etapas:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro. Tente novamente.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // FIXED: Navigate to coupon step with improved authentication handling
-  const handleProceed = async () => {
-    console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
-    
-    // Verificação de autenticação robusta antes de prosseguir
-    try {
-      // Verificar sessão atual explicitamente
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        throw new Error(`Erro ao verificar sessão: ${sessionError.message}`);
-      }
-      
-      if (!sessionData.session) {
-        logCheckoutEvent(
-          CheckoutEvent.AUTH_EVENT, 
-          LogLevel.WARNING, 
-          "Tentativa de prosseguir sem sessão válida", 
-          { timestamp: Date.now() }
-        );
-        
-        toast({
-          title: "Login necessário",
-          description: "Faça login para continuar com sua compra.",
-          variant: "destructive"
-        });
-        
-        navigate('/login?redirect=/selecionar-plano');
-        return;
-      }
-      
-      // Temos sessão confirmada, continua o processo
-      logCheckoutEvent(
-        CheckoutEvent.AUTH_EVENT, 
-        LogLevel.SUCCESS, 
-        "Sessão validada antes de prosseguir com plano", 
-        { userId: sessionData.session.user.id, timestamp: Date.now() }
-      );
-    } catch (error) {
-      console.error("Erro ao verificar autenticação:", error);
-      
-      logCheckoutEvent(
-        CheckoutEvent.AUTH_EVENT, 
-        LogLevel.ERROR, 
-        `Erro ao verificar autenticação: ${String(error)}`, 
-        { timestamp: Date.now() }
-      );
-      
-      toast({
-        title: "Erro de autenticação",
-        description: "Ocorreu um problema ao verificar sua sessão. Tente fazer login novamente.",
-        variant: "destructive"
-      });
-      
-      navigate('/login?redirect=/selecionar-plano');
       return;
     }
+
+    // Salvar plano selecionado
+    localStorage.setItem('selectedPlan', String(selectedPlan));
+    console.log("PlanSelection: Plano salvo no localStorage:", selectedPlan);
+
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT, 
+      LogLevel.INFO, 
+      "Navegando para cupom", 
+      { selectedPlan, timestamp: Date.now() }
+    );
+    
+    navigate('/checkout/cupom');
+  };
+
+  // Função simplificada para prosseguir (também vai para cupom)
+  const handleProceed = () => {
+    console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
     
     if (!selectedPlan) {
       toast({
@@ -247,59 +94,15 @@ export const usePlanSelection = (hasCart: boolean) => {
       return;
     }
     
-    if (!hasCart) {
-      logCheckoutEvent(
-        CheckoutEvent.CHECKOUT_ERROR, 
-        LogLevel.ERROR, 
-        "Tentativa de prosseguir sem carrinho válido", 
-        { timestamp: Date.now() }
-      );
-      
-      toast({
-        title: "Carrinho inválido",
-        description: "Seu carrinho parece estar vazio. Volte à loja para adicionar itens.",
-        variant: "destructive"
-      });
-      
-      navigate('/paineis-digitais/loja');
-      return;
-    }
+    // Salvar plano selecionado
+    localStorage.setItem('selectedPlan', String(selectedPlan));
+    console.log("PlanSelection: Plano salvo no localStorage:", selectedPlan);
     
-    // Save selected plan in localStorage
-    try {
-      localStorage.setItem('selectedPlan', String(selectedPlan));
-      console.log("PlanSelection: Plano salvo no localStorage:", selectedPlan);
-      
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT, 
-        LogLevel.SUCCESS, 
-        "Plano salvo com sucesso no localStorage", 
-        { selectedPlan, timestamp: Date.now() }
-      );
-    } catch (e) {
-      console.error("Erro ao salvar plano:", e);
-      
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT, 
-        LogLevel.ERROR, 
-        "Erro ao salvar plano no localStorage", 
-        { error: String(e), selectedPlan, timestamp: Date.now() }
-      );
-      
-      toast({
-        title: "Erro ao salvar plano",
-        description: "Ocorreu um erro ao salvar sua seleção. Tente novamente.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // FIXED: Navigate to coupon step instead of checkout
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT, 
       LogLevel.INFO, 
       "Navegando para etapa de cupom após seleção de plano", 
-      { timestamp: Date.now() }
+      { selectedPlan, timestamp: Date.now() }
     );
     
     navigate('/checkout/cupom');
@@ -312,7 +115,6 @@ export const usePlanSelection = (hasCart: boolean) => {
     PLANS,
     calculateEstimatedPrice,
     handleProceed,
-    handleCorrection,
-    handleSkipStages
+    handleGoToCoupon
   };
 };

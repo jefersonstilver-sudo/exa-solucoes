@@ -6,7 +6,7 @@ import PlanCard from './PlanCard';
 import PlanHeader from './PlanHeader';
 import PlanProceedButton from './PlanProceedButton';
 import { Button } from '@/components/ui/button';
-import { Settings, Zap } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 interface PlanSelectorProps {
   selectedPlan: PlanKey;
@@ -14,8 +14,7 @@ interface PlanSelectorProps {
   plans: Record<number, Plan>;
   panelCount: number;
   onProceed?: () => void;
-  onCorrection?: () => void;
-  onSkipStages?: () => void;
+  onGoToCoupon?: () => void;
   totalPrice?: number;
 }
 
@@ -25,8 +24,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   plans,
   panelCount,
   onProceed,
-  onCorrection,
-  onSkipStages,
+  onGoToCoupon,
   totalPrice
 }) => {
   const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
@@ -98,32 +96,18 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         })}
       </motion.div>
       
-      {/* Novos botões de navegação */}
+      {/* Botões de navegação simplificados */}
       <div className="space-y-3">
-        {/* Botão Correção */}
-        {onCorrection && (
+        {/* Botão Ir para Cupom */}
+        {onGoToCoupon && (
           <Button
-            onClick={onCorrection}
+            onClick={onGoToCoupon}
             disabled={!selectedPlan}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 text-sm font-medium transition-colors disabled:opacity-50"
           >
             <span className="flex items-center justify-center">
-              Correção - Ir para Cupom
+              Ir para Cupom
               <Settings className="h-4 w-4 ml-2" />
-            </span>
-          </Button>
-        )}
-
-        {/* Botão Pular Etapas */}
-        {onSkipStages && (
-          <Button
-            onClick={onSkipStages}
-            disabled={!selectedPlan}
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-3 text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            <span className="flex items-center justify-center">
-              Pular Etapas - Ir para Resumo
-              <Zap className="h-4 w-4 ml-2" />
             </span>
           </Button>
         )}

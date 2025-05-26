@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import PlanLoginNotification from '@/components/checkout/PlanLoginNotification';
@@ -27,8 +28,7 @@ const PlanSelection = () => {
     cartItems, 
     calculateEstimatedPrice, 
     handleProceed,
-    handleCorrection,
-    handleSkipStages
+    handleGoToCoupon
   } = usePlanSelection(hasCart);
   
   // Log de informação quando o componente é montado (apenas uma vez)
@@ -82,8 +82,7 @@ const PlanSelection = () => {
         plans={PLANS}
         panelCount={cartItems.length}
         onProceed={handleProceed}
-        onCorrection={handleCorrection}
-        onSkipStages={handleSkipStages}
+        onGoToCoupon={handleGoToCoupon}
         totalPrice={calculateEstimatedPrice()}
       />
     </Layout>
