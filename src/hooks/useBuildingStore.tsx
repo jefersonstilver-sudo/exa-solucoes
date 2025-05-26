@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { BuildingStore, fetchBuildingsForStore } from '@/services/buildingStoreService';
 import { getLocationCoordinates } from '@/services/geocoding';
+import { filterBuildings } from '@/services/buildingFilterService';
 
 export interface BuildingFilters {
   radius: number;
@@ -14,7 +15,8 @@ export interface BuildingFilters {
 }
 
 interface BuildingStoreState {
-  buildings: BuildingStore[];
+  allBuildings: BuildingStore[]; // Todos os prédios sem filtro
+  buildings: BuildingStore[]; // Prédios filtrados
   loading: boolean;
   isLoading: boolean; // Alias para compatibilidade
   error: string | null;
@@ -27,6 +29,7 @@ interface BuildingStoreState {
   fetchBuildings: (lat?: number, lng?: number) => Promise<void>;
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
+  applyFilters: () => void;
 }
 
 const defaultFilters: BuildingFilters = {
@@ -40,6 +43,7 @@ const defaultFilters: BuildingFilters = {
 };
 
 export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
+  allBuildings: [],
   buildings: [],
   loading: false,
   isLoading: false,
@@ -57,6 +61,14 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
     set(state => ({
       filters: { ...state.filters, ...newFilters }
     }));
+    // Aplicar filtros imediatamente após mudança
+    setTimeout(() => get().applyFilters(), 0);
+  },
+  
+  applyFilters: () => {
+    const { allBuildings, filters } = get();
+    const filteredBuildings = filterBuildings(allBuildings, filters);
+    set({ buildings: filteredBuildings });
   },
   
   fetchBuildings: async (lat?: number, lng?: number) => {
@@ -66,10 +78,13 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       const buildings = await fetchBuildingsForStore(lat, lng, get().filters.radius);
       
       set({ 
-        buildings: buildings as BuildingStore[], 
+        allBuildings: buildings as BuildingStore[],
         loading: false, 
         isLoading: false 
       });
+      
+      // Aplicar filtros aos novos dados
+      get().applyFilters();
       
     } catch (error: any) {
       console.error('Error fetching buildings:', error);
@@ -114,6 +129,7 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
     set({ 
       selectedLocation: null,
       searchLocation: '',
+      allBuildings: [],
       buildings: []
     });
   }

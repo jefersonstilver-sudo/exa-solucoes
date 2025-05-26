@@ -1,6 +1,8 @@
 
 /**
- * Format a number as Brazilian currency (BRL)
+ * Formats a number as currency in BRL
+ * @param value Amount to format
+ * @returns Formatted currency string
  */
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
@@ -10,46 +12,58 @@ export const formatCurrency = (value: number): string => {
 };
 
 /**
- * Format a date as Brazilian date format (DD/MM/YYYY)
+ * Formats a large number into a readable format (K, M)
+ * @param num Number to format
+ * @returns Formatted string
  */
-export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('pt-BR').format(date);
-};
-
-/**
- * Format a date to ISO string date only (YYYY-MM-DD)
- */
-export const formatDateISO = (date: Date): string => {
-  return date.toISOString().split('T')[0];
-};
-
-/**
- * Format a number with comma as decimal separator and thousands groups
- */
-export const formatNumber = (value: number, decimals: number = 2): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  }).format(value);
-};
-
-/**
- * Format a percentage value
- */
-export const formatPercent = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'percent',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value / 100);
-};
-
-/**
- * Format a location from Panel data
- */
-export const formatLocation = (panel: any): string => {
-  if (panel.buildings) {
-    return `${panel.buildings.bairro || ''}, ${panel.city || panel.buildings.city || ''}`;
+export const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
   }
-  return 'Local não especificado';
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(0)}K`;
+  }
+  return num.toString();
+};
+
+/**
+ * Formats building address for display
+ * @param endereco Full address
+ * @param bairro Neighborhood
+ * @returns Formatted address
+ */
+export const formatBuildingAddress = (endereco: string, bairro: string): string => {
+  // Se o endereço já inclui o bairro, retornar apenas o endereço
+  if (endereco.toLowerCase().includes(bairro.toLowerCase())) {
+    return endereco;
+  }
+  
+  // Caso contrário, combinar endereço + bairro
+  return `${endereco}, ${bairro}`;
+};
+
+/**
+ * Formats distance in meters to readable format
+ * @param distanceInMeters Distance in meters
+ * @returns Formatted distance string
+ */
+export const formatDistance = (distanceInMeters: number): string => {
+  if (distanceInMeters >= 1000) {
+    return `${(distanceInMeters / 1000).toFixed(1)} km`;
+  }
+  return `${Math.round(distanceInMeters)} m`;
+};
+
+/**
+ * Gets appropriate color class for building standard
+ * @param padrao Building standard
+ * @returns Tailwind color classes
+ */
+export const getBuildingStandardColor = (padrao: string): string => {
+  const colors = {
+    alto: 'bg-purple-100 text-purple-800 border-purple-300',
+    medio: 'bg-blue-100 text-blue-800 border-blue-300',
+    normal: 'bg-gray-100 text-gray-800 border-gray-300'
+  };
+  return colors[padrao as keyof typeof colors] || colors.normal;
 };

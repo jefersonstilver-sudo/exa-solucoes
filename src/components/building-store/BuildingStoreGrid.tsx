@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import BuildingStoreCard from './BuildingStoreCard';
 import LoadingPanels from '@/components/panels/LoadingPanels';
 import EmptyResults from '@/components/panels/EmptyResults';
+import { sortBuildings } from '@/services/buildingFilterService';
 
 interface BuildingStoreGridProps {
   buildings: BuildingStore[] | undefined;
@@ -35,6 +36,12 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
     }
   };
 
+  // Sortear prédios usando o serviço
+  const sortedBuildings = useMemo(() => {
+    if (!buildings) return [];
+    return sortBuildings(buildings, sortOption, selectedLocation);
+  }, [buildings, sortOption, selectedLocation]);
+
   if (isLoading || isSearching) {
     return <LoadingPanels vertical={true} count={6} />;
   }
@@ -42,22 +49,6 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   if (!buildings || buildings.length === 0) {
     return <EmptyResults />;
   }
-  
-  // Sort buildings based on selected option
-  const sortedBuildings = [...buildings].sort((a, b) => {
-    if (sortOption === 'distance' && 'distance' in a && 'distance' in b) {
-      return (a as any).distance - (b as any).distance;
-    } else if (sortOption === 'price-asc') {
-      return (a.preco_base || 280) - (b.preco_base || 280);
-    } else if (sortOption === 'price-desc') {
-      return (b.preco_base || 280) - (a.preco_base || 280);
-    } else if (sortOption === 'audience-desc') {
-      return (b.publico_estimado || 0) - (a.publico_estimado || 0);
-    } else if (sortOption === 'views-desc') {
-      return (b.visualizacoes_mes || 0) - (a.visualizacoes_mes || 0);
-    }
-    return 0;
-  });
 
   return (
     <div className="space-y-6 mb-10">
@@ -81,11 +72,12 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="distance">Mais próximos</SelectItem>
+            {selectedLocation && <SelectItem value="distance">Mais próximos</SelectItem>}
             <SelectItem value="price-asc">Preço: menor para maior</SelectItem>
             <SelectItem value="price-desc">Preço: maior para menor</SelectItem>
             <SelectItem value="audience-desc">Maior público</SelectItem>
             <SelectItem value="views-desc">Mais visualizações</SelectItem>
+            <SelectItem value="panels-desc">Mais painéis</SelectItem>
           </SelectContent>
         </Select>
       </div>

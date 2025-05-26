@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
-import SearchSection from '@/components/panels/SearchSection';
+import BuildingSearchSection from './BuildingSearchSection';
 import BuildingFilterSidebar from './BuildingFilterSidebar';
 import BuildingStoreGrid from './BuildingStoreGrid';
 
@@ -37,32 +37,16 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   return (
     <>
       {/* Search section */}
-      <SearchSection 
+      <BuildingSearchSection 
         searchLocation={searchLocation}
         setSearchLocation={setSearchLocation}
         selectedLocation={selectedLocation}
         isSearching={isSearching}
         handleSearch={handleSearch}
         handleClearLocation={handleClearLocation}
-        filters={{
-          radius: filters.radius,
-          neighborhood: filters.neighborhood,
-          status: [],
-          buildingProfile: filters.standardProfile,
-          facilities: filters.amenities,
-          minMonthlyViews: 0,
-          buildingAge: 'all',
-          buildingType: 'all'
-        }}
-        handleFilterChange={(newFilters) => {
-          handleFilterChange({
-            radius: newFilters.radius || filters.radius,
-            neighborhood: newFilters.neighborhood || filters.neighborhood,
-            standardProfile: newFilters.buildingProfile || filters.standardProfile,
-            amenities: newFilters.facilities || filters.amenities
-          });
-        }}
-        panelsCount={buildings?.length || 0}
+        filters={filters}
+        handleFilterChange={handleFilterChange}
+        buildingsCount={buildings?.length || 0}
       />
       
       {/* Layout with sidebar and building grid */}
