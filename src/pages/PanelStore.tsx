@@ -111,7 +111,7 @@ export default function PanelStore() {
   const handleAddToCartWithLogging = (panel: any, duration?: number) => {
     console.log('🛒 [PANEL STORE] Adicionando ao carrinho:', { 
       panelId: panel.id, 
-      panelName: panel.buildings?.nome || panel.nome,
+      panelName: panel.buildings?.nome || panel.code, // Fixed: use panel.code instead of panel.nome
       duration: duration || 30,
       cartItemsBefore: cartItems.length 
     });
@@ -124,7 +124,7 @@ export default function PanelStore() {
         cartItemsAfter: cartItems.length,
         cartItems: cartItems.map(item => ({
           id: item.panel.id,
-          name: item.panel.buildings?.nome || item.panel.nome
+          name: item.panel.buildings?.nome || item.panel.code // Fixed: use panel.code instead of panel.nome
         }))
       });
     }, 100);

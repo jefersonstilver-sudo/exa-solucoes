@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -98,7 +99,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
         audience_profile: building.amenities || [],
         tags: building.amenities || [],
         towers: 1,
-        apartments: building.numero_unidades || 0,
+        apartments: building.quantidade_telas || 0, // Using quantidade_telas instead of numero_unidades
         status: building.status
       }
     } as Panel;
