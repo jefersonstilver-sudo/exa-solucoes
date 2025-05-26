@@ -21,18 +21,19 @@ import {
 import { motion } from 'framer-motion';
 import { BuildingStore, getBuildingImageUrls } from '@/services/buildingStoreService';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Panel } from '@/types/panel';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
   onViewPanels: (building: BuildingStore) => void;
+  onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
   building, 
-  onViewPanels 
+  onViewPanels,
+  onAddToCart
 }) => {
-  const { toast } = useToast();
   const [isAdded, setIsAdded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -72,27 +73,51 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
     return num.toString();
   };
 
+  // Converter building em um painel válido para adicionar ao carrinho
+  const convertBuildingToPanel = (building: BuildingStore): Panel => {
+    return {
+      id: `building-${building.id}`,
+      building_id: building.id,
+      nome: `Pacote - ${building.nome}`,
+      tipo: 'led',
+      tamanho: '55"',
+      localizacao: building.endereco,
+      preco_base: building.preco_base || 280,
+      status: 'disponivel',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      buildings: {
+        id: building.id,
+        nome: building.nome,
+        endereco: building.endereco,
+        bairro: building.bairro,
+        cep: building.cep,
+        cidade: building.cidade,
+        estado: building.estado,
+        publico_estimado: building.publico_estimado,
+        padrao_publico: building.padrao_publico,
+        venue_type: building.venue_type,
+        ativo: building.ativo,
+        created_at: building.created_at,
+        updated_at: building.updated_at
+      }
+    } as Panel;
+  };
+
   const handleAddToCart = () => {
     if (isAdded) return;
     
     setIsAnimating(true);
     setIsAdded(true);
     
+    // Converter o prédio em um painel e adicionar ao carrinho
+    const panelFromBuilding = convertBuildingToPanel(building);
+    onAddToCart(panelFromBuilding, 30); // 30 dias por padrão
+    
     // Animação de feedback
     setTimeout(() => {
       setIsAnimating(false);
     }, 600);
-
-    // Toast de confirmação
-    toast({
-      title: "✅ Prédio adicionado",
-      description: `${building.nome} foi adicionado ao carrinho`,
-      action: (
-        <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-          <Check className="h-3 w-3 text-green-600" />
-        </div>
-      )
-    });
   };
 
   const primaryImage = getImageUrl(building.imagem_principal);

@@ -3,6 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
+import { Panel } from '@/types/panel';
 import BuildingSearchSection from './BuildingSearchSection';
 import BuildingFilterSidebar from './BuildingFilterSidebar';
 import BuildingStoreGrid from './BuildingStoreGrid';
@@ -19,6 +20,7 @@ interface BuildingStoreLayoutProps {
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
   onViewPanels: (building: BuildingStore) => void;
+  onAddToCart?: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
@@ -32,7 +34,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   handleFilterChange,
   handleSearch,
   handleClearLocation,
-  onViewPanels
+  onViewPanels,
+  onAddToCart
 }) => {
   return (
     <>
@@ -69,6 +72,7 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
             isSearching={isSearching}
             onViewPanels={onViewPanels}
             selectedLocation={selectedLocation}
+            onAddToCart={onAddToCart || (() => {})}
           />
         </div>
       </div>

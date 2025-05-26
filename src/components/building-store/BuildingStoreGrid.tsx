@@ -8,6 +8,7 @@ import BuildingStoreCard from './BuildingStoreCard';
 import LoadingPanels from '@/components/panels/LoadingPanels';
 import EmptyResults from '@/components/panels/EmptyResults';
 import { sortBuildings } from '@/services/buildingFilterService';
+import { Panel } from '@/types/panel';
 
 interface BuildingStoreGridProps {
   buildings: BuildingStore[] | undefined;
@@ -15,6 +16,7 @@ interface BuildingStoreGridProps {
   isSearching: boolean;
   onViewPanels: (building: BuildingStore) => void;
   selectedLocation: {lat: number, lng: number} | null;
+  onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({ 
@@ -22,7 +24,8 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   isLoading, 
   isSearching,
   onViewPanels,
-  selectedLocation
+  selectedLocation,
+  onAddToCart
 }) => {
   const [sortOption, setSortOption] = useState('distance');
 
@@ -159,6 +162,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
               <BuildingStoreCard
                 building={building}
                 onViewPanels={onViewPanels}
+                onAddToCart={onAddToCart}
               />
             </motion.div>
           ))}
