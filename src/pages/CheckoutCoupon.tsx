@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import CheckoutProgress from '@/components/checkout/CheckoutProgress';
@@ -9,15 +9,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const CheckoutCoupon = () => {
-  // Log detalhado quando a página carrega
-  useEffect(() => {
-    console.log("🎯 CHECKOUT CUPOM: ===================================");
-    console.log("🎯 CHECKOUT CUPOM: Página CheckoutCoupon montada com sucesso");
-    console.log("🎯 CHECKOUT CUPOM: URL atual:", window.location.href);
-    console.log("🎯 CHECKOUT CUPOM: Pathname:", window.location.pathname);
-    console.log("🎯 CHECKOUT CUPOM: ===================================");
-  }, []);
-
   const {
     couponCode,
     setCouponCode,
@@ -32,12 +23,6 @@ const CheckoutCoupon = () => {
   } = useCheckout();
 
   const totalPrice = calculateTotalPrice();
-
-  console.log("🎯 CHECKOUT CUPOM: Renderizando página com dados:", {
-    couponCode,
-    couponValid,
-    totalPrice
-  });
 
   return (
     <Layout>
@@ -59,16 +44,6 @@ const CheckoutCoupon = () => {
             transition={{ delay: 0.2 }}
             className="bg-white rounded-xl shadow-sm border p-6 sm:p-8"
           >
-            {/* Header de confirmação */}
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-green-600 mb-2">
-                ✅ Navegação Funcionando!
-              </h1>
-              <p className="text-gray-600">
-                Você está na página de cupom de desconto
-              </p>
-            </div>
-
             <CouponStep
               couponCode={couponCode}
               setCouponCode={setCouponCode}
