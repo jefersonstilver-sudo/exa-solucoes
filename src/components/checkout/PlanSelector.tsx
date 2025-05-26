@@ -29,6 +29,40 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
 }) => {
   const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
   
+  // Handler específico para o botão de cupom com logs detalhados
+  const handleCouponClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("🎯 BUTTON CLICK: Botão 'Ir para Cupom' foi clicado");
+    console.log("🎯 BUTTON CLICK: onGoToCoupon existe?", !!onGoToCoupon);
+    console.log("🎯 BUTTON CLICK: selectedPlan:", selectedPlan);
+    
+    if (onGoToCoupon) {
+      console.log("🎯 BUTTON CLICK: Chamando onGoToCoupon...");
+      onGoToCoupon();
+    } else {
+      console.error("🎯 BUTTON CLICK: ❌ onGoToCoupon não está definido!");
+    }
+  };
+
+  // Handler específico para o botão de prosseguir
+  const handleProceedClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("🎯 BUTTON CLICK: Botão 'Prosseguir' foi clicado");
+    console.log("🎯 BUTTON CLICK: onProceed existe?", !!onProceed);
+    console.log("🎯 BUTTON CLICK: selectedPlan:", selectedPlan);
+    
+    if (onProceed) {
+      console.log("🎯 BUTTON CLICK: Chamando onProceed...");
+      onProceed();
+    } else {
+      console.error("🎯 BUTTON CLICK: ❌ onProceed não está definido!");
+    }
+  };
+  
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -53,7 +87,6 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
     return colorMap[color] || colorMap.gray;
   };
   
-  // Get background color class for selected plan
   const getSelectedBgClass = (planKey: PlanKey) => {
     const colorMap = {
       'gray': 'bg-gray-50',
@@ -96,12 +129,12 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         })}
       </motion.div>
       
-      {/* Botões de navegação simplificados */}
+      {/* Botões de navegação com handlers específicos */}
       <div className="space-y-3">
         {/* Botão Ir para Cupom */}
         {onGoToCoupon && (
           <Button
-            onClick={onGoToCoupon}
+            onClick={handleCouponClick}
             disabled={!selectedPlan}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 text-sm font-medium transition-colors disabled:opacity-50"
           >
@@ -115,7 +148,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         {/* Botão Prosseguir Original */}
         {onProceed && (
           <PlanProceedButton 
-            onProceed={onProceed}
+            onProceed={handleProceedClick}
             disabled={!selectedPlan}
             selectedPlan={selectedPlan}
             planData={selectedPlan ? plans[selectedPlan] : null}
