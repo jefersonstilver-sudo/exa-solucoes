@@ -55,6 +55,131 @@ export const usePlanSelection = (hasCart: boolean) => {
     return totalPanels * pricePerPanelPerMonth * months;
   };
 
+  // Função de correção - navega para cupom
+  const handleCorrection = async () => {
+    console.log("PlanSelection: Correção - navegando para cupom");
+    
+    try {
+      // Verificar sessão atual explicitamente
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT, 
+          LogLevel.WARNING, 
+          "Tentativa de correção sem sessão válida", 
+          { timestamp: Date.now() }
+        );
+        
+        toast({
+          title: "Login necessário",
+          description: "Faça login para continuar.",
+          variant: "destructive"
+        });
+        
+        navigate('/login?redirect=/selecionar-plano');
+        return;
+      }
+
+      if (!hasCart) {
+        toast({
+          title: "Carrinho vazio",
+          description: "Adicione itens ao carrinho primeiro.",
+          variant: "destructive"
+        });
+        navigate('/paineis-digitais/loja');
+        return;
+      }
+
+      // Salvar plano se selecionado
+      if (selectedPlan) {
+        localStorage.setItem('selectedPlan', String(selectedPlan));
+      }
+
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT, 
+        LogLevel.INFO, 
+        "Correção: Navegando para cupom", 
+        { timestamp: Date.now() }
+      );
+      
+      navigate('/checkout/cupom');
+    } catch (error) {
+      console.error("Erro na correção:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Função para pular etapas - navega diretamente para resumo
+  const handleSkipStages = async () => {
+    console.log("PlanSelection: Pulando etapas - navegando para resumo");
+    
+    try {
+      // Verificar sessão atual explicitamente
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        logCheckoutEvent(
+          CheckoutEvent.AUTH_EVENT, 
+          LogLevel.WARNING, 
+          "Tentativa de pular etapas sem sessão válida", 
+          { timestamp: Date.now() }
+        );
+        
+        toast({
+          title: "Login necessário",
+          description: "Faça login para continuar.",
+          variant: "destructive"
+        });
+        
+        navigate('/login?redirect=/selecionar-plano');
+        return;
+      }
+
+      if (!selectedPlan) {
+        toast({
+          title: "Selecione um plano",
+          description: "Escolha um plano antes de prosseguir.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!hasCart) {
+        toast({
+          title: "Carrinho vazio",
+          description: "Adicione itens ao carrinho primeiro.",
+          variant: "destructive"
+        });
+        navigate('/paineis-digitais/loja');
+        return;
+      }
+
+      // Salvar plano selecionado
+      localStorage.setItem('selectedPlan', String(selectedPlan));
+
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT, 
+        LogLevel.INFO, 
+        "Pulando etapas: Navegando para resumo", 
+        { timestamp: Date.now() }
+      );
+      
+      navigate('/checkout/resumo');
+    } catch (error) {
+      console.error("Erro ao pular etapas:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // FIXED: Navigate to coupon step with improved authentication handling
   const handleProceed = async () => {
     console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
@@ -186,6 +311,8 @@ export const usePlanSelection = (hasCart: boolean) => {
     cartItems,
     PLANS,
     calculateEstimatedPrice,
-    handleProceed
+    handleProceed,
+    handleCorrection,
+    handleSkipStages
   };
 };

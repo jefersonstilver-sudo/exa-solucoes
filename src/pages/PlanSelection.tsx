@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import PlanLoginNotification from '@/components/checkout/PlanLoginNotification';
@@ -21,8 +20,16 @@ const PlanSelection = () => {
   const { hasCart, initialLoadDone } = useCartVerification(authVerified);
   
   // Seleção de plano - somente inicializar quando o resto estiver carregado
-  const { selectedPlan, setSelectedPlan, PLANS, cartItems, calculateEstimatedPrice, handleProceed } = 
-    usePlanSelection(hasCart);
+  const { 
+    selectedPlan, 
+    setSelectedPlan, 
+    PLANS, 
+    cartItems, 
+    calculateEstimatedPrice, 
+    handleProceed,
+    handleCorrection,
+    handleSkipStages
+  } = usePlanSelection(hasCart);
   
   // Log de informação quando o componente é montado (apenas uma vez)
   useEffect(() => {
@@ -75,6 +82,8 @@ const PlanSelection = () => {
         plans={PLANS}
         panelCount={cartItems.length}
         onProceed={handleProceed}
+        onCorrection={handleCorrection}
+        onSkipStages={handleSkipStages}
         totalPrice={calculateEstimatedPrice()}
       />
     </Layout>
