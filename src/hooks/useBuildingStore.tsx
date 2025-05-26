@@ -15,10 +15,10 @@ export interface BuildingFilters {
 }
 
 interface BuildingStoreState {
-  allBuildings: BuildingStore[]; // Todos os prédios sem filtro
-  buildings: BuildingStore[]; // Prédios filtrados
+  allBuildings: BuildingStore[];
+  buildings: BuildingStore[];
   loading: boolean;
-  isLoading: boolean; // Alias para compatibilidade
+  isLoading: boolean;
   error: string | null;
   searchLocation: string;
   setSearchLocation: (location: string) => void;
@@ -33,11 +33,11 @@ interface BuildingStoreState {
 }
 
 const defaultFilters: BuildingFilters = {
-  radius: 5000, // 5km
+  radius: 5000,
   neighborhood: '',
   venueType: [],
-  priceRange: [0, 1000],
-  audienceMin: 0,
+  priceRange: [0, 2000], // Aumentei o range máximo
+  audienceMin: 0, // IMPORTANTE: 0 para não excluir prédios sem público definido
   standardProfile: [],
   amenities: []
 };
@@ -58,6 +58,7 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   },
   
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => {
+    console.log('🔄 [BUILDING STORE] Alterando filtros:', newFilters);
     set(state => ({
       filters: { ...state.filters, ...newFilters }
     }));
@@ -67,15 +68,22 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   
   applyFilters: () => {
     const { allBuildings, filters } = get();
+    console.log('🔍 [BUILDING STORE] Aplicando filtros em', allBuildings.length, 'prédios');
+    console.log('🔍 [BUILDING STORE] Filtros atuais:', filters);
+    
     const filteredBuildings = filterBuildings(allBuildings, filters);
+    console.log('✅ [BUILDING STORE] Prédios após filtro:', filteredBuildings.length);
+    
     set({ buildings: filteredBuildings });
   },
   
   fetchBuildings: async (lat?: number, lng?: number) => {
     try {
+      console.log('🔄 [BUILDING STORE] Iniciando busca de prédios...');
       set({ loading: true, isLoading: true, error: null });
       
       const buildings = await fetchBuildingsForStore(lat, lng, get().filters.radius);
+      console.log('📊 [BUILDING STORE] Prédios recebidos:', buildings.length);
       
       set({ 
         allBuildings: buildings as BuildingStore[],
@@ -87,7 +95,7 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       get().applyFilters();
       
     } catch (error: any) {
-      console.error('Error fetching buildings:', error);
+      console.error('❌ [BUILDING STORE] Erro ao buscar prédios:', error);
       set({ 
         error: error.message || 'Failed to fetch buildings', 
         loading: false, 
@@ -102,15 +110,18 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
     }
     
     try {
+      console.log('🔍 [BUILDING STORE] Buscando localização:', location);
       set({ isSearching: true });
       
       const coordinates = await getLocationCoordinates(location);
       
       if (!coordinates) {
+        console.warn('⚠️ [BUILDING STORE] Coordenadas não encontradas');
         set({ isSearching: false });
         return;
       }
       
+      console.log('📍 [BUILDING STORE] Coordenadas encontradas:', coordinates);
       set({ 
         selectedLocation: coordinates,
         searchLocation: location
@@ -120,12 +131,13 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       
       set({ isSearching: false });
     } catch (error) {
-      console.error("Error searching location:", error);
+      console.error("❌ [BUILDING STORE] Erro na busca:", error);
       set({ isSearching: false });
     }
   },
   
   handleClearLocation: () => {
+    console.log('🧹 [BUILDING STORE] Limpando localização');
     set({ 
       selectedLocation: null,
       searchLocation: '',

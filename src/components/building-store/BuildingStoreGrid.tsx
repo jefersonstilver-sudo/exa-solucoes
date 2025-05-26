@@ -36,19 +36,50 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
     }
   };
 
+  // Log detalhado para debug
+  console.log('🏪 [BUILDING GRID] Estado atual:', {
+    buildings: buildings?.length || 0,
+    isLoading,
+    isSearching,
+    selectedLocation,
+    sortOption
+  });
+
   // Sortear prédios usando o serviço
   const sortedBuildings = useMemo(() => {
-    if (!buildings) return [];
+    if (!buildings) {
+      console.log('🏪 [BUILDING GRID] Nenhum prédio para ordenar');
+      return [];
+    }
+    console.log('🏪 [BUILDING GRID] Ordenando', buildings.length, 'prédios por', sortOption);
     return sortBuildings(buildings, sortOption, selectedLocation);
   }, [buildings, sortOption, selectedLocation]);
 
   if (isLoading || isSearching) {
+    console.log('⏳ [BUILDING GRID] Mostrando loading...');
     return <LoadingPanels vertical={true} count={6} />;
   }
 
   if (!buildings || buildings.length === 0) {
-    return <EmptyResults />;
+    console.log('❌ [BUILDING GRID] Nenhum prédio encontrado - mostrando EmptyResults');
+    return (
+      <div className="space-y-6 mb-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[#3C1361]">
+              Prédios Disponíveis
+            </h1>
+            <p className="text-gray-500 mt-1">
+              Nenhum prédio ativo encontrado na nossa rede
+            </p>
+          </div>
+        </div>
+        <EmptyResults />
+      </div>
+    );
   }
+
+  console.log('✅ [BUILDING GRID] Renderizando', sortedBuildings.length, 'prédios');
 
   return (
     <div className="space-y-6 mb-10">
@@ -59,7 +90,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
             Prédios Disponíveis
           </h1>
           <p className="text-gray-500 mt-1">
-            {buildings.length} prédio{buildings.length !== 1 ? 's' : ''} disponível{buildings.length !== 1 ? 'eis' : ''} {selectedLocation ? 'próximos à localização selecionada' : 'em nossa rede'}
+            {buildings.length} prédio{buildings.length !== 1 ? 's' : ''} ativo{buildings.length !== 1 ? 's' : ''} disponível{buildings.length !== 1 ? 'eis' : ''} {selectedLocation ? 'próximos à localização selecionada' : 'em nossa rede'}
           </p>
         </div>
         
