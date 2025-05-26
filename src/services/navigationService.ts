@@ -5,6 +5,10 @@ import { useNavigate } from 'react-router-dom';
 
 type NavigationMethod = 'navigate' | 'direct' | 'history' | 'reload' | 'location' | 'error';
 
+// Navigation cooldown state
+let navigationCooldown = false;
+let cooldownTimer: NodeJS.Timeout | null = null;
+
 /**
  * Navigate safely to a URL using React Router
  */
@@ -80,6 +84,24 @@ export const useSafeNavigation = () => {
   };
   
   return { navigateToRoute };
+};
+
+/**
+ * Reset navigation cooldown state
+ */
+export const resetNavigationCooldown = (): void => {
+  navigationCooldown = false;
+  if (cooldownTimer) {
+    clearTimeout(cooldownTimer);
+    cooldownTimer = null;
+  }
+  
+  logCheckoutEvent(
+    CheckoutEvent.DEBUG_EVENT,
+    LogLevel.INFO,
+    'Navigation cooldown reset',
+    { timestamp: Date.now() }
+  );
 };
 
 /**
