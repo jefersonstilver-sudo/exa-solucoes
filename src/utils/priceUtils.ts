@@ -1,4 +1,5 @@
 
+
 /**
  * Formats a number as currency in BRL
  * @param value Amount to format
@@ -51,3 +52,4 @@ export const ensureSpreadable = (input: any): object => {
   
   return {};
 };
+
