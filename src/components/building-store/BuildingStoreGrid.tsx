@@ -21,8 +21,17 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   onAddToCart,
   selectedLocation
 }) => {
+  // LOGS DETALHADOS para debug
+  console.log('🏢 [BUILDING STORE GRID] === RENDERIZANDO ===');
+  console.log('🏢 [BUILDING STORE GRID] buildings:', buildings);
+  console.log('🏢 [BUILDING STORE GRID] buildings?.length:', buildings?.length);
+  console.log('🏢 [BUILDING STORE GRID] isLoading:', isLoading);
+  console.log('🏢 [BUILDING STORE GRID] isSearching:', isSearching);
+  console.log('🏢 [BUILDING STORE GRID] selectedLocation:', selectedLocation);
+
   // Loading skeleton
   if (isLoading || isSearching) {
+    console.log('🔄 [BUILDING STORE GRID] Mostrando loading...');
     return (
       <div className="space-y-6">
         {[...Array(3)].map((_, index) => (
@@ -34,8 +43,16 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
     );
   }
 
-  // CORREÇÃO: Mostrar prédios se existirem, independente da localização
-  if (!buildings || buildings.length === 0) {
+  // CORREÇÃO CRÍTICA: Verificar se buildings é array válido e tem itens
+  const buildingsArray = Array.isArray(buildings) ? buildings : [];
+  const hasBuildings = buildingsArray.length > 0;
+  
+  console.log('🏢 [BUILDING STORE GRID] buildingsArray:', buildingsArray);
+  console.log('🏢 [BUILDING STORE GRID] hasBuildings:', hasBuildings);
+
+  // Só mostrar empty state se realmente não há prédios
+  if (!hasBuildings) {
+    console.log('❌ [BUILDING STORE GRID] Nenhum prédio disponível - mostrando empty state');
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -59,23 +76,28 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   }
 
   // CORREÇÃO: Sempre mostrar prédios quando disponíveis
+  console.log('✅ [BUILDING STORE GRID] Renderizando', buildingsArray.length, 'prédios');
+  
   return (
     <div className="space-y-6">
       <AnimatePresence mode="wait">
-        {buildings.map((building, index) => (
-          <motion.div
-            key={building.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <BuildingStoreCard
-              building={building}
-              onAddToCart={onAddToCart}
-            />
-          </motion.div>
-        ))}
+        {buildingsArray.map((building, index) => {
+          console.log(`🏢 [BUILDING STORE GRID] Renderizando prédio ${index + 1}:`, building.nome);
+          return (
+            <motion.div
+              key={building.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <BuildingStoreCard
+                building={building}
+                onAddToCart={onAddToCart}
+              />
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
     </div>
   );
