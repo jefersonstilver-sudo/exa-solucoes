@@ -49,12 +49,30 @@ const PanelConfigCard: React.FC<PanelConfigCardProps> = ({
     return orientacao === 'vertical' ? Smartphone : Monitor;
   };
 
+  // Determinar cor do card baseado na atribuição
+  const getCardBackground = () => {
+    if (panel.building_id) {
+      // Painel atribuído - verde claro
+      return 'bg-green-50 border-green-200 hover:bg-green-100';
+    } else {
+      // Painel não atribuído - amarelo claro
+      return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
+    }
+  };
+
   const statusInfo = getStatusInfo(panel.status);
   const StatusIcon = statusInfo.icon;
-  const OrientationIcon = getOrientationIcon(panel.orientacao);
+  const OrientationIcon = getOrientationIcon('vertical'); // Padronizado para vertical
+
+  // Especificações padronizadas
+  const standardSpecs = {
+    resolucao: '1080x1920',
+    orientacao: 'vertical',
+    sistema_operacional: 'linux'
+  };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow border border-gray-200">
+    <Card className={`hover:shadow-lg transition-all duration-200 ${getCardBackground()}`}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -68,12 +86,10 @@ const PanelConfigCard: React.FC<PanelConfigCardProps> = ({
                   <StatusIcon className="h-3 w-3" />
                   {statusInfo.label}
                 </Badge>
-                {panel.orientacao && (
-                  <Badge variant="outline" className="text-xs flex items-center gap-1">
-                    <OrientationIcon className="h-3 w-3" />
-                    {panel.orientacao === 'vertical' ? 'Vertical' : 'Horizontal'}
-                  </Badge>
-                )}
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <OrientationIcon className="h-3 w-3" />
+                  Vertical
+                </Badge>
               </div>
             </div>
           </div>
@@ -104,26 +120,33 @@ const PanelConfigCard: React.FC<PanelConfigCardProps> = ({
         </div>
 
         <div className="space-y-3">
-          {/* Informações Técnicas */}
+          {/* Status de Atribuição */}
+          <div className="mb-3">
+            {panel.building_id ? (
+              <Badge className="bg-green-100 text-green-800 border-green-300">
+                Atribuído ao prédio
+              </Badge>
+            ) : (
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                Disponível para atribuição
+              </Badge>
+            )}
+          </div>
+
+          {/* Especificações Técnicas Padronizadas */}
           <div className="grid grid-cols-2 gap-2 text-sm">
-            {panel.polegada && (
-              <div>
-                <span className="text-gray-500">Tamanho:</span>
-                <span className="ml-1 font-medium">{panel.polegada}"</span>
-              </div>
-            )}
-            {panel.resolucao && (
-              <div>
-                <span className="text-gray-500">Resolução:</span>
-                <span className="ml-1 font-medium">{panel.resolucao}</span>
-              </div>
-            )}
-            {panel.sistema_operacional && (
-              <div>
-                <span className="text-gray-500">SO:</span>
-                <span className="ml-1 font-medium capitalize">{panel.sistema_operacional}</span>
-              </div>
-            )}
+            <div>
+              <span className="text-gray-500">Resolução:</span>
+              <span className="ml-1 font-medium">{standardSpecs.resolucao}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Orientação:</span>
+              <span className="ml-1 font-medium capitalize">{standardSpecs.orientacao}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Sistema:</span>
+              <span className="ml-1 font-medium capitalize">{standardSpecs.sistema_operacional}</span>
+            </div>
             {panel.modelo && (
               <div>
                 <span className="text-gray-500">Modelo:</span>

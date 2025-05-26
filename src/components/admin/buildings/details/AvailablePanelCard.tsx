@@ -34,13 +34,22 @@ const AvailablePanelCard: React.FC<AvailablePanelCardProps> = ({
     }
   };
 
+  // Card amarelo claro para painéis disponíveis (não atribuídos)
+  const cardBackground = 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
+
   const handleAssign = () => {
     onAssign(panel.id, panel.code);
   };
 
+  // Especificações padronizadas
+  const standardSpecs = {
+    resolucao: '1080x1920',
+    sistema_operacional: 'linux'
+  };
+
   return (
     <PanelTooltip panel={panel}>
-      <Card className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${getStatusColor(panel.status)}`}>
+      <Card className={`cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 ${getStatusColor(panel.status)} ${cardBackground}`}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center">
@@ -53,15 +62,15 @@ const AvailablePanelCard: React.FC<AvailablePanelCardProps> = ({
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Resolução:</span>
-              <span className="font-medium">{panel.resolucao || 'N/A'}</span>
+              <span className="font-medium">{standardSpecs.resolucao}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Polegadas:</span>
-              <span className="font-medium">{panel.polegada || 'N/A'}</span>
+              <span className="text-gray-600">Orientação:</span>
+              <span className="font-medium">Vertical</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Sistema:</span>
-              <span className="font-medium">{panel.sistema_operacional || 'N/A'}</span>
+              <span className="font-medium capitalize">{standardSpecs.sistema_operacional}</span>
             </div>
           </div>
           
