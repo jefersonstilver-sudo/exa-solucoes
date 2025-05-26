@@ -55,7 +55,7 @@ export const usePlanSelection = (hasCart: boolean) => {
     return totalPanels * pricePerPanelPerMonth * months;
   };
 
-  // Proceed to next step after plan selection
+  // FIXED: Navigate to coupon step instead of checkout
   const handleProceed = async () => {
     console.log("PlanSelection: Prosseguindo com plano selecionado:", selectedPlan);
     
@@ -113,13 +113,6 @@ export const usePlanSelection = (hasCart: boolean) => {
       return;
     }
     
-    logCheckoutEvent(
-      CheckoutEvent.DEBUG_EVENT, 
-      LogLevel.INFO, 
-      "Prosseguindo para checkout após selecionar plano", 
-      { selectedPlan, hasCart, timestamp: Date.now() }
-    );
-    
     if (!selectedPlan) {
       toast({
         title: "Selecione um plano",
@@ -176,15 +169,15 @@ export const usePlanSelection = (hasCart: boolean) => {
       return;
     }
     
-    // Navigate to checkout page
+    // FIXED: Navigate to coupon step instead of checkout
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT, 
       LogLevel.INFO, 
-      "Navegando para checkout após seleção de plano", 
+      "Navegando para etapa de cupom após seleção de plano", 
       { timestamp: Date.now() }
     );
     
-    navigate('/checkout');
+    navigate('/checkout/cupom');
   };
 
   return {

@@ -47,18 +47,24 @@ export const useCheckoutNavigation = ({
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
   
+  // FIXED: Mapping step numbers to routes
+  const stepRoutes = {
+    0: '/checkout/cupom',      // Coupon step
+    1: '/checkout/resumo',     // Summary step  
+    2: '/checkout',            // Payment step (existing checkout page)
+    3: '/checkout/finalizar'   // Upload/Finish step
+  };
+  
   // Determine if the next button should be enabled
   const isNextEnabled = () => {
     switch (step) {
-      case 0: // REVIEW step
-        return cartItems.length > 0;
-      case 1: // PLAN step
-        return !!selectedPlan && selectedPlan > 0 && cartItems.length > 0;
-      case 2: // COUPON step
+      case 0: // COUPON step
         return true; // Always enabled as coupon is optional
-      case 3: // PAYMENT step
+      case 1: // SUMMARY step  
+        return cartItems.length > 0;
+      case 2: // PAYMENT step
         return acceptTerms;
-      case 4: // UPLOAD step
+      case 3: // UPLOAD step
         return true; // Always enabled for final step
       default:
         return false;
@@ -68,15 +74,22 @@ export const useCheckoutNavigation = ({
   // Navigate to the previous step
   const handlePrevStep = () => {
     if (step > 0) {
+      const prevStep = step - 1;
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
-        `Navigating to previous step: ${step - 1}`,
-        { currentStep: step, nextStep: step - 1 }
+        `Navigating to previous step: ${prevStep}`,
+        { currentStep: step, nextStep: prevStep }
       );
-      setStep(step - 1);
+      
+      // Navigate to previous route
+      const route = stepRoutes[prevStep as keyof typeof stepRoutes];
+      if (route) {
+        navigate(route);
+      }
+      setStep(prevStep);
     } else {
-      // Primeiro passo, voltar para a seleção de planos
+      // First step, go back to plan selection
       navigate('/selecionar-plano');
     }
   };
@@ -111,8 +124,8 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // CRITICAL FIX: Payment step processing
-      if (step === 3) { // PAYMENT step
+      // CRITICAL FIX: Payment step processing (step 2 in new flow)
+      if (step === 2) { // PAYMENT step
         // Payment
         if (!acceptTerms) {
           sonnerToast.error("Você precisa aceitar os termos para continuar");
@@ -173,14 +186,20 @@ export const useCheckoutNavigation = ({
       } 
       else {
         // Normal navigation for non-payment steps
+        const nextStep = step + 1;
+        const route = stepRoutes[nextStep as keyof typeof stepRoutes];
+        
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
-          `Navigating to next step: ${step + 1}`,
-          { currentStep: step, nextStep: step + 1 }
+          `Navigating to next step: ${nextStep}`,
+          { currentStep: step, nextStep, route }
         );
         
-        setStep(step + 1);
+        if (route) {
+          navigate(route);
+        }
+        setStep(nextStep);
         setIsNavigating(false);
       }
     } catch (error) {

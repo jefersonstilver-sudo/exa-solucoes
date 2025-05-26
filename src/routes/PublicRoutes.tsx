@@ -3,6 +3,8 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import PlanSelection from '@/pages/PlanSelection';
 import Checkout from '@/pages/Checkout';
+import CheckoutCoupon from '@/pages/CheckoutCoupon';
+import CheckoutSummary from '@/pages/CheckoutSummary';
 import CheckoutFinish from '@/pages/CheckoutFinish';
 import Confirmacao from '@/pages/Confirmacao';
 import BuildingStorePage from '@/pages/BuildingStore';
@@ -13,6 +15,8 @@ export const PublicRoutes = () => {
       <Route path="/planos" element={<PlanSelection />} />
       <Route path="/selecionar-plano" element={<PlanSelection />} />
       <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
+      <Route path="/checkout/resumo" element={<CheckoutSummary />} />
       <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
       <Route path="/confirmacao" element={<Confirmacao />} />
       <Route path="/predios-loja" element={<BuildingStorePage />} />

@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
 import { usePanelAvailability } from '@/hooks/usePanelAvailability';
@@ -20,6 +20,7 @@ export { PLANS }; // Re-exporta para compatibilidade
 
 export const useCheckout = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const orderId = searchParams.get('id');
   
   // Usa os hooks modularizados
@@ -33,6 +34,22 @@ export const useCheckout = () => {
     sessionUser, setSessionUser,
     STEPS
   } = useCheckoutState();
+
+  // FIXED: Set step based on current route
+  useEffect(() => {
+    const path = location.pathname;
+    console.log("Current path:", path);
+    
+    if (path === '/checkout/cupom') {
+      setStep(0);
+    } else if (path === '/checkout/resumo') {
+      setStep(1);
+    } else if (path === '/checkout') {
+      setStep(2);
+    } else if (path === '/checkout/finalizar') {
+      setStep(3);
+    }
+  }, [location.pathname, setStep]);
 
   // Carrega plano selecionado do localStorage (vem da página PlanSelection)
   useEffect(() => {
@@ -79,10 +96,10 @@ export const useCheckout = () => {
   
   // Verifica a disponibilidade dos painéis quando a etapa muda para revisão
   useEffect(() => {
-    if (step === STEPS.REVIEW) {
+    if (step === 1) { // SUMMARY step in new flow
       checkPanelAvailability(cartItems, startDate, endDate);
     }
-  }, [step, startDate, endDate, cartItems, checkPanelAvailability, STEPS.REVIEW]);
+  }, [step, startDate, endDate, cartItems, checkPanelAvailability]);
 
   // Log payment method changes for debugging
   useEffect(() => {
