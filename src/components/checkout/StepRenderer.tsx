@@ -63,6 +63,36 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   };
   
   switch (step) {
+    case STEPS.REVIEW:
+      return (
+        <motion.div
+          key="review"
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={pageVariants}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h2 className="text-xl font-semibold flex items-center">
+                <span className="mr-2 text-2xl">📋</span>
+                Revisão do Pedido
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Confirme os detalhes da sua campanha antes de prosseguir
+              </p>
+            </motion.div>
+            <ReviewStep />
+          </div>
+          <TrustIndicators />
+        </motion.div>
+      );
+      
     case STEPS.PLAN:
       return (
         <motion.div
@@ -80,7 +110,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
               transition={{ duration: 0.4 }}
             >
               <h2 className="text-xl font-semibold flex items-center">
-                <span className="mr-2 text-2xl">⏱️</span>
+                <span className="mr-2 text-2xl">📅</span>
                 Escolha seu plano
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -94,21 +124,6 @@ const StepRenderer: React.FC<StepRendererProps> = ({
               panelCount={cartItems.length}
             />
           </div>
-          <TrustIndicators />
-        </motion.div>
-      );
-      
-    case STEPS.REVIEW:
-      return (
-        <motion.div
-          key="review"
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          variants={pageVariants}
-          transition={{ duration: 0.4 }}
-        >
-          <ReviewStep />
           <TrustIndicators />
         </motion.div>
       );

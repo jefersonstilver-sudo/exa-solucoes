@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 import CartButton from './header/CartButton';
+import HeaderLogo from './header/HeaderLogo';
 
 interface HeaderProps {
   cartItemsCount?: number;
@@ -28,13 +29,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="bg-white p-2 rounded-lg">
-                <span className="text-[#3C1361] font-bold text-xl">INDEXA</span>
-              </div>
-            </Link>
-          </div>
+          <HeaderLogo />
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">

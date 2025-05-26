@@ -50,10 +50,10 @@ export const useCheckoutNavigation = ({
   // Determine if the next button should be enabled
   const isNextEnabled = () => {
     switch (step) {
-      case 0: // PLAN step
-        return !!selectedPlan && selectedPlan > 0 && cartItems.length > 0;
-      case 1: // REVIEW step
+      case 0: // REVIEW step
         return cartItems.length > 0;
+      case 1: // PLAN step
+        return !!selectedPlan && selectedPlan > 0 && cartItems.length > 0;
       case 2: // COUPON step
         return true; // Always enabled as coupon is optional
       case 3: // PAYMENT step
@@ -76,14 +76,13 @@ export const useCheckoutNavigation = ({
       );
       setStep(step - 1);
     } else {
-      // Primeiro passo, voltar para a loja
-      window.location.href = '/paineis-digitais/loja';
+      // Primeiro passo, voltar para a seleção de planos
+      navigate('/selecionar-plano');
     }
   };
 
   // Navigate to the next step or process payment with explicit payment method
   const handleNextStep = async (paymentMethod = 'credit_card') => {
-    // ENHANCED DEBUG: Add detailed tracing for payment flow
     console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: handleNextStep iniciado", {
       step,
       paymentMethod,
@@ -94,7 +93,6 @@ export const useCheckoutNavigation = ({
     // CRITICAL FIX: Clear up payment method type
     const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
     
-    // Critical debugging log
     console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, original: ${paymentMethod}, step: ${step}`);
     
     // CRITICAL FIX: Prevent duplicate navigation
@@ -122,7 +120,6 @@ export const useCheckoutNavigation = ({
           return;
         }
         
-        // Detailed logging
         console.log(`[useCheckoutNavigation] PAYMENT FLOW TRACE: Processando pagamento com método: ${normalizedPaymentMethod}`);
         
         logCheckoutEvent(
@@ -135,11 +132,9 @@ export const useCheckoutNavigation = ({
         // Calculate price with coupon discount
         const totalPrice = calculateTotalPrice();
         
-        // CRITICAL FIX: Explicitly await the payment promise
         try {
           console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: Chamando createPayment");
           
-          // CRITICAL FIX: Add await here to properly handle the async operation
           await createPayment({
             totalPrice,
             selectedPlan,
@@ -151,14 +146,17 @@ export const useCheckoutNavigation = ({
             unavailablePanels: [], // Ignoring validation for now to fix the bug
             sessionUser,
             handleClearCart,
-            paymentMethod: normalizedPaymentMethod // Ensure we pass the normalized method
+            paymentMethod: normalizedPaymentMethod
           });
           
           console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: createPayment concluído com sucesso");
+          
+          // Após pagamento bem-sucedido, redirecionar para página de finalização
+          navigate('/checkout/finalizar');
+          
         } catch (error) {
           console.error("[useCheckoutNavigation] PAYMENT FLOW TRACE: Erro em createPayment", error);
           
-          // Explicitly log error details
           logCheckoutEvent(
             CheckoutEvent.PAYMENT_ERROR,
             LogLevel.ERROR,
@@ -166,12 +164,9 @@ export const useCheckoutNavigation = ({
             { error: String(error), stack: error instanceof Error ? error.stack : 'unknown' }
           );
           
-          // Show error to user
           sonnerToast.error("Erro ao processar pagamento. Tente novamente.");
-          
-          // Reset navigation state
           setIsNavigating(false);
-          throw error; // Re-throw to allow upstream handling
+          throw error;
         }
         
         return;

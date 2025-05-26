@@ -1,124 +1,132 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useCheckout } from '@/hooks/useCheckout';
 import Layout from '@/components/layout/Layout';
-import { useUserSession } from '@/hooks/useUserSession';
-import { useNavigate } from 'react-router-dom';
-import { ClientOnly } from '@/components/ui/client-only';
-import CheckoutContainer from '@/components/checkout/CheckoutContainer';
-import { useToast } from '@/hooks/use-toast';
+import CheckoutProgress from '@/components/checkout/CheckoutProgress';
+import StepRenderer from '@/components/checkout/StepRenderer';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function Checkout() {
-  const { isLoggedIn, isLoading: isSessionLoading } = useUserSession();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isPageLoading, setIsPageLoading] = useState(true);
-  
-  // Verificação de autenticação - redireciona para login se necessário
-  useEffect(() => {
-    console.log("Checkout: Verificando autenticação, isLoggedIn:", isLoggedIn, "isSessionLoading:", isSessionLoading);
-    setIsPageLoading(true);
-    
-    if (!isSessionLoading && !isLoggedIn) {
-      toast({
-        title: "Login necessário",
-        description: "Faça login para continuar com a compra",
-        variant: "destructive"
-      });
-      navigate('/login?redirect=/checkout');
-      return;
-    }
-    
-    setIsPageLoading(false);
-  }, [isLoggedIn, isSessionLoading, navigate, toast]);
-  
-  // Verificar se o carrinho existe no localStorage
-  useEffect(() => {
-    if (isSessionLoading) return; // Espera a verificação da sessão
-    
-    try {
-      console.log("Checkout: Verificando carrinho no localStorage");
-      const savedCart = localStorage.getItem('panelCart');
-      console.log("Checkout: Carrinho encontrado:", savedCart ? "Sim" : "Não");
-      
-      if (savedCart) {
-        const parsedCart = JSON.parse(savedCart);
-        console.log("Checkout: Carrinho carregado, itens:", parsedCart.length);
-        
-        if (parsedCart.length === 0) {
-          console.log("Checkout: Carrinho vazio, redirecionando para loja");
-          toast({
-            title: "Carrinho vazio",
-            description: "Adicione itens ao carrinho antes de finalizar a compra.",
-            variant: "destructive"
-          });
-          navigate('/paineis-digitais/loja');
-        }
-      } else {
-        // Se não houver carrinho no localStorage
-        console.log("Checkout: Carrinho não encontrado no localStorage");
-        toast({
-          title: "Carrinho vazio",
-          description: "Adicione itens ao carrinho antes de finalizar a compra.",
-          variant: "destructive"
-        });
-        navigate('/paineis-digitais/loja');
-      }
-    } catch (e) {
-      console.error("Erro ao carregar carrinho:", e);
-      toast({
-        title: "Erro ao carregar carrinho",
-        description: "Ocorreu um erro ao carregar seu carrinho. Tente novamente.",
-        variant: "destructive"
-      });
-      navigate('/paineis-digitais/loja');
-    }
-  }, [navigate, toast, isSessionLoading]);
-  
-  // Verificar se o plano foi selecionado
-  useEffect(() => {
-    if (isSessionLoading) return; // Espera a verificação da sessão
-    
-    try {
-      console.log("Checkout: Verificando plano selecionado no localStorage");
-      const selectedPlan = localStorage.getItem('selectedPlan');
-      console.log("Checkout: Plano carregado:", selectedPlan);
-      
-      if (!selectedPlan) {
-        console.log("Checkout: Plano não selecionado, redirecionando para seleção de plano");
-        toast({
-          title: "Selecione um plano",
-          description: "Escolha um plano antes de prosseguir com o checkout.",
-          variant: "destructive"
-        });
-        navigate('/selecionar-plano');
-      }
-    } catch (e) {
-      console.error("Erro ao verificar plano selecionado:", e);
-      toast({
-        title: "Erro ao verificar plano",
-        description: "Ocorreu um erro ao verificar seu plano. Tente novamente.",
-        variant: "destructive"
-      });
-      navigate('/selecionar-plano');
-    }
-  }, [navigate, toast, isSessionLoading]);
-  
-  // Tela de carregamento enquanto verifica a sessão
-  if (isSessionLoading || isPageLoading) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-12 flex items-center justify-center">
-          <div className="h-10 w-10 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </Layout>
-    );
-  }
-  
+const Checkout = () => {
+  const {
+    step,
+    STEPS,
+    selectedPlan,
+    setSelectedPlan,
+    couponCode,
+    setCouponCode,
+    couponDiscount,
+    couponMessage,
+    couponValid,
+    isValidatingCoupon,
+    acceptTerms,
+    setAcceptTerms,
+    isCreatingPayment,
+    isNavigating,
+    unavailablePanels,
+    cartItems,
+    validateCoupon,
+    handleNextStep,
+    handlePrevStep,
+    isNextEnabled,
+    PLANS,
+    calculateTotalPrice,
+    paymentMethod,
+    setPaymentMethod
+  } = useCheckout();
+
+  const totalPrice = calculateTotalPrice();
+
   return (
     <Layout>
-      <ClientOnly>
-        <CheckoutContainer />
-      </ClientOnly>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          {/* Timeline Progress */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-sm border p-6 mb-8"
+          >
+            <CheckoutProgress currentStep={step} />
+          </motion.div>
+
+          {/* Main Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl shadow-sm border p-6 sm:p-8"
+          >
+            <StepRenderer
+              step={step}
+              cartItems={cartItems}
+              unavailablePanels={unavailablePanels}
+              selectedPlan={selectedPlan}
+              setSelectedPlan={setSelectedPlan}
+              PLANS={PLANS}
+              couponCode={couponCode}
+              setCouponCode={setCouponCode}
+              validateCoupon={validateCoupon}
+              isValidatingCoupon={isValidatingCoupon}
+              couponMessage={couponMessage}
+              couponValid={couponValid}
+              acceptTerms={acceptTerms}
+              setAcceptTerms={setAcceptTerms}
+              totalPrice={totalPrice}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+            />
+          </motion.div>
+
+          {/* Navigation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex justify-between items-center mt-8"
+          >
+            <Button
+              variant="outline"
+              onClick={handlePrevStep}
+              disabled={step === 0}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Voltar</span>
+            </Button>
+
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">
+                Total: R$ {totalPrice.toFixed(2)}
+              </p>
+              {couponValid && couponDiscount > 0 && (
+                <p className="text-sm text-green-600">
+                  Desconto aplicado: {couponDiscount}%
+                </p>
+              )}
+            </div>
+
+            <Button
+              onClick={() => handleNextStep(paymentMethod)}
+              disabled={!isNextEnabled || isCreatingPayment || isNavigating}
+              className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90"
+            >
+              <span>
+                {step === STEPS.PAYMENT ? 'Finalizar Pagamento' : 
+                 step === STEPS.UPLOAD ? 'Concluir' : 'Continuar'}
+              </span>
+              {(isCreatingPayment || isNavigating) ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <ArrowRight className="h-4 w-4" />
+              )}
+            </Button>
+          </motion.div>
+        </div>
+      </div>
     </Layout>
   );
-}
+};
+
+export default Checkout;
