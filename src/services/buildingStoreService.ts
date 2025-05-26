@@ -66,35 +66,36 @@ const getImageUrl = (path: string) => {
 
 export const fetchBuildingsForStore = async (lat?: number, lng?: number, radius = 5000) => {
   try {
-    console.log('🏢 [BUILDING STORE] Buscando prédios para loja online...');
+    console.log('🏢 [BUILDING STORE] Buscando prédios para loja pública...');
     console.log('🏢 [BUILDING STORE] Parâmetros:', { lat, lng, radius });
     
-    // Query principal: buscar TODOS os prédios ativos
+    // CORREÇÃO CRÍTICA: Query pública - sem verificação de autenticação
+    // RLS agora permite acesso público a prédios ativos
     let query = supabase
       .from('buildings')
       .select('*')
-      .eq('status', 'ativo') // APENAS prédios ativos
+      .eq('status', 'ativo') // Apenas prédios ativos são acessíveis publicamente
       .order('created_at', { ascending: false });
 
-    console.log('🏢 [BUILDING STORE] Executando query para prédios ativos...');
+    console.log('🏢 [BUILDING STORE] Executando query pública para prédios ativos...');
     const { data: buildings, error } = await query;
 
     if (error) {
-      console.error('❌ [BUILDING STORE] Erro na query:', error);
+      console.error('❌ [BUILDING STORE] Erro na query pública:', error);
       toast.error(`Erro ao carregar prédios: ${error.message}`);
       return [];
     }
 
     if (!buildings || buildings.length === 0) {
-      console.warn('⚠️ [BUILDING STORE] Nenhum prédio ativo encontrado no banco');
+      console.warn('⚠️ [BUILDING STORE] Nenhum prédio ativo encontrado publicamente');
       return [];
     }
 
-    console.log('✅ [BUILDING STORE] Prédios encontrados:', buildings.length);
+    console.log('✅ [BUILDING STORE] Prédios encontrados publicamente:', buildings.length);
     
     // Log detalhado dos prédios encontrados
     buildings.forEach(building => {
-      console.log('🏢 [BUILDING STORE] Prédio:', {
+      console.log('🏢 [BUILDING STORE] Prédio público:', {
         id: building.id,
         nome: building.nome,
         status: building.status,
@@ -131,11 +132,11 @@ export const fetchBuildingsForStore = async (lat?: number, lng?: number, radius 
       return filteredBuildings.sort((a, b) => a.distance - b.distance);
     }
 
-    console.log('✅ [BUILDING STORE] Retornando todos os prédios ativos:', buildings.length);
+    console.log('✅ [BUILDING STORE] Retornando todos os prédios ativos públicos:', buildings.length);
     return buildings || [];
     
   } catch (error: any) {
-    console.error('💥 [BUILDING STORE] Erro crítico:', error);
+    console.error('💥 [BUILDING STORE] Erro crítico na busca pública:', error);
     toast.error('Erro crítico ao carregar prédios');
     return [];
   }

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -44,26 +45,16 @@ export const buildImageUrlsArray = (building: any) => {
 
 export const fetchBuildingsData = async () => {
   try {
-    console.log('🏢 [BUILDINGS DATA SERVICE] Iniciando busca de prédios...');
+    console.log('🏢 [BUILDINGS DATA SERVICE] Iniciando busca de prédios para acesso público...');
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // CORREÇÃO CRÍTICA: Remover verificação de autenticação para permitir acesso público
+    // A tabela buildings agora tem RLS configurado para permitir leitura pública de prédios ativos
     
-    if (authError) {
-      console.error('❌ [BUILDINGS DATA SERVICE] Erro de autenticação:', authError);
-      toast.error('Erro de autenticação. Faça login novamente.');
-      return { buildings: [], panels: [] };
-    }
-
-    if (!user) {
-      console.error('❌ [BUILDINGS DATA SERVICE] Usuário não autenticado');
-      toast.error('Acesso negado. Faça login como administrador.');
-      return { buildings: [], panels: [] };
-    }
-
-    // Query para buscar prédios com timeout
+    // Query para buscar prédios com timeout - REMOVIDA autenticação obrigatória
     const buildingsPromise = supabase
       .from('buildings')
       .select('*')
+      .eq('status', 'ativo') // Apenas prédios ativos são visíveis publicamente
       .order('created_at', { ascending: false });
 
     const panelsPromise = supabase
@@ -89,7 +80,7 @@ export const fetchBuildingsData = async () => {
       return { buildings: [], panels: [] };
     }
 
-    console.log('✅ [BUILDINGS DATA SERVICE] Prédios carregados:', buildingsData?.length || 0);
+    console.log('✅ [BUILDINGS DATA SERVICE] Prédios carregados para acesso público:', buildingsData?.length || 0);
 
     if (panelsError) {
       console.error('⚠️ [BUILDINGS DATA SERVICE] Erro ao buscar painéis (não crítico):', panelsError);
