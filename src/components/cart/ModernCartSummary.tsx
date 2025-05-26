@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ShoppingBag } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types/cart';
 import { useUserSession } from '@/hooks/useUserSession';
+import { useNavigate } from 'react-router-dom';
 
 interface ModernCartSummaryProps {
   cartItems: CartItem[];
@@ -18,9 +19,15 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
   isCheckoutLoading = false
 }) => {
   const { isLoggedIn } = useUserSession();
+  const navigate = useNavigate();
   
   const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
   const totalItems = cartItems.length;
+
+  const handleCorrectionClick = () => {
+    console.log('🔧 Botão Correção: Navegando diretamente para /selecionar-plano');
+    navigate('/selecionar-plano');
+  };
 
   const getButtonText = () => {
     if (isCheckoutLoading) {
@@ -59,7 +66,19 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
           </span>
         </div>
 
-        {/* Checkout Button */}
+        {/* Correction Button */}
+        <Button
+          onClick={handleCorrectionClick}
+          disabled={cartItems.length === 0}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          <span className="flex items-center justify-center">
+            Correção
+            <Settings className="h-4 w-4 ml-2" />
+          </span>
+        </Button>
+
+        {/* Original Checkout Button */}
         <Button
           onClick={onProceedToCheckout}
           disabled={cartItems.length === 0 || isCheckoutLoading}
