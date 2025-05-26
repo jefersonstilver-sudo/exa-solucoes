@@ -5,6 +5,8 @@ import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
 import { useCartManager } from '@/hooks/useCartManager';
 import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +18,17 @@ interface LayoutProps {
   onProceedToCheckout?: () => void;
 }
 
+// Utility function to convert legacy cart item to full cart item
+const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number }): CartItem => {
+  return {
+    id: `cart_${legacyItem.panel.id}_${Date.now()}`,
+    panel: legacyItem.panel,
+    duration: legacyItem.duration,
+    addedAt: Date.now(),
+    price: getPanelPrice(legacyItem.panel, legacyItem.duration)
+  };
+};
+
 const Layout: React.FC<LayoutProps> = ({ 
   children, 
   useGradientBackground = false,
@@ -26,11 +39,12 @@ const Layout: React.FC<LayoutProps> = ({
   onProceedToCheckout
 }) => {
   // Get cart state from useCartManager
-  const { cartOpen, setCartOpen } = useCartManager();
+  const { cartOpen, setCartOpen, cartItems: managerCartItems } = useCartManager();
 
-  // Use cart items from props if provided, otherwise fall back to cartManager
-  const { cartItems: managerCartItems } = useCartManager();
-  const effectiveCartItems = cartItems.length > 0 ? cartItems : managerCartItems;
+  // Convert legacy cart items to proper CartItem format and choose the right source
+  const effectiveCartItems: CartItem[] = cartItems.length > 0 
+    ? cartItems.map(convertLegacyToCartItem)
+    : managerCartItems;
 
   return (
     <div className="min-h-screen flex flex-col">
