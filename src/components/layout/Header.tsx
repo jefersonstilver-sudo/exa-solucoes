@@ -90,7 +90,7 @@ const Header: React.FC<HeaderProps> = ({
                   <User className="h-5 w-5 text-[#3C1361]" />
                 </div>
                 <span className="text-white text-sm font-medium">
-                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+                  {user?.name || user?.email?.split('@')[0] || 'Usuário'}
                 </span>
               </div>
             ) : (

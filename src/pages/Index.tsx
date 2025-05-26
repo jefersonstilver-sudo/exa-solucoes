@@ -5,7 +5,7 @@ import ServiceCard from '@/components/ui/service-card';
 
 const Index = () => {
   return (
-    <Layout useGradientBackground>
+    <Layout>
       {/* Cards de Serviço com background image */}
       <section 
         className="py-16 px-4 relative min-h-[calc(100vh-200px)] flex items-center" 
