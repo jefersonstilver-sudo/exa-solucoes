@@ -7,14 +7,9 @@ import { usePanelStore } from '@/hooks/usePanelStore';
 import { useBuildingStore } from '@/hooks/useBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import CheckoutDebugger from '@/components/debug/CheckoutDebugger';
-import { useDebugCheckout } from '@/hooks/useDebugCheckout';
-import PanelDebugActions from '@/components/panel-store/PanelDebugActions';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { BuildingStore } from '@/services/buildingStoreService';
 
 export default function PanelStore() {
@@ -54,33 +49,21 @@ export default function PanelStore() {
 
   const {
     cartItems,
-    cartOpen,
-    setCartOpen,
     handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
-    cartAnimation,
     handleProceedToCheckout
   } = useCartManager();
 
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
-  
-  // Debug checkout hook
-  const { 
-    debugModalOpen, 
-    setDebugModalOpen, 
-    directGoToCheckout 
-  } = useDebugCheckout(cartItems);
 
   // Load appropriate data based on whether we're viewing a specific building or the main store
   useEffect(() => {
     if (!buildingId) {
-      // Load buildings for main store view
       fetchBuildings();
     }
-    // Panel loading will be handled by the panel store hook when buildingId is present
   }, [buildingId, fetchBuildings]);
 
   // Effect to hide promotion when user logs in or adds items to cart
@@ -94,40 +77,9 @@ export default function PanelStore() {
 
   // Handle viewing panels of a specific building
   const handleViewPanels = (building: BuildingStore) => {
-    // Update URL with building_id parameter
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('building_id', building.id);
     window.history.pushState({}, '', newUrl.toString());
-  };
-
-  // Handle going back to building list
-  const handleBackToBuildings = () => {
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.delete('building_id');
-    window.history.pushState({}, '', newUrl.toString());
-  };
-
-  // Log quando handleProceedToCheckout é chamado
-  const handleCheckoutStart = () => {
-    logCheckoutEvent(
-      CheckoutEvent.CHECKOUT_INITIATION,
-      LogLevel.INFO,
-      "Iniciando checkout a partir da loja",
-      { cartItemCount: cartItems.length, timestamp: Date.now() }
-    );
-    handleProceedToCheckout();
-  };
-
-  // Modified to match the expected signature without parameters
-  const handleDirectGoToCheckout = () => {
-    console.log("Redirecting to checkout directly");
-    directGoToCheckout(new MouseEvent('click') as unknown as React.MouseEvent);
-  };
-
-  // Handler to open debug modal
-  const handleOpenDebugger = () => {
-    console.log("Opening debug modal");
-    setDebugModalOpen(true);
   };
 
   // Determine which error to show
@@ -160,7 +112,7 @@ export default function PanelStore() {
       onRemoveFromCart={handleRemoveFromCart}
       onClearCart={handleClearCart}
       onChangeDuration={handleChangeDuration}
-      onProceedToCheckout={handleCheckoutStart}
+      onProceedToCheckout={handleProceedToCheckout}
     >
       <motion.div 
         initial={{ opacity: 0 }}
@@ -168,14 +120,6 @@ export default function PanelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 md:px-6 py-8"
       >
-        {/* Debug panel for diagnostics */}
-        <PanelDebugActions 
-          cartItemsCount={cartItems.length}
-          onProceedToCheckout={handleCheckoutStart}
-          directGoToCheckout={handleDirectGoToCheckout}
-          onOpenDebugger={handleOpenDebugger}
-        />
-      
         {/* Promotional Welcome Banner */}
         <AnimatePresence>
           <PromotionBanner 
@@ -186,7 +130,6 @@ export default function PanelStore() {
         
         {/* Conditional rendering based on whether we're viewing a specific building or the main store */}
         {buildingId ? (
-          // Show panel selection for specific building
           <StoreLayout 
             panels={panels}
             isLoading={panelsLoading}
@@ -202,7 +145,6 @@ export default function PanelStore() {
             onAddToCart={handleAddToCart}
           />
         ) : (
-          // Show building selection (main store view)
           <BuildingStoreLayout 
             buildings={buildings}
             isLoading={buildingsLoading}
@@ -218,13 +160,6 @@ export default function PanelStore() {
           />
         )}
       </motion.div>
-      
-      {/* Modal de diagnóstico - Fixed with proper accessibility attributes */}
-      <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
-        <DialogContent className="sm:max-w-md p-0">
-          <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 }

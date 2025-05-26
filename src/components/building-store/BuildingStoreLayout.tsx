@@ -1,10 +1,8 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import BuildingSearchSection from './BuildingSearchSection';
-import BuildingFilterSidebar from './BuildingFilterSidebar';
 import BuildingStoreGrid from './BuildingStoreGrid';
 
 interface BuildingStoreLayoutProps {
@@ -36,7 +34,7 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
 }) => {
   return (
     <>
-      {/* Search section */}
+      {/* Search section with integrated filters */}
       <BuildingSearchSection 
         searchLocation={searchLocation}
         setSearchLocation={setSearchLocation}
@@ -49,28 +47,15 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
         buildingsCount={buildings?.length || 0}
       />
       
-      {/* Layout with sidebar and building grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative mt-8">
-        {/* Left sidebar with filters */}
-        <div className="lg:col-span-3 xl:col-span-3">
-          <BuildingFilterSidebar 
-            filters={filters}
-            handleFilterChange={handleFilterChange}
-            isLoading={isLoading}
-            isSearching={isSearching}
-          />
-        </div>
-        
-        {/* Main content with building grid */}
-        <div className="lg:col-span-9 xl:col-span-9">
-          <BuildingStoreGrid 
-            buildings={buildings}
-            isLoading={isLoading}
-            isSearching={isSearching}
-            onViewPanels={onViewPanels}
-            selectedLocation={selectedLocation}
-          />
-        </div>
+      {/* Single column building grid - full width */}
+      <div className="w-full">
+        <BuildingStoreGrid 
+          buildings={buildings}
+          isLoading={isLoading}
+          isSearching={isSearching}
+          onViewPanels={onViewPanels}
+          selectedLocation={selectedLocation}
+        />
       </div>
     </>
   );
