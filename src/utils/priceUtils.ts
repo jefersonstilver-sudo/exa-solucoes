@@ -19,3 +19,7 @@ export const calculateDiscount = (originalPrice: number, discountPercentage: num
 export const calculateDiscountedPrice = (originalPrice: number, discountPercentage: number): number => {
   return originalPrice - calculateDiscount(originalPrice, discountPercentage);
 };
+
+export const calculatePriceWithDiscount = (price: number, discountPercentage: number): number => {
+  return calculateDiscountedPrice(price, discountPercentage);
+};
