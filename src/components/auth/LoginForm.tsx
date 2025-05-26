@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useLoginForm } from '@/components/auth/hooks/useLoginForm';
@@ -18,7 +19,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ redirectPath, setIsResetMo
     isLoading,
     error,
     handleSubmit
-  } = useLoginForm(redirectPath); // FIXED: Pass redirectPath to hook
+  } = useLoginForm(redirectPath);
+
+  const handleQuickLogin = () => {
+    // Quick login functionality can be implemented here
+    console.log('Quick login not implemented yet');
+  };
 
   return (
     <motion.form
@@ -33,12 +39,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ redirectPath, setIsResetMo
         setEmail={setEmail}
         password={password}
         setPassword={setPassword}
+        isLoading={isLoading}
         error={error}
+        setIsResetMode={setIsResetMode}
       />
       
       <LoginFormActions
         isLoading={isLoading}
-        setIsResetMode={setIsResetMode}
+        onQuickLogin={handleQuickLogin}
       />
     </motion.form>
   );

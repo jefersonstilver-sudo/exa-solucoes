@@ -26,7 +26,6 @@ const ModernCartLayout: React.FC<ModernCartLayoutProps> = ({
   isCheckoutLoading = false
 }) => {
   const isEmpty = cartItems.length === 0;
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
 
   if (isEmpty) {
     return <ModernEmptyCart />;
@@ -74,10 +73,9 @@ const ModernCartLayout: React.FC<ModernCartLayoutProps> = ({
       
       {/* Summary and Checkout */}
       <ModernCartSummary
-        itemCount={cartItems.length}
-        totalPrice={totalPrice}
+        cartItems={cartItems}
         onProceedToCheckout={onProceedToCheckout}
-        isLoading={isCheckoutLoading}
+        isCheckoutLoading={isCheckoutLoading}
       />
     </div>
   );
