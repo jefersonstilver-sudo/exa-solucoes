@@ -46,7 +46,7 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
         handleClearLocation={handleClearLocation}
         filters={{
           radius: filters.radius,
-          neighborhood: filters.neighborhood,
+          neighborhood: filters.neighborhood || '',
           status: [],
           buildingProfile: filters.standardProfile,
           facilities: filters.amenities,
