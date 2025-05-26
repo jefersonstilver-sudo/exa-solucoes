@@ -1,156 +1,122 @@
 
-import { useState, useEffect } from 'react';
+import { create } from 'zustand';
 import { BuildingStore, fetchBuildingsForStore } from '@/services/buildingStoreService';
-import { toast } from 'sonner';
+import { getLocationCoordinates } from '@/services/geocoding';
 
 export interface BuildingFilters {
   radius: number;
+  neighborhood: string;
   venueType: string[];
-  standardProfile: string[];
   priceRange: [number, number];
   audienceMin: number;
+  standardProfile: string[];
   amenities: string[];
 }
 
-const DEFAULT_FILTERS: BuildingFilters = {
-  radius: 10000, // 10km - raio maior para mostrar mais prédios
-  venueType: ['Residencial', 'Comercial', 'Misto'],
-  standardProfile: ['alto', 'medio', 'normal'],
+interface BuildingStoreState {
+  buildings: BuildingStore[];
+  loading: boolean;
+  isLoading: boolean; // Alias para compatibilidade
+  error: string | null;
+  searchLocation: string;
+  setSearchLocation: (location: string) => void;
+  selectedLocation: { lat: number, lng: number } | null;
+  isSearching: boolean;
+  filters: BuildingFilters;
+  handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;
+  fetchBuildings: (lat?: number, lng?: number) => Promise<void>;
+  handleSearch: (location: string) => Promise<void>;
+  handleClearLocation: () => void;
+}
+
+const defaultFilters: BuildingFilters = {
+  radius: 5000, // 5km
+  neighborhood: '',
+  venueType: [],
   priceRange: [0, 1000],
-  audienceMin: 0, // Reduzido para 0 para mostrar todos os prédios
+  audienceMin: 0,
+  standardProfile: [],
   amenities: []
 };
 
-export const useBuildingStore = () => {
-  const [buildings, setBuildings] = useState<BuildingStore[]>([]);
-  const [filteredBuildings, setFilteredBuildings] = useState<BuildingStore[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [filters, setFilters] = useState<BuildingFilters>(DEFAULT_FILTERS);
-
-  // Função para buscar prédios
-  const fetchBuildings = async (lat?: number, lng?: number, radius?: number) => {
+export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
+  buildings: [],
+  loading: false,
+  isLoading: false,
+  error: null,
+  searchLocation: '',
+  selectedLocation: null,
+  isSearching: false,
+  filters: { ...defaultFilters },
+  
+  setSearchLocation: (location: string) => {
+    set({ searchLocation: location });
+  },
+  
+  handleFilterChange: (newFilters: Partial<BuildingFilters>) => {
+    set(state => ({
+      filters: { ...state.filters, ...newFilters }
+    }));
+  },
+  
+  fetchBuildings: async (lat?: number, lng?: number) => {
     try {
-      console.log('🏢 [useBuildingStore] Iniciando busca de prédios...', { lat, lng, radius });
-      setIsSearching(true);
+      set({ loading: true, isLoading: true, error: null });
       
-      const data = await fetchBuildingsForStore(lat, lng, radius || filters.radius);
+      const buildings = await fetchBuildingsForStore(lat, lng, get().filters.radius);
       
-      console.log('🏢 [useBuildingStore] Prédios recebidos:', data.length);
-      console.log('🏢 [useBuildingStore] Dados dos prédios:', data);
+      set({ 
+        buildings: buildings as BuildingStore[], 
+        loading: false, 
+        isLoading: false 
+      });
       
-      setBuildings(data);
-      
-      if (data.length === 0) {
-        console.warn('⚠️ [useBuildingStore] Nenhum prédio encontrado');
-        toast.error('Nenhum prédio encontrado na região');
-      } else {
-        console.log('✅ [useBuildingStore] Prédios carregados com sucesso');
-        toast.success(`${data.length} prédios encontrados`);
-      }
-    } catch (error) {
-      console.error('❌ [useBuildingStore] Erro ao buscar prédios:', error);
-      toast.error('Erro ao carregar prédios');
-      setBuildings([]);
-    } finally {
-      setIsLoading(false);
-      setIsSearching(false);
+    } catch (error: any) {
+      console.error('Error fetching buildings:', error);
+      set({ 
+        error: error.message || 'Failed to fetch buildings', 
+        loading: false, 
+        isLoading: false 
+      });
     }
-  };
-
-  // Carregamento inicial automático
-  useEffect(() => {
-    console.log('🔄 [useBuildingStore] Iniciando carregamento automático...');
-    fetchBuildings();
-  }, []);
-
-  // Filtrar prédios quando os filtros ou dados mudarem
-  useEffect(() => {
-    console.log('🔍 [useBuildingStore] Aplicando filtros...', { 
-      totalBuildings: buildings.length,
-      filters 
-    });
-
-    if (!buildings.length) {
-      setFilteredBuildings([]);
+  },
+  
+  handleSearch: async (location: string) => {
+    if (!location.trim()) {
       return;
     }
-
-    const filtered = buildings.filter(building => {
-      // Filtro por tipo de local
-      if (filters.venueType.length > 0 && !filters.venueType.includes(building.venue_type)) {
-        return false;
+    
+    try {
+      set({ isSearching: true });
+      
+      const coordinates = await getLocationCoordinates(location);
+      
+      if (!coordinates) {
+        set({ isSearching: false });
+        return;
       }
-
-      // Filtro por padrão do público
-      if (filters.standardProfile.length > 0 && !filters.standardProfile.includes(building.padrao_publico)) {
-        return false;
-      }
-
-      // Filtro por faixa de preço - usar valor padrão se não houver preço
-      const preco = building.preco_base || 250; // Valor padrão se não houver preço
-      if (preco < filters.priceRange[0] || preco > filters.priceRange[1]) {
-        return false;
-      }
-
-      // Filtro por público mínimo - usar valor padrão se não houver público
-      const publico = building.publico_estimado || 1000; // Valor padrão se não houver público
-      if (publico < filters.audienceMin) {
-        return false;
-      }
-
-      // Filtro por comodidades
-      if (filters.amenities.length > 0) {
-        const buildingAmenities = building.amenities || [];
-        const hasAmenity = filters.amenities.some(amenity => 
-          buildingAmenities.includes(amenity)
-        );
-        if (!hasAmenity) {
-          return false;
-        }
-      }
-
-      return true;
+      
+      set({ 
+        selectedLocation: coordinates,
+        searchLocation: location
+      });
+      
+      await get().fetchBuildings(coordinates.lat, coordinates.lng);
+      
+      set({ isSearching: false });
+    } catch (error) {
+      console.error("Error searching location:", error);
+      set({ isSearching: false });
+    }
+  },
+  
+  handleClearLocation: () => {
+    set({ 
+      selectedLocation: null,
+      searchLocation: '',
+      buildings: []
     });
+  }
+}));
 
-    console.log('✅ [useBuildingStore] Filtros aplicados:', {
-      original: buildings.length,
-      filtered: filtered.length
-    });
-
-    setFilteredBuildings(filtered);
-  }, [buildings, filters]);
-
-  // Buscar por localização
-  const searchByLocation = async (lat: number, lng: number) => {
-    console.log('📍 [useBuildingStore] Buscando por localização:', { lat, lng });
-    setSelectedLocation({ lat, lng });
-    await fetchBuildings(lat, lng, filters.radius);
-  };
-
-  // Atualizar filtros
-  const updateFilters = (newFilters: Partial<BuildingFilters>) => {
-    console.log('🔧 [useBuildingStore] Atualizando filtros:', newFilters);
-    setFilters(prev => ({ ...prev, ...newFilters }));
-  };
-
-  // Reset filtros
-  const resetFilters = () => {
-    console.log('🔄 [useBuildingStore] Resetando filtros');
-    setFilters(DEFAULT_FILTERS);
-    setSelectedLocation(null);
-  };
-
-  return {
-    buildings: filteredBuildings,
-    isLoading,
-    isSearching,
-    selectedLocation,
-    filters,
-    fetchBuildings,
-    searchByLocation,
-    updateFilters,
-    resetFilters
-  };
-};
+export default useBuildingStore;
