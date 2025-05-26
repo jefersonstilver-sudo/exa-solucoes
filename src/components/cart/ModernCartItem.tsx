@@ -39,58 +39,58 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
   return (
     <motion.div
       className={`
-        bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden
+        bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden
         hover:shadow-md transition-shadow duration-300
         ${isRemoving ? 'opacity-50' : ''}
       `}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.005 }}
       layout
     >
       <div className="flex flex-col">
-        {/* Imagem - Agora mais quadrada */}
+        {/* Imagem - Muito mais compacta */}
         <div className="w-full relative">
           {panel.buildings?.imageUrl ? (
             <div className="relative group">
               <img 
                 src={panel.buildings.imageUrl}
                 alt={panel.buildings?.nome || 'Painel'}
-                className="w-full h-32 object-cover"
+                className="w-full h-20 object-cover"
               />
-              {/* Overlay com informações extras */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute bottom-3 left-3 right-3">
-                  <div className="flex items-center text-white text-xs space-x-2">
-                    <Eye className="h-3 w-3" />
-                    <span>{panel.buildings?.apartments || 100} apartamentos</span>
+              {/* Overlay simplificado */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute bottom-2 left-2 right-2">
+                  <div className="flex items-center text-white text-xs space-x-1">
+                    <Eye className="h-2.5 w-2.5" />
+                    <span>{panel.buildings?.apartments || 100} apts</span>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-br from-gray-200 to-gray-300 w-full h-32 flex items-center justify-center">
-              <Building className="h-8 w-8 text-gray-400" />
+            <div className="bg-gradient-to-br from-gray-200 to-gray-300 w-full h-20 flex items-center justify-center">
+              <Building className="h-5 w-5 text-gray-400" />
             </div>
           )}
           
-          {/* Badge de status */}
+          {/* Badge de status - menor */}
           <Badge 
             variant="secondary" 
-            className="absolute top-3 left-3 bg-green-100 text-green-700 border-none"
+            className="absolute top-2 left-2 bg-green-100 text-green-700 border-none text-xs px-2 py-0.5"
           >
             Ativo
           </Badge>
         </div>
         
-        {/* Conteúdo */}
-        <div className="p-4">
-          <div className="flex items-start justify-between mb-2">
+        {/* Conteúdo - muito mais compacto */}
+        <div className="p-3">
+          <div className="flex items-start justify-between mb-1">
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-lg">
+              <h3 className="font-semibold text-gray-900 text-base leading-tight">
                 {panel.buildings?.nome || 'Painel sem nome'}
               </h3>
-              <div className="flex items-center text-gray-500 text-sm mt-1">
+              <div className="flex items-center text-gray-500 text-xs mt-0.5">
                 <MapPin className="h-3 w-3 mr-1" />
-                <span>{formatLocation()}</span>
+                <span className="truncate">{formatLocation()}</span>
               </div>
             </div>
             
@@ -99,23 +99,23 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
               size="sm"
               onClick={handleRemove}
               disabled={isRemoving}
-              className="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors p-2"
+              className="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors p-1 h-6 w-6"
               title="Remover item"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3 w-3" />
             </Button>
           </div>
           
-          {/* Tipo de local */}
+          {/* Tipo de local - mais discreto */}
           {panel.buildings?.venue_type && (
-            <Badge variant="outline" className="mb-3 text-xs">
+            <Badge variant="outline" className="mb-2 text-xs px-1.5 py-0.5">
               {panel.buildings.venue_type}
             </Badge>
           )}
           
-          {/* Preço */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-2xl font-bold text-[#3C1361]">
+          {/* Preço - menor mas ainda destacado */}
+          <div className="flex items-center justify-between mt-2">
+            <div className="text-xl font-bold text-[#3C1361]">
               {formatCurrency(item.price)}
             </div>
           </div>
