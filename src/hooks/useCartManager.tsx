@@ -10,6 +10,18 @@ import {
   loadCartFromStorage, 
   CART_STORAGE_KEY 
 } from '@/services/cartStorageService';
+import { getPanelPrice } from '@/utils/checkoutUtils';
+
+// Utility function to convert legacy cart item to full cart item
+const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number }): CartItem => {
+  return {
+    id: `cart_${legacyItem.panel.id}_${Date.now()}`,
+    panel: legacyItem.panel,
+    duration: legacyItem.duration,
+    addedAt: Date.now(),
+    price: getPanelPrice(legacyItem.panel, legacyItem.duration)
+  };
+};
 
 export const useCartManager = () => {
   const {
@@ -88,7 +100,11 @@ export const useCartManager = () => {
       });
       
       // Forçar sincronização para resolver a discrepância
-      saveCartToStorage(cartItems);
+      const legacyCartItems = cartItems.map(item => ({
+        panel: item.panel,
+        duration: item.duration
+      }));
+      saveCartToStorage(legacyCartItems);
       
       logCheckoutEvent(
         CheckoutEvent.SAVE_CART,
@@ -142,9 +158,10 @@ export const useCartManager = () => {
     
     // Debugging and testing
     reloadCartFromStorage: () => {
-      const loadedCart = loadCartFromStorage();
-      setCartItems(loadedCart);
-      return loadedCart;
+      const loadedLegacyCart = loadCartFromStorage();
+      const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
+      setCartItems(fullCartItems);
+      return fullCartItems;
     }
   };
 };
