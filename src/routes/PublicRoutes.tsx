@@ -12,6 +12,7 @@ export const PublicRoutes = () => {
       <Route path="/selecionar-plano" element={<PlanSelection />} />
       <Route path="/confirmacao" element={<Confirmacao />} />
       <Route path="/predios-loja" element={<BuildingStorePage />} />
+      <Route path="/building-store" element={<BuildingStorePage />} />
     </Routes>
   );
 };

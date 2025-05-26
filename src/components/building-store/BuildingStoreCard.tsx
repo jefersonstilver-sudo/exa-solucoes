@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +15,8 @@ import {
   Gamepad2,
   Dumbbell,
   ShoppingCart,
-  Check
+  Check,
+  ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BuildingStore, getBuildingImageUrls, buildingToPanel } from '@/services/buildingStoreService';
@@ -102,6 +102,10 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
       setIsAdded(false);
       setIsAnimating(false);
     }
+  };
+
+  const handleViewPanels = () => {
+    onViewPanels(building);
   };
 
   const primaryImage = getImageUrl(building.imagem_principal);
@@ -232,7 +236,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                 </div>
               )}
 
-              {/* Preço e Ação */}
+              {/* Preço e Ações */}
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between pt-6 border-t border-gray-100">
                 <div className="mb-4 lg:mb-0">
                   <p className="text-sm text-gray-600 mb-1">A partir de</p>
@@ -245,33 +249,47 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                   </p>
                 </div>
                 
-                <motion.div
-                  animate={isAnimating ? { scale: [1, 1.1, 1] } : {}}
-                  transition={{ duration: 0.6 }}
-                >
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Botão Ver Painéis */}
                   <Button
-                    onClick={handleAddToCart}
+                    onClick={handleViewPanels}
+                    variant="outline"
                     size="lg"
-                    disabled={isAdded}
-                    className={`px-8 py-3 text-base font-semibold transition-all duration-300 ${
-                      isAdded 
-                        ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
-                        : 'bg-indexa-purple hover:bg-indexa-purple-dark text-white hover:scale-105'
-                    }`}
+                    className="px-6 py-3 text-base font-semibold border-2 border-indexa-purple text-indexa-purple hover:bg-indexa-purple/5 transition-all duration-300"
                   >
-                    {isAdded ? (
-                      <>
-                        <Check className="h-5 w-5 mr-2" />
-                        Adicionado ao Carrinho
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="h-5 w-5 mr-2" />
-                        Adicionar ao Carrinho
-                      </>
-                    )}
+                    <ArrowRight className="h-5 w-5 mr-2" />
+                    Ver Painéis
                   </Button>
-                </motion.div>
+
+                  {/* Botão Adicionar ao Carrinho */}
+                  <motion.div
+                    animate={isAnimating ? { scale: [1, 1.1, 1] } : {}}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <Button
+                      onClick={handleAddToCart}
+                      size="lg"
+                      disabled={isAdded}
+                      className={`px-6 py-3 text-base font-semibold transition-all duration-300 ${
+                        isAdded 
+                          ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
+                          : 'bg-indexa-purple hover:bg-indexa-purple-dark text-white hover:scale-105'
+                      }`}
+                    >
+                      {isAdded ? (
+                        <>
+                          <Check className="h-5 w-5 mr-2" />
+                          Adicionado
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="h-5 w-5 mr-2" />
+                          Adicionar
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                </div>
               </div>
             </div>
           </div>

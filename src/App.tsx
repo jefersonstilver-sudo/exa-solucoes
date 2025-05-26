@@ -13,6 +13,7 @@ import OrderConfirmation from '@/pages/OrderConfirmation';
 import Home from '@/pages/Home';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
+import BuildingStorePage from '@/pages/BuildingStore';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AuthHookTest from '@/pages/AuthHookTest';
 import AuthDiagnosticPage from '@/pages/AuthDiagnosticPage';
@@ -45,9 +46,13 @@ const App = () => {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         
-        {/* Painéis Digitais - Loja Online */}
+        {/* Loja de Prédios - Nova rota principal */}
+        <Route path="/loja" element={<BuildingStorePage />} />
+        <Route path="/loja-predios" element={<BuildingStorePage />} />
+        
+        {/* Painéis Digitais - Loja de Painéis (específicos de um prédio) */}
         <Route path="/paineis-digitais/loja" element={<PainelStore />} />
-        <Route path="/paineis-digitais" element={<Navigate to="/paineis-digitais/loja" replace />} />
+        <Route path="/paineis-digitais" element={<Navigate to="/loja" replace />} />
         
         {/* Advertiser Dashboard */}
         <Route path="/anunciante" element={<AdvertiserDashboard />} />

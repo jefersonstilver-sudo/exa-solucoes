@@ -13,6 +13,7 @@ import Forbidden from './pages/Forbidden'
 import Cadastro from './pages/Cadastro'
 import Checkout from './pages/Checkout'
 import PanelStore from './pages/PanelStore'
+import BuildingStorePage from './pages/BuildingStore'
 import PlanSelection from './pages/PlanSelection'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Confirmacao from './pages/Confirmacao'
@@ -58,6 +59,16 @@ const router = createBrowserRouter([
     path: '/forbidden',
     element: <Forbidden />
   },
+  // Loja de Prédios - Nova rota principal
+  {
+    path: '/loja',
+    element: <BuildingStorePage />
+  },
+  {
+    path: '/loja-predios',
+    element: <BuildingStorePage />
+  },
+  // Painéis Digitais - Loja de Painéis específicos
   {
     path: '/paineis-digitais/loja',
     element: <PanelStore />
