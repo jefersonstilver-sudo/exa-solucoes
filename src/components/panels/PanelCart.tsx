@@ -22,10 +22,7 @@ const PanelCart: React.FC<PanelCartProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCheckout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleCheckout = () => {
     console.log("PanelCart: Iniciando checkout moderno");
     logCheckoutEvent(
       CheckoutEvent.PROCEED_TO_CHECKOUT, 

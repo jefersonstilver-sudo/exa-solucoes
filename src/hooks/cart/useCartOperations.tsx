@@ -4,6 +4,7 @@ import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { Check, Trash2 } from 'lucide-react';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 
 interface UseCartOperationsProps {
   cartItems: CartItem[];
@@ -20,15 +21,35 @@ export const useCartOperations = ({
 }: UseCartOperationsProps) => {
   const { toast } = useToast();
 
+  const generateItemId = (panel: Panel): string => {
+    return `cart_${panel.id}_${Date.now()}`;
+  };
+
+  const createCartItem = (panel: Panel, duration: number = 30): CartItem => {
+    return {
+      id: generateItemId(panel),
+      panel,
+      duration,
+      addedAt: Date.now(),
+      price: getPanelPrice(panel, duration)
+    };
+  };
+
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
     setCartItems(prev => {
       // Check if panel is already in cart
-      const exists = prev.some(item => item.panel.id === panel.id);
-      if (exists) {
-        // Update the duration if panel already exists
-        return prev.map(item => 
-          item.panel.id === panel.id 
-            ? {...item, duration} 
+      const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
+      
+      if (existingIndex >= 0) {
+        // Update the existing item
+        return prev.map((item, index) => 
+          index === existingIndex 
+            ? {
+                ...item,
+                duration,
+                price: getPanelPrice(panel, duration),
+                addedAt: Date.now()
+              }
             : item
         );
       } else {
@@ -37,7 +58,8 @@ export const useCartOperations = ({
         setTimeout(() => setCartAnimation(false), 800);
         
         // Add new panel to cart
-        return [...prev, { panel, duration }];
+        const newItem = createCartItem(panel, duration);
+        return [...prev, newItem];
       }
     });
     
@@ -123,7 +145,11 @@ export const useCartOperations = ({
     setCartItems(prev => {
       const updated = prev.map(item => 
         item.panel.id === panelId 
-          ? {...item, duration} 
+          ? {
+              ...item,
+              duration,
+              price: getPanelPrice(item.panel, duration)
+            }
           : item
       );
       

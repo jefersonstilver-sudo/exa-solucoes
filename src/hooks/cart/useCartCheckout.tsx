@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
 import { navigateSafely, isCurrentPath } from '@/services/navigationService';
@@ -10,7 +10,7 @@ import { logCheckoutInitiation, logEmptyCartAttempt, logCheckoutStart, logChecko
 import { saveCartToStorage, loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
 
 interface UseCartCheckoutProps {
-  cartItems: { panel: Panel; duration: number }[];
+  cartItems: CartItem[];
   setIsNavigating: (isNavigating: boolean) => void;
   setCartOpen: (isOpen: boolean) => void;
 }
@@ -148,9 +148,15 @@ export const useCartCheckout = ({
       // Log checkout start
       logCheckoutStart(cartItems.length);
       
+      // Convert CartItem[] to legacy format for saveCartToStorage
+      const legacyCartItems = cartItems.map(item => ({
+        panel: item.panel,
+        duration: item.duration
+      }));
+      
       // VERIFICAÇÃO FINAL - Salvar carrinho com validação rigorosa
-      console.log("Salvando carrinho final antes do checkout:", cartItems);
-      const saveSuccess = saveCartToStorage(cartItems);
+      console.log("Salvando carrinho final antes do checkout:", legacyCartItems);
+      const saveSuccess = saveCartToStorage(legacyCartItems);
       
       if (!saveSuccess) {
         throw new Error("Falha ao salvar carrinho no localStorage");

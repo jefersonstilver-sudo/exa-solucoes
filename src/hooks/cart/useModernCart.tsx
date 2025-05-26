@@ -47,7 +47,6 @@ export const useModernCart = () => {
       toast({
         title: "✅ Painel adicionado",
         description: `${panel.buildings?.nome || 'Painel'} foi adicionado ao seu carrinho`,
-        duration: 3000,
       });
 
       return updatedItems;
@@ -77,7 +76,6 @@ export const useModernCart = () => {
       toast({
         title: "🗑️ Painel removido",
         description: `${itemToRemove?.panel.buildings?.nome || 'Painel'} foi removido do carrinho`,
-        duration: 3000,
       });
 
       return updatedItems;
@@ -105,7 +103,6 @@ export const useModernCart = () => {
         toast({
           title: "📅 Duração atualizada",
           description: `${item.panel.buildings?.nome}: ${months} ${months === 1 ? 'mês' : 'meses'}`,
-          duration: 2000,
         });
       }
 
@@ -130,7 +127,6 @@ export const useModernCart = () => {
       toast({
         title: "🧹 Carrinho limpo",
         description: "Todos os itens foram removidos do seu carrinho",
-        duration: 3000,
       });
 
       return updatedItems;

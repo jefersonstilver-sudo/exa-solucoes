@@ -3,11 +3,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
 import PanelCart from '@/components/panels/PanelCart';
 
 interface CartDrawerProps {
-  cartItems: Array<{panel: Panel, duration: number}>;
+  cartItems: CartItem[];
   onRemoveFromCart?: (panelId: string) => void;
   onClearCart?: () => void;
   onChangeDuration?: (panelId: string, duration: number) => void;
