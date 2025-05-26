@@ -52,10 +52,10 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
     );
   };
 
-  const getLocationTypeBadge = (type: string) => {
+  const getVenueTypeBadge = (venueType: string) => {
     return (
       <Badge className="bg-indigo-500/90 text-white border-0 shadow-md">
-        {type === 'residential' ? 'Residencial' : 'Comercial'}
+        {venueType || 'Residencial'}
       </Badge>
     );
   };
@@ -80,7 +80,7 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
       {/* Badges sobrepostos */}
       <div className="absolute top-3 left-3 flex flex-col gap-2">
         {getStatusBadge(building.status)}
-        {getLocationTypeBadge(building.location_type)}
+        {getVenueTypeBadge(building.venue_type)}
       </div>
       
       <div className="absolute top-3 right-3">

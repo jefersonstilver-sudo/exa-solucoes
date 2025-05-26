@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -8,8 +7,7 @@ export interface Building {
   endereco: string;
   bairro: string;
   status: string;
-  venue_type: string;
-  location_type: string;
+  venue_type: string; // Campo correto no banco
   monthly_traffic: number;
   latitude: number;
   longitude: number;
