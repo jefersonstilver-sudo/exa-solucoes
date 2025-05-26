@@ -77,7 +77,6 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   const convertBuildingToPanel = (building: BuildingStore): Panel => {
     return {
       id: `building-${building.id}`,
-      code: `BUILD-${building.id.slice(0, 8).toUpperCase()}`, // Adicionando o campo 'code' obrigatório
       building_id: building.id,
       nome: `Pacote - ${building.nome}`,
       tipo: 'led',
@@ -92,17 +91,15 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
         nome: building.nome,
         endereco: building.endereco,
         bairro: building.bairro,
-        cep: '', // Campo não existe em BuildingStore, usando valor padrão
-        cidade: '', // Campo não existe em BuildingStore, usando valor padrão  
-        estado: '', // Campo não existe em BuildingStore, usando valor padrão
-        latitude: building.latitude || 0,
-        longitude: building.longitude || 0,
+        cep: building.cep,
+        cidade: building.cidade,
+        estado: building.estado,
         publico_estimado: building.publico_estimado,
         padrao_publico: building.padrao_publico,
         venue_type: building.venue_type,
-        ativo: building.status === 'ativo', // Convertendo status para ativo boolean
-        created_at: new Date().toISOString(), // Campo não existe, usando valor padrão
-        updated_at: new Date().toISOString() // Campo não existe, usando valor padrão
+        ativo: building.ativo,
+        created_at: building.created_at,
+        updated_at: building.updated_at
       }
     } as Panel;
   };

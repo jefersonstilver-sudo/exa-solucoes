@@ -32,13 +32,12 @@ interface BuildingStoreState {
   applyFilters: () => void;
 }
 
-// Filtros padrão corrigidos para não excluir prédios com valores zerados
 const defaultFilters: BuildingFilters = {
   radius: 5000,
   neighborhood: '',
   venueType: [],
-  priceRange: [0, 5000], // Aumentado o range máximo
-  audienceMin: 0, // CRÍTICO: 0 para incluir TODOS os prédios
+  priceRange: [0, 2000], // Aumentei o range máximo
+  audienceMin: 0, // IMPORTANTE: 0 para não excluir prédios sem público definido
   standardProfile: [],
   amenities: []
 };
@@ -85,17 +84,6 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       
       const buildings = await fetchBuildingsForStore(lat, lng, get().filters.radius);
       console.log('📊 [BUILDING STORE] Prédios recebidos:', buildings.length);
-      
-      // Log detalhado dos prédios recebidos
-      buildings.forEach(building => {
-        console.log('🏢 [BUILDING STORE] Prédio carregado:', {
-          id: building.id,
-          nome: building.nome,
-          status: building.status,
-          preco_base: building.preco_base,
-          publico_estimado: building.publico_estimado
-        });
-      });
       
       set({ 
         allBuildings: buildings as BuildingStore[],
@@ -152,10 +140,10 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
     console.log('🧹 [BUILDING STORE] Limpando localização');
     set({ 
       selectedLocation: null,
-      searchLocation: ''
+      searchLocation: '',
+      allBuildings: [],
+      buildings: []
     });
-    // Recarregar todos os prédios após limpar localização
-    get().fetchBuildings();
   }
 }));
 
