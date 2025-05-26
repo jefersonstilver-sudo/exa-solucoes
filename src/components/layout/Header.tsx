@@ -1,133 +1,112 @@
 
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useCartManager } from '@/hooks/useCartManager';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { User } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
-import UserMenu from '@/components/user/UserMenu';
-import HeaderLogo from './header/HeaderLogo';
-import DesktopNavigation from './header/DesktopNavigation';
 import CartButton from './header/CartButton';
-import MobileMenuButton from './header/MobileMenuButton';
-import MobileMenu from './header/MobileMenu';
-import OnlineStoreButton from './header/OnlineStoreButton';
 
-const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { cartItems, toggleCart } = useCartManager();
+interface HeaderProps {
+  cartItemsCount?: number;
+  cartAnimation?: boolean;
+  onToggleCart?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ 
+  cartItemsCount = 0, 
+  cartAnimation = false,
+  onToggleCart
+}) => {
   const { user, isLoggedIn } = useUserSession();
 
-  // Close mobile menu when route changes
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location.pathname]);
-
-  // Close mobile menu on escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsMenuOpen(false);
-      }
-    };
-
-    if (isMenuOpen) {
-      document.addEventListener('keydown', handleEscape);
-      // Prevent body scroll when menu is open
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isMenuOpen]);
-
-  // CORREÇÃO: Verificar se super admin está em área pública
-  useEffect(() => {
-    const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
-    const isPublicPage = location.pathname === '/' || 
-                        location.pathname.startsWith('/loja') ||
-                        location.pathname.startsWith('/paineis-digitais') ||
-                        location.pathname.startsWith('/sobre') ||
-                        location.pathname.startsWith('/contato') ||
-                        location.pathname.startsWith('/planos');
-    
-    console.log('🎯 HEADER: Verificação de navegação:', {
-      currentPath: location.pathname,
-      isSuperAdmin,
-      isPublicPage,
-      shouldAllowNavigation: isSuperAdmin && isPublicPage
-    });
-    
-    // Super admin pode navegar livremente em páginas públicas
-    if (isSuperAdmin && isPublicPage) {
-      console.log('✅ HEADER: Super admin navegando em página pública - permitido');
-      return;
-    }
-  }, [location.pathname, user]);
-
-  const totalCartItems = cartItems.length;
-
-  const navItems = [
-    { to: "/", label: "Home" },
-    { to: "/planos", label: "Planos" },
-    { to: "/sobre", label: "Sobre" },
-    { to: "/contato", label: "Contato" }
-  ];
-
-  const toggleMobileMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMenuOpen(false);
-  };
+  console.log('🏢 Header: Renderizando header');
+  console.log('🏢 Header: cartItemsCount:', cartItemsCount);
+  console.log('🏢 Header: onToggleCart function:', !!onToggleCart);
 
   return (
-    <>
-      <header className="bg-gradient-to-r from-indexa-purple to-indexa-purple/95 text-white shadow-xl relative z-40">
-        <div className="container mx-auto px-4 lg:px-6">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            {/* Logo */}
-            <HeaderLogo />
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#3C1361] to-[#2A0D47] shadow-lg">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center space-x-3">
+            <Link to="/" className="flex items-center space-x-3">
+              <div className="bg-white p-2 rounded-lg">
+                <span className="text-[#3C1361] font-bold text-xl">INDEXA</span>
+              </div>
+            </Link>
+          </div>
 
-            {/* Desktop Navigation */}
-            <DesktopNavigation navItems={navItems} />
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link 
+              to="/" 
+              className="text-white hover:text-[#00FFAB] transition-colors font-medium"
+            >
+              Home
+            </Link>
+            <Link 
+              to="/planos" 
+              className="text-white hover:text-[#00FFAB] transition-colors font-medium"
+            >
+              Planos
+            </Link>
+            <Link 
+              to="/sobre" 
+              className="text-white hover:text-[#00FFAB] transition-colors font-medium"
+            >
+              Sobre
+            </Link>
+            <Link 
+              to="/contato" 
+              className="text-white hover:text-[#00FFAB] transition-colors font-medium"
+            >
+              Contato
+            </Link>
+          </nav>
 
-            {/* Right Side - Loja Online + User + Cart + Mobile Menu */}
-            <div className="flex items-center space-x-2 md:space-x-3">
-              {/* Online Store Button */}
-              <OnlineStoreButton />
+          {/* Right side - Cart and User actions */}
+          <div className="flex items-center space-x-4">
+            {/* Loja Online Button */}
+            <Link to="/paineis-digitais/loja">
+              <Button 
+                variant="outline" 
+                className="bg-[#00FFAB] text-[#3C1361] border-[#00FFAB] hover:bg-[#00FFAB]/90 font-semibold"
+              >
+                Loja Online
+              </Button>
+            </Link>
 
-              {/* User Menu */}
-              <UserMenu />
+            {/* Cart Button */}
+            <CartButton 
+              cartItemsCount={cartItemsCount}
+              isAnimating={cartAnimation}
+              onToggleCart={onToggleCart}
+            />
 
-              {/* Cart Button - NOW WITH TOGGLE FUNCTION */}
-              <CartButton 
-                cartItemsCount={totalCartItems} 
-                onToggleCart={toggleCart}
-              />
-
-              {/* Mobile Menu Button */}
-              <MobileMenuButton 
-                isMenuOpen={isMenuOpen} 
-                onToggle={toggleMobileMenu} 
-              />
-            </div>
+            {/* User Profile/Login */}
+            {isLoggedIn ? (
+              <div className="flex items-center space-x-2">
+                <div className="h-8 w-8 bg-[#00FFAB] rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-[#3C1361]" />
+                </div>
+                <span className="text-white text-sm font-medium">
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+                </span>
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:text-[#00FFAB] hover:bg-white/10"
+                >
+                  Entrar
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
-      </header>
-
-      {/* Mobile Menu */}
-      <MobileMenu 
-        isOpen={isMenuOpen} 
-        onClose={closeMobileMenu} 
-        navItems={navItems} 
-      />
-    </>
+      </div>
+    </header>
   );
 };
 

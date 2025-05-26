@@ -25,13 +25,21 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   onChangeDuration,
   onProceedToCheckout
 }) => {
+  console.log('🛒 CartDrawer: Renderizando');
+  console.log('🛒 CartDrawer: isOpen:', isOpen);
+  console.log('🛒 CartDrawer: cartItems.length:', cartItems.length);
+
   const handleClose = () => {
+    console.log('🛒 CartDrawer: Fechando drawer');
     onClose();
   };
 
+  // Sempre renderizar o drawer quando houver itens, independente do estado isOpen
+  const shouldShow = cartItems.length > 0 && isOpen;
+
   return (
     <AnimatePresence>
-      {isOpen && cartItems.length > 0 && (
+      {shouldShow && (
         <>
           {/* Overlay */}
           <motion.div
@@ -57,7 +65,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                Seu Carrinho
+                Seu Carrinho ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})
               </h2>
               <Button
                 variant="ghost"

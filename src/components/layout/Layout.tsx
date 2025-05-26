@@ -1,68 +1,78 @@
 
 import React from 'react';
+import { CartItem } from '@/types/cart';
 import Header from './Header';
-import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
 import { useCartManager } from '@/hooks/useCartManager';
-import { Panel } from '@/types/panel';
-import { CartItem } from '@/types/cart';
-import { getPanelPrice } from '@/utils/checkoutUtils';
 
 interface LayoutProps {
   children: React.ReactNode;
-  useGradientBackground?: boolean;
-  cartItems?: Array<{panel: Panel, duration: number}>;
+  cartItems?: CartItem[];
   onRemoveFromCart?: (panelId: string) => void;
   onClearCart?: () => void;
   onChangeDuration?: (panelId: string, duration: number) => void;
   onProceedToCheckout?: () => void;
 }
 
-// Utility function to convert legacy cart item to full cart item
-const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number }): CartItem => {
-  return {
-    id: `cart_${legacyItem.panel.id}_${Date.now()}`,
-    panel: legacyItem.panel,
-    duration: legacyItem.duration,
-    addedAt: Date.now(),
-    price: getPanelPrice(legacyItem.panel, legacyItem.duration)
-  };
-};
-
 const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  useGradientBackground = false,
-  cartItems = [],
-  onRemoveFromCart,
-  onClearCart,
-  onChangeDuration,
-  onProceedToCheckout
+  children,
+  cartItems: externalCartItems,
+  onRemoveFromCart: externalOnRemoveFromCart,
+  onClearCart: externalOnClearCart,
+  onChangeDuration: externalOnChangeDuration,
+  onProceedToCheckout: externalOnProceedToCheckout
 }) => {
-  // Get cart state from useCartManager
-  const { cartOpen, setCartOpen, cartItems: managerCartItems } = useCartManager();
+  // Use o hook interno do carrinho para gerenciar o estado
+  const {
+    cartItems: internalCartItems,
+    cartOpen,
+    setCartOpen,
+    handleRemoveFromCart: internalHandleRemoveFromCart,
+    handleClearCart: internalHandleClearCart,
+    handleChangeDuration: internalHandleChangeDuration,
+    cartAnimation,
+    toggleCart
+  } = useCartManager();
 
-  // Convert legacy cart items to proper CartItem format and choose the right source
-  const effectiveCartItems: CartItem[] = cartItems.length > 0 
-    ? cartItems.map(convertLegacyToCartItem)
-    : managerCartItems;
+  // Use props externas se fornecidas, senão use as internas
+  const cartItems = externalCartItems || internalCartItems;
+  const onRemoveFromCart = externalOnRemoveFromCart || internalHandleRemoveFromCart;
+  const onClearCart = externalOnClearCart || internalHandleClearCart;
+  const onChangeDuration = externalOnChangeDuration || internalHandleChangeDuration;
+  const onProceedToCheckout = externalOnProceedToCheckout || (() => {});
+
+  console.log('🏗️ Layout: Renderizando com carrinho');
+  console.log('🏗️ Layout: cartItems.length:', cartItems.length);
+  console.log('🏗️ Layout: cartOpen:', cartOpen);
+  console.log('🏗️ Layout: toggleCart function:', !!toggleCart);
+
+  const handleToggleCart = () => {
+    console.log('🏗️ Layout: handleToggleCart chamado');
+    console.log('🏗️ Layout: cartOpen atual:', cartOpen);
+    console.log('🏗️ Layout: cartItems.length:', cartItems.length);
+    
+    if (cartItems.length > 0) {
+      toggleCart();
+    } else {
+      console.log('🏗️ Layout: Carrinho vazio, não abrindo');
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main 
-        className={`flex-1 ${
-          useGradientBackground 
-            ? 'bg-gradient-to-br from-gray-50 via-white to-purple-50' 
-            : 'bg-white'
-        }`}
-      >
+    <div className="min-h-screen bg-gray-50">
+      <Header 
+        cartItemsCount={cartItems.length}
+        cartAnimation={cartAnimation}
+        onToggleCart={handleToggleCart}
+      />
+      
+      <main className="pt-16">
         {children}
       </main>
-      <MobileOptimizedFooter />
       
       {/* Cart Drawer */}
       <CartDrawer
-        cartItems={effectiveCartItems}
+        cartItems={cartItems}
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         onRemoveFromCart={onRemoveFromCart}

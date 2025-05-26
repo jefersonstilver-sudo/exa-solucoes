@@ -15,6 +15,9 @@ const CartButton: React.FC<CartButtonProps> = ({
 }) => {
   const handleCartClick = () => {
     console.log('🛒 CartButton: Clique no carrinho detectado');
+    console.log('🛒 CartButton: cartItemsCount:', cartItemsCount);
+    console.log('🛒 CartButton: onToggleCart function:', !!onToggleCart);
+    
     if (onToggleCart) {
       console.log('🛒 CartButton: Chamando função toggleCart');
       onToggleCart();
@@ -24,12 +27,14 @@ const CartButton: React.FC<CartButtonProps> = ({
   };
 
   return (
-    <ModernCartIcon
-      itemCount={cartItemsCount}
-      isAnimating={isAnimating}
-      onClick={handleCartClick}
-      variant="header"
-    />
+    <div className="relative">
+      <ModernCartIcon
+        itemCount={cartItemsCount}
+        isAnimating={isAnimating}
+        onClick={handleCartClick}
+        variant="header"
+      />
+    </div>
   );
 };
 
