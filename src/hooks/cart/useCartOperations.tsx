@@ -1,8 +1,8 @@
 
 import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
 import { Check, Trash2 } from 'lucide-react';
-import { CartItem } from './useCartState';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface UseCartOperationsProps {

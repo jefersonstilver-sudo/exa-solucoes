@@ -184,6 +184,7 @@ export default function PanelStore() {
             handleSearch={handleBuildingSearch}
             handleClearLocation={handleBuildingClearLocation}
             onViewPanels={handleViewPanels}
+            onAddToCart={handleAddToCart}
           />
         )}
       </motion.div>

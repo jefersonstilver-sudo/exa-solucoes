@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
+import { Panel } from '@/types/panel';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +15,7 @@ interface BuildingStoreGridProps {
   isLoading: boolean;
   isSearching: boolean;
   onViewPanels: (building: BuildingStore) => void;
+  onAddToCart: (panel: Panel, duration?: number) => void;
   selectedLocation: {lat: number, lng: number} | null;
 }
 
@@ -22,6 +24,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   isLoading, 
   isSearching,
   onViewPanels,
+  onAddToCart,
   selectedLocation
 }) => {
   const [sortOption, setSortOption] = useState('distance');
@@ -159,6 +162,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
               <BuildingStoreCard
                 building={building}
                 onViewPanels={onViewPanels}
+                onAddToCart={onAddToCart}
               />
             </motion.div>
           ))}

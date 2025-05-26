@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Panel } from '@/types/panel';
 
 export interface BuildingStore {
   id: string;
@@ -23,6 +24,45 @@ export interface BuildingStore {
   padrao_publico: 'alto' | 'medio' | 'normal';
   quantidade_telas: number;
 }
+
+/**
+ * Converte um BuildingStore em Panel para compatibilidade com o carrinho
+ */
+export const buildingToPanel = (building: BuildingStore): Panel => {
+  return {
+    id: building.id,
+    code: `BLD-${building.id.slice(0, 8)}`, // Gerar código baseado no ID
+    building_id: building.id,
+    status: 'ativo',
+    resolucao: '1920x1080', // Valor padrão
+    buildings: {
+      id: building.id,
+      nome: building.nome,
+      endereco: building.endereco,
+      bairro: building.bairro,
+      cidade: building.bairro, // Usando bairro como cidade por compatibilidade
+      estado: 'SP', // Valor padrão
+      cep: '00000-000', // Valor padrão
+      latitude: building.latitude,
+      longitude: building.longitude,
+      imageUrl: getImageUrl(building.imagem_principal),
+      basePrice: building.preco_base,
+      venue_type: building.venue_type,
+      condominiumProfile: building.padrao_publico,
+      audience_profile: building.caracteristicas,
+      tags: building.amenities,
+      towers: Math.ceil(building.quantidade_telas / 2), // Estimativa
+      apartments: building.publico_estimado ? Math.ceil(building.publico_estimado / 3) : 100, // Estimativa
+      status: building.status
+    }
+  };
+};
+
+const getImageUrl = (path: string) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
+};
 
 export const fetchBuildingsForStore = async (lat?: number, lng?: number, radius = 5000) => {
   try {

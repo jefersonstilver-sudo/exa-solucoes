@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
 import { loadCartFromStorage, saveCartToStorage } from '@/services/cartStorageService';
-
-export interface CartItem {
-  panel: Panel;
-  duration: number;
-}
 
 export const useCartState = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);

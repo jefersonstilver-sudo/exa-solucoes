@@ -19,20 +19,21 @@ import {
   Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { BuildingStore, getBuildingImageUrls } from '@/services/buildingStoreService';
+import { BuildingStore, getBuildingImageUrls, buildingToPanel } from '@/services/buildingStoreService';
+import { Panel } from '@/types/panel';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
   onViewPanels: (building: BuildingStore) => void;
+  onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
   building, 
-  onViewPanels 
+  onViewPanels,
+  onAddToCart 
 }) => {
-  const { toast } = useToast();
   const [isAdded, setIsAdded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -75,24 +76,32 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   const handleAddToCart = () => {
     if (isAdded) return;
     
-    setIsAnimating(true);
-    setIsAdded(true);
-    
-    // Animação de feedback
-    setTimeout(() => {
+    try {
+      // Converter Building para Panel antes de adicionar ao carrinho
+      const panel = buildingToPanel(building);
+      
+      console.log('🛒 [BUILDING STORE CARD] Convertendo building para panel:', {
+        building: building.nome,
+        panel: panel.id,
+        panelCode: panel.code
+      });
+      
+      setIsAnimating(true);
+      setIsAdded(true);
+      
+      // Chamar função real de adicionar ao carrinho
+      onAddToCart(panel, 30); // Duração padrão de 30 dias
+      
+      // Animação de feedback
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 600);
+      
+    } catch (error) {
+      console.error('❌ [BUILDING STORE CARD] Erro ao adicionar ao carrinho:', error);
+      setIsAdded(false);
       setIsAnimating(false);
-    }, 600);
-
-    // Toast de confirmação
-    toast({
-      title: "✅ Prédio adicionado",
-      description: `${building.nome} foi adicionado ao carrinho`,
-      action: (
-        <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-          <Check className="h-3 w-3 text-green-600" />
-        </div>
-      )
-    });
+    }
   };
 
   const primaryImage = getImageUrl(building.imagem_principal);

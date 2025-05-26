@@ -1,5 +1,5 @@
 
-import { CartItem } from '@/hooks/cart/useCartState';
+import { CartItem } from '@/types/cart';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 // Armazenamento para o carrinho
@@ -19,6 +19,49 @@ export function isCartEmpty(): boolean {
   } catch (e) {
     console.error("Erro ao verificar se o carrinho está vazio:", e);
     return true;
+  }
+}
+
+/**
+ * Limpa itens órfãos do carrinho (itens com estrutura inválida)
+ */
+export function cleanOrphanCartItems(): CartItem[] {
+  try {
+    const rawCart = localStorage.getItem(CART_STORAGE_KEY);
+    if (!rawCart) return [];
+    
+    const parsedCart = JSON.parse(rawCart);
+    if (!Array.isArray(parsedCart)) return [];
+    
+    const validItems = parsedCart.filter(item => {
+      const isValid = item && 
+                     item.panel && 
+                     typeof item.panel === 'object' && 
+                     item.panel.id && 
+                     typeof item.duration === 'number';
+      
+      if (!isValid) {
+        console.warn('🧹 [CART CLEANUP] Item órfão removido:', item);
+        logCheckoutEvent(
+          CheckoutEvent.LOAD_CART,
+          LogLevel.WARNING,
+          `Item órfão removido do carrinho`,
+          { item: JSON.stringify(item) }
+        );
+      }
+      
+      return isValid;
+    });
+    
+    if (validItems.length !== parsedCart.length) {
+      console.log(`🧹 [CART CLEANUP] ${parsedCart.length - validItems.length} itens órfãos removidos`);
+      saveCartToStorage(validItems);
+    }
+    
+    return validItems;
+  } catch (e) {
+    console.error("Erro ao limpar itens órfãos:", e);
+    return [];
   }
 }
 
@@ -53,38 +96,8 @@ export function loadCartFromStorage(): CartItem[] {
       return [];
     }
     
-    // Validar cada item do carrinho
-    const validItems = parsedCart.filter(item => {
-      const isValid = item && 
-                     item.panel && 
-                     typeof item.panel === 'object' && 
-                     item.panel.id && 
-                     typeof item.duration === 'number';
-      
-      if (!isValid) {
-        logCheckoutEvent(
-          CheckoutEvent.LOAD_CART,
-          LogLevel.WARNING,
-          `Item inválido encontrado no carrinho [${CART_STORAGE_KEY}]`,
-          { item: JSON.stringify(item), timestamp: Date.now() }
-        );
-      }
-      
-      return isValid;
-    });
-    
-    // Se removemos itens inválidos, atualizar o localStorage
-    if (validItems.length !== parsedCart.length) {
-      logCheckoutEvent(
-        CheckoutEvent.LOAD_CART,
-        LogLevel.WARNING,
-        `${parsedCart.length - validItems.length} itens inválidos removidos do carrinho [${CART_STORAGE_KEY}]`,
-        { originalCount: parsedCart.length, validCount: validItems.length, timestamp: Date.now() }
-      );
-      
-      // Salvar carrinho limpo
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(validItems));
-    }
+    // Usar função de limpeza para validar itens
+    const validItems = cleanOrphanCartItems();
     
     logCheckoutEvent(
       CheckoutEvent.LOAD_CART,

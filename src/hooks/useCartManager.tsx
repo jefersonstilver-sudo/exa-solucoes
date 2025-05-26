@@ -3,18 +3,13 @@ import { useCartState } from '@/hooks/cart/useCartState';
 import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
 import { Panel } from '@/types/panel';
-import { CartItem as CartItemType } from './cart/useCartState';
+import { CartItem } from '@/types/cart';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { 
   saveCartToStorage, 
   loadCartFromStorage, 
   CART_STORAGE_KEY 
 } from '@/services/cartStorageService';
-
-export interface CartItem {
-  panel: Panel;
-  duration: number;
-}
 
 export const useCartManager = () => {
   const {
