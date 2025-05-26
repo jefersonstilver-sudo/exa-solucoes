@@ -6,11 +6,72 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 export const CART_STORAGE_KEY = 'panelCart';
 
 /**
+ * Limpa itens órfãos e corrige problemas de sincronização do carrinho
+ */
+export function cleanOrphanedCartItems(): boolean {
+  try {
+    const rawCart = localStorage.getItem(CART_STORAGE_KEY);
+    if (!rawCart) return true;
+    
+    const parsedCart = JSON.parse(rawCart);
+    if (!Array.isArray(parsedCart)) {
+      localStorage.removeItem(CART_STORAGE_KEY);
+      logCheckoutEvent(
+        CheckoutEvent.CLEAR_CART,
+        LogLevel.WARNING,
+        `Carrinho com estrutura inválida removido [${CART_STORAGE_KEY}]`,
+        { rawCart }
+      );
+      return true;
+    }
+    
+    // Filtrar itens válidos
+    const validItems = parsedCart.filter(item => {
+      return item && 
+             item.panel && 
+             typeof item.panel === 'object' && 
+             item.panel.id && 
+             typeof item.duration === 'number' &&
+             item.duration > 0;
+    });
+    
+    if (validItems.length !== parsedCart.length) {
+      if (validItems.length === 0) {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      } else {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(validItems));
+      }
+      
+      logCheckoutEvent(
+        CheckoutEvent.CLEAR_CART,
+        LogLevel.INFO,
+        `${parsedCart.length - validItems.length} itens órfãos removidos do carrinho [${CART_STORAGE_KEY}]`,
+        { 
+          originalCount: parsedCart.length, 
+          validCount: validItems.length 
+        }
+      );
+      
+      return true;
+    }
+    
+    return false;
+  } catch (e) {
+    console.error("Erro ao limpar itens órfãos:", e);
+    localStorage.removeItem(CART_STORAGE_KEY);
+    return true;
+  }
+}
+
+/**
  * Verifica se o carrinho está vazio
  * @returns {boolean} true se o carrinho estiver vazio
  */
 export function isCartEmpty(): boolean {
   try {
+    // Primeiro limpar itens órfãos
+    cleanOrphanedCartItems();
+    
     const rawCart = localStorage.getItem(CART_STORAGE_KEY);
     if (!rawCart) return true;
     
@@ -28,12 +89,15 @@ export function isCartEmpty(): boolean {
  */
 export function loadCartFromStorage(): CartItem[] {
   try {
+    // Primeiro limpar itens órfãos
+    cleanOrphanedCartItems();
+    
     const rawCart = localStorage.getItem(CART_STORAGE_KEY);
     if (!rawCart) {
       logCheckoutEvent(
         CheckoutEvent.LOAD_CART,
         LogLevel.INFO,
-        `Carrinho não encontrado no localStorage [${CART_STORAGE_KEY}]`,
+        `Carrinho vazio ou não encontrado no localStorage [${CART_STORAGE_KEY}]`,
         { timestamp: Date.now() }
       );
       return [];
@@ -50,6 +114,7 @@ export function loadCartFromStorage(): CartItem[] {
         `Estrutura inválida do carrinho no localStorage [${CART_STORAGE_KEY}] - não é um array`,
         { value: rawCart, timestamp: Date.now() }
       );
+      localStorage.removeItem(CART_STORAGE_KEY);
       return [];
     }
     
@@ -59,7 +124,8 @@ export function loadCartFromStorage(): CartItem[] {
                      item.panel && 
                      typeof item.panel === 'object' && 
                      item.panel.id && 
-                     typeof item.duration === 'number';
+                     typeof item.duration === 'number' &&
+                     item.duration > 0;
       
       if (!isValid) {
         logCheckoutEvent(
@@ -75,15 +141,18 @@ export function loadCartFromStorage(): CartItem[] {
     
     // Se removemos itens inválidos, atualizar o localStorage
     if (validItems.length !== parsedCart.length) {
+      if (validItems.length === 0) {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      } else {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(validItems));
+      }
+      
       logCheckoutEvent(
         CheckoutEvent.LOAD_CART,
         LogLevel.WARNING,
         `${parsedCart.length - validItems.length} itens inválidos removidos do carrinho [${CART_STORAGE_KEY}]`,
         { originalCount: parsedCart.length, validCount: validItems.length, timestamp: Date.now() }
       );
-      
-      // Salvar carrinho limpo
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(validItems));
     }
     
     logCheckoutEvent(
@@ -123,7 +192,8 @@ export function saveCartToStorage(cartItems: CartItem[]): boolean {
              item.panel && 
              typeof item.panel === 'object' && 
              item.panel.id && 
-             typeof item.duration === 'number';
+             typeof item.duration === 'number' &&
+             item.duration > 0;
     });
     
     if (validItems.length !== cartItems.length) {
@@ -133,6 +203,18 @@ export function saveCartToStorage(cartItems: CartItem[]): boolean {
         `${cartItems.length - validItems.length} itens inválidos removidos ao salvar carrinho [${CART_STORAGE_KEY}]`,
         { originalCount: cartItems.length, validCount: validItems.length, timestamp: Date.now() }
       );
+    }
+    
+    // Se não há itens válidos, remover do localStorage
+    if (validItems.length === 0) {
+      localStorage.removeItem(CART_STORAGE_KEY);
+      logCheckoutEvent(
+        CheckoutEvent.SAVE_CART,
+        LogLevel.INFO,
+        `Carrinho vazio removido do localStorage [${CART_STORAGE_KEY}]`,
+        { timestamp: Date.now() }
+      );
+      return true;
     }
     
     // Salvar no localStorage
@@ -194,5 +276,26 @@ export function clearCartStorage(): void {
       `Erro ao limpar carrinho [${CART_STORAGE_KEY}]`,
       { error: String(e), timestamp: Date.now() }
     );
+  }
+}
+
+/**
+ * Força a limpeza de todos os dados do carrinho
+ */
+export function forceCleanCart(): void {
+  try {
+    localStorage.removeItem(CART_STORAGE_KEY);
+    sessionStorage.removeItem('lastCart');
+    
+    logCheckoutEvent(
+      CheckoutEvent.CLEAR_CART,
+      LogLevel.INFO,
+      `Limpeza forçada do carrinho executada [${CART_STORAGE_KEY}]`,
+      { timestamp: Date.now() }
+    );
+    
+    console.log('🧹 [CART] Limpeza forçada do carrinho executada');
+  } catch (e) {
+    console.error("Erro na limpeza forçada do carrinho:", e);
   }
 }
