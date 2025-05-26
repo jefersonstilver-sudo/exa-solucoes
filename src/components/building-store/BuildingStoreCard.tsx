@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,13 +15,13 @@ import {
   Shield,
   Gamepad2,
   Dumbbell,
-  Phone,
-  Mail,
-  Clock
+  ShoppingCart,
+  Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BuildingStore, getBuildingImageUrls } from '@/services/buildingStoreService';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
@@ -32,6 +32,10 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   building, 
   onViewPanels 
 }) => {
+  const { toast } = useToast();
+  const [isAdded, setIsAdded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const getImageUrl = (path: string) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
@@ -68,6 +72,29 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
     return num.toString();
   };
 
+  const handleAddToCart = () => {
+    if (isAdded) return;
+    
+    setIsAnimating(true);
+    setIsAdded(true);
+    
+    // Animação de feedback
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 600);
+
+    // Toast de confirmação
+    toast({
+      title: "✅ Prédio adicionado",
+      description: `${building.nome} foi adicionado ao carrinho`,
+      action: (
+        <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+          <Check className="h-3 w-3 text-green-600" />
+        </div>
+      )
+    });
+  };
+
   const primaryImage = getImageUrl(building.imagem_principal);
   const imageUrls = getBuildingImageUrls(building);
   const totalImages = imageUrls.length;
@@ -77,9 +104,13 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      whileHover={{ 
+        y: -8,
+        transition: { duration: 0.2 }
+      }}
       className="w-full"
     >
-      <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 bg-white">
+      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 bg-white shadow-md">
         <CardContent className="p-0">
           <div className="flex flex-col lg:flex-row">
             {/* Imagem Principal - Lado Esquerdo */}
@@ -205,13 +236,33 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                   </p>
                 </div>
                 
-                <Button
-                  onClick={() => onViewPanels(building)}
-                  size="lg"
-                  className="bg-indexa-purple hover:bg-indexa-purple-dark text-white px-8 py-3 text-base font-semibold"
+                <motion.div
+                  animate={isAnimating ? { scale: [1, 1.1, 1] } : {}}
+                  transition={{ duration: 0.6 }}
                 >
-                  Ver Painéis Disponíveis
-                </Button>
+                  <Button
+                    onClick={handleAddToCart}
+                    size="lg"
+                    disabled={isAdded}
+                    className={`px-8 py-3 text-base font-semibold transition-all duration-300 ${
+                      isAdded 
+                        ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
+                        : 'bg-indexa-purple hover:bg-indexa-purple-dark text-white hover:scale-105'
+                    }`}
+                  >
+                    {isAdded ? (
+                      <>
+                        <Check className="h-5 w-5 mr-2" />
+                        Adicionado ao Carrinho
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="h-5 w-5 mr-2" />
+                        Adicionar ao Carrinho
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
               </div>
             </div>
           </div>

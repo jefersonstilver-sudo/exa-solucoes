@@ -31,7 +31,25 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.15,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 30,
+      scale: 0.95
+    },
+    show: { 
+      opacity: 1, 
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut"
       }
     }
   };
@@ -50,13 +68,13 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
 
   if (!buildings || buildings.length === 0) {
     return (
-      <div className="space-y-6 mb-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#3C1361]">
+      <div className="space-y-8 mb-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="text-center md:text-left">
+            <h1 className="text-3xl font-bold text-[#3C1361] mb-2">
               Prédios Disponíveis
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 text-lg">
               Nenhum prédio ativo encontrado na nossa rede
             </p>
           </div>
@@ -67,62 +85,76 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   }
 
   return (
-    <div className="space-y-6 mb-10">
+    <div className="space-y-8 mb-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <motion.div 
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-[#3C1361]">
+          <h1 className="text-3xl font-bold text-[#3C1361] mb-2">
             Prédios Disponíveis
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-600 text-lg">
             {buildings.length} prédio{buildings.length !== 1 ? 's' : ''} ativo{buildings.length !== 1 ? 's' : ''} disponível{buildings.length !== 1 ? 'eis' : ''} {selectedLocation ? 'próximos à localização selecionada' : 'em nossa rede'}
           </p>
         </div>
         
-        <Select 
-          defaultValue="distance"
-          value={sortOption}
-          onValueChange={setSortOption}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
         >
-          <SelectTrigger className="w-[220px] bg-white">
-            <SelectValue placeholder="Ordenar por" />
-          </SelectTrigger>
-          <SelectContent>
-            {selectedLocation && <SelectItem value="distance">Mais próximos</SelectItem>}
-            <SelectItem value="price-asc">Preço: menor para maior</SelectItem>
-            <SelectItem value="price-desc">Preço: maior para menor</SelectItem>
-            <SelectItem value="audience-desc">Maior público</SelectItem>
-            <SelectItem value="views-desc">Mais visualizações</SelectItem>
-            <SelectItem value="panels-desc">Mais painéis</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          <Select 
+            defaultValue="distance"
+            value={sortOption}
+            onValueChange={setSortOption}
+          >
+            <SelectTrigger className="w-[250px] bg-white shadow-sm border-2 border-gray-200 hover:border-[#3C1361]/30 transition-colors duration-200 rounded-xl">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent className="bg-white shadow-xl border-2 border-gray-100 rounded-xl">
+              {selectedLocation && <SelectItem value="distance">Mais próximos</SelectItem>}
+              <SelectItem value="price-asc">Preço: menor para maior</SelectItem>
+              <SelectItem value="price-desc">Preço: maior para menor</SelectItem>
+              <SelectItem value="audience-desc">Maior público</SelectItem>
+              <SelectItem value="views-desc">Mais visualizações</SelectItem>
+              <SelectItem value="panels-desc">Mais painéis</SelectItem>
+            </SelectContent>
+          </Select>
+        </motion.div>
+      </motion.div>
       
-      {/* Building Grid - Single Column */}
+      {/* Building Grid - Single Column Optimized */}
       {sortedBuildings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="bg-gray-100 rounded-full p-4 mb-4">
-            <Search className="h-8 w-8 text-gray-400" />
+        <motion.div 
+          className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl shadow-sm border border-gray-100"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="bg-gray-100 rounded-full p-6 mb-6">
+            <Search className="h-12 w-12 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Nenhum prédio encontrado</h3>
-          <p className="text-gray-500 max-w-md">
+          <h3 className="text-2xl font-semibold mb-3 text-gray-800">Nenhum prédio encontrado</h3>
+          <p className="text-gray-500 max-w-md text-lg">
             Tente ajustar seus filtros ou buscar em outra localização para encontrar prédios disponíveis.
           </p>
-        </div>
+        </motion.div>
       ) : (
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="space-y-6"
+          className="space-y-8"
         >
-          {sortedBuildings.map(building => (
+          {sortedBuildings.map((building, index) => (
             <motion.div
               key={building.id}
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                show: { opacity: 1, y: 0 }
-              }}
+              variants={itemVariants}
+              className="w-full"
             >
               <BuildingStoreCard
                 building={building}

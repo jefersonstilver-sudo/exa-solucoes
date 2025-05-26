@@ -7,10 +7,6 @@ import { usePanelStore } from '@/hooks/usePanelStore';
 import { useBuildingStore } from '@/hooks/useBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import CheckoutDebugger from '@/components/debug/CheckoutDebugger';
-import { useDebugCheckout } from '@/hooks/useDebugCheckout';
-import PanelDebugActions from '@/components/panel-store/PanelDebugActions';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
@@ -66,13 +62,6 @@ export default function PanelStore() {
 
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
-  
-  // Debug checkout hook
-  const { 
-    debugModalOpen, 
-    setDebugModalOpen, 
-    directGoToCheckout 
-  } = useDebugCheckout(cartItems);
 
   // Load appropriate data based on whether we're viewing a specific building or the main store
   useEffect(() => {
@@ -118,18 +107,6 @@ export default function PanelStore() {
     handleProceedToCheckout();
   };
 
-  // Modified to match the expected signature without parameters
-  const handleDirectGoToCheckout = () => {
-    console.log("Redirecting to checkout directly");
-    directGoToCheckout(new MouseEvent('click') as unknown as React.MouseEvent);
-  };
-
-  // Handler to open debug modal
-  const handleOpenDebugger = () => {
-    console.log("Opening debug modal");
-    setDebugModalOpen(true);
-  };
-
   // Determine which error to show
   const error = buildingId ? panelsError : buildingsError;
 
@@ -168,14 +145,6 @@ export default function PanelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 md:px-6 py-8"
       >
-        {/* Debug panel for diagnostics */}
-        <PanelDebugActions 
-          cartItemsCount={cartItems.length}
-          onProceedToCheckout={handleCheckoutStart}
-          directGoToCheckout={handleDirectGoToCheckout}
-          onOpenDebugger={handleOpenDebugger}
-        />
-      
         {/* Promotional Welcome Banner */}
         <AnimatePresence>
           <PromotionBanner 
@@ -218,13 +187,6 @@ export default function PanelStore() {
           />
         )}
       </motion.div>
-      
-      {/* Modal de diagnóstico - Fixed with proper accessibility attributes */}
-      <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
-        <DialogContent className="sm:max-w-md p-0">
-          <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 }
