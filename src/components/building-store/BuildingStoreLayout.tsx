@@ -37,6 +37,13 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   onViewPanels,
   onAddToCart
 }) => {
+  console.log('🏗️ [BUILDING STORE LAYOUT] Props recebidas:', {
+    buildingsCount: buildings?.length,
+    hasOnAddToCart: !!onAddToCart,
+    isLoading,
+    isSearching
+  });
+
   return (
     <>
       {/* Search section */}
@@ -72,7 +79,9 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
             isSearching={isSearching}
             onViewPanels={onViewPanels}
             selectedLocation={selectedLocation}
-            onAddToCart={onAddToCart || (() => {})}
+            onAddToCart={onAddToCart || (() => {
+              console.warn('⚠️ [BUILDING STORE LAYOUT] onAddToCart não foi fornecido');
+            })}
           />
         </div>
       </div>
