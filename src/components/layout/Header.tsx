@@ -13,7 +13,7 @@ import OnlineStoreButton from './header/OnlineStoreButton';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  const { cartItems } = useCartManager();
+  const { cartItems, toggleCart } = useCartManager();
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -78,8 +78,11 @@ const Header = () => {
               {/* User Menu */}
               <UserMenu />
 
-              {/* Cart Button */}
-              <CartButton cartItemsCount={totalCartItems} />
+              {/* Cart Button - NOW WITH TOGGLE FUNCTION */}
+              <CartButton 
+                cartItemsCount={totalCartItems} 
+                onToggleCart={toggleCart}
+              />
 
               {/* Mobile Menu Button */}
               <MobileMenuButton 

@@ -14,8 +14,12 @@ const CartButton: React.FC<CartButtonProps> = ({
   onToggleCart
 }) => {
   const handleCartClick = () => {
+    console.log('🛒 CartButton: Clique no carrinho detectado');
     if (onToggleCart) {
+      console.log('🛒 CartButton: Chamando função toggleCart');
       onToggleCart();
+    } else {
+      console.error('🛒 CartButton: ERRO - onToggleCart não foi fornecida!');
     }
   };
 

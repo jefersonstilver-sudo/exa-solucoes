@@ -52,33 +52,43 @@ export const filterBuildings = (buildings: BuildingStore[], filters: BuildingFil
 
     // FILTRO 3: Bairro
     if (filters.neighborhood && filters.neighborhood.trim()) {
-      if (!building.bairro.toLowerCase().includes(filters.neighborhood.toLowerCase())) {
-        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Bairro: '${building.bairro}' não contém '${filters.neighborhood}'`);
+      const buildingBairro = building.bairro || '';
+      if (!buildingBairro.toLowerCase().includes(filters.neighborhood.toLowerCase())) {
+        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Bairro: '${buildingBairro}' não contém '${filters.neighborhood}'`);
         rejectedBuildings++;
         return false;
       }
-      console.log(`✅ [FILTER] Bairro: ${building.bairro} contém '${filters.neighborhood}' - OK`);
+      console.log(`✅ [FILTER] Bairro: ${buildingBairro} contém '${filters.neighborhood}' - OK`);
     } else {
       console.log(`✅ [FILTER] Bairro - FILTRO DESABILITADO`);
     }
 
-    // FILTRO 4: Faixa de preço (CRÍTICO - POSSÍVEL PROBLEMA)
+    // FILTRO 4: Faixa de preço (CORREÇÃO CRÍTICA)
     const preco = building.preco_base !== null && building.preco_base !== undefined ? Number(building.preco_base) : 280;
     console.log(`💰 [FILTER] Verificando preço: preco_base=${building.preco_base}, valor_usado=${preco}, range=[${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
     
-    if (preco < filters.priceRange[0] || preco > filters.priceRange[1]) {
+    // CORREÇÃO: Se o range é muito amplo (padrão), não filtrar por preço
+    if (filters.priceRange[0] === 0 && filters.priceRange[1] >= 10000) {
+      console.log(`✅ [FILTER] Range de preço muito amplo - FILTRO DESABILITADO`);
+    } else if (preco < filters.priceRange[0] || preco > filters.priceRange[1]) {
       console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Preço: R$ ${preco} fora da faixa [R$ ${filters.priceRange[0]} - R$ ${filters.priceRange[1]}]`);
       rejectedBuildings++;
       return false;
+    } else {
+      console.log(`✅ [FILTER] Preço: R$ ${preco} dentro da faixa - OK`);
     }
-    console.log(`✅ [FILTER] Preço: R$ ${preco} dentro da faixa - OK`);
 
-    // FILTRO 5: Público mínimo (CRÍTICO - POSSÍVEL PROBLEMA)
+    // FILTRO 5: Público mínimo (CORREÇÃO CRÍTICA PARA NULL/UNDEFINED)
     console.log(`👥 [FILTER] Verificando público: audienceMin=${filters.audienceMin}, publico_estimado=${building.publico_estimado}`);
     
     if (filters.audienceMin > 0) {
+      // CORREÇÃO: Tratar valores null/undefined como 0
       const publicoEstimado = building.publico_estimado !== null && building.publico_estimado !== undefined ? Number(building.publico_estimado) : 0;
-      if (publicoEstimado < filters.audienceMin) {
+      
+      // CORREÇÃO: Se publico_estimado for null/undefined, considerar como válido se audienceMin for 0
+      if (building.publico_estimado === null || building.publico_estimado === undefined) {
+        console.log(`⚠️ [FILTER] Público estimado é null/undefined - CONSIDERANDO COMO VÁLIDO`);
+      } else if (publicoEstimado < filters.audienceMin) {
         console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Público: ${publicoEstimado} menor que mínimo ${filters.audienceMin}`);
         rejectedBuildings++;
         return false;
@@ -90,12 +100,13 @@ export const filterBuildings = (buildings: BuildingStore[], filters: BuildingFil
 
     // FILTRO 6: Padrão do público
     if (filters.standardProfile.length > 0) {
-      if (!filters.standardProfile.includes(building.padrao_publico)) {
-        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Padrão: '${building.padrao_publico}' não está em [${filters.standardProfile.join(', ')}]`);
+      const padrao = building.padrao_publico || '';
+      if (!filters.standardProfile.includes(padrao)) {
+        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Padrão: '${padrao}' não está em [${filters.standardProfile.join(', ')}]`);
         rejectedBuildings++;
         return false;
       }
-      console.log(`✅ [FILTER] Padrão: ${building.padrao_publico} - OK`);
+      console.log(`✅ [FILTER] Padrão: ${padrao} - OK`);
     } else {
       console.log(`✅ [FILTER] Padrão do público - FILTRO DESABILITADO`);
     }
@@ -134,6 +145,12 @@ export const filterBuildings = (buildings: BuildingStore[], filters: BuildingFil
     console.warn('⚠️ [FILTER] 2. Filtro de público mínimo muito alto');
     console.warn('⚠️ [FILTER] 3. Todos os prédios têm status diferente de "ativo"');
     console.warn('⚠️ [FILTER] 4. Combinação de filtros muito específica');
+    
+    // CORREÇÃO: Sugerir mostrar todos os ativos como fallback
+    console.warn('⚠️ [FILTER] FALLBACK: Retornando todos os prédios ativos');
+    const activeBuildings = buildings.filter(building => building.status === 'ativo');
+    console.log(`🔄 [FILTER] Fallback aplicado: ${activeBuildings.length} prédios ativos retornados`);
+    return activeBuildings;
   }
 
   return filteredBuildings;

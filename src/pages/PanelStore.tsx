@@ -62,11 +62,13 @@ export default function PanelStore() {
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
 
-  // Load appropriate data based on whether we're viewing a specific building or the main store
+  // CORREÇÃO: Load appropriate data based on whether we're viewing a specific building or the main store
   useEffect(() => {
+    console.log('🔄 [PANEL STORE] Effect executado - buildingId:', buildingId);
     if (!buildingId) {
-      // Load buildings for main store view
-      fetchBuildings();
+      // CORREÇÃO: Load buildings for main store view - SEM coordenadas para pegar todos
+      console.log('🔄 [PANEL STORE] Carregando todos os prédios (sem filtro de localização)');
+      fetchBuildings(); // Sem lat/lng = busca todos os prédios disponíveis
     }
     // Panel loading will be handled by the panel store hook when buildingId is present
   }, [buildingId, fetchBuildings]);
@@ -162,7 +164,7 @@ export default function PanelStore() {
             onAddToCart={handleAddToCart}
           />
         ) : (
-          // Show building selection (main store view) - REMOVED onViewPanels prop
+          // Show building selection (main store view)
           <BuildingStoreLayout 
             buildings={buildings}
             isLoading={buildingsLoading}
