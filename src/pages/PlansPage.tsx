@@ -12,7 +12,6 @@ import PlanSelector from '@/components/checkout/PlanSelector';
 import PlanComparison from '@/components/plans/PlanComparison';
 import PlanSummary from '@/components/plans/PlanSummary';
 import { Calculator, Eye, Trophy } from 'lucide-react';
-import { PlanKey } from '@/types/checkout';
 
 const PlansPage = () => {
   const navigate = useNavigate();
@@ -153,7 +152,7 @@ const PlansPage = () => {
                   
                   <div className="space-y-4">
                     {Object.entries(plans).map(([key, plan]) => {
-                      const planKey = parseInt(key) as PlanKey;
+                      const planKey = parseInt(key) as keyof typeof plans;
                       const price = calculatePlanPrice(planKey, panelCount);
                       const monthlyPrice = price / plan.months;
                       
