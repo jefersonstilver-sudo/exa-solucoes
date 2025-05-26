@@ -62,14 +62,14 @@ export default function PanelStore() {
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
 
-  // CORREÇÃO: Garantir carregamento inicial de todos os prédios
+  // CORREÇÃO: Garantir carregamento automático de TODOS os prédios
   useEffect(() => {
     console.log('🔄 [PANEL STORE] === EFFECT INICIAL EXECUTADO ===');
     console.log('🔄 [PANEL STORE] buildingId:', buildingId);
     
     if (!buildingId) {
-      console.log('🔄 [PANEL STORE] Sem buildingId - carregando TODOS os prédios');
-      // CORREÇÃO: Forçar carregamento de todos os prédios
+      console.log('🔄 [PANEL STORE] Sem buildingId - FORÇANDO carregamento de todos os prédios');
+      // CORREÇÃO: Sempre forçar carregamento de todos os prédios ativos
       fetchBuildings();
     }
   }, [buildingId, fetchBuildings]);

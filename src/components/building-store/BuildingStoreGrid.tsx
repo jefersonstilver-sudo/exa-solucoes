@@ -34,7 +34,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
     );
   }
 
-  // Empty state when no buildings found
+  // CORREÇÃO: Mostrar prédios se existirem, independente da localização
   if (!buildings || buildings.length === 0) {
     return (
       <motion.div
@@ -43,32 +43,22 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
         className="text-center py-16"
       >
         <div className="flex flex-col items-center space-y-4">
-          {selectedLocation ? (
-            <>
-              <Search className="h-16 w-16 text-gray-400" />
-              <h3 className="text-xl font-semibold text-gray-700">
-                Nenhum prédio encontrado nesta região
-              </h3>
-              <p className="text-gray-500 max-w-md">
-                Tente expandir o raio de busca ou buscar em uma localização diferente.
-              </p>
-            </>
-          ) : (
-            <>
-              <Building2 className="h-16 w-16 text-gray-400" />
-              <h3 className="text-xl font-semibold text-gray-700">
-                Busque prédios na sua região
-              </h3>
-              <p className="text-gray-500 max-w-md">
-                Digite um endereço, bairro ou cidade para encontrar prédios disponíveis para publicidade.
-              </p>
-            </>
-          )}
+          <Building2 className="h-16 w-16 text-gray-400" />
+          <h3 className="text-xl font-semibold text-gray-700">
+            Nenhum prédio disponível
+          </h3>
+          <p className="text-gray-500 max-w-md">
+            {selectedLocation 
+              ? "Nenhum prédio encontrado nesta região. Tente expandir o raio de busca ou buscar em uma localização diferente."
+              : "No momento não há prédios disponíveis em nossa rede. Tente novamente mais tarde."
+            }
+          </p>
         </div>
       </motion.div>
     );
   }
 
+  // CORREÇÃO: Sempre mostrar prédios quando disponíveis
   return (
     <div className="space-y-6">
       <AnimatePresence mode="wait">
