@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import BuildingStoreGrid from '@/components/building-store/BuildingStoreGrid';
-import BuildingFilterSidebar from '@/components/building-store/BuildingFilterSidebar';
 import { useBuildingStore } from '@/hooks/useBuildingStore';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { toast } from 'sonner';
@@ -42,10 +42,15 @@ const BuildingStorePage = () => {
   const handleViewPanels = (building: BuildingStore) => {
     console.log('👁️ [BuildingStorePage] Visualizar painéis do prédio:', building.nome);
     
+    // Navegar para a página de painéis do prédio específico
+    // Por enquanto, vamos navegar para uma página de painéis genérica
+    // Depois podemos implementar uma página específica por prédio
     toast.success(`Carregando painéis do ${building.nome}...`);
     
+    // Salvar o prédio selecionado no localStorage para usar na próxima página
     localStorage.setItem('selectedBuilding', JSON.stringify(building));
     
+    // Navegar para página de painéis (pode ser implementada depois)
     navigate(`/paineis-digitais/predios/${building.id}/paineis`);
   };
 
@@ -57,41 +62,22 @@ const BuildingStorePage = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 md:px-6 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#3C1361] mb-2">
-              Loja de Prédios
-            </h1>
-            <p className="text-gray-600">
-              Selecione um prédio para visualizar os painéis disponíveis
-            </p>
-          </div>
-
-          {/* Layout with sidebar and grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left sidebar with filters */}
-            <div className="lg:col-span-3 xl:col-span-3">
-              <BuildingFilterSidebar 
-                filters={filters}
-                handleFilterChange={handleFiltersChange}
-                isLoading={isLoading}
-                isSearching={isSearching}
-              />
-            </div>
-            
-            {/* Main content with building grid */}
-            <div className="lg:col-span-9 xl:col-span-9">
-              <BuildingStoreGrid
-                buildings={buildings}
-                isLoading={isLoading}
-                isSearching={isSearching}
-                onViewPanels={handleViewPanels}
-                selectedLocation={selectedLocation}
-              />
-            </div>
-          </div>
-        </div>
+        <BuildingStoreLayout
+          onLocationSearch={handleLocationSearch}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onResetFilters={resetFilters}
+          selectedLocation={selectedLocation}
+          isLoading={isLoading}
+        >
+          <BuildingStoreGrid
+            buildings={buildings}
+            isLoading={isLoading}
+            isSearching={isSearching}
+            onViewPanels={handleViewPanels}
+            selectedLocation={selectedLocation}
+          />
+        </BuildingStoreLayout>
       </div>
     </Layout>
   );

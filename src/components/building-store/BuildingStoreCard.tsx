@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,8 +22,8 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   const precoBase = building.preco_base || 280;
   const quantidadeTelas = building.quantidade_telas || 1;
   
-  // Formatação da distância - correção do erro de tipo
-  const distanceText = 'distance' in building && typeof building.distance === 'number'
+  // Formatação da distância
+  const distanceText = 'distance' in building && building.distance 
     ? `${(building.distance / 1000).toFixed(1)}km`
     : '';
 

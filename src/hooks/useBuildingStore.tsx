@@ -10,17 +10,15 @@ export interface BuildingFilters {
   priceRange: [number, number];
   audienceMin: number;
   amenities: string[];
-  neighborhood?: string;
 }
 
 const DEFAULT_FILTERS: BuildingFilters = {
-  radius: 10000,
+  radius: 10000, // 10km - raio maior para mostrar mais prédios
   venueType: ['Residencial', 'Comercial', 'Misto'],
   standardProfile: ['alto', 'medio', 'normal'],
   priceRange: [0, 1000],
-  audienceMin: 0,
-  amenities: [],
-  neighborhood: ''
+  audienceMin: 0, // Reduzido para 0 para mostrar todos os prédios
+  amenities: []
 };
 
 export const useBuildingStore = () => {
@@ -30,15 +28,12 @@ export const useBuildingStore = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [filters, setFilters] = useState<BuildingFilters>(DEFAULT_FILTERS);
-  const [searchLocation, setSearchLocation] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   // Função para buscar prédios
   const fetchBuildings = async (lat?: number, lng?: number, radius?: number) => {
     try {
       console.log('🏢 [useBuildingStore] Iniciando busca de prédios...', { lat, lng, radius });
       setIsSearching(true);
-      setError(null);
       
       const data = await fetchBuildingsForStore(lat, lng, radius || filters.radius);
       
@@ -56,9 +51,7 @@ export const useBuildingStore = () => {
       }
     } catch (error) {
       console.error('❌ [useBuildingStore] Erro ao buscar prédios:', error);
-      const errorMessage = 'Erro ao carregar prédios';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error('Erro ao carregar prédios');
       setBuildings([]);
     } finally {
       setIsLoading(false);
@@ -136,24 +129,6 @@ export const useBuildingStore = () => {
     await fetchBuildings(lat, lng, filters.radius);
   };
 
-  // Handlers para compatibilidade com outras páginas
-  const handleFilterChange = (newFilters: Partial<BuildingFilters>) => {
-    console.log('🔧 [useBuildingStore] Atualizando filtros:', newFilters);
-    setFilters(prev => ({ ...prev, ...newFilters }));
-  };
-
-  const handleSearch = async (location: string) => {
-    console.log('🔍 [useBuildingStore] Buscando localização:', location);
-    setSearchLocation(location);
-    // Implementar geocoding se necessário
-  };
-
-  const handleClearLocation = () => {
-    console.log('🗑️ [useBuildingStore] Limpando localização');
-    setSelectedLocation(null);
-    setSearchLocation('');
-  };
-
   // Atualizar filtros
   const updateFilters = (newFilters: Partial<BuildingFilters>) => {
     console.log('🔧 [useBuildingStore] Atualizando filtros:', newFilters);
@@ -173,15 +148,9 @@ export const useBuildingStore = () => {
     isSearching,
     selectedLocation,
     filters,
-    searchLocation,
-    setSearchLocation,
-    error,
     fetchBuildings,
     searchByLocation,
     updateFilters,
-    resetFilters,
-    handleFilterChange,
-    handleSearch,
-    handleClearLocation
+    resetFilters
   };
 };
