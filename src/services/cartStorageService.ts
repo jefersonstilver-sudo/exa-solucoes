@@ -1,9 +1,16 @@
 
 import { CartItem } from '@/types/cart';
+import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 // Armazenamento para o carrinho
 export const CART_STORAGE_KEY = 'panelCart';
+
+// Tipo legado para compatibilidade
+export interface LegacyCartItem {
+  panel: Panel;
+  duration: number;
+}
 
 /**
  * Verifica se o carrinho está vazio
@@ -25,7 +32,7 @@ export function isCartEmpty(): boolean {
 /**
  * Limpa itens órfãos do carrinho (itens com estrutura inválida)
  */
-export function cleanOrphanCartItems(): CartItem[] {
+export function cleanOrphanCartItems(): LegacyCartItem[] {
   try {
     const rawCart = localStorage.getItem(CART_STORAGE_KEY);
     if (!rawCart) return [];
@@ -67,9 +74,9 @@ export function cleanOrphanCartItems(): CartItem[] {
 
 /**
  * Carrega o carrinho do localStorage com tratamento de erros robusto
- * @returns {CartItem[]} Array de itens do carrinho
+ * @returns {LegacyCartItem[]} Array de itens do carrinho
  */
-export function loadCartFromStorage(): CartItem[] {
+export function loadCartFromStorage(): LegacyCartItem[] {
   try {
     const rawCart = localStorage.getItem(CART_STORAGE_KEY);
     if (!rawCart) {
@@ -125,10 +132,10 @@ export function loadCartFromStorage(): CartItem[] {
 
 /**
  * Salva o carrinho no localStorage com validação e tratamento de erros
- * @param {CartItem[]} cartItems Itens do carrinho a serem salvos
+ * @param {LegacyCartItem[]} cartItems Itens do carrinho a serem salvos
  * @returns {boolean} true se o salvamento foi bem-sucedido
  */
-export function saveCartToStorage(cartItems: CartItem[]): boolean {
+export function saveCartToStorage(cartItems: LegacyCartItem[]): boolean {
   try {
     // Validar que os itens do carrinho são válidos antes de salvar
     const validItems = cartItems.filter(item => {

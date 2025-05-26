@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -7,7 +6,7 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 import { logNavigation } from '@/services/navigationAuditService';
 import { navigateSafely, isCurrentPath } from '@/services/navigationService';
 import { logCheckoutInitiation, logEmptyCartAttempt, logCheckoutStart, logCheckoutError, logMultipleCheckoutAttempt } from '@/services/checkoutLogService';
-import { saveCartToStorage, loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
+import { saveCartToStorage, loadCartFromStorage, CART_STORAGE_KEY, LegacyCartItem } from '@/services/cartStorageService';
 
 interface UseCartCheckoutProps {
   cartItems: CartItem[];
@@ -149,7 +148,7 @@ export const useCartCheckout = ({
       logCheckoutStart(cartItems.length);
       
       // CORREÇÃO: Converter CartItem[] para o formato legado esperado por saveCartToStorage
-      const legacyCartItems = cartItems.map(item => ({
+      const legacyCartItems: LegacyCartItem[] = cartItems.map(item => ({
         panel: item.panel,
         duration: item.duration
       }));
