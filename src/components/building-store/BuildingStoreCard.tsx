@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -77,32 +76,30 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   const convertBuildingToPanel = (building: BuildingStore): Panel => {
     return {
       id: `building-${building.id}`,
-      code: `BUILD-${building.id.slice(0, 8).toUpperCase()}`, // Adicionando o campo 'code' obrigatório
+      code: `BUILD-${building.id.slice(0, 8).toUpperCase()}`,
       building_id: building.id,
-      nome: `Pacote - ${building.nome}`,
-      tipo: 'led',
-      tamanho: '55"',
-      localizacao: building.endereco,
-      preco_base: building.preco_base || 280,
       status: 'disponivel',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      localizacao: building.endereco,
       buildings: {
         id: building.id,
         nome: building.nome,
         endereco: building.endereco,
         bairro: building.bairro,
-        cep: '', // Campo não existe em BuildingStore, usando valor padrão
-        cidade: '', // Campo não existe em BuildingStore, usando valor padrão  
-        estado: '', // Campo não existe em BuildingStore, usando valor padrão
+        cidade: building.bairro, // Usando bairro como cidade temporariamente
+        estado: 'SP', // Estado padrão
+        cep: '00000-000', // CEP padrão
         latitude: building.latitude || 0,
         longitude: building.longitude || 0,
-        publico_estimado: building.publico_estimado,
-        padrao_publico: building.padrao_publico,
-        venue_type: building.venue_type,
-        ativo: building.status === 'ativo', // Convertendo status para ativo boolean
-        created_at: new Date().toISOString(), // Campo não existe, usando valor padrão
-        updated_at: new Date().toISOString() // Campo não existe, usando valor padrão
+        imageUrl: building.imagem_principal,
+        basePrice: building.preco_base || 280,
+        venue_type: building.venue_type || 'Residencial',
+        condominiumProfile: building.padrao_publico,
+        audience_profile: building.amenities || [],
+        tags: building.amenities || [],
+        towers: 1,
+        apartments: building.numero_unidades || 0,
+        status: building.status
       }
     } as Panel;
   };
@@ -110,11 +107,15 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   const handleAddToCart = () => {
     if (isAdded) return;
     
+    console.log('🛒 [BUILDING CARD] Adicionando prédio ao carrinho:', building.nome);
+    
     setIsAnimating(true);
     setIsAdded(true);
     
     // Converter o prédio em um painel e adicionar ao carrinho
     const panelFromBuilding = convertBuildingToPanel(building);
+    console.log('🔄 [BUILDING CARD] Prédio convertido para painel:', panelFromBuilding);
+    
     onAddToCart(panelFromBuilding, 30); // 30 dias por padrão
     
     // Animação de feedback
