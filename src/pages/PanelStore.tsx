@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -183,7 +184,6 @@ export default function PanelStore() {
             handleSearch={handleBuildingSearch}
             handleClearLocation={handleBuildingClearLocation}
             onViewPanels={handleViewPanels}
-            onAddToCart={handleAddToCart}
           />
         )}
       </motion.div>
