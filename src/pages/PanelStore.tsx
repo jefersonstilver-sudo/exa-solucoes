@@ -11,7 +11,6 @@ import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { BuildingStore } from '@/services/buildingStoreService';
 
 export default function PanelStore() {
   const [searchParams] = useSearchParams();
@@ -80,14 +79,6 @@ export default function PanelStore() {
       setShowPromotion(true);
     }
   }, [isLoggedIn, cartItems.length]);
-
-  // Handle viewing panels of a specific building
-  const handleViewPanels = (building: BuildingStore) => {
-    // Update URL with building_id parameter
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('building_id', building.id);
-    window.history.pushState({}, '', newUrl.toString());
-  };
 
   // Handle going back to building list
   const handleBackToBuildings = () => {
@@ -171,7 +162,7 @@ export default function PanelStore() {
             onAddToCart={handleAddToCart}
           />
         ) : (
-          // Show building selection (main store view)
+          // Show building selection (main store view) - REMOVED onViewPanels prop
           <BuildingStoreLayout 
             buildings={buildings}
             isLoading={buildingsLoading}
@@ -183,7 +174,6 @@ export default function PanelStore() {
             handleFilterChange={handleBuildingFilterChange}
             handleSearch={handleBuildingSearch}
             handleClearLocation={handleBuildingClearLocation}
-            onViewPanels={handleViewPanels}
             onAddToCart={handleAddToCart}
           />
         )}
