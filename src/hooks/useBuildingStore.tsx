@@ -30,16 +30,19 @@ interface BuildingStoreState {
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
   applyFilters: () => void;
+  disableFilters: boolean;
+  toggleFilters: () => void;
 }
 
+// AJUSTADO: Filtros padrão mais permissivos
 const defaultFilters: BuildingFilters = {
-  radius: 5000,
+  radius: 10000, // Aumentado para 10km
   neighborhood: '',
-  venueType: [],
-  priceRange: [0, 2000], // Aumentei o range máximo
-  audienceMin: 0, // IMPORTANTE: 0 para não excluir prédios sem público definido
-  standardProfile: [],
-  amenities: []
+  venueType: [], // Vazio = todos os tipos
+  priceRange: [0, 5000], // Range muito amplo
+  audienceMin: 0, // Zero = sem filtro de público
+  standardProfile: [], // Vazio = todos os padrões
+  amenities: [] // Vazio = todas as amenities
 };
 
 export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
@@ -52,9 +55,21 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   selectedLocation: null,
   isSearching: false,
   filters: { ...defaultFilters },
+  disableFilters: false,
   
   setSearchLocation: (location: string) => {
     set({ searchLocation: location });
+  },
+  
+  toggleFilters: () => {
+    console.log('🔄 [BUILDING STORE] Alternando estado dos filtros');
+    set(state => {
+      const newDisableState = !state.disableFilters;
+      console.log(`🔄 [BUILDING STORE] Filtros ${newDisableState ? 'DESABILITADOS' : 'HABILITADOS'}`);
+      return { disableFilters: newDisableState };
+    });
+    // Reaplicar filtros após mudança
+    setTimeout(() => get().applyFilters(), 0);
   },
   
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => {
@@ -67,12 +82,23 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   },
   
   applyFilters: () => {
-    const { allBuildings, filters } = get();
-    console.log('🔍 [BUILDING STORE] Aplicando filtros em', allBuildings.length, 'prédios');
-    console.log('🔍 [BUILDING STORE] Filtros atuais:', filters);
+    const { allBuildings, filters, disableFilters } = get();
+    
+    console.log('🔍 [BUILDING STORE] === APLICANDO FILTROS ===');
+    console.log('🔍 [BUILDING STORE] Total de prédios disponíveis:', allBuildings.length);
+    console.log('🔍 [BUILDING STORE] Filtros desabilitados:', disableFilters);
+    console.log('🔍 [BUILDING STORE] Configuração atual dos filtros:', filters);
+    
+    if (disableFilters) {
+      // Mostrar todos os prédios ativos quando filtros estão desabilitados
+      const activeBuildings = allBuildings.filter(building => building.status === 'ativo');
+      console.log('✅ [BUILDING STORE] Filtros desabilitados - Mostrando todos os prédios ativos:', activeBuildings.length);
+      set({ buildings: activeBuildings });
+      return;
+    }
     
     const filteredBuildings = filterBuildings(allBuildings, filters);
-    console.log('✅ [BUILDING STORE] Prédios após filtro:', filteredBuildings.length);
+    console.log('✅ [BUILDING STORE] Prédios após aplicar filtros:', filteredBuildings.length);
     
     set({ buildings: filteredBuildings });
   },
@@ -80,10 +106,17 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   fetchBuildings: async (lat?: number, lng?: number) => {
     try {
       console.log('🔄 [BUILDING STORE] Iniciando busca de prédios...');
+      console.log('🔄 [BUILDING STORE] Coordenadas:', { lat, lng });
       set({ loading: true, isLoading: true, error: null });
       
       const buildings = await fetchBuildingsForStore(lat, lng, get().filters.radius);
-      console.log('📊 [BUILDING STORE] Prédios recebidos:', buildings.length);
+      console.log('📊 [BUILDING STORE] Prédios recebidos do service:', buildings.length);
+      console.log('📊 [BUILDING STORE] Primeiros 3 prédios:', buildings.slice(0, 3).map(b => ({
+        id: b.id,
+        nome: b.nome,
+        status: b.status,
+        preco_base: b.preco_base
+      })));
       
       set({ 
         allBuildings: buildings as BuildingStore[],

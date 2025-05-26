@@ -3,82 +3,140 @@ import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 
 export const filterBuildings = (buildings: BuildingStore[], filters: BuildingFilters): BuildingStore[] => {
-  console.log('🔍 [FILTER] Iniciando filtros com:', { 
-    totalBuildings: buildings.length, 
-    filters 
+  console.log('🔍 [FILTER] === AUDIT DETALHADO DOS FILTROS ===');
+  console.log('🔍 [FILTER] Total de prédios para filtrar:', buildings.length);
+  console.log('🔍 [FILTER] Configuração dos filtros:', {
+    venueType: filters.venueType,
+    neighborhood: filters.neighborhood,
+    priceRange: filters.priceRange,
+    audienceMin: filters.audienceMin,
+    standardProfile: filters.standardProfile,
+    amenities: filters.amenities
   });
 
-  return buildings.filter(building => {
-    console.log('🏢 [FILTER] Avaliando prédio:', building.nome, {
+  let passedBuildings = 0;
+  let rejectedBuildings = 0;
+
+  const filteredBuildings = buildings.filter((building, index) => {
+    console.log(`\n🏢 [FILTER] Prédio ${index + 1}/${buildings.length}: ${building.nome}`);
+    console.log('🏢 [FILTER] Dados do prédio:', {
+      id: building.id,
       status: building.status,
       venue_type: building.venue_type,
       bairro: building.bairro,
-      publico_estimado: building.publico_estimado,
       preco_base: building.preco_base,
-      padrao_publico: building.padrao_publico
+      publico_estimado: building.publico_estimado,
+      padrao_publico: building.padrao_publico,
+      amenities: building.amenities
     });
 
-    // REGRA PRINCIPAL: Só exibir prédios ativos
+    // FILTRO 1: Status ativo (OBRIGATÓRIO)
     if (building.status !== 'ativo') {
-      console.log('❌ [FILTER] Prédio rejeitado - status não é ativo:', building.status);
+      console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Status: ${building.status} (deve ser 'ativo')`);
+      rejectedBuildings++;
       return false;
     }
+    console.log(`✅ [FILTER] Status ativo - OK`);
 
-    // Filtro por tipo de venue
+    // FILTRO 2: Tipo de venue
     if (filters.venueType.length > 0) {
       if (!filters.venueType.includes(building.venue_type)) {
-        console.log('❌ [FILTER] Prédio rejeitado - venue_type não corresponde');
+        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Venue type: ${building.venue_type} não está em [${filters.venueType.join(', ')}]`);
+        rejectedBuildings++;
         return false;
       }
+      console.log(`✅ [FILTER] Venue type: ${building.venue_type} - OK`);
+    } else {
+      console.log(`✅ [FILTER] Venue type - FILTRO DESABILITADO`);
     }
 
-    // Filtro por bairro
-    if (filters.neighborhood) {
+    // FILTRO 3: Bairro
+    if (filters.neighborhood && filters.neighborhood.trim()) {
       if (!building.bairro.toLowerCase().includes(filters.neighborhood.toLowerCase())) {
-        console.log('❌ [FILTER] Prédio rejeitado - bairro não corresponde');
+        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Bairro: '${building.bairro}' não contém '${filters.neighborhood}'`);
+        rejectedBuildings++;
         return false;
       }
+      console.log(`✅ [FILTER] Bairro: ${building.bairro} contém '${filters.neighborhood}' - OK`);
+    } else {
+      console.log(`✅ [FILTER] Bairro - FILTRO DESABILITADO`);
     }
 
-    // Filtro por faixa de preço - usar preço base ou valor padrão
-    const preco = building.preco_base || 280;
+    // FILTRO 4: Faixa de preço (CRÍTICO - POSSÍVEL PROBLEMA)
+    const preco = building.preco_base !== null && building.preco_base !== undefined ? Number(building.preco_base) : 280;
+    console.log(`💰 [FILTER] Verificando preço: preco_base=${building.preco_base}, valor_usado=${preco}, range=[${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
+    
     if (preco < filters.priceRange[0] || preco > filters.priceRange[1]) {
-      console.log('❌ [FILTER] Prédio rejeitado - preço fora da faixa:', preco);
+      console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Preço: R$ ${preco} fora da faixa [R$ ${filters.priceRange[0]} - R$ ${filters.priceRange[1]}]`);
+      rejectedBuildings++;
       return false;
     }
+    console.log(`✅ [FILTER] Preço: R$ ${preco} dentro da faixa - OK`);
 
-    // Filtro por público mínimo - CORRIGIDO: só aplicar se for maior que 0
+    // FILTRO 5: Público mínimo (CRÍTICO - POSSÍVEL PROBLEMA)
+    console.log(`👥 [FILTER] Verificando público: audienceMin=${filters.audienceMin}, publico_estimado=${building.publico_estimado}`);
+    
     if (filters.audienceMin > 0) {
-      const publicoEstimado = building.publico_estimado || 0;
+      const publicoEstimado = building.publico_estimado !== null && building.publico_estimado !== undefined ? Number(building.publico_estimado) : 0;
       if (publicoEstimado < filters.audienceMin) {
-        console.log('❌ [FILTER] Prédio rejeitado - público estimado insuficiente:', publicoEstimado);
+        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Público: ${publicoEstimado} menor que mínimo ${filters.audienceMin}`);
+        rejectedBuildings++;
         return false;
       }
+      console.log(`✅ [FILTER] Público: ${publicoEstimado} >= ${filters.audienceMin} - OK`);
+    } else {
+      console.log(`✅ [FILTER] Público mínimo - FILTRO DESABILITADO (audienceMin = 0)`);
     }
 
-    // Filtro por padrão do público
+    // FILTRO 6: Padrão do público
     if (filters.standardProfile.length > 0) {
       if (!filters.standardProfile.includes(building.padrao_publico)) {
-        console.log('❌ [FILTER] Prédio rejeitado - padrão do público não corresponde');
+        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Padrão: '${building.padrao_publico}' não está em [${filters.standardProfile.join(', ')}]`);
+        rejectedBuildings++;
         return false;
       }
+      console.log(`✅ [FILTER] Padrão: ${building.padrao_publico} - OK`);
+    } else {
+      console.log(`✅ [FILTER] Padrão do público - FILTRO DESABILITADO`);
     }
 
-    // Filtro por amenities
+    // FILTRO 7: Amenities
     if (filters.amenities.length > 0) {
       const buildingAmenities = building.amenities || [];
       const hasAmenity = filters.amenities.some(amenity => 
         buildingAmenities.includes(amenity)
       );
       if (!hasAmenity) {
-        console.log('❌ [FILTER] Prédio rejeitado - amenities não correspondem');
+        console.log(`❌ [FILTER] Prédio ${building.nome} REJEITADO - Amenities: [${buildingAmenities.join(', ')}] não contém nenhum de [${filters.amenities.join(', ')}]`);
+        rejectedBuildings++;
         return false;
       }
+      console.log(`✅ [FILTER] Amenities: encontrado match - OK`);
+    } else {
+      console.log(`✅ [FILTER] Amenities - FILTRO DESABILITADO`);
     }
 
-    console.log('✅ [FILTER] Prédio aprovado:', building.nome);
+    console.log(`🎉 [FILTER] Prédio ${building.nome} APROVADO em todos os filtros!`);
+    passedBuildings++;
     return true;
   });
+
+  console.log('\n📊 [FILTER] === RESUMO FINAL ===');
+  console.log(`📊 [FILTER] Prédios analisados: ${buildings.length}`);
+  console.log(`📊 [FILTER] Prédios aprovados: ${passedBuildings}`);
+  console.log(`📊 [FILTER] Prédios rejeitados: ${rejectedBuildings}`);
+  console.log(`📊 [FILTER] Taxa de aprovação: ${buildings.length > 0 ? ((passedBuildings / buildings.length) * 100).toFixed(1) : 0}%`);
+  
+  if (filteredBuildings.length === 0) {
+    console.warn('⚠️ [FILTER] ALERTA: NENHUM PRÉDIO PASSOU NOS FILTROS!');
+    console.warn('⚠️ [FILTER] Possíveis causas:');
+    console.warn('⚠️ [FILTER] 1. Faixa de preço muito restritiva');
+    console.warn('⚠️ [FILTER] 2. Filtro de público mínimo muito alto');
+    console.warn('⚠️ [FILTER] 3. Todos os prédios têm status diferente de "ativo"');
+    console.warn('⚠️ [FILTER] 4. Combinação de filtros muito específica');
+  }
+
+  return filteredBuildings;
 };
 
 export const sortBuildings = (
@@ -86,7 +144,7 @@ export const sortBuildings = (
   sortOption: string, 
   selectedLocation?: { lat: number, lng: number } | null
 ): BuildingStore[] => {
-  console.log('📊 [SORT] Ordenando prédios por:', sortOption);
+  console.log('📊 [SORT] Ordenando prédios por:', sortOption, '| Quantidade:', buildings.length);
   
   return [...buildings].sort((a, b) => {
     switch (sortOption) {

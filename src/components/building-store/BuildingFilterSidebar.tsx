@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
-import { Map, Filter, X, Sparkles } from 'lucide-react';
+import { Map, Filter, X, Sparkles, Bug, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BuildingFiltersComponent from './BuildingFilters';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import useBuildingStore from '@/hooks/useBuildingStore';
 
 interface BuildingFilterSidebarProps {
   filters: BuildingFilters;
@@ -21,9 +22,47 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
   isSearching
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
+  const { disableFilters, toggleFilters, allBuildings, buildings } = useBuildingStore();
 
   return (
     <div className="space-y-6 sticky top-24">
+      {/* Debug Controls */}
+      <motion.div 
+        className="w-full mb-4 space-y-2"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <Button
+          variant="outline"
+          className={`w-full border-2 text-sm py-3 rounded-xl transition-all duration-300 ${
+            disableFilters 
+              ? 'border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100' 
+              : 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
+          }`}
+          onClick={toggleFilters}
+        >
+          {disableFilters ? (
+            <>
+              <EyeOff className="h-4 w-4 mr-2" />
+              Filtros Desabilitados
+            </>
+          ) : (
+            <>
+              <Eye className="h-4 w-4 mr-2" />
+              Filtros Habilitados
+            </>
+          )}
+        </Button>
+        
+        <div className="text-xs text-center text-gray-600 bg-gray-50 p-2 rounded-lg">
+          <div className="flex justify-between">
+            <span>Total: {allBuildings.length}</span>
+            <span>Exibindo: {buildings.length}</span>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Map Toggle Button */}
       <motion.div 
         className="w-full mb-4"
@@ -132,12 +171,20 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
           </p>
         </div>
         <div className="p-6 bg-gradient-to-b from-white to-gray-50/30">
-          <BuildingFiltersComponent 
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            loading={isLoading || isSearching}
-            compact={true}
-          />
+          {!disableFilters && (
+            <BuildingFiltersComponent 
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              loading={isLoading || isSearching}
+              compact={true}
+            />
+          )}
+          {disableFilters && (
+            <div className="text-center p-6 text-gray-500">
+              <EyeOff className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">Filtros temporariamente desabilitados para debug</p>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
