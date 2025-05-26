@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
+import { useUserSession } from '@/hooks/useUserSession';
 import UserMenu from '@/components/user/UserMenu';
 import HeaderLogo from './header/HeaderLogo';
 import DesktopNavigation from './header/DesktopNavigation';
@@ -13,7 +14,9 @@ import OnlineStoreButton from './header/OnlineStoreButton';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { cartItems, toggleCart } = useCartManager();
+  const { user, isLoggedIn } = useUserSession();
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -41,6 +44,30 @@ const Header = () => {
       document.body.style.overflow = 'unset';
     };
   }, [isMenuOpen]);
+
+  // CORREÇÃO: Verificar se super admin está em área pública
+  useEffect(() => {
+    const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+    const isPublicPage = location.pathname === '/' || 
+                        location.pathname.startsWith('/loja') ||
+                        location.pathname.startsWith('/paineis-digitais') ||
+                        location.pathname.startsWith('/sobre') ||
+                        location.pathname.startsWith('/contato') ||
+                        location.pathname.startsWith('/planos');
+    
+    console.log('🎯 HEADER: Verificação de navegação:', {
+      currentPath: location.pathname,
+      isSuperAdmin,
+      isPublicPage,
+      shouldAllowNavigation: isSuperAdmin && isPublicPage
+    });
+    
+    // Super admin pode navegar livremente em páginas públicas
+    if (isSuperAdmin && isPublicPage) {
+      console.log('✅ HEADER: Super admin navegando em página pública - permitido');
+      return;
+    }
+  }, [location.pathname, user]);
 
   const totalCartItems = cartItems.length;
 
