@@ -36,17 +36,32 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
     }
   };
 
+  // Log detalhado para debug
+  console.log('🏪 [BUILDING GRID] Estado atual:', {
+    buildings: buildings?.length || 0,
+    isLoading,
+    isSearching,
+    selectedLocation,
+    sortOption
+  });
+
   // Sortear prédios usando o serviço
   const sortedBuildings = useMemo(() => {
-    if (!buildings) return [];
+    if (!buildings) {
+      console.log('🏪 [BUILDING GRID] Nenhum prédio para ordenar');
+      return [];
+    }
+    console.log('🏪 [BUILDING GRID] Ordenando', buildings.length, 'prédios por', sortOption);
     return sortBuildings(buildings, sortOption, selectedLocation);
   }, [buildings, sortOption, selectedLocation]);
 
   if (isLoading || isSearching) {
-    return <LoadingPanels vertical={true} count={3} />;
+    console.log('⏳ [BUILDING GRID] Mostrando loading...');
+    return <LoadingPanels vertical={true} count={6} />;
   }
 
   if (!buildings || buildings.length === 0) {
+    console.log('❌ [BUILDING GRID] Nenhum prédio encontrado - mostrando EmptyResults');
     return (
       <div className="space-y-6 mb-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -63,6 +78,8 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
       </div>
     );
   }
+
+  console.log('✅ [BUILDING GRID] Renderizando', sortedBuildings.length, 'prédios');
 
   return (
     <div className="space-y-6 mb-10">
@@ -96,7 +113,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
         </Select>
       </div>
       
-      {/* Building Grid - Single Column Layout */}
+      {/* Building Grid */}
       {sortedBuildings.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="bg-gray-100 rounded-full p-4 mb-4">
@@ -112,7 +129,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="space-y-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
         >
           {sortedBuildings.map(building => (
             <motion.div

@@ -22,52 +22,80 @@ export interface BuildingStore {
   caracteristicas: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
   quantidade_telas: number;
-  numero_unidades: number;
-  nome_contato_predio: string;
-  numero_contato_predio: string;
 }
 
 export const fetchBuildingsForStore = async (lat?: number, lng?: number, radius = 5000) => {
   try {
+    console.log('🏢 [BUILDING STORE] Buscando prédios para loja online...');
+    console.log('🏢 [BUILDING STORE] Parâmetros:', { lat, lng, radius });
+    
     // Query principal: buscar TODOS os prédios ativos
     let query = supabase
       .from('buildings')
       .select('*')
-      .eq('status', 'ativo')
+      .eq('status', 'ativo') // APENAS prédios ativos
       .order('created_at', { ascending: false });
 
+    console.log('🏢 [BUILDING STORE] Executando query para prédios ativos...');
     const { data: buildings, error } = await query;
 
     if (error) {
+      console.error('❌ [BUILDING STORE] Erro na query:', error);
       toast.error(`Erro ao carregar prédios: ${error.message}`);
       return [];
     }
 
     if (!buildings || buildings.length === 0) {
+      console.warn('⚠️ [BUILDING STORE] Nenhum prédio ativo encontrado no banco');
       return [];
     }
 
+    console.log('✅ [BUILDING STORE] Prédios encontrados:', buildings.length);
+    
+    // Log detalhado dos prédios encontrados
+    buildings.forEach(building => {
+      console.log('🏢 [BUILDING STORE] Prédio:', {
+        id: building.id,
+        nome: building.nome,
+        status: building.status,
+        bairro: building.bairro,
+        venue_type: building.venue_type,
+        publico_estimado: building.publico_estimado,
+        quantidade_telas: building.quantidade_telas,
+        preco_base: building.preco_base
+      });
+    });
+
     // Se há coordenadas, calcular distância e filtrar por raio
     if (lat && lng && buildings) {
+      console.log('📍 [BUILDING STORE] Calculando distâncias...');
+      
       const buildingsWithDistance = buildings.map((building: any) => {
         if (building.latitude && building.longitude) {
           const distance = getDistanceFromLatLonInKm(lat, lng, building.latitude, building.longitude) * 1000;
+          console.log(`📏 [BUILDING STORE] Distância para ${building.nome}: ${distance}m`);
           return { ...building, distance };
         }
+        console.log(`⚠️ [BUILDING STORE] ${building.nome} sem coordenadas`);
         return { ...building, distance: 999999 };
       });
 
       // Filtrar por raio
-      const filteredBuildings = buildingsWithDistance.filter(building => 
-        building.distance <= radius
-      );
+      const filteredBuildings = buildingsWithDistance.filter(building => {
+        const withinRadius = building.distance <= radius;
+        console.log(`📍 [BUILDING STORE] ${building.nome} dentro do raio (${radius}m): ${withinRadius}`);
+        return withinRadius;
+      });
       
+      console.log(`✅ [BUILDING STORE] ${filteredBuildings.length} prédios dentro do raio de ${radius}m`);
       return filteredBuildings.sort((a, b) => a.distance - b.distance);
     }
 
+    console.log('✅ [BUILDING STORE] Retornando todos os prédios ativos:', buildings.length);
     return buildings || [];
     
   } catch (error: any) {
+    console.error('💥 [BUILDING STORE] Erro crítico:', error);
     toast.error('Erro crítico ao carregar prédios');
     return [];
   }
