@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { BuildingFilters } from '@/hooks/useBuildingStore';
+import type { BuildingFilters } from '@/hooks/useBuildingStore';
 
 interface BuildingFiltersProps {
   filters: BuildingFilters;
