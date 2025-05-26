@@ -1,12 +1,18 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const HeaderLogo: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
-    <Link 
-      to="/" 
-      className="flex items-center hover:opacity-80 transition-opacity duration-200"
+    <div 
+      onClick={handleLogoClick}
+      className="flex items-center hover:opacity-80 transition-opacity duration-200 cursor-pointer"
     >
       <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center">
         <img 
@@ -15,7 +21,7 @@ const HeaderLogo: React.FC = () => {
           className="w-full h-full object-contain"
         />
       </div>
-    </Link>
+    </div>
   );
 };
 

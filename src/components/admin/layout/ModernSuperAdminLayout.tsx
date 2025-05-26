@@ -3,6 +3,8 @@ import React from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
+import CartDrawer from '@/components/cart/CartDrawer';
+import { useCartManager } from '@/hooks/useCartManager';
 
 interface ModernSuperAdminLayoutProps {
   children: React.ReactNode;
@@ -10,6 +12,15 @@ interface ModernSuperAdminLayoutProps {
 }
 
 const ModernSuperAdminLayout = ({ children }: ModernSuperAdminLayoutProps) => {
+  const {
+    cartItems,
+    cartOpen,
+    handleRemoveFromCart,
+    handleClearCart,
+    handleChangeDuration,
+    handleProceedToCheckout
+  } = useCartManager();
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -34,6 +45,17 @@ const ModernSuperAdminLayout = ({ children }: ModernSuperAdminLayoutProps) => {
             </div>
           </footer>
         </SidebarInset>
+
+        {/* Cart Drawer */}
+        {cartOpen && (
+          <CartDrawer
+            cartItems={cartItems}
+            onRemoveFromCart={handleRemoveFromCart}
+            onClearCart={handleClearCart}
+            onChangeDuration={handleChangeDuration}
+            onProceedToCheckout={handleProceedToCheckout}
+          />
+        )}
       </div>
     </SidebarProvider>
   );

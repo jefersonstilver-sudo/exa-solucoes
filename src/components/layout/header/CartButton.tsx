@@ -1,21 +1,22 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import ModernCartIcon from '@/components/cart/ModernCartIcon';
 
 interface CartButtonProps {
   cartItemsCount: number;
   isAnimating?: boolean;
+  onToggleCart?: () => void;
 }
 
 const CartButton: React.FC<CartButtonProps> = ({ 
   cartItemsCount, 
-  isAnimating = false 
+  isAnimating = false,
+  onToggleCart
 }) => {
-  const navigate = useNavigate();
-
   const handleCartClick = () => {
-    navigate('/paineis-digitais/loja');
+    if (onToggleCart) {
+      onToggleCart();
+    }
   };
 
   return (
