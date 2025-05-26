@@ -26,13 +26,15 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#3C1361] to-[#2A0D47] shadow-lg">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <HeaderLogo />
+      <div className="container mx-auto px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
+          {/* Logo com mais espaço */}
+          <div className="flex-shrink-0">
+            <HeaderLogo />
+          </div>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-10">
             <Link 
               to="/" 
               className="text-white hover:text-[#00FFAB] transition-colors font-medium"
@@ -60,12 +62,12 @@ const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Right side - Cart and User actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-5">
             {/* Loja Online Button */}
             <Link to="/paineis-digitais/loja">
               <Button 
                 variant="outline" 
-                className="bg-[#00FFAB] text-[#3C1361] border-[#00FFAB] hover:bg-[#00FFAB]/90 font-semibold"
+                className="bg-[#00FFAB] text-[#3C1361] border-[#00FFAB] hover:bg-[#00FFAB]/90 font-semibold px-5"
               >
                 Loja Online
               </Button>
@@ -80,8 +82,8 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* User Profile/Login */}
             {isLoggedIn ? (
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 bg-[#00FFAB] rounded-full flex items-center justify-center">
+              <div className="flex items-center space-x-3">
+                <div className="h-9 w-9 bg-[#00FFAB] rounded-full flex items-center justify-center">
                   <User className="h-5 w-5 text-[#3C1361]" />
                 </div>
                 <span className="text-white text-sm font-medium">
@@ -92,7 +94,7 @@ const Header: React.FC<HeaderProps> = ({
               <Link to="/auth">
                 <Button 
                   variant="ghost" 
-                  className="text-white hover:text-[#00FFAB] hover:bg-white/10"
+                  className="text-white hover:text-[#00FFAB] hover:bg-white/10 px-5"
                 >
                   Entrar
                 </Button>

@@ -3,6 +3,7 @@ import React from 'react';
 import { CartItem } from '@/types/cart';
 import Header from './Header';
 import CartDrawer from '@/components/cart/CartDrawer';
+import MobileOptimizedFooter from './MobileOptimizedFooter';
 import { useCartManager } from '@/hooks/useCartManager';
 
 interface LayoutProps {
@@ -59,16 +60,19 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header 
         cartItemsCount={cartItems.length}
         cartAnimation={cartAnimation}
         onToggleCart={handleToggleCart}
       />
       
-      <main className="pt-16">
+      <main className="pt-20 flex-1">
         {children}
       </main>
+      
+      {/* Footer */}
+      <MobileOptimizedFooter />
       
       {/* Cart Drawer */}
       <CartDrawer
