@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { Map, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import BuildingFilters as BuildingFiltersComponent from './BuildingFilters';
+import BuildingFiltersComponent from './BuildingFilters';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 interface BuildingFilterSidebarProps {
