@@ -72,22 +72,6 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
             </>
           )}
         </Button>
-
-        {/* Trust indicators */}
-        <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
-          <span className="flex items-center">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-            Seguro
-          </span>
-          <span className="flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
-            Rápido
-          </span>
-          <span className="flex items-center">
-            <span className="w-2 h-2 bg-purple-500 rounded-full mr-1"></span>
-            Confiável
-          </span>
-        </div>
       </div>
     </motion.div>
   );

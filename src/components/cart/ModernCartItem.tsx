@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Trash2, Building, Eye } from 'lucide-react';
+import { MapPin, Trash2, Building, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/formatters';
 
@@ -28,11 +27,6 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
     }
     return 'Localização não especificada';
   };
-  
-  const formatDuration = (days: number) => {
-    const months = days / 30;
-    return `${months} ${months === 1 ? 'mês' : 'meses'}`;
-  };
 
   const handleRemove = async () => {
     setIsRemoving(true);
@@ -41,15 +35,6 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
       onRemove(panel.id);
     }, 150);
   };
-
-  const durationOptions = [
-    { value: 30, label: '1 mês' },
-    { value: 60, label: '2 meses' },
-    { value: 90, label: '3 meses' },
-    { value: 120, label: '4 meses' },
-    { value: 150, label: '5 meses' },
-    { value: 180, label: '6 meses' }
-  ];
 
   return (
     <motion.div
@@ -61,15 +46,15 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
       whileHover={{ scale: 1.01 }}
       layout
     >
-      <div className="flex flex-col sm:flex-row">
-        {/* Imagem */}
-        <div className="w-full sm:w-1/3 relative">
+      <div className="flex flex-col">
+        {/* Imagem - Agora mais quadrada */}
+        <div className="w-full relative">
           {panel.buildings?.imageUrl ? (
             <div className="relative group">
               <img 
                 src={panel.buildings.imageUrl}
                 alt={panel.buildings?.nome || 'Painel'}
-                className="w-full h-48 sm:h-full object-cover"
+                className="w-full h-32 object-cover"
               />
               {/* Overlay com informações extras */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -82,7 +67,7 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-br from-gray-200 to-gray-300 w-full h-48 sm:h-full flex items-center justify-center">
+            <div className="bg-gradient-to-br from-gray-200 to-gray-300 w-full h-32 flex items-center justify-center">
               <Building className="h-8 w-8 text-gray-400" />
             </div>
           )}
@@ -97,74 +82,41 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
         </div>
         
         {/* Conteúdo */}
-        <div className="flex-1 p-4">
-          <div className="flex flex-col h-full">
-            {/* Header do item */}
+        <div className="p-4">
+          <div className="flex items-start justify-between mb-2">
             <div className="flex-1">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-lg">
-                    {panel.buildings?.nome || 'Painel sem nome'}
-                  </h3>
-                  <div className="flex items-center text-gray-500 text-sm mt-1">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    <span>{formatLocation()}</span>
-                  </div>
-                </div>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemove}
-                  disabled={isRemoving}
-                  className="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors p-2"
-                  title="Remover item"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              <h3 className="font-semibold text-gray-900 text-lg">
+                {panel.buildings?.nome || 'Painel sem nome'}
+              </h3>
+              <div className="flex items-center text-gray-500 text-sm mt-1">
+                <MapPin className="h-3 w-3 mr-1" />
+                <span>{formatLocation()}</span>
               </div>
-              
-              {/* Tipo de local */}
-              {panel.buildings?.venue_type && (
-                <Badge variant="outline" className="mb-3 text-xs">
-                  {panel.buildings.venue_type}
-                </Badge>
-              )}
             </div>
             
-            {/* Controles e preço */}
-            <div className="flex items-end justify-between mt-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  <span>Período:</span>
-                </div>
-                
-                <Select
-                  value={item.duration.toString()}
-                  onValueChange={(value) => onChangeDuration(panel.id, parseInt(value))}
-                >
-                  <SelectTrigger className="w-32 h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {durationOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value.toString()}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="text-right">
-                <div className="text-2xl font-bold text-[#3C1361]">
-                  {formatCurrency(item.price)}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {formatDuration(item.duration)}
-                </div>
-              </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRemove}
+              disabled={isRemoving}
+              className="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors p-2"
+              title="Remover item"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Tipo de local */}
+          {panel.buildings?.venue_type && (
+            <Badge variant="outline" className="mb-3 text-xs">
+              {panel.buildings.venue_type}
+            </Badge>
+          )}
+          
+          {/* Preço */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-2xl font-bold text-[#3C1361]">
+              {formatCurrency(item.price)}
             </div>
           </div>
         </div>

@@ -57,10 +57,10 @@ export const useCartCheckout = ({
       // Save cart with validation
       saveCartForCheckout(cartItems);
       
-      // FIXED: Navigation based on authentication status
+      // FIXED: Navigation based on authentication status with immediate navigation
       if (!isLoggedIn) {
         console.log('🛒 Cart Checkout: Usuário não logado, redirecionando para login');
-        navigate('/login?redirect=/selecionar-plano');
+        window.location.href = '/login?redirect=/selecionar-plano';
       } else {
         console.log('🛒 Cart Checkout: Usuário logado, indo para seleção de planos');
         
@@ -72,7 +72,8 @@ export const useCartCheckout = ({
           return;
         }
         
-        navigate('/selecionar-plano');
+        // Force navigation using window.location for immediate redirect
+        window.location.href = '/selecionar-plano';
       }
       
       // Reset processing state after navigation attempt
@@ -87,9 +88,9 @@ export const useCartCheckout = ({
       
       // Last resort - direct navigation based on auth status
       if (!isLoggedIn) {
-        navigateSafely('/login?redirect=/selecionar-plano');
+        window.location.href = '/login?redirect=/selecionar-plano';
       } else {
-        navigateSafely('/selecionar-plano');
+        window.location.href = '/selecionar-plano';
       }
     }
   };
