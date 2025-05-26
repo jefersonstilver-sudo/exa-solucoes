@@ -31,6 +31,7 @@ export default function BuildingStorePage() {
 
   const {
     cartItems,
+    handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
@@ -114,6 +115,7 @@ export default function BuildingStorePage() {
           handleSearch={handleSearch}
           handleClearLocation={handleClearLocation}
           onViewPanels={handleViewPanels}
+          onAddToCart={handleAddToCart}
         />
       </motion.div>
     </Layout>
