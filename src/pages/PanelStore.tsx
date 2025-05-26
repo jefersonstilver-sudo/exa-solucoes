@@ -16,7 +16,7 @@ export default function PanelStore() {
   const [searchParams] = useSearchParams();
   const buildingId = searchParams.get('building_id');
   
-  // Panel store state (for when viewing specific building panels)
+  // Panel store state
   const {
     panels,
     isLoading: panelsLoading,
@@ -31,7 +31,7 @@ export default function PanelStore() {
     handleClearLocation: handlePanelClearLocation
   } = usePanelStore();
 
-  // Building store state (for main store view)
+  // Building store state
   const {
     buildings,
     isLoading: buildingsLoading,
@@ -62,15 +62,16 @@ export default function PanelStore() {
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
 
-  // CORREÇÃO: Load appropriate data based on whether we're viewing a specific building or the main store
+  // CORREÇÃO: Garantir carregamento inicial de todos os prédios
   useEffect(() => {
-    console.log('🔄 [PANEL STORE] Effect executado - buildingId:', buildingId);
+    console.log('🔄 [PANEL STORE] === EFFECT INICIAL EXECUTADO ===');
+    console.log('🔄 [PANEL STORE] buildingId:', buildingId);
+    
     if (!buildingId) {
-      // CORREÇÃO: Load buildings for main store view - SEM coordenadas para pegar todos
-      console.log('🔄 [PANEL STORE] Carregando todos os prédios (sem filtro de localização)');
-      fetchBuildings(); // Sem lat/lng = busca todos os prédios disponíveis
+      console.log('🔄 [PANEL STORE] Sem buildingId - carregando TODOS os prédios');
+      // CORREÇÃO: Forçar carregamento de todos os prédios
+      fetchBuildings();
     }
-    // Panel loading will be handled by the panel store hook when buildingId is present
   }, [buildingId, fetchBuildings]);
 
   // Effect to hide promotion when user logs in or adds items to cart
@@ -89,7 +90,6 @@ export default function PanelStore() {
     window.history.pushState({}, '', newUrl.toString());
   };
 
-  // Log quando handleProceedToCheckout é chamado
   const handleCheckoutStart = () => {
     logCheckoutEvent(
       CheckoutEvent.CHECKOUT_INITIATION,

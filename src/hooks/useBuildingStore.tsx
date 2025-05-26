@@ -34,15 +34,15 @@ interface BuildingStoreState {
   toggleFilters: () => void;
 }
 
-// CORREÇÃO: Filtros padrão MUITO mais permissivos para garantir que prédios apareçam
+// CORREÇÃO: Filtros padrão mais permissivos para garantir que prédios apareçam
 const defaultFilters: BuildingFilters = {
-  radius: 50000, // 50km - muito maior
+  radius: 50000, // 50km
   neighborhood: '',
-  venueType: [], // Vazio = todos os tipos aceitos
-  priceRange: [0, 10000], // Range muito amplo
-  audienceMin: 0, // CRÍTICO: Zero para não filtrar por público
-  standardProfile: [], // Vazio = todos os padrões aceitos
-  amenities: [] // Vazio = todas as amenities aceitas
+  venueType: [], // Vazio = todos os tipos
+  priceRange: [0, 10000], // Range amplo
+  audienceMin: 0, // Zero = sem restrição de público
+  standardProfile: [], // Vazio = todos os padrões
+  amenities: [] // Vazio = todas as amenities
 };
 
 export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
@@ -68,7 +68,6 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       console.log(`🔄 [BUILDING STORE] Filtros ${newDisableState ? 'DESABILITADOS' : 'HABILITADOS'}`);
       return { disableFilters: newDisableState };
     });
-    // Reaplicar filtros após mudança
     setTimeout(() => get().applyFilters(), 0);
   },
   
@@ -77,7 +76,6 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
     set(state => ({
       filters: { ...state.filters, ...newFilters }
     }));
-    // Aplicar filtros imediatamente após mudança
     setTimeout(() => get().applyFilters(), 0);
   },
   
@@ -87,17 +85,16 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
     console.log('🔍 [BUILDING STORE] === APLICANDO FILTROS ===');
     console.log('🔍 [BUILDING STORE] Total de prédios disponíveis:', allBuildings.length);
     console.log('🔍 [BUILDING STORE] Filtros desabilitados:', disableFilters);
-    console.log('🔍 [BUILDING STORE] Configuração atual dos filtros:', filters);
     
-    if (disableFilters) {
-      // Mostrar todos os prédios ativos quando filtros estão desabilitados
+    if (disableFilters || allBuildings.length === 0) {
+      // CORREÇÃO: Mostrar todos os prédios ativos quando filtros estão desabilitados ou não há dados
       const activeBuildings = allBuildings.filter(building => building.status === 'ativo');
-      console.log('✅ [BUILDING STORE] Filtros desabilitados - Mostrando todos os prédios ativos:', activeBuildings.length);
+      console.log('✅ [BUILDING STORE] Mostrando todos os prédios ativos:', activeBuildings.length);
       set({ buildings: activeBuildings });
       return;
     }
     
-    // CORREÇÃO CRÍTICA: Se não há filtros específicos aplicados, mostrar todos os ativos
+    // CORREÇÃO: Verificar se há filtros realmente ativos
     const hasActiveFilters = (
       filters.neighborhood.trim() !== '' ||
       filters.venueType.length > 0 ||
@@ -114,6 +111,7 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       return;
     }
     
+    // Aplicar filtros apenas se há filtros específicos
     const filteredBuildings = filterBuildings(allBuildings, filters);
     console.log('✅ [BUILDING STORE] Prédios após aplicar filtros:', filteredBuildings.length);
     
@@ -122,18 +120,18 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   
   fetchBuildings: async (lat?: number, lng?: number) => {
     try {
-      console.log('🔄 [BUILDING STORE] Iniciando busca de prédios...');
-      console.log('🔄 [BUILDING STORE] Coordenadas:', { lat, lng });
+      console.log('🔄 [BUILDING STORE] === INICIANDO BUSCA DE PRÉDIOS ===');
+      console.log('🔄 [BUILDING STORE] Coordenadas fornecidas:', { lat, lng });
       set({ loading: true, isLoading: true, error: null });
       
+      // CORREÇÃO: Forçar busca de TODOS os prédios se não há coordenadas
       const buildings = await fetchBuildingsForStore(lat, lng, get().filters.radius);
       console.log('📊 [BUILDING STORE] Prédios recebidos do service:', buildings.length);
-      console.log('📊 [BUILDING STORE] Primeiros 3 prédios:', buildings.slice(0, 3).map(b => ({
-        id: b.id,
-        nome: b.nome,
-        status: b.status,
-        preco_base: b.preco_base
-      })));
+      
+      // CORREÇÃO: Log detalhado dos prédios recebidos
+      buildings.forEach((building, index) => {
+        console.log(`📊 [BUILDING STORE] Prédio ${index + 1}: ${building.nome} (Status: ${building.status}, Público: ${building.publico_estimado})`);
+      });
       
       set({ 
         allBuildings: buildings as BuildingStore[],
@@ -141,7 +139,7 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
         isLoading: false 
       });
       
-      // CORREÇÃO: Aplicar filtros aos novos dados - mas com lógica mais permissiva
+      // CORREÇÃO: Aplicar filtros aos novos dados
       get().applyFilters();
       
     } catch (error: any) {
@@ -156,7 +154,6 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   
   handleSearch: async (location: string) => {
     if (!location.trim()) {
-      // CORREÇÃO: Se não há localização, buscar todos os prédios disponíveis
       console.log('🔍 [BUILDING STORE] Busca sem localização - carregando todos os prédios');
       await get().fetchBuildings();
       return;
@@ -169,7 +166,8 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       const coordinates = await getLocationCoordinates(location);
       
       if (!coordinates) {
-        console.warn('⚠️ [BUILDING STORE] Coordenadas não encontradas');
+        console.warn('⚠️ [BUILDING STORE] Coordenadas não encontradas - carregando todos os prédios');
+        await get().fetchBuildings();
         set({ isSearching: false });
         return;
       }
@@ -181,22 +179,24 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
       });
       
       await get().fetchBuildings(coordinates.lat, coordinates.lng);
-      
       set({ isSearching: false });
+      
     } catch (error) {
       console.error("❌ [BUILDING STORE] Erro na busca:", error);
+      // FALLBACK: Carregar todos os prédios mesmo com erro
+      await get().fetchBuildings();
       set({ isSearching: false });
     }
   },
   
   handleClearLocation: () => {
-    console.log('🧹 [BUILDING STORE] Limpando localização');
+    console.log('🧹 [BUILDING STORE] Limpando localização e recarregando todos os prédios');
     set({ 
       selectedLocation: null,
-      searchLocation: '',
-      allBuildings: [],
-      buildings: []
+      searchLocation: ''
     });
+    // CORREÇÃO: Recarregar todos os prédios após limpar localização
+    get().fetchBuildings();
   }
 }));
 
