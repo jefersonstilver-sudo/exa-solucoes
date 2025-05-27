@@ -15,7 +15,8 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  DollarSign
+  DollarSign,
+  Video
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
