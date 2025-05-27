@@ -22,16 +22,10 @@ const CheckoutContainer = ({
   const navigate = useNavigate();
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   
+  // TODOS os hooks sempre executam - apenas o conteúdo muda
+  
   // Verificação de autenticação
   useEffect(() => {
-    console.log('[CheckoutContainer] Auth check:', { 
-      isLoggedIn, 
-      isSessionLoading, 
-      hasUser: !!user,
-      requireAuth,
-      step 
-    });
-
     // Log de acesso
     if (isLoggedIn && user) {
       logCheckoutEvent(
@@ -59,7 +53,7 @@ const CheckoutContainer = ({
       );
       
       toast.error("Você precisa estar logado para continuar");
-      navigate('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      navigate('/login?redirect=/checkout');
     }
   }, [isLoggedIn, user, step, title, requireAuth, isSessionLoading, navigate]);
 
