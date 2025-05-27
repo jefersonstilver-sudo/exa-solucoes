@@ -31,26 +31,26 @@ const BuildingCardAmenities: React.FC<BuildingCardAmenitiesProps> = ({ building 
   }
 
   return (
-    <div className="mb-6">
-      <p className="text-sm font-semibold text-gray-700 mb-3">Comodidades disponíveis:</p>
-      <div className="flex flex-wrap gap-2">
-        {building.amenities.slice(0, 6).map((amenity, index) => {
+    <div className="mb-4">
+      <p className="text-xs font-semibold text-gray-700 mb-2">Comodidades disponíveis:</p>
+      <div className="flex flex-wrap gap-1.5">
+        {building.amenities.slice(0, 4).map((amenity, index) => {
           const IconComponent = getAmenityIcon(amenity);
           return (
             <div
               key={index}
-              className="flex items-center bg-gray-100 hover:bg-gray-200 transition-colors px-3 py-2 rounded-full"
+              className="flex items-center bg-gray-100 hover:bg-gray-200 transition-colors px-2 py-1 rounded-full"
             >
-              <IconComponent className="h-4 w-4 mr-2 text-gray-600" />
-              <span className="text-sm text-gray-700 capitalize">
+              <IconComponent className="h-3 w-3 mr-1 text-gray-600" />
+              <span className="text-xs text-gray-700 capitalize">
                 {amenity.replace('_', ' ')}
               </span>
             </div>
           );
         })}
-        {building.amenities.length > 6 && (
-          <span className="text-sm text-gray-500 px-3 py-2 bg-gray-50 rounded-full">
-            +{building.amenities.length - 6} mais
+        {building.amenities.length > 4 && (
+          <span className="text-xs text-gray-500 px-2 py-1 bg-gray-50 rounded-full">
+            +{building.amenities.length - 4} mais
           </span>
         )}
       </div>

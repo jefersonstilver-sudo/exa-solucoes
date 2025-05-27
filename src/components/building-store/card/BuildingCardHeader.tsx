@@ -9,15 +9,15 @@ interface BuildingCardHeaderProps {
 
 const BuildingCardHeader: React.FC<BuildingCardHeaderProps> = ({ building }) => {
   return (
-    <div className="mb-6">
-      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+    <div className="mb-4">
+      <h3 className="text-xl font-bold text-gray-900 mb-1">
         {building.nome}
       </h3>
-      <div className="flex items-center text-gray-600 mb-4">
-        <MapPin className="h-5 w-5 mr-2" />
-        <span className="text-base">{building.bairro}</span>
+      <div className="flex items-center text-gray-600 mb-2">
+        <MapPin className="h-4 w-4 mr-1" />
+        <span className="text-sm">{building.bairro}</span>
       </div>
-      <p className="text-gray-600 text-sm">
+      <p className="text-gray-600 text-xs">
         {building.endereco}
       </p>
     </div>

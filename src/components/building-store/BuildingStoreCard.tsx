@@ -25,19 +25,19 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       whileHover={{ 
-        y: -8,
+        y: -4,
         transition: { duration: 0.2 }
       }}
       className="w-full"
     >
-      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 bg-white shadow-md">
+      <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 bg-white shadow-md">
         <CardContent className="p-0">
           <div className="flex flex-col lg:flex-row">
             {/* Imagem Principal - Lado Esquerdo */}
             <BuildingCardImage building={building} />
 
             {/* Informações - Lado Direito */}
-            <div className="lg:w-3/5 p-6 lg:p-8">
+            <div className="lg:w-3/5 p-4 lg:p-5">
               {/* Header com Nome e Localização */}
               <BuildingCardHeader building={building} />
 

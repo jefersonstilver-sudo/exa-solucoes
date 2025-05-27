@@ -53,14 +53,14 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between pt-6 border-t border-gray-100">
-      <div className="mb-4 lg:mb-0">
-        <p className="text-sm text-gray-600 mb-1">A partir de</p>
-        <p className="text-3xl font-bold text-indexa-purple">
+    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between pt-4 border-t border-gray-100">
+      <div className="mb-3 lg:mb-0">
+        <p className="text-xs text-gray-600 mb-1">A partir de</p>
+        <p className="text-2xl font-bold text-indexa-purple">
           R$ {building.preco_base || 280}
-          <span className="text-lg font-normal text-gray-500">/mês</span>
+          <span className="text-sm font-normal text-gray-500">/mês</span>
         </p>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-xs text-gray-500 mt-1">
           {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
         </p>
       </div>
@@ -73,9 +73,9 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
         >
           <Button
             onClick={handleAddToCart}
-            size="lg"
+            size="sm"
             disabled={isAdded}
-            className={`px-8 py-3 text-base font-semibold transition-all duration-300 ${
+            className={`px-6 py-2 text-sm font-semibold transition-all duration-300 ${
               isAdded 
                 ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
                 : 'bg-indexa-purple hover:bg-indexa-purple-dark text-white hover:scale-105'
@@ -83,12 +83,12 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
           >
             {isAdded ? (
               <>
-                <Check className="h-5 w-5 mr-2" />
+                <Check className="h-4 w-4 mr-1" />
                 Adicionado
               </>
             ) : (
               <>
-                <ShoppingCart className="h-5 w-5 mr-2" />
+                <ShoppingCart className="h-4 w-4 mr-1" />
                 Adicionar ao Carrinho
               </>
             )}

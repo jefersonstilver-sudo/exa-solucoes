@@ -19,33 +19,33 @@ const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({ building }) =
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      <div className="bg-blue-50 p-4 rounded-xl">
-        <div className="flex items-center mb-2">
-          <Users className="h-5 w-5 text-blue-600 mr-2" />
-          <span className="text-sm text-blue-600 font-medium">Público</span>
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+      <div className="bg-blue-50 p-3 rounded-lg">
+        <div className="flex items-center mb-1">
+          <Users className="h-4 w-4 text-blue-600 mr-1" />
+          <span className="text-xs text-blue-600 font-medium">Público</span>
         </div>
-        <p className="text-xl font-bold text-blue-900">
+        <p className="text-lg font-bold text-blue-900">
           {formatNumber(building.publico_estimado)}
         </p>
       </div>
       
-      <div className="bg-green-50 p-4 rounded-xl">
-        <div className="flex items-center mb-2">
-          <Eye className="h-5 w-5 text-green-600 mr-2" />
-          <span className="text-sm text-green-600 font-medium">Views/mês</span>
+      <div className="bg-green-50 p-3 rounded-lg">
+        <div className="flex items-center mb-1">
+          <Eye className="h-4 w-4 text-green-600 mr-1" />
+          <span className="text-xs text-green-600 font-medium">Views/mês</span>
         </div>
-        <p className="text-xl font-bold text-green-900">
+        <p className="text-lg font-bold text-green-900">
           {formatNumber(building.visualizacoes_mes)}
         </p>
       </div>
 
-      <div className="bg-purple-50 p-4 rounded-xl col-span-2 lg:col-span-1">
-        <div className="flex items-center mb-2">
-          <Building2 className="h-5 w-5 text-purple-600 mr-2" />
-          <span className="text-sm text-purple-600 font-medium">Painéis</span>
+      <div className="bg-purple-50 p-3 rounded-lg col-span-2 lg:col-span-1">
+        <div className="flex items-center mb-1">
+          <Building2 className="h-4 w-4 text-purple-600 mr-1" />
+          <span className="text-xs text-purple-600 font-medium">Painéis</span>
         </div>
-        <p className="text-xl font-bold text-purple-900">
+        <p className="text-lg font-bold text-purple-900">
           {building.quantidade_telas}
         </p>
       </div>

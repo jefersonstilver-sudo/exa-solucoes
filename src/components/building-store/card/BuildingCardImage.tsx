@@ -30,7 +30,7 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
   const totalImages = imageUrls.length;
 
   return (
-    <div className="relative lg:w-2/5 h-64 lg:h-80">
+    <div className="relative lg:w-2/5 h-48 lg:h-56">
       {primaryImage ? (
         <img
           src={primaryImage}
@@ -39,25 +39,25 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/5">
-          <Building2 className="h-16 w-16 text-indexa-purple/30" />
+          <Building2 className="h-12 w-12 text-indexa-purple/30" />
         </div>
       )}
       
       {/* Badges no topo da imagem */}
-      <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-        <Badge className={getPadraoColor(building.padrao_publico)}>
+      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+        <Badge className={`${getPadraoColor(building.padrao_publico)} text-xs px-2 py-1`}>
           {building.padrao_publico.charAt(0).toUpperCase() + building.padrao_publico.slice(1)}
         </Badge>
-        <Badge className="bg-indigo-500/90 text-white border-0">
+        <Badge className="bg-indigo-500/90 text-white border-0 text-xs px-2 py-1">
           {building.venue_type || 'Residencial'}
         </Badge>
       </div>
       
       {/* Contador de fotos */}
       {totalImages > 0 && (
-        <div className="absolute bottom-4 left-4 flex items-center bg-black/60 text-white px-3 py-2 rounded-lg">
-          <Camera className="h-4 w-4 mr-2" />
-          <span className="text-sm font-medium">{totalImages} fotos</span>
+        <div className="absolute bottom-3 left-3 flex items-center bg-black/60 text-white px-2 py-1 rounded-lg">
+          <Camera className="h-3 w-3 mr-1" />
+          <span className="text-xs font-medium">{totalImages} fotos</span>
         </div>
       )}
     </div>
