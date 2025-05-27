@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { BuildingStore, fetchBuildingsForStore } from '@/services/buildingStoreService';
+import { fetchActiveBuildings, SimpleBuildingStore } from '@/services/simpleBuildingService';
 import { toast } from 'sonner';
 
 export const useSimpleBuildingStore = () => {
-  const [buildings, setBuildings] = useState<BuildingStore[]>([]);
+  const [buildings, setBuildings] = useState<SimpleBuildingStore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,7 +14,7 @@ export const useSimpleBuildingStore = () => {
       setIsLoading(true);
       setError(null);
       
-      const data = await fetchBuildingsForStore();
+      const data = await fetchActiveBuildings();
       console.log('🏢 [SIMPLE STORE] Prédios recebidos:', data.length);
       
       if (data.length === 0) {

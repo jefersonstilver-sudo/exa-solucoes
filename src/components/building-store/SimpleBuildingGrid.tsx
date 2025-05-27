@@ -62,7 +62,6 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
     <div className="space-y-4">
       {buildings.map((building, index) => {
         console.log(`🏢 [SIMPLE GRID] Renderizando prédio ${index + 1}: ${building.nome}`);
-        const buildingAsPanel = buildingToPanel(building);
         return (
           <motion.div
             key={building.id}
