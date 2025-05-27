@@ -53,7 +53,7 @@ export const useCartOperations = ({
             : item
         );
       } else {
-        // Trigger cart icon animation
+        // Trigger cart icon animation only
         setCartAnimation(true);
         setTimeout(() => setCartAnimation(false), 800);
         
@@ -63,8 +63,7 @@ export const useCartOperations = ({
       }
     });
     
-    // Automatically open the cart when an item is added
-    setCartOpen(true);
+    // DO NOT automatically open the cart - only open on manual click
     
     // Log event
     logCheckoutEvent(
@@ -207,7 +206,7 @@ export const useCartOperations = ({
     return false;
   };
 
-  // Toggle cart open/close
+  // Toggle cart open/close - only allow manual toggle
   const toggleCart = () => {
     setCartOpen(prev => !prev);
   };

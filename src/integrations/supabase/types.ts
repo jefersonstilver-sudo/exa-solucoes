@@ -579,6 +579,7 @@ export type Database = {
           credencial: string | null
           id: string
           id_user: string
+          predio: string | null
           predios_selecionados: number[] | null
           valor_total: number | null
         }
@@ -587,6 +588,7 @@ export type Database = {
           credencial?: string | null
           id?: string
           id_user: string
+          predio?: string | null
           predios_selecionados?: number[] | null
           valor_total?: number | null
         }
@@ -595,6 +597,7 @@ export type Database = {
           credencial?: string | null
           id?: string
           id_user?: string
+          predio?: string | null
           predios_selecionados?: number[] | null
           valor_total?: number | null
         }

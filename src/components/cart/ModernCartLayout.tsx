@@ -39,24 +39,24 @@ const ModernCartLayout: React.FC<ModernCartLayoutProps> = ({
         onClear={onClear}
       />
       
-      {/* Items List - espaçamento mais compacto */}
-      <ScrollArea className="flex-1 px-3">
-        <div className="space-y-3 py-3">
+      {/* Items List - optimized for many items */}
+      <ScrollArea className="flex-1 px-2">
+        <div className="space-y-2 py-2">
           <AnimatePresence mode="popLayout">
             {cartItems.map((item, index) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ 
                   opacity: 0, 
-                  y: -8, 
+                  y: -5, 
                   scale: 0.98,
                   transition: { duration: 0.15 }
                 }}
                 transition={{ 
-                  duration: 0.25,
-                  delay: index * 0.03
+                  duration: 0.2,
+                  delay: Math.min(index * 0.02, 0.3) // Cap delay for many items
                 }}
                 layout
               >
