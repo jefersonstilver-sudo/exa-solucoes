@@ -47,11 +47,11 @@ export const useCheckoutNavigation = ({
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
   
-  // FIXED: Mapping step numbers to routes
+  // CORREÇÃO CRÍTICA: Mapeamento correto dos steps
   const stepRoutes = {
     0: '/checkout/cupom',      // Coupon step
     1: '/checkout/resumo',     // Summary step  
-    2: '/checkout',            // Payment step (existing checkout page)
+    2: '/checkout',            // Payment METHOD SELECTION step (CRÍTICO!)
     3: '/checkout/finalizar'   // Upload/Finish step
   };
   
@@ -62,8 +62,8 @@ export const useCheckoutNavigation = ({
         return true; // Always enabled as coupon is optional
       case 1: // SUMMARY step  
         return cartItems.length > 0;
-      case 2: // PAYMENT step
-        return acceptTerms;
+      case 2: // PAYMENT METHOD SELECTION step
+        return true; // Always enabled to allow method selection
       case 3: // UPLOAD step
         return true; // Always enabled for final step
       default:
@@ -94,20 +94,15 @@ export const useCheckoutNavigation = ({
     }
   };
 
-  // Navigate to the next step or process payment with explicit payment method
+  // CORREÇÃO CRÍTICA: Navigate to the next step SEM processar pagamento no step 2
   const handleNextStep = async (paymentMethod = 'credit_card') => {
-    console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: handleNextStep iniciado", {
+    console.log("[useCheckoutNavigation] MEGA CHECKOUT FLOW: handleNextStep iniciado", {
       step,
       paymentMethod,
       isNavigating,
       isNextEnabled: isNextEnabled()
     });
   
-    // CRITICAL FIX: Clear up payment method type
-    const normalizedPaymentMethod = paymentMethod === 'pix' ? 'pix' : 'credit_card';
-    
-    console.log(`[useCheckoutNavigation] handleNextStep called with method: ${normalizedPaymentMethod}, original: ${paymentMethod}, step: ${step}`);
-    
     // CRITICAL FIX: Prevent duplicate navigation
     if (isNavigating) {
       console.warn('[useCheckoutNavigation] Ignoring navigation - already in progress');
@@ -124,75 +119,34 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // CRITICAL FIX: Payment step processing (step 2 in new flow)
-      if (step === 2) { // PAYMENT step
-        // Payment
-        if (!acceptTerms) {
-          sonnerToast.error("Você precisa aceitar os termos para continuar");
-          setIsNavigating(false);
-          return;
-        }
-        
-        console.log(`[useCheckoutNavigation] PAYMENT FLOW TRACE: Processando pagamento com método: ${normalizedPaymentMethod}`);
+      // CORREÇÃO MEGA CRÍTICA: NO STEP 2, APENAS NAVEGAR - NÃO PROCESSAR PAGAMENTO!
+      if (step === 2) {
+        // Step 2 é seleção de método de pagamento, não processamento!
+        // O processamento acontece na página /checkout quando o usuário escolhe o método
+        console.log('[useCheckoutNavigation] MEGA CHECKOUT: Step 2 - navegando para método de pagamento');
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
-          `Starting payment process with method: ${normalizedPaymentMethod}`,
-          { currentStep: step, paymentMethod: normalizedPaymentMethod }
+          'Navegando para seleção de método de pagamento',
+          { currentStep: step, targetRoute: '/checkout' }
         );
         
-        // Calculate price with coupon discount
-        const totalPrice = calculateTotalPrice();
-        
-        try {
-          console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: Chamando createPayment");
-          
-          await createPayment({
-            totalPrice,
-            selectedPlan,
-            cartItems,
-            startDate,
-            endDate,
-            couponId,
-            acceptTerms,
-            unavailablePanels: [], // Ignoring validation for now to fix the bug
-            sessionUser,
-            handleClearCart,
-            paymentMethod: normalizedPaymentMethod
-          });
-          
-          console.log("[useCheckoutNavigation] PAYMENT FLOW TRACE: createPayment concluído com sucesso");
-          
-          // Após pagamento bem-sucedido, redirecionar para página de finalização
-          navigate('/checkout/finalizar');
-          
-        } catch (error) {
-          console.error("[useCheckoutNavigation] PAYMENT FLOW TRACE: Erro em createPayment", error);
-          
-          logCheckoutEvent(
-            CheckoutEvent.PAYMENT_ERROR,
-            LogLevel.ERROR,
-            `Erro ao processar pagamento: ${error}`,
-            { error: String(error), stack: error instanceof Error ? error.stack : 'unknown' }
-          );
-          
-          sonnerToast.error("Erro ao processar pagamento. Tente novamente.");
-          setIsNavigating(false);
-          throw error;
-        }
-        
+        // Navegar para a página de seleção de método de pagamento
+        navigate('/checkout');
+        setStep(2); // Manter no step 2 pois é onde fica a seleção
+        setIsNavigating(false);
         return;
       } 
       else {
-        // Normal navigation for non-payment steps
+        // Normal navigation for other steps
         const nextStep = step + 1;
         const route = stepRoutes[nextStep as keyof typeof stepRoutes];
         
         logCheckoutEvent(
           CheckoutEvent.NAVIGATION_EVENT,
           LogLevel.INFO,
-          `Navigating to next step: ${nextStep}`,
+          `Navegando para próximo step: ${nextStep}`,
           { currentStep: step, nextStep, route }
         );
         
@@ -218,9 +172,7 @@ export const useCheckoutNavigation = ({
   
   // Method to calculate total with discount
   const calculateTotalPrice = () => {
-    // Base calculation: subtotal
     const subtotal = cartItems.reduce((total, item) => {
-      // Example values for development
       const pricePerPanel = 250; // R$ 250 per panel/month
       return total + pricePerPanel;
     }, 0);

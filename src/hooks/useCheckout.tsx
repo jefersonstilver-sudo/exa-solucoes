@@ -15,15 +15,14 @@ import { CheckoutSteps, Plan, PlanKey } from '@/types/checkout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { PaymentResponse } from '@/types/payment';
 
-export const STEPS = CHECKOUT_STEPS; // Re-exporta para compatibilidade
-export { PLANS }; // Re-exporta para compatibilidade
+export const STEPS = CHECKOUT_STEPS;
+export { PLANS };
 
 export const useCheckout = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const orderId = searchParams.get('id');
   
-  // Usa os hooks modularizados
   const { cartItems, handleClearCart } = useCartManager();
   
   const {
@@ -35,27 +34,31 @@ export const useCheckout = () => {
     STEPS
   } = useCheckoutState();
 
-  // FIXED: Set step based on current route
+  // CORREÇÃO MEGA: Set step baseado na rota atual
   useEffect(() => {
     const path = location.pathname;
-    console.log("Current path:", path);
+    console.log("[useCheckout] MEGA CHECKOUT: Current path:", path);
     
+    // Mapear rotas para steps corretamente
     if (path === '/checkout/cupom') {
-      setStep(0);
+      setStep(0); // Cupom
     } else if (path === '/checkout/resumo') {
-      setStep(1);
+      setStep(1); // Resumo
     } else if (path === '/checkout') {
-      setStep(2);
+      setStep(2); // Seleção de método de pagamento (CORREÇÃO CRÍTICA!)
     } else if (path === '/checkout/finalizar') {
-      setStep(3);
+      setStep(3); // Upload/Finalizar
+    } else if (path.startsWith('/pix-payment')) {
+      // PIX payment em andamento - manter step 2
+      setStep(2);
     }
   }, [location.pathname, setStep]);
 
-  // Carrega plano selecionado do localStorage (vem da página PlanSelection)
+  // Carrega plano selecionado do localStorage
   useEffect(() => {
     try {
       const savedPlan = localStorage.getItem('selectedPlan');
-      console.log('[useCheckout] Plano carregado do localStorage:', savedPlan);
+      console.log('[useCheckout] MEGA CHECKOUT: Plano carregado do localStorage:', savedPlan);
       
       if (savedPlan) {
         const parsedPlan = parseInt(savedPlan);
@@ -96,7 +99,7 @@ export const useCheckout = () => {
   
   // Verifica a disponibilidade dos painéis quando a etapa muda para revisão
   useEffect(() => {
-    if (step === 1) { // SUMMARY step in new flow
+    if (step === 1) { // SUMMARY step
       checkPanelAvailability(cartItems, startDate, endDate);
     }
   }, [step, startDate, endDate, cartItems, checkPanelAvailability]);
@@ -104,7 +107,7 @@ export const useCheckout = () => {
   // Log payment method changes for debugging
   useEffect(() => {
     if (paymentMethod) {
-      console.log(`[useCheckout] Payment method selected: ${paymentMethod}, step: ${step}`);
+      console.log(`[useCheckout] MEGA CHECKOUT: Payment method selected: ${paymentMethod}, step: ${step}`);
       
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
@@ -124,20 +127,18 @@ export const useCheckout = () => {
   const wrappedCreatePayment = async (options: any): Promise<void> => {
     try {
       const response = await createPayment(options);
-      console.log('[useCheckout] Payment created:', response);
-      // Handle successful response if needed
+      console.log('[useCheckout] MEGA CHECKOUT: Payment created:', response);
     } catch (error) {
-      console.error('[useCheckout] Payment error:', error);
-      throw error; // Re-throw to maintain error handling
+      console.error('[useCheckout] MEGA CHECKOUT: Payment error:', error);
+      throw error;
     }
   };
 
   // Define handler for next step with explicit payment method
   const handleNextStepWithPayment = (paymentMethod?: string) => {
-    console.log(`[useCheckout] handleNextStepWithPayment called with method: ${paymentMethod || 'default'}`);
+    console.log(`[useCheckout] MEGA CHECKOUT: handleNextStepWithPayment called with method: ${paymentMethod || 'default'}`);
     
     if (handleNavigation.handleNextStep && typeof handleNavigation.handleNextStep === 'function') {
-      // Log para diagnóstico
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
@@ -164,21 +165,21 @@ export const useCheckout = () => {
     endDate,
     sessionUser,
     handleClearCart,
-    createPayment: wrappedCreatePayment // Use the wrapped function
+    createPayment: wrappedCreatePayment
   });
   
   const { isNavigating } = handleNavigation;
 
   // Log para diagnóstico dos cálculos
   useEffect(() => {
-    console.log("[useCheckout] Cart data:", cartItems);
+    console.log("[useCheckout] MEGA CHECKOUT: Cart data:", cartItems);
     if (cartItems.length > 0) {
-      console.log("[useCheckout] Calculated subtotal:", calculateCartSubtotal(cartItems));
-      console.log("[useCheckout] Calculated total:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
+      console.log("[useCheckout] MEGA CHECKOUT: Calculated subtotal:", calculateCartSubtotal(cartItems));
+      console.log("[useCheckout] MEGA CHECKOUT: Calculated total:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
     }
   }, [cartItems, selectedPlan, couponDiscount, couponValid]);
 
-  // Função para calcular o total do pedido (usado no PaymentStep)
+  // Função para calcular o total do pedido
   const getOrderTotal = () => {
     return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   };
