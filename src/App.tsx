@@ -16,6 +16,7 @@ import PainelStore from '@/pages/PainelStore';
 import BuildingStorePage from '@/pages/BuildingStore';
 import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
+import AdvertiserOrders from '@/pages/advertiser/AdvertiserOrders';
 import MyCampaigns from '@/pages/advertiser/MyCampaigns';
 import CampaignDetails from '@/pages/advertiser/CampaignDetails';
 import MyVideos from '@/pages/advertiser/MyVideos';
@@ -63,6 +64,7 @@ const App = () => {
         {/* ADVERTISER ROUTES WITH LAYOUT - ESTRUTURA COMPLETA E CORRIGIDA */}
         <Route path="/anunciante" element={<AdvertiserLayout />}>
           <Route index element={<AdvertiserDashboard />} />
+          <Route path="pedidos" element={<AdvertiserOrders />} />
           <Route path="campanhas" element={<MyCampaigns />} />
           <Route path="campanhas/:id" element={<CampaignDetails />} />
           <Route path="videos" element={<MyVideos />} />
@@ -78,9 +80,8 @@ const App = () => {
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         
-        {/* Unified Pedidos Routes */}
-        <Route path="/pedidos" element={<Pedidos />} />
-        <Route path="/meus-pedidos" element={<Pedidos />} />
+        {/* Redirecionamento para a nova rota no portal do anunciante */}
+        <Route path="/meus-pedidos" element={<Navigate to="/anunciante/pedidos" replace />} />
         
         {/* Public Routes - must be after specific routes */}
         <Route path="/*" element={<PublicRoutes />} />

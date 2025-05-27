@@ -46,7 +46,7 @@ const AdvertiserLayout = () => {
     {
       icon: ShoppingBag,
       label: 'Meus Pedidos',
-      path: '/meus-pedidos',
+      path: '/anunciante/pedidos',
       description: 'Histórico de compras e status'
     },
     {
