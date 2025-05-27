@@ -1,160 +1,97 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ClientOnly } from '@/components/ui/client-only';
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import PixPaymentRealtimeWrapper from './PixPaymentRealtimeWrapper';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { useUserSession } from '@/hooks/useUserSession';
-import { toast } from 'sonner';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import PixPaymentDebugger from '@/components/checkout/payment/PixPaymentDebugger';
-import BackToCheckoutButton from '@/components/checkout/payment/BackToCheckoutButton';
-import PixPaymentHeader from '@/components/checkout/payment/PixPaymentHeader';
-import PixMobilePayButton from '@/components/checkout/payment/PixMobilePayButton';
-import PixPaymentInstructions from '@/components/checkout/payment/PixPaymentInstructions';
-import PixContentContainer from '@/components/checkout/payment/PixContentContainer';
-import PixPaymentLoadingState from '@/components/checkout/payment/PixPaymentLoadingState';
-import PixPaymentRealtimeWrapper from '@/components/checkout/payment/PixPaymentRealtimeWrapper';
 
 interface PixPaymentContentProps {
   paymentData: PixPaymentData;
   onBack: () => void;
   onRefreshStatus: () => Promise<void>;
-  isLoading?: boolean;
-  error?: string | null;
+  isLoading: boolean;
+  error: string | null;
   pedidoId: string | null;
 }
 
-const PixPaymentContent = ({ 
-  paymentData, 
-  onBack, 
+const PixPaymentContent = ({
+  paymentData,
+  onBack,
   onRefreshStatus,
-  isLoading = false,
-  error = null,
+  isLoading,
+  error,
   pedidoId
 }: PixPaymentContentProps) => {
-  const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
-  const navigate = useNavigate();
-  const [processando, setProcessando] = useState(false);
-  
-  // Check authentication on mount
-  useEffect(() => {
-    if (!isSessionLoading && !isLoggedIn) {
-      toast.error("Usuário não autenticado");
-      navigate('/login?redirect=/checkout');
-    }
-  }, [isLoggedIn, isSessionLoading, navigate]);
-  
-  // Check payment status more frequently
-  useEffect(() => {
-    // Only set up automatic checking if payment is still pending
-    if (paymentData.status !== 'approved') {
-      const checkStatusInterval = setInterval(() => {
-        onRefreshStatus().catch(err => {
-          console.error("Error checking payment status:", err);
-        });
-      }, 5000); // Check every 5 seconds
-      
-      return () => clearInterval(checkStatusInterval);
-    }
-  }, [paymentData.status, onRefreshStatus]);
-
-  // Function to handle the webhook call when paying with PIX
-  const handlePayWithPix = async () => {
-    try {
-      // Verify user is authenticated
-      if (!isLoggedIn || !user) {
-        toast.error("Usuário não autenticado");
-        navigate('/login?redirect=/checkout');
-        return;
-      }
-      
-      // Set processing state
-      setProcessando(true);
-      
-      console.log("[PixPaymentContent] Botão 'Pagar com PIX' clicado na página de pagamento");
-      
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        "Botão 'Pagar com PIX' clicado na página de pagamento PIX",
-        { 
-          timestamp: new Date().toISOString(), 
-          pedidoId,
-          paymentId: paymentData.paymentId,
-          hasQRCode: !!paymentData.qrCode,
-          userId: user.id
-        }
-      );
-      
-      // Refresh payment status
-      await onRefreshStatus();
-      setProcessando(false);
-      
-      // If payment is not approved yet, show a guide toast
-      if (paymentData.status !== 'approved') {
-        toast("Para pagar, escaneie o QR code com seu app do banco", {
-          description: "Após o pagamento, o sistema detectará automaticamente",
-          duration: 5000
-        });
-      }
-    } catch (error) {
-      console.error("[PixPaymentContent] Erro ao processar pagamento:", error);
-      setProcessando(false);
-      toast.error("Erro ao processar pagamento");
-    }
-  };
-
-  // Don't render content if user is not authenticated
-  if (isSessionLoading) {
-    return <PixPaymentLoadingState />;
-  }
-  
-  if (!isLoggedIn) {
-    return null; // Will be redirected by the effect above
-  }
+  const { user } = useUserSession();
 
   return (
-    <ClientOnly>
-      <PixContentContainer>
-        <BackToCheckoutButton onBack={onBack} />
-        
-        <PixPaymentHeader />
-        
-        <div className="bg-white rounded-lg shadow-sm p-6 border">
-          {/* NOVO: Wrapper com Realtime */}
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-2xl">
+        {/* Header */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            className="flex items-center text-gray-600 hover:text-gray-800"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar ao checkout
+          </Button>
+        </div>
+
+        {/* Título */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Pagamento via PIX
+          </h1>
+          <p className="text-gray-600">
+            Escaneie o QR code ou copie o código PIX para finalizar seu pagamento
+          </p>
+        </div>
+
+        {/* Card principal */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          {/* Informações do pedido */}
+          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-blue-900 mb-2">Detalhes do Pedido</h3>
+            <div className="space-y-1 text-sm text-blue-800">
+              <div>Pedido: {paymentData.pedidoId}</div>
+              <div>Valor: R$ {paymentData.valorTotal.toFixed(2)}</div>
+              <div>Status: {paymentData.status === 'pending' ? 'Aguardando pagamento' : paymentData.status}</div>
+            </div>
+          </div>
+
+          {/* Wrapper com monitoramento em tempo real */}
           <PixPaymentRealtimeWrapper
-            qrCodeBase64={paymentData.qrCodeBase64 || ''}
-            qrCodeText={paymentData.qrCode || ''} 
+            qrCodeBase64={paymentData.qrCodeBase64}
+            qrCodeText={paymentData.qrCode}
             status={paymentData.status}
-            paymentId={paymentData.paymentId || ''}
+            paymentId={paymentData.paymentId}
             onRefreshStatus={onRefreshStatus}
             userId={user?.id}
             pedidoId={pedidoId}
           />
-          
-          {/* Pay with PIX button only shown if payment not approved */}
-          {paymentData.status !== 'approved' && (
-            <PixMobilePayButton
-              onClick={handlePayWithPix}
-              isProcessing={processando}
-            />
-          )}
         </div>
-        
-        {paymentData.status !== 'approved' && (
-          <PixPaymentInstructions />
-        )}
-        
-        {/* Debugger component */}
-        <PixPaymentDebugger 
-          paymentData={paymentData}
-          error={error}
-          isLoading={isLoading}
-          pedidoId={pedidoId}
-          onRefresh={onRefreshStatus}
-        />
-      </PixContentContainer>
-    </ClientOnly>
+
+        {/* Instruções */}
+        <div className="mt-6 bg-white rounded-lg shadow-sm border p-6">
+          <h3 className="font-medium text-gray-900 mb-3">Como pagar com PIX</h3>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+            <li>Abra o aplicativo do seu banco</li>
+            <li>Escolha a opção "Pagar com PIX"</li>
+            <li>Escaneie o QR code ou copie e cole o código PIX</li>
+            <li>Confirme o pagamento no seu aplicativo</li>
+            <li>Aguarde a confirmação automática (pode levar alguns segundos)</li>
+          </ol>
+        </div>
+
+        {/* Aviso de segurança */}
+        <div className="mt-4 text-center text-xs text-gray-500">
+          🔒 Pagamento seguro processado pelo MercadoPago
+        </div>
+      </div>
+    </div>
   );
 };
 
