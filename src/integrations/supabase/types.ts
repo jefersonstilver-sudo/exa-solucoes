@@ -282,39 +282,57 @@ export type Database = {
       cupons: {
         Row: {
           ativo: boolean
+          categoria: string | null
           codigo: string
           created_at: string
           created_by: string | null
+          data_inicio: string | null
           desconto_percentual: number
+          descricao: string | null
           expira_em: string | null
           id: string
           max_usos: number
           min_meses: number
+          tipo_desconto: string | null
+          uso_por_usuario: number | null
           usos_atuais: number
+          valor_minimo_pedido: number | null
         }
         Insert: {
           ativo?: boolean
+          categoria?: string | null
           codigo: string
           created_at?: string
           created_by?: string | null
+          data_inicio?: string | null
           desconto_percentual: number
+          descricao?: string | null
           expira_em?: string | null
           id?: string
           max_usos?: number
           min_meses?: number
+          tipo_desconto?: string | null
+          uso_por_usuario?: number | null
           usos_atuais?: number
+          valor_minimo_pedido?: number | null
         }
         Update: {
           ativo?: boolean
+          categoria?: string | null
           codigo?: string
           created_at?: string
           created_by?: string | null
+          data_inicio?: string | null
           desconto_percentual?: number
+          descricao?: string | null
           expira_em?: string | null
           id?: string
           max_usos?: number
           min_meses?: number
+          tipo_desconto?: string | null
+          uso_por_usuario?: number | null
           usos_atuais?: number
+          valor_minimo_pedido?: number | null
         }
         Relationships: []
       }
@@ -702,6 +720,10 @@ export type Database = {
           is_consistent: boolean
         }[]
       }
+      generate_coupon_code: {
+        Args: { prefix?: string }
+        Returns: string
+      }
       get_approvals_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -709,6 +731,26 @@ export type Database = {
           video_enviado: number
           video_aprovado: number
           video_rejeitado: number
+        }[]
+      }
+      get_coupon_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_cupons: number
+          cupons_ativos: number
+          cupons_expirados: number
+          total_usos: number
+          receita_com_desconto: number
+        }[]
+      }
+      get_coupon_usage_details: {
+        Args: { cupom_id_param: string }
+        Returns: {
+          user_email: string
+          pedido_id: string
+          valor_pedido: number
+          valor_desconto: number
+          data_uso: string
         }[]
       }
       get_dashboard_stats: {

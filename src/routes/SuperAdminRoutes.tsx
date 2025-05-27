@@ -10,6 +10,7 @@ import OrderDetails from '@/pages/admin/OrderDetails';
 import ApprovalsPage from '@/pages/admin/ApprovalsPage';
 import PanelsPage from '@/pages/admin/PanelsPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
+import CouponsPage from '@/pages/admin/CouponsPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -23,6 +24,7 @@ const SuperAdminRoutes = () => {
       <Route path="/predios" element={<BuildingsManagement />} />
       <Route path="/predios-gestao" element={<BuildingsManagement />} />
       <Route path="/paineis" element={<PanelsPage />} />
+      <Route path="/cupons" element={<CouponsPage />} />
       <Route path="/configuracoes" element={<ConfiguracoesPage />} />
     </Routes>
   );
