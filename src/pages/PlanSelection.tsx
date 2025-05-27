@@ -26,7 +26,8 @@ const PlanSelection = () => {
     setSelectedPlan, 
     PLANS, 
     cartItems, 
-    calculateEstimatedPrice
+    calculateEstimatedPrice,
+    handleGoToCoupon
   } = usePlanSelection(hasCart);
   
   // Log de informação quando o componente é montado (apenas uma vez)
@@ -80,6 +81,7 @@ const PlanSelection = () => {
         plans={PLANS}
         panelCount={cartItems.length}
         totalPrice={calculateEstimatedPrice()}
+        onContinue={handleGoToCoupon}
       />
     </Layout>
   );

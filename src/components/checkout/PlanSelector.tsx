@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Plan, PlanKey } from '@/types/checkout';
 import PlanCard from './PlanCard';
 import PlanHeader from './PlanHeader';
+import PlanContinueButton from './PlanContinueButton';
 
 interface PlanSelectorProps {
   selectedPlan: PlanKey;
@@ -11,6 +12,7 @@ interface PlanSelectorProps {
   plans: Record<number, Plan>;
   panelCount: number;
   totalPrice?: number;
+  onContinue?: () => void;
 }
 
 const PlanSelector: React.FC<PlanSelectorProps> = ({ 
@@ -18,7 +20,8 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   onSelectPlan, 
   plans,
   panelCount,
-  totalPrice
+  totalPrice,
+  onContinue
 }) => {
   const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
   
@@ -87,6 +90,14 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
           );
         })}
       </motion.div>
+
+      {/* Continue Button */}
+      {onContinue && (
+        <PlanContinueButton
+          selectedPlan={selectedPlan}
+          onContinue={onContinue}
+        />
+      )}
     </div>
   );
 };
