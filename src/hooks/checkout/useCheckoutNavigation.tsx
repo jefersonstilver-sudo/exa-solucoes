@@ -25,7 +25,7 @@ interface UseCheckoutNavigationProps {
   endDate: Date;
   sessionUser: any;
   handleClearCart: () => void;
-  createPayment: (options: any) => Promise<void>;
+  createPayment: (options: any) => Promise<any>;
 }
 
 export const useCheckoutNavigation = ({
@@ -47,11 +47,11 @@ export const useCheckoutNavigation = ({
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
   
-  // CORREÇÃO CRÍTICA: Mapeamento correto dos steps
+  // Mapeamento correto dos steps para as rotas
   const stepRoutes = {
     0: '/checkout/cupom',      // Coupon step
     1: '/checkout/resumo',     // Summary step  
-    2: '/checkout',            // Payment METHOD SELECTION step (CRÍTICO!)
+    2: '/checkout',            // Payment METHOD SELECTION step
     3: '/checkout/finalizar'   // Upload/Finish step
   };
   
@@ -94,9 +94,9 @@ export const useCheckoutNavigation = ({
     }
   };
 
-  // CORREÇÃO CRÍTICA: Navigate to the next step SEM processar pagamento no step 2
+  // CORREÇÃO CRÍTICA: Navigate to the next step com criação de pedido
   const handleNextStep = async (paymentMethod = 'credit_card') => {
-    console.log("[useCheckoutNavigation] MEGA CHECKOUT FLOW: handleNextStep iniciado", {
+    console.log("[useCheckoutNavigation] CORREÇÃO DEFINITIVA: handleNextStep iniciado", {
       step,
       paymentMethod,
       isNavigating,
@@ -119,22 +119,79 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // CORREÇÃO MEGA CRÍTICA: NO STEP 2, APENAS NAVEGAR - NÃO PROCESSAR PAGAMENTO!
-      if (step === 2) {
-        // Step 2 é seleção de método de pagamento, não processamento!
-        // O processamento acontece na página /checkout quando o usuário escolhe o método
-        console.log('[useCheckoutNavigation] MEGA CHECKOUT: Step 2 - navegando para método de pagamento');
+      // CORREÇÃO DEFINITIVA: NO STEP 1 (RESUMO), CRIAR PEDIDO E NAVEGAR PARA CHECKOUT
+      if (step === 1) {
+        console.log('[useCheckoutNavigation] CORREÇÃO: Step 1 -> 2 - criando pedido e navegando para checkout');
         
-        logCheckoutEvent(
-          CheckoutEvent.NAVIGATION_EVENT,
-          LogLevel.INFO,
-          'Navegando para seleção de método de pagamento',
-          { currentStep: step, targetRoute: '/checkout' }
-        );
+        // Validar dados necessários
+        if (!sessionUser?.id) {
+          sonnerToast.error("Usuário não autenticado");
+          setIsNavigating(false);
+          return;
+        }
+
+        if (cartItems.length === 0) {
+          sonnerToast.error("Carrinho vazio");
+          setIsNavigating(false);
+          return;
+        }
+
+        if (!selectedPlan) {
+          sonnerToast.error("Nenhum plano selecionado");
+          setIsNavigating(false);
+          return;
+        }
+
+        try {
+          // Calcular preço total
+          const totalPrice = cartItems.reduce((total, item) => {
+            const pricePerPanel = item.panel.buildings?.basePrice || 250;
+            return total + pricePerPanel;
+          }, 0);
+
+          // Aplicar desconto do cupom se válido
+          let finalPrice = totalPrice;
+          if (couponValid && couponDiscount > 0) {
+            const discount = (totalPrice * couponDiscount) / 100;
+            finalPrice = totalPrice - discount;
+          }
+
+          // Criar o pedido usando createPayment
+          const paymentOptions = {
+            sessionUser,
+            cartItems,
+            selectedPlan,
+            totalPrice: finalPrice,
+            couponId,
+            startDate,
+            endDate,
+            paymentMethod: 'pix' // Default para PIX
+          };
+
+          console.log('[useCheckoutNavigation] Criando pedido com:', paymentOptions);
+          
+          const result = await createPayment(paymentOptions);
+          
+          if (result && result.pedidoId) {
+            // Sucesso! Navegar para checkout com orderId
+            logCheckoutEvent(
+              CheckoutEvent.NAVIGATION_EVENT,
+              LogLevel.INFO,
+              'Pedido criado com sucesso, navegando para checkout',
+              { pedidoId: result.pedidoId, totalPrice: finalPrice }
+            );
+            
+            navigate(`/checkout?id=${result.pedidoId}`);
+            setStep(2);
+          } else {
+            console.error('[useCheckoutNavigation] Resultado inválido do createPayment:', result);
+            sonnerToast.error("Erro ao criar pedido. Tente novamente.");
+          }
+        } catch (error) {
+          console.error('[useCheckoutNavigation] Erro ao criar pedido:', error);
+          sonnerToast.error("Erro ao processar pedido. Tente novamente.");
+        }
         
-        // Navegar para a página de seleção de método de pagamento
-        navigate('/checkout');
-        setStep(2); // Manter no step 2 pois é onde fica a seleção
         setIsNavigating(false);
         return;
       } 
@@ -168,23 +225,6 @@ export const useCheckoutNavigation = ({
       );
       setIsNavigating(false);
     }
-  };
-  
-  // Method to calculate total with discount
-  const calculateTotalPrice = () => {
-    const subtotal = cartItems.reduce((total, item) => {
-      const pricePerPanel = 250; // R$ 250 per panel/month
-      return total + pricePerPanel;
-    }, 0);
-    
-    // Apply coupon discount if valid
-    let total = subtotal;
-    if (couponValid && couponDiscount > 0) {
-      const discount = (subtotal * couponDiscount) / 100;
-      total = subtotal - discount;
-    }
-    
-    return total;
   };
 
   return {

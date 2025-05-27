@@ -15,40 +15,45 @@ const Checkout = () => {
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   const [totalAmount, setTotalAmount] = useState(0);
   
-  // Get order ID from URL params
+  // Get order ID from URL params - CORREÇÃO CRÍTICA
   const orderId = searchParams.get('id') || searchParams.get('pedido');
   
   // Enhanced logging
   useEffect(() => {
-    console.log("[Checkout] Component mounted with params:", { 
+    console.log("[Checkout] CORREÇÃO DEFINITIVA: Component mounted with params:", { 
       orderId, 
       isLoggedIn, 
       isSessionLoading,
-      userId: user?.id 
+      userId: user?.id,
+      urlParams: Object.fromEntries(searchParams.entries())
     });
     
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      "Checkout page loaded",
+      "Checkout page loaded with orderId validation",
       { 
         orderId, 
         isLoggedIn, 
         isSessionLoading,
         userId: user?.id,
+        hasOrderId: !!orderId,
         timestamp: new Date().toISOString() 
       }
     );
-  }, [orderId, isLoggedIn, isSessionLoading, user]);
+  }, [orderId, isLoggedIn, isSessionLoading, user, searchParams]);
 
   // Calculate total amount from cart or localStorage
   useEffect(() => {
     try {
-      const cartItems = JSON.parse(localStorage.getItem('indexa_cart') || '[]');
-      const total = cartItems.reduce((sum: number, item: any) => sum + (item.price || 0), 0);
+      const cartItems = JSON.parse(localStorage.getItem('panelCart') || '[]');
+      const total = cartItems.reduce((sum: number, item: any) => {
+        const price = item.panel?.buildings?.basePrice || item.price || 250;
+        return sum + price;
+      }, 0);
       setTotalAmount(total);
       
-      console.log("[Checkout] Cart total calculated:", total);
+      console.log("[Checkout] Cart total calculated:", { total, cartItemsCount: cartItems.length });
     } catch (error) {
       console.error("[Checkout] Error calculating total:", error);
       setTotalAmount(0);
@@ -57,7 +62,7 @@ const Checkout = () => {
 
   // Redirect handler with enhanced logging
   const handleRefreshStatus = async (): Promise<void> => {
-    console.log("[Checkout] Refresh status called");
+    console.log("[Checkout] Refresh status called for orderId:", orderId);
     // Status refresh logic will be handled by the payment component
   };
 
@@ -73,6 +78,7 @@ const Checkout = () => {
   }
 
   if (!isLoggedIn) {
+    console.log("[Checkout] User not logged in, redirecting to login");
     return null; // CheckoutContainer will handle redirect
   }
 
@@ -83,14 +89,26 @@ const Checkout = () => {
     return null;
   }
 
+  // CORREÇÃO CRÍTICA: Validar orderId obrigatório
   if (!orderId) {
-    console.error("[Checkout] No order ID provided");
-    toast.error("ID do pedido não encontrado");
-    navigate('/');
+    console.error("[Checkout] CRÍTICO: No order ID provided in URL params");
+    toast.error("ID do pedido não encontrado. Redirecionando para resumo.");
+    
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.ERROR,
+      "Critical: No orderId found, redirecting to summary",
+      { 
+        currentUrl: window.location.href,
+        searchParams: Object.fromEntries(searchParams.entries())
+      }
+    );
+    
+    navigate('/checkout/resumo');
     return null;
   }
 
-  console.log("[Checkout] Rendering PaymentGateway with:", {
+  console.log("[Checkout] CORREÇÃO: Rendering PaymentGateway with orderId:", {
     orderId,
     totalAmount,
     userId: user.id,
@@ -104,7 +122,7 @@ const Checkout = () => {
           orderId={orderId}
           totalAmount={totalAmount}
           onRefreshStatus={handleRefreshStatus}
-          userId={user.id} // CRITICAL: Passar userId corretamente
+          userId={user.id}
         />
       </Layout>
     </CheckoutContainer>

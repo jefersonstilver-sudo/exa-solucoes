@@ -2,8 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, Clock, CreditCard, Tag, ChevronRight } from 'lucide-react';
+import { MapPin, Calendar, Clock, CreditCard, Tag } from 'lucide-react';
 import { useCheckout } from '@/hooks/useCheckout';
 import { formatCurrency } from '@/utils/formatters';
 import { PLANS } from '@/constants/checkoutConstants';
@@ -14,7 +13,6 @@ const ReviewStep = () => {
     selectedPlan, 
     couponValid,
     couponDiscount,
-    handleNextStep,
     calculateTotalPrice,
     calculateCartSubtotal
   } = useCheckout();
@@ -140,16 +138,6 @@ const ReviewStep = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Continue Button */}
-      <Button 
-        onClick={() => handleNextStep()}
-        className="w-full bg-indexa-purple hover:bg-indexa-purple-dark text-white py-3"
-        size="lg"
-      >
-        Continuar para Pagamento
-        <ChevronRight className="h-4 w-4 ml-2" />
-      </Button>
     </div>
   );
 };
