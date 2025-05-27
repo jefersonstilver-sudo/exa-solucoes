@@ -10,7 +10,7 @@ import NotFound from '@/pages/NotFound';
 import Payment from '@/pages/Payment';
 import PixPayment from '@/pages/PixPayment';
 import OrderConfirmation from '@/pages/OrderConfirmation';
-import Home from '@/pages/Home';
+import Index from '@/pages/Index';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import BuildingStorePage from '@/pages/BuildingStore';
@@ -51,8 +51,8 @@ const App = () => {
         <Route path="/auth/*" element={<AuthRoutes />} />
         <Route path="/login" element={<AuthRoutes />} />
         
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
+        {/* Public Routes - PÁGINA PRINCIPAL COM OS 3 CARDS ROXOS */}
+        <Route path="/" element={<Index />} />
         
         {/* Loja de Prédios - Nova rota principal */}
         <Route path="/loja" element={<BuildingStorePage />} />
