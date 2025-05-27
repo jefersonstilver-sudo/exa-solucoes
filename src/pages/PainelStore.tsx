@@ -139,9 +139,6 @@ export default function PainelStore() {
           <h1 className="text-3xl md:text-4xl font-bold text-[#3C1361] mb-2">
             Loja de Painéis Digitais
           </h1>
-          <p className="text-lg text-gray-600">
-            Encontre o local perfeito para sua campanha publicitária
-          </p>
         </motion.div>
         
         {/* Layout Profissional Completo */}
