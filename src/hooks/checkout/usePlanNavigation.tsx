@@ -39,22 +39,14 @@ export const usePlanNavigation = (
     );
     
     try {
-      console.log("🎯 CUPOM NAVIGATION: Tentando navegar via React Router...");
+      console.log("🎯 CUPOM NAVIGATION: Navegando para /checkout/cupom");
+      // CORREÇÃO: Usar a rota correta que agora existe no main.tsx
       navigate('/checkout/cupom');
-      
-      // Fallback: verificar se a navegação funcionou após 1 segundo
-      setTimeout(() => {
-        if (window.location.pathname !== '/checkout/cupom') {
-          console.log("🎯 CUPOM NAVIGATION: React Router falhou, usando navegação forçada");
-          window.location.href = '/checkout/cupom';
-        } else {
-          console.log("🎯 CUPOM NAVIGATION: ✅ Navegação bem-sucedida via React Router");
-        }
-      }, 1000);
+      console.log("🎯 CUPOM NAVIGATION: ✅ Navegação executada via React Router");
       
     } catch (error) {
       console.error("🎯 CUPOM NAVIGATION: Erro na navegação:", error);
-      // Navegação de emergência
+      // Navegação de emergência como fallback
       window.location.href = '/checkout/cupom';
     }
   }, [selectedPlan, savePlanToStorage, navigate, toast]);
@@ -62,49 +54,8 @@ export const usePlanNavigation = (
   // Função simplificada para prosseguir (também vai para cupom)
   const handleProceed = useCallback(() => {
     console.log("🎯 PROCEED NAVIGATION: Botão 'Prosseguir' clicado");
-    console.log("🎯 PROCEED NAVIGATION: Plano selecionado:", selectedPlan);
-    
-    if (!selectedPlan) {
-      console.log("🎯 PROCEED NAVIGATION: Erro - Nenhum plano selecionado");
-      toast({
-        title: "Selecione um plano",
-        description: "Escolha um plano antes de prosseguir.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Salvar plano selecionado
-    savePlanToStorage(selectedPlan);
-    console.log("🎯 PROCEED NAVIGATION: Plano salvo no storage:", selectedPlan);
-    
-    logCheckoutEvent(
-      CheckoutEvent.NAVIGATION_EVENT, 
-      LogLevel.INFO, 
-      "PROCEED BUTTON: Navegando para etapa de cupom após seleção de plano", 
-      { selectedPlan, timestamp: Date.now(), source: 'handleProceed' }
-    );
-    
-    try {
-      console.log("🎯 PROCEED NAVIGATION: Tentando navegar via React Router...");
-      navigate('/checkout/cupom');
-      
-      // Fallback: verificar se a navegação funcionou após 1 segundo
-      setTimeout(() => {
-        if (window.location.pathname !== '/checkout/cupom') {
-          console.log("🎯 PROCEED NAVIGATION: React Router falhou, usando navegação forçada");
-          window.location.href = '/checkout/cupom';
-        } else {
-          console.log("🎯 PROCEED NAVIGATION: ✅ Navegação bem-sucedida via React Router");
-        }
-      }, 1000);
-      
-    } catch (error) {
-      console.error("🎯 PROCEED NAVIGATION: Erro na navegação:", error);
-      // Navegação de emergência
-      window.location.href = '/checkout/cupom';
-    }
-  }, [selectedPlan, savePlanToStorage, navigate, toast]);
+    handleGoToCoupon(); // Reutiliza a mesma lógica
+  }, [handleGoToCoupon]);
 
   return {
     handleGoToCoupon,

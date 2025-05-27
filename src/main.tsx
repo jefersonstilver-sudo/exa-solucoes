@@ -12,6 +12,9 @@ import Login from './pages/Login'
 import Forbidden from './pages/Forbidden'
 import Cadastro from './pages/Cadastro'
 import Checkout from './pages/Checkout'
+import CheckoutCoupon from './pages/CheckoutCoupon'
+import CheckoutSummary from './pages/CheckoutSummary'
+import CheckoutFinish from './pages/CheckoutFinish'
 import PanelStore from './pages/PanelStore'
 import BuildingStorePage from './pages/BuildingStore'
 import PlanSelection from './pages/PlanSelection'
@@ -77,9 +80,22 @@ const router = createBrowserRouter([
     path: '/selecionar-plano',
     element: <PlanSelection />
   },
+  // CORREÇÃO: Adicionar rotas de checkout faltantes
   {
     path: '/checkout',
     element: <Checkout />
+  },
+  {
+    path: '/checkout/cupom',
+    element: <CheckoutCoupon />
+  },
+  {
+    path: '/checkout/resumo',
+    element: <CheckoutSummary />
+  },
+  {
+    path: '/checkout/finalizar',
+    element: <CheckoutFinish />
   },
   {
     path: '/pedido-confirmado',
