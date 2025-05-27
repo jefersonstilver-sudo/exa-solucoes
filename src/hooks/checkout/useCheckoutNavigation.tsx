@@ -61,7 +61,7 @@ export const useCheckoutNavigation = ({
       case 0: // COUPON step
         return true; // Always enabled as coupon is optional
       case 1: // SUMMARY step  
-        return cartItems.length > 0;
+        return cartItems.length > 0 && !!sessionUser;
       case 2: // PAYMENT METHOD SELECTION step
         return true; // Always enabled to allow method selection
       case 3: // UPLOAD step
@@ -94,13 +94,14 @@ export const useCheckoutNavigation = ({
     }
   };
 
-  // CORREÇÃO CRÍTICA: Navigate to the next step com criação de pedido
+  // CORREÇÃO CRÍTICA: Navigate to the next step com validação de autenticação
   const handleNextStep = async (paymentMethod = 'credit_card') => {
     console.log("[useCheckoutNavigation] CORREÇÃO DEFINITIVA: handleNextStep iniciado", {
       step,
       paymentMethod,
       isNavigating,
-      isNextEnabled: isNextEnabled()
+      isNextEnabled: isNextEnabled(),
+      hasUser: !!sessionUser
     });
   
     // CRITICAL FIX: Prevent duplicate navigation
@@ -112,6 +113,15 @@ export const useCheckoutNavigation = ({
     setIsNavigating(true);
     
     try {
+      // VALIDAÇÃO CRÍTICA DE AUTENTICAÇÃO
+      if (!sessionUser?.id) {
+        console.error('[useCheckoutNavigation] Usuário não autenticado');
+        sonnerToast.error("Você precisa estar logado para continuar");
+        navigate('/login?redirect=/checkout/resumo');
+        setIsNavigating(false);
+        return;
+      }
+
       // Check if can proceed
       if (!isNextEnabled()) {
         console.warn('[useCheckoutNavigation] Navigation blocked - isNextEnabled() returned false');
@@ -124,12 +134,6 @@ export const useCheckoutNavigation = ({
         console.log('[useCheckoutNavigation] CORREÇÃO: Step 1 -> 2 - criando pedido e navegando para checkout');
         
         // Validar dados necessários
-        if (!sessionUser?.id) {
-          sonnerToast.error("Usuário não autenticado");
-          setIsNavigating(false);
-          return;
-        }
-
         if (cartItems.length === 0) {
           sonnerToast.error("Carrinho vazio");
           setIsNavigating(false);
