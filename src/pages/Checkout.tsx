@@ -68,12 +68,27 @@ const Checkout = () => {
         '12': '12 meses'
       };
 
+      // Get cart items (prédios/painéis escolhidos)
+      const cartItems = JSON.parse(localStorage.getItem('panelCart') || '[]');
+      const prediosEscolhidos = cartItems.map((item: any) => ({
+        painel_id: item.panel?.id || '',
+        painel_codigo: item.panel?.code || '',
+        predio_nome: item.panel?.buildings?.nome || '',
+        predio_endereco: item.panel?.buildings?.endereco || '',
+        predio_bairro: item.panel?.buildings?.bairro || '',
+        predio_cidade: item.panel?.buildings?.cidade || '',
+        duracao_dias: item.duration || 30,
+        preco: item.panel?.buildings?.basePrice || item.price || 250
+      }));
+
       const webhookData = {
         usuario_id: user.id,
         nome_usuario: user.email?.split('@')[0] || 'Cliente',
         email_usuario: user.email || '',
         plano_escolhido: planNames[selectedPlan as keyof typeof planNames] || '1 mês',
-        valor_total: (totalAmount * 0.95).toFixed(2) // 5% discount for PIX
+        valor_total: (totalAmount * 0.95).toFixed(2), // 5% discount for PIX
+        predios_escolhidos: prediosEscolhidos,
+        quantidade_paineis: prediosEscolhidos.length
       };
 
       console.log('[PIX Webhook] Enviando dados:', webhookData);
