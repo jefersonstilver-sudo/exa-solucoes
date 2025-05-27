@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import PixCountdownTimer from '@/components/checkout/payment/PixCountdownTimer';
 import PaymentSuccessAnimation from '@/components/checkout/payment/PaymentSuccessAnimation';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PixQrCodeDialogProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface PixQrCodeDialogProps {
   paymentLink?: string;
   pix_url?: string;
   pix_base64?: string;
+  pedidoId?: string; // Novo prop para ID do pedido
 }
 
 const PixQrCodeDialog = ({
@@ -32,7 +34,8 @@ const PixQrCodeDialog = ({
   qrCodeText,
   paymentLink,
   pix_url,
-  pix_base64
+  pix_base64,
+  pedidoId
 }: PixQrCodeDialogProps) => {
   // Use pix_url/pix_base64 if available, otherwise fall back to the original fields
   const finalQrCodeBase64 = pix_base64 || qrCodeBase64;
@@ -46,37 +49,77 @@ const PixQrCodeDialog = ({
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(QR_EXPIRATION_TIME);
   
-  // Simulação de verificação de pagamento (em um caso real, isso seria uma API)
+  // NOVO: Monitoramento em tempo real com Supabase Realtime
   useEffect(() => {
-    if (isExpired || paymentConfirmed) return;
+    if (!pedidoId || isExpired || paymentConfirmed) return;
     
-    const checkInterval = setInterval(() => {
-      // Aqui seria a verificação real do pagamento
-      // Para simular, vamos apenas criar um efeito de demonstração
-      const shouldConfirm = Math.random() < 0.01; // 1% chance de confirmar (apenas para demo)
-      
-      if (shouldConfirm && !isExpired) {
-        setPaymentConfirmed(true);
-        clearInterval(checkInterval);
-        
-        // Log payment confirmation
-        logCheckoutEvent(
-          CheckoutEvent.PAYMENT_EVENT,
-          LogLevel.INFO,
-          "Pagamento PIX confirmado (simulação)",
-          { timestamp: new Date().toISOString() }
-        );
-        
-        // Após a animação, redirecionar para página de upload
-        setTimeout(() => {
-          onClose();
-          window.location.href = '/pedido-confirmado'; // Redirecionar para página de upload
-        }, 3000);
-      }
-    }, 3000);
+    console.log('🔄 Iniciando monitoramento Realtime para pedido:', pedidoId);
     
-    return () => clearInterval(checkInterval);
-  }, [isExpired, onClose, paymentConfirmed]);
+    // Configurar canal Realtime para monitorar o pedido específico
+    const channel = supabase
+      .channel('pedido-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'pedidos',
+          filter: `id=eq.${pedidoId}`
+        },
+        (payload) => {
+          console.log('📡 Atualização Realtime recebida:', payload);
+          
+          const newData = payload.new as any;
+          
+          // Verificar se o pagamento foi aprovado
+          if (newData.status === 'pago') {
+            console.log('🎉 Pagamento confirmado via Realtime!');
+            
+            setPaymentConfirmed(true);
+            
+            // Log payment confirmation
+            logCheckoutEvent(
+              CheckoutEvent.PAYMENT_EVENT,
+              LogLevel.INFO,
+              "Pagamento PIX confirmado via Realtime",
+              { 
+                pedidoId,
+                timestamp: new Date().toISOString(),
+                realtimeData: newData
+              }
+            );
+            
+            toast.success("Pagamento confirmado! Redirecionando...");
+            
+            // Após a animação, redirecionar para página de confirmação
+            setTimeout(() => {
+              onClose();
+              window.location.href = `/pedido-confirmado?id=${pedidoId}`;
+            }, 3000);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Status do canal Realtime:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Conectado ao Realtime - monitorando pagamentos');
+          
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_EVENT,
+            LogLevel.INFO,
+            "Monitoramento Realtime ativado",
+            { pedidoId, timestamp: new Date().toISOString() }
+          );
+        }
+      });
+    
+    // Cleanup: desconectar do canal ao desmontar ou fechar
+    return () => {
+      console.log('🔌 Desconectando do Realtime');
+      supabase.removeChannel(channel);
+    };
+  }, [pedidoId, isExpired, paymentConfirmed, onClose]);
 
   const handleCopyQrCode = () => {
     if (finalQrCodeText) {
@@ -89,7 +132,7 @@ const PixQrCodeDialog = ({
         CheckoutEvent.USER_ACTION,
         LogLevel.INFO,
         "Usuário copiou código PIX",
-        { timestamp: new Date().toISOString() }
+        { pedidoId, timestamp: new Date().toISOString() }
       );
     }
   };
@@ -103,7 +146,7 @@ const PixQrCodeDialog = ({
       CheckoutEvent.PAYMENT_EVENT,
       LogLevel.WARNING,
       "QR Code PIX expirado",
-      { timestamp: new Date().toISOString() }
+      { pedidoId, timestamp: new Date().toISOString() }
     );
     
     // Fecha o diálogo automaticamente após 3 segundos
@@ -124,7 +167,7 @@ const PixQrCodeDialog = ({
           <PaymentSuccessAnimation
             onContinue={() => {
               onClose();
-              window.location.href = '/pedido-confirmado';
+              window.location.href = `/pedido-confirmado?id=${pedidoId}`;
             }}
             autoRedirectTimeout={3000}
           />
@@ -137,7 +180,7 @@ const PixQrCodeDialog = ({
               <DialogDescription className="text-center">
                 {isExpired 
                   ? "O tempo para pagamento expirou. Feche e tente novamente." 
-                  : "Escaneie o QR Code ou copie o código para pagar"
+                  : "Escaneie o QR Code ou copie o código para pagar. O pagamento será detectado automaticamente!"
                 }
               </DialogDescription>
             </DialogHeader>
@@ -163,6 +206,18 @@ const PixQrCodeDialog = ({
                     />
                   </div>
                 </div>
+
+                {/* Indicador de monitoramento ativo */}
+                {pedidoId && (
+                  <div className="w-full bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <p className="text-green-700 text-sm font-medium">
+                        🔄 Monitorando pagamento em tempo real
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {finalQrCodeBase64 && (
                   <div className="w-full flex flex-col items-center space-y-3">

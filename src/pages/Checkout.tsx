@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import PaymentMethodCard from '@/components/checkout/payment/PaymentMethodCard';
 import PaymentProgressHeader from '@/components/checkout/payment/PaymentProgressHeader';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import { supabase } from '@/integrations/supabase/client'; // NOVO: import do supabase
 
 const Checkout = () => {
   const navigate = useNavigate();
