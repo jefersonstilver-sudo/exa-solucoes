@@ -1,19 +1,15 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Plan, PlanKey } from '@/types/checkout';
 import PlanCard from './PlanCard';
 import PlanHeader from './PlanHeader';
-import PlanProceedButton from './PlanProceedButton';
-import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
 
 interface PlanSelectorProps {
   selectedPlan: PlanKey;
   onSelectPlan: (plan: PlanKey) => void;
   plans: Record<number, Plan>;
   panelCount: number;
-  onProceed?: () => void;
-  onGoToCoupon?: () => void;
   totalPrice?: number;
 }
 
@@ -22,39 +18,9 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   onSelectPlan, 
   plans,
   panelCount,
-  onProceed,
-  onGoToCoupon,
   totalPrice
 }) => {
   const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
-  
-  // Handler específico para o botão de cupom - sem parâmetros
-  const handleCouponClick = () => {
-    console.log("🎯 BUTTON CLICK: Botão 'Ir para Cupom' foi clicado");
-    console.log("🎯 BUTTON CLICK: onGoToCoupon existe?", !!onGoToCoupon);
-    console.log("🎯 BUTTON CLICK: selectedPlan:", selectedPlan);
-    
-    if (onGoToCoupon) {
-      console.log("🎯 BUTTON CLICK: Chamando onGoToCoupon...");
-      onGoToCoupon();
-    } else {
-      console.error("🎯 BUTTON CLICK: ❌ onGoToCoupon não está definido!");
-    }
-  };
-
-  // Handler específico para o botão de prosseguir - sem parâmetros  
-  const handleProceedClick = () => {
-    console.log("🎯 BUTTON CLICK: Botão 'Prosseguir' foi clicado");
-    console.log("🎯 BUTTON CLICK: onProceed existe?", !!onProceed);
-    console.log("🎯 BUTTON CLICK: selectedPlan:", selectedPlan);
-    
-    if (onProceed) {
-      console.log("🎯 BUTTON CLICK: Chamando onProceed...");
-      onProceed();
-    } else {
-      console.error("🎯 BUTTON CLICK: ❌ onProceed não está definido!");
-    }
-  };
   
   // Animation variants
   const containerVariants = {
@@ -121,34 +87,6 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
           );
         })}
       </motion.div>
-      
-      {/* Botões de navegação com handlers corrigidos */}
-      <div className="space-y-3">
-        {/* Botão Ir para Cupom */}
-        {onGoToCoupon && (
-          <Button
-            onClick={handleCouponClick}
-            disabled={!selectedPlan}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            <span className="flex items-center justify-center">
-              Ir para Cupom
-              <Settings className="h-4 w-4 ml-2" />
-            </span>
-          </Button>
-        )}
-
-        {/* Botão Prosseguir Original */}
-        {onProceed && (
-          <PlanProceedButton 
-            onProceed={handleProceedClick}
-            disabled={!selectedPlan}
-            selectedPlan={selectedPlan}
-            planData={selectedPlan ? plans[selectedPlan] : null}
-            totalPrice={totalPrice}
-          />
-        )}
-      </div>
     </div>
   );
 };

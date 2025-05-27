@@ -13,8 +13,6 @@ interface PlanSelectionContentProps {
   onSelectPlan: (plan: PlanKey) => void;
   plans: Record<number, Plan>;
   panelCount: number;
-  onProceed: () => void;
-  onGoToCoupon?: () => void;
   totalPrice: number;
 }
 
@@ -23,8 +21,6 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
   onSelectPlan,
   plans,
   panelCount,
-  onProceed,
-  onGoToCoupon,
   totalPrice
 }) => {
   // Só mostra o timeline se há itens no carrinho
@@ -58,8 +54,6 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
             onSelectPlan={onSelectPlan}
             plans={plans}
             panelCount={panelCount}
-            onProceed={onProceed}
-            onGoToCoupon={onGoToCoupon}
             totalPrice={totalPrice}
           />
         </div>
