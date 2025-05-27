@@ -12,7 +12,10 @@ import {
   Activity,
   ArrowUpRight,
   RefreshCw,
-  TrendingUp
+  TrendingUp,
+  Crown,
+  Shield,
+  Zap
 } from 'lucide-react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import DashboardCharts from '@/components/admin/charts/DashboardCharts';
@@ -35,7 +38,9 @@ const Dashboard = () => {
       change: `+${Math.round(stats.totalUsers * 0.12)} este mês`,
       changeType: 'positive',
       icon: Users,
-      color: 'text-blue-600'
+      color: 'from-blue-500 to-blue-600',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600'
     },
     {
       title: 'Prédios Cadastrados',
@@ -43,7 +48,9 @@ const Dashboard = () => {
       change: `${stats.totalBuildings} ativos`,
       changeType: 'neutral',
       icon: Building2,
-      color: 'text-green-600'
+      color: 'from-emerald-500 to-emerald-600',
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600'
     },
     {
       title: 'Painéis Online',
@@ -51,7 +58,9 @@ const Dashboard = () => {
       change: `${Math.round((stats.onlinePanels/stats.totalPanels) * 100)}% funcionando`,
       changeType: stats.onlinePanels === stats.totalPanels ? 'positive' : 'warning',
       icon: MonitorPlay,
-      color: 'text-purple-600'
+      color: 'from-purple-500 to-purple-600',
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600'
     },
     {
       title: 'Receita Mensal',
@@ -59,7 +68,9 @@ const Dashboard = () => {
       change: '+15.3% vs mês anterior',
       changeType: 'positive',
       icon: DollarSign,
-      color: 'text-emerald-600'
+      color: 'from-amber-500 to-amber-600',
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600'
     }
   ];
 
@@ -96,7 +107,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 p-6">
         <div className="flex items-center justify-between">
           <div>
             <Skeleton className="h-8 w-64 mb-2" />
@@ -107,7 +118,7 @@ const Dashboard = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
+            <Card key={i} className="animate-pulse">
               <CardHeader>
                 <Skeleton className="h-4 w-24" />
               </CardHeader>
@@ -123,36 +134,53 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
+      {/* Header do Dashboard */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard Executivo</h1>
-          <p className="text-muted-foreground">
-            Visão geral do sistema INDEXA • {stats.totalUsers} usuários • {stats.totalBuildings} prédios
-          </p>
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-br from-indexa-purple to-indexa-purple-dark rounded-xl flex items-center justify-center shadow-lg">
+              <Crown className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard Executivo</h1>
+              <p className="text-gray-600">
+                Visão geral completa do sistema INDEXA • {stats.totalUsers} usuários • {stats.totalBuildings} prédios
+              </p>
+            </div>
+          </div>
         </div>
-        <Button variant="outline" onClick={refetch}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button variant="outline" onClick={refetch} className="shadow-sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+          <Button className="bg-indexa-purple hover:bg-indexa-purple-dark shadow-lg">
+            <Zap className="h-4 w-4 mr-2" />
+            Ações Rápidas
+          </Button>
+        </div>
       </div>
 
+      {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsCards.map((stat, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card key={index} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 {stat.title}
               </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className={`w-12 h-12 ${stat.iconBg} rounded-xl flex items-center justify-center`}>
+                <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold mb-1">{stat.value}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
               <div className="flex items-center text-sm">
                 <div className={`flex items-center ${
                   stat.changeType === 'positive' ? 'text-green-600' : 
                   stat.changeType === 'warning' ? 'text-yellow-600' : 
-                  'text-muted-foreground'
+                  'text-gray-600'
                 }`}>
                   {stat.changeType === 'positive' && <ArrowUpRight className="h-4 w-4 mr-1" />}
                   {stat.change}
@@ -163,30 +191,33 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* Gráficos */}
       <DashboardCharts data={chartData} />
 
+      {/* Seção inferior */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
+        {/* Atividades do Sistema */}
+        <Card className="lg:col-span-2 shadow-lg border-0">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Activity className="h-5 w-5 mr-2" />
+              <Activity className="h-5 w-5 mr-3 text-indexa-purple" />
               Atividades do Sistema
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg border">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                <div key={activity.id} className="flex items-center space-x-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                     activity.type === 'success' ? 'bg-green-100 text-green-600' :
                     activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
                     'bg-gray-100 text-gray-600'
                   }`}>
-                    <activity.icon className="w-4 h-4" />
+                    <activity.icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
                   </div>
                   <Badge variant="secondary" className="text-xs">
                     {activity.type}
@@ -197,50 +228,55 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Ações Rápidas */}
+        <Card className="shadow-lg border-0">
           <CardHeader>
-            <CardTitle>Ações Rápidas</CardTitle>
+            <CardTitle className="flex items-center">
+              <Zap className="h-5 w-5 mr-3 text-indexa-purple" />
+              Ações Rápidas
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full" variant="default">
-              <Users className="h-4 w-4 mr-2" />
+            <Button className="w-full justify-start bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg">
+              <Users className="h-4 w-4 mr-3" />
               Gerenciar Usuários ({stats.totalUsers})
             </Button>
-            <Button variant="outline" className="w-full">
-              <Building2 className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="w-full justify-start shadow-sm hover:shadow-md transition-shadow">
+              <Building2 className="h-4 w-4 mr-3" />
               Gerenciar Prédios ({stats.totalBuildings})
             </Button>
-            <Button variant="outline" className="w-full">
-              <ShoppingBag className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="w-full justify-start shadow-sm hover:shadow-md transition-shadow">
+              <ShoppingBag className="h-4 w-4 mr-3" />
               Ver Pedidos ({stats.totalOrders})
             </Button>
-            <Button variant="outline" className="w-full">
-              <MonitorPlay className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="w-full justify-start shadow-sm hover:shadow-md transition-shadow">
+              <MonitorPlay className="h-4 w-4 mr-3" />
               Monitorar Painéis ({stats.totalPanels})
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+      {/* Card de Resumo Financeiro */}
+      <Card className="bg-gradient-to-r from-indexa-purple via-indexa-purple-dark to-indexa-purple text-white shadow-2xl border-0">
         <CardHeader>
           <CardTitle className="flex items-center text-white">
-            <DollarSign className="h-5 w-5 mr-2" />
-            Resumo Financeiro
+            <DollarSign className="h-6 w-6 mr-3" />
+            Resumo Financeiro INDEXA
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
             <div className="text-center">
-              <div className="text-3xl font-bold">{formatCurrency(stats.monthlyRevenue)}</div>
+              <div className="text-4xl font-bold mb-2">{formatCurrency(stats.monthlyRevenue)}</div>
               <p className="text-sm opacity-80">Receita Mensal</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold">{stats.activeOrders}</div>
+              <div className="text-4xl font-bold mb-2">{stats.activeOrders}</div>
               <p className="text-sm opacity-80">Pedidos Ativos</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold">{stats.pendingOrders}</div>
+              <div className="text-4xl font-bold mb-2">{stats.pendingOrders}</div>
               <p className="text-sm opacity-80">Pedidos Pendentes</p>
             </div>
           </div>

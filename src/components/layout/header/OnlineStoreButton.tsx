@@ -14,11 +14,11 @@ const OnlineStoreButton: React.FC = () => {
   return (
     <Button
       onClick={handleStoreClick}
-      className="bg-indexa-mint hover:bg-indexa-mint-dark text-indexa-purple font-medium rounded-full px-3 py-2 md:px-4 md:py-2 transition-all duration-200 flex items-center gap-2"
-      size="sm"
+      variant="ghost"
+      className="text-white hover:bg-white/20 hover:text-indexa-mint rounded-lg h-10 px-4 flex items-center gap-2 transition-all duration-200"
     >
       <Store className="h-4 w-4" />
-      <span className="text-sm">Loja Online</span>
+      <span className="hidden sm:inline">Loja</span>
     </Button>
   );
 };
