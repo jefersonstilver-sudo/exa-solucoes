@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { LogIn, Eye, EyeOff, User, ShieldCheck } from 'lucide-react';
@@ -20,7 +19,6 @@ const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
 
   // Função para alternar entre os modos
   const toggleMode = () => {
@@ -38,44 +36,68 @@ const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
     setLoading(true);
     
     try {
+      console.log('🔐 LoginSelector: Iniciando processo de login...');
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password
       });
       
-      if (error) throw error;
-      
-      // Verificar o papel do usuário após login bem-sucedido
-      const userRole = data.user.user_metadata?.role;
-      
-      // Verificar se o modo de login corresponde ao papel do usuário
-      if (mode === 'admin' && userRole !== 'admin' && userRole !== 'super_admin') {
-        await supabase.auth.signOut();
-        toast.error('Você não tem permissão para acessar o painel administrativo');
-        setLoading(false);
-        return;
+      if (error) {
+        console.error('🔐 LoginSelector: Erro na autenticação:', error);
+        throw error;
       }
       
-      if (mode === 'client' && userRole === 'admin') {
-        toast.info('Você está entrando como cliente, mas tem acesso administrativo');
-      }
-      
-      toast.success('Login realizado com sucesso!');
-      
-      // Redirecionar com base no modo
-      if (mode === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/anunciante');
-      }
-      
-      // Callback após login bem-sucedido
-      if (onLoginSuccess) {
-        onLoginSuccess();
+      if (data.user) {
+        console.log('🔐 LoginSelector: Login bem-sucedido!');
+        
+        // Verificar o papel do usuário através do JWT
+        const userRole = data.user.user_metadata?.role;
+        console.log('🔐 LoginSelector: Role do usuário:', userRole);
+        
+        // Verificação básica de permissão sem bloquear o login
+        if (mode === 'admin' && userRole !== 'admin' && userRole !== 'super_admin') {
+          console.log('🔐 LoginSelector: Usuário sem permissão administrativa, mas não bloquear login');
+          toast.info('Você foi logado com sucesso. Use o menu do usuário para acessar suas funcionalidades.');
+        }
+        
+        if (mode === 'client' && (userRole === 'admin' || userRole === 'super_admin')) {
+          console.log('🔐 LoginSelector: Admin logando como cliente');
+          toast.info('Login realizado! Você tem acesso administrativo disponível no menu do usuário.');
+        }
+        
+        toast.success('Login realizado com sucesso!');
+        
+        // CORREÇÃO CRÍTICA: Não navegar automaticamente
+        // Apenas fechar o dropdown e deixar o usuário na página atual
+        console.log('🔐 LoginSelector: Fechando dropdown e mantendo usuário na página atual');
+        
+        // Limpar formulário
+        setEmail('');
+        setPassword('');
+        
+        // Callback para fechar o dropdown
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
+        
+        // Não fazer navegação automática - deixar o UserMenu aparecer
+        console.log('🔐 LoginSelector: Login concluído sem navegação');
       }
     } catch (error: any) {
-      console.error('Erro no login:', error);
-      toast.error(error.message || 'Erro ao realizar login');
+      console.error('🔐 LoginSelector: Erro no processo de login:', error);
+      
+      let errorMessage = 'Erro ao realizar login';
+      
+      if (error.message === 'Invalid login credentials') {
+        errorMessage = 'Email ou senha incorretos';
+      } else if (error.message === 'Email not confirmed') {
+        errorMessage = 'Por favor, confirme seu email antes de fazer login';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -165,12 +187,12 @@ const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
             {loading ? (
               <div className="flex items-center justify-center">
                 <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin mr-2"></div>
-                Aguarde...
+                Entrando...
               </div>
             ) : (
               <div className="flex items-center justify-center">
                 <LogIn className="mr-2 h-5 w-5" />
-                Entrar como {mode === 'admin' ? 'Administrador' : 'Anunciante'}
+                Entrar
               </div>
             )}
           </Button>

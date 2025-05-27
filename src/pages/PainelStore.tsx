@@ -1,11 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import useBuildingStore from '@/hooks/useBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
-import { useUserSession } from '@/hooks/useUserSession';
-import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
@@ -37,23 +35,11 @@ export default function PainelStore() {
     handleProceedToCheckout
   } = useCartManager();
 
-  const { isLoggedIn } = useUserSession();
-  const [showPromotion, setShowPromotion] = useState(true);
-
   // Initialize store on mount
   useEffect(() => {
     console.log('🚀 [PAINEL STORE] Inicializando store da loja profissional');
     initializeStore();
   }, [initializeStore]);
-
-  // Effect to hide promotion when user logs in or adds items to cart
-  useEffect(() => {
-    if (isLoggedIn || cartItems.length > 0) {
-      setShowPromotion(false);
-    } else {
-      setShowPromotion(true);
-    }
-  }, [isLoggedIn, cartItems.length]);
 
   // Log do estado atual
   useEffect(() => {
@@ -121,15 +107,7 @@ export default function PainelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 md:px-6 py-6"
       >
-        {/* Promotional Welcome Banner */}
-        <AnimatePresence>
-          <PromotionBanner 
-            showPromotion={showPromotion}
-            setShowPromotion={setShowPromotion}
-          />
-        </AnimatePresence>
-        
-        {/* Header Simplificado da Loja */}
+        {/* Header da Loja - ALTERADO conforme solicitado */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -137,7 +115,7 @@ export default function PainelStore() {
           className="text-center mb-6"
         >
           <h1 className="text-3xl md:text-4xl font-bold text-[#3C1361] mb-2">
-            Loja de Painéis Digitais
+            Escolha seu Espaço
           </h1>
         </motion.div>
         
