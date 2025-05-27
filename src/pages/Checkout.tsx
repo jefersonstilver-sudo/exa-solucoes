@@ -20,6 +20,7 @@ const Checkout = () => {
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
   const orderId = searchParams.get('id') || searchParams.get('pedido');
   
@@ -50,12 +51,68 @@ const Checkout = () => {
     navigate('/checkout/resumo');
   };
 
+  const sendPixWebhook = async () => {
+    if (!user) {
+      toast.error("Dados do usuário não encontrados");
+      return;
+    }
+
+    try {
+      setIsProcessingPayment(true);
+      
+      // Get selected plan from localStorage or default
+      const selectedPlan = localStorage.getItem('selectedPlan') || '1';
+      const planNames = {
+        '1': '1 mês',
+        '3': '3 meses', 
+        '6': '6 meses',
+        '12': '12 meses'
+      };
+
+      const webhookData = {
+        usuario_id: user.id,
+        nome_usuario: user.email?.split('@')[0] || 'Cliente',
+        email_usuario: user.email || '',
+        plano_escolhido: planNames[selectedPlan as keyof typeof planNames] || '1 mês',
+        valor_total: (totalAmount * 0.95).toFixed(2) // 5% discount for PIX
+      };
+
+      console.log('[PIX Webhook] Enviando dados:', webhookData);
+
+      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData)
+      });
+
+      if (response.ok) {
+        toast.success("Dados enviados com sucesso! Processando pagamento PIX...");
+        console.log('[PIX Webhook] Webhook enviado com sucesso');
+        
+        // Navigate to PIX payment page or show success
+        // For now, just show success message
+        setTimeout(() => {
+          toast.info("Em breve você será redirecionado para o PIX");
+        }, 1500);
+      } else {
+        throw new Error(`Erro no webhook: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('[PIX Webhook] Erro ao enviar webhook:', error);
+      toast.error("Erro ao processar pagamento PIX. Tente novamente.");
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const handlePixPayment = () => {
     if (!acceptTerms) {
       toast.error("Você precisa aceitar os termos para continuar");
       return;
     }
-    toast.info("Método PIX será configurado em breve!");
+    sendPixWebhook();
   };
 
   const handleCreditCardPayment = () => {
@@ -196,11 +253,18 @@ const Checkout = () => {
                         {selectedMethod === 'pix' ? (
                           <Button
                             onClick={handlePixPayment}
-                            disabled={!acceptTerms}
+                            disabled={!acceptTerms || isProcessingPayment}
                             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 text-lg font-semibold rounded-xl transition-colors"
                             size="lg"
                           >
-                            Pagar com PIX - R$ {pixAmount.toFixed(2)}
+                            {isProcessingPayment ? (
+                              <>
+                                <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                Processando...
+                              </>
+                            ) : (
+                              `Pagar com PIX - R$ ${pixAmount.toFixed(2)}`
+                            )}
                           </Button>
                         ) : (
                           <Button
