@@ -1,0 +1,219 @@
+
+import React from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  ShoppingBag, 
+  Video, 
+  Play, 
+  Settings, 
+  LogOut,
+  Menu,
+  X,
+  BarChart3,
+  FileText
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useUserSession } from '@/hooks/useUserSession';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
+
+const AdvertiserLayout = () => {
+  const { user } = useUserSession();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('Logout realizado com sucesso');
+      navigate('/');
+    } catch (error) {
+      toast.error('Erro ao realizar logout');
+    }
+  };
+
+  const menuItems = [
+    {
+      icon: LayoutDashboard,
+      label: 'Dashboard',
+      path: '/anunciante',
+      description: 'Visão geral das suas campanhas'
+    },
+    {
+      icon: ShoppingBag,
+      label: 'Meus Pedidos',
+      path: '/meus-pedidos',
+      description: 'Histórico de compras e status'
+    },
+    {
+      icon: Play,
+      label: 'Campanhas',
+      path: '/anunciante/campanhas',
+      description: 'Gerencie suas campanhas ativas'
+    },
+    {
+      icon: Video,
+      label: 'Meus Vídeos',
+      path: '/anunciante/videos',
+      description: 'Upload e gestão de vídeos'
+    },
+    {
+      icon: BarChart3,
+      label: 'Relatórios',
+      path: '/anunciante/relatorios',
+      description: 'Métricas e performance'
+    },
+    {
+      icon: Settings,
+      label: 'Configurações',
+      path: '/anunciante/configuracoes',
+      description: 'Dados pessoais e preferências'
+    }
+  ];
+
+  const isActiveRoute = (path: string) => {
+    if (path === '/anunciante') {
+      return location.pathname === '/anunciante' || location.pathname === '/anunciante/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full bg-gradient-to-b from-[#3C1361] to-[#2A0D47] text-white">
+      {/* Header */}
+      <div className="p-6 border-b border-white/10">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-[#00FFAB] rounded-lg flex items-center justify-center">
+            <span className="text-[#3C1361] font-bold text-lg">I</span>
+          </div>
+          <div>
+            <h2 className="font-bold text-lg">Indexa</h2>
+            <p className="text-sm text-gray-300">Portal do Anunciante</p>
+          </div>
+        </div>
+      </div>
+
+      {/* User Info */}
+      <div className="p-4 border-b border-white/10">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-[#00FFAB] rounded-full flex items-center justify-center">
+            <span className="text-[#3C1361] font-semibold text-sm">
+              {user?.email?.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <p className="font-medium text-sm">{user?.email}</p>
+            <p className="text-xs text-gray-400">Anunciante</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = isActiveRoute(item.path);
+          
+          return (
+            <button
+              key={item.path}
+              onClick={() => {
+                navigate(item.path);
+                setSidebarOpen(false);
+              }}
+              className={cn(
+                "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group text-left",
+                isActive 
+                  ? "bg-[#00FFAB] text-[#3C1361] shadow-lg" 
+                  : "hover:bg-white/10 text-gray-200 hover:text-white"
+              )}
+            >
+              <Icon className={cn(
+                "h-5 w-5 transition-colors",
+                isActive ? "text-[#3C1361]" : "text-gray-300 group-hover:text-white"
+              )} />
+              <div className="flex-1">
+                <p className={cn(
+                  "font-medium text-sm",
+                  isActive ? "text-[#3C1361]" : "text-gray-200 group-hover:text-white"
+                )}>
+                  {item.label}
+                </p>
+                <p className={cn(
+                  "text-xs",
+                  isActive ? "text-[#3C1361]/70" : "text-gray-400 group-hover:text-gray-300"
+                )}>
+                  {item.description}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Logout Button */}
+      <div className="p-4 border-t border-white/10">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-red-500/20 text-gray-200 hover:text-red-300 transition-all duration-200"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="font-medium text-sm">Sair</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block w-80 fixed inset-y-0 z-30">
+        <SidebarContent />
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 z-50 bg-black/50"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <div className="w-80 h-full" onClick={e => e.stopPropagation()}>
+            <SidebarContent />
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-lg"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="lg:ml-80 flex-1 flex flex-col min-h-screen">
+        {/* Mobile Header */}
+        <header className="lg:hidden bg-white shadow-sm border-b px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <h1 className="font-semibold text-gray-900">Portal do Anunciante</h1>
+          <div className="w-9" /> {/* Spacer */}
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default AdvertiserLayout;

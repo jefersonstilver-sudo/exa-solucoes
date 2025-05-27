@@ -14,7 +14,10 @@ import Home from '@/pages/Home';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import BuildingStorePage from '@/pages/BuildingStore';
+import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
+import AdvertiserReports from '@/pages/advertiser/AdvertiserReports';
+import AdvertiserSettings from '@/pages/advertiser/AdvertiserSettings';
 import AuthHookTest from '@/pages/AuthHookTest';
 import AuthDiagnosticPage from '@/pages/AuthDiagnosticPage';
 import AuthHookDiagnosticPage from '@/pages/AuthHookDiagnosticPage';
@@ -54,8 +57,12 @@ const App = () => {
         <Route path="/paineis-digitais/loja" element={<PainelStore />} />
         <Route path="/paineis-digitais" element={<Navigate to="/loja" replace />} />
         
-        {/* Advertiser Dashboard */}
-        <Route path="/anunciante" element={<AdvertiserDashboard />} />
+        {/* ADVERTISER ROUTES WITH LAYOUT */}
+        <Route path="/anunciante" element={<AdvertiserLayout />}>
+          <Route index element={<AdvertiserDashboard />} />
+          <Route path="relatorios" element={<AdvertiserReports />} />
+          <Route path="configuracoes" element={<AdvertiserSettings />} />
+        </Route>
         
         {/* Client Routes */}
         <Route path="/client/*" element={<ClientRoutes />} />

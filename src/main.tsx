@@ -1,158 +1,21 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import App from './App'
 import './index.css'
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-
-// Pages
-import Index from './pages/Index'
-import NotFound from './pages/NotFound'
-import Login from './pages/Login'
-import Forbidden from './pages/Forbidden'
-import Cadastro from './pages/Cadastro'
-import Checkout from './pages/Checkout'
-import CheckoutCoupon from './pages/CheckoutCoupon'
-import CheckoutSummary from './pages/CheckoutSummary'
-import CheckoutFinish from './pages/CheckoutFinish'
-import PanelStore from './pages/PanelStore'
-import BuildingStorePage from './pages/BuildingStore'
-import PlanSelection from './pages/PlanSelection'
-import OrderConfirmation from './pages/OrderConfirmation'
-import Confirmacao from './pages/Confirmacao'
-import PixPayment from './pages/PixPayment'
-import Pedidos from './pages/Pedidos'
-
-// Super Admin Pages (via SuperAdminPage que contém todas as rotas)
-import SuperAdminPage from './pages/SuperAdminPage'
-
-// Advertiser Pages
-import AdvertiserDashboard from './pages/advertiser/AdvertiserDashboard'
-import MyCampaigns from './pages/advertiser/MyCampaigns'
-import CampaignDetails from './pages/advertiser/CampaignDetails'
-import MyVideos from './pages/advertiser/MyVideos'
-
-// Providers
 import { ThemeProvider } from './components/ui/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
-import { Toaster as SonnerToaster } from 'sonner'
 
 // Create a client
 const queryClient = new QueryClient()
-
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Index />,
-    errorElement: <NotFound />
-  },
-  {
-    path: '/login',
-    element: <Login />
-  },
-  {
-    path: '/cadastro',
-    element: <Cadastro />
-  },
-  {
-    path: '/confirmacao',
-    element: <Confirmacao />
-  },
-  {
-    path: '/forbidden',
-    element: <Forbidden />
-  },
-  // Loja de Prédios - Nova rota principal
-  {
-    path: '/loja',
-    element: <BuildingStorePage />
-  },
-  {
-    path: '/loja-predios',
-    element: <BuildingStorePage />
-  },
-  // Painéis Digitais - Loja de Painéis específicos
-  {
-    path: '/paineis-digitais/loja',
-    element: <PanelStore />
-  },
-  {
-    path: '/selecionar-plano',
-    element: <PlanSelection />
-  },
-  // CORREÇÃO: Adicionar rotas de checkout faltantes
-  {
-    path: '/checkout',
-    element: <Checkout />
-  },
-  {
-    path: '/checkout/cupom',
-    element: <CheckoutCoupon />
-  },
-  {
-    path: '/checkout/resumo',
-    element: <CheckoutSummary />
-  },
-  {
-    path: '/checkout/finalizar',
-    element: <CheckoutFinish />
-  },
-  {
-    path: '/pedido-confirmado',
-    element: <OrderConfirmation />
-  },
-  {
-    path: '/pix-payment',
-    element: <PixPayment />
-  },
-  // CORREÇÃO: Rotas de pedidos diretas sem redirecionamento
-  {
-    path: '/pedidos',
-    element: <Pedidos />
-  },
-  {
-    path: '/meus-pedidos',
-    element: <Pedidos />
-  },
-  // Super Admin routes - Acesso exclusivo para jefersonstilver@gmail.com
-  {
-    path: '/super_admin/*',
-    element: <SuperAdminPage />
-  },
-  // Advertiser routes
-  {
-    path: '/anunciante',
-    element: <AdvertiserDashboard />
-  },
-  {
-    path: '/anunciante/campanhas',
-    element: <MyCampaigns />
-  },
-  {
-    path: '/anunciante/campanhas/:id',
-    element: <CampaignDetails />
-  },
-  {
-    path: '/anunciante/videos',
-    element: <MyVideos />
-  }
-])
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <RouterProvider router={router} />
-        <SonnerToaster 
-          position="top-center" 
-          expand={true} 
-          richColors 
-          closeButton
-          toastOptions={{
-            duration: 3000,
-            className: "toast-class"
-          }} 
-        />
+        <App />
+        <Toaster />
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,
