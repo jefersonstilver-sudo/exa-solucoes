@@ -46,7 +46,7 @@ const AvatarFallback = React.forwardRef<
 ))
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 
-// New component that adds a glowing effect to the avatar
+// COMPONENTE MELHORADO com glow effect mais visível
 const AvatarGlow = React.forwardRef<
   React.ElementRef<typeof React.Fragment>,
   React.HTMLAttributes<HTMLDivElement> & { active?: boolean }
@@ -54,13 +54,22 @@ const AvatarGlow = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "relative rounded-full",
-      active && "before:absolute before:-inset-[3px] before:rounded-full before:bg-indexa-mint before:opacity-90 before:blur-[2px] before:content-['']",
+      "relative rounded-full transition-all duration-300",
+      active && [
+        "before:absolute before:-inset-[2px] before:rounded-full before:opacity-60 before:blur-[1px] before:content-['']",
+        "before:bg-gradient-to-r before:from-[#00FFAB] before:via-[#58E3AB] before:to-[#00FFAB]",
+        "before:animate-pulse"
+      ],
       className
     )}
     {...props}
   >
-    {children}
+    <div className={cn(
+      "relative rounded-full",
+      active && "ring-2 ring-[#00FFAB]/30 ring-offset-2 ring-offset-transparent"
+    )}>
+      {children}
+    </div>
   </div>
 ))
 AvatarGlow.displayName = "AvatarGlow"

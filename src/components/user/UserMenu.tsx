@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -39,6 +38,16 @@ const UserMenu = () => {
   const { user, isLoading, isLoggedIn, logout } = useUserSession();
   const navigate = useNavigate();
 
+  // Debug logs para identificar o problema
+  console.log('👤 UserMenu Debug:', {
+    isLoading,
+    isLoggedIn,
+    user,
+    userEmail: user?.email,
+    userName: user?.name,
+    userRole: user?.role
+  });
+
   const handleLogout = async () => {
     await logout();
     setOpen(false);
@@ -49,17 +58,8 @@ const UserMenu = () => {
   const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
   const isAdmin = user?.role === 'admin';
   const isClient = user?.role === 'client';
-  
-  console.log('👤 UserMenu - Verificação de usuário:', {
-    userEmail: user?.email,
-    userRole: user?.role,
-    isSuperAdmin,
-    isAdmin,
-    isClient,
-    isLoggedIn
-  });
 
-  // Generate avatar initials from name or email
+  // Generate avatar initials from name or email - MELHORADO
   const getInitials = () => {
     if (!user) return "?";
     
@@ -76,6 +76,27 @@ const UserMenu = () => {
     }
     
     return "?";
+  };
+
+  // CORES MELHORADAS baseadas no status do usuário
+  const getAvatarColors = () => {
+    if (!isLoggedIn) {
+      return "bg-gray-500 text-white border-2 border-white/30";
+    }
+    
+    if (isSuperAdmin) {
+      return "bg-gradient-to-br from-yellow-500 to-orange-600 text-white border-2 border-yellow-400/50";
+    }
+    
+    if (isAdmin) {
+      return "bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-2 border-blue-400/50";
+    }
+    
+    if (isClient) {
+      return "bg-gradient-to-br from-[#3C1361] to-[#4A1888] text-white border-2 border-[#3C1361]/50";
+    }
+    
+    return "bg-gradient-to-br from-gray-600 to-gray-700 text-white border-2 border-gray-400/50";
   };
 
   // Animation variants for dropdown content
@@ -106,15 +127,17 @@ const UserMenu = () => {
   };
 
   return (
-    <ClientOnly fallback={<div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>}>
+    <ClientOnly fallback={
+      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 animate-pulse border-2 border-white/20"></div>
+    }>
       {isLoading ? (
-        <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 animate-pulse border-2 border-white/20"></div>
       ) : (
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="relative p-0 overflow-hidden border-0 text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12" 
+              className="relative p-0 overflow-hidden border-0 text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12 transition-all duration-200" 
               aria-label="Menu do usuário"
             >
               <AvatarGlow active={isLoggedIn}>
@@ -127,20 +150,13 @@ const UserMenu = () => {
                     damping: 15 
                   }}
                 >
-                  <Avatar className="h-10 w-10 md:h-12 md:w-12 ring-2 ring-white/20">
+                  <Avatar className="h-10 w-10 md:h-12 md:w-12 ring-2 ring-white/30 transition-all duration-200">
                     <AvatarImage 
                       src={user?.avatar_url || ''} 
                       alt={user?.name || user?.email || "Usuário"}
                     />
                     <AvatarFallback 
-                      className={isLoggedIn 
-                        ? isSuperAdmin 
-                          ? "bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900" 
-                          : isAdmin
-                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
-                            : "bg-gradient-to-br from-gray-400 to-gray-500 text-white"
-                        : "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700"
-                      }
+                      className={`font-bold text-sm ${getAvatarColors()} transition-all duration-200`}
                     >
                       {isLoggedIn ? getInitials() : <UserIcon className="h-5 w-5" />}
                     </AvatarFallback>
