@@ -25,7 +25,14 @@ export const useCouponsData = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCoupons(data || []);
+      
+      // Garantir que tipo_desconto seja do tipo correto
+      const normalizedData = (data || []).map(coupon => ({
+        ...coupon,
+        tipo_desconto: (coupon.tipo_desconto as 'percentual' | 'valor_fixo') || 'percentual'
+      }));
+      
+      setCoupons(normalizedData);
     } catch (error) {
       console.error('Erro ao buscar cupons:', error);
       toast({
@@ -66,12 +73,14 @@ export const useCouponsData = () => {
   // Criar novo cupom
   const createCoupon = async (couponData: CreateCouponData): Promise<boolean> => {
     try {
+      // Garantir que o código seja obrigatório
+      if (!couponData.codigo) {
+        throw new Error('Código do cupom é obrigatório');
+      }
+
       const { error } = await supabase
         .from('cupons')
-        .insert({
-          ...couponData,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        });
+        .insert(couponData);
 
       if (error) throw error;
 

@@ -35,7 +35,7 @@ export interface CouponUsageDetail {
 }
 
 export interface CreateCouponData {
-  codigo?: string;
+  codigo: string; // Mudou de opcional para obrigatório
   desconto_percentual: number;
   max_usos: number;
   min_meses: number;

@@ -90,6 +90,12 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar se o código está preenchido
+    if (!formData.codigo) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -309,7 +315,7 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !formData.codigo}>
               {isSubmitting ? 'Salvando...' : editingCoupon ? 'Atualizar' : 'Criar Cupom'}
             </Button>
           </div>
