@@ -36,7 +36,7 @@ export const executeAutomaticCleanup = async (): Promise<CleanupResult> => {
     console.log("✅ Limpeza automática concluída:", data);
     
     // Type assertion segura para o retorno da função RPC
-    const result = data as CleanupResult;
+    const result = data as unknown as CleanupResult;
     
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
@@ -69,7 +69,7 @@ export const forceMigrateOrphanedPayments = async (): Promise<MigrationResult> =
     console.log("✅ Migração forçada concluída:", data);
     
     // Type assertion segura para o retorno da função RPC
-    const result = data as MigrationResult;
+    const result = data as unknown as MigrationResult;
     
     return result || { success: true, migrated_count: 0 };
   } catch (error) {

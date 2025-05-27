@@ -2,10 +2,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { User } from 'lucide-react';
-import { useUserSession } from '@/hooks/useUserSession';
 import CartButton from './header/CartButton';
 import HeaderLogo from './header/HeaderLogo';
+import UserMenu from '@/components/user/UserMenu';
 
 interface HeaderProps {
   cartItemsCount?: number;
@@ -18,8 +17,6 @@ const Header: React.FC<HeaderProps> = ({
   cartAnimation = false,
   onToggleCart
 }) => {
-  const { user, isLoggedIn } = useUserSession();
-
   console.log('🏢 Header: Renderizando header');
   console.log('🏢 Header: cartItemsCount:', cartItemsCount);
   console.log('🏢 Header: onToggleCart function:', !!onToggleCart);
@@ -80,26 +77,8 @@ const Header: React.FC<HeaderProps> = ({
               onToggleCart={onToggleCart}
             />
 
-            {/* User Profile/Login */}
-            {isLoggedIn ? (
-              <div className="flex items-center space-x-3">
-                <div className="h-9 w-9 bg-[#00FFAB] rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-[#3C1361]" />
-                </div>
-                <span className="text-white text-sm font-medium">
-                  {user?.name || user?.email?.split('@')[0] || 'Usuário'}
-                </span>
-              </div>
-            ) : (
-              <Link to="/login">
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:text-[#00FFAB] hover:bg-white/10 px-5"
-                >
-                  Entrar
-                </Button>
-              </Link>
-            )}
+            {/* User Menu - componente profissional que já existe */}
+            <UserMenu />
           </div>
         </div>
       </div>

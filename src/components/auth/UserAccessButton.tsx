@@ -4,6 +4,7 @@ import { User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
 import LoginSelector from './LoginSelector';
+import UserMenu from '@/components/user/UserMenu';
 import { ClientOnly } from '@/components/ui/client-only';
 
 const UserAccessButton = () => {
@@ -34,9 +35,6 @@ const UserAccessButton = () => {
     );
   }
 
-  // Verificar se é super admin
-  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
-
   return (
     <ClientOnly fallback={
       <div className="w-10 h-10 flex items-center justify-center">
@@ -44,24 +42,25 @@ const UserAccessButton = () => {
       </div>
     }>
       <div className="relative" ref={dropdownRef}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative text-white hover:bg-white/20 rounded-full group h-10 w-10 md:h-12 md:w-12"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label="Login"
-        >
-          <User className={`h-5 w-5 md:h-6 md:w-6 ${
-            isSuperAdmin 
-              ? 'text-amber-500' 
-              : isLoggedIn 
-                ? 'text-indexa-mint' 
-                : 'text-gray-300'
-          }`} />
-        </Button>
-        
-        {isOpen && !isLoggedIn && (
-          <LoginSelector onLoginSuccess={() => setIsOpen(false)} />
+        {/* Se usuário estiver logado, mostra o UserMenu profissional */}
+        {isLoggedIn ? (
+          <UserMenu />
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative text-white hover:bg-white/20 rounded-full group h-10 w-10 md:h-12 md:w-12"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Login"
+            >
+              <User className="h-5 w-5 md:h-6 md:w-6 text-gray-300" />
+            </Button>
+            
+            {isOpen && (
+              <LoginSelector onLoginSuccess={() => setIsOpen(false)} />
+            )}
+          </>
         )}
       </div>
     </ClientOnly>
