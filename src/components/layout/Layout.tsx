@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { CartItem } from '@/types/cart';
 import Header from './Header';
 import CartDrawer from '@/components/cart/CartDrawer';
@@ -16,7 +16,7 @@ interface LayoutProps {
   onProceedToCheckout?: () => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ 
+const Layout: React.FC<LayoutProps> = memo(({ 
   children,
   cartItems: externalCartItems,
   onRemoveFromCart: externalOnRemoveFromCart,
@@ -42,7 +42,6 @@ const Layout: React.FC<LayoutProps> = ({
   const onRemoveFromCart = externalOnRemoveFromCart || internalHandleRemoveFromCart;
   const onClearCart = externalOnClearCart || internalHandleClearCart;
   const onChangeDuration = externalOnChangeDuration || internalHandleChangeDuration;
-  // CORREÇÃO: Usar handleProceedToCheckout do useCartManager em vez de função vazia
   const onProceedToCheckout = externalOnProceedToCheckout || internalHandleProceedToCheckout;
 
   // Configurar limpeza automática na montagem do Layout
@@ -53,22 +52,11 @@ const Layout: React.FC<LayoutProps> = ({
     return cancelCleanup;
   }, []);
 
-  console.log('🏗️ Layout: Renderizando com carrinho');
-  console.log('🏗️ Layout: cartItems.length:', cartItems.length);
-  console.log('🏗️ Layout: cartOpen:', cartOpen);
-  console.log('🏗️ Layout: toggleCart function:', !!toggleCart);
-
-  const handleToggleCart = () => {
-    console.log('🏗️ Layout: handleToggleCart chamado');
-    console.log('🏗️ Layout: cartOpen atual:', cartOpen);
-    console.log('🏗️ Layout: cartItems.length:', cartItems.length);
-    
+  const handleToggleCart = React.useCallback(() => {
     if (cartItems.length > 0) {
       toggleCart();
-    } else {
-      console.log('🏗️ Layout: Carrinho vazio, não abrindo');
     }
-  };
+  }, [cartItems.length, toggleCart]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col relative">
@@ -99,6 +87,8 @@ const Layout: React.FC<LayoutProps> = ({
       />
     </div>
   );
-};
+});
+
+Layout.displayName = 'Layout';
 
 export default Layout;

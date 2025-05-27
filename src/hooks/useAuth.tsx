@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, UserRole } from '@/types/userTypes';
@@ -9,8 +9,9 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initialized = useRef(false);
 
-  // Função para extrair role do JWT - memoizada para evitar re-criações
+  // Função para extrair role do JWT - memoizada
   const extractUserRoleFromJWT = useCallback((session: Session | null): UserRole | null => {
     if (!session?.access_token) {
       return null;
@@ -43,25 +44,40 @@ export const useAuth = () => {
 
   // FIXED: Otimização crítica para evitar re-renderizações excessivas
   const updateAuthState = useCallback((newSession: Session | null) => {
-    // Só atualiza se realmente mudou
-    if (newSession?.user?.id !== user?.id) {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      
-      if (newSession?.user) {
-        const profile = createUserProfileFromSession(newSession);
-        setUserProfile(profile);
-      } else {
-        setUserProfile(null);
+    const newUser = newSession?.user ?? null;
+    const newProfile = newSession ? createUserProfileFromSession(newSession) : null;
+    
+    // Só atualiza se realmente mudou para evitar loops
+    setSession(prevSession => {
+      if (prevSession?.access_token !== newSession?.access_token) {
+        return newSession;
       }
-    }
+      return prevSession;
+    });
+    
+    setUser(prevUser => {
+      if (prevUser?.id !== newUser?.id) {
+        return newUser;
+      }
+      return prevUser;
+    });
+    
+    setUserProfile(prevProfile => {
+      if (prevProfile?.id !== newProfile?.id || prevProfile?.role !== newProfile?.role) {
+        return newProfile;
+      }
+      return prevProfile;
+    });
     
     setIsLoading(false);
-  }, [user?.id, createUserProfileFromSession]);
+  }, [createUserProfileFromSession]);
 
   // Inicialização e listener de auth - OTIMIZADA
   useEffect(() => {
+    if (initialized.current) return;
+    
     let mounted = true;
+    initialized.current = true;
 
     const initializeAuth = async () => {
       try {
@@ -83,9 +99,9 @@ export const useAuth = () => {
       (event, session) => {
         if (!mounted) return;
         
-        // CRITICAL: Reduzir logs para evitar spam no console
+        // CRITICAL: Apenas log para eventos importantes
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          console.log('🔄 INDEXA AUTH: State changed:', event);
+          console.log('🔄 AUTH: State changed:', event);
         }
         
         updateAuthState(session);

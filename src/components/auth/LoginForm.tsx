@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { useLoginForm } from '@/components/auth/hooks/useLoginForm';
 import { LoginFormFields } from '@/components/auth/LoginFormFields';
@@ -10,7 +10,7 @@ interface LoginFormProps {
   setIsResetMode: (isResetMode: boolean) => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ redirectPath, setIsResetMode }) => {
+export const LoginForm: React.FC<LoginFormProps> = memo(({ redirectPath, setIsResetMode }) => {
   const {
     email,
     setEmail,
@@ -50,4 +50,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ redirectPath, setIsResetMo
       />
     </motion.form>
   );
-};
+});
+
+LoginForm.displayName = 'LoginForm';

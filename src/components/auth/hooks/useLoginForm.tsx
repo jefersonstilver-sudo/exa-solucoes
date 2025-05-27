@@ -3,9 +3,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-export const useLoginForm = (redirectPath: string = '/paineis-digitais/loja') => {
+export const useLoginForm = (redirectPath: string = '/') => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +23,7 @@ export const useLoginForm = (redirectPath: string = '/paineis-digitais/loja') =>
     setError('');
 
     try {
-      console.log('🔐 LoginForm: Tentando fazer login para email:', email);
+      console.log('🔐 LoginForm: Tentando fazer login...');
       
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -37,39 +36,17 @@ export const useLoginForm = (redirectPath: string = '/paineis-digitais/loja') =>
       }
 
       if (data.user) {
-        console.log('🔐 LoginForm: Login bem-sucedido, redirecionando para:', redirectPath);
+        console.log('🔐 LoginForm: Login bem-sucedido');
         
-        logCheckoutEvent(
-          CheckoutEvent.AUTH_EVENT,
-          LogLevel.SUCCESS,
-          'Login realizado com sucesso via formulário',
-          { 
-            userId: data.user.id, 
-            email: data.user.email,
-            redirectPath,
-            timestamp: new Date().toISOString() 
-          }
-        );
-
         toast.success('Login realizado com sucesso!');
         
-        // FIXED: Use the redirectPath passed from props
-        navigate(redirectPath);
+        // FIXED: Navegação com timeout para evitar conflitos
+        setTimeout(() => {
+          navigate(redirectPath);
+        }, 100);
       }
     } catch (error: any) {
       console.error('🔐 LoginForm: Erro no login:', error);
-      
-      logCheckoutEvent(
-        CheckoutEvent.AUTH_EVENT,
-        LogLevel.ERROR,
-        `Erro no login: ${error.message}`,
-        { 
-          email,
-          error: error.message,
-          redirectPath,
-          timestamp: new Date().toISOString() 
-        }
-      );
 
       let errorMessage = 'Erro ao fazer login';
       

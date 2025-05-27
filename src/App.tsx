@@ -47,9 +47,9 @@ const App = () => {
         <Route path="/auth-hook-test" element={<AuthHookTest />} />
         <Route path="/auth-diagnostic" element={<AuthDiagnosticPage />} />
         
-        {/* Auth Routes */}
+        {/* Auth Routes - FIXED: Adicionar /* para subrotas */}
         <Route path="/auth/*" element={<AuthRoutes />} />
-        <Route path="/login" element={<AuthRoutes />} />
+        <Route path="/login/*" element={<AuthRoutes />} />
         
         {/* Public Routes - PÁGINA PRINCIPAL COM OS 3 CARDS ROXOS */}
         <Route path="/" element={<Index />} />

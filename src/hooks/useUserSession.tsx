@@ -25,7 +25,5 @@ export const useUserSession = () => {
     setUserRole: async () => ({ success: true }) // Legacy - not needed
   }), [userProfile, user, session, isLoading, isLoggedIn, logout, hasRole]);
 
-  // REMOVED: Logs excessivos que causavam spam no console
-  
   return sessionData;
 };
