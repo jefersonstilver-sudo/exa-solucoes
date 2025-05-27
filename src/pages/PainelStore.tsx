@@ -119,7 +119,7 @@ export default function PainelStore() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto px-4 md:px-6 py-8"
+        className="container mx-auto px-4 md:px-6 py-6"
       >
         {/* Promotional Welcome Banner */}
         <AnimatePresence>
@@ -129,39 +129,19 @@ export default function PainelStore() {
           />
         </AnimatePresence>
         
-        {/* Header da Loja Profissional */}
+        {/* Header Simplificado da Loja */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#3C1361] via-[#4A1B6B] to-[#3C1361] bg-clip-text text-transparent mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#3C1361] mb-2">
             Loja de Painéis Digitais
           </h1>
-          <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
-            Encontre o local perfeito para sua campanha publicitária. Nossa rede oferece os melhores pontos estratégicos da cidade.
+          <p className="text-lg text-gray-600">
+            Encontre o local perfeito para sua campanha publicitária
           </p>
-          
-          {/* Contador Dinâmico Sempre Visível */}
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-            className="inline-flex items-center bg-gradient-to-r from-[#3C1361]/10 via-[#4A1B6B]/10 to-[#3C1361]/10 text-[#3C1361] px-6 py-3 rounded-full border border-[#3C1361]/20 shadow-sm"
-          >
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-            <span className="font-semibold text-lg">
-              {isLoading ? (
-                <span className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#3C1361] mr-2"></div>
-                  Carregando...
-                </span>
-              ) : (
-                `${buildings.length} prédio${buildings.length !== 1 ? 's' : ''} disponível${buildings.length !== 1 ? 'eis' : ''}`
-              )}
-            </span>
-          </motion.div>
         </motion.div>
         
         {/* Layout Profissional Completo */}
