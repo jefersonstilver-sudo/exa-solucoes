@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { loadCartFromStorage, saveCartToStorage } from '@/services/cartStorageService';
 import { getPanelPrice } from '@/utils/checkoutUtils';
 
-// CORREÇÃO: Função pura para conversão
+// Função pura para conversão
 const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number }): CartItem => {
   return {
     id: `cart_${legacyItem.panel.id}_${Date.now()}`,
@@ -23,30 +23,25 @@ export const useCartState = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   
-  // CORREÇÃO: useCallback para funções estáveis
-  const loadInitialCart = useCallback(() => {
+  // Carregamento inicial - simplificado sem useCallback problemático
+  useEffect(() => {
     if (initialLoadDone) return;
     
-    console.log("useCartState: Carregando carrinho do localStorage (load inicial)");
+    console.log("useCartState: Carregando carrinho inicial");
     const loadedLegacyCart = loadCartFromStorage();
     const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
     
     setCartItems(fullCartItems);
     setInitialLoadDone(true);
     
-    console.log("useCartState: Carrinho inicial carregado:", fullCartItems);
+    console.log("useCartState: Carrinho carregado:", fullCartItems);
   }, [initialLoadDone]);
 
-  // CORREÇÃO: useEffect consolidado para carregamento inicial
-  useEffect(() => {
-    loadInitialCart();
-  }, [loadInitialCart]);
-
-  // CORREÇÃO: useEffect otimizado para salvamento
+  // Salvamento automático
   useEffect(() => {
     if (!initialLoadDone) return;
     
-    console.log("useCartState: Salvando carrinho no localStorage devido à mudança no estado:", cartItems);
+    console.log("useCartState: Salvando carrinho:", cartItems);
     
     const legacyCartItems = cartItems.map(item => ({
       panel: item.panel,
@@ -56,7 +51,7 @@ export const useCartState = () => {
     saveCartToStorage(legacyCartItems);
   }, [cartItems, initialLoadDone]);
 
-  // CORREÇÃO: useEffect otimizado para controle de drawer
+  // Controle do drawer
   useEffect(() => {
     if (cartItems.length > 0 && !isNavigating) {
       setCartOpen(true);

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
@@ -22,24 +22,16 @@ const CheckoutContainer = ({
   const navigate = useNavigate();
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   
-  // CORREÇÃO CRÍTICA: Todos os hooks SEMPRE executam na mesma ordem
-  // Usar useMemo para calcular estados sem afetar ordem de hooks
-  const authState = useMemo(() => {
-    return {
-      shouldRedirect: requireAuth && !isSessionLoading && !isLoggedIn,
-      shouldShowLoading: requireAuth && isSessionLoading,
-      shouldShowContent: !requireAuth || (!isSessionLoading && isLoggedIn)
-    };
-  }, [requireAuth, isSessionLoading, isLoggedIn]);
-
-  // ÚNICO useEffect para todas as verificações de autenticação
+  // TODOS os hooks sempre executam - apenas o conteúdo muda
+  
+  // Verificação de autenticação
   useEffect(() => {
-    // Log de acesso bem-sucedido
+    // Log de acesso
     if (isLoggedIn && user) {
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
-        `MEGA CHECKOUT: Usuário autenticado acessando step ${step}`,
+        `CheckoutContainer: Usuário autenticado acessando step ${step}`,
         { 
           userId: user.id, 
           step, 
@@ -49,9 +41,9 @@ const CheckoutContainer = ({
       );
     }
 
-    // Verificação de redirecionamento
-    if (authState.shouldRedirect) {
-      console.error("[CheckoutContainer] MEGA CHECKOUT: Usuário não autenticado");
+    // Redirecionamento se necessário
+    if (requireAuth && !isSessionLoading && !isLoggedIn) {
+      console.error("[CheckoutContainer] Usuário não autenticado");
       
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
@@ -63,10 +55,10 @@ const CheckoutContainer = ({
       toast.error("Você precisa estar logado para continuar");
       navigate('/login?redirect=/checkout');
     }
-  }, [isLoggedIn, user, step, title, authState.shouldRedirect, navigate]);
+  }, [isLoggedIn, user, step, title, requireAuth, isSessionLoading, navigate]);
 
-  // CORREÇÃO: Renderização baseada em estado computado, não em condições que afetam hooks
-  if (authState.shouldShowLoading) {
+  // Loading state
+  if (requireAuth && isSessionLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <motion.div
@@ -81,10 +73,12 @@ const CheckoutContainer = ({
     );
   }
   
-  if (authState.shouldRedirect) {
+  // Redirect state
+  if (requireAuth && !isSessionLoading && !isLoggedIn) {
     return null; // Will be redirected by the effect above
   }
   
+  // Main content
   return (
     <motion.div
       initial={{ opacity: 0 }}

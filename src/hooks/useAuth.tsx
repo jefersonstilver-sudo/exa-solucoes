@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, UserRole } from '@/types/userTypes';
@@ -10,8 +10,8 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // CORREÇÃO: Extrair role do JWT de forma otimizada
-  const extractUserRoleFromJWT = useCallback((session: Session | null): UserRole | null => {
+  // Função para extrair role do JWT
+  const extractUserRoleFromJWT = (session: Session | null): UserRole | null => {
     if (!session?.access_token) {
       return null;
     }
@@ -23,10 +23,10 @@ export const useAuth = () => {
       console.error('❌ Erro ao extrair role do JWT:', error);
       return null;
     }
-  }, []);
+  };
 
-  // CORREÇÃO: Criar perfil de forma otimizada
-  const createUserProfileFromSession = useCallback((session: Session | null): UserProfile | null => {
+  // Função para criar perfil do usuário
+  const createUserProfileFromSession = (session: Session | null): UserProfile | null => {
     if (!session?.user) {
       return null;
     }
@@ -39,34 +39,32 @@ export const useAuth = () => {
       role: userRole,
       data_criacao: session.user.created_at
     };
-  }, [extractUserRoleFromJWT]);
+  };
 
-  // CORREÇÃO: useEffect consolidado e otimizado
+  // Inicialização e listener de auth - simplificado
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        console.log('🔄 INDEXA AUTH: Inicializando autenticação...');
+        console.log('🔄 INDEXA AUTH: Inicializando...');
         
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (initialSession?.user && mounted) {
-          console.log('🔍 INDEXA AUTH: Sessão inicial encontrada para:', initialSession.user.email);
+          console.log('🔍 INDEXA AUTH: Sessão encontrada:', initialSession.user.email);
           setSession(initialSession);
           setUser(initialSession.user);
           
           const profile = createUserProfileFromSession(initialSession);
           setUserProfile(profile);
-        } else {
-          console.log('🔍 INDEXA AUTH: Nenhuma sessão inicial encontrada');
         }
         
         if (mounted) {
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('💥 Erro na inicialização de auth:', error);
+        console.error('💥 Erro na inicialização:', error);
         if (mounted) {
           setIsLoading(false);
         }
@@ -74,10 +72,10 @@ export const useAuth = () => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
         
-        console.log('🔄 INDEXA AUTH: Auth state changed:', event, session?.user?.email);
+        console.log('🔄 INDEXA AUTH: State changed:', event);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -99,10 +97,10 @@ export const useAuth = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [createUserProfileFromSession]);
+  }, []); // Dependências vazias para executar apenas uma vez
 
-  // CORREÇÃO: Funções otimizadas com useCallback
-  const logout = useCallback(async () => {
+  // Função de logout
+  const logout = async () => {
     console.log('🚪 INDEXA AUTH: Fazendo logout...');
     const { error } = await supabase.auth.signOut();
     if (!error) {
@@ -110,14 +108,13 @@ export const useAuth = () => {
       setSession(null);
       setUserProfile(null);
       localStorage.clear();
-      console.log('✅ INDEXA AUTH: Logout realizado com sucesso');
-    } else {
-      console.error('❌ Erro no logout:', error);
+      console.log('✅ INDEXA AUTH: Logout realizado');
     }
     return { success: !error, error };
-  }, []);
+  };
 
-  const hasRole = useCallback((requiredRole: string): boolean => {
+  // Função de verificação de role
+  const hasRole = (requiredRole: string): boolean => {
     if (!userProfile?.role) {
       return false;
     }
@@ -127,12 +124,10 @@ export const useAuth = () => {
     }
     
     return userProfile.role === requiredRole;
-  }, [userProfile?.role]);
+  };
 
-  // CORREÇÃO: Usar useMemo para valores computados
-  const isLoggedIn = useMemo(() => 
-    !!user && !!session && !!userProfile
-  , [user, session, userProfile]);
+  // Estado computado
+  const isLoggedIn = !!user && !!session && !!userProfile;
 
   return {
     user,
