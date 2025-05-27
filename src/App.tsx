@@ -16,6 +16,9 @@ import PainelStore from '@/pages/PainelStore';
 import BuildingStorePage from '@/pages/BuildingStore';
 import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
+import MyCampaigns from '@/pages/advertiser/MyCampaigns';
+import CampaignDetails from '@/pages/advertiser/CampaignDetails';
+import MyVideos from '@/pages/advertiser/MyVideos';
 import AdvertiserReports from '@/pages/advertiser/AdvertiserReports';
 import AdvertiserSettings from '@/pages/advertiser/AdvertiserSettings';
 import AuthHookTest from '@/pages/AuthHookTest';
@@ -57,14 +60,17 @@ const App = () => {
         <Route path="/paineis-digitais/loja" element={<PainelStore />} />
         <Route path="/paineis-digitais" element={<Navigate to="/loja" replace />} />
         
-        {/* ADVERTISER ROUTES WITH LAYOUT */}
+        {/* ADVERTISER ROUTES WITH LAYOUT - ESTRUTURA COMPLETA E CORRIGIDA */}
         <Route path="/anunciante" element={<AdvertiserLayout />}>
           <Route index element={<AdvertiserDashboard />} />
+          <Route path="campanhas" element={<MyCampaigns />} />
+          <Route path="campanhas/:id" element={<CampaignDetails />} />
+          <Route path="videos" element={<MyVideos />} />
           <Route path="relatorios" element={<AdvertiserReports />} />
           <Route path="configuracoes" element={<AdvertiserSettings />} />
         </Route>
         
-        {/* Client Routes */}
+        {/* Client Routes - apenas rotas não relacionadas ao anunciante */}
         <Route path="/client/*" element={<ClientRoutes />} />
         
         {/* Payment Routes */}
@@ -72,7 +78,7 @@ const App = () => {
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         
-        {/* Unified Pedidos Routes - CORREÇÃO: Rota direta sem redirecionamento */}
+        {/* Unified Pedidos Routes */}
         <Route path="/pedidos" element={<Pedidos />} />
         <Route path="/meus-pedidos" element={<Pedidos />} />
         
