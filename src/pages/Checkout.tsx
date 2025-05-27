@@ -1,175 +1,113 @@
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCheckout } from '@/hooks/useCheckout';
-import Layout from '@/components/layout/Layout';
-import CheckoutProgress from '@/components/checkout/CheckoutProgress';
-import StepRenderer from '@/components/checkout/StepRenderer';
+import { useUserSession } from '@/hooks/useUserSession';
 import CheckoutContainer from '@/components/checkout/CheckoutContainer';
 import PaymentGateway from '@/components/checkout/payment/PaymentGateway';
-import ErrorBoundary from '@/components/ui/ErrorBoundary';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import Layout from '@/components/layout/Layout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { toast } from 'sonner';
 
 const Checkout = () => {
-  // CORREÇÃO CRÍTICA: Todos os hooks SEMPRE executam na mesma ordem
-  const {
-    step,
-    STEPS,
-    selectedPlan,
-    setSelectedPlan,
-    couponCode,
-    setCouponCode,
-    couponDiscount,
-    couponMessage,
-    couponValid,
-    isValidatingCoupon,
-    acceptTerms,
-    setAcceptTerms,
-    isCreatingPayment,
-    isNavigating,
-    unavailablePanels,
-    cartItems,
-    validateCoupon,
-    handleNextStep,
-    handlePrevStep,
-    isNextEnabled,
-    PLANS,
-    calculateTotalPrice,
-    paymentMethod,
-    setPaymentMethod,
-    orderId
-  } = useCheckout();
-
-  const totalPrice = calculateTotalPrice();
-
-  // CORREÇÃO: Usar useMemo para cálculos que não afetam hooks
-  const isPaymentSelectionStep = useMemo(() => 
-    step === 2 && window.location.pathname === '/checkout'
-  , [step]);
-
-  // CORREÇÃO: useEffect consolidado para logs
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
+  const [totalAmount, setTotalAmount] = useState(0);
+  
+  // Get order ID from URL params
+  const orderId = searchParams.get('id') || searchParams.get('pedido');
+  
+  // Enhanced logging
   useEffect(() => {
+    console.log("[Checkout] Component mounted with params:", { 
+      orderId, 
+      isLoggedIn, 
+      isSessionLoading,
+      userId: user?.id 
+    });
+    
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      `MEGA CHECKOUT: Página principal carregada, step: ${step}`,
-      { step, totalPrice, cartItemsCount: cartItems.length }
+      "Checkout page loaded",
+      { 
+        orderId, 
+        isLoggedIn, 
+        isSessionLoading,
+        userId: user?.id,
+        timestamp: new Date().toISOString() 
+      }
     );
-  }, [step, totalPrice, cartItems.length]);
+  }, [orderId, isLoggedIn, isSessionLoading, user]);
 
-  // CORREÇÃO: Componente de erro para capturar falhas de hooks
-  if (isPaymentSelectionStep) {
-    console.log("[Checkout] MEGA CHECKOUT: Renderizando PaymentGateway");
-    
+  // Calculate total amount from cart or localStorage
+  useEffect(() => {
+    try {
+      const cartItems = JSON.parse(localStorage.getItem('indexa_cart') || '[]');
+      const total = cartItems.reduce((sum: number, item: any) => sum + (item.price || 0), 0);
+      setTotalAmount(total);
+      
+      console.log("[Checkout] Cart total calculated:", total);
+    } catch (error) {
+      console.error("[Checkout] Error calculating total:", error);
+      setTotalAmount(0);
+    }
+  }, []);
+
+  // Redirect handler with enhanced logging
+  const handleRefreshStatus = async (): Promise<void> => {
+    console.log("[Checkout] Refresh status called");
+    // Status refresh logic will be handled by the payment component
+  };
+
+  // Authentication check with proper error handling
+  if (isSessionLoading) {
     return (
-      <ErrorBoundary>
-        <Layout>
-          <CheckoutContainer step={step} title="Seleção de Pagamento" requireAuth={true}>
-            <PaymentGateway
-              orderId={orderId || 'temp-order'}
-              totalAmount={totalPrice}
-              onRefreshStatus={() => Promise.resolve()}
-            />
-          </CheckoutContainer>
-        </Layout>
-      </ErrorBoundary>
+      <CheckoutContainer>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="h-8 w-8 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </CheckoutContainer>
     );
   }
 
+  if (!isLoggedIn) {
+    return null; // CheckoutContainer will handle redirect
+  }
+
+  if (!user?.id) {
+    console.error("[Checkout] User authenticated but no user ID available");
+    toast.error("Erro de autenticação. Tente fazer login novamente.");
+    navigate('/login?redirect=/checkout');
+    return null;
+  }
+
+  if (!orderId) {
+    console.error("[Checkout] No order ID provided");
+    toast.error("ID do pedido não encontrado");
+    navigate('/');
+    return null;
+  }
+
+  console.log("[Checkout] Rendering PaymentGateway with:", {
+    orderId,
+    totalAmount,
+    userId: user.id,
+    userEmail: user.email
+  });
+
   return (
-    <ErrorBoundary>
+    <CheckoutContainer requireAuth={true} step={2} title="Pagamento">
       <Layout>
-        <CheckoutContainer step={step} title="Checkout" requireAuth={true}>
-          <div className="min-h-screen bg-gray-50 py-8">
-            <div className="container mx-auto px-4 max-w-4xl">
-              {/* Timeline Progress */}
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-sm border p-6 mb-8"
-              >
-                <CheckoutProgress currentStep={step} />
-              </motion.div>
-
-              {/* Main Content */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white rounded-xl shadow-sm border p-6 sm:p-8"
-              >
-                <StepRenderer
-                  step={step}
-                  cartItems={cartItems}
-                  unavailablePanels={unavailablePanels}
-                  selectedPlan={selectedPlan}
-                  setSelectedPlan={setSelectedPlan}
-                  PLANS={PLANS}
-                  couponCode={couponCode}
-                  setCouponCode={setCouponCode}
-                  validateCoupon={validateCoupon}
-                  isValidatingCoupon={isValidatingCoupon}
-                  couponMessage={couponMessage}
-                  couponValid={couponValid}
-                  acceptTerms={acceptTerms}
-                  setAcceptTerms={setAcceptTerms}
-                  totalPrice={totalPrice}
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                />
-              </motion.div>
-
-              {/* Navigation */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="flex justify-between items-center mt-8"
-              >
-                <Button
-                  variant="outline"
-                  onClick={handlePrevStep}
-                  disabled={step === 0}
-                  className="flex items-center space-x-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Voltar</span>
-                </Button>
-
-                <div className="text-center">
-                  <p className="text-lg font-semibold text-gray-900">
-                    Total: R$ {totalPrice.toFixed(2)}
-                  </p>
-                  {couponValid && couponDiscount > 0 && (
-                    <p className="text-sm text-green-600">
-                      Desconto aplicado: {couponDiscount}%
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  onClick={() => handleNextStep(paymentMethod)}
-                  disabled={!isNextEnabled || isCreatingPayment || isNavigating}
-                  className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90"
-                >
-                  <span>
-                    {step === STEPS.PAYMENT ? 'Escolher Pagamento' : 
-                     step === STEPS.UPLOAD ? 'Concluir' : 'Continuar'}
-                  </span>
-                  {(isCreatingPayment || isNavigating) ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4" />
-                  )}
-                </Button>
-              </motion.div>
-            </div>
-          </div>
-        </CheckoutContainer>
+        <PaymentGateway
+          orderId={orderId}
+          totalAmount={totalAmount}
+          onRefreshStatus={handleRefreshStatus}
+          userId={user.id} // CRITICAL: Passar userId corretamente
+        />
       </Layout>
-    </ErrorBoundary>
+    </CheckoutContainer>
   );
 };
 

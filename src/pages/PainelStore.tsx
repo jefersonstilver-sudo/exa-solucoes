@@ -103,13 +103,7 @@ export default function PainelStore() {
   }
 
   return (
-    <Layout 
-      cartItems={cartItems}
-      onRemoveFromCart={handleRemoveFromCart}
-      onClearCart={handleClearCart}
-      onChangeDuration={handleChangeDuration}
-      onProceedToCheckout={handleCheckoutStart}
-    >
+    <Layout>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

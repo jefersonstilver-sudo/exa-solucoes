@@ -6,7 +6,7 @@ import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 interface PixPaymentDebuggerProps {
-  paymentData: PixPaymentData;
+  paymentData: PixPaymentData | null;
   error: string | null;
   isLoading: boolean;
   pedidoId: string | null;
@@ -39,7 +39,7 @@ const PixPaymentDebugger: React.FC<PixPaymentDebuggerProps> = ({
         "Manual refresh initiated from debug panel",
         { 
           pedidoId,
-          paymentId: paymentData.paymentId,
+          paymentId: paymentData?.paymentId || 'N/A',
           timestamp: new Date().toISOString() 
         }
       );
@@ -77,35 +77,68 @@ const PixPaymentDebugger: React.FC<PixPaymentDebuggerProps> = ({
       
       {isDebugExpanded && (
         <div className="p-4 text-sm">
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-white p-2 rounded border border-gray-200">
-              <div className="font-medium text-gray-700 mb-1">Status</div>
-              <div className={`text-sm ${paymentData.status === 'approved' ? 'text-green-600' : 'text-orange-500'}`}>
-                {paymentData.status || 'Unknown'}
+          {/* Payment Data Section */}
+          {paymentData ? (
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="bg-white p-2 rounded border border-gray-200">
+                <div className="font-medium text-gray-700 mb-1">Status</div>
+                <div className={`text-sm ${paymentData.status === 'approved' ? 'text-green-600' : 'text-orange-500'}`}>
+                  {paymentData.status || 'Unknown'}
+                </div>
+              </div>
+              <div className="bg-white p-2 rounded border border-gray-200">
+                <div className="font-medium text-gray-700 mb-1">Total</div>
+                <div className="text-sm">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paymentData.valorTotal || 0)}
+                </div>
+              </div>
+              <div className="bg-white p-2 rounded border border-gray-200">
+                <div className="font-medium text-gray-700 mb-1">Payment ID</div>
+                <div className="text-sm font-mono text-xs truncate">{paymentData.paymentId || 'N/A'}</div>
+              </div>
+              <div className="bg-white p-2 rounded border border-gray-200">
+                <div className="font-medium text-gray-700 mb-1">Order ID</div>
+                <div className="text-sm font-mono text-xs truncate">{pedidoId || 'N/A'}</div>
+              </div>
+              <div className="bg-white p-2 rounded border border-gray-200 col-span-2">
+                <div className="font-medium text-gray-700 mb-1">QR Code Status</div>
+                <div className="text-sm">
+                  {paymentData.qrCodeBase64 ? (
+                    <span className="text-green-600">✓ QR Code disponível ({paymentData.qrCodeBase64.length} chars)</span>
+                  ) : (
+                    <span className="text-red-600">✗ QR Code não disponível</span>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="bg-white p-2 rounded border border-gray-200">
-              <div className="font-medium text-gray-700 mb-1">Total</div>
-              <div className="text-sm">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paymentData.valorTotal || 0)}
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 p-2 rounded mb-4">
+              <div className="font-medium text-yellow-700 mb-1">Sem Dados de Pagamento</div>
+              <div className="text-sm text-yellow-600">
+                {isLoading ? 'Carregando dados...' : 'Nenhum dado de pagamento PIX encontrado'}
               </div>
             </div>
-            <div className="bg-white p-2 rounded border border-gray-200">
-              <div className="font-medium text-gray-700 mb-1">Payment ID</div>
-              <div className="text-sm font-mono text-xs truncate">{paymentData.paymentId || 'N/A'}</div>
-            </div>
-            <div className="bg-white p-2 rounded border border-gray-200">
-              <div className="font-medium text-gray-700 mb-1">Order ID</div>
-              <div className="text-sm font-mono text-xs truncate">{pedidoId || 'N/A'}</div>
-            </div>
-          </div>
+          )}
           
+          {/* Error Section */}
           {error && (
             <div className="bg-red-50 border border-red-200 p-2 rounded mb-4">
               <div className="font-medium text-red-700 mb-1">Error</div>
               <div className="text-sm text-red-600">{error}</div>
             </div>
           )}
+          
+          {/* Debug Info */}
+          <div className="bg-gray-50 border border-gray-200 p-2 rounded mb-4">
+            <div className="font-medium text-gray-700 mb-1">Debug Info</div>
+            <div className="text-xs space-y-1">
+              <div>Pedido ID: {pedidoId || 'N/A'}</div>
+              <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
+              <div>Has Error: {error ? 'Yes' : 'No'}</div>
+              <div>Has Payment Data: {paymentData ? 'Yes' : 'No'}</div>
+              <div>Timestamp: {new Date().toLocaleString('pt-BR')}</div>
+            </div>
+          </div>
           
           <Button 
             variant="outline"

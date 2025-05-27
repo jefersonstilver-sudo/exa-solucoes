@@ -7,6 +7,9 @@ export interface UserProfile {
   id: string;
   email: string;
   name?: string;
+  nome?: string; // Adicionar campo nome
+  documento?: string; // Adicionar campo documento
+  telefone?: string; // Adicionar campo telefone
   avatar_url?: string;
   role?: UserRole;
   data_criacao?: string;
