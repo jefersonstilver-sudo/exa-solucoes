@@ -7,9 +7,12 @@ export interface UserProfile {
   id: string;
   email: string;
   name?: string;
+  nome?: string; // Portuguese name field
   avatar_url?: string;
   role?: UserRole;
   data_criacao?: string;
+  documento?: string; // CPF/CNPJ
+  telefone?: string; // Phone number
 }
 
 export interface UserSessionState {

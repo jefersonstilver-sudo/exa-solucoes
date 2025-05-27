@@ -98,11 +98,11 @@ const Configuracoes = () => {
               <CardContent>
                 <div className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-[#3C1361] rounded-full flex items-center justify-center text-white text-xl font-bold">
-                    {(user.nome || user.email)?.substring(0, 2).toUpperCase()}
+                    {(user.nome || user.name || user.email)?.substring(0, 2).toUpperCase()}
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">
-                      {user.nome || 'Nome não definido'}
+                      {user.nome || user.name || 'Nome não definido'}
                     </h3>
                     <p className="text-gray-600">{user.email}</p>
                     <p className="text-sm text-gray-500">

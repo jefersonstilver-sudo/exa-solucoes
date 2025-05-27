@@ -45,7 +45,7 @@ const UserDropdown = () => {
 
   if (!user) return null;
 
-  const userName = user.nome || user.email?.split('@')[0] || 'Usuário';
+  const userName = user.nome || user.name || user.email?.split('@')[0] || 'Usuário';
   const userInitials = userName.substring(0, 2).toUpperCase();
 
   return (

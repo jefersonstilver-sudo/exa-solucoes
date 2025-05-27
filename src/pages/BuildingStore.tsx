@@ -71,13 +71,7 @@ export default function BuildingStorePage() {
   }
 
   return (
-    <Layout 
-      cartItems={cartItems}
-      onRemoveFromCart={handleRemoveFromCart}
-      onClearCart={handleClearCart}
-      onChangeDuration={handleChangeDuration}
-      onProceedToCheckout={handleProceedToCheckout}
-    >
+    <Layout>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

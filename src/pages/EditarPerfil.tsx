@@ -31,7 +31,7 @@ const EditarPerfil = () => {
 
     if (user) {
       setFormData({
-        nome: user.nome || '',
+        nome: user.nome || user.name || '',
         email: user.email || '',
         documento: user.documento || '',
         telefone: user.telefone || ''
@@ -56,8 +56,11 @@ const EditarPerfil = () => {
       const { error: authError } = await supabase.auth.updateUser({
         data: {
           name: formData.nome,
+          nome: formData.nome,
           document: formData.documento,
-          phone: formData.telefone
+          documento: formData.documento,
+          phone: formData.telefone,
+          telefone: formData.telefone
         }
       });
 
