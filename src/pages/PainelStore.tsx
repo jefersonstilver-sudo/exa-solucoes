@@ -2,54 +2,35 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
-import { usePanelStore } from '@/hooks/usePanelStore';
+import { useSimpleBuildingStore } from '@/hooks/useSimpleBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import CheckoutDebugger from '@/components/debug/CheckoutDebugger';
-import { useDebugCheckout } from '@/hooks/useDebugCheckout';
-import PanelDebugActions from '@/components/panel-store/PanelDebugActions';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
-import StoreLayout from '@/components/panel-store/StoreLayout';
+import SimpleBuildingGrid from '@/components/building-store/SimpleBuildingGrid';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PainelStore() {
-  // Use our custom hooks for state management
+  console.log('🏢 [PAINEL STORE] === INICIALIZANDO LOJA DE PRÉDIOS ===');
+
+  // Building store state (usando o hook correto)
   const {
-    panels,
+    buildings,
     isLoading,
     error,
-    searchLocation,
-    setSearchLocation,
-    selectedLocation,
-    isSearching,
-    filters,
-    handleFilterChange,
-    handleSearch,
-    handleClearLocation
-  } = usePanelStore();
+    refetch
+  } = useSimpleBuildingStore();
 
   const {
     cartItems,
-    cartOpen,
-    setCartOpen,
     handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
-    cartAnimation,
     handleProceedToCheckout
   } = useCartManager();
 
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
-  
-  // Debug checkout hook
-  const { 
-    debugModalOpen, 
-    setDebugModalOpen, 
-    directGoToCheckout 
-  } = useDebugCheckout(cartItems);
 
   // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
@@ -60,39 +41,38 @@ export default function PainelStore() {
     }
   }, [isLoggedIn, cartItems.length]);
 
-  // Log quando handleProceedToCheckout é chamado
+  // Log do estado atual
+  useEffect(() => {
+    console.log('🔄 [PAINEL STORE] === ESTADO ATUAL ===');
+    console.log('🔄 [PAINEL STORE] buildings.length:', buildings.length);
+    console.log('🔄 [PAINEL STORE] isLoading:', isLoading);
+    console.log('🔄 [PAINEL STORE] error:', error);
+    console.log('🔄 [PAINEL STORE] cartItems.length:', cartItems.length);
+  }, [buildings, isLoading, error, cartItems.length]);
+
   const handleCheckoutStart = () => {
     logCheckoutEvent(
       CheckoutEvent.CHECKOUT_INITIATION,
       LogLevel.INFO,
-      "Iniciando checkout a partir da loja",
+      "Iniciando checkout a partir da loja de prédios",
       { cartItemCount: cartItems.length, timestamp: Date.now() }
     );
     handleProceedToCheckout();
   };
 
-  // Modified to match the expected signature without parameters
-  const handleDirectGoToCheckout = () => {
-    console.log("Redirecting to checkout directly");
-    directGoToCheckout(new MouseEvent('click') as unknown as React.MouseEvent);
-  };
-
-  // Handler to open debug modal
-  const handleOpenDebugger = () => {
-    console.log("Opening debug modal");
-    setDebugModalOpen(true);
-  };
-
   if (error) {
+    console.error('❌ [PAINEL STORE] Erro na loja:', error);
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
-          <h2 className="text-2xl font-semibold text-red-500 mb-4">Erro ao carregar painéis</h2>
+          <h2 className="text-2xl font-semibold text-red-500 mb-4">
+            Erro ao carregar prédios
+          </h2>
           <p className="text-muted-foreground mb-6">
-            Ocorreu um problema ao buscar os painéis disponíveis. Por favor, tente novamente.
+            Ocorreu um problema ao buscar os prédios disponíveis. Por favor, tente novamente.
           </p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => refetch()} 
             className="px-4 py-2 bg-[#3C1361] text-white rounded-md hover:bg-[#3C1361]/80"
           >
             Tentar novamente
@@ -103,21 +83,19 @@ export default function PainelStore() {
   }
 
   return (
-    <Layout>
+    <Layout 
+      cartItems={cartItems}
+      onRemoveFromCart={handleRemoveFromCart}
+      onClearCart={handleClearCart}
+      onChangeDuration={handleChangeDuration}
+      onProceedToCheckout={handleCheckoutStart}
+    >
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 md:px-6 py-8"
       >
-        {/* Debug panel for diagnostics */}
-        <PanelDebugActions 
-          cartItemsCount={cartItems.length}
-          onProceedToCheckout={handleCheckoutStart}
-          directGoToCheckout={handleDirectGoToCheckout}
-          onOpenDebugger={handleOpenDebugger}
-        />
-      
         {/* Promotional Welcome Banner */}
         <AnimatePresence>
           <PromotionBanner 
@@ -126,29 +104,30 @@ export default function PainelStore() {
           />
         </AnimatePresence>
         
-        {/* Store Layout - Search, Filter Sidebar, and Panel Cards */}
-        <StoreLayout 
-          panels={panels}
+        {/* Header da Loja com Contagem */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#3C1361] mb-2">
+            Loja de Painéis Digitais
+          </h1>
+          <p className="text-gray-600 mb-4">
+            Selecione um prédio para anunciar seus produtos e serviços
+          </p>
+          
+          {/* Contagem sempre visível */}
+          <div className="inline-flex items-center bg-[#3C1361]/10 text-[#3C1361] px-4 py-2 rounded-full">
+            <span className="font-semibold">
+              {isLoading ? 'Carregando...' : `${buildings.length} prédio${buildings.length !== 1 ? 's' : ''} disponível${buildings.length !== 1 ? 'eis' : ''}`}
+            </span>
+          </div>
+        </div>
+        
+        {/* Grid de Prédios Simplificado */}
+        <SimpleBuildingGrid 
+          buildings={buildings}
           isLoading={isLoading}
-          isSearching={isSearching}
-          searchLocation={searchLocation}
-          setSearchLocation={setSearchLocation}
-          selectedLocation={selectedLocation}
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          handleSearch={handleSearch}
-          handleClearLocation={handleClearLocation}
-          cartItems={cartItems}
           onAddToCart={handleAddToCart}
         />
       </motion.div>
-      
-      {/* Modal de diagnóstico - Fixed with proper accessibility attributes */}
-      <Dialog open={debugModalOpen} onOpenChange={setDebugModalOpen}>
-        <DialogContent className="sm:max-w-md p-0">
-          <CheckoutDebugger onClose={() => setDebugModalOpen(false)} />
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 }

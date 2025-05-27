@@ -15,6 +15,7 @@ interface SimpleBuildingGridProps {
 
 // Adapter para converter SimpleBuildingStore para BuildingStore
 const convertToBuildingStore = (building: SimpleBuildingStore) => {
+  console.log('🔄 [SIMPLE GRID] Convertendo prédio:', building.nome);
   return {
     id: building.id,
     nome: building.nome,
@@ -50,11 +51,17 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
   if (isLoading) {
     console.log('🔄 [SIMPLE GRID] Mostrando loading...');
     return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, index) => (
-          <div key={index} className="animate-pulse">
-            <div className="bg-gray-200 h-56 rounded-xl"></div>
-          </div>
+      <div className="space-y-6">
+        {[...Array(4)].map((_, index) => (
+          <motion.div 
+            key={index} 
+            className="animate-pulse"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+          >
+            <div className="bg-gray-200 h-64 rounded-xl"></div>
+          </motion.div>
         ))}
       </div>
     );
@@ -66,15 +73,15 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center py-12"
+        className="text-center py-16"
       >
-        <div className="flex flex-col items-center space-y-3">
-          <Building2 className="h-12 w-12 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-700">
+        <div className="flex flex-col items-center space-y-4">
+          <Building2 className="h-16 w-16 text-gray-400" />
+          <h3 className="text-xl font-semibold text-gray-700">
             Nenhum prédio disponível
           </h3>
-          <p className="text-gray-500 max-w-md text-sm">
-            Não encontramos prédios ativos em nossa rede no momento.
+          <p className="text-gray-500 max-w-md">
+            Não encontramos prédios ativos em nossa rede no momento. Nossa equipe está trabalhando para adicionar mais locais.
           </p>
         </div>
       </motion.div>
@@ -84,19 +91,21 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
   console.log('✅ [SIMPLE GRID] EXIBINDO', buildings.length, 'prédios');
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {buildings.map((building, index) => {
         console.log(`🏢 [SIMPLE GRID] Renderizando prédio ${index + 1}: ${building.nome}`);
-        // CORREÇÃO CRÍTICA: Converter SimpleBuildingStore para BuildingStore
         const convertedBuilding = convertToBuildingStore(building);
-        console.log(`🔄 [SIMPLE GRID] Prédio convertido:`, convertedBuilding);
         
         return (
           <motion.div
             key={building.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+            whileHover={{ 
+              y: -2,
+              transition: { duration: 0.2 }
+            }}
           >
             <BuildingStoreCard
               building={convertedBuilding}
