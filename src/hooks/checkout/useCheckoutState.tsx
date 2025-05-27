@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
 import { PlanKey } from '@/types/checkout';
 

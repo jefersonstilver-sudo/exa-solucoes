@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { loadCartFromStorage, saveCartToStorage } from '@/services/cartStorageService';
