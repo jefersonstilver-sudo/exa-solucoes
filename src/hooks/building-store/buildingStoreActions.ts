@@ -47,7 +47,8 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       console.log('🔄 [BUILDING STORE] Coordenadas fornecidas:', { lat, lng });
       set({ loading: true, isLoading: true, error: null });
       
-      const buildings = await fetchBuildingsForStore(lat, lng, get().filters.radius);
+      // CORREÇÃO: Chamar sem argumentos, pois a função não aceita parâmetros
+      const buildings = await fetchBuildingsForStore();
       console.log('📊 [BUILDING STORE] Prédios recebidos do service:', buildings.length);
       
       buildings.forEach((building, index) => {
@@ -113,7 +114,8 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
         searchLocation: location
       });
       
-      await get().fetchBuildings(coordinates.lat, coordinates.lng);
+      // CORREÇÃO: Chamar sem argumentos
+      await get().fetchBuildings();
       set({ isSearching: false });
       
     } catch (error) {
