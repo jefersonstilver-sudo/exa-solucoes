@@ -3,10 +3,10 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import CheckoutProgress from '@/components/checkout/CheckoutProgress';
+import PaymentProgressHeader from '@/components/checkout/payment/PaymentProgressHeader';
 import ReviewStep from '@/components/checkout/ReviewStep';
-import { useCheckout } from '@/hooks/useCheckout';
 import { useUserSession } from '@/hooks/useUserSession';
+import { useCheckout } from '@/hooks/useCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,18 +16,14 @@ const CheckoutSummary = () => {
   const { isLoggedIn, user, isLoading } = useUserSession();
   
   const {
-    handleNextStep,
-    handlePrevStep,
+    cartItems,
     calculateTotalPrice,
     couponValid,
-    couponDiscount,
-    isNavigating,
-    cartItems
+    couponDiscount
   } = useCheckout();
 
-  // CRITICAL: Verificação de autenticação simplificada e otimizada
+  // Verificação de autenticação otimizada
   useEffect(() => {
-    // Aguardar carregamento completo do estado de auth
     if (isLoading) return;
     
     if (!isLoggedIn || !user?.id) {
@@ -37,7 +33,7 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CRITICAL: Validação do carrinho - debounced
+  // Validação do carrinho
   useEffect(() => {
     if (isLoading) return;
     
@@ -50,7 +46,16 @@ const CheckoutSummary = () => {
 
   const totalPrice = calculateTotalPrice();
 
-  // FIXED: Loading state otimizado
+  const handleBack = () => {
+    navigate('/checkout/cupom');
+  };
+
+  const handleNext = () => {
+    // Navegação direta e simples para a página de pagamento
+    navigate('/checkout');
+  };
+
+  // Loading state
   if (isLoading) {
     return (
       <Layout>
@@ -68,24 +73,17 @@ const CheckoutSummary = () => {
     );
   }
 
-  // REMOVED: Múltiplos estados de loading que causavam piscadas
-
   return (
     <Layout>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="min-h-screen bg-gray-50 py-8"
-      >
-        <div className="container mx-auto px-4 max-w-4xl">
-          {/* Timeline Progress */}
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          {/* Progress Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm border p-6 mb-8"
+            className="mb-8"
           >
-            <CheckoutProgress currentStep={2} />
+            <PaymentProgressHeader currentStep={1} />
           </motion.div>
 
           {/* Main Content */}
@@ -93,24 +91,9 @@ const CheckoutSummary = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-sm border p-6 sm:p-8"
+            className="bg-white rounded-xl shadow-lg border p-6 sm:p-8"
           >
-            <div className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <h2 className="text-xl font-semibold flex items-center">
-                  <span className="mr-2 text-2xl">📋</span>
-                  Revisão do Pedido
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Confirme os detalhes da sua campanha antes de prosseguir
-                </p>
-              </motion.div>
-              <ReviewStep />
-            </div>
+            <ReviewStep />
           </motion.div>
 
           {/* Navigation */}
@@ -118,18 +101,18 @@ const CheckoutSummary = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex justify-between items-center mt-8"
+            className="flex flex-col sm:flex-row justify-between items-center mt-8 gap-4"
           >
             <Button
               variant="outline"
-              onClick={handlePrevStep}
-              className="flex items-center space-x-2"
+              onClick={handleBack}
+              className="flex items-center space-x-2 w-full sm:w-auto"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Voltar</span>
             </Button>
 
-            <div className="text-center">
+            <div className="text-center order-first sm:order-none">
               <p className="text-lg font-semibold text-gray-900">
                 Total: R$ {totalPrice.toFixed(2)}
               </p>
@@ -141,20 +124,16 @@ const CheckoutSummary = () => {
             </div>
 
             <Button
-              onClick={() => handleNextStep('pix')}
-              disabled={isNavigating || !isLoggedIn || cartItems.length === 0}
-              className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90"
+              onClick={handleNext}
+              disabled={!isLoggedIn || cartItems.length === 0}
+              className="flex items-center space-x-2 bg-[#1E1B4B] hover:bg-[#1E1B4B]/90 w-full sm:w-auto"
             >
               <span>Ir para Pagamento</span>
-              {isNavigating ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <ArrowRight className="h-4 w-4" />
-              )}
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </motion.div>
         </div>
-      </motion.div>
+      </div>
     </Layout>
   );
 };

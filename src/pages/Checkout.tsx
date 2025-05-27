@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Shield, Lock, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import PaymentMethodCard from '@/components/checkout/payment/PaymentMethodCard';
 import PaymentProgressHeader from '@/components/checkout/payment/PaymentProgressHeader';
@@ -17,6 +19,7 @@ const Checkout = () => {
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [totalAmount, setTotalAmount] = useState(0);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   
   const orderId = searchParams.get('id') || searchParams.get('pedido');
   
@@ -48,13 +51,19 @@ const Checkout = () => {
   };
 
   const handlePixPayment = () => {
-    // Temporariamente sem ação - preparado para webhook
+    if (!acceptTerms) {
+      toast.error("Você precisa aceitar os termos para continuar");
+      return;
+    }
     toast.info("Método PIX será configurado em breve!");
   };
 
   const handleCreditCardPayment = () => {
+    if (!acceptTerms) {
+      toast.error("Você precisa aceitar os termos para continuar");
+      return;
+    }
     toast.info("Redirecionando para pagamento com cartão...");
-    // Aqui seria a lógica do cartão de crédito
   };
 
   if (isSessionLoading) {
@@ -112,7 +121,7 @@ const Checkout = () => {
                 transition={{ delay: 0.1 }}
               >
                 <Card className="shadow-lg border-0">
-                  <CardContent className="p-8">
+                  <CardContent className="p-6 sm:p-8">
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">
                       Como você deseja pagar?
                     </h2>
@@ -120,7 +129,7 @@ const Checkout = () => {
                       Escolha a forma de pagamento que preferir
                     </p>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 mb-8">
                       {/* PIX Payment Method */}
                       <PaymentMethodCard
                         id="pix"
@@ -148,17 +157,47 @@ const Checkout = () => {
                       />
                     </div>
 
+                    {/* Terms acceptance */}
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="flex items-start space-x-3 mb-8 p-4 bg-gray-50 rounded-lg"
+                    >
+                      <Checkbox 
+                        id="terms" 
+                        checked={acceptTerms} 
+                        onCheckedChange={(checked) => setAcceptTerms(!!checked)}
+                        className="h-5 w-5 mt-0.5 border-gray-300 text-[#1E1B4B] focus:ring-[#1E1B4B]"
+                      />
+                      <Label 
+                        htmlFor="terms" 
+                        className="text-sm text-gray-600 cursor-pointer leading-relaxed"
+                      >
+                        Li e concordo com os{' '}
+                        <a href="/termos" className="text-[#1E1B4B] hover:underline font-medium">
+                          Termos de Uso
+                        </a>{' '}
+                        e a{' '}
+                        <a href="/privacidade" className="text-[#1E1B4B] hover:underline font-medium">
+                          Política de Privacidade
+                        </a>
+                        .
+                      </Label>
+                    </motion.div>
+
                     {/* Payment button */}
                     {selectedMethod && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-8"
+                        className="space-y-3"
                       >
                         {selectedMethod === 'pix' ? (
                           <Button
                             onClick={handlePixPayment}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white py-4 text-lg font-semibold rounded-xl"
+                            disabled={!acceptTerms}
+                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 text-lg font-semibold rounded-xl transition-colors"
                             size="lg"
                           >
                             Pagar com PIX - R$ {pixAmount.toFixed(2)}
@@ -166,11 +205,18 @@ const Checkout = () => {
                         ) : (
                           <Button
                             onClick={handleCreditCardPayment}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 text-lg font-semibold rounded-xl"
+                            disabled={!acceptTerms}
+                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 text-lg font-semibold rounded-xl transition-colors"
                             size="lg"
                           >
                             Pagar com Cartão - R$ {totalAmount.toFixed(2)}
                           </Button>
+                        )}
+                        
+                        {!acceptTerms && selectedMethod && (
+                          <p className="text-sm text-amber-600 text-center">
+                            ⚠️ Aceite os termos para continuar
+                          </p>
                         )}
                       </motion.div>
                     )}
@@ -179,13 +225,13 @@ const Checkout = () => {
               </motion.div>
             </div>
 
-            {/* Summary sidebar */}
+            {/* Summary sidebar - responsivo */}
             <div className="lg:col-span-1">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="space-y-6"
+                className="space-y-6 sticky top-8"
               >
                 {/* Order summary */}
                 <Card className="shadow-lg border-0">

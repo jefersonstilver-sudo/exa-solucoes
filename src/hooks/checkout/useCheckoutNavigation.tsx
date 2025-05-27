@@ -61,7 +61,7 @@ export const useCheckoutNavigation = ({
       case 0: // COUPON step
         return true;
       case 1: // SUMMARY step  
-        return cartItems.length > 0 && sessionUser?.id; // CRITICAL: Require authentication
+        return cartItems.length > 0 && sessionUser?.id;
       case 2: // PAYMENT METHOD SELECTION step
         return true;
       case 3: // UPLOAD step
@@ -85,7 +85,7 @@ export const useCheckoutNavigation = ({
     }
   }, [step, navigate, setStep]);
 
-  // CRITICAL FIX: Enhanced navigation with proper authentication validation
+  // Navegação simplificada e direta
   const handleNextStep = useCallback(async (paymentMethod = 'pix') => {
     console.log("[useCheckoutNavigation] handleNextStep iniciado", {
       step,
@@ -95,13 +95,13 @@ export const useCheckoutNavigation = ({
       cartItems: cartItems.length
     });
   
-    // CRITICAL: Prevent duplicate navigation
+    // Prevenir navegação dupla
     if (isNavigating) {
       console.warn('[useCheckoutNavigation] Navigation already in progress');
       return;
     }
 
-    // CRITICAL: Validate authentication first
+    // Validar autenticação
     if (!sessionUser?.id) {
       console.error('[useCheckoutNavigation] User not authenticated');
       sonnerToast.error("Você precisa estar logado para continuar");
@@ -112,18 +112,18 @@ export const useCheckoutNavigation = ({
     setIsNavigating(true);
     
     try {
-      // Check if can proceed
+      // Validar se pode prosseguir
       if (!isNextEnabled()) {
         console.warn('[useCheckoutNavigation] Navigation blocked - requirements not met');
         setIsNavigating(false);
         return;
       }
 
-      // CRITICAL FIX: Step 1 (RESUMO) - Create order and navigate to checkout
+      // NAVEGAÇÃO DIRETA E SIMPLES
       if (step === 1) {
-        console.log('[useCheckoutNavigation] Step 1 -> 2 - Creating order and navigating to checkout');
+        // Do resumo para pagamento - navegação direta
+        console.log('[useCheckoutNavigation] Step 1 -> 2 - Direct navigation to checkout');
         
-        // Validate required data
         if (cartItems.length === 0) {
           sonnerToast.error("Carrinho vazio");
           setIsNavigating(false);
@@ -136,68 +136,21 @@ export const useCheckoutNavigation = ({
           return;
         }
 
-        try {
-          // Calculate total price
-          const totalPrice = cartItems.reduce((total, item) => {
-            const pricePerPanel = item.panel.buildings?.basePrice || 250;
-            return total + pricePerPanel;
-          }, 0);
-
-          // Apply coupon discount if valid
-          let finalPrice = totalPrice;
-          if (couponValid && couponDiscount > 0) {
-            const discount = (totalPrice * couponDiscount) / 100;
-            finalPrice = totalPrice - discount;
-          }
-
-          // Create order using createPayment
-          const paymentOptions = {
-            sessionUser,
-            cartItems,
-            selectedPlan,
-            totalPrice: finalPrice,
-            couponId,
-            startDate,
-            endDate,
-            paymentMethod: 'pix'
-          };
-
-          console.log('[useCheckoutNavigation] Creating order with:', paymentOptions);
-          
-          const result = await createPayment(paymentOptions);
-          
-          if (result && result.pedidoId) {
-            // Success! Navigate to checkout with orderId
-            logCheckoutEvent(
-              CheckoutEvent.NAVIGATION_EVENT,
-              LogLevel.INFO,
-              'Order created successfully, navigating to checkout',
-              { pedidoId: result.pedidoId, totalPrice: finalPrice }
-            );
-            
-            navigate(`/checkout?id=${result.pedidoId}`);
-            setStep(2);
-          } else {
-            console.error('[useCheckoutNavigation] Invalid result from createPayment:', result);
-            sonnerToast.error("Erro ao criar pedido. Tente novamente.");
-          }
-        } catch (error) {
-          console.error('[useCheckoutNavigation] Error creating order:', error);
-          sonnerToast.error("Erro ao processar pedido. Tente novamente.");
-        }
-        
+        // Navegação direta sem criar pedido ainda
+        navigate('/checkout');
+        setStep(2);
         setIsNavigating(false);
         return;
       } 
       else {
-        // Normal navigation for other steps
+        // Navegação normal para outros steps
         const nextStep = step + 1;
         const route = stepRoutes[nextStep as keyof typeof stepRoutes];
         
         if (route) {
           navigate(route);
+          setStep(nextStep);
         }
-        setStep(nextStep);
         setIsNavigating(false);
       }
     } catch (error) {
@@ -205,7 +158,7 @@ export const useCheckoutNavigation = ({
       sonnerToast.error("Erro ao processar sua solicitação");
       setIsNavigating(false);
     }
-  }, [step, sessionUser?.id, cartItems, selectedPlan, couponDiscount, couponValid, couponId, startDate, endDate, createPayment, navigate, setStep, isNavigating, isNextEnabled]);
+  }, [step, sessionUser?.id, cartItems, selectedPlan, navigate, setStep, isNavigating, isNextEnabled]);
 
   return {
     handleNextStep,

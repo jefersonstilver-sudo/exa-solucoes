@@ -38,16 +38,20 @@ const ReviewStep = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Revisão do Pedido</h2>
-        <p className="text-gray-600">Confirme os detalhes do seu pedido antes de prosseguir</p>
+      {/* Header simples */}
+      <div className="border-b pb-4">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <span className="mr-3 text-2xl">📋</span>
+          Revisão do Pedido
+        </h2>
+        <p className="text-gray-600 mt-2">Confirme os detalhes do seu pedido antes de prosseguir</p>
       </div>
 
-      {/* Selected Panels */}
+      {/* Painéis Selecionados */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <MapPin className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-lg">
+            <MapPin className="h-5 w-5 mr-2 text-[#1E1B4B]" />
             Painéis Selecionados ({cartItems.length})
           </CardTitle>
           <CardDescription>
@@ -55,13 +59,13 @@ const ReviewStep = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {cartItems.map((item) => (
-              <div key={item.panel.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div key={item.panel.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
-                      <MapPin className="h-6 w-6 text-indexa-purple" />
+                    <div className="w-12 h-12 bg-[#1E1B4B]/10 rounded-lg flex items-center justify-center">
+                      <MapPin className="h-6 w-6 text-[#1E1B4B]" />
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900">{formatPanelInfo(item.panel)}</h4>
@@ -76,7 +80,7 @@ const ReviewStep = () => {
                   <p className="font-medium text-gray-900">
                     {formatCurrency(item.panel.buildings?.basePrice || 250)}/mês
                   </p>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs mt-1">
                     {item.panel.resolucao || 'Resolução não informada'}
                   </Badge>
                 </div>
@@ -86,58 +90,61 @@ const ReviewStep = () => {
         </CardContent>
       </Card>
 
-      {/* Duration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2" />
-            Duração da Campanha
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-3">
-            <Clock className="h-5 w-5 text-gray-400" />
-            <span className="text-lg font-medium">
-              {selectedMonths} {selectedMonths === 1 ? 'mês' : 'meses'}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Grid de informações */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Duração */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg">
+              <Calendar className="h-5 w-5 mr-2 text-[#1E1B4B]" />
+              Duração da Campanha
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-3">
+              <Clock className="h-5 w-5 text-gray-400" />
+              <span className="text-lg font-medium">
+                {selectedMonths} {selectedMonths === 1 ? 'mês' : 'meses'}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Pricing Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <CreditCard className="h-5 w-5 mr-2" />
-            Resumo de Preços
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
-              <span className="font-medium">{formatCurrency(totalOriginalPrice)}</span>
-            </div>
-            
-            {couponValid && discount > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span className="flex items-center">
-                  <Tag className="h-4 w-4 mr-1" />
-                  Desconto aplicado
-                </span>
-                <span className="font-medium">-{formatCurrency(discount)}</span>
+        {/* Resumo de Preços */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg">
+              <CreditCard className="h-5 w-5 mr-2 text-[#1E1B4B]" />
+              Resumo de Preços
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
+                <span className="font-medium">{formatCurrency(totalOriginalPrice)}</span>
               </div>
-            )}
-            
-            <div className="border-t pt-3">
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span className="text-indexa-purple">{formatCurrency(finalPrice)}</span>
+              
+              {couponValid && discount > 0 && (
+                <div className="flex justify-between text-green-600 text-sm">
+                  <span className="flex items-center">
+                    <Tag className="h-4 w-4 mr-1" />
+                    Desconto aplicado
+                  </span>
+                  <span className="font-medium">-{formatCurrency(discount)}</span>
+                </div>
+              )}
+              
+              <div className="border-t pt-3">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span className="text-[#1E1B4B]">{formatCurrency(finalPrice)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
