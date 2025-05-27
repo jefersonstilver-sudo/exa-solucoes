@@ -19,6 +19,19 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   building, 
   onAddToCart 
 }) => {
+  console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD ===');
+  console.log('🏢 [BUILDING STORE CARD] Building recebido:', {
+    id: building.id,
+    nome: building.nome,
+    endereco: building.endereco,
+    bairro: building.bairro,
+    status: building.status,
+    preco_base: building.preco_base,
+    quantidade_telas: building.quantidade_telas,
+    venue_type: building.venue_type,
+    imagem_principal: building.imagem_principal
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

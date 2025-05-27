@@ -16,6 +16,7 @@ export const useSimpleBuildingStore = () => {
       
       const data = await fetchActiveBuildings();
       console.log('🏢 [SIMPLE STORE] Prédios recebidos:', data.length);
+      console.log('🏢 [SIMPLE STORE] Dados completos:', data);
       
       if (data.length === 0) {
         console.warn('⚠️ [SIMPLE STORE] Nenhum prédio encontrado');
@@ -23,7 +24,7 @@ export const useSimpleBuildingStore = () => {
       } else {
         console.log('✅ [SIMPLE STORE] Prédios carregados com sucesso');
         data.forEach((building, index) => {
-          console.log(`🏢 [SIMPLE STORE] Prédio ${index + 1}: ${building.nome} (${building.bairro})`);
+          console.log(`🏢 [SIMPLE STORE] Prédio ${index + 1}: ${building.nome} (${building.bairro}) - Status: ${building.status}`);
         });
       }
       

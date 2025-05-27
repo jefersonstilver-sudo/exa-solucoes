@@ -13,6 +13,31 @@ interface SimpleBuildingGridProps {
   onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
+// Adapter para converter SimpleBuildingStore para BuildingStore
+const convertToBuildingStore = (building: SimpleBuildingStore) => {
+  return {
+    id: building.id,
+    nome: building.nome,
+    endereco: building.endereco,
+    bairro: building.bairro,
+    venue_type: building.venue_type,
+    status: building.status,
+    latitude: building.latitude,
+    longitude: building.longitude,
+    publico_estimado: building.publico_estimado,
+    visualizacoes_mes: building.visualizacoes_mes,
+    preco_base: building.preco_base,
+    imagem_principal: building.imagem_principal,
+    imagem_2: building.imagem_2,
+    imagem_3: building.imagem_3,
+    imagem_4: building.imagem_4,
+    amenities: building.amenities || [],
+    caracteristicas: building.caracteristicas || [],
+    padrao_publico: building.padrao_publico,
+    quantidade_telas: building.quantidade_telas
+  };
+};
+
 const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
   buildings,
   isLoading,
@@ -62,6 +87,10 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
     <div className="space-y-4">
       {buildings.map((building, index) => {
         console.log(`🏢 [SIMPLE GRID] Renderizando prédio ${index + 1}: ${building.nome}`);
+        // CORREÇÃO CRÍTICA: Converter SimpleBuildingStore para BuildingStore
+        const convertedBuilding = convertToBuildingStore(building);
+        console.log(`🔄 [SIMPLE GRID] Prédio convertido:`, convertedBuilding);
+        
         return (
           <motion.div
             key={building.id}
@@ -70,7 +99,7 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
             <BuildingStoreCard
-              building={building}
+              building={convertedBuilding}
               onAddToCart={onAddToCart}
             />
           </motion.div>
