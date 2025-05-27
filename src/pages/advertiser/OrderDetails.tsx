@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +31,7 @@ interface OrderDetails {
   plano_meses: number;
   data_inicio?: string;
   data_fim?: string;
+  client_id: string;
 }
 
 interface VideoSlot {
@@ -58,30 +58,124 @@ const OrderDetails = () => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
-    if (id) {
+    if (id && userProfile?.id) {
+      console.log('🔍 OrderDetails: Iniciando carregamento...', {
+        orderId: id,
+        userId: userProfile.id,
+        userEmail: userProfile.email
+      });
       loadOrderDetails();
       loadVideoSlots();
+    } else {
+      console.log('❌ OrderDetails: Dados incompletos', {
+        orderId: id,
+        userProfile: userProfile
+      });
+      setLoading(false);
     }
-  }, [id]);
+  }, [id, userProfile]);
 
   const loadOrderDetails = async () => {
-    if (!id || !userProfile?.id) return;
+    if (!id || !userProfile?.id) {
+      console.log('❌ loadOrderDetails: Parâmetros inválidos', { id, userId: userProfile?.id });
+      return;
+    }
 
     try {
-      const { data, error } = await supabase
+      console.log('🔄 loadOrderDetails: Iniciando consulta...', {
+        pedidoId: id,
+        clientId: userProfile.id
+      });
+
+      // Primeira tentativa: buscar o pedido específico do usuário
+      const { data: userOrder, error: userError } = await supabase
         .from('pedidos')
         .select('*')
         .eq('id', id)
         .eq('client_id', userProfile.id)
         .single();
 
-      if (error) throw error;
-      setOrderDetails(data);
+      console.log('📊 loadOrderDetails: Resultado da consulta do usuário', {
+        data: userOrder,
+        error: userError
+      });
+
+      if (userError && userError.code !== 'PGRST116') {
+        throw userError;
+      }
+
+      if (userOrder) {
+        console.log('✅ loadOrderDetails: Pedido encontrado!', userOrder);
+        setOrderDetails(userOrder);
+        setDebugInfo({
+          found: true,
+          method: 'user_specific',
+          data: userOrder
+        });
+        return;
+      }
+
+      // Segunda tentativa: verificar se o pedido existe (debug)
+      console.log('🔍 loadOrderDetails: Pedido não encontrado para o usuário, verificando existência...');
+      
+      const { data: anyOrder, error: anyError } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      console.log('📊 loadOrderDetails: Resultado da consulta geral', {
+        data: anyOrder,
+        error: anyError
+      });
+
+      if (anyOrder) {
+        console.log('⚠️ loadOrderDetails: Pedido existe mas pertence a outro usuário', {
+          pedidoClientId: anyOrder.client_id,
+          usuarioLogadoId: userProfile.id,
+          match: anyOrder.client_id === userProfile.id
+        });
+        
+        setDebugInfo({
+          found: false,
+          reason: 'belongs_to_other_user',
+          pedidoClientId: anyOrder.client_id,
+          usuarioLogadoId: userProfile.id,
+          data: anyOrder
+        });
+      } else {
+        console.log('❌ loadOrderDetails: Pedido não existe na base de dados');
+        setDebugInfo({
+          found: false,
+          reason: 'does_not_exist',
+          error: anyError
+        });
+      }
+
+      // Terceira tentativa: buscar todos os pedidos do usuário (debug)
+      const { data: userOrders, error: listError } = await supabase
+        .from('pedidos')
+        .select('id, created_at, status')
+        .eq('client_id', userProfile.id)
+        .order('created_at', { ascending: false });
+
+      console.log('📋 loadOrderDetails: Todos os pedidos do usuário', {
+        count: userOrders?.length || 0,
+        pedidos: userOrders,
+        error: listError
+      });
+
     } catch (error) {
-      console.error('Erro ao carregar detalhes do pedido:', error);
+      console.error('💥 loadOrderDetails: Erro:', error);
       toast.error('Erro ao carregar detalhes do pedido');
+      setDebugInfo({
+        found: false,
+        reason: 'error',
+        error: error
+      });
     }
   };
 
@@ -91,7 +185,8 @@ const OrderDetails = () => {
     try {
       setLoading(true);
 
-      // Buscar vídeos existentes para este pedido
+      console.log('🎥 loadVideoSlots: Carregando vídeos para pedido', id);
+
       const { data: pedidoVideos, error } = await supabase
         .from('pedido_videos')
         .select(`
@@ -113,7 +208,11 @@ const OrderDetails = () => {
 
       if (error) throw error;
 
-      // Criar slots de 1 a 4 com type casting adequado
+      console.log('📊 loadVideoSlots: Vídeos encontrados', {
+        count: pedidoVideos?.length || 0,
+        videos: pedidoVideos
+      });
+
       const slots: VideoSlot[] = [1, 2, 3, 4].map(position => {
         const existingVideo = pedidoVideos?.find(pv => pv.slot_position === position);
         
@@ -136,7 +235,7 @@ const OrderDetails = () => {
 
       setVideoSlots(slots);
     } catch (error) {
-      console.error('Erro ao carregar slots de vídeo:', error);
+      console.error('💥 loadVideoSlots: Erro:', error);
       toast.error('Erro ao carregar vídeos');
     } finally {
       setLoading(false);
@@ -155,7 +254,6 @@ const OrderDetails = () => {
         const height = video.videoHeight;
         const orientation = height > width ? 'vertical' : 'horizontal';
         
-        // Validações
         if (duration > 15) {
           errors.push('Vídeo deve ter no máximo 15 segundos');
         }
@@ -164,8 +262,7 @@ const OrderDetails = () => {
           errors.push('Vídeo deve estar em orientação horizontal');
         }
         
-        // Simulação de detecção de áudio (em produção seria mais complexo)
-        const hasAudio = file.size > (width * height * duration * 0.1); // Heurística simples
+        const hasAudio = file.size > (width * height * duration * 0.1);
         if (hasAudio) {
           errors.push('Vídeo não deve conter áudio');
         }
@@ -206,20 +303,18 @@ const OrderDetails = () => {
     try {
       setUploading(true);
 
-      // Validar vídeo
       const validation = await validateVideoFile(file);
       if (!validation.valid) {
         toast.error(validation.errors.join(', '));
         return;
       }
 
-      // Criar registro do vídeo
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .insert({
           client_id: userProfile.id,
           nome: file.name,
-          url: 'pending_upload', // Em produção seria o URL real
+          url: 'pending_upload',
           origem: 'cliente',
           status: 'ativo',
           ...validation.videoData
@@ -229,7 +324,6 @@ const OrderDetails = () => {
 
       if (videoError) throw videoError;
 
-      // Criar ou atualizar slot do vídeo
       const { error: slotError } = await supabase
         .from('pedido_videos')
         .upsert({
@@ -244,7 +338,7 @@ const OrderDetails = () => {
       toast.success('Vídeo enviado para aprovação!');
       loadVideoSlots();
     } catch (error) {
-      console.error('Erro no upload:', error);
+      console.error('Upload error:', error);
       toast.error('Erro ao fazer upload do vídeo');
     } finally {
       setUploading(false);
@@ -331,6 +425,23 @@ const OrderDetails = () => {
       <div className="text-center py-12">
         <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
         <h3 className="text-xl font-medium mb-2">Pedido não encontrado</h3>
+        <p className="text-gray-600 mb-4">
+          {debugInfo?.reason === 'belongs_to_other_user' 
+            ? 'Este pedido pertence a outro usuário.'
+            : debugInfo?.reason === 'does_not_exist'
+            ? 'Este pedido não existe na base de dados.'
+            : 'Não foi possível carregar os detalhes do pedido.'
+          }
+        </p>
+        
+        {/* Debug Info - remover em produção */}
+        {debugInfo && (
+          <div className="bg-gray-100 p-4 rounded-lg text-left text-sm mb-4 max-w-2xl mx-auto">
+            <h4 className="font-semibold mb-2">Debug Info:</h4>
+            <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+          </div>
+        )}
+        
         <Button onClick={() => navigate('/anunciante/pedidos')}>
           Voltar aos Pedidos
         </Button>
