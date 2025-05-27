@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useCartState } from '@/hooks/cart/useCartState';
 import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
@@ -59,82 +59,43 @@ export const useCartManager = () => {
     setCartOpen
   });
 
-  // Log para diagnóstico do estado atual do carrinho
-  if (initialLoadDone && cartItems.length > 0) {
-    // Verifica se o estado atual do carrinho é válido
-    const cartValid = cartItems.every(item => 
-      item && 
-      item.panel && 
-      typeof item.panel === 'object' && 
-      item.panel.id && 
-      typeof item.duration === 'number'
-    );
-    
-    // Verificação de consistência entre estado e localStorage
-    const localStorageCart = localStorage.getItem(CART_STORAGE_KEY);
-    const localStorageParsed = localStorageCart ? JSON.parse(localStorageCart) : [];
-    const storageCount = Array.isArray(localStorageParsed) ? localStorageParsed.length : 0;
-    
-    console.log("useCartManager: Verificação de integridade:", {
-      cartItemsCount: cartItems.length,
-      localStorageCount: storageCount,
-      match: cartItems.length === storageCount
-    });
-    
-    // Se não for válido, registra um erro crítico
-    if (!cartValid) {
-      logCheckoutEvent(
-        CheckoutEvent.SAVE_CART,
-        LogLevel.ERROR,
-        `ESTADO CRÍTICO: Carrinho com estrutura inválida detectado em useCartManager [${CART_STORAGE_KEY}]`,
-        { 
-          cartItems: JSON.stringify(cartItems),
-          cartItemsCount: cartItems.length,
-          storageKey: CART_STORAGE_KEY
-        }
+  // CRITICAL FIX: Drastically reduce logging frequency to prevent infinite loops
+  const cartValidationLog = useMemo(() => {
+    if (initialLoadDone && cartItems.length > 0) {
+      // Only log once per cart change, not continuously
+      const cartValid = cartItems.every(item => 
+        item && 
+        item.panel && 
+        typeof item.panel === 'object' && 
+        item.panel.id && 
+        typeof item.duration === 'number'
       );
-    } else if (cartItems.length !== storageCount) {
-      // Se houver discrepância entre estado e localStorage
-      console.error("DISCREPÂNCIA: Estado do carrinho e localStorage não coincidem", {
-        stateCount: cartItems.length,
-        storageCount
-      });
       
-      // Forçar sincronização para resolver a discrepância
-      const legacyCartItems = cartItems.map(item => ({
-        panel: item.panel,
-        duration: item.duration
-      }));
-      saveCartToStorage(legacyCartItems);
-      
-      logCheckoutEvent(
-        CheckoutEvent.SAVE_CART,
-        LogLevel.WARNING,
-        `DISCREPÂNCIA: Estado do carrinho e localStorage não coincidem [${CART_STORAGE_KEY}]. Sincronizando...`,
-        { 
-          stateCount: cartItems.length,
-          storageCount,
-          action: "forced_sync"
-        }
-      );
-    } else {
-      // Se for válido, registra o estado normal
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        `Estado do carrinho em useCartManager [${CART_STORAGE_KEY}]: ${cartItems.length} itens`,
-        { 
-          cartItemsCount: cartItems.length,
-          storageKey: CART_STORAGE_KEY,
-          itemSummary: cartItems.map(item => ({
-            id: item.panel.id,
-            name: item.panel.buildings?.nome || 'Unknown',
-            duration: item.duration
-          }))
-        }
-      );
+      if (!cartValid) {
+        // Only log critical errors
+        logCheckoutEvent(
+          CheckoutEvent.SAVE_CART,
+          LogLevel.ERROR,
+          `CRITICAL: Invalid cart structure detected`,
+          { cartItemsCount: cartItems.length }
+        );
+      }
     }
-  }
+    return cartItems.length;
+  }, [initialLoadDone, cartItems.length]); // Only depend on length to reduce re-computations
+
+  // Memoized functions to prevent unnecessary re-renders
+  const reloadCartFromStorage = useCallback(() => {
+    try {
+      const loadedLegacyCart = loadCartFromStorage();
+      const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
+      setCartItems(fullCartItems);
+      return fullCartItems;
+    } catch (error) {
+      console.error('[useCartManager] Error reloading cart:', error);
+      return [];
+    }
+  }, [setCartItems]);
 
   return {
     // Cart state
@@ -157,12 +118,7 @@ export const useCartManager = () => {
     handleProceedToCheckout,
     isNavigating,
     
-    // Debugging and testing
-    reloadCartFromStorage: () => {
-      const loadedLegacyCart = loadCartFromStorage();
-      const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
-      setCartItems(fullCartItems);
-      return fullCartItems;
-    }
+    // Debugging and testing - memoized
+    reloadCartFromStorage
   };
 };

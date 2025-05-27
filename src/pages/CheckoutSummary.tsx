@@ -1,24 +1,77 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import CheckoutProgress from '@/components/checkout/CheckoutProgress';
 import ReviewStep from '@/components/checkout/ReviewStep';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useUserSession } from '@/hooks/useUserSession';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
 
 const CheckoutSummary = () => {
+  const navigate = useNavigate();
+  const { isLoggedIn, user } = useUserSession();
+  
   const {
     handleNextStep,
     handlePrevStep,
     calculateTotalPrice,
     couponValid,
     couponDiscount,
-    isNavigating
+    isNavigating,
+    cartItems
   } = useCheckout();
 
+  // CRITICAL: Force authentication before allowing checkout
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) {
+      console.log('[CheckoutSummary] User not authenticated, redirecting to login');
+      toast.error("Você precisa estar logado para continuar");
+      navigate('/login?redirect=/checkout/resumo');
+    }
+  }, [isLoggedIn, user, navigate]);
+
+  // CRITICAL: Validate cart is not empty
+  useEffect(() => {
+    if (isLoggedIn && cartItems.length === 0) {
+      console.log('[CheckoutSummary] Cart is empty, redirecting to store');
+      toast.error("Seu carrinho está vazio");
+      navigate('/paineis-digitais/loja');
+    }
+  }, [isLoggedIn, cartItems.length, navigate]);
+
   const totalPrice = calculateTotalPrice();
+
+  // Show loading if not authenticated
+  if (!isLoggedIn || !user?.id) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <div className="h-8 w-8 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Verificando autenticação...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show loading if cart is empty
+  if (cartItems.length === 0) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <div className="h-8 w-8 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando carrinho...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -86,8 +139,8 @@ const CheckoutSummary = () => {
             </div>
 
             <Button
-              onClick={() => handleNextStep()}
-              disabled={isNavigating}
+              onClick={() => handleNextStep('pix')}
+              disabled={isNavigating || !isLoggedIn || cartItems.length === 0}
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90"
             >
               <span>Ir para Pagamento</span>

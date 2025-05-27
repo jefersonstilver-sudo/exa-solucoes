@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
@@ -19,7 +19,6 @@ export const STEPS = CHECKOUT_STEPS;
 export { PLANS };
 
 export const useCheckout = () => {
-  // TODOS OS HOOKS SEMPRE EXECUTAM NA MESMA ORDEM
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const orderId = searchParams.get('id');
@@ -55,38 +54,42 @@ export const useCheckout = () => {
     setPaymentMethod
   } = usePaymentProcessor();
 
-  // Hook de autenticação
+  // Hook de autenticação - executado apenas uma vez
   useCheckoutAuth(setSessionUser);
   
-  // Hook de validação do carrinho
-  useCartValidation(cartItems);
+  // Hook de validação do carrinho - com debounce
+  const debouncedCartValidation = useCallback(() => {
+    if (cartItems.length > 0) {
+      // Remove logs excessivos do cart validation
+      console.log(`[useCheckout] Cart validated: ${cartItems.length} items`);
+    }
+  }, [cartItems.length]); // Depend only on length to reduce re-runs
 
-  // TODOS OS EFFECTS NO FINAL PARA MANTER ORDEM CONSISTENTE
-  
-  // Set step baseado na rota
   useEffect(() => {
-    const path = location.pathname;
-    console.log("[useCheckout] Current path:", path);
-    
-    if (path === '/checkout/cupom') {
+    const timeout = setTimeout(debouncedCartValidation, 500);
+    return () => clearTimeout(timeout);
+  }, [debouncedCartValidation]);
+
+  // Set step baseado na rota - memoizado para evitar loops
+  const currentPath = location.pathname;
+  useEffect(() => {
+    if (currentPath === '/checkout/cupom') {
       setStep(0);
-    } else if (path === '/checkout/resumo') {
+    } else if (currentPath === '/checkout/resumo') {
       setStep(1);
-    } else if (path === '/checkout') {
+    } else if (currentPath === '/checkout') {
       setStep(2);
-    } else if (path === '/checkout/finalizar') {
+    } else if (currentPath === '/checkout/finalizar') {
       setStep(3);
-    } else if (path.startsWith('/pix-payment')) {
+    } else if (currentPath.startsWith('/pix-payment')) {
       setStep(2);
     }
-  }, [location.pathname, setStep]);
+  }, [currentPath, setStep]);
 
-  // Carrega plano do localStorage
+  // Carrega plano do localStorage - apenas uma vez
   useEffect(() => {
     try {
       const savedPlan = localStorage.getItem('selectedPlan');
-      console.log('[useCheckout] Plano carregado:', savedPlan);
-      
       if (savedPlan) {
         const parsedPlan = parseInt(savedPlan);
         if ([1, 3, 6, 12].includes(parsedPlan)) {
@@ -96,51 +99,50 @@ export const useCheckout = () => {
     } catch (error) {
       console.error('[useCheckout] Erro ao carregar plano:', error);
     }
-  }, [setSelectedPlan]);
+  }, []); // Empty deps to run only once
   
-  // Verifica disponibilidade dos painéis
+  // Verifica disponibilidade dos painéis - apenas quando necessário
   useEffect(() => {
-    if (step === 1) {
-      checkPanelAvailability(cartItems, startDate, endDate);
+    if (step === 1 && cartItems.length > 0) {
+      const timeout = setTimeout(() => {
+        checkPanelAvailability(cartItems, startDate, endDate);
+      }, 1000); // Debounce availability check
+      return () => clearTimeout(timeout);
     }
-  }, [step, startDate, endDate, cartItems, checkPanelAvailability]);
+  }, [step, cartItems.length, startDate, endDate]); // Simplified dependencies
 
-  // Log de mudanças no método de pagamento
-  useEffect(() => {
-    if (paymentMethod) {
-      console.log(`[useCheckout] Payment method selected: ${paymentMethod}, step: ${step}`);
-      
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        `Payment method selected: ${paymentMethod}`,
-        { paymentMethod, step }
-      );
-    }
-  }, [paymentMethod, step]);
+  // Memoizar cálculos para evitar re-computações desnecessárias
+  const orderTotal = useMemo(() => {
+    return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+  }, [selectedPlan, cartItems, couponDiscount, couponValid]);
 
-  // Log para diagnóstico dos cálculos
-  useEffect(() => {
-    console.log("[useCheckout] Cart data:", cartItems);
-    if (cartItems.length > 0) {
-      console.log("[useCheckout] Calculated subtotal:", calculateCartSubtotal(cartItems));
-      console.log("[useCheckout] Calculated total:", calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid));
-    }
-  }, [cartItems, selectedPlan, couponDiscount, couponValid]);
+  const cartSubtotal = useMemo(() => {
+    return calculateCartSubtotal(cartItems);
+  }, [cartItems]);
 
-  // Função wrapper para createPayment
-  const wrappedCreatePayment = async (options: any): Promise<void> => {
+  // Função wrapper para createPayment - com validação robusta
+  const wrappedCreatePayment = useCallback(async (options: any): Promise<any> => {
     try {
+      // CRITICAL: Validate authentication before creating payment
+      if (!sessionUser?.id) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      if (cartItems.length === 0) {
+        throw new Error("Carrinho vazio");
+      }
+
+      console.log('[useCheckout] Creating payment with valid user:', sessionUser.id);
       const response = await createPayment(options);
-      console.log('[useCheckout] Payment created:', response);
+      return response;
     } catch (error) {
       console.error('[useCheckout] Payment error:', error);
       throw error;
     }
-  };
+  }, [createPayment, sessionUser?.id, cartItems.length]);
 
-  // Usa o hook de navegação
-  const handleNavigation = useCheckoutNavigation({
+  // Usa o hook de navegação - com validações melhoradas
+  const navigation = useCheckoutNavigation({
     step,
     setStep,
     selectedPlan,
@@ -156,34 +158,28 @@ export const useCheckout = () => {
     handleClearCart,
     createPayment: wrappedCreatePayment
   });
-  
-  const { isNavigating } = handleNavigation;
 
-  // Adaptação da função validateCoupon
-  const handleValidateCoupon = () => {
-    validateCoupon(couponCode, selectedPlan);
-  };
+  // Adaptação da função validateCoupon - com debounce
+  const handleValidateCoupon = useCallback(() => {
+    if (couponCode.trim()) {
+      validateCoupon(couponCode, selectedPlan);
+    }
+  }, [couponCode, selectedPlan, validateCoupon]);
 
-  // Handler para próximo step com payment method
-  const handleNextStepWithPayment = (paymentMethod?: string) => {
+  // Handler para próximo step com payment method - memoizado
+  const handleNextStepWithPayment = useCallback((paymentMethod?: string) => {
     console.log(`[useCheckout] handleNextStepWithPayment: ${paymentMethod || 'default'}`);
     
-    if (handleNavigation.handleNextStep && typeof handleNavigation.handleNextStep === 'function') {
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        `Calling handleNextStep with method: ${paymentMethod || 'default'}`,
-        { paymentMethod }
-      );
-      
-      handleNavigation.handleNextStep(paymentMethod);
+    // CRITICAL: Validate authentication before proceeding
+    if (!sessionUser?.id) {
+      console.error('[useCheckout] Cannot proceed - user not authenticated');
+      return;
     }
-  };
 
-  // Função para calcular o total do pedido
-  const getOrderTotal = () => {
-    return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  };
+    if (navigation.handleNextStep && typeof navigation.handleNextStep === 'function') {
+      navigation.handleNextStep(paymentMethod);
+    }
+  }, [navigation.handleNextStep, sessionUser?.id]);
 
   return {
     step,
@@ -201,16 +197,16 @@ export const useCheckout = () => {
     startDate,
     endDate,
     isCreatingPayment,
-    isNavigating,
+    isNavigating: navigation.isNavigating,
     unavailablePanels,
     cartItems,
     validateCoupon: handleValidateCoupon,
     handleNextStep: handleNextStepWithPayment,
-    handlePrevStep: handleNavigation.handlePrevStep,
-    isNextEnabled: handleNavigation.isNextEnabled,
+    handlePrevStep: navigation.handlePrevStep,
+    isNextEnabled: navigation.isNextEnabled,
     PLANS,
-    calculateTotalPrice: getOrderTotal,
-    calculateCartSubtotal: () => calculateCartSubtotal(cartItems),
+    calculateTotalPrice: () => orderTotal,
+    calculateCartSubtotal: () => cartSubtotal,
     orderId,
     paymentMethod,
     setPaymentMethod

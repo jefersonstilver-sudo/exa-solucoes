@@ -33,8 +33,13 @@ export enum CheckoutEvent {
   CHECKOUT_ERROR = 'CHECKOUT_ERROR'
 }
 
-// Store for logs
+// Store for logs with automatic cleanup to prevent memory leaks
 const checkoutLogs: any[] = [];
+const MAX_LOGS = 100; // Limit to prevent infinite growth
+
+// CRITICAL FIX: Implement throttling to prevent infinite logging loops
+let lastLogTime = 0;
+const LOG_THROTTLE_MS = 100; // Minimum time between logs
 
 export const logCheckoutEvent = (
   event: CheckoutEvent,
@@ -42,6 +47,13 @@ export const logCheckoutEvent = (
   message: string,
   data?: Record<string, any>
 ) => {
+  // CRITICAL: Throttle logs to prevent infinite loops
+  const now = Date.now();
+  if (now - lastLogTime < LOG_THROTTLE_MS) {
+    return; // Skip this log to prevent spam
+  }
+  lastLogTime = now;
+
   const color = level === LogLevel.ERROR ? '#e53935' : 
                 level === LogLevel.WARNING ? '#ffb300' : 
                 level === LogLevel.INFO ? '#3498db' : 
@@ -56,9 +68,18 @@ export const logCheckoutEvent = (
     timestamp: new Date().toISOString()
   };
   
+  // Add to logs array with automatic cleanup
   checkoutLogs.push(logEntry);
   
-  console.log(`%c[${level}] [${event}] ${message}`, `color: ${color}`, data || {});
+  // CRITICAL: Prevent memory leaks by limiting log storage
+  if (checkoutLogs.length > MAX_LOGS) {
+    checkoutLogs.splice(0, checkoutLogs.length - MAX_LOGS);
+  }
+  
+  // Only log critical errors and important events to console
+  if (level === LogLevel.ERROR || level === LogLevel.SUCCESS) {
+    console.log(`%c[${level}] [${event}] ${message}`, `color: ${color}`, data || {});
+  }
 };
 
 // Export functions for debug components
@@ -79,4 +100,10 @@ export const getCheckoutAuditSummary = () => {
   };
   
   return summary;
+};
+
+// CRITICAL: Add cleanup function to clear logs when needed
+export const clearCheckoutLogs = () => {
+  checkoutLogs.length = 0;
+  console.log('%c[SYSTEM] Checkout logs cleared', 'color: #4caf50');
 };
