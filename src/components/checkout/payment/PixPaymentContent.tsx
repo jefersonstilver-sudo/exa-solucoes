@@ -7,13 +7,13 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import PixPaymentDebugger from '@/components/checkout/payment/PixPaymentDebugger';
-import PixPaymentDetails from '@/components/checkout/payment/PixPaymentDetails';
 import BackToCheckoutButton from '@/components/checkout/payment/BackToCheckoutButton';
 import PixPaymentHeader from '@/components/checkout/payment/PixPaymentHeader';
 import PixMobilePayButton from '@/components/checkout/payment/PixMobilePayButton';
 import PixPaymentInstructions from '@/components/checkout/payment/PixPaymentInstructions';
 import PixContentContainer from '@/components/checkout/payment/PixContentContainer';
 import PixPaymentLoadingState from '@/components/checkout/payment/PixPaymentLoadingState';
+import PixPaymentRealtimeWrapper from '@/components/checkout/payment/PixPaymentRealtimeWrapper';
 
 interface PixPaymentContentProps {
   paymentData: PixPaymentData;
@@ -121,7 +121,8 @@ const PixPaymentContent = ({
         <PixPaymentHeader />
         
         <div className="bg-white rounded-lg shadow-sm p-6 border">
-          <PixPaymentDetails
+          {/* NOVO: Wrapper com Realtime */}
+          <PixPaymentRealtimeWrapper
             qrCodeBase64={paymentData.qrCodeBase64 || ''}
             qrCodeText={paymentData.qrCode || ''} 
             status={paymentData.status}

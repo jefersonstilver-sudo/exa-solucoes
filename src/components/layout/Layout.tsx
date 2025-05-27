@@ -5,6 +5,7 @@ import Header from './Header';
 import CartDrawer from '@/components/cart/CartDrawer';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import { useCartManager } from '@/hooks/useCartManager';
+import { setupPeriodicCleanup } from '@/services/realtimeCleanupService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -43,6 +44,14 @@ const Layout: React.FC<LayoutProps> = ({
   const onChangeDuration = externalOnChangeDuration || internalHandleChangeDuration;
   // CORREÇÃO: Usar handleProceedToCheckout do useCartManager em vez de função vazia
   const onProceedToCheckout = externalOnProceedToCheckout || internalHandleProceedToCheckout;
+
+  // Configurar limpeza automática na montagem do Layout
+  React.useEffect(() => {
+    const cancelCleanup = setupPeriodicCleanup();
+    
+    // Cleanup na desmontagem
+    return cancelCleanup;
+  }, []);
 
   console.log('🏗️ Layout: Renderizando com carrinho');
   console.log('🏗️ Layout: cartItems.length:', cartItems.length);

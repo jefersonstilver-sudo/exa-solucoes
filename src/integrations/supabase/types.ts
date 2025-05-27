@@ -709,6 +709,10 @@ export type Database = {
         Args: { user_id: string; user_email: string; user_role: string }
         Returns: string
       }
+      auto_cleanup_paid_attempts: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       check_panel_availability: {
         Args: { p_panel_id: string; p_start_date: string; p_end_date: string }
         Returns: boolean
@@ -831,6 +835,14 @@ export type Database = {
           p_new_values?: Json
         }
         Returns: string
+      }
+      migrate_orphaned_payments: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      process_mercadopago_webhook_with_cleanup: {
+        Args: { p_payment_data: Json }
+        Returns: Json
       }
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }
