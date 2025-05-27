@@ -71,14 +71,16 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col relative">
+      {/* Header Fixed */}
       <Header 
         cartItemsCount={cartItems.length}
         cartAnimation={cartAnimation}
         onToggleCart={handleToggleCart}
       />
       
-      <main className="pt-20 flex-1">
+      {/* Main Content */}
+      <main className="flex-1 w-full">
         {children}
       </main>
       
