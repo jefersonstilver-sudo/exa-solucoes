@@ -16,7 +16,9 @@ export const ClientRoutes = () => {
       <Route path="/dashboard" element={<AdvertiserDashboard />} />
       <Route path="/comprar" element={<PanelStore />} />
       <Route path="/checkout" element={<Checkout />} />
+      {/* CORREÇÃO: Rota direta para pedidos sem redirecionamento */}
       <Route path="/pedidos" element={<Pedidos />} />
+      <Route path="/meus-pedidos" element={<Pedidos />} />
       <Route path="/campanhas" element={<MyCampaigns />} />
       <Route path="/campanhas/:id" element={<CampaignDetails />} />
       <Route path="/videos" element={<MyVideos />} />

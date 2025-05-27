@@ -105,6 +105,7 @@ const router = createBrowserRouter([
     path: '/pix-payment',
     element: <PixPayment />
   },
+  // CORREÇÃO: Rotas de pedidos diretas sem redirecionamento
   {
     path: '/pedidos',
     element: <Pedidos />

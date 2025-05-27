@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -39,39 +38,55 @@ const Pedidos: React.FC = () => {
 
   const isAdmin = hasRole('admin') || hasRole('super_admin');
 
+  // LOGS DE DEBUG para diagnóstico
+  console.log('📋 Pedidos: Componente renderizado');
+  console.log('📋 Pedidos: URL atual:', window.location.pathname);
+  console.log('📋 Pedidos: Usuário logado:', isLoggedIn);
+  console.log('📋 Pedidos: Dados do usuário:', user);
+  console.log('📋 Pedidos: É admin:', isAdmin);
+
   // Carregar os pedidos baseado no perfil do usuário
   useEffect(() => {
     const fetchPedidos = async () => {
       try {
+        console.log('📋 Pedidos: Iniciando carregamento de pedidos...');
         setIsLoading(true);
         
         let query = supabase.from('pedidos').select('*').order('created_at', { ascending: false });
         
         // Se não for admin, filtrar apenas os pedidos do usuário logado
         if (!isAdmin && user?.id) {
+          console.log('📋 Pedidos: Filtrando por client_id:', user.id);
           query = query.eq('client_id', user.id);
+        } else {
+          console.log('📋 Pedidos: Carregando todos os pedidos (usuário admin)');
         }
         
         const { data, error } = await query;
         
         if (error) {
-          console.error('Erro detalhado ao carregar pedidos:', error);
+          console.error('❌ Pedidos: Erro detalhado ao carregar pedidos:', error);
           throw error;
         }
         
-        console.log("Pedidos carregados:", data);
+        console.log("✅ Pedidos: Dados carregados com sucesso:", data);
+        console.log("📊 Pedidos: Quantidade de pedidos:", data?.length || 0);
         setPedidos(data || []);
         setFilteredPedidos(data || []);
       } catch (error: any) {
-        console.error('Erro ao carregar pedidos:', error.message || error);
+        console.error('💥 Pedidos: Erro crítico ao carregar pedidos:', error.message || error);
         toast.error('Não foi possível carregar os pedidos');
       } finally {
+        console.log('📋 Pedidos: Finalizando carregamento...');
         setIsLoading(false);
       }
     };
 
-    if (!isLoading && user) {
+    if (user) {
+      console.log('📋 Pedidos: Usuário disponível, iniciando carregamento');
       fetchPedidos();
+    } else {
+      console.log('📋 Pedidos: Aguardando dados do usuário...');
     }
 
     // Configurar inscrição em tempo real para atualizações de pedidos
@@ -84,8 +99,8 @@ const Pedidos: React.FC = () => {
           table: 'pedidos' 
         }, 
         (payload) => {
-          console.log('Mudança detectada em pedidos:', payload);
-          if (!isLoading && user) {
+          console.log('🔄 Pedidos: Mudança detectada em tempo real:', payload);
+          if (user) {
             fetchPedidos(); // Recarregar todos os pedidos quando houver mudanças
           }
         }
@@ -94,13 +109,16 @@ const Pedidos: React.FC = () => {
 
     // Limpar inscrição ao desmontar
     return () => {
+      console.log('🧹 Pedidos: Limpando inscrições de tempo real');
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, user, isLoading]);
+  }, [isAdmin, user]);
 
   // Filtrar pedidos quando o termo de pesquisa ou filtro de status mudar
   useEffect(() => {
     if (pedidos.length === 0) return;
+
+    console.log('🔍 Pedidos: Aplicando filtros - Termo:', searchTerm, 'Status:', statusFilter);
 
     const filtered = pedidos.filter(pedido => {
       const matchesSearch = 
@@ -115,6 +133,7 @@ const Pedidos: React.FC = () => {
       return matchesSearch && matchesStatus;
     });
 
+    console.log('📊 Pedidos: Resultados filtrados:', filtered.length);
     setFilteredPedidos(filtered);
   }, [searchTerm, statusFilter, pedidos]);
 
@@ -195,6 +214,7 @@ const Pedidos: React.FC = () => {
   };
 
   if (isLoading) {
+    console.log('⏳ Pedidos: Exibindo tela de carregamento');
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[60vh]">
@@ -206,6 +226,8 @@ const Pedidos: React.FC = () => {
       </Layout>
     );
   }
+
+  console.log('🎨 Pedidos: Renderizando interface principal');
 
   return (
     <Layout>

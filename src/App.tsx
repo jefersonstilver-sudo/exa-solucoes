@@ -65,9 +65,9 @@ const App = () => {
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         
-        {/* Unified Pedidos Route */}
+        {/* Unified Pedidos Routes - CORREÇÃO: Rota direta sem redirecionamento */}
         <Route path="/pedidos" element={<Pedidos />} />
-        <Route path="/meus-pedidos" element={<Navigate to="/pedidos" replace />} />
+        <Route path="/meus-pedidos" element={<Pedidos />} />
         
         {/* Public Routes - must be after specific routes */}
         <Route path="/*" element={<PublicRoutes />} />
