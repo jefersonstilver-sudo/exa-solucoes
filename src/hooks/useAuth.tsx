@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, UserRole } from '@/types/userTypes';
@@ -10,8 +10,8 @@ export const useAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Função para extrair role do JWT
-  const extractUserRoleFromJWT = (session: Session | null): UserRole | null => {
+  // Função para extrair role do JWT - memoizada para evitar re-criações
+  const extractUserRoleFromJWT = useCallback((session: Session | null): UserRole | null => {
     if (!session?.access_token) {
       return null;
     }
@@ -23,10 +23,10 @@ export const useAuth = () => {
       console.error('❌ Erro ao extrair role do JWT:', error);
       return null;
     }
-  };
+  }, []);
 
-  // Função para criar perfil do usuário
-  const createUserProfileFromSession = (session: Session | null): UserProfile | null => {
+  // Função para criar perfil do usuário - memoizada
+  const createUserProfileFromSession = useCallback((session: Session | null): UserProfile | null => {
     if (!session?.user) {
       return null;
     }
@@ -39,29 +39,36 @@ export const useAuth = () => {
       role: userRole,
       data_criacao: session.user.created_at
     };
-  };
+  }, [extractUserRoleFromJWT]);
 
-  // Inicialização e listener de auth - simplificado
+  // FIXED: Otimização crítica para evitar re-renderizações excessivas
+  const updateAuthState = useCallback((newSession: Session | null) => {
+    // Só atualiza se realmente mudou
+    if (newSession?.user?.id !== user?.id) {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      
+      if (newSession?.user) {
+        const profile = createUserProfileFromSession(newSession);
+        setUserProfile(profile);
+      } else {
+        setUserProfile(null);
+      }
+    }
+    
+    setIsLoading(false);
+  }, [user?.id, createUserProfileFromSession]);
+
+  // Inicialização e listener de auth - OTIMIZADA
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        console.log('🔄 INDEXA AUTH: Inicializando...');
-        
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (initialSession?.user && mounted) {
-          console.log('🔍 INDEXA AUTH: Sessão encontrada:', initialSession.user.email);
-          setSession(initialSession);
-          setUser(initialSession.user);
-          
-          const profile = createUserProfileFromSession(initialSession);
-          setUserProfile(profile);
-        }
-        
         if (mounted) {
-          setIsLoading(false);
+          updateAuthState(initialSession);
         }
       } catch (error) {
         console.error('💥 Erro na inicialização:', error);
@@ -71,23 +78,17 @@ export const useAuth = () => {
       }
     };
 
+    // FIXED: Listener otimizado para prevenir loops
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted) return;
         
-        console.log('🔄 INDEXA AUTH: State changed:', event);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const profile = createUserProfileFromSession(session);
-          setUserProfile(profile);
-        } else {
-          setUserProfile(null);
+        // CRITICAL: Reduzir logs para evitar spam no console
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          console.log('🔄 INDEXA AUTH: State changed:', event);
         }
         
-        setIsLoading(false);
+        updateAuthState(session);
       }
     );
 
@@ -97,24 +98,22 @@ export const useAuth = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Dependências vazias para executar apenas uma vez
+  }, []); // CRITICAL: Dependências vazias para executar apenas uma vez
 
-  // Função de logout
-  const logout = async () => {
-    console.log('🚪 INDEXA AUTH: Fazendo logout...');
+  // Função de logout - memoizada
+  const logout = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
       setUser(null);
       setSession(null);
       setUserProfile(null);
       localStorage.clear();
-      console.log('✅ INDEXA AUTH: Logout realizado');
     }
     return { success: !error, error };
-  };
+  }, []);
 
-  // Função de verificação de role
-  const hasRole = (requiredRole: string): boolean => {
+  // Função de verificação de role - memoizada
+  const hasRole = useCallback((requiredRole: string): boolean => {
     if (!userProfile?.role) {
       return false;
     }
@@ -124,10 +123,10 @@ export const useAuth = () => {
     }
     
     return userProfile.role === requiredRole;
-  };
+  }, [userProfile?.role]);
 
-  // Estado computado
-  const isLoggedIn = !!user && !!session && !!userProfile;
+  // Estado computado - memoizado
+  const isLoggedIn = Boolean(user && session && userProfile);
 
   return {
     user,

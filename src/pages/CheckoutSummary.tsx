@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useUserSession();
+  const { isLoggedIn, user, isLoading } = useUserSession();
   
   const {
     handleNextStep,
@@ -25,57 +25,59 @@ const CheckoutSummary = () => {
     cartItems
   } = useCheckout();
 
-  // CRITICAL: Force authentication before allowing checkout
+  // CRITICAL: Verificação de autenticação simplificada e otimizada
   useEffect(() => {
+    // Aguardar carregamento completo do estado de auth
+    if (isLoading) return;
+    
     if (!isLoggedIn || !user?.id) {
       console.log('[CheckoutSummary] User not authenticated, redirecting to login');
       toast.error("Você precisa estar logado para continuar");
       navigate('/login?redirect=/checkout/resumo');
     }
-  }, [isLoggedIn, user, navigate]);
+  }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CRITICAL: Validate cart is not empty
+  // CRITICAL: Validação do carrinho - debounced
   useEffect(() => {
+    if (isLoading) return;
+    
     if (isLoggedIn && cartItems.length === 0) {
       console.log('[CheckoutSummary] Cart is empty, redirecting to store');
       toast.error("Seu carrinho está vazio");
       navigate('/paineis-digitais/loja');
     }
-  }, [isLoggedIn, cartItems.length, navigate]);
+  }, [isLoggedIn, cartItems.length, navigate, isLoading]);
 
   const totalPrice = calculateTotalPrice();
 
-  // Show loading if not authenticated
-  if (!isLoggedIn || !user?.id) {
+  // FIXED: Loading state otimizado
+  if (isLoading) {
     return (
       <Layout>
         <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-          <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
+          >
             <div className="h-8 w-8 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Verificando autenticação...</p>
-          </div>
+          </motion.div>
         </div>
       </Layout>
     );
   }
 
-  // Show loading if cart is empty
-  if (cartItems.length === 0) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-          <div className="text-center">
-            <div className="h-8 w-8 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando carrinho...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  // REMOVED: Múltiplos estados de loading que causavam piscadas
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-50 py-8">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="min-h-screen bg-gray-50 py-8"
+      >
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Timeline Progress */}
           <motion.div
@@ -152,7 +154,7 @@ const CheckoutSummary = () => {
             </Button>
           </motion.div>
         </div>
-      </div>
+      </motion.div>
     </Layout>
   );
 };

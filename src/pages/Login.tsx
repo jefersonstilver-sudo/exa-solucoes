@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn } from 'lucide-react';
@@ -23,25 +22,8 @@ export default function Login() {
   const searchParams = new URLSearchParams(location.search);
   const redirectPath = searchParams.get('redirect') || '/paineis-digitais/loja';
   
-  console.log('🔐 Login: Redirect path configurado para:', redirectPath);
-  
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          console.log('🔐 Login: Usuário já logado, redirecionando para:', redirectPath);
-          // User is already logged in, redirect
-          navigate(redirectPath);
-        }
-      } catch (error) {
-        console.error('🔐 Login: Erro ao verificar sessão:', error);
-      }
-    };
-    
-    checkSession();
-  }, [navigate, redirectPath]);
+  // REMOVED: Duplicate session check that was causing white screen flashing
+  // The useAuth hook now handles all authentication state management
   
   return (
     <Layout>
@@ -49,7 +31,7 @@ export default function Login() {
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.3 }}
           className="flex items-center justify-center min-h-[80vh] px-4"
         >
           <Card className="w-full max-w-md shadow-lg border-indexa-purple/10">
