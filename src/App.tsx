@@ -17,6 +17,7 @@ import BuildingStorePage from '@/pages/BuildingStore';
 import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AdvertiserOrders from '@/pages/advertiser/AdvertiserOrders';
+import OrderDetails from '@/pages/advertiser/OrderDetails';
 import MyCampaigns from '@/pages/advertiser/MyCampaigns';
 import CampaignDetails from '@/pages/advertiser/CampaignDetails';
 import MyVideos from '@/pages/advertiser/MyVideos';
@@ -65,6 +66,7 @@ const App = () => {
         <Route path="/anunciante" element={<AdvertiserLayout />}>
           <Route index element={<AdvertiserDashboard />} />
           <Route path="pedidos" element={<AdvertiserOrders />} />
+          <Route path="pedido/:id" element={<OrderDetails />} />
           <Route path="campanhas" element={<MyCampaigns />} />
           <Route path="campanhas/:id" element={<CampaignDetails />} />
           <Route path="videos" element={<MyVideos />} />

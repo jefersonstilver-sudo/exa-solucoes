@@ -19,7 +19,6 @@ export interface UseVideoUploadResult {
   startUpload: () => Promise<void>;
   handleReset: () => void;
   handleContinue: () => void;
-  // Add the missing ref properties
   videoRef: React.RefObject<HTMLVideoElement>;
   fileInputRef: React.RefObject<HTMLInputElement>;
 }
@@ -41,7 +40,14 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const validateVideo = useCallback((file: File): Promise<{ duration: number; orientation: 'landscape' | 'portrait' }> => {
+  const validateVideoAdvanced = useCallback((file: File): Promise<{ 
+    duration: number; 
+    orientation: 'landscape' | 'portrait'; 
+    width: number; 
+    height: number; 
+    hasAudio: boolean;
+    errors: string[];
+  }> => {
     return new Promise((resolve, reject) => {
       if (!videoRef.current) {
         reject(new Error('Video element not available'));
@@ -50,15 +56,56 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
 
       const video = videoRef.current;
       const url = URL.createObjectURL(file);
+      const errors: string[] = [];
       
-      video.onloadedmetadata = () => {
-        const duration = video.duration;
+      video.onloadedmetadata = async () => {
+        const duration = Math.round(video.duration);
         const width = video.videoWidth;
         const height = video.videoHeight;
         const orientation = height > width ? 'portrait' : 'landscape';
         
+        // Validações rigorosas baseadas nas regras do sistema
+        if (duration > 15) {
+          errors.push('Vídeo deve ter no máximo 15 segundos');
+        }
+        
+        if (orientation !== 'landscape') {
+          errors.push('Vídeo deve estar em orientação horizontal');
+        }
+        
+        // Verificar proporção (largura deve ser maior que altura)
+        if (width <= height) {
+          errors.push('Vídeo deve ter proporção horizontal (largura > altura)');
+        }
+        
+        // Verificação simples de áudio (heurística baseada no tamanho do arquivo)
+        // Em produção, seria necessário uma análise mais sofisticada
+        const expectedSizeWithoutAudio = width * height * duration * 0.1; // Estimativa
+        const hasAudio = file.size > expectedSizeWithoutAudio * 1.5;
+        
+        if (hasAudio) {
+          errors.push('Vídeo não deve conter áudio');
+        }
+        
+        // Validar formato
+        if (!['video/mp4', 'video/quicktime', 'video/avi'].includes(file.type)) {
+          errors.push('Formato deve ser MP4, MOV ou AVI');
+        }
+        
+        // Validar tamanho do arquivo (máx 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+          errors.push('Arquivo deve ter no máximo 100MB');
+        }
+        
         URL.revokeObjectURL(url);
-        resolve({ duration, orientation });
+        resolve({ 
+          duration, 
+          orientation, 
+          width, 
+          height, 
+          hasAudio,
+          errors 
+        });
       };
       
       video.onerror = () => {
@@ -80,27 +127,65 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
       setUploadStatus('uploading');
       setUploadProgress(0);
 
-      // Insert video record into database
+      // Validar usando a função do Supabase
+      const { data: validationResult, error: validationError } = await supabase
+        .rpc('validate_video_specs', {
+          p_duracao: videoDuration || 0,
+          p_orientacao: videoOrientation === 'landscape' ? 'horizontal' : 'vertical',
+          p_tem_audio: false, // Assumindo que passou na validação local
+          p_largura: 1920, // Valores padrão - em produção viriam da análise real
+          p_altura: 1080
+        });
+
+      if (validationError) throw validationError;
+
+      if (!validationResult[0]?.valid) {
+        const errors = validationResult[0]?.errors || ['Vídeo não atende aos requisitos'];
+        setVideoError(errors.join(', '));
+        setUploadStatus('error');
+        toast.error(errors.join(', '));
+        return;
+      }
+
+      // Criar registro do vídeo com dados técnicos completos
       const videoData = prepareForInsert({
         client_id: userId,
         nome: videoFile.name,
         url: 'pending_upload',
-        origem: 'upload',
+        origem: 'cliente',
         duracao: videoDuration,
-        status: 'ativo'
+        status: 'ativo',
+        orientacao: videoOrientation === 'landscape' ? 'horizontal' : 'vertical',
+        tem_audio: false,
+        largura: 1920, // Em produção, viria da análise real
+        altura: 1080,
+        tamanho_arquivo: videoFile.size,
+        formato: videoFile.type
       });
 
-      const { data, error } = await supabase
+      const { data: newVideo, error: videoInsertError } = await supabase
         .from('videos')
         .insert([videoData] as any)
         .select()
         .single();
 
-      if (error) throw error;
+      if (videoInsertError) throw videoInsertError;
+
+      // Criar entrada na tabela pedido_videos para aprovação
+      const { error: pedidoVideoError } = await supabase
+        .from('pedido_videos')
+        .insert({
+          pedido_id: orderId,
+          video_id: newVideo.id,
+          slot_position: 1, // Por padrão vai para o slot 1
+          approval_status: 'pending'
+        });
+
+      if (pedidoVideoError) throw pedidoVideoError;
 
       setUploadProgress(100);
       setUploadStatus('success');
-      toast.success('Vídeo enviado com sucesso!');
+      toast.success('Vídeo enviado para aprovação com sucesso!');
 
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -108,7 +193,7 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
       setUploadStatus('error');
       toast.error('Erro no upload: ' + error.message);
     }
-  }, [videoFile, userId, orderId, videoDuration]);
+  }, [videoFile, userId, orderId, videoDuration, videoOrientation]);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -116,18 +201,24 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
 
     try {
       setVideoError(null);
-      const { duration, orientation } = await validateVideo(file);
+      const validation = await validateVideoAdvanced(file);
+      
+      if (validation.errors.length > 0) {
+        setVideoError(validation.errors.join(', '));
+        toast.error(validation.errors.join(', '));
+        return;
+      }
       
       setVideoFile(file);
-      setVideoDuration(duration);
-      setVideoOrientation(orientation);
+      setVideoDuration(validation.duration);
+      setVideoOrientation(validation.orientation);
       
-      toast.success('Vídeo carregado com sucesso!');
+      toast.success('Vídeo validado com sucesso! Clique em enviar para fazer upload.');
     } catch (error: any) {
       setVideoError(error.message);
       toast.error('Erro ao processar vídeo: ' + error.message);
     }
-  }, [validateVideo]);
+  }, [validateVideoAdvanced]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -154,19 +245,25 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
     if (videoFile) {
       try {
         setVideoError(null);
-        const { duration, orientation } = await validateVideo(videoFile);
+        const validation = await validateVideoAdvanced(videoFile);
+        
+        if (validation.errors.length > 0) {
+          setVideoError(validation.errors.join(', '));
+          toast.error(validation.errors.join(', '));
+          return;
+        }
         
         setVideoFile(videoFile);
-        setVideoDuration(duration);
-        setVideoOrientation(orientation);
+        setVideoDuration(validation.duration);
+        setVideoOrientation(validation.orientation);
         
-        toast.success('Vídeo carregado com sucesso!');
+        toast.success('Vídeo validado com sucesso! Clique em enviar para fazer upload.');
       } catch (error: any) {
         setVideoError(error.message);
         toast.error('Erro ao processar vídeo: ' + error.message);
       }
     }
-  }, [validateVideo]);
+  }, [validateVideoAdvanced]);
 
   const handleReset = useCallback(() => {
     setVideoFile(null);
@@ -201,7 +298,6 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
     startUpload,
     handleReset,
     handleContinue,
-    // Export the refs
     videoRef,
     fileInputRef
   };

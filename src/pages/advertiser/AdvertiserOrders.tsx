@@ -345,7 +345,7 @@ const AdvertiserOrders = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/pedido-confirmado?id=${order.id}`)}
+                          onClick={() => navigate(`/anunciante/pedido/${order.id}`)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Detalhes

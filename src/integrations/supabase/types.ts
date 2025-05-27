@@ -478,6 +478,63 @@ export type Database = {
           },
         ]
       }
+      pedido_videos: {
+        Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          pedido_id: string
+          rejection_reason: string | null
+          slot_position: number
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pedido_id: string
+          rejection_reason?: string | null
+          slot_position: number
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pedido_id?: string
+          rejection_reason?: string | null
+          slot_position?: number
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_videos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_videos_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos: {
         Row: {
           client_id: string
@@ -626,33 +683,51 @@ export type Database = {
       }
       videos: {
         Row: {
+          altura: number | null
           client_id: string
           created_at: string | null
           duracao: number | null
+          formato: string | null
           id: string
+          largura: number | null
           nome: string
+          orientacao: string | null
           origem: string
           status: string
+          tamanho_arquivo: number | null
+          tem_audio: boolean | null
           url: string
         }
         Insert: {
+          altura?: number | null
           client_id: string
           created_at?: string | null
           duracao?: number | null
+          formato?: string | null
           id?: string
+          largura?: number | null
           nome: string
+          orientacao?: string | null
           origem: string
           status?: string
+          tamanho_arquivo?: number | null
+          tem_audio?: boolean | null
           url: string
         }
         Update: {
+          altura?: number | null
           client_id?: string
           created_at?: string | null
           duracao?: number | null
+          formato?: string | null
           id?: string
+          largura?: number | null
           nome?: string
+          orientacao?: string | null
           origem?: string
           status?: string
+          tamanho_arquivo?: number | null
+          tem_audio?: boolean | null
           url?: string
         }
         Relationships: [
@@ -697,6 +772,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_video: {
+        Args: { p_pedido_id: string; p_pedido_video_id: string }
+        Returns: boolean
+      }
       admin_check_user_exists: {
         Args: { user_email: string }
         Returns: boolean
@@ -708,6 +787,10 @@ export type Database = {
       admin_insert_user: {
         Args: { user_id: string; user_email: string; user_role: string }
         Returns: string
+      }
+      approve_video: {
+        Args: { p_pedido_video_id: string; p_approved_by: string }
+        Returns: boolean
       }
       auto_cleanup_paid_attempts: {
         Args: Record<PropertyKey, never>
@@ -844,6 +927,14 @@ export type Database = {
         Args: { p_payment_data: Json }
         Returns: Json
       }
+      reject_video: {
+        Args: {
+          p_pedido_video_id: string
+          p_approved_by: string
+          p_rejection_reason: string
+        }
+        Returns: boolean
+      }
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }
         Returns: {
@@ -852,6 +943,19 @@ export type Database = {
           desconto_percentual: number
           valid: boolean
           message: string
+        }[]
+      }
+      validate_video_specs: {
+        Args: {
+          p_duracao: number
+          p_orientacao: string
+          p_tem_audio: boolean
+          p_largura?: number
+          p_altura?: number
+        }
+        Returns: {
+          valid: boolean
+          errors: string[]
         }[]
       }
     }
