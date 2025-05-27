@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Cadastro from '@/pages/Cadastro';
 
@@ -9,6 +9,8 @@ export const AuthRoutes = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/cadastro" element={<Cadastro />} />
+      {/* Fallback route - redirect /auth to /login */}
+      <Route path="/*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 };

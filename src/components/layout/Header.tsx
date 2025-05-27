@@ -91,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({
                 </span>
               </div>
             ) : (
-              <Link to="/auth">
+              <Link to="/login">
                 <Button 
                   variant="ghost" 
                   className="text-white hover:text-[#00FFAB] hover:bg-white/10 px-5"
