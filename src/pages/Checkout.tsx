@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import PaymentMethodCard from '@/components/checkout/payment/PaymentMethodCard';
 import PaymentProgressHeader from '@/components/checkout/payment/PaymentProgressHeader';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -20,6 +21,13 @@ const Checkout = () => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  // Estados para o popup PIX
+  const [showPixDialog, setShowPixDialog] = useState(false);
+  const [pixData, setPixData] = useState<{
+    pix_url?: string;
+    pix_base64?: string;
+  }>({});
   
   const orderId = searchParams.get('id') || searchParams.get('pedido');
   
@@ -102,14 +110,26 @@ const Checkout = () => {
       });
 
       if (response.ok) {
-        toast.success("Dados enviados com sucesso! Processando pagamento PIX...");
-        console.log('[PIX Webhook] Webhook enviado com sucesso');
+        const responseData = await response.json();
+        console.log('[PIX Webhook] Resposta recebida:', responseData);
         
-        // Navigate to PIX payment page or show success
-        // For now, just show success message
-        setTimeout(() => {
-          toast.info("Em breve você será redirecionado para o PIX");
-        }, 1500);
+        // Verificar se recebemos pix_url e pix_base64
+        if (responseData.pix_url && responseData.pix_base64) {
+          setPixData({
+            pix_url: responseData.pix_url,
+            pix_base64: responseData.pix_base64
+          });
+          setShowPixDialog(true);
+          toast.success("QR Code PIX gerado com sucesso!");
+        } else {
+          console.warn('[PIX Webhook] Resposta sem dados PIX esperados:', responseData);
+          toast.success("Dados enviados com sucesso! Processando pagamento PIX...");
+          
+          // Navigate to PIX payment page or show success
+          setTimeout(() => {
+            toast.info("Em breve você será redirecionado para o PIX");
+          }, 1500);
+        }
       } else {
         throw new Error(`Erro no webhook: ${response.status}`);
       }
@@ -135,6 +155,11 @@ const Checkout = () => {
       return;
     }
     toast.info("Redirecionando para pagamento com cartão...");
+  };
+
+  const handleClosePixDialog = () => {
+    setShowPixDialog(false);
+    setPixData({});
   };
 
   if (isSessionLoading) {
@@ -373,6 +398,16 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+
+      {/* PIX Dialog Popup */}
+      <PixQrCodeDialog
+        isOpen={showPixDialog}
+        onClose={handleClosePixDialog}
+        qrCodeBase64={pixData.pix_base64}
+        qrCodeText={pixData.pix_url}
+        pix_url={pixData.pix_url}
+        pix_base64={pixData.pix_base64}
+      />
     </Layout>
   );
 };

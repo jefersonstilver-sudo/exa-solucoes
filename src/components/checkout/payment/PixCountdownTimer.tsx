@@ -74,21 +74,31 @@ const PixCountdownTimer: React.FC<PixCountdownTimerProps> = ({
   // Calcular progresso para a barra de progresso
   const progress = (seconds / initialSeconds) * 100;
   
-  // Determinar a cor da barra de progresso com base no tempo restante
+  // Determinar a cor da barra de progresso com base no tempo restante - sempre vermelha para urgência
   const getProgressColor = () => {
-    if (progress > 60) return 'bg-green-500';
-    if (progress > 20) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (progress > 60) return 'bg-red-500';
+    if (progress > 20) return 'bg-red-600';
+    return 'bg-red-700';
   };
+
+  // Adicionar pulsação quando tempo está baixo
+  const shouldPulse = progress <= 20;
 
   return (
     <div className="w-full">
-      <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+      <div className="w-full h-3 bg-red-100 rounded-full overflow-hidden border border-red-200">
         <div 
-          className={`h-full ${getProgressColor()} transition-all duration-1000 ease-linear`} 
+          className={`h-full ${getProgressColor()} transition-all duration-1000 ease-linear ${
+            shouldPulse ? 'animate-pulse' : ''
+          }`} 
           style={{ width: `${progress}%` }}
         />
       </div>
+      {shouldPulse && (
+        <p className="text-xs text-red-700 text-center mt-1 font-medium animate-pulse">
+          ⚠️ Tempo quase esgotado!
+        </p>
+      )}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -95,7 +96,7 @@ const PixQrCodeDialog = ({
   
   const handleExpire = () => {
     setIsExpired(true);
-    toast.warning("QR Code expirado. Feche e gere um novo código para tentar novamente.");
+    toast.warning("QR Code expirado. O popup será fechado automaticamente.");
     
     // Log expiration
     logCheckoutEvent(
@@ -130,65 +131,80 @@ const PixQrCodeDialog = ({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Pagamento PIX</DialogTitle>
-              <DialogDescription>
-                Escaneie o QR Code ou copie o código para pagar
+              <DialogTitle className="text-center text-xl font-bold">
+                {isExpired ? "QR Code Expirado" : "Pagamento PIX"}
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                {isExpired 
+                  ? "O tempo para pagamento expirou. Feche e tente novamente." 
+                  : "Escaneie o QR Code ou copie o código para pagar"
+                }
               </DialogDescription>
             </DialogHeader>
             
-            <div className="flex flex-col items-center space-y-4 py-4">
-              {finalQrCodeBase64 && (
-                <div className="w-full flex flex-col items-center space-y-3">
-                  <div className="w-full flex justify-center">
-                    <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
+            {!isExpired && (
+              <div className="flex flex-col items-center space-y-6 py-4">
+                {/* Timer de 5 minutos - em destaque com cor vermelha */}
+                <div className="w-full bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="text-center mb-3">
+                    <p className="text-red-700 font-semibold text-lg">
+                      ⏰ Tempo para pagamento: {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
+                    </p>
+                    <p className="text-red-600 text-sm">
+                      Pague rapidamente! O código expira em 5 minutos.
+                    </p>
                   </div>
-                  
-                  {/* Timer colocado abaixo do QR code conforme solicitado */}
-                  <div className="w-full max-w-[220px]">
+                  <div className="w-full">
                     <PixCountdownTimer
                       initialSeconds={QR_EXPIRATION_TIME}
                       onExpire={handleExpire}
                       isActive={!isExpired}
                       onTimeUpdate={handleTimeUpdate}
                     />
-                    <p className="text-xs text-center text-gray-500 mt-1">
-                      O código expira em {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
-                    </p>
                   </div>
                 </div>
-              )}
-              
-              {!isExpired && finalQrCodeText && (
-                <div className="w-full">
-                  <div className="flex flex-col space-y-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Código PIX Copia e Cola
-                    </label>
-                    <div className="relative">
-                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-xs overflow-x-auto max-w-full whitespace-nowrap">
-                        {finalQrCodeText.length > 50 ? `${finalQrCodeText.substring(0, 50)}...` : finalQrCodeText}
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={handleCopyQrCode}
-                        className="absolute right-1 top-1/2 -translate-y-1/2"
-                      >
-                        <Copy className="h-4 w-4" />
-                        <span className="sr-only">Copiar código</span>
-                      </Button>
+
+                {finalQrCodeBase64 && (
+                  <div className="w-full flex flex-col items-center space-y-3">
+                    <div className="w-full flex justify-center">
+                      <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+                
+                {finalQrCodeText && (
+                  <div className="w-full">
+                    <div className="flex flex-col space-y-3">
+                      <label className="text-sm font-medium text-gray-700 text-center">
+                        Ou copie e cole o código PIX:
+                      </label>
+                      <div className="relative">
+                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-xs overflow-x-auto max-w-full whitespace-nowrap">
+                          {finalQrCodeText.length > 50 ? `${finalQrCodeText.substring(0, 50)}...` : finalQrCodeText}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          onClick={handleCopyQrCode}
+                          className="w-full mt-2 bg-green-600 hover:bg-green-700"
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copiar Código PIX
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex justify-center gap-2 mt-4">
               <Button 
                 variant="outline" 
                 onClick={onClose}
+                className="flex-1"
               >
-                Fechar
+                {isExpired ? "Fechar" : "Cancelar"}
               </Button>
             </div>
           </>
