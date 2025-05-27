@@ -20,6 +20,7 @@ export interface PaymentLog {
   payment_method: string;
   payment_status: string;
   payment_id: string;
+  payment_created_at?: string;
   pix_data?: PixData;
 }
 
@@ -30,6 +31,7 @@ export interface PixPaymentData {
   qrCodeBase64: string;
   paymentId: string;
   valorTotal: number;
+  createdAt?: string;
 }
 
 export const usePixPayment = (pedidoId: string | null) => {
@@ -68,6 +70,26 @@ export const usePixPayment = (pedidoId: string | null) => {
       // We need to safely cast the log_pagamento to PaymentLog
       const logPagamento = pedido.log_pagamento as unknown as PaymentLog;
       
+      // DETECÇÃO INTELIGENTE: Se já está pago, redirecionar
+      if (logPagamento?.payment_status === 'approved' || pedido.status === 'pago_pendente_video') {
+        console.log("✅ PIX: Pagamento já aprovado, redirecionando para confirmação");
+        
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_PROCESSING,
+          LogLevel.INFO,
+          "Pagamento já aprovado - redirecionando",
+          { pedidoId, status: pedido.status }
+        );
+        
+        // Redirecionar após pequeno delay
+        setTimeout(() => {
+          navigate(`/pedido-confirmado?id=${pedido.id}`);
+        }, 1000);
+        
+        setIsLoading(false);
+        return;
+      }
+      
       if (!logPagamento || logPagamento.payment_method !== 'pix') {
         throw new Error("Método de pagamento inválido ou não encontrado");
       }
@@ -84,8 +106,14 @@ export const usePixPayment = (pedidoId: string | null) => {
       
       console.log("[usePixPayment] Extracted QR data:", { 
         qrCode: qrCode ? `${qrCode.substring(0, 20)}...` : 'Not found',
-        qrCodeBase64: qrCodeBase64 ? `${qrCodeBase64.substring(0, 20)}...` : 'Not found' 
+        qrCodeBase64: qrCodeBase64 ? `${qrCodeBase64.substring(0, 20)}...` : 'Not found',
+        paymentStatus: logPagamento.payment_status
       });
+      
+      // VALIDAÇÃO: Se não tem QR code válido, mostrar opção de regenerar
+      if (!qrCode && !qrCodeBase64) {
+        console.warn("[usePixPayment] QR code não encontrado - precisará regenerar");
+      }
       
       setPaymentData({
         pedidoId: pedido.id,
@@ -93,15 +121,9 @@ export const usePixPayment = (pedidoId: string | null) => {
         qrCode: qrCode,
         qrCodeBase64: qrCodeBase64,
         paymentId: logPagamento.payment_id || '',
-        valorTotal: pedido.valor_total
+        valorTotal: pedido.valor_total,
+        createdAt: logPagamento.payment_created_at
       });
-      
-      // If payment is already approved, redirect to confirmation page after a short delay
-      if (logPagamento.payment_status === 'approved') {
-        setTimeout(() => {
-          navigate(`/pedido-confirmado?id=${pedido.id}`);
-        }, 3000);
-      }
       
       setIsLoading(false);
     } catch (err: any) {
@@ -133,7 +155,6 @@ export const usePixPayment = (pedidoId: string | null) => {
       if (!data || data.length === 0) throw new Error("Pedido não encontrado");
       
       const pedido = data[0];
-      // We need to safely cast the log_pagamento to PaymentLog
       const logPagamento = pedido.log_pagamento as unknown as PaymentLog;
       
       // Update local payment data

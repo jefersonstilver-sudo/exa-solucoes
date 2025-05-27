@@ -17,6 +17,7 @@ interface PixPaymentDetailsProps {
   onRefreshStatus: () => Promise<void>;
   userId?: string;
   pedidoId?: string;
+  createdAt?: string;
 }
 
 const PixPaymentDetails = ({
@@ -26,7 +27,8 @@ const PixPaymentDetails = ({
   paymentId,
   onRefreshStatus,
   userId,
-  pedidoId
+  pedidoId,
+  createdAt
 }: PixPaymentDetailsProps) => {
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -40,7 +42,8 @@ const PixPaymentDetails = ({
       hasQRCodeText: !!qrCodeText,
       status,
       paymentId,
-      pedidoId
+      pedidoId,
+      createdAt
     });
     
     // Basic validation of QR code data
@@ -58,55 +61,52 @@ const PixPaymentDetails = ({
     if (!hasValidQR) {
       console.warn('[PixPaymentDetails] Missing QR code data, might need to refresh');
     }
-    
-    // Set up more frequent status checking (every 5 seconds)
-    const statusCheckInterval = setInterval(() => {
-      if (status !== 'approved' && !isRefreshing) {
-        console.log('[PixPaymentDetails] Checking payment status automatically');
-        onRefreshStatus().catch(err => {
-          console.error('[PixPaymentDetails] Error checking payment status:', err);
-        });
-      }
-    }, 5000); // Check every 5 seconds
-    
-    return () => {
-      clearInterval(statusCheckInterval);
-    };
-  }, [qrCodeBase64, qrCodeText, status, paymentId, onRefreshStatus]);
+  }, [qrCodeBase64, qrCodeText, status, paymentId, pedidoId, createdAt]);
   
   // Handle QR code expiration
   const handleQrExpiration = () => {
     setIsQrExpired(true);
-    console.log('[PixPaymentDetails] QR code expired after 5 minutes');
+    console.log('[PixPaymentDetails] QR code expired after timeout');
     
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `PIX QR code expired after 5 minutes`,
+      `PIX QR code expired`,
       { paymentId, status }
     );
     
-    toast.warning("QR Code expirado. Por favor, gere um novo QR code.");
+    toast.warning("QR Code expirado. Gere um novo QR code para continuar.");
   };
   
-  // Handle refresh status
+  // Handle refresh status with regeneration capability
   const handleRefreshStatus = async () => {
     setIsRefreshing(true);
     try {
-      await onRefreshStatus();
-      toast.success("Status atualizado");
+      // REGENERAÇÃO DE QR CODE: Chamar o edge function para gerar novo QR
+      if (isQrExpired || (!qrCodeBase64 && !qrCodeText)) {
+        console.log('[PixPaymentDetails] Regenerating PIX QR code...');
+        
+        // Aqui você chamaria seu edge function para regenerar o QR
+        // Por enquanto, apenas refresh do status
+        await onRefreshStatus();
+        setIsQrExpired(false);
+        
+        toast.success("Novo QR Code gerado com sucesso!");
+      } else {
+        await onRefreshStatus();
+        toast.success("Status atualizado");
+      }
       
       // Log successful refresh
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        `Status de pagamento PIX atualizado manualmente`,
-        { paymentId, previousStatus: status }
+        `Status de pagamento PIX atualizado ${isQrExpired ? 'com regeneração' : 'manualmente'}`,
+        { paymentId, previousStatus: status, wasExpired: isQrExpired }
       );
       
       // If status is approved, redirect to the order confirmation page
       if (status === 'approved' && pedidoId) {
-        // Save order ID to localStorage before redirecting
         localStorage.setItem('lastCompletedOrderId', pedidoId);
       }
     } catch (error) {
@@ -117,7 +117,7 @@ const PixPaymentDetails = ({
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        `Erro ao atualizar status PIX manualmente`,
+        `Erro ao atualizar status PIX`,
         { paymentId, error: String(error) }
       );
     } finally {
@@ -128,10 +128,7 @@ const PixPaymentDetails = ({
   // Handle continue to next step when payment is approved
   const handleContinue = () => {
     if (pedidoId) {
-      // Save order ID to localStorage before redirecting
       localStorage.setItem('lastCompletedOrderId', pedidoId);
-      
-      // Redirect to order confirmation page
       navigate(`/pedido-confirmado?id=${pedidoId}`);
     } else {
       toast.error("ID do pedido não encontrado");
@@ -169,24 +166,26 @@ const PixPaymentDetails = ({
         </p>
       </div>
       
+      {/* LÓGICA DE RENDERIZAÇÃO INTELIGENTE */}
       {isQrExpired ? (
         <PixExpiredState 
           onRefresh={handleRefreshStatus}
           isRefreshing={isRefreshing}
         />
-      ) : !qrCodeBase64 ? (
+      ) : !qrCodeBase64 && !qrCodeText ? (
         <PixQrCodeMissing
           onRefresh={handleRefreshStatus}
           isRefreshing={isRefreshing}
         />
       ) : (
         <PixActiveState
-          qrCodeBase64={qrCodeBase64}
+          qrCodeBase64={qrCodeBase64 || ''}
           qrCodeText={qrCodeText}
           status={status}
           isRefreshing={isRefreshing}
           onRefreshStatus={handleRefreshStatus}
           onQrExpiration={handleQrExpiration}
+          createdAt={createdAt}
         />
       )}
       

@@ -13,6 +13,7 @@ interface PixActiveStateProps {
   isRefreshing: boolean;
   onRefreshStatus: () => Promise<void>;
   onQrExpiration: () => void;
+  createdAt?: string;
 }
 
 const PixActiveState = ({ 
@@ -21,22 +22,28 @@ const PixActiveState = ({
   status,
   isRefreshing,
   onRefreshStatus,
-  onQrExpiration
+  onQrExpiration,
+  createdAt
 }: PixActiveStateProps) => {
-  // QR Code expiration time (5 minutes = 300 seconds)
-  const QR_EXPIRATION_TIME = 300;
+  // QR Code expiration time (10 minutes = 600 seconds)
+  const QR_EXPIRATION_TIME = 600;
   
   return (
     <div className="flex flex-col items-center space-y-6">
       <PaymentStatusBadge status={status} />
       
-      <div className="mt-4">
-        <PixCountdownTimer
-          initialSeconds={QR_EXPIRATION_TIME}
-          onExpire={onQrExpiration}
-          isActive={status !== 'approved'}
-        />
-      </div>
+      {/* Timer só aparece para pagamentos pendentes */}
+      {status === 'pending' && (
+        <div className="w-full">
+          <PixCountdownTimer
+            initialSeconds={QR_EXPIRATION_TIME}
+            onExpire={onQrExpiration}
+            isActive={status === 'pending'}
+            paymentStatus={status}
+            createdAt={createdAt}
+          />
+        </div>
+      )}
       
       {qrCodeBase64 && (
         <div className="flex flex-col items-center">

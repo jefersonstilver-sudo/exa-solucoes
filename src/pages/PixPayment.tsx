@@ -44,7 +44,8 @@ const PixPayment = () => {
       isLoading, 
       hasError: !!error, 
       hasPaymentData: !!paymentData,
-      status: paymentData?.status
+      status: paymentData?.status,
+      hasQrCode: !!(paymentData?.qrCodeBase64 || paymentData?.qrCode)
     });
     
     if (error) {
@@ -55,7 +56,8 @@ const PixPayment = () => {
       console.log("[PIX Payment] SISTEMA CORRIGIDO - Payment data received:", {
         status: paymentData.status,
         paymentId: paymentData.paymentId,
-        hasQRCode: !!paymentData.qrCodeBase64
+        hasQRCode: !!paymentData.qrCodeBase64,
+        createdAt: paymentData.createdAt
       });
     }
   }, [isLoading, error, paymentData, pedidoId]);

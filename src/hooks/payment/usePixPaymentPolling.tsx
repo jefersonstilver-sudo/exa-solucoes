@@ -15,7 +15,7 @@ export const usePixPaymentPolling = ({
   pedidoId,
   isActive,
   onPaymentApproved,
-  intervalMs = 5000 // 5 segundos por padrão
+  intervalMs = 10000 // 10 segundos por padrão - menos frequente
 }: UsePixPaymentPollingProps) => {
   const [isPolling, setIsPolling] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
@@ -76,20 +76,21 @@ export const usePixPaymentPolling = ({
     }
   }, [pedidoId, isActive, onPaymentApproved]);
   
-  // Polling automático
+  // Polling automático menos agressivo
   useEffect(() => {
     if (!isActive || !pedidoId) return;
     
     console.log("🚀 POLLING: Iniciando polling automático", { pedidoId, intervalMs });
     
-    // Primeira verificação imediata
-    checkPaymentStatus();
+    // Primeira verificação após 5 segundos
+    const initialTimeout = setTimeout(checkPaymentStatus, 5000);
     
-    // Configurar intervalo
+    // Intervalo regular
     const interval = setInterval(checkPaymentStatus, intervalMs);
     
     return () => {
       console.log("🛑 POLLING: Parando polling automático");
+      clearTimeout(initialTimeout);
       clearInterval(interval);
     };
   }, [checkPaymentStatus, isActive, pedidoId, intervalMs]);

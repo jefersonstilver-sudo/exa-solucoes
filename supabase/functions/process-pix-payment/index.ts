@@ -110,8 +110,16 @@ serve(async (req) => {
       ticket_url: paymentResponse.point_of_interaction?.transaction_data?.ticket_url || null,
       status: paymentResponse.status,
       status_detail: paymentResponse.status_detail,
-      external_reference: paymentResponse.external_reference
+      external_reference: paymentResponse.external_reference,
+      created_at: new Date().toISOString()
     };
+    
+    console.log("[PIX] Payment created successfully:", {
+      payment_id: pixData.payment_id,
+      status: pixData.status,
+      hasQrCode: !!pixData.qrCode,
+      hasQrCodeBase64: !!pixData.qrCodeBase64
+    });
     
     // Update the pedido with payment information - using standardized field names
     const { error: updateError } = await supabase
@@ -121,7 +129,8 @@ serve(async (req) => {
           payment_method: 'pix',
           payment_id: pixData.payment_id,
           payment_status: pixData.status,
-          payment_created_at: new Date().toISOString(),
+          payment_created_at: pixData.created_at,
+          external_reference: pixData.external_reference,
           pix_data: {
             qr_code: pixData.qrCode,
             qr_code_base64: pixData.qrCodeBase64,
@@ -135,6 +144,8 @@ serve(async (req) => {
     
     if (updateError) {
       console.error("[PIX] Error updating pedido:", updateError);
+    } else {
+      console.log("[PIX] Pedido updated successfully with payment data");
     }
     
     // Log the PIX payment creation
@@ -148,7 +159,8 @@ serve(async (req) => {
           user_id: userId,
           payment_id: pixData.payment_id,
           amount,
-          status: pixData.status
+          status: pixData.status,
+          created_at: pixData.created_at
         }
       });
     
@@ -161,7 +173,8 @@ serve(async (req) => {
           qrCode: pixData.qrCode,
           qrCodeBase64: pixData.qrCodeBase64,
           status: pixData.status,
-          ticket_url: pixData.ticket_url
+          ticket_url: pixData.ticket_url,
+          created_at: pixData.created_at
         },
         pedido_id: pedidoId
       }),
