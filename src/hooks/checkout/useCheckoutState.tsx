@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
 import { PlanKey } from '@/types/checkout';
 
@@ -8,20 +8,16 @@ export const useCheckoutState = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>(1);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(() => {
-    const date = new Date();
-    date.setDate(date.getDate() + 30); // Padrão de 30 dias
-    return date;
-  });
   const [sessionUser, setSessionUser] = useState<any>(null);
   
-  // Atualiza a data final quando o plano muda
-  useEffect(() => {
+  // CORREÇÃO: Usar useMemo para cálculo de endDate
+  const endDate = useMemo(() => {
     const date = new Date(startDate);
     date.setMonth(date.getMonth() + PLANS[selectedPlan].months);
-    setEndDate(date);
+    return date;
   }, [selectedPlan, startDate]);
   
+  // CORREÇÃO: Remover setEndDate pois agora é computado
   return {
     step,
     setStep,
@@ -31,8 +27,7 @@ export const useCheckoutState = () => {
     setAcceptTerms,
     startDate,
     setStartDate,
-    endDate,
-    setEndDate,
+    endDate, // Agora é computado, não estado
     sessionUser,
     setSessionUser,
     STEPS: CHECKOUT_STEPS

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
@@ -22,9 +22,35 @@ const CheckoutContainer = ({
   const navigate = useNavigate();
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   
-  // MEGA PROTEÇÃO: Verificação de autenticação contínua
+  // CORREÇÃO CRÍTICA: Todos os hooks SEMPRE executam na mesma ordem
+  // Usar useMemo para calcular estados sem afetar ordem de hooks
+  const authState = useMemo(() => {
+    return {
+      shouldRedirect: requireAuth && !isSessionLoading && !isLoggedIn,
+      shouldShowLoading: requireAuth && isSessionLoading,
+      shouldShowContent: !requireAuth || (!isSessionLoading && isLoggedIn)
+    };
+  }, [requireAuth, isSessionLoading, isLoggedIn]);
+
+  // ÚNICO useEffect para todas as verificações de autenticação
   useEffect(() => {
-    if (requireAuth && !isSessionLoading && !isLoggedIn) {
+    // Log de acesso bem-sucedido
+    if (isLoggedIn && user) {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `MEGA CHECKOUT: Usuário autenticado acessando step ${step}`,
+        { 
+          userId: user.id, 
+          step, 
+          title,
+          timestamp: new Date().toISOString() 
+        }
+      );
+    }
+
+    // Verificação de redirecionamento
+    if (authState.shouldRedirect) {
       console.error("[CheckoutContainer] MEGA CHECKOUT: Usuário não autenticado");
       
       logCheckoutEvent(
@@ -37,10 +63,10 @@ const CheckoutContainer = ({
       toast.error("Você precisa estar logado para continuar");
       navigate('/login?redirect=/checkout');
     }
-  }, [isLoggedIn, isSessionLoading, navigate, requireAuth, step]);
+  }, [isLoggedIn, user, step, title, authState.shouldRedirect, navigate]);
 
-  // MEGA PROTEÇÃO: Loading state
-  if (requireAuth && isSessionLoading) {
+  // CORREÇÃO: Renderização baseada em estado computado, não em condições que afetam hooks
+  if (authState.shouldShowLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <motion.div
@@ -55,27 +81,9 @@ const CheckoutContainer = ({
     );
   }
   
-  // MEGA PROTEÇÃO: Usuário não autenticado
-  if (requireAuth && !isLoggedIn) {
+  if (authState.shouldRedirect) {
     return null; // Will be redirected by the effect above
   }
-  
-  // Log successful access
-  useEffect(() => {
-    if (isLoggedIn && user) {
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        `MEGA CHECKOUT: Usuário autenticado acessando step ${step}`,
-        { 
-          userId: user.id, 
-          step, 
-          title,
-          timestamp: new Date().toISOString() 
-        }
-      );
-    }
-  }, [isLoggedIn, user, step, title]);
   
   return (
     <motion.div
