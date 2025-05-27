@@ -31,6 +31,7 @@ const Layout: React.FC<LayoutProps> = ({
     handleRemoveFromCart: internalHandleRemoveFromCart,
     handleClearCart: internalHandleClearCart,
     handleChangeDuration: internalHandleChangeDuration,
+    handleProceedToCheckout: internalHandleProceedToCheckout,
     cartAnimation,
     toggleCart
   } = useCartManager();
@@ -40,7 +41,8 @@ const Layout: React.FC<LayoutProps> = ({
   const onRemoveFromCart = externalOnRemoveFromCart || internalHandleRemoveFromCart;
   const onClearCart = externalOnClearCart || internalHandleClearCart;
   const onChangeDuration = externalOnChangeDuration || internalHandleChangeDuration;
-  const onProceedToCheckout = externalOnProceedToCheckout || (() => {});
+  // CORREÇÃO: Usar handleProceedToCheckout do useCartManager em vez de função vazia
+  const onProceedToCheckout = externalOnProceedToCheckout || internalHandleProceedToCheckout;
 
   console.log('🏗️ Layout: Renderizando com carrinho');
   console.log('🏗️ Layout: cartItems.length:', cartItems.length);
