@@ -4,19 +4,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { usePanelStore } from '@/hooks/usePanelStore';
-import { useBuildingStore } from '@/hooks/useBuildingStore';
+import { useSimpleBuildingStore } from '@/hooks/useSimpleBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
-import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
+import SimpleBuildingGrid from '@/components/building-store/SimpleBuildingGrid';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
   const [searchParams] = useSearchParams();
   const buildingId = searchParams.get('building_id');
   
-  // Panel store state
+  // Panel store state (for specific building)
   const {
     panels,
     isLoading: panelsLoading,
@@ -31,21 +31,13 @@ export default function PanelStore() {
     handleClearLocation: handlePanelClearLocation
   } = usePanelStore();
 
-  // Building store state
+  // Simplified building store state (for main store view)
   const {
     buildings,
     isLoading: buildingsLoading,
     error: buildingsError,
-    searchLocation: buildingSearchLocation,
-    setSearchLocation: setBuildingSearchLocation,
-    selectedLocation: buildingSelectedLocation,
-    isSearching: buildingsSearching,
-    filters: buildingFilters,
-    handleFilterChange: handleBuildingFilterChange,
-    handleSearch: handleBuildingSearch,
-    handleClearLocation: handleBuildingClearLocation,
-    initializeStore
-  } = useBuildingStore();
+    refetch: refetchBuildings
+  } = useSimpleBuildingStore();
 
   const {
     cartItems,
@@ -62,18 +54,6 @@ export default function PanelStore() {
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
 
-  // CORREÇÃO CRÍTICA: Inicializar o store automaticamente
-  useEffect(() => {
-    console.log('🔄 [PANEL STORE] === EFFECT INICIAL EXECUTADO ===');
-    console.log('🔄 [PANEL STORE] buildingId:', buildingId);
-    
-    if (!buildingId) {
-      console.log('🔄 [PANEL STORE] Sem buildingId - INICIALIZANDO store de prédios');
-      // CORREÇÃO: Usar initializeStore para garantir carregamento
-      initializeStore();
-    }
-  }, [buildingId, initializeStore]);
-
   // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
     if (isLoggedIn || cartItems.length > 0) {
@@ -82,6 +62,15 @@ export default function PanelStore() {
       setShowPromotion(true);
     }
   }, [isLoggedIn, cartItems.length]);
+
+  // Log do estado atual
+  useEffect(() => {
+    console.log('🔄 [PANEL STORE] === ESTADO ATUAL ===');
+    console.log('🔄 [PANEL STORE] buildingId:', buildingId);
+    console.log('🔄 [PANEL STORE] buildings.length:', buildings.length);
+    console.log('🔄 [PANEL STORE] buildingsLoading:', buildingsLoading);
+    console.log('🔄 [PANEL STORE] buildingsError:', buildingsError);
+  }, [buildingId, buildings, buildingsLoading, buildingsError]);
 
   // Handle going back to building list
   const handleBackToBuildings = () => {
@@ -111,10 +100,10 @@ export default function PanelStore() {
             Erro ao carregar {buildingId ? 'painéis' : 'prédios'}
           </h2>
           <p className="text-muted-foreground mb-6">
-            Ocorreu um problema ao buscar os {buildingId ? 'painéis' : 'prédios'} disponíveis. Por favor, tente novamente.
+            Ocorreu um problema ao buscar os {buildingId ? 'painéis' : 'prédios'} disponíveis.
           </p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => buildingId ? window.location.reload() : refetchBuildings()} 
             className="px-4 py-2 bg-[#3C1361] text-white rounded-md hover:bg-[#3C1361]/80"
           >
             Tentar novamente
@@ -164,20 +153,23 @@ export default function PanelStore() {
             onAddToCart={handleAddToCart}
           />
         ) : (
-          // Show building selection (main store view)
-          <BuildingStoreLayout 
-            buildings={buildings}
-            isLoading={buildingsLoading}
-            isSearching={buildingsSearching}
-            searchLocation={buildingSearchLocation}
-            setSearchLocation={setBuildingSearchLocation}
-            selectedLocation={buildingSelectedLocation}
-            filters={buildingFilters}
-            handleFilterChange={handleBuildingFilterChange}
-            handleSearch={handleBuildingSearch}
-            handleClearLocation={handleBuildingClearLocation}
-            onAddToCart={handleAddToCart}
-          />
+          // Show building selection (main store view) - SIMPLIFIED
+          <div className="space-y-6">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-[#3C1361] mb-2">
+                Loja de Prédios
+              </h1>
+              <p className="text-gray-600">
+                Selecione um prédio para ver os painéis disponíveis
+              </p>
+            </div>
+            
+            <SimpleBuildingGrid 
+              buildings={buildings}
+              isLoading={buildingsLoading}
+              onAddToCart={handleAddToCart}
+            />
+          </div>
         )}
       </motion.div>
     </Layout>

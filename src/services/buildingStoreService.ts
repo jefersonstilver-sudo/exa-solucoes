@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Panel } from '@/types/panel';
@@ -26,76 +25,33 @@ export interface BuildingStore {
 }
 
 /**
- * Converte um BuildingStore em Panel para compatibilidade com o carrinho
+ * VERSÃO SIMPLIFICADA E CONFIÁVEL
  */
-export const buildingToPanel = (building: BuildingStore): Panel => {
-  return {
-    id: building.id,
-    code: `BLD-${building.id.slice(0, 8)}`, // Gerar código baseado no ID
-    building_id: building.id,
-    status: 'ativo',
-    resolucao: '1920x1080', // Valor padrão
-    buildings: {
-      id: building.id,
-      nome: building.nome,
-      endereco: building.endereco,
-      bairro: building.bairro,
-      cidade: building.bairro, // Usando bairro como cidade por compatibilidade
-      estado: 'SP', // Valor padrão
-      cep: '00000-000', // Valor padrão
-      latitude: building.latitude,
-      longitude: building.longitude,
-      imageUrl: getImageUrl(building.imagem_principal),
-      basePrice: building.preco_base,
-      venue_type: building.venue_type,
-      condominiumProfile: building.padrao_publico,
-      audience_profile: building.caracteristicas,
-      tags: building.amenities,
-      towers: Math.ceil(building.quantidade_telas / 2), // Estimativa
-      apartments: building.publico_estimado ? Math.ceil(building.publico_estimado / 3) : 100, // Estimativa
-      status: building.status
-    }
-  };
-};
-
-const getImageUrl = (path: string) => {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
-};
-
-export const fetchBuildingsForStore = async (lat?: number, lng?: number, radius = 5000) => {
+export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
   try {
-    console.log('🏢 [BUILDING STORE] Buscando prédios para loja pública...');
-    console.log('🏢 [BUILDING STORE] Parâmetros:', { lat, lng, radius });
+    console.log('🏢 [BUILDING STORE SERVICE] === VERSÃO SIMPLIFICADA ===');
     
-    // CORREÇÃO CRÍTICA: Query pública - sem verificação de autenticação
-    // RLS agora permite acesso público a prédios ativos
-    let query = supabase
+    const { data: buildings, error } = await supabase
       .from('buildings')
       .select('*')
-      .eq('status', 'ativo') // Apenas prédios ativos são acessíveis publicamente
+      .eq('status', 'ativo')
       .order('created_at', { ascending: false });
 
-    console.log('🏢 [BUILDING STORE] Executando query pública para prédios ativos...');
-    const { data: buildings, error } = await query;
-
     if (error) {
-      console.error('❌ [BUILDING STORE] Erro na query pública:', error);
-      toast.error(`Erro ao carregar prédios: ${error.message}`);
-      return [];
+      console.error('❌ [BUILDING STORE SERVICE] Erro na query:', error);
+      throw new Error(`Erro ao buscar prédios: ${error.message}`);
     }
 
     if (!buildings || buildings.length === 0) {
-      console.warn('⚠️ [BUILDING STORE] Nenhum prédio ativo encontrado publicamente');
+      console.warn('⚠️ [BUILDING STORE SERVICE] Nenhum prédio ativo encontrado');
       return [];
     }
 
-    console.log('✅ [BUILDING STORE] Prédios encontrados publicamente:', buildings.length);
+    console.log('✅ [BUILDING STORE SERVICE] Prédios ativos encontrados:', buildings.length);
     
     // Log detalhado dos prédios encontrados
-    buildings.forEach(building => {
-      console.log('🏢 [BUILDING STORE] Prédio público:', {
+    buildings.forEach((building, index) => {
+      console.log(`🏢 [BUILDING STORE SERVICE] Prédio ${index + 1}:`, {
         id: building.id,
         nome: building.nome,
         status: building.status,
@@ -107,44 +63,57 @@ export const fetchBuildingsForStore = async (lat?: number, lng?: number, radius 
       });
     });
 
-    // Se há coordenadas, calcular distância e filtrar por raio
-    if (lat && lng && buildings) {
-      console.log('📍 [BUILDING STORE] Calculando distâncias...');
-      
-      const buildingsWithDistance = buildings.map((building: any) => {
-        if (building.latitude && building.longitude) {
-          const distance = getDistanceFromLatLonInKm(lat, lng, building.latitude, building.longitude) * 1000;
-          console.log(`📏 [BUILDING STORE] Distância para ${building.nome}: ${distance}m`);
-          return { ...building, distance };
-        }
-        console.log(`⚠️ [BUILDING STORE] ${building.nome} sem coordenadas`);
-        return { ...building, distance: 999999 };
-      });
-
-      // Filtrar por raio
-      const filteredBuildings = buildingsWithDistance.filter(building => {
-        const withinRadius = building.distance <= radius;
-        console.log(`📍 [BUILDING STORE] ${building.nome} dentro do raio (${radius}m): ${withinRadius}`);
-        return withinRadius;
-      });
-      
-      console.log(`✅ [BUILDING STORE] ${filteredBuildings.length} prédios dentro do raio de ${radius}m`);
-      return filteredBuildings.sort((a, b) => a.distance - b.distance);
-    }
-
-    console.log('✅ [BUILDING STORE] Retornando todos os prédios ativos públicos:', buildings.length);
-    return buildings || [];
+    return buildings as BuildingStore[];
     
   } catch (error: any) {
-    console.error('💥 [BUILDING STORE] Erro crítico na busca pública:', error);
+    console.error('💥 [BUILDING STORE SERVICE] Erro crítico:', error);
     toast.error('Erro crítico ao carregar prédios');
     return [];
   }
 };
 
+/**
+ * Converte um BuildingStore em Panel para compatibilidade com o carrinho
+ */
+export const buildingToPanel = (building: BuildingStore): Panel => {
+  return {
+    id: building.id,
+    code: `BLD-${building.id.slice(0, 8)}`,
+    building_id: building.id,
+    status: 'ativo',
+    resolucao: '1920x1080',
+    buildings: {
+      id: building.id,
+      nome: building.nome,
+      endereco: building.endereco,
+      bairro: building.bairro,
+      cidade: building.bairro,
+      estado: 'SP',
+      cep: '00000-000',
+      latitude: building.latitude,
+      longitude: building.longitude,
+      imageUrl: getImageUrl(building.imagem_principal),
+      basePrice: building.preco_base,
+      venue_type: building.venue_type,
+      condominiumProfile: building.padrao_publico,
+      audience_profile: building.caracteristicas,
+      tags: building.amenities,
+      towers: Math.ceil(building.quantidade_telas / 2),
+      apartments: building.publico_estimado ? Math.ceil(building.publico_estimado / 3) : 100,
+      status: building.status
+    }
+  };
+};
+
+const getImageUrl = (path: string) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
+};
+
 // Função auxiliar para calcular distância
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; // Raio da Terra em km
+  const R = 6371;
   const dLat = deg2rad(lat2 - lat1);
   const dLon = deg2rad(lon2 - lon1);
   const a = 
