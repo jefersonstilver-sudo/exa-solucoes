@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDebugService';
 import { handleMercadoPagoRedirect } from '@/services/mercadoPagoService';
+import { useUserSession } from '@/hooks/useUserSession';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import PixPaymentDetails from './PixPaymentDetails';
 import CreditCardPayment from './CreditCardPayment';
@@ -34,16 +35,27 @@ const PaymentGateway = ({
   preferenceId,
   pixData,
   onRefreshStatus,
-  userId
+  userId: propUserId
 }: PaymentGatewayProps) => {
   const navigate = useNavigate();
+  const { user, isLoggedIn } = useUserSession();
   const [paymentMethod, setPaymentMethod] = useState<string>(
     localStorage.getItem('preferred_payment_method') || 'credit_card'
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
+  // Use user from session if propUserId is not provided
+  const userId = propUserId || user?.id;
+  
   // Log de montagem do componente
   useEffect(() => {
+    console.log('PaymentGateway mounted with:', {
+      orderId,
+      userId,
+      isLoggedIn,
+      user: user ? { id: user.id, email: user.email } : null
+    });
+    
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
@@ -53,22 +65,23 @@ const PaymentGateway = ({
         paymentMethod,
         hasPix: !!pixData,
         hasPreference: !!preferenceId,
-        hasUserId: !!userId
+        hasUserId: !!userId,
+        isLoggedIn,
+        userEmail: user?.email
       }
     );
     
+    // Verificar autenticação no mount
+    if (!isLoggedIn || !user) {
+      console.error('PaymentGateway: Usuário não autenticado');
+      toast.error("Você precisa estar logado para acessar o pagamento");
+      navigate('/login?redirect=/checkout');
+      return;
+    }
+    
     // Salva preferência de método de pagamento
     localStorage.setItem('preferred_payment_method', paymentMethod);
-    
-    return () => {
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        `PaymentGateway desmontado`,
-        { orderId }
-      );
-    };
-  }, [orderId, paymentMethod, pixData, preferenceId, userId]);
+  }, [orderId, paymentMethod, pixData, preferenceId, userId, isLoggedIn, user, navigate]);
   
   // Voltar para o checkout
   const handleBack = () => {
@@ -91,10 +104,22 @@ const PaymentGateway = ({
   
   // Prosseguir com o pagamento
   const handleProceedPayment = async () => {
+    console.log('handleProceedPayment called:', {
+      paymentMethod,
+      isLoggedIn,
+      userId,
+      user: user ? { id: user.id, email: user.email } : null
+    });
+    
     setIsLoading(true);
     
     // Validate user authentication first
-    if (paymentMethod === 'pix' && !userId) {
+    if (!isLoggedIn || !user || !userId) {
+      console.error('handleProceedPayment: Usuário não autenticado', {
+        isLoggedIn,
+        hasUser: !!user,
+        hasUserId: !!userId
+      });
       toast.error("Usuário não autenticado");
       setIsLoading(false);
       navigate('/login?redirect=/checkout');
@@ -106,53 +131,54 @@ const PaymentGateway = ({
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
       } else if (paymentMethod === 'pix') {
-        // If we're in PIX payment flow, send the webhook and then navigate
-        if (userId) {
-          // Get user information
-          const userInfo = await getUserInfo(userId);
-          
-          if (!userInfo) {
-            toast.error("Erro ao buscar dados do usuário");
-            setIsLoading(false);
-            return;
-          }
-          
-          // Get cart items from localStorage
-          const cartItemsStr = localStorage.getItem('indexa_cart');
-          const cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
-          
-          // Format cart items for the webhook
-          const formattedPredios = cartItems.map((item: any) => ({
-            id: item.panel?.id || '',
-            nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
-          }));
-          
-          // Prepare webhook data
-          const webhookData = {
-            cliente_id: userId,
-            email: userInfo.email,
-            nome: userInfo.nome,
-            plano_escolhido: "Mensal",
-            predios_selecionados: formattedPredios,
-            valor_total: totalAmount.toFixed(2),
-            periodo_exibicao: {
-              inicio: new Date().toLocaleDateString('pt-BR'),
-              fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('pt-BR')
-            }
-          };
-          
-          // Send webhook and handle response
-          const response = await sendPixPaymentWebhook(webhookData);
-          
-          if (response.success) {
-            // Show success and navigate to PIX payment page
-            toast.success("PIX gerado com sucesso!");
-          } else {
-            toast.error("Erro ao gerar PIX");
-          }
+        console.log('Processing PIX payment for user:', userId);
+        
+        // Get user information
+        const userInfo = await getUserInfo(userId);
+        
+        if (!userInfo) {
+          toast.error("Erro ao buscar dados do usuário");
+          setIsLoading(false);
+          return;
         }
         
-        navigate(`/pix-payment?pedido=${orderId}`);
+        // Get cart items from localStorage
+        const cartItemsStr = localStorage.getItem('indexa_cart');
+        const cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
+        
+        // Format cart items for the webhook
+        const formattedPredios = cartItems.map((item: any) => ({
+          id: item.panel?.id || '',
+          nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
+        }));
+        
+        // Prepare webhook data
+        const webhookData = {
+          cliente_id: userId,
+          email: userInfo.email,
+          nome: userInfo.nome,
+          plano_escolhido: "Mensal",
+          predios_selecionados: formattedPredios,
+          valor_total: totalAmount.toFixed(2),
+          periodo_exibicao: {
+            inicio: new Date().toLocaleDateString('pt-BR'),
+            fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('pt-BR')
+          }
+        };
+        
+        console.log('Sending PIX webhook with data:', webhookData);
+        
+        // Send webhook and handle response
+        const response = await sendPixPaymentWebhook(webhookData);
+        
+        if (response.success) {
+          // Show success and navigate to PIX payment page
+          toast.success("PIX gerado com sucesso!");
+          navigate(`/pix-payment?pedido=${orderId}`);
+        } else {
+          toast.error("Erro ao gerar PIX");
+          setIsLoading(false);
+        }
       } else {
         toast.error("Configuração de pagamento inválida");
         setIsLoading(false);
@@ -163,6 +189,21 @@ const PaymentGateway = ({
       setIsLoading(false);
     }
   };
+  
+  // Don't render if user is not authenticated
+  if (!isLoggedIn || !user) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Acesso Restrito</h2>
+          <p className="text-gray-600 mb-6">Você precisa estar logado para acessar esta página.</p>
+          <Button onClick={() => navigate('/login?redirect=/checkout')}>
+            Fazer Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <ClientOnly>
@@ -200,6 +241,7 @@ const PaymentGateway = ({
                 paymentId={pixData.paymentId}
                 onRefreshStatus={onRefreshStatus || (() => Promise.resolve())}
                 userId={userId}
+                pedidoId={orderId}
               />
             ) : paymentMethod === 'credit_card' ? (
               <CreditCardPayment

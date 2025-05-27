@@ -10,6 +10,10 @@ import PixPayment from '@/pages/PixPayment';
 import Payment from '@/pages/Payment';
 import Confirmacao from '@/pages/Confirmacao';
 import BuildingStorePage from '@/pages/BuildingStore';
+import EditarPerfil from '@/pages/EditarPerfil';
+import AlterarSenha from '@/pages/AlterarSenha';
+import Configuracoes from '@/pages/Configuracoes';
+import MeusPedidos from '@/pages/MeusPedidos';
 
 export const PublicRoutes = () => {
   return (
@@ -35,6 +39,12 @@ export const PublicRoutes = () => {
       {/* Building store */}
       <Route path="/predios-loja" element={<BuildingStorePage />} />
       <Route path="/building-store" element={<BuildingStorePage />} />
+      
+      {/* User account pages */}
+      <Route path="/editar-perfil" element={<EditarPerfil />} />
+      <Route path="/alterar-senha" element={<AlterarSenha />} />
+      <Route path="/configuracoes" element={<Configuracoes />} />
+      <Route path="/meus-pedidos" element={<MeusPedidos />} />
     </Routes>
   );
 };

@@ -48,20 +48,36 @@ export const usePixPayment = (pedidoId: string | null) => {
       return;
     }
     
+    if (!user?.id) {
+      setError("Usuário não autenticado");
+      setIsLoading(false);
+      return;
+    }
+    
     try {
+      console.log('[usePixPayment] Fetching payment data for pedido:', pedidoId, 'user:', user.id);
+      
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
         .eq('id', pedidoId)
+        .eq('client_id', user.id) // Security: only fetch user's own orders
         .limit(1);
       
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error("Pedido não encontrado");
+      if (error) {
+        console.error('[usePixPayment] Supabase error:', error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        throw new Error("Pedido não encontrado ou você não tem permissão para visualizá-lo");
+      }
       
       const pedido = data[0];
+      console.log('[usePixPayment] Pedido found:', { id: pedido.id, status: pedido.status });
       
       // Check if user is authorized to view this payment
-      if (pedido.client_id !== user?.id) {
+      if (pedido.client_id !== user.id) {
         throw new Error("Você não tem permissão para visualizar este pagamento");
       }
       
@@ -76,15 +92,21 @@ export const usePixPayment = (pedidoId: string | null) => {
       const pixData = logPagamento.pix_data || {};
       
       // Enhanced logging for debugging
-      console.log("[usePixPayment] Raw PIX data:", pixData);
+      console.log("[usePixPayment] Raw PIX data:", {
+        hasPixData: !!pixData,
+        keys: Object.keys(pixData || {}),
+        paymentStatus: logPagamento.payment_status
+      });
       
       // Set the payment data, trying different field naming patterns
       const qrCode = pixData.qrCode || pixData.qr_code || '';
       const qrCodeBase64 = pixData.qrCodeBase64 || pixData.qr_code_base64 || '';
       
       console.log("[usePixPayment] Extracted QR data:", { 
-        qrCode: qrCode ? `${qrCode.substring(0, 20)}...` : 'Not found',
-        qrCodeBase64: qrCodeBase64 ? `${qrCodeBase64.substring(0, 20)}...` : 'Not found' 
+        hasQrCode: !!qrCode,
+        hasQrCodeBase64: !!qrCodeBase64,
+        qrCodeLength: qrCode.length,
+        qrCodeBase64Length: qrCodeBase64.length
       });
       
       setPaymentData({
@@ -105,7 +127,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       
       setIsLoading(false);
     } catch (err: any) {
-      console.error("Error fetching payment data:", err);
+      console.error("[usePixPayment] Error fetching payment data:", err);
       setError(err.message || "Erro ao carregar dados do pagamento");
       setIsLoading(false);
       
@@ -113,20 +135,23 @@ export const usePixPayment = (pedidoId: string | null) => {
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
         `Erro ao carregar dados do PIX: ${err.message}`,
-        { pedidoId, error: String(err) }
+        { pedidoId, error: String(err), userId: user?.id }
       );
     }
   };
   
   // Refresh the payment status
   const refreshPaymentStatus = async (): Promise<void> => {
-    if (!pedidoId) return;
+    if (!pedidoId || !user?.id) return;
     
     try {
+      console.log('[usePixPayment] Refreshing payment status for:', pedidoId);
+      
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
         .eq('id', pedidoId)
+        .eq('client_id', user.id) // Security: only fetch user's own orders
         .limit(1);
       
       if (error) throw error;
@@ -135,6 +160,8 @@ export const usePixPayment = (pedidoId: string | null) => {
       const pedido = data[0];
       // We need to safely cast the log_pagamento to PaymentLog
       const logPagamento = pedido.log_pagamento as unknown as PaymentLog;
+      
+      console.log('[usePixPayment] Refreshed payment status:', logPagamento.payment_status);
       
       // Update local payment data
       setPaymentData(prev => prev ? ({
@@ -150,22 +177,34 @@ export const usePixPayment = (pedidoId: string | null) => {
         }, 1500);
       }
     } catch (err: any) {
-      console.error("Error refreshing payment status:", err);
+      console.error("[usePixPayment] Error refreshing payment status:", err);
       toast.error("Erro ao atualizar status do pagamento");
     }
   };
   
   // Check authentication and load payment data
   useEffect(() => {
-    if (isSessionLoading) return;
+    console.log('[usePixPayment] Effect triggered:', {
+      isSessionLoading,
+      isLoggedIn,
+      hasUser: !!user,
+      userId: user?.id,
+      pedidoId
+    });
     
-    if (!isLoggedIn) {
+    if (isSessionLoading) {
+      console.log('[usePixPayment] Session still loading, waiting...');
+      return;
+    }
+    
+    if (!isLoggedIn || !user) {
+      console.log('[usePixPayment] User not authenticated, redirecting to login');
       navigate('/login?redirect=/checkout');
       return;
     }
     
     fetchPaymentData();
-  }, [isSessionLoading, isLoggedIn, pedidoId]);
+  }, [isSessionLoading, isLoggedIn, pedidoId, user]);
   
   return {
     isLoading,
