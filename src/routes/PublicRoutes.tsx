@@ -9,7 +9,6 @@ import CheckoutFinish from '@/pages/CheckoutFinish';
 import PixPayment from '@/pages/PixPayment';
 import Payment from '@/pages/Payment';
 import Confirmacao from '@/pages/Confirmacao';
-import BuildingStorePage from '@/pages/BuildingStore';
 
 export const PublicRoutes = () => {
   return (
@@ -31,10 +30,6 @@ export const PublicRoutes = () => {
       {/* Confirmation */}
       <Route path="/confirmacao" element={<Confirmacao />} />
       <Route path="/pedido-confirmado" element={<Confirmacao />} />
-      
-      {/* Building store */}
-      <Route path="/predios-loja" element={<BuildingStorePage />} />
-      <Route path="/building-store" element={<BuildingStorePage />} />
     </Routes>
   );
 };

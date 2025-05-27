@@ -13,7 +13,6 @@ import OrderConfirmation from '@/pages/OrderConfirmation';
 import Index from '@/pages/Index';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
-import BuildingStorePage from '@/pages/BuildingStore';
 import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AdvertiserOrders from '@/pages/advertiser/AdvertiserOrders';
@@ -54,13 +53,15 @@ const App = () => {
         {/* Public Routes - PÁGINA PRINCIPAL COM OS 3 CARDS ROXOS */}
         <Route path="/" element={<Index />} />
         
-        {/* Loja de Prédios - Nova rota principal */}
-        <Route path="/loja" element={<BuildingStorePage />} />
-        <Route path="/loja-predios" element={<BuildingStorePage />} />
+        {/* CORREÇÃO CRÍTICA: TODAS AS ROTAS DE LOJA REDIRECIONAM PARA A FUNCIONAL */}
+        <Route path="/loja" element={<Navigate to="/paineis-digitais/loja" replace />} />
+        <Route path="/loja-predios" element={<Navigate to="/paineis-digitais/loja" replace />} />
+        <Route path="/building-store" element={<Navigate to="/paineis-digitais/loja" replace />} />
+        <Route path="/predios-loja" element={<Navigate to="/paineis-digitais/loja" replace />} />
         
-        {/* Painéis Digitais - Loja de Painéis (específicos de um prédio) */}
+        {/* LOJA FUNCIONAL - Painéis Digitais (inclui seleção de prédios e painéis) */}
         <Route path="/paineis-digitais/loja" element={<PainelStore />} />
-        <Route path="/paineis-digitais" element={<Navigate to="/loja" replace />} />
+        <Route path="/paineis-digitais" element={<Navigate to="/paineis-digitais/loja" replace />} />
         
         {/* ADVERTISER ROUTES WITH LAYOUT - ESTRUTURA COMPLETA E CORRIGIDA */}
         <Route path="/anunciante" element={<AdvertiserLayout />}>
