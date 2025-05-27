@@ -2,10 +2,21 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
+// Tipos para os retornos das funções
+interface CleanupResult {
+  success: boolean;
+  cleaned_count: number;
+}
+
+interface MigrationResult {
+  success: boolean;
+  migrated_count: number;
+}
+
 /**
  * Executa limpeza automática de tentativas órfãs
  */
-export const executeAutomaticCleanup = async (): Promise<{success: boolean, cleaned_count: number}> => {
+export const executeAutomaticCleanup = async (): Promise<CleanupResult> => {
   try {
     console.log("🧹 Executando limpeza automática de tentativas órfãs...");
     
@@ -24,14 +35,17 @@ export const executeAutomaticCleanup = async (): Promise<{success: boolean, clea
     
     console.log("✅ Limpeza automática concluída:", data);
     
+    // Type assertion segura para o retorno da função RPC
+    const result = data as CleanupResult;
+    
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_PROCESSING,
       LogLevel.INFO,
-      `Limpeza automática executada: ${data?.cleaned_count || 0} tentativas removidas`,
-      { result: data }
+      `Limpeza automática executada: ${result?.cleaned_count || 0} tentativas removidas`,
+      { result }
     );
     
-    return data || { success: true, cleaned_count: 0 };
+    return result || { success: true, cleaned_count: 0 };
   } catch (error) {
     console.error("💥 Erro crítico na limpeza automática:", error);
     return { success: false, cleaned_count: 0 };
@@ -41,7 +55,7 @@ export const executeAutomaticCleanup = async (): Promise<{success: boolean, clea
 /**
  * Força migração de dados órfãos (caso necessário)
  */
-export const forceMigrateOrphanedPayments = async (): Promise<{success: boolean, migrated_count: number}> => {
+export const forceMigrateOrphanedPayments = async (): Promise<MigrationResult> => {
   try {
     console.log("🔄 Forçando migração de dados órfãos...");
     
@@ -53,7 +67,11 @@ export const forceMigrateOrphanedPayments = async (): Promise<{success: boolean,
     }
     
     console.log("✅ Migração forçada concluída:", data);
-    return data || { success: true, migrated_count: 0 };
+    
+    // Type assertion segura para o retorno da função RPC
+    const result = data as MigrationResult;
+    
+    return result || { success: true, migrated_count: 0 };
   } catch (error) {
     console.error("💥 Erro crítico na migração forçada:", error);
     return { success: false, migrated_count: 0 };
