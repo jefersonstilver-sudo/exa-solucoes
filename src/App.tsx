@@ -13,6 +13,7 @@ import OrderConfirmation from '@/pages/OrderConfirmation';
 import Index from '@/pages/Index';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
+import Login from '@/pages/Login';
 import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AdvertiserOrders from '@/pages/advertiser/AdvertiserOrders';
@@ -46,9 +47,11 @@ const App = () => {
         <Route path="/auth-hook-test" element={<AuthHookTest />} />
         <Route path="/auth-diagnostic" element={<AuthDiagnosticPage />} />
         
-        {/* Auth Routes - FIXED: Adicionar /* para subrotas */}
+        {/* ROTA DE LOGIN DIRETA - CORREÇÃO CRÍTICA */}
+        <Route path="/login" element={<Login />} />
+        
+        {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
-        <Route path="/login/*" element={<AuthRoutes />} />
         
         {/* Public Routes - PÁGINA PRINCIPAL COM OS 3 CARDS ROXOS */}
         <Route path="/" element={<Index />} />
