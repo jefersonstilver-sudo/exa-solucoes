@@ -113,7 +113,7 @@ const OrderDetails = () => {
 
       if (error) throw error;
 
-      // Criar slots de 1 a 4
+      // Criar slots de 1 a 4 com type casting adequado
       const slots: VideoSlot[] = [1, 2, 3, 4].map(position => {
         const existingVideo = pedidoVideos?.find(pv => pv.slot_position === position);
         
@@ -122,7 +122,7 @@ const OrderDetails = () => {
           slot_position: position,
           video_id: existingVideo?.video_id,
           is_active: existingVideo?.is_active || false,
-          approval_status: existingVideo?.approval_status || 'pending',
+          approval_status: (existingVideo?.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
           video_data: existingVideo?.videos ? {
             nome: existingVideo.videos.nome,
             url: existingVideo.videos.url,
