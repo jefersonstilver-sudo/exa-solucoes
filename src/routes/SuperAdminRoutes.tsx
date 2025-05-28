@@ -12,6 +12,7 @@ import PanelsPage from '@/pages/admin/PanelsPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import CouponsPage from '@/pages/admin/CouponsPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
+import VideoManagement from '@/pages/admin/VideoManagement';
 
 const SuperAdminRoutes = () => {
   return (
@@ -22,6 +23,7 @@ const SuperAdminRoutes = () => {
       <Route path="/pedidos" element={<OrdersPage />} />
       <Route path="/pedidos/:id" element={<OrderDetails />} />
       <Route path="/aprovacoes" element={<ApprovalsPage />} />
+      <Route path="/videos" element={<VideoManagement />} />
       <Route path="/predios" element={<BuildingsManagement />} />
       <Route path="/predios-gestao" element={<BuildingsManagement />} />
       <Route path="/paineis" element={<PanelsPage />} />
