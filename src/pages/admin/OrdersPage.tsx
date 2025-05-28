@@ -11,7 +11,10 @@ import {
   DollarSign,
   RefreshCw,
   Video,
-  Clock
+  Clock,
+  CheckCircle,
+  XCircle,
+  Play
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -19,11 +22,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRealOrdersData } from '@/hooks/useRealOrdersData';
+import { useEnhancedOrdersData } from '@/hooks/useEnhancedOrdersData';
 import OrdersTable from '@/components/admin/orders/OrdersTable';
+import DataMigrationPanel from '@/components/admin/orders/DataMigrationPanel';
 
 const OrdersPage = () => {
-  const { orders, stats, loading, refetch } = useRealOrdersData();
+  const { orders, stats, loading, refetch } = useEnhancedOrdersData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -53,7 +57,7 @@ const OrdersPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Gerenciar Pedidos</h1>
-          <p className="text-slate-300">Visualize e gerencie todos os pedidos com status de vídeo</p>
+          <p className="text-slate-300">Sistema completo de pedidos com dados sincronizados</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button 
@@ -72,51 +76,87 @@ const OrdersPage = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Data Migration Panel */}
+      <DataMigrationPanel />
+
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
         <Card className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 border-slate-600/40">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Total de Pedidos</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-300">Total</CardTitle>
             <Package className="h-4 w-4 text-[#00FFAB]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{stats.total}</div>
-            <p className="text-xs text-[#00FFAB]">Sistema conectado</p>
+            <p className="text-xs text-[#00FFAB]">pedidos</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-[#00FFAB]/20 to-[#00FFAB]/10 border-[#00FFAB]/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Receita Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-300">Receita</CardTitle>
             <DollarSign className="h-4 w-4 text-[#00FFAB]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">
               R$ {stats.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-[#00FFAB]">Pedidos pagos</p>
+            <p className="text-xs text-[#00FFAB]">total</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-[#3C1361]/30 to-[#3C1361]/20 border-[#3C1361]/40">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Aguardando Vídeo</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-300">Aguard. Vídeo</CardTitle>
             <Clock className="h-4 w-4 text-[#00FFAB]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{stats.awaiting_video}</div>
-            <p className="text-xs text-[#00FFAB]">Clientes pagaram</p>
+            <p className="text-xs text-[#00FFAB]">pendentes</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-slate-700/50 to-slate-600/30 border-slate-600/40">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Para Aprovação</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-300">Vídeo Enviado</CardTitle>
             <Video className="h-4 w-4 text-[#00FFAB]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{stats.video_sent}</div>
-            <p className="text-xs text-[#00FFAB]">Vídeos enviados</p>
+            <p className="text-xs text-[#00FFAB]">para análise</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-600/20 to-green-500/10 border-green-500/30">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-300">Aprovados</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stats.video_approved}</div>
+            <p className="text-xs text-green-400">aprovados</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-600/20 to-red-500/10 border-red-500/30">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-300">Rejeitados</CardTitle>
+            <XCircle className="h-4 w-4 text-red-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stats.video_rejected}</div>
+            <p className="text-xs text-red-400">rejeitados</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-[#00FFAB]/20 to-[#00FFAB]/10 border-[#00FFAB]/30">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-300">Ativos</CardTitle>
+            <Play className="h-4 w-4 text-[#00FFAB]" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stats.active}</div>
+            <p className="text-xs text-[#00FFAB]">rodando</p>
           </CardContent>
         </Card>
       </div>
@@ -162,11 +202,14 @@ const OrdersPage = () => {
                 <DropdownMenuItem onClick={() => setStatusFilter('video_aprovado')} className="text-white hover:bg-slate-700">
                   Vídeo Aprovado
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter('video_rejeitado')} className="text-white hover:bg-slate-700">
+                  Vídeo Rejeitado
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter('ativo')} className="text-white hover:bg-slate-700">
+                  Ativos
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setStatusFilter('pendente')} className="text-white hover:bg-slate-700">
                   Pendentes
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter('pago')} className="text-white hover:bg-slate-700">
-                  Pagos
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setStatusFilter('cancelado')} className="text-white hover:bg-slate-700">
                   Cancelados
@@ -182,7 +225,7 @@ const OrdersPage = () => {
         <CardHeader>
           <CardTitle className="text-white">Lista de Pedidos</CardTitle>
           <CardDescription className="text-slate-300">
-            Gerenciamento completo de todos os pedidos com dados reais
+            Sistema completo com dados dos clientes sincronizados e corrigidos
           </CardDescription>
         </CardHeader>
         <CardContent>
