@@ -363,6 +363,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       painel_logs: {
         Row: {
           created_at: string | null
@@ -881,6 +917,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_unread_notifications_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -918,6 +958,10 @@ export type Database = {
           p_new_values?: Json
         }
         Returns: string
+      }
+      mark_notification_read: {
+        Args: { notification_id: string }
+        Returns: boolean
       }
       migrate_orphaned_payments: {
         Args: Record<PropertyKey, never>

@@ -11,6 +11,7 @@ import ApprovalsPage from '@/pages/admin/ApprovalsPage';
 import PanelsPage from '@/pages/admin/PanelsPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import CouponsPage from '@/pages/admin/CouponsPage';
+import NotificationsPage from '@/pages/admin/NotificationsPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -26,6 +27,7 @@ const SuperAdminRoutes = () => {
       <Route path="/paineis" element={<PanelsPage />} />
       <Route path="/cupons" element={<CouponsPage />} />
       <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
     </Routes>
   );
 };
