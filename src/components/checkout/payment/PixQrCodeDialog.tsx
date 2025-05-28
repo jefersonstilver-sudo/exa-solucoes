@@ -66,9 +66,9 @@ const PixQrCodeDialog = ({
     // Close dialog
     onClose();
     
-    // Redirect to client portal
+    // Redirect to advertiser portal (correct route)
     setTimeout(() => {
-      window.location.href = '/pedidos'; // Portal do cliente/anunciante
+      window.location.href = '/anunciante/pedidos';
     }, 1000);
   };
 

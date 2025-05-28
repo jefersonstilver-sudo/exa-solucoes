@@ -86,6 +86,9 @@ const App = () => {
         <Route path="/pix-payment" element={<PixPayment />} />
         <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
         
+        {/* FALLBACK ROUTE: Redirect /pedidos to advertiser orders */}
+        <Route path="/pedidos" element={<Navigate to="/anunciante/pedidos" replace />} />
+        
         {/* Redirecionamento para a nova rota no portal do anunciante */}
         <Route path="/meus-pedidos" element={<Navigate to="/anunciante/pedidos" replace />} />
         
