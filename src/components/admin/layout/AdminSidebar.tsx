@@ -9,7 +9,8 @@ import {
   Settings, 
   Users, 
   Shield,
-  Crown
+  Crown,
+  Video
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +30,12 @@ const AdminSidebar = () => {
       label: 'Pedidos',
       icon: <ShoppingBag className="h-5 w-5" />,
       href: '/super_admin/pedidos',
+      requireSuperAdmin: false,
+    },
+    {
+      label: 'Aprovações',
+      icon: <Video className="h-5 w-5" />,
+      href: '/super_admin/aprovacoes',
       requireSuperAdmin: false,
     },
     {
@@ -60,12 +67,23 @@ const AdminSidebar = () => {
   return (
     <aside className="w-64 min-h-screen bg-indexa-purple shadow-lg">
       <div className="flex flex-col h-full">
+        {/* Logo da INDEXA oficial */}
+        <div className="p-6 border-b border-indexa-purple-light">
+          <div className="flex items-center justify-center">
+            <img 
+              src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODEzNjM2MCwiZXhwIjoxNzc5NjcyMzYwfQ.lJuvOzeGcyQSF2sNqu1GyxuZpgwpBUGt9HsIbKrGakg" 
+              alt="INDEXA Logo" 
+              className="h-12 w-auto"
+            />
+          </div>
+        </div>
+
         {/* Status do usuário */}
         {isSuperAdmin && (
-          <div className="p-6 border-b border-indexa-purple-light">
+          <div className="p-4 border-b border-indexa-purple-light">
             <div className="flex items-center space-x-2 text-indexa-mint">
-              <Crown className="h-5 w-5" />
-              <span className="text-sm font-bold">Super Admin Access</span>
+              <Crown className="h-4 w-4" />
+              <span className="text-xs font-bold">Super Admin Access</span>
             </div>
           </div>
         )}

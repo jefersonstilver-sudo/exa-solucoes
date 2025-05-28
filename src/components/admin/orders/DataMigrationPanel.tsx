@@ -20,12 +20,12 @@ const DataMigrationPanel: React.FC = () => {
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700/50">
+    <Card className="bg-white border-gray-200">
       <CardHeader>
-        <CardTitle className="flex items-center text-white">
+        <CardTitle className="flex items-center text-black">
           <Database className="h-5 w-5 mr-2 text-[#00FFAB]" />
           Migração e Sincronização de Dados
-          <Badge className="ml-2 bg-[#00FFAB] text-[#3C1361]">Sistema Crítico</Badge>
+          <Badge className="ml-2 bg-red-100 text-red-800 border-red-300">Sistema Crítico</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -33,7 +33,7 @@ const DataMigrationPanel: React.FC = () => {
           <Button
             onClick={runFullMigration}
             disabled={isMigrating}
-            className="bg-[#00FFAB] hover:bg-[#00FFAB]/80 text-[#3C1361] font-semibold"
+            className="bg-[#00FFAB] hover:bg-[#00FFAB]/80 text-white font-semibold"
           >
             {isMigrating ? (
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -47,7 +47,7 @@ const DataMigrationPanel: React.FC = () => {
             onClick={migrateMissingOrders}
             disabled={isMigrating}
             variant="outline"
-            className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-[#3C1361]"
+            className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Migrar Pedidos
@@ -57,7 +57,7 @@ const DataMigrationPanel: React.FC = () => {
             onClick={syncVideoStatus}
             disabled={isMigrating}
             variant="outline"
-            className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-[#3C1361]"
+            className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Sync Status
@@ -67,16 +67,16 @@ const DataMigrationPanel: React.FC = () => {
             onClick={cleanupOrphanedData}
             disabled={isMigrating}
             variant="outline"
-            className="border-slate-500 text-slate-300 hover:bg-slate-500 hover:text-white"
+            className="border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-black"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Limpar Dados
           </Button>
         </div>
 
-        <div className="bg-[#00FFAB]/10 border border-[#00FFAB]/30 rounded-lg p-4">
-          <h4 className="font-medium text-white mb-2">Sobre esta ferramenta:</h4>
-          <ul className="text-sm text-slate-300 space-y-1">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-medium text-black mb-2">Sobre esta ferramenta:</h4>
+          <ul className="text-sm text-gray-700 space-y-1">
             <li>• <strong>Migração Completa:</strong> Executa todas as operações de uma vez</li>
             <li>• <strong>Migrar Pedidos:</strong> Recupera pedidos perdidos das tentativas de compra</li>
             <li>• <strong>Sync Status:</strong> Sincroniza status entre pedidos e aprovações de vídeo</li>
