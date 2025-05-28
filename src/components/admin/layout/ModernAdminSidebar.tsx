@@ -80,11 +80,20 @@ const ModernAdminSidebar = () => {
   };
 
   return (
-    <div className="bg-slate-900 border-r border-slate-700 w-64 min-h-screen">
+    <div className="bg-gradient-to-b from-[#3C1361] to-[#2A0D47] border-r border-purple-800/30 w-64 min-h-screen">
       <div className="p-6">
-        <h2 className="text-xl font-bold text-white mb-8">
-          INDEXA Admin
-        </h2>
+        {/* Logo da Indexa no topo */}
+        <div className="flex items-center space-x-3 mb-8">
+          <div className="w-10 h-10 bg-[#00FFAB] rounded-lg flex items-center justify-center">
+            <span className="text-[#3C1361] font-bold text-xl">I</span>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-white">
+              INDEXA
+            </h2>
+            <p className="text-xs text-purple-200">Admin Panel</p>
+          </div>
+        </div>
         
         <nav className="space-y-2">
           {sidebarItems.map((item) => (
@@ -92,10 +101,10 @@ const ModernAdminSidebar = () => {
               key={item.href}
               to={item.href}
               className={cn(
-                'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
                 isActive(item.href, item.exact)
-                  ? 'bg-indexa-purple text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  ? 'bg-[#00FFAB] text-[#3C1361] shadow-lg font-semibold'
+                  : 'text-purple-100 hover:text-white hover:bg-white/10 hover:translate-x-1'
               )}
             >
               <item.icon className="h-5 w-5" />

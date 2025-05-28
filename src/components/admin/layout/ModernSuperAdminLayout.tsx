@@ -28,30 +28,33 @@ const ModernSuperAdminLayout = ({ children }: ModernSuperAdminLayoutProps) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-[#3C1361] to-[#2A0D47]">
         <ModernAdminSidebar />
         <SidebarInset>
           <ModernAdminHeader />
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>
           </main>
-          <footer className="border-t bg-background p-4">
-            <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
+          <footer className="border-t bg-gradient-to-r from-[#3C1361] to-[#2A0D47] p-4">
+            <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-purple-200">
               <div className="flex items-center space-x-4">
                 <span>© 2024 INDEXA MEDIA</span>
                 <span>•</span>
                 <span>Painel Administrativo</span>
               </div>
-              <div>
-                v3.0
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-[#00FFAB] rounded flex items-center justify-center">
+                  <span className="text-[#3C1361] font-bold text-xs">I</span>
+                </div>
+                <span className="text-white font-medium">v3.0</span>
               </div>
             </div>
           </footer>
         </SidebarInset>
 
-        {/* Cart Drawer */}
+        {/* Cart Drawer - mantido para compatibilidade */}
         <CartDrawer
           cartItems={cartItems}
           isOpen={cartOpen}
