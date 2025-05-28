@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Bell, Settings, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,12 +14,12 @@ import { useNavigate } from 'react-router-dom';
 import NotificationCenter from './NotificationCenter';
 
 const ModernAdminHeader = () => {
-  const { userProfile, signOut } = useAuth();
+  const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       navigate('/login');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
