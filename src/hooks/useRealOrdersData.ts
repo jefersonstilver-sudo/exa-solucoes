@@ -38,7 +38,6 @@ export const useRealOrdersData = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Buscando pedidos com dados reais...');
       
       const { data, error } = await supabase.rpc('get_pedidos_com_clientes');
       
@@ -46,13 +45,10 @@ export const useRealOrdersData = () => {
         console.error('❌ Erro ao buscar pedidos:', error);
         throw error;
       }
-
-      console.log('✅ Pedidos carregados:', data?.length || 0);
       
       if (data) {
         setOrders(data);
         
-        // Calcular estatísticas
         const total = data.length;
         const revenue = data
           .filter(order => order.status === 'pago' || order.status === 'pago_pendente_video')
@@ -63,7 +59,7 @@ export const useRealOrdersData = () => {
         setStats({ total, revenue, awaiting_video, video_sent });
       }
     } catch (error: any) {
-      console.error('💥 Erro crítico ao carregar pedidos:', error);
+      console.error('💥 Erro ao carregar pedidos:', error);
       toast.error('Erro ao carregar pedidos');
     } finally {
       setLoading(false);

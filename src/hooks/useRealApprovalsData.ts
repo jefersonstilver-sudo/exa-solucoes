@@ -22,7 +22,6 @@ export const useRealApprovalsData = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Buscando estatísticas reais de aprovação...');
       
       const { data, error } = await supabase.rpc('get_real_approval_stats');
       
@@ -30,8 +29,6 @@ export const useRealApprovalsData = () => {
         console.error('❌ Erro ao buscar estatísticas:', error);
         throw error;
       }
-
-      console.log('✅ Estatísticas carregadas:', data);
       
       if (data && data.length > 0) {
         const result = data[0];
@@ -43,7 +40,7 @@ export const useRealApprovalsData = () => {
         });
       }
     } catch (error: any) {
-      console.error('💥 Erro crítico ao carregar estatísticas:', error);
+      console.error('💥 Erro ao carregar estatísticas:', error);
       toast.error('Erro ao carregar estatísticas de aprovação');
     } finally {
       setLoading(false);
