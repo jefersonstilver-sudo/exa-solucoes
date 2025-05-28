@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -262,10 +263,8 @@ const OrderDetails = () => {
           errors.push('Vídeo deve estar em orientação horizontal');
         }
         
-        const hasAudio = file.size > (width * height * duration * 0.1);
-        if (hasAudio) {
-          errors.push('Vídeo não deve conter áudio');
-        }
+        // Removida validação de áudio - permite vídeos com áudio
+        // O áudio será mutado durante a reprodução
         
         URL.revokeObjectURL(url);
         
@@ -279,7 +278,7 @@ const OrderDetails = () => {
             altura: height,
             tamanho_arquivo: file.size,
             formato: file.type,
-            tem_audio: hasAudio
+            tem_audio: false // Sempre false para garantir reprodução mutada
           }
         });
       };
@@ -517,7 +516,8 @@ const OrderDetails = () => {
             Gestão de Vídeos (4 Slots)
           </CardTitle>
           <p className="text-sm text-gray-600">
-            Envie até 4 vídeos (máx. 15s, horizontal, sem áudio). Apenas 1 pode estar ativo por vez.
+            Envie até 4 vídeos (máx. 15s, horizontal). Apenas 1 pode estar ativo por vez. 
+            <span className="text-green-600 font-medium"> Áudio será automaticamente silenciado.</span>
           </p>
         </CardHeader>
         <CardContent>
@@ -543,6 +543,7 @@ const OrderDetails = () => {
                         <p className="font-medium truncate">{slot.video_data.nome}</p>
                         <p className="text-gray-600">
                           {slot.video_data.duracao}s • {slot.video_data.orientacao}
+                          <span className="text-green-600 ml-2">• Áudio silenciado</span>
                         </p>
                       </div>
 

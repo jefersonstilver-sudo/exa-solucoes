@@ -45,7 +45,6 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
     orientation: 'landscape' | 'portrait'; 
     width: number; 
     height: number; 
-    hasAudio: boolean;
     errors: string[];
   }> => {
     return new Promise((resolve, reject) => {
@@ -64,7 +63,7 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
         const height = video.videoHeight;
         const orientation = height > width ? 'portrait' : 'landscape';
         
-        // Validações rigorosas baseadas nas regras do sistema
+        // Validações essenciais (removida validação de áudio)
         if (duration > 15) {
           errors.push('Vídeo deve ter no máximo 15 segundos');
         }
@@ -76,15 +75,6 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
         // Verificar proporção (largura deve ser maior que altura)
         if (width <= height) {
           errors.push('Vídeo deve ter proporção horizontal (largura > altura)');
-        }
-        
-        // Verificação simples de áudio (heurística baseada no tamanho do arquivo)
-        // Em produção, seria necessário uma análise mais sofisticada
-        const expectedSizeWithoutAudio = width * height * duration * 0.1; // Estimativa
-        const hasAudio = file.size > expectedSizeWithoutAudio * 1.5;
-        
-        if (hasAudio) {
-          errors.push('Vídeo não deve conter áudio');
         }
         
         // Validar formato
@@ -103,7 +93,6 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
           orientation, 
           width, 
           height, 
-          hasAudio,
           errors 
         });
       };
@@ -127,13 +116,13 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
       setUploadStatus('uploading');
       setUploadProgress(0);
 
-      // Validar usando a função do Supabase
+      // Validar usando a função do Supabase (sem verificação de áudio)
       const { data: validationResult, error: validationError } = await supabase
         .rpc('validate_video_specs', {
           p_duracao: videoDuration || 0,
           p_orientacao: videoOrientation === 'landscape' ? 'horizontal' : 'vertical',
-          p_tem_audio: false, // Assumindo que passou na validação local
-          p_largura: 1920, // Valores padrão - em produção viriam da análise real
+          p_tem_audio: false, // Sempre false, áudio será mutado na reprodução
+          p_largura: 1920,
           p_altura: 1080
         });
 
@@ -147,7 +136,7 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
         return;
       }
 
-      // Criar registro do vídeo com dados técnicos completos
+      // Criar registro do vídeo
       const videoData = prepareForInsert({
         client_id: userId,
         nome: videoFile.name,
@@ -156,8 +145,8 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
         duracao: videoDuration,
         status: 'ativo',
         orientacao: videoOrientation === 'landscape' ? 'horizontal' : 'vertical',
-        tem_audio: false,
-        largura: 1920, // Em produção, viria da análise real
+        tem_audio: false, // Sempre false para garantir que seja mutado
+        largura: 1920,
         altura: 1080,
         tamanho_arquivo: videoFile.size,
         formato: videoFile.type
@@ -177,7 +166,7 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
         .insert({
           pedido_id: orderId,
           video_id: newVideo.id,
-          slot_position: 1, // Por padrão vai para o slot 1
+          slot_position: 1,
           approval_status: 'pending'
         });
 
@@ -279,7 +268,6 @@ export const useVideoUpload = ({ orderId, userId, orderDetails }: UseVideoUpload
   }, []);
 
   const handleContinue = useCallback(() => {
-    // Implementation for continue action
     console.log('Continue action triggered');
   }, []);
 
