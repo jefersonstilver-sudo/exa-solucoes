@@ -11,8 +11,8 @@ export const useDataMigration = () => {
       setIsMigrating(true);
       console.log('🔄 Iniciando migração de pedidos perdidos...');
 
-      // Executar função de migração no banco
-      const { data, error } = await supabase.rpc('migrate_missing_orders');
+      // Usar função existente auto_cleanup_paid_attempts
+      const { data, error } = await supabase.rpc('auto_cleanup_paid_attempts');
 
       if (error) {
         console.error('❌ Erro na migração:', error);
@@ -20,7 +20,12 @@ export const useDataMigration = () => {
       }
 
       console.log('✅ Migração concluída:', data);
-      toast.success(`Migração concluída! ${data?.migrated_count || 0} pedidos migrados.`);
+      
+      // Tratar o retorno como objeto JSON
+      const result = data as any;
+      const migratedCount = result?.cleaned_count || 0;
+      
+      toast.success(`Migração concluída! ${migratedCount} registros processados.`);
       
       return data;
     } catch (error: any) {
@@ -37,7 +42,7 @@ export const useDataMigration = () => {
       setIsMigrating(true);
       console.log('🧹 Limpando dados órfãos...');
 
-      // Limpar tentativas de compra que já foram migradas
+      // Usar função existente auto_cleanup_paid_attempts
       const { data, error } = await supabase.rpc('auto_cleanup_paid_attempts');
 
       if (error) {
@@ -46,7 +51,12 @@ export const useDataMigration = () => {
       }
 
       console.log('✅ Limpeza concluída:', data);
-      toast.success(`Limpeza concluída! ${data?.cleaned_count || 0} registros removidos.`);
+      
+      // Tratar o retorno como objeto JSON
+      const result = data as any;
+      const cleanedCount = result?.cleaned_count || 0;
+      
+      toast.success(`Limpeza concluída! ${cleanedCount} registros removidos.`);
       
       return data;
     } catch (error: any) {
@@ -72,12 +82,14 @@ export const useDataMigration = () => {
       if (pendingError) throw pendingError;
 
       // Atualizar pedidos para status 'video_enviado' se têm vídeos pendentes
-      for (const video of pendingVideos || []) {
-        await supabase
-          .from('pedidos')
-          .update({ status: 'video_enviado' })
-          .eq('id', video.pedido_id)
-          .eq('status', 'pago_pendente_video');
+      if (pendingVideos && pendingVideos.length > 0) {
+        for (const video of pendingVideos) {
+          await supabase
+            .from('pedidos')
+            .update({ status: 'video_enviado' })
+            .eq('id', video.pedido_id)
+            .eq('status', 'pago_pendente_video');
+        }
       }
 
       // Buscar vídeos aprovados e atualizar status dos pedidos
@@ -89,16 +101,19 @@ export const useDataMigration = () => {
       if (approvedError) throw approvedError;
 
       // Atualizar pedidos para status 'video_aprovado'
-      for (const video of approvedVideos || []) {
-        await supabase
-          .from('pedidos')
-          .update({ status: 'video_aprovado' })
-          .eq('id', video.pedido_id)
-          .in('status', ['video_enviado', 'pago_pendente_video']);
+      if (approvedVideos && approvedVideos.length > 0) {
+        for (const video of approvedVideos) {
+          await supabase
+            .from('pedidos')
+            .update({ status: 'video_aprovado' })
+            .eq('id', video.pedido_id)
+            .in('status', ['video_enviado', 'pago_pendente_video']);
+        }
       }
 
+      const totalSynced = (pendingVideos?.length || 0) + (approvedVideos?.length || 0);
       console.log('✅ Sincronização de status concluída');
-      toast.success('Status de vídeos sincronizados com sucesso!');
+      toast.success(`Status sincronizados! ${totalSynced} registros atualizados.`);
       
     } catch (error: any) {
       console.error('💥 Erro na sincronização:', error);

@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Database, Trash2, Sync } from 'lucide-react';
+import { RefreshCw, Database, Trash2, RotateCcw } from 'lucide-react';
 import { useDataMigration } from '@/hooks/useDataMigration';
 
 const DataMigrationPanel: React.FC = () => {
@@ -59,7 +59,7 @@ const DataMigrationPanel: React.FC = () => {
             variant="outline"
             className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-[#3C1361]"
           >
-            <Sync className="h-4 w-4 mr-2" />
+            <RotateCcw className="h-4 w-4 mr-2" />
             Sync Status
           </Button>
 
