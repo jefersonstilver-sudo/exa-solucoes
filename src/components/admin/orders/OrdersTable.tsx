@@ -31,23 +31,23 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pago_pendente_video':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Aguardando Vídeo</Badge>;
+        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Aguardando Vídeo</Badge>;
       case 'video_enviado':
-        return <Badge className="bg-[#3C1361] text-white">Vídeo Enviado</Badge>;
+        return <Badge className="bg-[#3C1361] text-white font-semibold">Vídeo Enviado</Badge>;
       case 'video_aprovado':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Vídeo Aprovado</Badge>;
+        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Vídeo Aprovado</Badge>;
       case 'video_rejeitado':
-        return <Badge variant="destructive">Vídeo Rejeitado</Badge>;
+        return <Badge className="bg-red-500 text-white font-semibold">Vídeo Rejeitado</Badge>;
       case 'pago':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Pago</Badge>;
+        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Pago</Badge>;
       case 'pendente':
-        return <Badge variant="outline" className="border-slate-400 text-slate-300">Pendente</Badge>;
+        return <Badge className="bg-slate-500 text-white font-semibold">Pendente</Badge>;
       case 'ativo':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Ativo</Badge>;
+        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Ativo</Badge>;
       case 'cancelado':
-        return <Badge variant="destructive">Cancelado</Badge>;
+        return <Badge className="bg-red-500 text-white font-semibold">Cancelado</Badge>;
       default:
-        return <Badge variant="outline" className="border-slate-400 text-slate-300">{status}</Badge>;
+        return <Badge className="bg-slate-500 text-white font-semibold">{status}</Badge>;
     }
   };
 
@@ -65,8 +65,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-slate-400 text-lg">Nenhum pedido encontrado</div>
-        <p className="text-slate-500 mt-2">Tente ajustar os filtros de busca</p>
+        <div className="text-white text-lg">Nenhum pedido encontrado</div>
+        <p className="text-slate-400 mt-2">Tente ajustar os filtros de busca</p>
       </div>
     );
   }
@@ -75,22 +75,22 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="border-slate-700">
-            <TableHead className="text-slate-300">ID do Pedido</TableHead>
-            <TableHead className="text-slate-300">Cliente</TableHead>
-            <TableHead className="text-slate-300">Data</TableHead>
-            <TableHead className="text-slate-300">Status</TableHead>
-            <TableHead className="text-slate-300">Valor</TableHead>
-            <TableHead className="text-slate-300">Plano</TableHead>
-            <TableHead className="text-slate-300">Painéis</TableHead>
-            <TableHead className="text-slate-300">Período</TableHead>
-            <TableHead className="text-slate-300">Ações</TableHead>
+          <TableRow className="border-slate-600 hover:bg-slate-700/50">
+            <TableHead className="text-slate-300 font-semibold">ID do Pedido</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Cliente</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Data</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Status</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Valor</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Plano</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Painéis</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Período</TableHead>
+            <TableHead className="text-slate-300 font-semibold">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((order) => (
-            <TableRow key={order.id} className="border-slate-700 hover:bg-slate-800/50">
-              <TableCell className="font-mono text-sm text-white">
+            <TableRow key={order.id} className="border-slate-600 hover:bg-slate-700/30">
+              <TableCell className="font-mono text-sm text-slate-300">
                 {order.id.substring(0, 8)}...
               </TableCell>
               <TableCell>

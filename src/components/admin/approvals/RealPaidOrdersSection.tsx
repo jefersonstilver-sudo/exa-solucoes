@@ -81,11 +81,11 @@ const RealPaidOrdersSection: React.FC<RealPaidOrdersSectionProps> = ({ loading, 
 
   if (loadingOrders || loading) {
     return (
-      <Card className="bg-white border-[#3C1361]/20">
+      <Card className="bg-slate-800/50 border-slate-700/50">
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-[#3C1361]" />
-            <span className="ml-3 text-gray-600">Carregando pedidos pagos...</span>
+            <RefreshCw className="h-8 w-8 animate-spin text-[#00FFAB]" />
+            <span className="ml-3 text-white">Carregando pedidos pagos...</span>
           </div>
         </CardContent>
       </Card>
@@ -94,72 +94,72 @@ const RealPaidOrdersSection: React.FC<RealPaidOrdersSectionProps> = ({ loading, 
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white border-[#3C1361]/20">
-        <CardHeader>
-          <CardTitle className="flex items-center text-[#3C1361]">
+      <Card className="bg-slate-800/50 border-slate-700/50">
+        <CardHeader className="border-b border-slate-700/50">
+          <CardTitle className="flex items-center text-white">
             <Clock className="h-5 w-5 mr-2 text-[#00FFAB]" />
             Pedidos Pagos Aguardando Vídeo
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-slate-300">
             Clientes que já pagaram mas ainda não enviaram o vídeo de 15 segundos
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {paidOrders.length === 0 ? (
             <div className="text-center py-12">
-              <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Clock className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+              <h3 className="text-lg font-medium text-white mb-2">
                 Nenhum pedido aguardando vídeo
               </h3>
-              <p className="text-gray-500">
+              <p className="text-slate-400">
                 Todos os clientes que pagaram já enviaram seus vídeos
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paidOrders.map((order) => (
-                <Card key={order.id} className="border-[#00FFAB]/30 bg-gradient-to-br from-[#00FFAB]/10 to-white">
+                <Card key={order.id} className="bg-gradient-to-br from-[#3C1361]/20 to-slate-800/50 border-[#00FFAB]/30">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">
                         Aguardando Vídeo
                       </Badge>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-slate-400">
                         {formatDate(order.created_at)}
                       </span>
                     </div>
                     
                     <div className="space-y-3">
                       <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-[#3C1361]" />
-                        <span className="text-sm font-medium text-[#3C1361]">{order.client_name}</span>
+                        <User className="h-4 w-4 mr-2 text-[#00FFAB]" />
+                        <span className="text-sm font-medium text-white">{order.client_name}</span>
                       </div>
                       
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-slate-400">
                         {order.client_email}
                       </div>
                       
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-[#3C1361]" />
-                        <span className="text-sm font-bold text-[#3C1361]">
+                        <DollarSign className="h-4 w-4 mr-2 text-[#00FFAB]" />
+                        <span className="text-sm font-bold text-[#00FFAB]">
                           {formatCurrency(order.valor_total)}
                         </span>
                       </div>
                       
                       <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-2 text-[#3C1361]" />
-                        <span className="text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 mr-2 text-[#00FFAB]" />
+                        <span className="text-sm text-slate-300">
                           {order.lista_paineis?.length || 0} painéis • {order.plano_meses} meses
                         </span>
                       </div>
                     </div>
                     
-                    <div className="mt-4 pt-4 border-t border-[#00FFAB]/20">
+                    <div className="mt-4 pt-4 border-t border-slate-700/50">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => sendReminderEmail(order.client_email, order.id)}
-                        className="w-full border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361] hover:text-white"
+                        className="w-full border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-[#3C1361]"
                       >
                         <Mail className="h-3 w-3 mr-1" />
                         Enviar Lembrete

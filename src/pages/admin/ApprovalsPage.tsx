@@ -92,24 +92,24 @@ const ApprovalsPage = () => {
 
       {/* Tabs para Separação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-slate-800/50">
+        <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border border-slate-700/50">
           <TabsTrigger 
             value="pending-orders" 
-            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-[#3C1361]"
+            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-[#3C1361] text-slate-300"
           >
             <Clock className="h-4 w-4" />
             <span>Aguardando Vídeo ({stats.paidWithoutVideo})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="pending-videos" 
-            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-[#3C1361]"
+            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-[#3C1361] text-slate-300"
           >
             <AlertTriangle className="h-4 w-4" />
             <span>Para Aprovação ({stats.pendingApproval})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="approved-videos" 
-            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-[#3C1361]"
+            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-[#3C1361] text-slate-300"
           >
             <CheckCircle className="h-4 w-4" />
             <span>Aprovados ({stats.approved})</span>
