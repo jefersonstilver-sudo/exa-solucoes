@@ -1,25 +1,12 @@
 
 import React from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Eye, Video, Clock } from 'lucide-react';
+import { Eye, Calendar, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface Order {
+interface OrderWithClient {
   id: string;
   created_at: string;
   status: string;
@@ -35,148 +22,122 @@ interface Order {
 }
 
 interface OrdersTableProps {
-  orders: Order[];
+  orders: OrderWithClient[];
 }
 
-const OrdersTable = ({ orders }: OrdersTableProps) => {
+const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   const navigate = useNavigate();
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any, label: string, color: string }> = {
-      pendente: { variant: 'secondary', label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-      pago: { variant: 'success', label: 'Pago', color: 'bg-green-100 text-green-800' },
-      pago_pendente_video: { variant: 'secondary', label: 'Aguardando Vídeo', color: 'bg-orange-100 text-orange-800' },
-      video_enviado: { variant: 'secondary', label: 'Vídeo Enviado', color: 'bg-blue-100 text-blue-800' },
-      video_aprovado: { variant: 'success', label: 'Vídeo Aprovado', color: 'bg-green-100 text-green-800' },
-      video_rejeitado: { variant: 'destructive', label: 'Vídeo Rejeitado', color: 'bg-red-100 text-red-800' },
-      ativo: { variant: 'default', label: 'Ativo', color: 'bg-green-100 text-green-800' },
-      cancelado: { variant: 'destructive', label: 'Cancelado', color: 'bg-red-100 text-red-800' }
-    };
-    
-    return variants[status] || { variant: 'secondary', label: status, color: 'bg-gray-100 text-gray-800' };
-  };
-
-  const getVideoStatusIcon = (status: string) => {
     switch (status) {
       case 'pago_pendente_video':
-        return <Clock className="h-4 w-4 text-orange-500" />;
+        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Aguardando Vídeo</Badge>;
       case 'video_enviado':
-        return <Video className="h-4 w-4 text-blue-500" />;
+        return <Badge className="bg-[#3C1361] text-white">Vídeo Enviado</Badge>;
       case 'video_aprovado':
-        return <Video className="h-4 w-4 text-green-500" />;
+        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Vídeo Aprovado</Badge>;
       case 'video_rejeitado':
-        return <Video className="h-4 w-4 text-red-500" />;
+        return <Badge variant="destructive">Vídeo Rejeitado</Badge>;
+      case 'pago':
+        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Pago</Badge>;
+      case 'pendente':
+        return <Badge variant="outline" className="border-slate-400 text-slate-300">Pendente</Badge>;
+      case 'ativo':
+        return <Badge className="bg-[#00FFAB] text-[#3C1361]">Ativo</Badge>;
+      case 'cancelado':
+        return <Badge variant="destructive">Cancelado</Badge>;
       default:
-        return null;
+        return <Badge variant="outline" className="border-slate-400 text-slate-300">{status}</Badge>;
     }
   };
 
-  const handleViewOrder = (orderId: string) => {
-    navigate(`/super_admin/pedidos/${orderId}`);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
   if (orders.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <p>Nenhum pedido encontrado</p>
+      <div className="text-center py-12">
+        <div className="text-slate-400 text-lg">Nenhum pedido encontrado</div>
+        <p className="text-slate-500 mt-2">Tente ajustar os filtros de busca</p>
       </div>
     );
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50">
-            <TableHead className="font-semibold text-gray-900">Cliente</TableHead>
-            <TableHead className="font-semibold text-gray-900">Pedido</TableHead>
-            <TableHead className="font-semibold text-gray-900">Status</TableHead>
-            <TableHead className="font-semibold text-gray-900">Valor</TableHead>
-            <TableHead className="font-semibold text-gray-900">Período</TableHead>
-            <TableHead className="font-semibold text-gray-900">Data Criação</TableHead>
-            <TableHead className="font-semibold text-gray-900 text-right">Ações</TableHead>
+          <TableRow className="border-slate-700">
+            <TableHead className="text-slate-300">ID do Pedido</TableHead>
+            <TableHead className="text-slate-300">Cliente</TableHead>
+            <TableHead className="text-slate-300">Data</TableHead>
+            <TableHead className="text-slate-300">Status</TableHead>
+            <TableHead className="text-slate-300">Valor</TableHead>
+            <TableHead className="text-slate-300">Plano</TableHead>
+            <TableHead className="text-slate-300">Painéis</TableHead>
+            <TableHead className="text-slate-300">Período</TableHead>
+            <TableHead className="text-slate-300">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => {
-            const statusInfo = getStatusBadge(order.status);
-            const videoIcon = getVideoStatusIcon(order.status);
-            
-            return (
-              <TableRow key={order.id} className="hover:bg-gray-50">
-                <TableCell>
-                  <div>
-                    <div className="font-medium text-gray-900">{order.client_name}</div>
-                    <div className="text-sm text-gray-500">{order.client_email}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <div className="font-mono text-sm text-gray-900">
-                      {order.id.substring(0, 8)}...
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {order.plano_meses} meses • {Array.isArray(order.lista_paineis) ? order.lista_paineis.length : 0} painéis
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={statusInfo.color}>
-                      {statusInfo.label}
-                    </Badge>
-                    {videoIcon}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {order.video_status}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="font-bold text-gray-900">
-                    R$ {Number(order.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm text-gray-900">
-                    {order.data_inicio && order.data_fim ? (
-                      <div>
-                        <div>{new Date(order.data_inicio).toLocaleDateString('pt-BR')}</div>
-                        <div className="text-gray-500">até {new Date(order.data_fim).toLocaleDateString('pt-BR')}</div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-500">Período não definido</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm text-gray-900">
-                    {new Date(order.created_at).toLocaleDateString('pt-BR')}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(order.created_at).toLocaleTimeString('pt-BR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleViewOrder(order.id)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalhes
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {orders.map((order) => (
+            <TableRow key={order.id} className="border-slate-700 hover:bg-slate-800/50">
+              <TableCell className="font-mono text-sm text-white">
+                {order.id.substring(0, 8)}...
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col">
+                  <span className="font-medium text-white">{order.client_name}</span>
+                  <span className="text-sm text-slate-400">{order.client_email}</span>
+                </div>
+              </TableCell>
+              <TableCell className="text-slate-300">
+                {formatDate(order.created_at)}
+              </TableCell>
+              <TableCell>
+                {getStatusBadge(order.status)}
+              </TableCell>
+              <TableCell className="font-semibold text-[#00FFAB]">
+                {formatCurrency(order.valor_total)}
+              </TableCell>
+              <TableCell className="text-slate-300">
+                {order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center text-slate-300">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  <span>{order.lista_paineis?.length || 0}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center text-sm text-slate-300">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  <span className="whitespace-nowrap">
+                    {formatDate(order.data_inicio)} - {formatDate(order.data_fim)}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/super_admin/pedidos/${order.id}`)}
+                  className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-[#3C1361]"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  Ver
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

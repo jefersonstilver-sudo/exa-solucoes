@@ -1,0 +1,83 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface OrderWithClient {
+  id: string;
+  created_at: string;
+  status: string;
+  valor_total: number;
+  lista_paineis: string[];
+  plano_meses: number;
+  data_inicio: string;
+  data_fim: string;
+  client_id: string;
+  client_email: string;
+  client_name: string;
+  video_status: string;
+}
+
+interface OrderStats {
+  total: number;
+  revenue: number;
+  awaiting_video: number;
+  video_sent: number;
+}
+
+export const useRealOrdersData = () => {
+  const [orders, setOrders] = useState<OrderWithClient[]>([]);
+  const [stats, setStats] = useState<OrderStats>({
+    total: 0,
+    revenue: 0,
+    awaiting_video: 0,
+    video_sent: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Buscando pedidos com dados reais...');
+      
+      const { data, error } = await supabase.rpc('get_pedidos_com_clientes');
+      
+      if (error) {
+        console.error('❌ Erro ao buscar pedidos:', error);
+        throw error;
+      }
+
+      console.log('✅ Pedidos carregados:', data?.length || 0);
+      
+      if (data) {
+        setOrders(data);
+        
+        // Calcular estatísticas
+        const total = data.length;
+        const revenue = data
+          .filter(order => order.status === 'pago' || order.status === 'pago_pendente_video')
+          .reduce((sum, order) => sum + (order.valor_total || 0), 0);
+        const awaiting_video = data.filter(order => order.status === 'pago_pendente_video').length;
+        const video_sent = data.filter(order => order.status === 'video_enviado').length;
+        
+        setStats({ total, revenue, awaiting_video, video_sent });
+      }
+    } catch (error: any) {
+      console.error('💥 Erro crítico ao carregar pedidos:', error);
+      toast.error('Erro ao carregar pedidos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  return {
+    orders,
+    stats,
+    loading,
+    refetch: fetchOrders
+  };
+};

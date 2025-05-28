@@ -883,6 +883,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_paid_orders_without_video: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          created_at: string
+          valor_total: number
+          lista_paineis: string[]
+          plano_meses: number
+          client_id: string
+          client_email: string
+          client_name: string
+        }[]
+      }
       get_panels_by_location: {
         Args: { lat: number; lng: number; radius_meters: number }
         Returns: {
@@ -913,9 +926,51 @@ export type Database = {
           video_status: string
         }[]
       }
+      get_pending_approval_videos: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          pedido_id: string
+          video_id: string
+          slot_position: number
+          created_at: string
+          client_email: string
+          client_name: string
+          pedido_valor: number
+          video_nome: string
+          video_url: string
+          video_duracao: number
+          video_orientacao: string
+        }[]
+      }
+      get_real_approval_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          paid_without_video: number
+          pending_approval: number
+          approved: number
+          rejected: number
+        }[]
+      }
       get_real_revenue: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_recently_approved_videos: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          pedido_id: string
+          video_id: string
+          slot_position: number
+          approved_at: string
+          is_active: boolean
+          client_email: string
+          client_name: string
+          pedido_valor: number
+          video_nome: string
+          video_url: string
+        }[]
       }
       get_unread_notifications_count: {
         Args: Record<PropertyKey, never>
