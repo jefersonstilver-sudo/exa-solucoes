@@ -24,7 +24,7 @@ export const QRCodeDisplay = ({
   
   return (
     <motion.div 
-      className="flex flex-col items-center space-y-2" 
+      className="flex flex-col items-center" 
       initial={{
         opacity: 0,
         scale: 0.9
@@ -37,30 +37,23 @@ export const QRCodeDisplay = ({
         duration: 0.3
       }}
     >
-      <h3 className="text-lg font-medium text-gray-800">Pague com PIX</h3>
-      <p className="text-sm text-gray-500 text-center">
-        Ao confirmar o pagamento, seu pedido vai aparecer na tela de "pedidos"
-      </p>
-      
       {hasValidQRCode ? (
-        <div className="border border-gray-200 p-4 rounded-lg bg-white">
-          <img 
-            src={imageSource} 
-            alt="QR Code PIX" 
-            className="w-64 h-64" 
-            onError={(e) => {
-              console.error("[QRCodeDisplay] Error loading QR code image");
-              const target = e.target as HTMLImageElement;
-              target.onerror = null; // Prevent infinite loop
-              target.alt = "Erro ao carregar QR Code";
-              target.className = "w-64 h-64 opacity-50";
-            }}
-          />
-        </div>
+        <img 
+          src={imageSource} 
+          alt="QR Code PIX" 
+          className="w-64 h-64 rounded-lg" 
+          onError={(e) => {
+            console.error("[QRCodeDisplay] Error loading QR code image");
+            const target = e.target as HTMLImageElement;
+            target.onerror = null; // Prevent infinite loop
+            target.alt = "Erro ao carregar QR Code";
+            target.className = "w-64 h-64 opacity-50 rounded-lg";
+          }}
+        />
       ) : (
-        <div className="border border-gray-200 p-4 rounded-lg bg-white flex flex-col items-center justify-center w-64 h-64">
+        <div className="border border-gray-200 rounded-lg bg-white flex flex-col items-center justify-center w-64 h-64">
           <AlertCircle className="h-12 w-12 text-orange-500 mb-2" />
-          <p className="text-sm text-gray-500 text-center">
+          <p className="text-sm text-gray-500 text-center px-4">
             QR Code não disponível. Tente atualizar o status do pagamento.
           </p>
         </div>

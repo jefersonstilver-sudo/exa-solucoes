@@ -76,10 +76,15 @@ const PixQrCodeDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl font-bold">
+          <DialogTitle className="text-center text-xl font-bold flex items-center justify-center gap-3">
+            <img 
+              src="https://logospng.org/wp-content/uploads/mercado-pago.png" 
+              alt="Mercado Pago" 
+              className="h-8 w-auto"
+            />
             Pagamento PIX
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center text-gray-600">
             Escaneie o QR Code ou copie o código para pagar
           </DialogDescription>
         </DialogHeader>
@@ -88,7 +93,9 @@ const PixQrCodeDialog = ({
           {finalQrCodeBase64 && (
             <div className="w-full flex flex-col items-center space-y-3">
               <div className="w-full flex justify-center">
-                <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
+                <div className="bg-white p-4 rounded-xl border-2 border-gray-100 shadow-sm">
+                  <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
+                </div>
               </div>
             </div>
           )}
