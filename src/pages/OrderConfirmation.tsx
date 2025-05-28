@@ -12,6 +12,7 @@ import SuccessHeader from '@/components/order-confirmation/SuccessHeader';
 import OrderSummary from '@/components/order-confirmation/OrderSummary';
 import VideoRequirements from '@/components/order-confirmation/VideoRequirements';
 import UploadStatus from '@/components/order-confirmation/UploadStatus';
+import { VideoPlayer } from '@/components/video-management/VideoPlayer';
 import { Upload } from 'lucide-react';
 
 const OrderConfirmation: React.FC = () => {
@@ -60,7 +61,7 @@ const OrderConfirmation: React.FC = () => {
       <Layout>
         <div className="container mx-auto px-4 py-12 flex flex-col items-center">
           <RefreshCw className="h-10 w-10 text-indexa-purple animate-spin" />
-          <h2 className="text-xl font-medium mt-4">Carregando detalhes do pedido...</h2>
+          <h2 className="text-xl font-medium mt-4 text-black">Carregando detalhes do pedido...</h2>
         </div>
       </Layout>
     );
@@ -88,8 +89,8 @@ const OrderConfirmation: React.FC = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="p-6 shadow-md border-2 border-indexa-purple/20">
-              <h2 className="text-xl font-semibold flex items-center">
+            <Card className="p-6 shadow-md border-2 border-indexa-purple/20 bg-white">
+              <h2 className="text-xl font-semibold flex items-center text-black">
                 <Upload className="mr-2 h-5 w-5 text-indexa-purple" />
                 {uploadStatus === 'success' ? 'Vídeo enviado com sucesso!' : 'Envie seu vídeo'}
               </h2>

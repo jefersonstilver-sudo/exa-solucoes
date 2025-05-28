@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, XCircle, Play, User, AlertTriangle, RefreshCw, Download } from 'lucide-react';
+import { CheckCircle, XCircle, User, AlertTriangle, RefreshCw, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { VideoPlayer } from '@/components/video-management/VideoPlayer';
 
 interface PendingVideo {
   id: string;
@@ -139,13 +140,17 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
     }).format(value);
   };
 
+  const handleDownload = (videoUrl: string, fileName: string) => {
+    window.open(videoUrl, '_blank');
+  };
+
   if (loadingVideos || loading) {
     return (
-      <Card className="bg-slate-800/50 border-slate-700/50">
+      <Card className="bg-white border-gray-200">
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
             <RefreshCw className="h-8 w-8 animate-spin text-[#00FFAB]" />
-            <span className="ml-3 text-white">Carregando vídeos para aprovação...</span>
+            <span className="ml-3 text-black">Carregando vídeos para aprovação...</span>
           </div>
         </CardContent>
       </Card>
@@ -154,40 +159,40 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
   return (
     <div className="space-y-6">
-      <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardHeader className="border-b border-slate-700/50">
-          <CardTitle className="flex items-center text-white">
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="flex items-center text-black">
             <AlertTriangle className="h-5 w-5 mr-2 text-[#00FFAB]" />
             Vídeos Aguardando Aprovação
           </CardTitle>
-          <CardDescription className="text-slate-300">
+          <CardDescription className="text-gray-600">
             Analise os vídeos conforme diretrizes CONAR - Conteúdo familiar adequado
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
           {pendingVideos.length === 0 ? (
             <div className="text-center py-12">
-              <Play className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-              <h3 className="text-lg font-medium text-white mb-2">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-black mb-2">
                 Nenhum vídeo para aprovação
               </h3>
-              <p className="text-slate-400">
+              <p className="text-gray-600">
                 Todos os vídeos enviados foram processados
               </p>
             </div>
           ) : (
             <div className="space-y-8">
               {pendingVideos.map((video) => (
-                <Card key={video.id} className="bg-gradient-to-br from-[#3C1361]/20 to-slate-800/50 border-[#3C1361]/40">
+                <Card key={video.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Informações do Cliente e Pedido */}
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <Badge className="bg-[#3C1361] text-white">
+                          <Badge className="bg-yellow-100 text-yellow-800">
                             Aguardando Aprovação
                           </Badge>
-                          <span className="text-sm text-slate-400">
+                          <span className="text-sm text-gray-600">
                             Enviado em: {formatDate(video.created_at)}
                           </span>
                         </div>
@@ -196,12 +201,12 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-2 text-[#00FFAB]" />
                             <div>
-                              <span className="font-medium text-white">{video.client_name}</span>
-                              <div className="text-sm text-slate-400">{video.client_email}</div>
+                              <span className="font-medium text-black">{video.client_name}</span>
+                              <div className="text-sm text-gray-600">{video.client_email}</div>
                             </div>
                           </div>
                           
-                          <div className="text-sm text-slate-300 space-y-1">
+                          <div className="text-sm text-gray-700 space-y-1">
                             <p><strong>Valor:</strong> {formatCurrency(video.pedido_valor)}</p>
                             <p><strong>Arquivo:</strong> {video.video_nome}</p>
                             <p><strong>Duração:</strong> {video.video_duracao}s • {video.video_orientacao}</p>
@@ -209,30 +214,25 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                         </div>
 
                         {/* Player de Vídeo */}
-                        <div className="bg-slate-900 rounded-lg aspect-video flex items-center justify-center relative border border-slate-700/50">
-                          <div className="text-center text-white">
-                            <Play className="h-12 w-12 mx-auto mb-2" />
-                            <p className="text-sm">Vídeo do Cliente</p>
-                            <p className="text-xs text-slate-400">{video.video_duracao}s • {video.video_orientacao}</p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(video.video_url, '_blank')}
-                            className="absolute top-2 right-2 text-white hover:bg-white/20"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                        <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                          <VideoPlayer
+                            src={video.video_url}
+                            title={video.video_nome}
+                            className="w-full h-full"
+                            muted={true}
+                            controls={true}
+                            onDownload={() => handleDownload(video.video_url, video.video_nome)}
+                          />
                         </div>
                       </div>
 
                       {/* Painel de Aprovação/Rejeição */}
                       <div className="space-y-4">
-                        <h3 className="font-semibold text-white">Análise CONAR</h3>
+                        <h3 className="font-semibold text-black">Análise CONAR</h3>
                         
                         <div className="bg-[#00FFAB]/10 border border-[#00FFAB]/30 rounded-lg p-4">
-                          <h4 className="font-medium text-white mb-2">Verificar:</h4>
-                          <ul className="text-sm text-slate-300 space-y-1">
+                          <h4 className="font-medium text-black mb-2">Verificar:</h4>
+                          <ul className="text-sm text-gray-700 space-y-1">
                             <li>• Conteúdo adequado para ambiente familiar</li>
                             <li>• Ausência de propaganda inadequada</li>
                             <li>• Linguagem apropriada</li>
@@ -243,7 +243,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
                         {/* Motivos de Rejeição */}
                         <div className="space-y-2">
-                          <label className="text-sm font-medium text-white">
+                          <label className="text-sm font-medium text-black">
                             Motivo da rejeição (se aplicável):
                           </label>
                           <select
@@ -252,7 +252,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                               ...prev,
                               [video.id]: e.target.value
                             }))}
-                            className="w-full p-2 border border-slate-600 rounded-md text-sm bg-slate-700 text-white focus:border-[#00FFAB] focus:ring-[#00FFAB]"
+                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-white text-black focus:border-[#00FFAB] focus:ring-[#00FFAB]"
                           >
                             <option value="">Selecione um motivo...</option>
                             {conarViolations.map((violation) => (
@@ -266,7 +266,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                         {rejectionReason[video.id] === 'Outro motivo (especificar)' && (
                           <Textarea
                             placeholder="Especifique o motivo da rejeição..."
-                            className="text-sm border-slate-600 bg-slate-700 text-white focus:border-[#00FFAB] focus:ring-[#00FFAB]"
+                            className="text-sm border-gray-300 bg-white text-black focus:border-[#00FFAB] focus:ring-[#00FFAB]"
                             onChange={(e) => setRejectionReason(prev => ({
                               ...prev,
                               [video.id]: `Outro motivo: ${e.target.value}`
@@ -279,7 +279,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                           <Button
                             onClick={() => approveVideo(video.id, video.client_name)}
                             disabled={actionLoading}
-                            className="flex-1 bg-[#00FFAB] hover:bg-[#00FFAB]/80 text-[#3C1361] font-semibold"
+                            className="flex-1 bg-[#00FFAB] hover:bg-[#00FFAB]/80 text-black font-semibold"
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Aprovar
@@ -288,7 +288,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                           <Button
                             onClick={() => rejectVideo(video.id, video.client_name)}
                             variant="outline"
-                            className="flex-1 border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                            className="flex-1 border-red-500 text-red-600 hover:bg-red-500 hover:text-white"
                             disabled={!rejectionReason[video.id] || actionLoading}
                           >
                             <XCircle className="h-4 w-4 mr-2" />

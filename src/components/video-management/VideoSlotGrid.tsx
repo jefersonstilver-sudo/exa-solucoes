@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
+import { VideoPlayer } from './VideoPlayer';
 
 interface VideoSlot {
   id?: string;
@@ -90,6 +91,15 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
     return `${seconds}s`;
   };
 
+  const handleDownload = (videoUrl: string, fileName: string) => {
+    if (onDownload) {
+      onDownload(videoUrl, fileName);
+    } else {
+      // Fallback: open in new tab
+      window.open(videoUrl, '_blank');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {videoSlots.map((slot) => (
@@ -105,7 +115,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             {/* Header do Slot */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-lg">Slot {slot.slot_position}</h3>
+                <h3 className="font-semibold text-lg text-black">Slot {slot.slot_position}</h3>
                 {slot.video_data && getStatusIcon(slot.approval_status)}
               </div>
               {slot.video_data && getStatusBadge(slot.approval_status, slot.is_active)}
@@ -113,11 +123,18 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
 
             {slot.video_data ? (
               <div className="space-y-4">
-                {/* Preview do Vídeo */}
-                <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center relative overflow-hidden">
-                  <Play className="h-12 w-12 text-white opacity-80" />
+                {/* Video Player */}
+                <div className="aspect-video rounded-lg overflow-hidden">
+                  <VideoPlayer
+                    src={slot.video_data.url}
+                    title={slot.video_data.nome}
+                    className="w-full h-full"
+                    muted={true}
+                    controls={true}
+                    onDownload={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)}
+                  />
                   {slot.is_active && (
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2 z-10">
                       <Badge className="bg-green-500 text-white">EXIBINDO</Badge>
                     </div>
                   )}
@@ -125,7 +142,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
 
                 {/* Informações do Vídeo */}
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm truncate" title={slot.video_data.nome}>
+                  <h4 className="font-medium text-sm truncate text-black" title={slot.video_data.nome}>
                     {slot.video_data.nome}
                   </h4>
                   <div className="flex justify-between text-xs text-gray-600">
@@ -157,22 +174,21 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
                     </Button>
                   )}
                   
-                  {onDownload && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDownload(slot.video_data!.url, slot.video_data!.nome)}
-                    >
-                      <Download className="h-3 w-3 mr-1" />
-                      Download
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)}
+                    className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Download
+                  </Button>
                   
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => slot.id && onRemove(slot.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
                     Remover
