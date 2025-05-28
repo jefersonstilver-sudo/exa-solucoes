@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import Layout from '@/components/layout/Layout';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useOrderDetails } from '@/hooks/useOrderDetails';
-import { useVideoUpload } from '@/hooks/useVideoUpload';
+import { useSimpleVideoUpload } from '@/hooks/useSimpleVideoUpload';
 import SuccessHeader from '@/components/order-confirmation/SuccessHeader';
 import OrderSummary from '@/components/order-confirmation/OrderSummary';
 import VideoRequirements from '@/components/order-confirmation/VideoRequirements';
@@ -42,10 +42,9 @@ const OrderConfirmation: React.FC = () => {
     startUpload,
     handleReset,
     handleContinue
-  } = useVideoUpload({ 
+  } = useSimpleVideoUpload({ 
     orderId, 
-    userId: user?.id, 
-    orderDetails 
+    userId: user?.id
   });
   
   // Animation variants
