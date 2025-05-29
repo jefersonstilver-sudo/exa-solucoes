@@ -45,7 +45,9 @@ export const useSimpleVideoUpload = ({ orderId, userId }: UseSimpleVideoUploadPr
       }
 
       setVideoDuration(validation.metadata.duration);
-      setVideoOrientation(validation.metadata.orientation);
+      // Map the orientation from validation service to our state type
+      const mappedOrientation = validation.metadata.orientation === 'horizontal' ? 'landscape' : 'portrait';
+      setVideoOrientation(mappedOrientation);
       setUploadStatus('idle');
     } catch (error) {
       setVideoError('Erro ao validar o vídeo');
