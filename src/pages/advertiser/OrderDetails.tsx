@@ -11,7 +11,8 @@ import {
   Video, 
   Loader2,
   AlertCircle,
-  Star
+  Star,
+  CheckCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ const OrderDetails = () => {
     videoSlots,
     loading: videosLoading,
     uploading,
+    uploadProgress,
     selectVideoForDisplay,
     activateVideo,
     removeVideo,
@@ -100,6 +102,9 @@ const OrderDetails = () => {
 
   const hasSelectedVideo = videoSlots.some(slot => slot.video_data && slot.selected_for_display);
   const totalVideos = videoSlots.filter(slot => slot.video_data).length;
+  const approvedSelectedVideo = videoSlots.find(slot => 
+    slot.selected_for_display && slot.approval_status === 'approved'
+  );
 
   if (loading || videosLoading) {
     return (
@@ -187,18 +192,31 @@ const OrderDetails = () => {
 
       {/* Video Selection Status */}
       {totalVideos > 0 && (
-        <Card className={`${hasSelectedVideo ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+        <Card className={`${approvedSelectedVideo ? 'border-green-200 bg-green-50' : hasSelectedVideo ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50'}`}>
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <Star className={`h-6 w-6 ${hasSelectedVideo ? 'text-green-600 fill-current' : 'text-red-600'}`} />
+              {approvedSelectedVideo ? (
+                <CheckCircle className="h-6 w-6 text-green-600 fill-current" />
+              ) : hasSelectedVideo ? (
+                <Star className="h-6 w-6 text-yellow-600 fill-current" />
+              ) : (
+                <Star className="h-6 w-6 text-red-600" />
+              )}
               <div>
-                <h3 className={`font-medium ${hasSelectedVideo ? 'text-green-800' : 'text-red-800'}`}>
-                  {hasSelectedVideo ? 'Vídeo Selecionado para Exibição' : 'Nenhum Vídeo Selecionado'}
+                <h3 className={`font-medium ${approvedSelectedVideo ? 'text-green-800' : hasSelectedVideo ? 'text-yellow-800' : 'text-red-800'}`}>
+                  {approvedSelectedVideo 
+                    ? 'Vídeo Aprovado e Pronto para Exibição!' 
+                    : hasSelectedVideo 
+                      ? 'Vídeo Selecionado - Aguardando Aprovação'
+                      : 'Nenhum Vídeo Selecionado'
+                  }
                 </h3>
-                <p className={`text-sm ${hasSelectedVideo ? 'text-green-600' : 'text-red-600'}`}>
-                  {hasSelectedVideo 
-                    ? 'Você tem um vídeo selecionado que será exibido assim que aprovado pelos administradores.'
-                    : 'Você deve selecionar qual dos seus vídeos será exibido nos painéis.'
+                <p className={`text-sm ${approvedSelectedVideo ? 'text-green-600' : hasSelectedVideo ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {approvedSelectedVideo 
+                    ? 'Seu vídeo foi aprovado pelos administradores e está pronto para ser exibido nos painéis.'
+                    : hasSelectedVideo 
+                      ? 'Seu vídeo está selecionado e aguardando aprovação dos administradores.'
+                      : 'Você deve selecionar qual dos seus vídeos será exibido nos painéis.'
                   }
                 </p>
               </div>
@@ -216,7 +234,7 @@ const OrderDetails = () => {
           </CardTitle>
           <div className="space-y-2 text-sm text-gray-600">
             <p>
-              Envie até 4 vídeos (máx. 15s, horizontal). <strong>Você deve selecionar qual vídeo será exibido.</strong>
+              Envie até 4 vídeos (máx. 15s, horizontal, 100MB). <strong>Você deve selecionar qual vídeo será exibido.</strong>
             </p>
             <p className="text-green-600 font-medium">
               ✓ Áudio será automaticamente silenciado durante reprodução
@@ -224,12 +242,16 @@ const OrderDetails = () => {
             <p className="text-blue-600">
               ⭐ Use o botão "Selecionar para Exibição" para escolher qual vídeo será mostrado nos painéis
             </p>
+            <p className="text-purple-600">
+              📁 Arquivos são salvos de forma segura no seu storage pessoal
+            </p>
           </div>
         </CardHeader>
         <CardContent>
           <VideoSlotGrid
             videoSlots={videoSlots}
             uploading={uploading}
+            uploadProgress={uploadProgress}
             onUpload={handleVideoUpload}
             onActivate={activateVideo}
             onRemove={removeVideo}

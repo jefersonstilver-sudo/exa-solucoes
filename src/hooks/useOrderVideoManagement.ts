@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { validateVideoFile, uploadVideoToStorage, deleteVideoFromStorage } from '@/services/videoStorageService';
 
 interface VideoSlot {
   id?: string;
@@ -26,6 +28,7 @@ export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
 
   const loadVideoSlots = async () => {
     if (!orderId) return;
@@ -147,6 +150,12 @@ export const useOrderVideoManagement = (orderId: string) => {
         return;
       }
 
+      // Deletar arquivo do storage se existir
+      if (videoToRemove?.video_data?.url && videoToRemove.video_data.url !== 'pending_upload') {
+        await deleteVideoFromStorage(videoToRemove.video_data.url);
+      }
+
+      // Deletar do banco
       const { error } = await supabase
         .from('pedido_videos')
         .delete()
@@ -165,13 +174,23 @@ export const useOrderVideoManagement = (orderId: string) => {
   const uploadVideo = async (slotPosition: number, file: File, userId: string) => {
     try {
       setUploading(true);
+      setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
-      // Validar vídeo usando a função do Supabase
+      // Validar vídeo
       const validation = await validateVideoFile(file);
       if (!validation.valid) {
         toast.error(validation.errors.join(', '));
         return;
       }
+
+      setUploadProgress(prev => ({ ...prev, [slotPosition]: 20 }));
+
+      // Upload para storage
+      const videoUrl = await uploadVideoToStorage(file, userId, (progress) => {
+        setUploadProgress(prev => ({ ...prev, [slotPosition]: 20 + (progress * 0.6) }));
+      });
+
+      setUploadProgress(prev => ({ ...prev, [slotPosition]: 90 }));
 
       // Criar registro do vídeo
       const { data: videoData, error: videoError } = await supabase
@@ -179,10 +198,16 @@ export const useOrderVideoManagement = (orderId: string) => {
         .insert({
           client_id: userId,
           nome: file.name,
-          url: 'pending_upload',
+          url: videoUrl,
           origem: 'cliente',
           status: 'ativo',
-          ...validation.videoData
+          duracao: validation.metadata.duration,
+          orientacao: validation.metadata.orientation,
+          largura: validation.metadata.width,
+          altura: validation.metadata.height,
+          tamanho_arquivo: validation.metadata.size,
+          formato: validation.metadata.format,
+          tem_audio: false // Sempre false para garantir que seja mutado
         })
         .select()
         .single();
@@ -201,64 +226,30 @@ export const useOrderVideoManagement = (orderId: string) => {
 
       if (slotError) throw slotError;
 
-      toast.success('Vídeo enviado para aprovação!');
+      setUploadProgress(prev => ({ ...prev, [slotPosition]: 100 }));
+      toast.success('Vídeo enviado com sucesso!');
+      
+      // Limpar progresso após um tempo
+      setTimeout(() => {
+        setUploadProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[slotPosition];
+          return newProgress;
+        });
+      }, 2000);
+
       loadVideoSlots();
     } catch (error) {
       console.error('Erro no upload:', error);
       toast.error('Erro ao fazer upload do vídeo');
+      setUploadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[slotPosition];
+        return newProgress;
+      });
     } finally {
       setUploading(false);
     }
-  };
-
-  const validateVideoFile = (file: File): Promise<{ valid: boolean; errors: string[]; videoData: any }> => {
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      const url = URL.createObjectURL(file);
-      
-      video.onloadedmetadata = () => {
-        const errors: string[] = [];
-        const duration = Math.round(video.duration);
-        const width = video.videoWidth;
-        const height = video.videoHeight;
-        const orientation = height > width ? 'vertical' : 'horizontal';
-        
-        if (duration > 15) {
-          errors.push('Vídeo deve ter no máximo 15 segundos');
-        }
-        
-        if (orientation !== 'horizontal') {
-          errors.push('Vídeo deve estar em orientação horizontal');
-        }
-        
-        URL.revokeObjectURL(url);
-        
-        resolve({
-          valid: errors.length === 0,
-          errors,
-          videoData: {
-            duracao: duration,
-            orientacao: orientation,
-            largura: width,
-            altura: height,
-            tamanho_arquivo: file.size,
-            formato: file.type,
-            tem_audio: false
-          }
-        });
-      };
-      
-      video.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve({
-          valid: false,
-          errors: ['Erro ao processar vídeo'],
-          videoData: null
-        });
-      };
-      
-      video.src = url;
-    });
   };
 
   useEffect(() => {
@@ -269,6 +260,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     videoSlots,
     loading,
     uploading,
+    uploadProgress,
     selectVideoForDisplay,
     activateVideo,
     removeVideo,

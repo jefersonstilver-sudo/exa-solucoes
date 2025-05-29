@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
   Upload, 
   Play, 
@@ -41,6 +42,7 @@ interface VideoSlot {
 interface VideoSlotGridProps {
   videoSlots: VideoSlot[];
   uploading: boolean;
+  uploadProgress: { [key: number]: number };
   onUpload: (slotPosition: number, file: File) => void;
   onActivate: (slotId: string) => void;
   onRemove: (slotId: string) => void;
@@ -51,6 +53,7 @@ interface VideoSlotGridProps {
 export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   videoSlots,
   uploading,
+  uploadProgress,
   onUpload,
   onActivate,
   onRemove,
@@ -127,6 +130,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   };
 
   const hasSelectedVideo = videoSlots.some(slot => slot.video_data && slot.selected_for_display);
+  const currentProgress = uploadProgress || {};
 
   return (
     <div className="space-y-4">
@@ -167,6 +171,17 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
                 </div>
                 {slot.video_data && getStatusBadge(slot)}
               </div>
+
+              {/* Progress Bar para Upload */}
+              {currentProgress[slot.slot_position] !== undefined && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Enviando vídeo...</span>
+                    <span className="text-sm text-gray-500">{Math.round(currentProgress[slot.slot_position])}%</span>
+                  </div>
+                  <Progress value={currentProgress[slot.slot_position]} className="h-2" />
+                </div>
+              )}
 
               {slot.video_data ? (
                 <div className="space-y-4">
@@ -263,11 +278,11 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
                   <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-sm text-gray-600 mb-4">
-                    Clique para enviar vídeo ou arraste aqui
+                    Clique para enviar vídeo ou arraste aqui (máx. 15s, horizontal, 100MB)
                   </p>
                   <input
                     type="file"
-                    accept="video/mp4,video/quicktime,video/avi"
+                    accept="video/mp4,video/quicktime,video/avi,video/mov"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -276,18 +291,20 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
                     }}
                     className="hidden"
                     id={`upload-${slot.slot_position}`}
-                    disabled={uploading}
+                    disabled={uploading || currentProgress[slot.slot_position] !== undefined}
                   />
                   <label 
                     htmlFor={`upload-${slot.slot_position}`}
-                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className={`cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${
+                      (uploading || currentProgress[slot.slot_position] !== undefined) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
-                    {uploading ? (
+                    {currentProgress[slot.slot_position] !== undefined ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : (
                       <Upload className="h-4 w-4 mr-2" />
                     )}
-                    {uploading ? 'Enviando...' : 'Escolher Arquivo'}
+                    {currentProgress[slot.slot_position] !== undefined ? 'Enviando...' : 'Escolher Arquivo'}
                   </label>
                 </div>
               )}
