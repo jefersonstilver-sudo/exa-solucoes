@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -10,10 +9,11 @@ export interface VideoHealthCheck {
   fileAccessible: boolean;
   errorDetails?: string;
   suggestions: string[];
+  alascaSeteStatus?: 'ok' | 'warning' | 'error';
 }
 
 export const checkVideoHealth = async (videoUrl: string, videoId: string): Promise<VideoHealthCheck> => {
-  console.log('🔍 Iniciando verificação de saúde do vídeo:', { videoId, videoUrl });
+  console.log('🔍 [ALASCA SETE] Iniciando verificação de saúde do vídeo:', { videoId, videoUrl });
   
   const result: VideoHealthCheck = {
     videoId,
@@ -21,7 +21,8 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
     urlValid: false,
     fileExists: false,
     fileAccessible: false,
-    suggestions: []
+    suggestions: [],
+    alascaSeteStatus: 'error'
   };
 
   try {
@@ -29,7 +30,7 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
     try {
       new URL(videoUrl);
       result.urlValid = true;
-      console.log('✅ URL é válida:', videoUrl);
+      console.log('✅ [ALASCA SETE] URL é válida:', videoUrl);
     } catch {
       result.urlValid = false;
       result.errorDetails = 'URL malformada ou pendente';
@@ -38,7 +39,7 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
       } else {
         result.suggestions.push('Gerar nova URL para o arquivo');
       }
-      console.error('❌ URL inválida:', videoUrl);
+      console.error('❌ [ALASCA SETE] URL inválida:', videoUrl);
       return result;
     }
 
@@ -47,15 +48,15 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
     if (!isSupabaseUrl) {
       result.errorDetails = 'URL não é do Supabase Storage';
       result.suggestions.push('Verificar se o arquivo foi enviado corretamente');
-      console.warn('⚠️ URL não é do Supabase Storage:', videoUrl);
+      console.warn('⚠️ [ALASCA SETE] URL não é do Supabase Storage:', videoUrl);
     }
 
     // 3. Testar conectividade HTTP com timeout mais curto
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      console.log('🌐 Testando conectividade HTTP...');
+      console.log('🌐 [ALASCA SETE] Testando conectividade HTTP...');
       const response = await fetch(videoUrl, { 
         method: 'HEAD',
         signal: controller.signal
@@ -66,26 +67,27 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
       if (response.ok) {
         result.fileExists = true;
         result.fileAccessible = true;
-        console.log('✅ Arquivo acessível via HTTP:', response.status);
+        result.alascaSeteStatus = 'ok';
+        console.log('✅ [ALASCA SETE] Arquivo acessível via HTTP:', response.status);
         
-        // Verificar tipo de conteúdo
         const contentType = response.headers.get('content-type');
         if (contentType && !contentType.startsWith('video/')) {
           result.suggestions.push(`Tipo de arquivo inesperado: ${contentType}`);
+          result.alascaSeteStatus = 'warning';
         }
         
-        // Verificar tamanho
         const contentLength = response.headers.get('content-length');
         if (contentLength) {
           const sizeInMB = parseInt(contentLength) / (1024 * 1024);
-          console.log(`📦 Tamanho do arquivo: ${sizeInMB.toFixed(2)} MB`);
+          console.log(`📦 [ALASCA SETE] Tamanho do arquivo: ${sizeInMB.toFixed(2)} MB`);
         }
         
       } else {
         result.fileExists = false;
         result.fileAccessible = false;
         result.errorDetails = `HTTP ${response.status} - ${response.statusText}`;
-        console.error('❌ Erro HTTP:', response.status, response.statusText);
+        result.alascaSeteStatus = 'error';
+        console.error('❌ [ALASCA SETE] Erro HTTP:', response.status, response.statusText);
         
         if (response.status === 404) {
           result.suggestions.push('Arquivo não encontrado no storage - reenviar vídeo');
@@ -97,6 +99,7 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
       }
     } catch (error) {
       result.fileAccessible = false;
+      result.alascaSeteStatus = 'error';
       if (error.name === 'AbortError') {
         result.errorDetails = 'Timeout na conexão (>5s)';
         result.suggestions.push('Conexão muito lenta - verificar internet');
@@ -104,19 +107,18 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
         result.errorDetails = `Erro de rede: ${error.message}`;
         result.suggestions.push('Verificar conectividade com a internet');
       }
-      console.error('❌ Erro ao testar conectividade:', error);
+      console.error('❌ [ALASCA SETE] Erro ao testar conectividade:', error);
     }
 
-    // 4. Verificar se o arquivo existe no storage via API do Supabase (melhorado)
+    // 4. Verificar no storage via API
     if (isSupabaseUrl) {
       try {
-        console.log('🔍 Verificando no Supabase Storage...');
+        console.log('🔍 [ALASCA SETE] Verificando no Supabase Storage...');
         const urlParts = videoUrl.split('/storage/v1/object/public/videos/');
         if (urlParts.length === 2) {
           const filePath = urlParts[1];
-          console.log('📁 Caminho do arquivo:', filePath);
+          console.log('📁 [ALASCA SETE] Caminho do arquivo:', filePath);
           
-          // Extrair pasta e nome do arquivo
           const pathSegments = filePath.split('/');
           const fileName = pathSegments.pop();
           const folderPath = pathSegments.join('/');
@@ -128,18 +130,18 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
             });
           
           if (error) {
-            console.error('❌ Erro ao listar arquivos:', error);
+            console.error('❌ [ALASCA SETE] Erro ao listar arquivos:', error);
             result.suggestions.push('Erro ao acessar storage - verificar permissões');
           } else if (data && data.length > 0) {
-            console.log('✅ Arquivo encontrado no storage:', data[0]);
+            console.log('✅ [ALASCA SETE] Arquivo encontrado no storage:', data[0]);
             result.fileExists = true;
           } else {
-            console.log('❌ Arquivo não encontrado no storage');
+            console.log('❌ [ALASCA SETE] Arquivo não encontrado no storage');
             result.suggestions.push('Arquivo foi deletado ou não foi enviado corretamente');
           }
         }
       } catch (error) {
-        console.error('❌ Erro ao verificar storage:', error);
+        console.error('❌ [ALASCA SETE] Erro ao verificar storage:', error);
         result.suggestions.push('Erro ao verificar storage do Supabase');
       }
     }
@@ -147,7 +149,8 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
   } catch (error) {
     result.errorDetails = `Erro geral: ${error.message}`;
     result.suggestions.push('Erro inesperado na verificação');
-    console.error('❌ Erro geral na verificação:', error);
+    result.alascaSeteStatus = 'error';
+    console.error('❌ [ALASCA SETE] Erro geral na verificação:', error);
   }
 
   // Adicionar sugestões baseadas no resultado
@@ -156,15 +159,14 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
     result.suggestions.push('Usar a funcionalidade de limpeza de registros órfãos');
   }
 
-  console.log('📊 Resultado da verificação:', result);
+  console.log('📊 [ALASCA SETE] Resultado da verificação:', result);
   return result;
 };
 
 export const diagnosePanelVideoIssues = async (orderId: string): Promise<VideoHealthCheck[]> => {
-  console.log('🔍 Diagnosticando vídeos do pedido:', orderId);
+  console.log('🔍 [ALASCA SETE] Diagnosticando vídeos do pedido:', orderId);
   
   try {
-    // Buscar todos os vídeos do pedido
     const { data: pedidoVideos, error } = await supabase
       .from('pedido_videos')
       .select(`
@@ -181,18 +183,17 @@ export const diagnosePanelVideoIssues = async (orderId: string): Promise<VideoHe
       .eq('pedido_id', orderId);
 
     if (error) {
-      console.error('❌ Erro ao buscar vídeos do pedido:', error);
+      console.error('❌ [ALASCA SETE] Erro ao buscar vídeos do pedido:', error);
       throw error;
     }
 
     if (!pedidoVideos || pedidoVideos.length === 0) {
-      console.log('ℹ️ Nenhum vídeo encontrado para o pedido');
+      console.log('ℹ️ [ALASCA SETE] Nenhum vídeo encontrado para o pedido');
       return [];
     }
 
-    console.log(`📊 Encontrados ${pedidoVideos.length} vídeos para diagnóstico`);
+    console.log(`📊 [ALASCA SETE] Encontrados ${pedidoVideos.length} vídeos para diagnóstico`);
 
-    // Verificar saúde de cada vídeo
     const healthChecks = await Promise.all(
       pedidoVideos.map(async (pv) => {
         if (pv.videos) {
@@ -205,7 +206,8 @@ export const diagnosePanelVideoIssues = async (orderId: string): Promise<VideoHe
             fileExists: false,
             fileAccessible: false,
             errorDetails: 'Vídeo não encontrado no banco',
-            suggestions: ['Verificar integridade do banco de dados', 'Reenviar vídeo']
+            suggestions: ['Verificar integridade do banco de dados', 'Reenviar vídeo'],
+            alascaSeteStatus: 'error'
           } as VideoHealthCheck;
         }
       })
@@ -213,47 +215,46 @@ export const diagnosePanelVideoIssues = async (orderId: string): Promise<VideoHe
 
     return healthChecks;
   } catch (error) {
-    console.error('❌ Erro ao diagnosticar vídeos:', error);
+    console.error('❌ [ALASCA SETE] Erro ao diagnosticar vídeos:', error);
     throw error;
   }
 };
 
 export const testStorageConnectivity = async (): Promise<boolean> => {
   try {
-    console.log('🔍 Testando conectividade com o storage...');
+    console.log('🔍 [ALASCA SETE] Testando conectividade com o storage...');
     
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
     if (bucketsError) {
-      console.error('❌ Erro ao listar buckets:', bucketsError);
+      console.error('❌ [ALASCA SETE] Erro ao listar buckets:', bucketsError);
       return false;
     }
     
     const videosBucket = buckets?.find(bucket => bucket.name === 'videos');
     if (!videosBucket) {
-      console.error('❌ Bucket "videos" não encontrado');
+      console.error('❌ [ALASCA SETE] Bucket "videos" não encontrado');
       return false;
     }
     
-    // Tentar listar arquivos para confirmar acesso real
     try {
       const { error: listError } = await supabase.storage
         .from('videos')
         .list('', { limit: 1 });
       
       if (listError) {
-        console.error('❌ Erro ao acessar bucket videos:', listError);
+        console.error('❌ [ALASCA SETE] Erro ao acessar bucket videos:', listError);
         return false;
       }
       
-      console.log('✅ Conectividade com storage OK - Bucket videos acessível');
+      console.log('✅ [ALASCA SETE] Conectividade com storage OK - Bucket videos acessível');
       return true;
     } catch (listError) {
-      console.error('❌ Erro ao testar acesso ao bucket:', listError);
+      console.error('❌ [ALASCA SETE] Erro ao testar acesso ao bucket:', listError);
       return false;
     }
   } catch (error) {
-    console.error('❌ Erro ao testar conectividade:', error);
+    console.error('❌ [ALASCA SETE] Erro ao testar conectividade:', error);
     return false;
   }
 };

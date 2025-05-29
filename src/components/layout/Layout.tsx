@@ -4,6 +4,7 @@ import { CartItem } from '@/types/cart';
 import Header from './Header';
 import CartDrawer from '@/components/cart/CartDrawer';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
+import AlascaSeteMonitor from '@/components/system/AlascaSeteMonitor';
 import { useCartManager } from '@/hooks/useCartManager';
 import { setupPeriodicCleanup } from '@/services/realtimeCleanupService';
 
@@ -37,18 +38,14 @@ const Layout: React.FC<LayoutProps> = memo(({
     toggleCart
   } = useCartManager();
 
-  // Use props externas se fornecidas, senão use as internas
   const cartItems = externalCartItems || internalCartItems;
   const onRemoveFromCart = externalOnRemoveFromCart || internalHandleRemoveFromCart;
   const onClearCart = externalOnClearCart || internalHandleClearCart;
   const onChangeDuration = externalOnChangeDuration || internalHandleChangeDuration;
   const onProceedToCheckout = externalOnProceedToCheckout || internalHandleProceedToCheckout;
 
-  // Configurar limpeza automática na montagem do Layout
   React.useEffect(() => {
     const cancelCleanup = setupPeriodicCleanup();
-    
-    // Cleanup na desmontagem
     return cancelCleanup;
   }, []);
 
@@ -60,6 +57,9 @@ const Layout: React.FC<LayoutProps> = memo(({
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col relative">
+      {/* ALASCA SETE: Monitor de sistema */}
+      <AlascaSeteMonitor />
+      
       {/* Header Fixed */}
       <Header 
         cartItemsCount={cartItems.length}
