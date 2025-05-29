@@ -101,7 +101,7 @@ const Checkout = () => {
 
       console.log('[PIX Webhook] Enviando dados:', webhookData);
 
-      const response = await fetch('https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
+      const response = await fetch('https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
