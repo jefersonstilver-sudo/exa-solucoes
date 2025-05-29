@@ -30,7 +30,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const is_emergency_mode = data === true;
     
     if (is_emergency_mode) {
-      // Log that emergency mode is active - fixed to not use array
+      // Log that emergency mode is active
       await supabase
         .from('painel_logs')
         .insert({
@@ -53,27 +53,54 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       });
     }
     
-    // Normal mode - get regular playlist
-    const playlist = await getPanelPlaylist(parsedPanelId);
+    // NOVA FUNCIONALIDADE: Verificar contratos ativos para o painel
+    const { data: activeVideos, error: videosError } = await supabase
+      .rpc('get_active_videos_for_panel', { p_panel_id: parsedPanelId });
     
-    if (!playlist) {
-      // No active playlist - use fallback - fixed to not use array
+    if (videosError) {
+      console.error('Erro ao buscar vídeos ativos:', videosError);
+    }
+    
+    // Se há vídeos de contratos ativos, usar eles
+    if (activeVideos && activeVideos.length > 0) {
+      const video = activeVideos[0];
+      
       await supabase
         .from('painel_logs')
         .insert({
           painel_id: parsedPanelId,
-          status_sincronizacao: 'emergencia',
+          status_sincronizacao: 'ativo_com_contrato',
           timestamp: new Date().toISOString()
         });
-        
+      
       return res.status(200).json({
-        fallback: true,
-        fallback_video_url: "/fallback/indexa_default.mp4",
-        reason: "no_campanha"
+        active_contract: true,
+        videos: [
+          {
+            url: video.video_url,
+            nome: video.video_nome,
+            duracao: video.video_duracao
+          }
+        ]
       });
     }
     
-    return res.status(200).json(playlist);
+    // Fallback para contratos expirados - vídeo institucional
+    await supabase
+      .from('painel_logs')
+      .insert({
+        painel_id: parsedPanelId,
+        status_sincronizacao: 'contrato_expirado',
+        timestamp: new Date().toISOString()
+      });
+      
+    return res.status(200).json({
+      contract_expired: true,
+      fallback_video_url: "/fallback/indexa_default.mp4",
+      reason: "contrato_expirado",
+      message: "Contrato expirado - exibindo vídeo institucional"
+    });
+    
   } catch (error) {
     console.error('Error fetching playlist:', error);
     return res.status(500).json({ error: 'Error fetching playlist' });

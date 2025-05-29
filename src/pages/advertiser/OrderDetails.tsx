@@ -14,6 +14,8 @@ import { OrderHeader } from '@/components/order/OrderHeader';
 import { OrderSummaryCard } from '@/components/order/OrderSummaryCard';
 import { OrderStatusAlerts } from '@/components/order/OrderStatusAlerts';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
+import { ContractStatusAlert } from '@/components/order/ContractStatusAlert';
+import { useContractStatus } from '@/hooks/useContractStatus';
 
 interface OrderDetails {
   id: string;
@@ -33,6 +35,9 @@ const OrderDetails = () => {
   const { userProfile } = useAuth();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Hook para verificar status do contrato
+  const { contractStatus, loading: contractLoading } = useContractStatus(id || '');
 
   // Hook para dados aprimorados (recuperação de painéis)
   const { 
@@ -91,14 +96,31 @@ const OrderDetails = () => {
 
   const handleVideoUpload = async (slotPosition: number, file: File) => {
     if (!userProfile?.id || !id) return;
+    
+    // Verificar se o contrato está ativo antes de permitir upload
+    if (contractStatus.isExpired) {
+      toast.error('Não é possível fazer upload de vídeos para contratos expirados');
+      return;
+    }
+    
     await uploadVideo(slotPosition, file, userProfile.id);
+  };
+
+  const handleVideoAction = async (action: () => Promise<void>) => {
+    // Verificar se o contrato está ativo antes de permitir ações
+    if (contractStatus.isExpired) {
+      toast.error('Não é possível realizar ações em contratos expirados');
+      return;
+    }
+    
+    await action();
   };
 
   const handleVideoDownload = (videoUrl: string, fileName: string) => {
     window.open(videoUrl, '_blank');
   };
 
-  if (loading || videosLoading || enhancedLoading) {
+  if (loading || videosLoading || enhancedLoading || contractLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
@@ -129,7 +151,8 @@ const OrderDetails = () => {
     originalPanels: orderDetails.lista_paineis,
     recoveredPanels: enhancedData?.recoveredPanels,
     displayPanels,
-    isRecovered: enhancedData?.isRecovered
+    isRecovered: enhancedData?.isRecovered,
+    contractStatus
   });
 
   return (
@@ -137,6 +160,15 @@ const OrderDetails = () => {
       <div className="space-y-6">
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
+
+        {/* Status do Contrato */}
+        <ContractStatusAlert
+          isActive={contractStatus.isActive}
+          isExpired={contractStatus.isExpired}
+          isNearExpiration={contractStatus.isNearExpiration}
+          daysRemaining={contractStatus.daysRemaining}
+          expiryDate={contractStatus.expiryDate}
+        />
 
         {/* Informações de Compra */}
         <PurchaseInfoCard orderDetails={orderDetails} />
@@ -155,17 +187,31 @@ const OrderDetails = () => {
           isRecovered={enhancedData?.isRecovered}
         />
 
-        {/* Gestão de Vídeos */}
-        <VideoManagementCard
-          videoSlots={videoSlots}
-          uploading={uploading}
-          uploadProgress={uploadProgress}
-          onUpload={handleVideoUpload}
-          onActivate={activateVideo}
-          onRemove={removeVideo}
-          onSelectForDisplay={selectVideoForDisplay}
-          onDownload={handleVideoDownload}
-        />
+        {/* Gestão de Vídeos - Bloqueada se contrato expirado */}
+        {contractStatus.isExpired ? (
+          <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-300">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">
+                Gestão de Vídeos Bloqueada
+              </h3>
+              <p className="text-gray-600">
+                O contrato expirou. Para reativar a gestão de vídeos, renove seu contrato.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <VideoManagementCard
+            videoSlots={videoSlots}
+            uploading={uploading}
+            uploadProgress={uploadProgress}
+            onUpload={handleVideoUpload}
+            onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
+            onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
+            onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
+            onDownload={handleVideoDownload}
+          />
+        )}
       </div>
 
       {/* Popup de Sucesso */}

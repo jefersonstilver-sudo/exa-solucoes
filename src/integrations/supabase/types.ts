@@ -1045,6 +1045,10 @@ export type Database = {
         Args: { p_pedido_video_id: string }
         Returns: boolean
       }
+      update_expired_contracts: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }
         Returns: {
