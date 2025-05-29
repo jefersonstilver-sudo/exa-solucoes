@@ -8,6 +8,7 @@ import {
   removeVideo as removeVideoAction 
 } from '@/services/videoActionService';
 import { uploadVideo as uploadVideoAction } from '@/services/videoUploadService';
+import { toast } from 'sonner';
 
 export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
@@ -54,7 +55,35 @@ export const useOrderVideoManagement = (orderId: string) => {
   };
 
   const selectVideoForDisplay = async (slotId: string) => {
-    console.log('⭐ [ORDER_VIDEO] Selecionando vídeo:', slotId);
+    console.log('⭐ [ORDER_VIDEO] Tentativa de seleção de vídeo:', slotId);
+    
+    // NOVA VALIDAÇÃO: Verificar status de aprovação ANTES de chamar o serviço
+    const slot = videoSlots.find(s => s.id === slotId);
+    if (!slot) {
+      console.error('❌ [ORDER_VIDEO] Slot não encontrado:', slotId);
+      toast.error('❌ Vídeo não encontrado');
+      return;
+    }
+
+    if (slot.approval_status !== 'approved') {
+      console.warn('⚠️ [ORDER_VIDEO] Tentativa de selecionar vídeo não aprovado:', {
+        slotId,
+        status: slot.approval_status
+      });
+      
+      const statusMessages = {
+        'pending': 'Este vídeo ainda está aguardando aprovação dos administradores.',
+        'rejected': 'Este vídeo foi rejeitado e não pode ser selecionado para exibição.'
+      };
+      
+      const message = statusMessages[slot.approval_status as keyof typeof statusMessages] || 
+                     'Apenas vídeos aprovados podem ser selecionados para exibição.';
+      
+      toast.error(`❌ Seleção bloqueada: ${message}`);
+      return;
+    }
+
+    console.log('✅ [ORDER_VIDEO] Vídeo aprovado, prosseguindo com seleção');
     const success = await selectVideoAction(slotId);
     if (success) {
       refreshSlots();

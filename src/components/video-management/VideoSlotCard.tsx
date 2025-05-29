@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +8,9 @@ import {
   CheckCircle, 
   XCircle, 
   Clock,
-  AlertCircle
+  AlertCircle,
+  Lock,
+  Shield
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
 import { VideoSlotActions } from './VideoSlotActions';
@@ -87,21 +88,34 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
     
     if (slot.approval_status === 'approved') {
-      return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
+      return <Badge className="bg-green-100 text-green-800 flex items-center space-x-1">
+        <Shield className="h-3 w-3" />
+        <span>Aprovado</span>
+      </Badge>;
     }
     
     if (slot.approval_status === 'rejected') {
-      return <Badge className="bg-red-100 text-red-800">Rejeitado</Badge>;
+      return <Badge className="bg-red-100 text-red-800 flex items-center space-x-1">
+        <XCircle className="h-3 w-3" />
+        <span>Rejeitado</span>
+      </Badge>;
     }
     
     if (slot.approval_status === 'pending') {
-      return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 flex items-center space-x-1">
+        <Clock className="h-3 w-3" />
+        <span>Pendente</span>
+      </Badge>;
     }
     
     return null;
   };
 
   const getSelectionIcon = (slot: VideoSlot) => {
+    if (slot.approval_status !== 'approved') {
+      return <Lock className="h-5 w-5 text-gray-400" />;
+    }
+    
     if (slot.selected_for_display) {
       return <Star className="h-5 w-5 text-yellow-500 fill-current" />;
     }
@@ -127,16 +141,20 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   const currentProgress = uploadProgress[slot.slot_position];
 
+  // Determinar se o card deve ter visual de bloqueio
+  const isBlocked = slot.video_data && slot.approval_status !== 'approved';
+  const cardClasses = `transition-all duration-200 ${
+    slot.selected_for_display 
+      ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
+      : slot.is_active 
+        ? 'border-2 border-green-500 bg-green-50 shadow-lg'
+        : isBlocked
+          ? 'border-2 border-gray-300 bg-gray-50 opacity-75'
+          : 'border-gray-200 hover:shadow-md'
+  }`;
+
   return (
-    <Card 
-      className={`transition-all duration-200 ${
-        slot.selected_for_display 
-          ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
-          : slot.is_active 
-            ? 'border-2 border-green-500 bg-green-50 shadow-lg'
-            : 'border-gray-200 hover:shadow-md'
-      }`}
-    >
+    <Card className={cardClasses}>
       <CardContent className="p-6">
         {/* Header do Slot */}
         <div className="flex items-center justify-between mb-4">
@@ -144,6 +162,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             <h3 className="font-semibold text-lg text-black">Slot {slot.slot_position}</h3>
             {slot.video_data && getStatusIcon(slot.approval_status)}
             {slot.video_data && getSelectionIcon(slot)}
+            {isBlocked && (
+              <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                Não Selecionável
+              </span>
+            )}
           </div>
           {slot.video_data && getStatusBadge(slot)}
         </div>
@@ -179,6 +202,14 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                   </Badge>
                 </div>
               )}
+              {isBlocked && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                  <div className="text-center text-white">
+                    <Lock className="h-8 w-8 mx-auto mb-2" />
+                    <p className="text-sm">Aguardando Aprovação</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Informações do Vídeo */}
@@ -199,6 +230,21 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 <p className="text-red-800 text-sm">
                   <strong>Motivo da rejeição:</strong> {slot.rejection_reason}
                 </p>
+              </div>
+            )}
+
+            {/* Aviso para vídeos não aprovados */}
+            {isBlocked && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <Lock className="h-4 w-4 text-gray-500" />
+                  <p className="text-gray-700 text-sm">
+                    {slot.approval_status === 'pending' 
+                      ? 'Este vídeo está aguardando aprovação dos administradores.'
+                      : 'Este vídeo foi rejeitado e não pode ser selecionado.'
+                    }
+                  </p>
+                </div>
               </div>
             )}
 
