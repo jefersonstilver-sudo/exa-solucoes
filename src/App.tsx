@@ -14,6 +14,7 @@ import Index from '@/pages/Index';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import Login from '@/pages/Login';
+import Cadastro from '@/pages/Cadastro';
 import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AdvertiserOrders from '@/pages/advertiser/AdvertiserOrders';
@@ -47,8 +48,9 @@ const App = () => {
         <Route path="/auth-hook-test" element={<AuthHookTest />} />
         <Route path="/auth-diagnostic" element={<AuthDiagnosticPage />} />
         
-        {/* ROTA DE LOGIN DIRETA - CORREÇÃO CRÍTICA */}
+        {/* ROTAS DE AUTENTICAÇÃO - CORREÇÃO CRÍTICA */}
         <Route path="/login" element={<Login />} />
+        <Route path="/cadastro" element={<Cadastro />} />
         
         {/* Auth Routes */}
         <Route path="/auth/*" element={<AuthRoutes />} />
