@@ -54,16 +54,27 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     
     // NOVA FUNCIONALIDADE: Verificar contratos ativos para o painel
+    // Buscar vídeos ativos de contratos válidos para este painel
     const { data: activeVideos, error: videosError } = await supabase
-      .rpc('get_active_videos_for_panel', { p_panel_id: parsedPanelId });
+      .from('pedido_videos')
+      .select(`
+        *,
+        video:videos(*),
+        pedido:pedidos(*)
+      `)
+      .eq('selected_for_display', true)
+      .eq('approval_status', 'approved')
+      .eq('pedidos.status', 'ativo')
+      .gte('pedidos.data_fim', new Date().toISOString().split('T')[0])
+      .contains('pedidos.lista_paineis', [parsedPanelId]);
     
     if (videosError) {
       console.error('Erro ao buscar vídeos ativos:', videosError);
     }
     
     // Se há vídeos de contratos ativos, usar eles
-    if (activeVideos && activeVideos.length > 0) {
-      const video = activeVideos[0];
+    if (activeVideos && Array.isArray(activeVideos) && activeVideos.length > 0) {
+      const videoData = activeVideos[0];
       
       await supabase
         .from('painel_logs')
@@ -77,9 +88,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         active_contract: true,
         videos: [
           {
-            url: video.video_url,
-            nome: video.video_nome,
-            duracao: video.video_duracao
+            url: videoData.video?.url,
+            nome: videoData.video?.nome,
+            duracao: videoData.video?.duracao
           }
         ]
       });
