@@ -17,7 +17,7 @@ export const useBuildingNames = (listaPaineis: string[]) => {
       console.log('🔍 [BUILDING_NAMES] Iniciando busca para painéis:', listaPaineis);
       
       if (!listaPaineis || listaPaineis.length === 0) {
-        console.log('⚠️ [BUILDING_NAMES] Lista de painéis vazia');
+        console.log('⚠️ [BUILDING_NAMES] Lista de painéis vazia, retornando estado vazio');
         setBuildingNames([]);
         setLoading(false);
         return;
@@ -43,8 +43,8 @@ export const useBuildingNames = (listaPaineis: string[]) => {
         console.log('✅ [BUILDING_NAMES] Painéis encontrados:', painels);
 
         if (!painels || painels.length === 0) {
-          console.log('⚠️ [BUILDING_NAMES] Nenhum painel encontrado');
-          setBuildingNames(['Painéis não encontrados']);
+          console.log('⚠️ [BUILDING_NAMES] Nenhum painel encontrado no banco');
+          setBuildingNames(['Painéis não encontrados no sistema']);
           setLoading(false);
           return;
         }
@@ -54,8 +54,8 @@ export const useBuildingNames = (listaPaineis: string[]) => {
         console.log('🏢 [BUILDING_NAMES] IDs dos prédios únicos:', buildingIds);
 
         if (buildingIds.length === 0) {
-          console.log('⚠️ [BUILDING_NAMES] Nenhum prédio vinculado');
-          setBuildingNames(['Prédios não vinculados']);
+          console.log('⚠️ [BUILDING_NAMES] Nenhum prédio vinculado aos painéis');
+          setBuildingNames(['Prédios não vinculados aos painéis']);
           setLoading(false);
           return;
         }
@@ -73,15 +73,15 @@ export const useBuildingNames = (listaPaineis: string[]) => {
 
         console.log('🏢 [BUILDING_NAMES] Prédios encontrados:', buildings);
 
-        const names = buildings?.map(b => b.nome) || ['Prédios não encontrados'];
-        console.log('📝 [BUILDING_NAMES] Nomes dos prédios:', names);
+        const names = buildings?.map(b => b.nome) || ['Nomes dos prédios não encontrados'];
+        console.log('📝 [BUILDING_NAMES] Nomes finais dos prédios:', names);
         
         setBuildingNames(names);
 
       } catch (error) {
         console.error('💥 [BUILDING_NAMES] Erro geral ao buscar nomes dos prédios:', error);
-        setError('Erro ao carregar informações');
-        setBuildingNames(['Erro ao carregar']);
+        setError('Erro ao carregar informações dos locais');
+        setBuildingNames(['Erro ao carregar locais']);
       } finally {
         setLoading(false);
       }

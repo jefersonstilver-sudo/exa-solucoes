@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +19,8 @@ import { useOrderVideoManagement } from '@/hooks/useOrderVideoManagement';
 import { VideoSlotGrid } from '@/components/video-management/VideoSlotGrid';
 import { VideoActivationSuccessPopup } from '@/components/video-management/VideoActivationSuccessPopup';
 import { LocationsTooltip } from '@/components/order/LocationsTooltip';
+import { PurchaseInfoCard } from '@/components/order/PurchaseInfoCard';
+import { useEnhancedOrderData } from '@/hooks/useEnhancedOrderData';
 
 interface OrderDetails {
   id: string;
@@ -39,6 +40,13 @@ const OrderDetails = () => {
   const { userProfile } = useAuth();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Hook para dados aprimorados (recuperação de painéis)
+  const { 
+    enhancedData, 
+    loading: enhancedLoading, 
+    error: enhancedError 
+  } = useEnhancedOrderData(id || '', userProfile?.id || '');
 
   const {
     videoSlots,
@@ -108,7 +116,7 @@ const OrderDetails = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  if (loading || videosLoading) {
+  if (loading || videosLoading || enhancedLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
@@ -132,7 +140,16 @@ const OrderDetails = () => {
     );
   }
 
-  console.log('🔍 [ORDER_DETAILS] Renderizando com lista_paineis:', orderDetails.lista_paineis);
+  // Usar dados recuperados se disponíveis
+  const displayPanels = enhancedData?.recoveredPanels || orderDetails.lista_paineis || [];
+  const panelsCount = displayPanels.length;
+
+  console.log('🔍 [ORDER_DETAILS] Dados finais para exibição:', {
+    originalPanels: orderDetails.lista_paineis,
+    recoveredPanels: enhancedData?.recoveredPanels,
+    displayPanels,
+    isRecovered: enhancedData?.isRecovered
+  });
 
   return (
     <>
@@ -153,7 +170,27 @@ const OrderDetails = () => {
           </div>
         </div>
 
-        {/* Order Summary */}
+        {/* Informações de Compra - NOVA SEÇÃO */}
+        <PurchaseInfoCard orderDetails={orderDetails} />
+
+        {/* Alerta de recuperação de dados */}
+        {enhancedData?.isRecovered && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Monitor className="h-6 w-6 text-blue-600" />
+                <div>
+                  <h3 className="font-medium text-blue-800">Dados Recuperados</h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Os locais selecionados foram recuperados automaticamente do sistema anterior.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Order Summary - ATUALIZADO */}
         <Card>
           <CardHeader>
             <CardTitle>Resumo do Pedido</CardTitle>
@@ -168,12 +205,17 @@ const OrderDetails = () => {
                 </div>
               </div>
               
-              <LocationsTooltip listaPaineis={orderDetails.lista_paineis || []}>
+              <LocationsTooltip listaPaineis={displayPanels}>
                 <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
                   <MapPin className="h-8 w-8 text-blue-500" />
                   <div>
                     <p className="font-medium">Locais</p>
-                    <p className="text-lg">{orderDetails.lista_paineis?.length || 0} selecionados</p>
+                    <p className="text-lg">
+                      {panelsCount} selecionados
+                      {enhancedData?.isRecovered && (
+                        <span className="text-xs text-blue-600 ml-1">(recuperados)</span>
+                      )}
+                    </p>
                   </div>
                 </div>
               </LocationsTooltip>
@@ -197,6 +239,23 @@ const OrderDetails = () => {
           </CardContent>
         </Card>
 
+        {/* Error de dados aprimorados */}
+        {enhancedError && (
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-6 w-6 text-yellow-600" />
+                <div>
+                  <h3 className="font-medium text-yellow-800">Aviso de Recuperação</h3>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Não foi possível recuperar alguns dados automaticamente: {enhancedError}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Error de carregamento de vídeos */}
         {videosLoadError && (
           <Card className="border-red-200 bg-red-50">
@@ -212,7 +271,7 @@ const OrderDetails = () => {
           </Card>
         )}
 
-        {/* Gestão de Vídeos - Simplificada */}
+        {/* Gestão de Vídeos - Inalterada */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
