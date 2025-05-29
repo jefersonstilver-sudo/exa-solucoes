@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Calendar, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+import { ProfessionalPDFExporter } from './ProfessionalPDFExporter';
 
 interface RealOrderHeaderProps {
   order: {
@@ -18,10 +17,36 @@ interface RealOrderHeaderProps {
     data_inicio?: string;
     data_fim?: string;
     plano_meses: number;
+    log_pagamento?: any;
+    cupom_id?: string;
+    termos_aceitos?: boolean;
   };
+  panels?: Array<{
+    id: string;
+    code: string;
+    building_name: string;
+    building_address: string;
+    building_neighborhood: string;
+  }>;
+  videos?: Array<{
+    id: string;
+    slot_position: number;
+    approval_status: 'pending' | 'approved' | 'rejected';
+    is_active: boolean;
+    selected_for_display: boolean;
+    video_data?: {
+      nome: string;
+      duracao: number;
+      orientacao: string;
+    };
+  }>;
 }
 
-export const RealOrderHeader: React.FC<RealOrderHeaderProps> = ({ order }) => {
+export const RealOrderHeader: React.FC<RealOrderHeaderProps> = ({ 
+  order, 
+  panels = [], 
+  videos = [] 
+}) => {
   const navigate = useNavigate();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -59,88 +84,14 @@ export const RealOrderHeader: React.FC<RealOrderHeaderProps> = ({ order }) => {
     });
   };
 
-  const formatSimpleDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
   const handleExportPDF = async () => {
     setIsExporting(true);
     
     try {
-      const doc = new jsPDF();
-      
-      // Header do documento
-      doc.setFontSize(20);
-      doc.setTextColor(60, 19, 97); // indexa purple
-      doc.text('RELATÓRIO DO PEDIDO', 20, 25);
-      
-      // ID do pedido
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Pedido #${order.id.substring(0, 8)}`, 20, 40);
-      
-      // Linha separadora
-      doc.setLineWidth(0.5);
-      doc.line(20, 45, 190, 45);
-      
-      // Informações do cliente
-      let yPosition = 55;
-      doc.setFontSize(16);
-      doc.setTextColor(60, 19, 97);
-      doc.text('DADOS DO CLIENTE', 20, yPosition);
-      
-      yPosition += 10;
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Nome: ${order.client_name}`, 20, yPosition);
-      
-      yPosition += 8;
-      doc.text(`Email: ${order.client_email}`, 20, yPosition);
-      
-      yPosition += 8;
-      doc.text(`Data do Pedido: ${formatDate(order.created_at)}`, 20, yPosition);
-      
-      // Informações do pedido
-      yPosition += 20;
-      doc.setFontSize(16);
-      doc.setTextColor(60, 19, 97);
-      doc.text('DETALHES DO PEDIDO', 20, yPosition);
-      
-      yPosition += 10;
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Status: ${statusInfo.label}`, 20, yPosition);
-      
-      yPosition += 8;
-      doc.text(`Valor Total: ${formatCurrency(order.valor_total)}`, 20, yPosition);
-      
-      yPosition += 8;
-      doc.text(`Duração: ${order.plano_meses} ${order.plano_meses === 1 ? 'mês' : 'meses'}`, 20, yPosition);
-      
-      if (order.data_inicio && order.data_fim) {
-        yPosition += 8;
-        doc.text(`Período: ${formatSimpleDate(order.data_inicio)} até ${formatSimpleDate(order.data_fim)}`, 20, yPosition);
-      }
-      
-      // Footer
-      yPosition = 270;
-      doc.setFontSize(10);
-      doc.setTextColor(128, 128, 128);
-      doc.text('Relatório gerado automaticamente pelo sistema Indexa', 20, yPosition);
-      doc.text(`Data: ${new Date().toLocaleString('pt-BR')}`, 20, yPosition + 5);
-      
-      // Salvar o PDF
-      doc.save(`pedido-${order.id.substring(0, 8)}.pdf`);
-      
-      toast.success('Relatório exportado com sucesso!');
+      const exporter = new ProfessionalPDFExporter();
+      await exporter.generateReport(order, panels, videos);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      toast.error('Erro ao gerar o relatório PDF');
     } finally {
       setIsExporting(false);
     }
@@ -191,7 +142,7 @@ export const RealOrderHeader: React.FC<RealOrderHeaderProps> = ({ order }) => {
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            {isExporting ? 'Gerando...' : 'Exportar'}
+            {isExporting ? 'Gerando...' : 'Relatório Profissional'}
           </Button>
         </div>
       </div>

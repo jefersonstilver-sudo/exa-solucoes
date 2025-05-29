@@ -40,8 +40,12 @@ const OrderDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header com informações principais */}
-        <RealOrderHeader order={orderDetails} />
+        {/* Header com informações principais e export profissional */}
+        <RealOrderHeader 
+          order={orderDetails} 
+          panels={panelData}
+          videos={orderVideos}
+        />
 
         {/* Grid de informações principais */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
