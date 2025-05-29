@@ -87,15 +87,19 @@ export const uploadVideoToStorage = async (
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   try {
-    console.log('=== INICIANDO UPLOAD DE VÍDEO ===');
-    console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
-    console.log('User ID:', userId);
+    console.log('Iniciando upload do vídeo para storage:', file.name);
+    console.log('Tamanho do arquivo:', file.size, 'bytes');
     
-    // Garantir que o bucket existe primeiro
-    const bucketReady = await ensureVideosBucket();
-    if (!bucketReady) {
-      throw new Error('Não foi possível preparar o bucket de vídeos');
+    // Verificar se o bucket existe
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error('Erro ao listar buckets:', bucketsError);
+      throw new Error('Erro ao acessar storage');
     }
+    
+    const videosBucket = buckets?.find(bucket => bucket.name === 'videos');
+    console.log('Bucket videos encontrado:', !!videosBucket);
     
     // Gerar nome único para o arquivo
     const timestamp = Date.now();
@@ -106,10 +110,10 @@ export const uploadVideoToStorage = async (
     
     console.log('Caminho do arquivo:', filePath);
     
+    // Simular progresso inicial
     if (onProgress) onProgress(10);
     
-    // Upload para o storage
-    console.log('Iniciando upload para o storage...');
+    // Upload para o storage com configurações otimizadas
     const { data, error } = await supabase.storage
       .from('videos')
       .upload(filePath, file, {
@@ -119,15 +123,25 @@ export const uploadVideoToStorage = async (
       });
     
     if (error) {
-      console.error('Erro no upload para storage:', error);
-      throw new Error(`Erro no upload: ${error.message}`);
+      console.error('Erro detalhado no upload:', error);
+      
+      // Tratar erros específicos
+      if (error.message.includes('Bucket not found')) {
+        throw new Error('Bucket de vídeos não encontrado. Contate o suporte.');
+      } else if (error.message.includes('Row level security')) {
+        throw new Error('Erro de permissão. Verifique se está logado.');
+      } else if (error.message.includes('File size')) {
+        throw new Error('Arquivo muito grande. Máximo 100MB.');
+      } else {
+        throw new Error(`Erro no upload: ${error.message}`);
+      }
     }
     
     console.log('Upload realizado com sucesso:', data);
-    if (onProgress) onProgress(60);
+    
+    if (onProgress) onProgress(80);
     
     // Obter URL pública
-    console.log('Gerando URL pública...');
     const { data: urlData } = supabase.storage
       .from('videos')
       .getPublicUrl(filePath);
@@ -137,35 +151,38 @@ export const uploadVideoToStorage = async (
     }
     
     console.log('URL pública gerada:', urlData.publicUrl);
-    if (onProgress) onProgress(80);
     
-    // Validar se a URL é acessível
+    if (onProgress) onProgress(95);
+    
+    // Validar se a URL é acessível (com timeout)
     try {
-      console.log('Validando URL...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+      
       const response = await fetch(urlData.publicUrl, { 
         method: 'HEAD',
-        signal: AbortSignal.timeout(10000) // 10 segundos timeout
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         console.warn('URL pode não estar acessível ainda:', response.status);
+        // Não falhar aqui, apenas avisar
       } else {
         console.log('URL validada com sucesso');
       }
     } catch (urlError) {
       console.warn('Erro ao validar URL (não crítico):', urlError);
+      // Não falhar aqui, a URL pode estar válida mesmo assim
     }
     
     if (onProgress) onProgress(100);
     
-    console.log('=== UPLOAD CONCLUÍDO COM SUCESSO ===');
-    console.log('URL final:', urlData.publicUrl);
-    
     return urlData.publicUrl;
   } catch (error) {
-    console.error('=== ERRO NO UPLOAD ===');
-    console.error('Erro detalhado:', error);
-    throw error;
+    console.error('Erro no upload para storage:', error);
+    throw error; // Re-throw para manter o erro original
   }
 };
 
@@ -195,6 +212,7 @@ export const deleteVideoFromStorage = async (videoUrl: string): Promise<void> =>
     console.log('Arquivo deletado com sucesso do storage');
   } catch (error) {
     console.error('Erro ao deletar vídeo do storage:', error);
+    // Não falhar silenciosamente - permitir que a operação continue
   }
 };
 
@@ -206,7 +224,7 @@ export const isValidVideoUrl = (url: string): boolean => {
   
   try {
     new URL(url);
-    return url.includes('/storage/v1/object/public/videos/');
+    return true;
   } catch {
     return false;
   }
@@ -240,14 +258,7 @@ export const testStorageConnectivity = async (): Promise<boolean> => {
 // Função para criar bucket se não existir
 export const ensureVideosBucket = async (): Promise<boolean> => {
   try {
-    console.log('Verificando/criando bucket videos...');
-    
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    if (listError) {
-      console.error('Erro ao listar buckets:', listError);
-      return false;
-    }
-    
+    const { data: buckets } = await supabase.storage.listBuckets();
     const videosBucket = buckets?.find(bucket => bucket.name === 'videos');
     
     if (!videosBucket) {
@@ -264,8 +275,6 @@ export const ensureVideosBucket = async (): Promise<boolean> => {
       }
       
       console.log('Bucket videos criado com sucesso');
-    } else {
-      console.log('Bucket videos já existe');
     }
     
     return true;

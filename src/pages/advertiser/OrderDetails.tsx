@@ -44,10 +44,11 @@ const OrderDetails = () => {
     loading: videosLoading,
     uploading,
     uploadProgress,
-    handleSelectForDisplay,
-    handleRemove,
-    handleUpload
-  } = useOrderVideoManagement(id || '', userProfile?.id);
+    selectVideoForDisplay,
+    activateVideo,
+    removeVideo,
+    uploadVideo
+  } = useOrderVideoManagement(id || '');
 
   useEffect(() => {
     if (id && userProfile?.id) {
@@ -81,7 +82,7 @@ const OrderDetails = () => {
 
   const handleVideoUpload = async (slotPosition: number, file: File) => {
     if (!userProfile?.id || !id) return;
-    await handleUpload(file);
+    await uploadVideo(slotPosition, file, userProfile.id);
   };
 
   const handleVideoDownload = (videoUrl: string, fileName: string) => {
@@ -252,9 +253,9 @@ const OrderDetails = () => {
             uploading={uploading}
             uploadProgress={uploadProgress}
             onUpload={handleVideoUpload}
-            onActivate={() => {}} // Função vazia pois não usamos mais esta funcionalidade
-            onRemove={handleRemove}
-            onSelectForDisplay={handleSelectForDisplay}
+            onActivate={activateVideo}
+            onRemove={removeVideo}
+            onSelectForDisplay={selectVideoForDisplay}
             onDownload={handleVideoDownload}
           />
         </CardContent>

@@ -5,7 +5,6 @@ import { useVideoPlayer } from './hooks/useVideoPlayer';
 import { VideoPlayerStates } from './VideoPlayerStates';
 import { VideoPlayerCore } from './VideoPlayerCore';
 import { VideoPlayerControls } from './VideoPlayerControls';
-import { isValidVideoUrl } from '@/services/videoStorageService';
 
 interface VideoPlayerProps {
   src: string;
@@ -40,6 +39,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowControls,
     hasError,
     isLoading,
+    isValidVideoUrl,
     togglePlay,
     toggleMute,
     handleVolumeChange,
@@ -51,15 +51,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const isValidUrl = isValidVideoUrl(src);
 
-  console.log('VideoPlayer - src:', src, 'isValidUrl:', isValidUrl, 'hasError:', hasError, 'isLoading:', isLoading);
-
   // Show error or loading states
   if (!isValidUrl || hasError || isLoading) {
     return (
       <VideoPlayerStates
         className={className}
         isLoading={isLoading}
-        hasError={hasError || !isValidUrl}
+        hasError={hasError}
         isValidUrl={isValidUrl}
         onDownload={onDownload}
       />

@@ -1,14 +1,15 @@
 
 import { useState, useEffect } from 'react';
-import { VideoSlot } from '@/types/videoManagement';
+import { VideoSlot, VideoManagementState } from '@/types/videoManagement';
+import { loadVideoSlots } from '@/services/videoSlotService';
 import { 
-  loadOrderVideos,
-  uploadOrderVideo,
-  selectVideoForDisplay,
-  removeVideo
-} from '@/services/videoManagementService';
+  selectVideoForDisplay as selectVideoAction, 
+  activateVideo as activateVideoAction, 
+  removeVideo as removeVideoAction 
+} from '@/services/videoActionService';
+import { uploadVideo as uploadVideoAction } from '@/services/videoUploadService';
 
-export const useOrderVideoManagement = (orderId: string, userId?: string) => {
+export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -19,7 +20,7 @@ export const useOrderVideoManagement = (orderId: string, userId?: string) => {
 
     try {
       setLoading(true);
-      const slots = await loadOrderVideos(orderId);
+      const slots = await loadVideoSlots(orderId);
       setVideoSlots(slots);
     } catch (error) {
       console.error('Erro ao carregar vídeos:', error);
@@ -28,51 +29,62 @@ export const useOrderVideoManagement = (orderId: string, userId?: string) => {
     }
   };
 
-  const handleUpload = async (file: File) => {
-    if (!userId) {
-      console.error('User ID não encontrado');
-      return;
+  const selectVideoForDisplay = async (slotId: string) => {
+    const success = await selectVideoAction(slotId);
+    if (success) {
+      refreshSlots();
     }
+  };
 
+  const activateVideo = async (slotId: string) => {
+    const success = await activateVideoAction(slotId, orderId);
+    if (success) {
+      refreshSlots();
+    }
+  };
+
+  const removeVideo = async (slotId: string) => {
+    const success = await removeVideoAction(slotId, videoSlots);
+    if (success) {
+      refreshSlots();
+    }
+  };
+
+  const uploadVideo = async (slotPosition: number, file: File, userId: string) => {
     try {
       setUploading(true);
-      setUploadProgress({ 1: 0 });
+      setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
-      const success = await uploadOrderVideo(
-        orderId,
+      const success = await uploadVideoAction(
+        slotPosition,
         file,
         userId,
+        orderId,
         (progress) => {
-          setUploadProgress({ 1: progress });
+          setUploadProgress(prev => ({ ...prev, [slotPosition]: progress }));
         }
       );
 
       if (success) {
         // Limpar progresso após um tempo
         setTimeout(() => {
-          setUploadProgress({});
+          setUploadProgress(prev => {
+            const newProgress = { ...prev };
+            delete newProgress[slotPosition];
+            return newProgress;
+          });
         }, 2000);
-        
-        await refreshSlots();
+
+        refreshSlots();
       } else {
-        setUploadProgress({});
+        setUploadProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[slotPosition];
+          return newProgress;
+        });
       }
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleSelectForDisplay = async (slotId: string) => {
-    const success = await selectVideoForDisplay(slotId, orderId);
-    if (success) {
-      await refreshSlots();
-    }
-  };
-
-  const handleRemove = async (slotId: string) => {
-    const success = await removeVideo(slotId);
-    if (success) {
-      await refreshSlots();
     }
   };
 
@@ -85,9 +97,10 @@ export const useOrderVideoManagement = (orderId: string, userId?: string) => {
     loading,
     uploading,
     uploadProgress,
-    handleUpload,
-    handleSelectForDisplay,
-    handleRemove,
+    selectVideoForDisplay,
+    activateVideo,
+    removeVideo,
+    uploadVideo,
     refreshSlots
   };
 };
