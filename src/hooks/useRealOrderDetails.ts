@@ -100,7 +100,7 @@ export const useRealOrderDetails = (orderId: string) => {
         const formattedVideos: OrderVideo[] = videos?.map(v => ({
           id: v.id,
           slot_position: v.slot_position,
-          approval_status: v.approval_status,
+          approval_status: v.approval_status as 'pending' | 'approved' | 'rejected',
           is_active: v.is_active,
           selected_for_display: v.selected_for_display,
           created_at: v.created_at,
