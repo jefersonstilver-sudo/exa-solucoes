@@ -153,7 +153,7 @@ export default function Cadastro() {
         transition={{ duration: 0.5 }}
         className="flex items-center justify-center min-h-[80vh] px-4 py-8"
       >
-        <Card className="w-full max-w-md shadow-lg border-indexa-purple/10">
+        <Card className="w-full max-w-lg shadow-lg border-indexa-purple/10">
           <CardHeader className="space-y-1 text-center">
             <motion.div
               initial={{ y: -20, opacity: 0 }}
@@ -168,7 +168,7 @@ export default function Cadastro() {
               </CardDescription>
             </motion.div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-8">
             {error && (
               <motion.div 
                 initial={{ opacity: 0, y: -10 }}
@@ -180,7 +180,7 @@ export default function Cadastro() {
               </motion.div>
             )}
             
-            <form onSubmit={handleSignUp} className="space-y-4">
+            <form onSubmit={handleSignUp} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="name" className="flex items-center text-gray-700">
                   <UserCheck className="h-4 w-4 mr-2 text-indexa-purple" /> Nome completo
@@ -192,7 +192,7 @@ export default function Cadastro() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="border-indexa-purple/20 focus:border-indexa-purple"
+                  className="border-indexa-purple/20 focus:border-indexa-purple h-11"
                 />
               </div>
               
@@ -207,7 +207,7 @@ export default function Cadastro() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="border-indexa-purple/20 focus:border-indexa-purple"
+                  className="border-indexa-purple/20 focus:border-indexa-purple h-11"
                 />
               </div>
               
@@ -222,7 +222,7 @@ export default function Cadastro() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="border-indexa-purple/20 focus:border-indexa-purple"
+                  className="border-indexa-purple/20 focus:border-indexa-purple h-11"
                 />
                 <p className="text-xs text-muted-foreground">
                   A senha deve ter pelo menos 6 caracteres
@@ -234,7 +234,7 @@ export default function Cadastro() {
                   <FileText className="h-4 w-4 mr-2 text-indexa-purple" /> Tipo de documento
                 </Label>
                 <Select value={documentType} onValueChange={(value) => setDocumentType(value as 'cpf' | 'cnpj')}>
-                  <SelectTrigger className="border-indexa-purple/20 focus:border-indexa-purple">
+                  <SelectTrigger className="border-indexa-purple/20 focus:border-indexa-purple h-11">
                     <SelectValue placeholder="Selecione o tipo de documento" />
                   </SelectTrigger>
                   <SelectContent>
@@ -255,7 +255,7 @@ export default function Cadastro() {
                   value={document}
                   onChange={handleChangeDocument}
                   required
-                  className="border-indexa-purple/20 focus:border-indexa-purple"
+                  className="border-indexa-purple/20 focus:border-indexa-purple h-11"
                   maxLength={documentType === 'cpf' ? 14 : 18}
                 />
               </div>
@@ -263,10 +263,11 @@ export default function Cadastro() {
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                className="pt-2"
               >
                 <Button 
                   type="submit" 
-                  className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-all duration-200"
+                  className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-all duration-200 h-11"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -283,7 +284,7 @@ export default function Cadastro() {
               </motion.div>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4 pt-0">
+          <CardFooter className="flex flex-col space-y-4 pt-0 px-8">
             <div className="text-center text-sm">
               <span className="text-muted-foreground">Já tem uma conta?</span>{' '}
               <Link 
