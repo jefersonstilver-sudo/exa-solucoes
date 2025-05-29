@@ -14,7 +14,10 @@ export const useBuildingNames = (listaPaineis: string[]) => {
 
   useEffect(() => {
     const fetchBuildingNames = async () => {
+      console.log('🔍 [BUILDING_NAMES] Iniciando busca para painéis:', listaPaineis);
+      
       if (!listaPaineis || listaPaineis.length === 0) {
+        console.log('⚠️ [BUILDING_NAMES] Lista de painéis vazia');
         setBuildingNames([]);
         setLoading(false);
         return;
@@ -24,15 +27,23 @@ export const useBuildingNames = (listaPaineis: string[]) => {
         setLoading(true);
         setError(null);
 
+        console.log('📡 [BUILDING_NAMES] Buscando painéis pelos IDs:', listaPaineis);
+
         // Buscar painéis pelos IDs
         const { data: painels, error: painelsError } = await supabase
           .from('painels')
           .select('building_id')
           .in('id', listaPaineis);
 
-        if (painelsError) throw painelsError;
+        if (painelsError) {
+          console.error('❌ [BUILDING_NAMES] Erro ao buscar painéis:', painelsError);
+          throw painelsError;
+        }
+
+        console.log('✅ [BUILDING_NAMES] Painéis encontrados:', painels);
 
         if (!painels || painels.length === 0) {
+          console.log('⚠️ [BUILDING_NAMES] Nenhum painel encontrado');
           setBuildingNames(['Painéis não encontrados']);
           setLoading(false);
           return;
@@ -40,8 +51,10 @@ export const useBuildingNames = (listaPaineis: string[]) => {
 
         // Extrair building_ids únicos
         const buildingIds = [...new Set(painels.map(p => p.building_id).filter(Boolean))];
+        console.log('🏢 [BUILDING_NAMES] IDs dos prédios únicos:', buildingIds);
 
         if (buildingIds.length === 0) {
+          console.log('⚠️ [BUILDING_NAMES] Nenhum prédio vinculado');
           setBuildingNames(['Prédios não vinculados']);
           setLoading(false);
           return;
@@ -53,13 +66,20 @@ export const useBuildingNames = (listaPaineis: string[]) => {
           .select('id, nome')
           .in('id', buildingIds);
 
-        if (buildingsError) throw buildingsError;
+        if (buildingsError) {
+          console.error('❌ [BUILDING_NAMES] Erro ao buscar prédios:', buildingsError);
+          throw buildingsError;
+        }
+
+        console.log('🏢 [BUILDING_NAMES] Prédios encontrados:', buildings);
 
         const names = buildings?.map(b => b.nome) || ['Prédios não encontrados'];
+        console.log('📝 [BUILDING_NAMES] Nomes dos prédios:', names);
+        
         setBuildingNames(names);
 
       } catch (error) {
-        console.error('Erro ao buscar nomes dos prédios:', error);
+        console.error('💥 [BUILDING_NAMES] Erro geral ao buscar nomes dos prédios:', error);
         setError('Erro ao carregar informações');
         setBuildingNames(['Erro ao carregar']);
       } finally {

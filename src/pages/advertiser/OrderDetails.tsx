@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -75,6 +76,9 @@ const OrderDetails = () => {
 
       if (userError) throw userError;
 
+      console.log('📊 [ORDER_DETAILS] Pedido carregado:', userOrder);
+      console.log('📍 [ORDER_DETAILS] Lista de painéis:', userOrder?.lista_paineis);
+      
       setOrderDetails(userOrder);
     } catch (error) {
       console.error('Erro ao carregar pedido:', error);
@@ -127,6 +131,8 @@ const OrderDetails = () => {
       </div>
     );
   }
+
+  console.log('🔍 [ORDER_DETAILS] Renderizando com lista_paineis:', orderDetails.lista_paineis);
 
   return (
     <>

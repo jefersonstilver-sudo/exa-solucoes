@@ -15,6 +15,13 @@ export const LocationsTooltip: React.FC<LocationsTooltipProps> = ({
 }) => {
   const { buildingNames, loading, error } = useBuildingNames(listaPaineis);
 
+  console.log('🎯 [LOCATIONS_TOOLTIP] Renderizando com:', {
+    listaPaineis,
+    buildingNames,
+    loading,
+    error
+  });
+
   const getTooltipContent = () => {
     if (loading) {
       return (
