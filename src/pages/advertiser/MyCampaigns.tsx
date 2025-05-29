@@ -1,5 +1,7 @@
+import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileMyCampaigns from './MobileMyCampaigns';
 
-import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +27,7 @@ const MyCampaigns = () => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadCampaigns();
