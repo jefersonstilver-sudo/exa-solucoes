@@ -8,6 +8,7 @@ export interface PixWebhookData {
   email: string;
   nome: string;
   plano_escolhido: string;
+  periodo_meses: number;
   predios_selecionados: Array<{id: string, nome: string}>;
   valor_total: string;
   periodo_exibicao: string | {

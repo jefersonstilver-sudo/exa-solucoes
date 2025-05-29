@@ -94,6 +94,7 @@ const Checkout = () => {
         nome_usuario: user.email?.split('@')[0] || 'Cliente',
         email_usuario: user.email || '',
         plano_escolhido: planNames[selectedPlan as keyof typeof planNames] || '1 mês',
+        periodo_meses: parseInt(selectedPlan), // Novo campo com o número de meses
         valor_total: (totalAmount * 0.95).toFixed(2), // 5% discount for PIX
         predios_escolhidos: prediosEscolhidos,
         quantidade_paineis: prediosEscolhidos.length
