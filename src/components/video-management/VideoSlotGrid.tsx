@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Loader2,
   Star,
-  StarOff
+  StarOff,
+  RefreshCw
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
 
@@ -130,12 +131,13 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   };
 
   const hasSelectedVideo = videoSlots.some(slot => slot.video_data && slot.selected_for_display);
+  const videosWithData = videoSlots.filter(slot => slot.video_data);
   const currentProgress = uploadProgress || {};
 
   return (
     <div className="space-y-4">
       {/* Alerta se nenhum vídeo está selecionado */}
-      {!hasSelectedVideo && videoSlots.some(slot => slot.video_data) && (
+      {!hasSelectedVideo && videosWithData.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
             <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
@@ -145,6 +147,24 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
                 Você deve selecionar qual vídeo será exibido nos painéis. Clique no botão "Selecionar para Exibição" em um dos seus vídeos.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status da seleção atual */}
+      {hasSelectedVideo && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Star className="h-5 w-5 text-blue-500 mr-2 fill-current" />
+              <div>
+                <h3 className="font-medium text-blue-800">Vídeo Selecionado</h3>
+                <p className="text-blue-600 text-sm">
+                  {videosWithData.find(slot => slot.selected_for_display)?.video_data?.nome || 'Vídeo selecionado'}
+                </p>
+              </div>
+            </div>
+            <RefreshCw className="h-4 w-4 text-blue-500" />
           </div>
         </div>
       )}
@@ -228,17 +248,21 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
 
                   {/* Botões de Ação */}
                   <div className="flex flex-col space-y-2">
-                    {/* Botão de Seleção para Exibição */}
-                    {!slot.selected_for_display && (
-                      <Button
-                        onClick={() => slot.id && onSelectForDisplay(slot.id)}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white w-full"
-                      >
-                        <Star className="h-4 w-4 mr-2" />
-                        Selecionar para Exibição
-                      </Button>
-                    )}
+                    {/* Botão de Seleção - SEMPRE VISÍVEL para permitir trocar */}
+                    <Button
+                      onClick={() => slot.id && onSelectForDisplay(slot.id)}
+                      className={`w-full ${
+                        slot.selected_for_display 
+                          ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                      disabled={!slot.id}
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      {slot.selected_for_display ? 'SELECIONADO ✓' : 'Selecionar para Exibição'}
+                    </Button>
 
+                    {/* Botões secundários */}
                     <div className="flex space-x-2">
                       {slot.approval_status === 'approved' && !slot.is_active && slot.selected_for_display && (
                         <Button

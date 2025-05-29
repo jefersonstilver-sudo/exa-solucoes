@@ -2,7 +2,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { validateVideoFile, uploadVideoToStorage, deleteVideoFromStorage } from '@/services/videoStorageService';
+import { 
+  validateVideoFile, 
+  uploadVideoToStorage, 
+  deleteVideoFromStorage,
+  testStorageConnectivity 
+} from '@/services/videoStorageService';
 
 interface VideoSlot {
   id?: string;
@@ -35,6 +40,7 @@ export const useOrderVideoManagement = (orderId: string) => {
 
     try {
       setLoading(true);
+      console.log('Carregando slots de vídeo para pedido:', orderId);
 
       const { data: pedidoVideos, error } = await supabase
         .from('pedido_videos')
@@ -60,6 +66,8 @@ export const useOrderVideoManagement = (orderId: string) => {
         .eq('pedido_id', orderId);
 
       if (error) throw error;
+
+      console.log('Dados carregados:', pedidoVideos);
 
       // Criar slots 1-4, preenchendo com dados existentes
       const slots: VideoSlot[] = [1, 2, 3, 4].map(position => {
@@ -97,6 +105,8 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   const selectVideoForDisplay = async (slotId: string) => {
     try {
+      console.log('Selecionando vídeo para exibição:', slotId);
+      
       const { data, error } = await supabase.rpc('select_video_for_display', {
         p_pedido_video_id: slotId
       });
@@ -117,6 +127,8 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   const activateVideo = async (slotId: string) => {
     try {
+      console.log('Ativando vídeo:', slotId);
+      
       const { data, error } = await supabase.rpc('activate_video', {
         p_pedido_id: orderId,
         p_pedido_video_id: slotId
@@ -138,6 +150,8 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   const removeVideo = async (slotId: string) => {
     try {
+      console.log('Removendo vídeo:', slotId);
+      
       // Verificar se é o único vídeo selecionado
       const selectedVideos = videoSlots.filter(slot => 
         slot.video_data && slot.selected_for_display
@@ -176,6 +190,14 @@ export const useOrderVideoManagement = (orderId: string) => {
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
+      console.log(`Iniciando upload para slot ${slotPosition}:`, file.name);
+
+      // Testar conectividade primeiro
+      const isConnected = await testStorageConnectivity();
+      if (!isConnected) {
+        throw new Error('Não foi possível conectar ao storage. Verifique a configuração.');
+      }
+
       // Validar vídeo
       const validation = await validateVideoFile(file);
       if (!validation.valid) {
@@ -190,6 +212,7 @@ export const useOrderVideoManagement = (orderId: string) => {
         setUploadProgress(prev => ({ ...prev, [slotPosition]: 20 + (progress * 0.6) }));
       });
 
+      console.log('Vídeo uploaded, URL:', videoUrl);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 90 }));
 
       // Criar registro do vídeo
@@ -213,6 +236,8 @@ export const useOrderVideoManagement = (orderId: string) => {
         .single();
 
       if (videoError) throw videoError;
+
+      console.log('Registro de vídeo criado:', videoData);
 
       // Criar/atualizar entrada na tabela pedido_videos
       const { error: slotError } = await supabase
@@ -241,7 +266,7 @@ export const useOrderVideoManagement = (orderId: string) => {
       loadVideoSlots();
     } catch (error) {
       console.error('Erro no upload:', error);
-      toast.error('Erro ao fazer upload do vídeo');
+      toast.error('Erro ao fazer upload do vídeo: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
       setUploadProgress(prev => {
         const newProgress = { ...prev };
         delete newProgress[slotPosition];

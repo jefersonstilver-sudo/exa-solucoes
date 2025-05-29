@@ -82,10 +82,14 @@ export const uploadVideoToStorage = async (
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   try {
+    console.log('Iniciando upload do vídeo:', file.name);
+    
     // Gerar nome único para o arquivo
     const timestamp = Date.now();
     const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const filePath = `${userId}/${fileName}`;
+    
+    console.log('Caminho do arquivo:', filePath);
     
     // Simular progresso se callback fornecido
     if (onProgress) onProgress(10);
@@ -98,7 +102,13 @@ export const uploadVideoToStorage = async (
         upsert: false
       });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Erro no upload:', error);
+      throw error;
+    }
+    
+    console.log('Upload realizado com sucesso:', data);
+    
     if (onProgress) onProgress(80);
     
     // Obter URL pública
@@ -106,7 +116,21 @@ export const uploadVideoToStorage = async (
       .from('videos')
       .getPublicUrl(filePath);
     
+    console.log('URL pública gerada:', urlData.publicUrl);
+    
     if (onProgress) onProgress(100);
+    
+    // Validar se a URL é acessível
+    try {
+      const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        console.warn('URL pode não estar acessível:', response.status);
+      } else {
+        console.log('URL validada com sucesso');
+      }
+    } catch (urlError) {
+      console.warn('Erro ao validar URL:', urlError);
+    }
     
     return urlData.publicUrl;
   } catch (error) {
@@ -117,19 +141,67 @@ export const uploadVideoToStorage = async (
 
 export const deleteVideoFromStorage = async (videoUrl: string): Promise<void> => {
   try {
+    console.log('Deletando vídeo:', videoUrl);
+    
     // Extrair o path do arquivo da URL
     const urlParts = videoUrl.split('/storage/v1/object/public/videos/');
-    if (urlParts.length < 2) return;
+    if (urlParts.length < 2) {
+      console.log('URL não é do storage, pulando deleção');
+      return;
+    }
     
     const filePath = urlParts[1];
+    console.log('Caminho do arquivo para deleção:', filePath);
     
     const { error } = await supabase.storage
       .from('videos')
       .remove([filePath]);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao deletar do storage:', error);
+      throw error;
+    }
+    
+    console.log('Arquivo deletado com sucesso do storage');
   } catch (error) {
     console.error('Erro ao deletar vídeo do storage:', error);
-    // Não falhar silenciosamente em caso de erro de deleção
+    // Não falhar silenciosamente - permitir que a operação continue
+  }
+};
+
+// Função utilitária para verificar se uma URL de vídeo é válida
+export const isValidVideoUrl = (url: string): boolean => {
+  if (!url || url === 'pending_upload' || url.trim() === '') {
+    return false;
+  }
+  
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Função para testar conectividade com o storage
+export const testStorageConnectivity = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.storage.listBuckets();
+    if (error) {
+      console.error('Erro ao listar buckets:', error);
+      return false;
+    }
+    
+    const videosBucket = data?.find(bucket => bucket.name === 'videos');
+    if (!videosBucket) {
+      console.error('Bucket "videos" não encontrado');
+      return false;
+    }
+    
+    console.log('Conectividade com storage OK - Bucket videos encontrado');
+    return true;
+  } catch (error) {
+    console.error('Erro ao testar conectividade:', error);
+    return false;
   }
 };

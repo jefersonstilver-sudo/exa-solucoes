@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -9,7 +8,8 @@ import {
   VolumeX, 
   Maximize, 
   Download,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -43,10 +43,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Validar se a URL do vídeo é válida
+  const isValidVideoUrl = (url: string) => {
+    if (!url || url === 'pending_upload' || url.trim() === '') {
+      return false;
+    }
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isValidVideoUrl(src)) {
+      setHasError(true);
+      setIsLoading(false);
+      return;
+    }
+
+    setHasError(false);
+    setIsLoading(true);
 
     const updateProgress = () => {
       if (video.duration) {
@@ -57,27 +79,50 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     const updateDuration = () => {
       setDuration(video.duration);
+      setIsLoading(false);
+    };
+
+    const handleError = () => {
+      console.error('Erro ao carregar vídeo:', src);
+      setHasError(true);
+      setIsLoading(false);
+    };
+
+    const handleLoadStart = () => {
+      setIsLoading(true);
+      setHasError(false);
+    };
+
+    const handleCanPlay = () => {
+      setIsLoading(false);
+      setHasError(false);
     };
 
     video.addEventListener('timeupdate', updateProgress);
     video.addEventListener('loadedmetadata', updateDuration);
     video.addEventListener('ended', () => setIsPlaying(false));
+    video.addEventListener('error', handleError);
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('canplay', handleCanPlay);
 
     return () => {
       video.removeEventListener('timeupdate', updateProgress);
       video.removeEventListener('loadedmetadata', updateDuration);
       video.removeEventListener('ended', () => setIsPlaying(false));
+      video.removeEventListener('error', handleError);
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('canplay', handleCanPlay);
     };
-  }, []);
+  }, [src]);
 
   const togglePlay = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || hasError) return;
 
     if (isPlaying) {
       video.pause();
     } else {
-      video.play();
+      video.play().catch(() => setHasError(true));
     }
     setIsPlaying(!isPlaying);
   };
@@ -147,6 +192,48 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Renderizar estado de erro ou carregamento
+  if (!isValidVideoUrl(src) || hasError) {
+    return (
+      <div className={cn(
+        "relative bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center",
+        className
+      )}>
+        <div className="text-center text-white p-8">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
+          <p className="text-sm opacity-70 mb-4">
+            {!isValidVideoUrl(src) ? 'Vídeo não disponível' : 'Erro ao carregar vídeo'}
+          </p>
+          {onDownload && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDownload}
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Baixar arquivo
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className={cn(
+        "relative bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center",
+        className
+      )}>
+        <div className="text-center text-white p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-sm opacity-70">Carregando vídeo...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className={cn(
@@ -166,16 +253,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         loop
         playsInline
       />
-
-      {/* Loading/Error State */}
-      {!src || src === 'pending_upload' ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-          <div className="text-center text-white">
-            <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm opacity-70">Vídeo não disponível</p>
-          </div>
-        </div>
-      ) : null}
 
       {/* Controls Overlay */}
       {controls && showControls && (
@@ -300,4 +377,69 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
     </div>
   );
+
+  function toggleMute() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = !isMuted;
+    setIsMuted(!isMuted);
+  }
+
+  function handleVolumeChange(value: number[]) {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const newVolume = value[0];
+    video.volume = newVolume;
+    setVolume(newVolume);
+    
+    if (newVolume === 0) {
+      setIsMuted(true);
+      video.muted = true;
+    } else if (isMuted) {
+      setIsMuted(false);
+      video.muted = false;
+    }
+  }
+
+  function handleProgressChange(value: number[]) {
+    const video = videoRef.current;
+    if (!video || !duration) return;
+
+    const newTime = (value[0] / 100) * duration;
+    video.currentTime = newTime;
+    setProgress(value[0]);
+  }
+
+  function toggleFullscreen() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isFullscreen) {
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+    setIsFullscreen(!isFullscreen);
+  }
+
+  function restart() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.currentTime = 0;
+    setProgress(0);
+    setCurrentTime(0);
+  }
+
+  function formatTime(time: number) {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
 };
