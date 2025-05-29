@@ -18,10 +18,10 @@ export const useSuccessPopup = () => {
       videoName
     });
 
-    // Auto-fechar após 5 segundos
+    // Auto-fechar após 10 segundos (aumentado de 5s)
     setTimeout(() => {
       setPopupState(prev => ({ ...prev, isOpen: false }));
-    }, 5000);
+    }, 10000);
   }, []);
 
   const hideSuccess = useCallback(() => {

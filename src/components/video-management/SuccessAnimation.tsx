@@ -12,11 +12,12 @@ export const SuccessAnimation: React.FC<SuccessAnimationProps> = ({ isVisible })
 
   useEffect(() => {
     if (isVisible) {
-      const newParticles = Array.from({ length: 8 }, (_, i) => ({
+      // Reduzido de 8 para 4 partículas para melhor performance
+      const newParticles = Array.from({ length: 4 }, (_, i) => ({
         id: i,
         x: Math.random() * 100,
         y: Math.random() * 100,
-        delay: Math.random() * 0.5
+        delay: Math.random() * 0.2 // Reduzido delay máximo
       }));
       setParticles(newParticles);
     }
@@ -26,7 +27,7 @@ export const SuccessAnimation: React.FC<SuccessAnimationProps> = ({ isVisible })
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {/* Partículas animadas */}
+      {/* Partículas animadas otimizadas */}
       {particles.map((particle) => (
         <motion.div
           key={particle.id}
@@ -37,39 +38,39 @@ export const SuccessAnimation: React.FC<SuccessAnimationProps> = ({ isVisible })
           }}
           initial={{ scale: 0, rotate: 0, opacity: 0 }}
           animate={{
-            scale: [0, 1.2, 0],
+            scale: [0, 1, 0],
             rotate: [0, 180, 360],
             opacity: [0, 1, 0],
-            y: [-20, -40, -60]
+            y: [-10, -30, -50] // Movimento reduzido
           }}
           transition={{
-            duration: 1.5,
+            duration: 1, // Reduzido de 1.5s para 1s
             delay: particle.delay,
             ease: "easeOut"
           }}
         >
           {particle.id % 3 === 0 ? (
-            <Star className="h-4 w-4 text-yellow-400 fill-current" />
+            <Star className="h-3 w-3 text-yellow-400 fill-current" />
           ) : particle.id % 3 === 1 ? (
-            <Sparkles className="h-4 w-4 text-blue-400 fill-current" />
+            <Sparkles className="h-3 w-3 text-blue-400 fill-current" />
           ) : (
-            <Zap className="h-4 w-4 text-green-400 fill-current" />
+            <Zap className="h-3 w-3 text-green-400 fill-current" />
           )}
         </motion.div>
       ))}
 
-      {/* Ondas de celebração */}
+      {/* Ondas de celebração simplificadas */}
       <motion.div
-        className="absolute inset-0 rounded-full border-4 border-green-400 opacity-50"
-        initial={{ scale: 0, opacity: 0.8 }}
-        animate={{ scale: 2, opacity: 0 }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        className="absolute inset-0 rounded-full border-2 border-green-400 opacity-30"
+        initial={{ scale: 0, opacity: 0.6 }}
+        animate={{ scale: 1.5, opacity: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
       />
       <motion.div
-        className="absolute inset-0 rounded-full border-2 border-blue-400 opacity-30"
-        initial={{ scale: 0, opacity: 0.6 }}
-        animate={{ scale: 2.5, opacity: 0 }}
-        transition={{ duration: 1.2, delay: 0.1, ease: "easeOut" }}
+        className="absolute inset-0 rounded-full border border-blue-400 opacity-20"
+        initial={{ scale: 0, opacity: 0.4 }}
+        animate={{ scale: 2, opacity: 0 }}
+        transition={{ duration: 1, delay: 0.1, ease: "easeOut" }}
       />
     </div>
   );

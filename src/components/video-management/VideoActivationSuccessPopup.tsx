@@ -20,59 +20,60 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
+          {/* Overlay otimizado */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }} // Mais rápido
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={onClose}
           />
 
-          {/* Popup Container */}
+          {/* Popup Container otimizado */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", duration: 0.2, bounce: 0.25 }} // Mais responsivo
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div 
-              className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 max-w-md w-full mx-4 pointer-events-auto"
+              className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-md w-full mx-4 pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Animação de sucesso */}
               <SuccessAnimation isVisible={isOpen} />
 
-              {/* Botão de fechar */}
+              {/* Botão de fechar otimizado */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="absolute top-4 right-4 h-8 w-8 rounded-full hover:bg-gray-100 p-0"
+                className="absolute top-3 right-3 h-8 w-8 rounded-full hover:bg-gray-100 p-0 transition-colors duration-150"
               >
                 <X className="h-4 w-4" />
               </Button>
 
               {/* Conteúdo principal */}
-              <div className="text-center space-y-6">
-                {/* Ícone de sucesso */}
+              <div className="text-center space-y-4">
+                {/* Ícone de sucesso otimizado */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
+                  transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 20 }}
+                  className="mx-auto w-14 h-14 bg-green-100 rounded-full flex items-center justify-center"
                 >
-                  <CheckCircle className="h-8 w-8 text-green-600 fill-current" />
+                  <CheckCircle className="h-7 w-7 text-green-600 fill-current" />
                 </motion.div>
 
-                {/* Título */}
+                {/* Título otimizado */}
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
                 >
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">
                     🎉 Vídeo Selecionado!
                   </h2>
                   <p className="text-gray-600 text-sm">
@@ -80,14 +81,14 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
                   </p>
                 </motion.div>
 
-                {/* Informação principal */}
+                {/* Informação principal otimizada */}
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-100"
+                  transition={{ delay: 0.15, duration: 0.2 }}
+                  className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-5 border border-blue-100"
                 >
-                  <div className="flex items-center justify-center space-x-3 mb-3">
+                  <div className="flex items-center justify-center space-x-3 mb-2">
                     <Monitor className="h-5 w-5 text-blue-600" />
                     <span className="font-semibold text-gray-900">Entrando no Ar</span>
                   </div>
@@ -97,26 +98,26 @@ export const VideoActivationSuccessPopup: React.FC<VideoActivationSuccessPopupPr
                   </p>
                 </motion.div>
 
-                {/* Informações adicionais */}
+                {/* Informações adicionais otimizadas */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
+                  transition={{ delay: 0.2, duration: 0.2 }}
                   className="flex items-center justify-center space-x-2 text-sm text-gray-500"
                 >
                   <Clock className="h-4 w-4" />
                   <span>Sincronização automática ativa</span>
                 </motion.div>
 
-                {/* Botão de ação */}
+                {/* Botão de ação otimizado */}
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
+                  transition={{ delay: 0.25, duration: 0.2 }}
                 >
                   <Button
                     onClick={onClose}
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white rounded-xl py-3 font-medium transition-all duration-200 transform hover:scale-105"
+                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white rounded-xl py-3 font-medium transition-all duration-150 transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     Perfeito! 🚀
                   </Button>
