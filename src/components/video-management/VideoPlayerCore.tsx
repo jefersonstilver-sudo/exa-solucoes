@@ -16,6 +16,8 @@ export const VideoPlayerCore: React.FC<VideoPlayerCoreProps> = ({
   autoPlay,
   muted
 }) => {
+  console.log('🎬 [ALASCA SETE] VideoPlayerCore renderizando com src:', src);
+  
   return (
     <video
       ref={videoRef}
@@ -26,6 +28,11 @@ export const VideoPlayerCore: React.FC<VideoPlayerCoreProps> = ({
       muted={muted}
       loop
       playsInline
+      crossOrigin="anonymous"
+      preload="metadata"
+      onLoadStart={() => console.log('🔄 [ALASCA SETE] Video loadstart event')}
+      onCanPlay={() => console.log('✅ [ALASCA SETE] Video canplay event')}
+      onError={(e) => console.error('❌ [ALASCA SETE] Video error event:', e)}
     />
   );
 };
