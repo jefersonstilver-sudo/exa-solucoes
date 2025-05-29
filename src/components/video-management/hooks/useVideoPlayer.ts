@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 
 export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) => {
@@ -15,30 +14,29 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
   const [isLoading, setIsLoading] = useState(true);
   const [errorDetails, setErrorDetails] = useState<string>('');
 
-  // CORREÇÃO FINAL ALASCA SETE: Validação mais permissiva e precisa
+  // CORREÇÃO ALASCA SETE: Validação melhorada para URLs do Supabase
   const isValidVideoUrl = (url: string) => {
-    // Verificar se URL não é vazia ou estado de upload pendente
     if (!url || url === 'pending_upload' || url.trim() === '') {
-      console.log('❌ [ALASCA SETE] URL vazia ou pendente:', url);
+      console.log('❌ [ALASCA SETE] URL inválida ou vazia:', url);
       return false;
     }
     
     try {
       const urlObj = new URL(url);
       
-      // CORREÇÃO: Aceitar especificamente URLs do Supabase Storage
-      if (url.includes('supabase.co/storage/v1/object/public/')) {
+      // Aceitar URLs do Supabase storage especificamente
+      if (url.includes('supabase.co/storage/v1/object/public/videos/')) {
         console.log('✅ [ALASCA SETE] URL do Supabase Storage válida:', url);
         return true;
       }
       
-      // Aceitar outras URLs HTTPS/HTTP válidas
-      if (urlObj.protocol === 'https:' || urlObj.protocol === 'http:') {
-        console.log('✅ [ALASCA SETE] URL válida aceita:', url);
+      // Aceitar outras URLs válidas
+      if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+        console.log('✅ [ALASCA SETE] URL válida:', url);
         return true;
       }
       
-      console.log('⚠️ [ALASCA SETE] Protocolo não suportado:', urlObj.protocol);
+      console.log('❌ [ALASCA SETE] Protocolo não suportado:', urlObj.protocol);
       return false;
     } catch (error) {
       console.log('❌ [ALASCA SETE] URL malformada:', url, error);
@@ -48,23 +46,15 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) {
-      console.log('❌ [ALASCA SETE] Elemento de vídeo não encontrado');
-      setHasError(true);
-      setIsLoading(false);
-      setErrorDetails('Elemento de vídeo não disponível');
-      return;
-    }
-
-    if (!isValidVideoUrl(src)) {
-      console.log('❌ [ALASCA SETE] URL inválida rejeitada:', src);
+    if (!video || !isValidVideoUrl(src)) {
+      console.log('❌ [ALASCA SETE] Vídeo ou URL inválida, definindo erro');
       setHasError(true);
       setIsLoading(false);
       setErrorDetails(!src ? 'URL não fornecida' : `URL inválida: ${src}`);
       return;
     }
 
-    console.log('🎥 [ALASCA SETE] Inicializando player para URL válida:', src);
+    console.log('🎥 [ALASCA SETE] Inicializando player para:', src);
     setHasError(false);
     setIsLoading(true);
     setErrorDetails('');
@@ -86,32 +76,33 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       const target = e.target as HTMLVideoElement;
       const error = target.error;
       
-      let errorMessage = 'Erro ao carregar vídeo';
+      let errorMessage = 'Erro desconhecido ao carregar vídeo';
       if (error) {
         switch (error.code) {
           case MediaError.MEDIA_ERR_ABORTED:
-            errorMessage = 'Carregamento abortado pelo usuário';
+            errorMessage = 'Carregamento do vídeo foi abortado pelo usuário';
             break;
           case MediaError.MEDIA_ERR_NETWORK:
-            errorMessage = 'Erro de rede - verifique sua conexão';
+            errorMessage = 'Erro de rede ao carregar vídeo - verifique sua conexão';
             break;
           case MediaError.MEDIA_ERR_DECODE:
-            errorMessage = 'Erro ao decodificar - formato pode não ser suportado';
+            errorMessage = 'Erro ao decodificar vídeo - formato pode não ser suportado';
             break;
           case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-            errorMessage = 'Formato não suportado pelo navegador';
+            errorMessage = 'Formato de vídeo não suportado pelo navegador';
             break;
           default:
             errorMessage = `Erro de vídeo (código: ${error.code})`;
         }
       }
       
-      console.error('❌ [ALASCA SETE] Erro no vídeo:', {
+      console.error('❌ [ALASCA SETE] Erro ao carregar vídeo:', {
         src,
         errorCode: error?.code,
         errorMessage,
         networkState: target.networkState,
-        readyState: target.readyState
+        readyState: target.readyState,
+        userAgent: navigator.userAgent
       });
       
       setHasError(true);
@@ -120,25 +111,35 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     };
 
     const handleLoadStart = () => {
-      console.log('🔄 [ALASCA SETE] Iniciando carregamento');
+      console.log('🔄 [ALASCA SETE] Iniciando carregamento do vídeo');
       setIsLoading(true);
       setHasError(false);
+      setErrorDetails('');
     };
 
     const handleCanPlay = () => {
       console.log('✅ [ALASCA SETE] Vídeo pode ser reproduzido');
       setIsLoading(false);
       setHasError(false);
+      setErrorDetails('');
     };
 
     const handleWaiting = () => {
-      console.log('⏳ [ALASCA SETE] Aguardando dados...');
+      console.log('⏳ [ALASCA SETE] Vídeo está aguardando dados...');
       setIsLoading(true);
     };
 
     const handlePlaying = () => {
-      console.log('▶️ [ALASCA SETE] Reproduzindo');
+      console.log('▶️ [ALASCA SETE] Vídeo está reproduzindo');
       setIsLoading(false);
+    };
+
+    const handleStalled = () => {
+      console.warn('⚠️ [ALASCA SETE] Vídeo travou durante carregamento');
+    };
+
+    const handleSuspend = () => {
+      console.log('⏸️ [ALASCA SETE] Carregamento do vídeo foi suspenso');
     };
 
     // Event listeners
@@ -150,6 +151,8 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('playing', handlePlaying);
+    video.addEventListener('stalled', handleStalled);
+    video.addEventListener('suspend', handleSuspend);
 
     return () => {
       video.removeEventListener('timeupdate', updateProgress);
@@ -160,6 +163,8 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('stalled', handleStalled);
+      video.removeEventListener('suspend', handleSuspend);
     };
   }, [src]);
 
@@ -171,7 +176,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       video.pause();
     } else {
       video.play().catch((error) => {
-        console.error('❌ [ALASCA SETE] Erro ao reproduzir:', error);
+        console.error('❌ [ALASCA SETE] Erro ao reproduzir vídeo:', error);
         setHasError(true);
         setErrorDetails('Erro ao iniciar reprodução - clique para tentar novamente');
       });
