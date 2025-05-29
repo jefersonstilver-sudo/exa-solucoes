@@ -1,5 +1,7 @@
+import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 
-import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -57,6 +59,13 @@ const AdvertiserOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+
+  const isMobile = useIsMobile();
+
+  // Use mobile version for mobile devices
+  if (isMobile) {
+    return <MobileAdvertiserOrders />;
+  }
 
   useEffect(() => {
     loadOrders();
