@@ -45,6 +45,7 @@ const OrderDetails = () => {
   const {
     videoSlots,
     loading: videosLoading,
+    loadError: videosLoadError,
     uploading,
     uploadProgress,
     selectVideoForDisplay,
@@ -192,6 +193,21 @@ const OrderDetails = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Error de carregamento de vídeos */}
+      {videosLoadError && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+              <div>
+                <h3 className="font-medium text-red-800">Erro ao Carregar Vídeos</h3>
+                <p className="text-sm text-red-700 mt-1">{videosLoadError}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Video Selection Status */}
       {totalVideos > 0 && (

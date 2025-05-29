@@ -1,10 +1,10 @@
 
 export const isValidVideoUrl = (url: string) => {
-  console.log('🔍 [PLAYER] Validando URL:', url);
+  console.log('🔍 [VALIDATION] Validando URL:', url);
   
   // Verificar se URL não está vazia ou é pendente
   if (!url || url === 'pending_upload' || url.trim() === '') {
-    console.log('❌ [PLAYER] URL inválida ou vazia:', url);
+    console.log('❌ [VALIDATION] URL inválida ou vazia:', url);
     return false;
   }
 
@@ -17,17 +17,33 @@ export const isValidVideoUrl = (url: string) => {
     const isHttps = urlObj.protocol === 'https:';
     const hasVideoExtension = /\.(mp4|webm|ogg|avi|mov|mkv|m4v)(\?.*)?$/i.test(url);
     
+    // Log detalhado para debug
+    console.log('🔍 [VALIDATION] Análise da URL:', {
+      url,
+      isSupabaseStorage,
+      isHttps,
+      hasVideoExtension,
+      domain: urlObj.hostname,
+      pathname: urlObj.pathname
+    });
+    
     if (isSupabaseStorage && isHttps) {
-      console.log('✅ [PLAYER] URL válida do Supabase Storage:', url);
+      console.log('✅ [VALIDATION] URL válida do Supabase Storage:', url);
       return true;
     }
     
     if (isHttps && hasVideoExtension) {
-      console.log('✅ [PLAYER] URL de vídeo válida:', url);
+      console.log('✅ [VALIDATION] URL de vídeo válida:', url);
       return true;
     }
     
-    console.log('⚠️ [PLAYER] URL não reconhecida como vídeo válido:', {
+    // FALLBACK: Se for HTTPS e do domínio Supabase, considerar válida mesmo sem extensão
+    if (isHttps && url.includes('supabase.co') && url.includes('storage')) {
+      console.log('✅ [VALIDATION] URL Supabase aceita (fallback):', url);
+      return true;
+    }
+    
+    console.log('⚠️ [VALIDATION] URL não reconhecida como vídeo válido:', {
       url,
       isSupabaseStorage,
       isHttps,
@@ -36,7 +52,7 @@ export const isValidVideoUrl = (url: string) => {
     return false;
     
   } catch (error) {
-    console.log('❌ [PLAYER] URL malformada:', url, error);
+    console.log('❌ [VALIDATION] URL malformada:', url, error);
     return false;
   }
 };
