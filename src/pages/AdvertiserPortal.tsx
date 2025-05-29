@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { AdvertiserLayout } from '@/components/advertiser/AdvertiserLayout';
+import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
 import { VideoManagementPage } from './VideoManagementPage';
 
 export const AdvertiserPortal = () => {
