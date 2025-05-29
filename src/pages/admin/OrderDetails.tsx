@@ -17,9 +17,10 @@ const OrderDetails = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center bg-white rounded-lg p-8 shadow-lg">
           <Loader2 className="h-12 w-12 animate-spin text-indexa-purple mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900">Carregando detalhes do pedido...</h2>
+          <p className="text-gray-600 mt-2">Aguarde enquanto buscamos as informações</p>
         </div>
       </div>
     );
@@ -28,7 +29,7 @@ const OrderDetails = () => {
   if (!orderDetails) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center bg-white rounded-lg p-8 shadow-lg">
           <h2 className="text-xl font-semibold text-gray-900">Pedido não encontrado</h2>
           <p className="text-gray-600 mt-2">O pedido solicitado não existe ou foi removido.</p>
         </div>
@@ -38,25 +39,26 @@ const OrderDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header com informações principais */}
         <RealOrderHeader order={orderDetails} />
 
+        {/* Grid de informações principais */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Customer Information */}
+          {/* Informações do Cliente */}
           <RealOrderCustomerCard order={orderDetails} />
 
-          {/* Order Information */}
+          {/* Informações do Pedido */}
           <RealOrderInfoCard order={orderDetails} />
 
-          {/* Financial Summary */}
+          {/* Resumo Financeiro */}
           <RealOrderFinancialCard order={orderDetails} />
         </div>
 
-        {/* Panels Information */}
+        {/* Seção de Painéis */}
         <RealOrderPanelsCard panels={panelData} order={orderDetails} />
 
-        {/* Videos Management */}
+        {/* Seção de Gestão de Vídeos */}
         <RealOrderVideosCard videos={orderVideos} orderId={orderDetails.id} />
       </div>
     </div>
