@@ -60,22 +60,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
-  // Show error or loading states
-  if (!isValidUrl || hasError || isLoading) {
-    return (
-      <VideoPlayerStates
-        className={className}
-        isLoading={isLoading}
-        hasError={hasError}
-        isValidUrl={isValidUrl}
-        errorDetails={errorDetails}
-        videoUrl={src}
-        onDownload={onDownload}
-        onRetry={handleRetry}
-      />
-    );
-  }
-
   return (
     <div 
       className={cn(
@@ -85,16 +69,38 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(controls)}
     >
+      {/* SEMPRE renderizar o elemento de vídeo para evitar deadlock */}
       <VideoPlayerCore
         videoRef={videoRef}
         src={src}
         poster={poster}
         autoPlay={autoPlay}
         muted={muted}
+        className={cn(
+          "w-full h-full object-contain",
+          // Esconder visualmente se estiver loading/error, mas manter no DOM
+          (isLoading || hasError || !isValidUrl) && "opacity-0 absolute inset-0"
+        )}
       />
 
-      {/* Controls Overlay */}
-      {controls && showControls && (
+      {/* Overlay com estados de loading/error por cima do vídeo */}
+      {(!isValidUrl || hasError || isLoading) && (
+        <div className="absolute inset-0 z-10">
+          <VideoPlayerStates
+            className="w-full h-full"
+            isLoading={isLoading}
+            hasError={hasError}
+            isValidUrl={isValidUrl}
+            errorDetails={errorDetails}
+            videoUrl={src}
+            onDownload={onDownload}
+            onRetry={handleRetry}
+          />
+        </div>
+      )}
+
+      {/* Controls Overlay - só mostrar quando vídeo está funcionando */}
+      {controls && showControls && !isLoading && !hasError && isValidUrl && (
         <VideoPlayerControls
           title={title}
           onDownload={onDownload}

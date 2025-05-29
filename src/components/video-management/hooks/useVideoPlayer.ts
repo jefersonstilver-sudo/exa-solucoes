@@ -64,10 +64,21 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       return;
     }
 
+    // Timeout de segurança para forçar saída do loading se necessário
+    const emergencyTimeout = setTimeout(() => {
+      console.warn('🚨 [PLAYER] TIMEOUT DE EMERGÊNCIA ATIVADO - Forçando saída do loading');
+      setIsLoading(false);
+      setHasError(true);
+      setErrorDetails('Timeout de carregamento - elemento de vídeo pode não ter sido renderizado');
+    }, 10000); // 10 segundos como último recurso
+
     // Aguardar elemento estar pronto
     waitForVideoElement(videoRef, setIsElementReady)
       .then((video) => {
         console.log('🎥 [PLAYER] Inicializando player para:', src);
+        
+        // Limpar timeout de emergência se chegou aqui
+        clearTimeout(emergencyTimeout);
         
         // Create event handlers
         const {
@@ -154,17 +165,16 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       })
       .catch((error) => {
         console.error('❌ [PLAYER] Falha ao aguardar elemento de vídeo:', error);
+        clearTimeout(emergencyTimeout);
         setHasError(true);
         setIsLoading(false);
-        setErrorDetails('Elemento de vídeo não foi inicializado - aguardando...');
-        
-        // Tentar novamente após um delay maior
-        setTimeout(() => {
-          console.log('🔄 [PLAYER] Tentando recarregar após falha...');
-          setIsLoading(true);
-          setHasError(false);
-        }, 2000);
+        setErrorDetails('Elemento de vídeo não foi inicializado - verifique se o componente está sendo renderizado corretamente');
       });
+
+    // Cleanup do timeout de emergência
+    return () => {
+      clearTimeout(emergencyTimeout);
+    };
   }, [src]);
 
   return {

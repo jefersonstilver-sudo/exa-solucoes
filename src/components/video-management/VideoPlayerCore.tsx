@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface VideoPlayerCoreProps {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -7,6 +8,7 @@ interface VideoPlayerCoreProps {
   poster?: string;
   autoPlay: boolean;
   muted: boolean;
+  className?: string;
 }
 
 export const VideoPlayerCore: React.FC<VideoPlayerCoreProps> = ({
@@ -14,18 +16,21 @@ export const VideoPlayerCore: React.FC<VideoPlayerCoreProps> = ({
   src,
   poster,
   autoPlay,
-  muted
+  muted,
+  className
 }) => {
   return (
     <video
       ref={videoRef}
       src={src}
       poster={poster}
-      className="w-full h-full object-contain"
+      className={cn("w-full h-full object-contain", className)}
       autoPlay={autoPlay}
       muted={muted}
       loop
       playsInline
+      onLoadStart={() => console.log('🎬 [CORE] Video element loadstart event')}
+      onLoadedMetadata={() => console.log('🎬 [CORE] Video element metadata loaded')}
     />
   );
 };
