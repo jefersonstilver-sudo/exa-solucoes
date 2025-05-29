@@ -1,5 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
+import { isValidVideoUrl } from '@/services/videoStorageService';
 
 export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -14,23 +15,15 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Validar se a URL do vídeo é válida
-  const isValidVideoUrl = (url: string) => {
-    if (!url || url === 'pending_upload' || url.trim() === '') {
-      return false;
-    }
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isValidVideoUrl(src)) {
-      setHasError(true);
+    const isUrlValid = isValidVideoUrl(src);
+    
+    console.log('useVideoPlayer - src:', src, 'isValid:', isUrlValid);
+    
+    if (!video || !isUrlValid) {
+      console.log('Video ref ou URL inválida, definindo erro');
+      setHasError(!isUrlValid);
       setIsLoading(false);
       return;
     }
@@ -46,29 +39,37 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     };
 
     const updateDuration = () => {
+      console.log('Video metadata carregado, duração:', video.duration);
       setDuration(video.duration);
       setIsLoading(false);
     };
 
-    const handleError = () => {
-      console.error('Erro ao carregar vídeo:', src);
+    const handleError = (e: Event) => {
+      console.error('Erro ao carregar vídeo:', src, e);
       setHasError(true);
       setIsLoading(false);
     };
 
     const handleLoadStart = () => {
+      console.log('Iniciando carregamento do vídeo');
       setIsLoading(true);
       setHasError(false);
     };
 
     const handleCanPlay = () => {
+      console.log('Vídeo pronto para reprodução');
       setIsLoading(false);
       setHasError(false);
     };
 
+    const handleEnded = () => {
+      console.log('Vídeo terminou');
+      setIsPlaying(false);
+    };
+
     video.addEventListener('timeupdate', updateProgress);
     video.addEventListener('loadedmetadata', updateDuration);
-    video.addEventListener('ended', () => setIsPlaying(false));
+    video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
     video.addEventListener('loadstart', handleLoadStart);
     video.addEventListener('canplay', handleCanPlay);
@@ -76,7 +77,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     return () => {
       video.removeEventListener('timeupdate', updateProgress);
       video.removeEventListener('loadedmetadata', updateDuration);
-      video.removeEventListener('ended', () => setIsPlaying(false));
+      video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
       video.removeEventListener('loadstart', handleLoadStart);
       video.removeEventListener('canplay', handleCanPlay);
@@ -90,7 +91,10 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     if (isPlaying) {
       video.pause();
     } else {
-      video.play().catch(() => setHasError(true));
+      video.play().catch((error) => {
+        console.error('Erro ao reproduzir vídeo:', error);
+        setHasError(true);
+      });
     }
     setIsPlaying(!isPlaying);
   };
@@ -173,7 +177,6 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     isFullscreen,
     hasError,
     isLoading,
-    isValidVideoUrl,
     togglePlay,
     toggleMute,
     handleVolumeChange,

@@ -3,17 +3,21 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { 
   Star,
   StarOff,
   CheckCircle, 
   XCircle, 
   Clock,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  RefreshCw
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
 import { VideoSlotActions } from './VideoSlotActions';
 import { VideoSlotUpload } from './VideoSlotUpload';
+import { isValidVideoUrl } from '@/services/videoStorageService';
 
 interface VideoSlot {
   id?: string;
@@ -125,7 +129,21 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
   };
 
+  const handleReUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/mp4,video/quicktime,video/avi,video/mov';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        onUpload(slot.slot_position, file);
+      }
+    };
+    input.click();
+  };
+
   const currentProgress = uploadProgress[slot.slot_position];
+  const hasInvalidUrl = slot.video_data && !isValidVideoUrl(slot.video_data.url);
 
   return (
     <Card 
@@ -134,7 +152,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
           : slot.is_active 
             ? 'border-2 border-green-500 bg-green-50 shadow-lg'
-            : 'border-gray-200 hover:shadow-md'
+            : hasInvalidUrl
+              ? 'border-2 border-red-400 bg-red-50 shadow-lg'
+              : 'border-gray-200 hover:shadow-md'
       }`}
     >
       <CardContent className="p-6">
@@ -159,7 +179,28 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           </div>
         )}
 
-        {slot.video_data ? (
+        {/* URL Inválida - Mostrar erro e opção de re-upload */}
+        {hasInvalidUrl && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center space-x-2 mb-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <span className="font-medium text-red-800">Erro no Upload</span>
+            </div>
+            <p className="text-red-600 text-sm mb-3">
+              O upload do vídeo não foi concluído corretamente. Clique no botão abaixo para tentar novamente.
+            </p>
+            <Button
+              onClick={handleReUpload}
+              className="bg-red-600 hover:bg-red-700 text-white w-full"
+              disabled={uploading}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Fazer Upload Novamente
+            </Button>
+          </div>
+        )}
+
+        {slot.video_data && !hasInvalidUrl ? (
           <div className="space-y-4">
             {/* Video Player */}
             <div className="aspect-video rounded-lg overflow-hidden relative">
@@ -211,14 +252,14 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               onDownload={handleDownload}
             />
           </div>
-        ) : (
+        ) : !hasInvalidUrl ? (
           <VideoSlotUpload
             slotPosition={slot.slot_position}
             uploading={uploading}
             isUploading={currentProgress !== undefined}
             onUpload={onUpload}
           />
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

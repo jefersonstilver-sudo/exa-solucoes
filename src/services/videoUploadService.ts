@@ -15,7 +15,8 @@ export const uploadVideo = async (
   onProgress?: (progress: number) => void
 ): Promise<boolean> => {
   try {
-    console.log(`Iniciando upload para slot ${slotPosition}:`, file.name);
+    console.log('=== INICIANDO PROCESSO DE UPLOAD ===');
+    console.log(`Slot: ${slotPosition}, Arquivo: ${file.name}`);
     console.log('User ID:', userId);
     console.log('Order ID:', orderId);
 
@@ -43,6 +44,7 @@ export const uploadVideo = async (
 
     while (retryCount < maxRetries) {
       try {
+        console.log(`Tentativa de upload ${retryCount + 1}/${maxRetries}`);
         videoUrl = await uploadVideoToStorage(file, userId, (progress) => {
           onProgress?.(20 + (progress * 0.6));
         });
@@ -63,7 +65,7 @@ export const uploadVideo = async (
 
     onProgress?.(85);
 
-    // Criar registro do vídeo com validação
+    // Criar registro do vídeo
     const videoData = {
       client_id: userId,
       nome: file.name,
@@ -135,7 +137,7 @@ export const uploadVideo = async (
           video_id: videoRecord.id,
           slot_position: slotPosition,
           approval_status: 'pending',
-          selected_for_display: false // Será definido pelo usuário posteriormente
+          selected_for_display: false
         });
 
       slotResult = { error: insertError };
@@ -147,12 +149,13 @@ export const uploadVideo = async (
     }
 
     onProgress?.(100);
-    console.log('Upload completo com sucesso!');
+    console.log('=== UPLOAD COMPLETO COM SUCESSO ===');
     toast.success('Vídeo enviado com sucesso!');
     return true;
 
   } catch (error) {
-    console.error('Erro no upload:', error);
+    console.error('=== ERRO NO UPLOAD ===');
+    console.error('Erro detalhado:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     toast.error(`Erro ao fazer upload do vídeo: ${errorMessage}`);
     return false;

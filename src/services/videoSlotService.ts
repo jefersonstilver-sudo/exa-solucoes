@@ -30,15 +30,18 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
     `)
     .eq('pedido_id', orderId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Erro ao carregar pedido_videos:', error);
+    throw error;
+  }
 
-  console.log('Dados carregados:', pedidoVideos);
+  console.log('Dados carregados do banco:', pedidoVideos);
 
   // Criar slots 1-4, preenchendo com dados existentes
   const slots: VideoSlot[] = [1, 2, 3, 4].map(position => {
     const existingVideo = pedidoVideos?.find(pv => pv.slot_position === position);
     
-    return {
+    const slot: VideoSlot = {
       id: existingVideo?.id,
       slot_position: position,
       video_id: existingVideo?.video_id,
@@ -57,7 +60,16 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
       } : undefined,
       rejection_reason: existingVideo?.rejection_reason
     };
+
+    // Log detalhado para debug
+    if (slot.video_data) {
+      console.log(`Slot ${position} - Video URL:`, slot.video_data.url);
+      console.log(`Slot ${position} - Video completo:`, slot.video_data);
+    }
+
+    return slot;
   });
 
+  console.log('Slots processados:', slots);
   return slots;
 };
