@@ -80,6 +80,7 @@ const ClientInfoDialog = ({
         email: userInfo.email || clientEmail, // Use the email we got or fall back to the provided one
         nome: userInfo.nome,
         plano_escolhido: "Mensal", // Default plan
+        periodo_meses: 1, // Default to 1 month
         predios_selecionados: selectedPanels,
         valor_total: totalPrice.toFixed(2),
         periodo_exibicao: formattedPeriod

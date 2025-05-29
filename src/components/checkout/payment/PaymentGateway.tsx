@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -130,12 +129,16 @@ const PaymentGateway = ({
             nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
           }));
           
+          // Get selected plan or default to 1 month
+          const selectedPlan = localStorage.getItem('selectedPlan') || '1';
+          
           // Prepare webhook data
           const webhookData = {
             cliente_id: userId,
             email: userInfo.email,
             nome: userInfo.nome,
             plano_escolhido: "Mensal",
+            periodo_meses: parseInt(selectedPlan),
             predios_selecionados: formattedPredios,
             valor_total: totalAmount.toFixed(2),
             periodo_exibicao: {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -94,6 +93,7 @@ const PixPaymentButton = ({
         email: userInfo.email,
         nome: userInfo.nome,
         plano_escolhido: `${selectedPlan} ${parseInt(selectedPlan) === 1 ? 'mês' : 'meses'}`,
+        periodo_meses: parseInt(selectedPlan),
         predios_selecionados: formattedPredios,
         valor_total: discountedTotal.toFixed(2),
         periodo_exibicao: {
