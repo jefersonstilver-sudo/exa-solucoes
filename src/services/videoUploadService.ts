@@ -1,70 +1,87 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { prepareForInsert } from '@/utils/supabaseUtils';
+import { toast } from 'sonner';
+import { 
+  validateVideoFile, 
+  uploadVideoToStorage, 
+  testStorageConnectivity 
+} from '@/services/videoStorageService';
 
-export interface VideoUploadData {
-  file: File;
-  userId: string;
-  orderId: string;
-  duration: number;
-  orientation: 'landscape' | 'portrait';
-}
+export const uploadVideo = async (
+  slotPosition: number,
+  file: File,
+  userId: string,
+  orderId: string,
+  onProgress?: (progress: number) => void
+): Promise<boolean> => {
+  try {
+    console.log(`Iniciando upload para slot ${slotPosition}:`, file.name);
 
-export const uploadVideoToSupabase = async (data: VideoUploadData): Promise<string> => {
-  const { file, userId, orderId, duration, orientation } = data;
+    // Testar conectividade primeiro
+    const isConnected = await testStorageConnectivity();
+    if (!isConnected) {
+      throw new Error('Não foi possível conectar ao storage. Verifique a configuração.');
+    }
 
-  // Validar usando a função do Supabase (sem verificação de áudio)
-  const { data: validationResult, error: validationError } = await supabase
-    .rpc('validate_video_specs', {
-      p_duracao: duration,
-      p_orientacao: orientation === 'landscape' ? 'horizontal' : 'vertical',
-      p_tem_audio: false, // Sempre false, áudio será mutado na reprodução
-      p_largura: 1920,
-      p_altura: 1080
+    // Validar vídeo
+    const validation = await validateVideoFile(file);
+    if (!validation.valid) {
+      toast.error(validation.errors.join(', '));
+      return false;
+    }
+
+    onProgress?.(20);
+
+    // Upload para storage
+    const videoUrl = await uploadVideoToStorage(file, userId, (progress) => {
+      onProgress?.(20 + (progress * 0.6));
     });
 
-  if (validationError) throw validationError;
+    console.log('Vídeo uploaded, URL:', videoUrl);
+    onProgress?.(90);
 
-  if (!validationResult[0]?.valid) {
-    const errors = validationResult[0]?.errors || ['Vídeo não atende aos requisitos'];
-    throw new Error(errors.join(', '));
+    // Criar registro do vídeo
+    const { data: videoData, error: videoError } = await supabase
+      .from('videos')
+      .insert({
+        client_id: userId,
+        nome: file.name,
+        url: videoUrl,
+        origem: 'cliente',
+        status: 'ativo',
+        duracao: validation.metadata.duration,
+        orientacao: validation.metadata.orientation,
+        largura: validation.metadata.width,
+        altura: validation.metadata.height,
+        tamanho_arquivo: validation.metadata.size,
+        formato: validation.metadata.format,
+        tem_audio: false // Sempre false para garantir que seja mutado
+      })
+      .select()
+      .single();
+
+    if (videoError) throw videoError;
+
+    console.log('Registro de vídeo criado:', videoData);
+
+    // Criar/atualizar entrada na tabela pedido_videos
+    const { error: slotError } = await supabase
+      .from('pedido_videos')
+      .upsert({
+        pedido_id: orderId,
+        video_id: videoData.id,
+        slot_position: slotPosition,
+        approval_status: 'pending'
+      });
+
+    if (slotError) throw slotError;
+
+    onProgress?.(100);
+    toast.success('Vídeo enviado com sucesso!');
+    return true;
+  } catch (error) {
+    console.error('Erro no upload:', error);
+    toast.error('Erro ao fazer upload do vídeo: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    return false;
   }
-
-  // Criar registro do vídeo
-  const videoData = prepareForInsert({
-    client_id: userId,
-    nome: file.name,
-    url: 'pending_upload',
-    origem: 'cliente',
-    duracao: duration,
-    status: 'ativo',
-    orientacao: orientation === 'landscape' ? 'horizontal' : 'vertical',
-    tem_audio: false, // Sempre false para garantir que seja mutado
-    largura: 1920,
-    altura: 1080,
-    tamanho_arquivo: file.size,
-    formato: file.type
-  });
-
-  const { data: newVideo, error: videoInsertError } = await supabase
-    .from('videos')
-    .insert([videoData] as any)
-    .select()
-    .single();
-
-  if (videoInsertError) throw videoInsertError;
-
-  // Criar entrada na tabela pedido_videos para aprovação
-  const { error: pedidoVideoError } = await supabase
-    .from('pedido_videos')
-    .insert({
-      pedido_id: orderId,
-      video_id: newVideo.id,
-      slot_position: 1,
-      approval_status: 'pending'
-    });
-
-  if (pedidoVideoError) throw pedidoVideoError;
-
-  return newVideo.id;
 };

@@ -1,33 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { VideoSlot, VideoManagementState } from '@/types/videoManagement';
+import { loadVideoSlots } from '@/services/videoSlotService';
 import { 
-  validateVideoFile, 
-  uploadVideoToStorage, 
-  deleteVideoFromStorage,
-  testStorageConnectivity 
-} from '@/services/videoStorageService';
-
-interface VideoSlot {
-  id?: string;
-  slot_position: number;
-  video_id?: string;
-  is_active: boolean;
-  selected_for_display: boolean;
-  approval_status: 'pending' | 'approved' | 'rejected';
-  video_data?: {
-    id: string;
-    nome: string;
-    url: string;
-    duracao: number;
-    orientacao: string;
-    tem_audio: boolean;
-    tamanho_arquivo?: number;
-    formato?: string;
-  };
-  rejection_reason?: string;
-}
+  selectVideoForDisplay as selectVideoAction, 
+  activateVideo as activateVideoAction, 
+  removeVideo as removeVideoAction 
+} from '@/services/videoActionService';
+import { uploadVideo as uploadVideoAction } from '@/services/videoUploadService';
 
 export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
@@ -35,153 +15,38 @@ export const useOrderVideoManagement = (orderId: string) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
 
-  const loadVideoSlots = async () => {
+  const refreshSlots = async () => {
     if (!orderId) return;
 
     try {
       setLoading(true);
-      console.log('Carregando slots de vídeo para pedido:', orderId);
-
-      const { data: pedidoVideos, error } = await supabase
-        .from('pedido_videos')
-        .select(`
-          id,
-          slot_position,
-          video_id,
-          is_active,
-          selected_for_display,
-          approval_status,
-          rejection_reason,
-          videos (
-            id,
-            nome,
-            url,
-            duracao,
-            orientacao,
-            tem_audio,
-            tamanho_arquivo,
-            formato
-          )
-        `)
-        .eq('pedido_id', orderId);
-
-      if (error) throw error;
-
-      console.log('Dados carregados:', pedidoVideos);
-
-      // Criar slots 1-4, preenchendo com dados existentes
-      const slots: VideoSlot[] = [1, 2, 3, 4].map(position => {
-        const existingVideo = pedidoVideos?.find(pv => pv.slot_position === position);
-        
-        return {
-          id: existingVideo?.id,
-          slot_position: position,
-          video_id: existingVideo?.video_id,
-          is_active: existingVideo?.is_active || false,
-          selected_for_display: existingVideo?.selected_for_display || false,
-          approval_status: (existingVideo?.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
-          video_data: existingVideo?.videos ? {
-            id: existingVideo.videos.id,
-            nome: existingVideo.videos.nome,
-            url: existingVideo.videos.url,
-            duracao: existingVideo.videos.duracao,
-            orientacao: existingVideo.videos.orientacao,
-            tem_audio: existingVideo.videos.tem_audio,
-            tamanho_arquivo: existingVideo.videos.tamanho_arquivo,
-            formato: existingVideo.videos.formato
-          } : undefined,
-          rejection_reason: existingVideo?.rejection_reason
-        };
-      });
-
+      const slots = await loadVideoSlots(orderId);
       setVideoSlots(slots);
     } catch (error) {
       console.error('Erro ao carregar vídeos:', error);
-      toast.error('Erro ao carregar vídeos');
     } finally {
       setLoading(false);
     }
   };
 
   const selectVideoForDisplay = async (slotId: string) => {
-    try {
-      console.log('Selecionando vídeo para exibição:', slotId);
-      
-      const { data, error } = await supabase.rpc('select_video_for_display', {
-        p_pedido_video_id: slotId
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        toast.success('Vídeo selecionado para exibição!');
-        loadVideoSlots();
-      } else {
-        toast.error('Erro ao selecionar vídeo');
-      }
-    } catch (error) {
-      console.error('Erro ao selecionar vídeo:', error);
-      toast.error('Erro ao selecionar vídeo para exibição');
+    const success = await selectVideoAction(slotId);
+    if (success) {
+      refreshSlots();
     }
   };
 
   const activateVideo = async (slotId: string) => {
-    try {
-      console.log('Ativando vídeo:', slotId);
-      
-      const { data, error } = await supabase.rpc('activate_video', {
-        p_pedido_id: orderId,
-        p_pedido_video_id: slotId
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        toast.success('Vídeo ativado com sucesso!');
-        loadVideoSlots();
-      } else {
-        toast.error('Apenas vídeos aprovados podem ser ativados');
-      }
-    } catch (error) {
-      console.error('Erro ao ativar vídeo:', error);
-      toast.error('Erro ao ativar vídeo');
+    const success = await activateVideoAction(slotId, orderId);
+    if (success) {
+      refreshSlots();
     }
   };
 
   const removeVideo = async (slotId: string) => {
-    try {
-      console.log('Removendo vídeo:', slotId);
-      
-      // Verificar se é o único vídeo selecionado
-      const selectedVideos = videoSlots.filter(slot => 
-        slot.video_data && slot.selected_for_display
-      );
-      
-      const videoToRemove = videoSlots.find(slot => slot.id === slotId);
-      
-      if (selectedVideos.length === 1 && videoToRemove?.selected_for_display) {
-        toast.error('Não é possível remover o único vídeo selecionado. Selecione outro vídeo primeiro.');
-        return;
-      }
-
-      // Deletar arquivo do storage se existir
-      if (videoToRemove?.video_data?.url && videoToRemove.video_data.url !== 'pending_upload') {
-        await deleteVideoFromStorage(videoToRemove.video_data.url);
-      }
-
-      // Deletar do banco
-      const { error } = await supabase
-        .from('pedido_videos')
-        .delete()
-        .eq('id', slotId);
-
-      if (error) throw error;
-
-      toast.success('Vídeo removido com sucesso');
-      loadVideoSlots();
-    } catch (error) {
-      console.error('Erro ao remover vídeo:', error);
-      toast.error('Erro ao remover vídeo');
+    const success = await removeVideoAction(slotId, videoSlots);
+    if (success) {
+      refreshSlots();
     }
   };
 
@@ -190,95 +55,41 @@ export const useOrderVideoManagement = (orderId: string) => {
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
-      console.log(`Iniciando upload para slot ${slotPosition}:`, file.name);
+      const success = await uploadVideoAction(
+        slotPosition,
+        file,
+        userId,
+        orderId,
+        (progress) => {
+          setUploadProgress(prev => ({ ...prev, [slotPosition]: progress }));
+        }
+      );
 
-      // Testar conectividade primeiro
-      const isConnected = await testStorageConnectivity();
-      if (!isConnected) {
-        throw new Error('Não foi possível conectar ao storage. Verifique a configuração.');
-      }
+      if (success) {
+        // Limpar progresso após um tempo
+        setTimeout(() => {
+          setUploadProgress(prev => {
+            const newProgress = { ...prev };
+            delete newProgress[slotPosition];
+            return newProgress;
+          });
+        }, 2000);
 
-      // Validar vídeo
-      const validation = await validateVideoFile(file);
-      if (!validation.valid) {
-        toast.error(validation.errors.join(', '));
-        return;
-      }
-
-      setUploadProgress(prev => ({ ...prev, [slotPosition]: 20 }));
-
-      // Upload para storage
-      const videoUrl = await uploadVideoToStorage(file, userId, (progress) => {
-        setUploadProgress(prev => ({ ...prev, [slotPosition]: 20 + (progress * 0.6) }));
-      });
-
-      console.log('Vídeo uploaded, URL:', videoUrl);
-      setUploadProgress(prev => ({ ...prev, [slotPosition]: 90 }));
-
-      // Criar registro do vídeo
-      const { data: videoData, error: videoError } = await supabase
-        .from('videos')
-        .insert({
-          client_id: userId,
-          nome: file.name,
-          url: videoUrl,
-          origem: 'cliente',
-          status: 'ativo',
-          duracao: validation.metadata.duration,
-          orientacao: validation.metadata.orientation,
-          largura: validation.metadata.width,
-          altura: validation.metadata.height,
-          tamanho_arquivo: validation.metadata.size,
-          formato: validation.metadata.format,
-          tem_audio: false // Sempre false para garantir que seja mutado
-        })
-        .select()
-        .single();
-
-      if (videoError) throw videoError;
-
-      console.log('Registro de vídeo criado:', videoData);
-
-      // Criar/atualizar entrada na tabela pedido_videos
-      const { error: slotError } = await supabase
-        .from('pedido_videos')
-        .upsert({
-          pedido_id: orderId,
-          video_id: videoData.id,
-          slot_position: slotPosition,
-          approval_status: 'pending'
-        });
-
-      if (slotError) throw slotError;
-
-      setUploadProgress(prev => ({ ...prev, [slotPosition]: 100 }));
-      toast.success('Vídeo enviado com sucesso!');
-      
-      // Limpar progresso após um tempo
-      setTimeout(() => {
+        refreshSlots();
+      } else {
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[slotPosition];
           return newProgress;
         });
-      }, 2000);
-
-      loadVideoSlots();
-    } catch (error) {
-      console.error('Erro no upload:', error);
-      toast.error('Erro ao fazer upload do vídeo: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
-      setUploadProgress(prev => {
-        const newProgress = { ...prev };
-        delete newProgress[slotPosition];
-        return newProgress;
-      });
+      }
     } finally {
       setUploading(false);
     }
   };
 
   useEffect(() => {
-    loadVideoSlots();
+    refreshSlots();
   }, [orderId]);
 
   return {
@@ -290,6 +101,6 @@ export const useOrderVideoManagement = (orderId: string) => {
     activateVideo,
     removeVideo,
     uploadVideo,
-    refreshSlots: loadVideoSlots
+    refreshSlots
   };
 };
