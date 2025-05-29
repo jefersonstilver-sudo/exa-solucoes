@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -115,11 +114,11 @@ export default function Cadastro() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-center min-h-[80vh] px-4 py-8"
+        className="flex items-center justify-center min-h-[80vh] px-6 py-8"
       >
-        <Card className="w-full max-w-xl shadow-lg border-indexa-purple/10">
+        <Card className="w-full max-w-md md:max-w-lg lg:max-w-2xl shadow-lg border-indexa-purple/10">
           <RegistrationHeader />
-          <CardContent className="px-8 pb-6">
+          <CardContent className="px-6 md:px-8 lg:px-10 pb-6">
             {error && <ErrorDisplay error={error} />}
             
             <RegistrationForm
@@ -137,7 +136,7 @@ export default function Cadastro() {
               onSubmit={handleSignUp}
             />
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4 pt-0 px-8 pb-8">
+          <CardFooter className="flex flex-col space-y-4 pt-0 px-6 md:px-8 lg:px-10 pb-8">
             <div className="text-center text-sm">
               <span className="text-muted-foreground">Já tem uma conta?</span>{' '}
               <Link 
