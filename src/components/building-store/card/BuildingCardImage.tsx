@@ -30,7 +30,7 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
   const totalImages = imageUrls.length;
 
   return (
-    <div className="relative lg:w-2/5 h-48 lg:h-56">
+    <div className="relative w-full h-72 lg:h-80">
       {primaryImage ? (
         <img
           src={primaryImage}
@@ -39,7 +39,7 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/5">
-          <Building2 className="h-12 w-12 text-indexa-purple/30" />
+          <Building2 className="h-16 w-16 text-indexa-purple/30" />
         </div>
       )}
       

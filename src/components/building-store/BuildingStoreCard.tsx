@@ -35,61 +35,68 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   return (
     <Card className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative">
       <CardContent className="p-0 relative">
-        <div className="flex flex-col lg:flex-row">
-          {/* Imagem Principal - Quadrada e Compacta */}
-          <div className="lg:w-1/3 relative overflow-hidden">
-            <div className="aspect-square relative">
-              <BuildingCardImage building={building} />
-              
-              {/* Badge de status */}
+        <div className="flex flex-col lg:flex-row min-h-[320px]">
+          {/* Imagem Principal - Agora mais proeminente */}
+          <div className="lg:w-2/5 relative overflow-hidden">
+            <BuildingCardImage building={building} />
+            
+            {/* Badge de status */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="absolute top-3 right-3 z-10"
+            >
+              <div className="bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm bg-green-500/90">
+                ✨ Disponível
+              </div>
+            </motion.div>
+
+            {/* Badge de prioridade se for high-end */}
+            {building.padrao_publico === 'alto' && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="absolute top-3 left-3 z-10"
+                transition={{ delay: 0.3 }}
+                className="absolute bottom-3 right-3 z-10"
               >
-                <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm bg-green-500/90">
-                  ✨ Disponível
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
+                  ⭐ Premium
                 </div>
               </motion.div>
-
-              {/* Badge de prioridade se for high-end */}
-              {building.padrao_publico === 'alto' && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="absolute top-3 right-3 z-10"
-                >
-                  <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
-                    ⭐ Premium
-                  </div>
-                </motion.div>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* Informações - Lado Direito Compacto */}
-          <div className="lg:w-2/3 p-4 lg:p-5 relative">
+          {/* Informações - Lado Direito Mais Compacto */}
+          <div className="lg:w-3/5 p-4 lg:p-6 relative flex flex-col justify-between">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
+              className="flex-1 flex flex-col justify-between"
             >
               {/* Header com Nome e Localização */}
-              <BuildingCardHeader building={building} />
+              <div className="mb-4">
+                <BuildingCardHeader building={building} />
+              </div>
 
               {/* Métricas Principais */}
-              <BuildingCardMetrics building={building} />
+              <div className="mb-4">
+                <BuildingCardMetrics building={building} />
+              </div>
 
               {/* Amenities */}
-              <BuildingCardAmenities building={building} />
+              <div className="mb-4">
+                <BuildingCardAmenities building={building} />
+              </div>
 
               {/* Preço e Ações */}
-              <BuildingCardActions 
-                building={building}
-                onAddToCart={onAddToCart}
-              />
+              <div className="mt-auto">
+                <BuildingCardActions 
+                  building={building}
+                  onAddToCart={onAddToCart}
+                />
+              </div>
             </motion.div>
           </div>
         </div>
