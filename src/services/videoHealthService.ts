@@ -32,8 +32,12 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
       console.log('✅ URL é válida:', videoUrl);
     } catch {
       result.urlValid = false;
-      result.errorDetails = 'URL malformada';
-      result.suggestions.push('Gerar nova URL para o arquivo');
+      result.errorDetails = 'URL malformada ou pendente';
+      if (videoUrl === 'pending_upload') {
+        result.suggestions.push('Upload não foi concluído - tentar enviar novamente');
+      } else {
+        result.suggestions.push('Gerar nova URL para o arquivo');
+      }
       console.error('❌ URL inválida:', videoUrl);
       return result;
     }
@@ -46,10 +50,10 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
       console.warn('⚠️ URL não é do Supabase Storage:', videoUrl);
     }
 
-    // 3. Testar conectividade HTTP
+    // 3. Testar conectividade HTTP com timeout mais curto
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
       
       console.log('🌐 Testando conectividade HTTP...');
       const response = await fetch(videoUrl, { 
@@ -84,9 +88,9 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
         console.error('❌ Erro HTTP:', response.status, response.statusText);
         
         if (response.status === 404) {
-          result.suggestions.push('Arquivo não encontrado no storage');
+          result.suggestions.push('Arquivo não encontrado no storage - reenviar vídeo');
         } else if (response.status === 403) {
-          result.suggestions.push('Problema de permissão - verificar políticas RLS');
+          result.suggestions.push('Problema de permissão - verificar configuração');
         } else {
           result.suggestions.push('Erro no servidor - tentar novamente mais tarde');
         }
@@ -94,8 +98,8 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
     } catch (error) {
       result.fileAccessible = false;
       if (error.name === 'AbortError') {
-        result.errorDetails = 'Timeout na conexão (>10s)';
-        result.suggestions.push('Conexão muito lenta ou arquivo muito grande');
+        result.errorDetails = 'Timeout na conexão (>5s)';
+        result.suggestions.push('Conexão muito lenta - verificar internet');
       } else {
         result.errorDetails = `Erro de rede: ${error.message}`;
         result.suggestions.push('Verificar conectividade com a internet');
@@ -103,7 +107,7 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
       console.error('❌ Erro ao testar conectividade:', error);
     }
 
-    // 4. Verificar se o arquivo existe no storage via API do Supabase
+    // 4. Verificar se o arquivo existe no storage via API do Supabase (melhorado)
     if (isSupabaseUrl) {
       try {
         console.log('🔍 Verificando no Supabase Storage...');
@@ -112,21 +116,26 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
           const filePath = urlParts[1];
           console.log('📁 Caminho do arquivo:', filePath);
           
+          // Extrair pasta e nome do arquivo
+          const pathSegments = filePath.split('/');
+          const fileName = pathSegments.pop();
+          const folderPath = pathSegments.join('/');
+          
           const { data, error } = await supabase.storage
             .from('videos')
-            .list(filePath.split('/').slice(0, -1).join('/') || '', {
-              search: filePath.split('/').pop()
+            .list(folderPath || '', {
+              search: fileName
             });
           
           if (error) {
             console.error('❌ Erro ao listar arquivos:', error);
-            result.suggestions.push('Erro ao acessar bucket de vídeos');
+            result.suggestions.push('Erro ao acessar storage - verificar permissões');
           } else if (data && data.length > 0) {
             console.log('✅ Arquivo encontrado no storage:', data[0]);
             result.fileExists = true;
           } else {
             console.log('❌ Arquivo não encontrado no storage');
-            result.suggestions.push('Arquivo foi deletado do storage');
+            result.suggestions.push('Arquivo foi deletado ou não foi enviado corretamente');
           }
         }
       } catch (error) {
@@ -144,7 +153,7 @@ export const checkVideoHealth = async (videoUrl: string, videoId: string): Promi
   // Adicionar sugestões baseadas no resultado
   if (!result.fileAccessible && result.urlValid) {
     result.suggestions.push('Tentar reenviar o vídeo');
-    result.suggestions.push('Verificar configurações do bucket');
+    result.suggestions.push('Usar a funcionalidade de limpeza de registros órfãos');
   }
 
   console.log('📊 Resultado da verificação:', result);
@@ -196,7 +205,7 @@ export const diagnosePanelVideoIssues = async (orderId: string): Promise<VideoHe
             fileExists: false,
             fileAccessible: false,
             errorDetails: 'Vídeo não encontrado no banco',
-            suggestions: ['Verificar integridade do banco de dados']
+            suggestions: ['Verificar integridade do banco de dados', 'Reenviar vídeo']
           } as VideoHealthCheck;
         }
       })
@@ -226,8 +235,23 @@ export const testStorageConnectivity = async (): Promise<boolean> => {
       return false;
     }
     
-    console.log('✅ Conectividade com storage OK - Bucket videos encontrado');
-    return true;
+    // Tentar listar arquivos para confirmar acesso real
+    try {
+      const { error: listError } = await supabase.storage
+        .from('videos')
+        .list('', { limit: 1 });
+      
+      if (listError) {
+        console.error('❌ Erro ao acessar bucket videos:', listError);
+        return false;
+      }
+      
+      console.log('✅ Conectividade com storage OK - Bucket videos acessível');
+      return true;
+    } catch (listError) {
+      console.error('❌ Erro ao testar acesso ao bucket:', listError);
+      return false;
+    }
   } catch (error) {
     console.error('❌ Erro ao testar conectividade:', error);
     return false;

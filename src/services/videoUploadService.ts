@@ -3,8 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   validateVideoFile, 
-  uploadVideoToStorage, 
-  testStorageConnectivity 
+  uploadVideoToStorage,
+  cleanupPendingUploads
 } from '@/services/videoStorageService';
 
 export const uploadVideo = async (
@@ -15,49 +15,57 @@ export const uploadVideo = async (
   onProgress?: (progress: number) => void
 ): Promise<boolean> => {
   try {
-    console.log(`Iniciando upload para slot ${slotPosition}:`, file.name);
-    console.log('User ID:', userId);
-    console.log('Order ID:', orderId);
+    console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
+    console.log('👤 User ID:', userId);
+    console.log('📋 Order ID:', orderId);
 
-    // Testar conectividade primeiro
-    const isConnected = await testStorageConnectivity();
-    if (!isConnected) {
-      throw new Error('Não foi possível conectar ao storage. Verifique a configuração.');
+    // Limpar uploads pendentes antes de tentar novo upload
+    onProgress?.(5);
+    const cleanedCount = await cleanupPendingUploads(userId);
+    if (cleanedCount > 0) {
+      console.log(`🧹 ${cleanedCount} registros órfãos removidos`);
     }
 
     // Validar vídeo
+    onProgress?.(10);
     const validation = await validateVideoFile(file);
     if (!validation.valid) {
-      console.error('Validação falhou:', validation.errors);
+      console.error('❌ Validação falhou:', validation.errors);
       toast.error(validation.errors.join(', '));
       return false;
     }
 
-    console.log('Vídeo validado com sucesso:', validation.metadata);
+    console.log('✅ Vídeo validado com sucesso:', validation.metadata);
     onProgress?.(20);
 
-    // Upload para storage com retry
+    // Upload para storage com retry automático
     let videoUrl: string;
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 2; // Reduzido para evitar demora excessiva
 
-    while (retryCount < maxRetries) {
+    while (retryCount <= maxRetries) {
       try {
+        console.log(`📤 Tentativa ${retryCount + 1} de upload...`);
+        
         videoUrl = await uploadVideoToStorage(file, userId, (progress) => {
+          // Mapear progresso do storage para 20-80% do progresso total
           onProgress?.(20 + (progress * 0.6));
         });
-        console.log('Upload para storage concluído, URL:', videoUrl);
+        
+        console.log('✅ Upload para storage concluído, URL:', videoUrl);
         break;
       } catch (uploadError) {
         retryCount++;
-        console.warn(`Tentativa ${retryCount} de upload falhou:`, uploadError);
+        console.warn(`⚠️ Tentativa ${retryCount} de upload falhou:`, uploadError);
         
-        if (retryCount >= maxRetries) {
-          throw new Error(`Upload falhou após ${maxRetries} tentativas: ${uploadError.message}`);
+        if (retryCount > maxRetries) {
+          throw new Error(`Upload falhou após ${maxRetries + 1} tentativas: ${uploadError.message}`);
         }
         
-        // Aguardar antes de tentar novamente
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        // Aguardar antes de tentar novamente (backoff exponencial)
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        console.log(`⏱️ Aguardando ${delay}ms antes da próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
@@ -79,7 +87,7 @@ export const uploadVideo = async (
       tem_audio: false // Sempre false para garantir que seja mutado
     };
 
-    console.log('Criando registro de vídeo:', videoData);
+    console.log('💾 Criando registro de vídeo:', videoData);
 
     const { data: videoRecord, error: videoError } = await supabase
       .from('videos')
@@ -88,11 +96,11 @@ export const uploadVideo = async (
       .single();
 
     if (videoError) {
-      console.error('Erro ao criar registro de vídeo:', videoError);
+      console.error('❌ Erro ao criar registro de vídeo:', videoError);
       throw new Error(`Erro ao salvar vídeo no banco: ${videoError.message}`);
     }
 
-    console.log('Registro de vídeo criado com sucesso:', videoRecord);
+    console.log('✅ Registro de vídeo criado com sucesso:', videoRecord);
     onProgress?.(95);
 
     // Verificar se já existe entrada para este slot
@@ -104,30 +112,32 @@ export const uploadVideo = async (
       .maybeSingle();
 
     if (checkError) {
-      console.error('Erro ao verificar slot existente:', checkError);
+      console.error('❌ Erro ao verificar slot existente:', checkError);
     }
 
     let slotResult;
     if (existingSlot) {
       // Atualizar entrada existente
-      console.log('Atualizando slot existente:', existingSlot.id);
+      console.log('🔄 Atualizando slot existente:', existingSlot.id);
       const { error: updateError } = await supabase
         .from('pedido_videos')
         .update({
           video_id: videoRecord.id,
           approval_status: 'pending',
+          selected_for_display: false, // Resetar seleção
+          is_active: false, // Resetar ativação
           updated_at: new Date().toISOString()
         })
         .eq('id', existingSlot.id);
 
       if (updateError) {
-        console.error('Erro ao atualizar slot:', updateError);
+        console.error('❌ Erro ao atualizar slot:', updateError);
         throw new Error(`Erro ao atualizar slot: ${updateError.message}`);
       }
       slotResult = { error: null };
     } else {
       // Criar nova entrada
-      console.log('Criando nova entrada no slot');
+      console.log('➕ Criando nova entrada no slot');
       const { error: insertError } = await supabase
         .from('pedido_videos')
         .insert({
@@ -135,24 +145,25 @@ export const uploadVideo = async (
           video_id: videoRecord.id,
           slot_position: slotPosition,
           approval_status: 'pending',
-          selected_for_display: false // Será definido pelo usuário posteriormente
+          selected_for_display: false, // Será definido pelo usuário posteriormente
+          is_active: false
         });
 
       slotResult = { error: insertError };
     }
 
     if (slotResult.error) {
-      console.error('Erro ao gerenciar slot:', slotResult.error);
+      console.error('❌ Erro ao gerenciar slot:', slotResult.error);
       throw new Error(`Erro ao salvar no slot: ${slotResult.error.message}`);
     }
 
     onProgress?.(100);
-    console.log('Upload completo com sucesso!');
+    console.log('🎉 Upload completo com sucesso!');
     toast.success('Vídeo enviado com sucesso!');
     return true;
 
   } catch (error) {
-    console.error('Erro no upload:', error);
+    console.error('💥 Erro no upload:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     toast.error(`Erro ao fazer upload do vídeo: ${errorMessage}`);
     return false;
