@@ -15,7 +15,7 @@ import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import Login from '@/pages/Login';
 import Cadastro from '@/pages/Cadastro';
-import AdvertiserLayout from '@/components/advertiser/AdvertiserLayout';
+import ModernAdvertiserLayout from '@/components/advertiser/layout/ModernAdvertiserLayout';
 import AdvertiserDashboard from '@/pages/advertiser/AdvertiserDashboard';
 import AdvertiserOrders from '@/pages/advertiser/AdvertiserOrders';
 import OrderDetails from '@/pages/advertiser/OrderDetails';
@@ -68,8 +68,8 @@ const App = () => {
         <Route path="/paineis-digitais/loja" element={<PainelStore />} />
         <Route path="/paineis-digitais" element={<Navigate to="/paineis-digitais/loja" replace />} />
         
-        {/* ADVERTISER ROUTES WITH LAYOUT - ESTRUTURA COMPLETA E CORRIGIDA */}
-        <Route path="/anunciante" element={<AdvertiserLayout />}>
+        {/* ADVERTISER ROUTES WITH MODERN LAYOUT - ESTRUTURA MODERNIZADA */}
+        <Route path="/anunciante" element={<ModernAdvertiserLayout />}>
           <Route index element={<AdvertiserDashboard />} />
           <Route path="pedidos" element={<AdvertiserOrders />} />
           <Route path="pedido/:id" element={<OrderDetails />} />
