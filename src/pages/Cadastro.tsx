@@ -142,7 +142,7 @@ export default function Cadastro() {
               
               <CardFooter className="flex flex-col space-y-4 p-4 sm:p-6 md:p-8 lg:p-10 pt-0">
                 <div className="text-center text-sm">
-                  <span className="text-muted-foreground">Já tem uma conta?</span>{' '}
+                  <span className="text-gray-600">Já tem uma conta?</span>{' '}
                   <Link 
                     to={`/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
                     className="font-medium text-indexa-purple hover:text-indexa-purple-dark hover:underline transition-colors"
@@ -151,7 +151,7 @@ export default function Cadastro() {
                   </Link>
                 </div>
                 
-                <div className="text-center text-xs text-muted-foreground px-2">
+                <div className="text-center text-xs text-gray-500 px-2">
                   <p>
                     Ao criar uma conta, você concorda com os nossos{' '}
                     <a href="#" className="underline hover:text-indexa-purple transition-colors">

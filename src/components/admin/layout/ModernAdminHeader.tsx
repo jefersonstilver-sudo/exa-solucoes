@@ -27,20 +27,25 @@ const ModernAdminHeader = () => {
     }
   };
 
+  const handleLogoClick = () => {
+    navigate('/super_admin');
+  };
+
   return (
-    <header className="bg-gradient-to-r from-[#3C1361] to-[#2A0D47] border-b border-purple-800/30 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          {/* Logo da Indexa */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-[#00FFAB] rounded-lg flex items-center justify-center">
-              <span className="text-[#3C1361] font-bold text-xl">I</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">
-                INDEXA
-              </h1>
-              <p className="text-sm text-purple-200">Painel Administrativo</p>
+          {/* Logo da Indexa - mesma da página principal */}
+          <div 
+            onClick={handleLogoClick}
+            className="flex items-center hover:opacity-80 transition-opacity duration-200 cursor-pointer py-2"
+          >
+            <div className="w-16 h-16 flex items-center justify-center">
+              <img 
+                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
+                alt="Indexa Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
         </div>
@@ -52,15 +57,15 @@ const ModernAdminHeader = () => {
           {/* Menu do Usuário */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10">
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-gray-100">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-[#00FFAB] text-[#3C1361] font-semibold">
+                  <AvatarFallback className="bg-indexa-purple text-white font-semibold">
                     {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-white border border-gray-200" align="end" forceMount>
+            <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-lg" align="end" forceMount>
               <div className="flex flex-col space-y-1 p-2">
                 <p className="text-sm font-medium leading-none text-gray-900">
                   {userProfile?.email || 'Admin'}

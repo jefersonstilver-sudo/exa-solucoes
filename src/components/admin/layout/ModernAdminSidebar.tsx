@@ -82,16 +82,14 @@ const ModernAdminSidebar = () => {
   return (
     <div className="bg-gradient-to-b from-[#3C1361] to-[#2A0D47] border-r border-purple-800/30 w-64 min-h-screen">
       <div className="p-6">
-        {/* Logo da Indexa no topo */}
-        <div className="flex items-center space-x-3 mb-8">
-          <div className="w-10 h-10 bg-[#00FFAB] rounded-lg flex items-center justify-center">
-            <span className="text-[#3C1361] font-bold text-xl">I</span>
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">
-              INDEXA
-            </h2>
-            <p className="text-xs text-purple-200">Admin Panel</p>
+        {/* Logo da Indexa - mesma da página principal */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="w-20 h-20 flex items-center justify-center">
+            <img 
+              src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
+              alt="Indexa Logo" 
+              className="w-full h-full object-contain filter brightness-0 invert"
+            />
           </div>
         </div>
         

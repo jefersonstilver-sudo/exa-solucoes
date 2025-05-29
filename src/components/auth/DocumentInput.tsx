@@ -27,22 +27,22 @@ const DocumentInput: React.FC<DocumentInputProps> = ({
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor="documentType" className="flex items-center text-gray-700">
+        <Label htmlFor="documentType" className="flex items-center text-gray-900">
           <FileText className="h-4 w-4 mr-2 text-indexa-purple" /> Tipo de documento
         </Label>
         <Select value={documentType} onValueChange={onDocumentTypeChange}>
-          <SelectTrigger className="border-indexa-purple/20 focus:border-indexa-purple h-11">
+          <SelectTrigger className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900">
             <SelectValue placeholder="Selecione o tipo de documento" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="cpf">CPF</SelectItem>
-            <SelectItem value="cnpj">CNPJ</SelectItem>
+          <SelectContent className="bg-white border border-gray-200">
+            <SelectItem value="cpf" className="text-gray-900">CPF</SelectItem>
+            <SelectItem value="cnpj" className="text-gray-900">CNPJ</SelectItem>
           </SelectContent>
         </Select>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="document" className="flex items-center text-gray-700">
+        <Label htmlFor="document" className="flex items-center text-gray-900">
           <FileText className="h-4 w-4 mr-2 text-indexa-purple" /> {documentType.toUpperCase()}
         </Label>
         <Input
@@ -52,7 +52,7 @@ const DocumentInput: React.FC<DocumentInputProps> = ({
           value={document}
           onChange={onDocumentChange}
           required
-          className="border-indexa-purple/20 focus:border-indexa-purple h-11"
+          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
           maxLength={documentType === 'cpf' ? 14 : 18}
         />
       </div>

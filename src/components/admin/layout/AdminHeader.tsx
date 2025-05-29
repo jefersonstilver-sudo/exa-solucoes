@@ -53,7 +53,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
         {/* Título da página apenas */}
         <div className="flex items-center space-x-6">
           <div>
-            <h2 className="text-xl font-semibold text-black">{title}</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
             <p className="text-sm text-gray-600">
               {isSuperAdmin ? 'Painel Super Administrativo' : 'Painel Administrativo'}
             </p>
@@ -68,24 +68,24 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
             <input 
               type="search" 
               placeholder="Buscar..." 
-              className="bg-transparent border-none focus:outline-none text-sm w-48 text-black placeholder-gray-500"
+              className="bg-transparent border-none focus:outline-none text-sm w-48 text-gray-900 placeholder-gray-500"
             />
           </div>
           
           {/* Notificações */}
-          <Button variant="ghost" size="icon" className="text-gray-600 hover:text-black hover:bg-gray-100">
+          <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
             <Bell className="h-5 w-5" />
           </Button>
           
           {/* Menu do usuário */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-3 text-gray-600 hover:text-black hover:bg-gray-100 px-3 py-2">
+              <Button variant="ghost" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2">
                 <div className="w-8 h-8 bg-indexa-purple rounded-lg flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-black">{userName}</p>
+                  <p className="text-sm font-medium text-gray-900">{userName}</p>
                   <p className="text-xs text-gray-500 flex items-center">
                     {isSuperAdmin && <Crown className="h-3 w-3 mr-1" />}
                     {isSuperAdmin ? 'Super Admin' : 'Admin'}
@@ -94,14 +94,14 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
-              <DropdownMenuLabel className="text-black">
+              <DropdownMenuLabel className="text-gray-900">
                 <div className="flex flex-col">
                   <span className="font-medium">{userName}</span>
                   <span className="text-xs text-gray-500">{userProfile?.role}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
-              <DropdownMenuItem onClick={() => navigate('/super_admin/configuracoes')} className="text-black hover:bg-gray-100">
+              <DropdownMenuItem onClick={() => navigate('/super_admin/configuracoes')} className="text-gray-900 hover:bg-gray-100">
                 <Settings className="mr-3 h-4 w-4" />
                 <span>Configurações</span>
               </DropdownMenuItem>

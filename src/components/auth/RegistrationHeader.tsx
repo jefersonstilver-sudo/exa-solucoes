@@ -15,7 +15,7 @@ const RegistrationHeader: React.FC = () => {
         <CardTitle className="text-2xl font-bold text-indexa-purple flex items-center justify-center gap-2">
           <UserPlus size={24} /> Crie sua conta
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-gray-600">
           Preencha os dados abaixo para começar a usar a plataforma
         </CardDescription>
       </motion.div>
