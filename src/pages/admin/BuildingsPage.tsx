@@ -44,7 +44,7 @@ const BuildingsPage = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
-          <span className="ml-2 text-indexa-purple">Carregando prédios...</span>
+          <span className="ml-2 text-gray-900 font-medium">Carregando prédios...</span>
         </div>
       </div>
     );

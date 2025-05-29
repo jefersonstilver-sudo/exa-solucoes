@@ -146,14 +146,14 @@ const Pedidos: React.FC = () => {
     switch (statusString) {
       case 'pendente':
       case 'false':
-        return { label: 'Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1' };
+        return { label: 'Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'pago':
       case 'true':
-        return { label: 'Pago', color: 'bg-green-600 text-white text-xs px-2 py-1' };
+        return { label: 'Pago', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'cancelado':
-        return { label: 'Cancelado', color: 'bg-red-600 text-white text-xs px-2 py-1' };
+        return { label: 'Cancelado', color: 'bg-red-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       default:
-        return { label: statusString || 'Desconhecido', color: 'bg-gray-600 text-white text-xs px-2 py-1' };
+        return { label: statusString || 'Desconhecido', color: 'bg-gray-700 text-white text-xs px-2 py-1 font-semibold border-0' };
     }
   };
 
@@ -173,32 +173,32 @@ const Pedidos: React.FC = () => {
         <div className="flex justify-between items-start mb-2">
           <div>
             <Badge className={status.color}>{status.label}</Badge>
-            <h3 className="font-medium mt-2 text-gray-900">ID: {pedido.id.substring(0, 8)}...</h3>
+            <h3 className="font-semibold mt-2 text-gray-900">ID: {pedido.id.substring(0, 8)}...</h3>
           </div>
-          <p className="text-right font-semibold text-gray-900">
+          <p className="text-right font-bold text-gray-900 text-lg">
             R$ {pedido.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
           </p>
         </div>
         
         <div className="grid grid-cols-2 gap-2 text-sm mt-3">
           <div>
-            <p className="text-gray-600">Data do Pedido</p>
-            <p className="text-gray-900">{new Date(pedido.created_at).toLocaleDateString('pt-BR')}</p>
+            <p className="text-gray-700 font-medium">Data do Pedido</p>
+            <p className="text-gray-900 font-semibold">{new Date(pedido.created_at).toLocaleDateString('pt-BR')}</p>
           </div>
           <div>
-            <p className="text-gray-600">Duração</p>
-            <p className="text-gray-900">{pedido.plano_meses} {pedido.plano_meses === 1 ? 'mês' : 'meses'}</p>
+            <p className="text-gray-700 font-medium">Duração</p>
+            <p className="text-gray-900 font-semibold">{pedido.plano_meses} {pedido.plano_meses === 1 ? 'mês' : 'meses'}</p>
           </div>
           <div>
-            <p className="text-gray-600">Período</p>
-            <p className="flex items-center text-gray-900">
-              <CalendarClock className="h-3 w-3 mr-1 text-gray-500" />
+            <p className="text-gray-700 font-medium">Período</p>
+            <p className="flex items-center text-gray-900 font-semibold">
+              <CalendarClock className="h-3 w-3 mr-1 text-indexa-purple" />
               <span>{formatDate(pedido.data_inicio)} - {formatDate(pedido.data_fim)}</span>
             </p>
           </div>
           <div>
-            <p className="text-gray-600">Qtd. Painéis</p>
-            <p className="text-gray-900">{paineisList.length}</p>
+            <p className="text-gray-700 font-medium">Qtd. Painéis</p>
+            <p className="text-gray-900 font-semibold">{paineisList.length}</p>
           </div>
         </div>
         
@@ -206,7 +206,7 @@ const Pedidos: React.FC = () => {
           variant="outline"
           size="sm"
           onClick={() => navigate(`/pedido-confirmado?id=${pedido.id}`)}
-          className="w-full mt-3"
+          className="w-full mt-3 border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
         >
           Ver Detalhes
         </Button>
@@ -221,7 +221,7 @@ const Pedidos: React.FC = () => {
         <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-indexa-purple mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-800">Carregando pedidos...</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Carregando pedidos...</h2>
           </div>
         </div>
       </Layout>
@@ -239,11 +239,11 @@ const Pedidos: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="mb-6"
         >
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
             <ShoppingBag className="mr-2 h-6 w-6 md:h-8 md:w-8 text-indexa-purple" />
             {isAdmin ? "Todos os Pedidos" : "Meus Pedidos"}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-700 mt-1 font-medium">
             {isAdmin ? "Lista completa de todos os pedidos do sistema" : "Confira o histórico e status de todas as suas campanhas"}
           </p>
         </motion.div>
@@ -254,7 +254,7 @@ const Pedidos: React.FC = () => {
             placeholder="Buscar por ID, data ou valor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="md:max-w-xs bg-white border-gray-300 text-gray-900"
+            className="md:max-w-xs bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
           />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full md:w-[180px] bg-white border-gray-300 text-gray-900">
@@ -272,10 +272,10 @@ const Pedidos: React.FC = () => {
         {filteredPedidos.length === 0 ? (
           <Card className="p-8 text-center bg-white border-gray-200">
             <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
-              <AlertCircle className="h-8 w-8 text-gray-500" />
+              <AlertCircle className="h-8 w-8 text-gray-600" />
             </div>
-            <h2 className="text-xl font-medium mb-2 text-gray-900">Nenhum pedido encontrado</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-xl font-semibold mb-2 text-gray-900">Nenhum pedido encontrado</h2>
+            <p className="text-gray-700 mb-6 font-medium">
               {searchTerm || statusFilter !== 'todos' 
                 ? 'Nenhum pedido corresponde aos filtros aplicados.'
                 : 'Você ainda não realizou nenhum pedido em nossa plataforma.'}
@@ -283,7 +283,7 @@ const Pedidos: React.FC = () => {
             <div className="flex justify-center">
               <Button 
                 onClick={() => navigate('/paineis-digitais/loja')}
-                className="bg-indexa-purple hover:bg-indexa-purple/90"
+                className="bg-indexa-purple hover:bg-indexa-purple/90 font-semibold"
               >
                 Explorar Painéis
               </Button>
@@ -301,14 +301,14 @@ const Pedidos: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-gray-200">
-                        <TableHead className="text-gray-700 font-semibold">ID do Pedido</TableHead>
-                        <TableHead className="text-gray-700 font-semibold">Data</TableHead>
-                        <TableHead className="text-gray-700 font-semibold">Status</TableHead>
-                        <TableHead className="text-gray-700 font-semibold">Valor</TableHead>
-                        <TableHead className="text-gray-700 font-semibold">Duração</TableHead>
-                        <TableHead className="text-gray-700 font-semibold">Período</TableHead>
-                        <TableHead className="text-gray-700 font-semibold">Qtd. Painéis</TableHead>
-                        <TableHead className="text-gray-700 font-semibold">Ações</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">ID do Pedido</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Data</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Status</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Valor</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Duração</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Período</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Qtd. Painéis</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -321,7 +321,7 @@ const Pedidos: React.FC = () => {
                             <TableCell className="font-medium text-gray-900">
                               {pedido.id.substring(0, 8)}...
                             </TableCell>
-                            <TableCell className="text-gray-700">
+                            <TableCell className="text-gray-800 font-medium">
                               {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
                             </TableCell>
                             <TableCell>
@@ -329,21 +329,21 @@ const Pedidos: React.FC = () => {
                                 {status.label}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-gray-900 font-semibold">
+                            <TableCell className="text-gray-900 font-bold text-base">
                               R$ {pedido.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
                             </TableCell>
-                            <TableCell className="text-gray-700">
+                            <TableCell className="text-gray-800 font-medium">
                               {pedido.plano_meses} {pedido.plano_meses === 1 ? 'mês' : 'meses'}
                             </TableCell>
                             <TableCell className="whitespace-nowrap">
-                              <div className="flex items-center text-gray-700">
-                                <CalendarClock className="h-4 w-4 mr-1 text-gray-500" />
+                              <div className="flex items-center text-gray-800 font-medium">
+                                <CalendarClock className="h-4 w-4 mr-1 text-indexa-purple" />
                                 <span>
                                   {formatDate(pedido.data_inicio)} - {formatDate(pedido.data_fim)}
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-gray-700">
+                            <TableCell className="text-gray-800 font-medium">
                               {paineisList.length}
                             </TableCell>
                             <TableCell>
@@ -351,6 +351,7 @@ const Pedidos: React.FC = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => navigate(`/pedido-confirmado?id=${pedido.id}`)}
+                                className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
                               >
                                 Detalhes
                               </Button>
