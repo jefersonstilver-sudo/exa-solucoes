@@ -1,26 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Monitor, 
-  DollarSign, 
-  Video, 
-  Loader2,
-  AlertCircle,
-  MapPin
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useOrderVideoManagement } from '@/hooks/useOrderVideoManagement';
-import { VideoSlotGrid } from '@/components/video-management/VideoSlotGrid';
 import { VideoActivationSuccessPopup } from '@/components/video-management/VideoActivationSuccessPopup';
-import { LocationsTooltip } from '@/components/order/LocationsTooltip';
 import { PurchaseInfoCard } from '@/components/order/PurchaseInfoCard';
 import { useEnhancedOrderData } from '@/hooks/useEnhancedOrderData';
+import { OrderHeader } from '@/components/order/OrderHeader';
+import { OrderSummaryCard } from '@/components/order/OrderSummaryCard';
+import { OrderStatusAlerts } from '@/components/order/OrderStatusAlerts';
+import { VideoManagementCard } from '@/components/order/VideoManagementCard';
 
 interface OrderDetails {
   id: string;
@@ -105,17 +98,6 @@ const OrderDetails = () => {
     window.open(videoUrl, '_blank');
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
   if (loading || videosLoading || enhancedLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -142,7 +124,6 @@ const OrderDetails = () => {
 
   // Usar dados recuperados se disponíveis
   const displayPanels = enhancedData?.recoveredPanels || orderDetails.lista_paineis || [];
-  const panelsCount = displayPanels.length;
 
   console.log('🔍 [ORDER_DETAILS] Dados finais para exibição:', {
     originalPanels: orderDetails.lista_paineis,
@@ -155,146 +136,36 @@ const OrderDetails = () => {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/anunciante/pedidos')}
-            className="flex items-center"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Detalhes do Pedido</h1>
-            <p className="text-gray-600 mt-1">#{orderDetails.id.substring(0, 8)}</p>
-          </div>
-        </div>
+        <OrderHeader orderId={orderDetails.id} />
 
-        {/* Informações de Compra - NOVA SEÇÃO */}
+        {/* Informações de Compra */}
         <PurchaseInfoCard orderDetails={orderDetails} />
 
-        {/* Alerta de recuperação de dados */}
-        {enhancedData?.isRecovered && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <Monitor className="h-6 w-6 text-blue-600" />
-                <div>
-                  <h3 className="font-medium text-blue-800">Dados Recuperados</h3>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Os locais selecionados foram recuperados automaticamente do sistema anterior.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Alertas de Status */}
+        <OrderStatusAlerts
+          isRecovered={enhancedData?.isRecovered}
+          enhancedError={enhancedError}
+          videosLoadError={videosLoadError}
+        />
 
-        {/* Order Summary - ATUALIZADO */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo do Pedido</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="flex items-center space-x-3">
-                <DollarSign className="h-8 w-8 text-green-500" />
-                <div>
-                  <p className="font-medium">Valor Total</p>
-                  <p className="text-lg">{formatCurrency(orderDetails.valor_total)}</p>
-                </div>
-              </div>
-              
-              <LocationsTooltip listaPaineis={displayPanels}>
-                <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
-                  <MapPin className="h-8 w-8 text-blue-500" />
-                  <div>
-                    <p className="font-medium">Locais</p>
-                    <p className="text-lg">
-                      {panelsCount} selecionados
-                      {enhancedData?.isRecovered && (
-                        <span className="text-xs text-blue-600 ml-1">(recuperados)</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </LocationsTooltip>
-              
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-8 w-8 text-purple-500" />
-                <div>
-                  <p className="font-medium">Duração</p>
-                  <p className="text-lg">{orderDetails.plano_meses} meses</p>
-                </div>
-              </div>
+        {/* Resumo do Pedido */}
+        <OrderSummaryCard
+          orderDetails={orderDetails}
+          displayPanels={displayPanels}
+          isRecovered={enhancedData?.isRecovered}
+        />
 
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-8 w-8 text-orange-500" />
-                <div>
-                  <p className="font-medium">Criado em</p>
-                  <p className="text-lg">{formatDate(orderDetails.created_at)}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Error de dados aprimorados */}
-        {enhancedError && (
-          <Card className="border-yellow-200 bg-yellow-50">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <AlertCircle className="h-6 w-6 text-yellow-600" />
-                <div>
-                  <h3 className="font-medium text-yellow-800">Aviso de Recuperação</h3>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    Não foi possível recuperar alguns dados automaticamente: {enhancedError}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Error de carregamento de vídeos */}
-        {videosLoadError && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <AlertCircle className="h-6 w-6 text-red-600" />
-                <div>
-                  <h3 className="font-medium text-red-800">Erro ao Carregar Vídeos</h3>
-                  <p className="text-sm text-red-700 mt-1">{videosLoadError}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Gestão de Vídeos - Inalterada */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Video className="h-5 w-5 mr-2" />
-              Gestão de Vídeos
-            </CardTitle>
-            <p className="text-sm text-gray-600">
-              Envie até 4 vídeos e selecione qual será exibido nos painéis.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <VideoSlotGrid
-              videoSlots={videoSlots}
-              uploading={uploading}
-              uploadProgress={uploadProgress}
-              onUpload={handleVideoUpload}
-              onActivate={activateVideo}
-              onRemove={removeVideo}
-              onSelectForDisplay={selectVideoForDisplay}
-              onDownload={handleVideoDownload}
-            />
-          </CardContent>
-        </Card>
+        {/* Gestão de Vídeos */}
+        <VideoManagementCard
+          videoSlots={videoSlots}
+          uploading={uploading}
+          uploadProgress={uploadProgress}
+          onUpload={handleVideoUpload}
+          onActivate={activateVideo}
+          onRemove={removeVideo}
+          onSelectForDisplay={selectVideoForDisplay}
+          onDownload={handleVideoDownload}
+        />
       </div>
 
       {/* Popup de Sucesso */}
