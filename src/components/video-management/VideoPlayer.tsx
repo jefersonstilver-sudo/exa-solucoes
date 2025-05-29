@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -377,69 +378,4 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
     </div>
   );
-
-  function toggleMute() {
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.muted = !isMuted;
-    setIsMuted(!isMuted);
-  }
-
-  function handleVolumeChange(value: number[]) {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const newVolume = value[0];
-    video.volume = newVolume;
-    setVolume(newVolume);
-    
-    if (newVolume === 0) {
-      setIsMuted(true);
-      video.muted = true;
-    } else if (isMuted) {
-      setIsMuted(false);
-      video.muted = false;
-    }
-  }
-
-  function handleProgressChange(value: number[]) {
-    const video = videoRef.current;
-    if (!video || !duration) return;
-
-    const newTime = (value[0] / 100) * duration;
-    video.currentTime = newTime;
-    setProgress(value[0]);
-  }
-
-  function toggleFullscreen() {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (!isFullscreen) {
-      if (video.requestFullscreen) {
-        video.requestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-    setIsFullscreen(!isFullscreen);
-  }
-
-  function restart() {
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.currentTime = 0;
-    setProgress(0);
-    setCurrentTime(0);
-  }
-
-  function formatTime(time: number) {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }
 };
