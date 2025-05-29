@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { VideoSlot, VideoManagementState } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
@@ -55,35 +54,27 @@ export const useOrderVideoManagement = (orderId: string) => {
   };
 
   const selectVideoForDisplay = async (slotId: string) => {
-    console.log('⭐ [ORDER_VIDEO] Tentativa de seleção de vídeo:', slotId);
+    console.log('⭐ [ORDER_VIDEO] Selecionando vídeo para exibição:', slotId);
     
-    // NOVA VALIDAÇÃO: Verificar status de aprovação ANTES de chamar o serviço
+    // Verificação básica do slot local (não bloqueia mais a operação)
     const slot = videoSlots.find(s => s.id === slotId);
     if (!slot) {
-      console.error('❌ [ORDER_VIDEO] Slot não encontrado:', slotId);
+      console.error('❌ [ORDER_VIDEO] Slot não encontrado localmente:', slotId);
       toast.error('❌ Vídeo não encontrado');
       return;
     }
 
+    // Info log sobre o status (mas não bloqueia)
     if (slot.approval_status !== 'approved') {
-      console.warn('⚠️ [ORDER_VIDEO] Tentativa de selecionar vídeo não aprovado:', {
+      console.warn('⚠️ [ORDER_VIDEO] Tentativa de seleção de vídeo não aprovado (será validado no servidor):', {
         slotId,
         status: slot.approval_status
       });
-      
-      const statusMessages = {
-        'pending': 'Este vídeo ainda está aguardando aprovação dos administradores.',
-        'rejected': 'Este vídeo foi rejeitado e não pode ser selecionado para exibição.'
-      };
-      
-      const message = statusMessages[slot.approval_status as keyof typeof statusMessages] || 
-                     'Apenas vídeos aprovados podem ser selecionados para exibição.';
-      
-      toast.error(`❌ Seleção bloqueada: ${message}`);
-      return;
+    } else {
+      console.log('✅ [ORDER_VIDEO] Vídeo aprovado, prosseguindo com seleção/troca');
     }
 
-    console.log('✅ [ORDER_VIDEO] Vídeo aprovado, prosseguindo com seleção');
+    // Chamar o serviço que fará a validação real no servidor
     const success = await selectVideoAction(slotId);
     if (success) {
       refreshSlots();

@@ -7,7 +7,8 @@ import {
   Download, 
   Star,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  ArrowRightLeft
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -103,7 +104,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   return (
     <>
       <div className="flex flex-col space-y-2">
-        {/* Botão de Seleção - Com validação de aprovação */}
+        {/* Botão de Seleção - Melhorado para indicar troca */}
         <Button
           onClick={handleSelectForDisplay}
           disabled={!isApproved}
@@ -123,11 +124,12 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
                   : 'Vídeo não aprovado - não pode ser selecionado'
               : slot.selected_for_display 
                 ? 'Este vídeo está selecionado para exibição'
-                : 'Selecionar este vídeo para exibição nos painéis'
+                : 'Selecionar este vídeo para exibição (substituirá o atual)'
           }
         >
           {!isApproved && <Lock className="h-4 w-4 mr-2" />}
-          {isApproved && <Star className="h-4 w-4 mr-2" />}
+          {isApproved && !slot.selected_for_display && <ArrowRightLeft className="h-4 w-4 mr-2" />}
+          {isApproved && slot.selected_for_display && <Star className="h-4 w-4 mr-2" />}
           {slot.selected_for_display ? 'SELECIONADO ✓' : 'Selecionar para Exibição'}
         </Button>
 

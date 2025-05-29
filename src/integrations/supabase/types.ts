@@ -1041,6 +1041,10 @@ export type Database = {
         Args: { p_pedido_video_id: string }
         Returns: boolean
       }
+      switch_video_selection: {
+        Args: { p_pedido_video_id: string }
+        Returns: boolean
+      }
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }
         Returns: {

@@ -45,8 +45,9 @@ export const selectVideoForDisplay = async (slotId: string): Promise<boolean> =>
       return false;
     }
 
-    console.log('✅ [VIDEO_ACTION] Vídeo aprovado, prosseguindo com seleção');
+    console.log('✅ [VIDEO_ACTION] Vídeo aprovado, usando função corrigida para seleção');
     
+    // Usar a função RPC corrigida que permite troca de seleção
     const { data, error } = await supabase.rpc('select_video_for_display', {
       p_pedido_video_id: slotId
     });
@@ -57,7 +58,7 @@ export const selectVideoForDisplay = async (slotId: string): Promise<boolean> =>
     }
 
     if (data) {
-      console.log('✅ [VIDEO_ACTION] Vídeo selecionado com sucesso');
+      console.log('✅ [VIDEO_ACTION] Vídeo selecionado com sucesso (troca permitida)');
       toast.success('✅ Vídeo selecionado para exibição!');
       return true;
     } else {
