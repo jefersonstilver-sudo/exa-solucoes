@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -8,6 +7,7 @@ interface VideoSlot {
   slot_position: number;
   video_id?: string;
   is_active: boolean;
+  selected_for_display: boolean;
   approval_status: 'pending' | 'approved' | 'rejected';
   video_data?: {
     id: string;
@@ -40,6 +40,7 @@ export const useOrderVideoManagement = (orderId: string) => {
           slot_position,
           video_id,
           is_active,
+          selected_for_display,
           approval_status,
           rejection_reason,
           videos (
@@ -66,6 +67,7 @@ export const useOrderVideoManagement = (orderId: string) => {
           slot_position: position,
           video_id: existingVideo?.video_id,
           is_active: existingVideo?.is_active || false,
+          selected_for_display: existingVideo?.selected_for_display || false,
           approval_status: (existingVideo?.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
           video_data: existingVideo?.videos ? {
             id: existingVideo.videos.id,
@@ -87,6 +89,26 @@ export const useOrderVideoManagement = (orderId: string) => {
       toast.error('Erro ao carregar vídeos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const selectVideoForDisplay = async (slotId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('select_video_for_display', {
+        p_pedido_video_id: slotId
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        toast.success('Vídeo selecionado para exibição!');
+        loadVideoSlots();
+      } else {
+        toast.error('Erro ao selecionar vídeo');
+      }
+    } catch (error) {
+      console.error('Erro ao selecionar vídeo:', error);
+      toast.error('Erro ao selecionar vídeo para exibição');
     }
   };
 
@@ -113,6 +135,18 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   const removeVideo = async (slotId: string) => {
     try {
+      // Verificar se é o único vídeo selecionado
+      const selectedVideos = videoSlots.filter(slot => 
+        slot.video_data && slot.selected_for_display
+      );
+      
+      const videoToRemove = videoSlots.find(slot => slot.id === slotId);
+      
+      if (selectedVideos.length === 1 && videoToRemove?.selected_for_display) {
+        toast.error('Não é possível remover o único vídeo selecionado. Selecione outro vídeo primeiro.');
+        return;
+      }
+
       const { error } = await supabase
         .from('pedido_videos')
         .delete()
@@ -235,6 +269,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     videoSlots,
     loading,
     uploading,
+    selectVideoForDisplay,
     activateVideo,
     removeVideo,
     uploadVideo,

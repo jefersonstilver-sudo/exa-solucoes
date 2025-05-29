@@ -524,6 +524,7 @@ export type Database = {
           is_active: boolean
           pedido_id: string
           rejection_reason: string | null
+          selected_for_display: boolean
           slot_position: number
           updated_at: string
           video_id: string
@@ -537,6 +538,7 @@ export type Database = {
           is_active?: boolean
           pedido_id: string
           rejection_reason?: string | null
+          selected_for_display?: boolean
           slot_position: number
           updated_at?: string
           video_id: string
@@ -550,6 +552,7 @@ export type Database = {
           is_active?: boolean
           pedido_id?: string
           rejection_reason?: string | null
+          selected_for_display?: boolean
           slot_position?: number
           updated_at?: string
           video_id?: string
@@ -1032,6 +1035,10 @@ export type Database = {
           p_approved_by: string
           p_rejection_reason: string
         }
+        Returns: boolean
+      }
+      select_video_for_display: {
+        Args: { p_pedido_video_id: string }
         Returns: boolean
       }
       validate_cupom: {
