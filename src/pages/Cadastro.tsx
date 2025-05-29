@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -110,49 +111,63 @@ export default function Cadastro() {
   
   return (
     <Layout>
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-center min-h-[80vh] px-6 py-8"
-      >
-        <Card className="w-full max-w-md md:max-w-lg lg:max-w-2xl shadow-lg border-indexa-purple/10">
-          <RegistrationHeader />
-          <CardContent className="px-6 md:px-8 lg:px-10 pb-6">
-            {error && <ErrorDisplay error={error} />}
-            
-            <RegistrationForm
-              name={name}
-              email={email}
-              password={password}
-              document={document}
-              documentType={documentType}
-              isLoading={isLoading}
-              onNameChange={setName}
-              onEmailChange={setEmail}
-              onPasswordChange={setPassword}
-              onDocumentTypeChange={setDocumentType}
-              onDocumentChange={handleChangeDocument}
-              onSubmit={handleSignUp}
-            />
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4 pt-0 px-6 md:px-8 lg:px-10 pb-8">
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">Já tem uma conta?</span>{' '}
-              <Link 
-                to={`/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
-                className="font-medium text-indexa-purple hover:text-indexa-purple-dark hover:underline transition-colors"
-              >
-                Faça login
-              </Link>
-            </div>
-            
-            <div className="text-center text-xs text-muted-foreground">
-              <p>Ao criar uma conta, você concorda com os nossos <a href="#" className="underline hover:text-indexa-purple transition-colors">termos de uso</a> e <a href="#" className="underline hover:text-indexa-purple transition-colors">política de privacidade</a>.</p>
-            </div>
-          </CardFooter>
-        </Card>
-      </motion.div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="w-full shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+              <RegistrationHeader />
+              
+              <CardContent className="p-4 sm:p-6 md:p-8 lg:p-10">
+                {error && <ErrorDisplay error={error} />}
+                
+                <RegistrationForm
+                  name={name}
+                  email={email}
+                  password={password}
+                  document={document}
+                  documentType={documentType}
+                  isLoading={isLoading}
+                  onNameChange={setName}
+                  onEmailChange={setEmail}
+                  onPasswordChange={setPassword}
+                  onDocumentTypeChange={setDocumentType}
+                  onDocumentChange={handleChangeDocument}
+                  onSubmit={handleSignUp}
+                />
+              </CardContent>
+              
+              <CardFooter className="flex flex-col space-y-4 p-4 sm:p-6 md:p-8 lg:p-10 pt-0">
+                <div className="text-center text-sm">
+                  <span className="text-muted-foreground">Já tem uma conta?</span>{' '}
+                  <Link 
+                    to={`/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
+                    className="font-medium text-indexa-purple hover:text-indexa-purple-dark hover:underline transition-colors"
+                  >
+                    Faça login
+                  </Link>
+                </div>
+                
+                <div className="text-center text-xs text-muted-foreground px-2">
+                  <p>
+                    Ao criar uma conta, você concorda com os nossos{' '}
+                    <a href="#" className="underline hover:text-indexa-purple transition-colors">
+                      termos de uso
+                    </a>{' '}
+                    e{' '}
+                    <a href="#" className="underline hover:text-indexa-purple transition-colors">
+                      política de privacidade
+                    </a>.
+                  </p>
+                </div>
+              </CardFooter>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
     </Layout>
   );
 }
