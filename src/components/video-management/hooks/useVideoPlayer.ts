@@ -72,11 +72,13 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
         // Create event handlers
         const {
           updateProgress,
+          handleProgress,
           handleLoadedMetadata,
           handleLoadedData,
+          handleCanPlay,
+          handleCanPlayThrough,
           handleError,
           handleLoadStart,
-          handleCanPlay,
           handleWaiting,
           handlePlaying,
           handlePause,
@@ -95,23 +97,28 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
           src
         });
 
-        // Timeout para evitar loading infinito
+        // Timeout inteligente para evitar loading infinito
         const loadingTimeout = createTimeout();
 
         // Event listeners
         const progressHandler = updateProgress(video);
+        const downloadProgressHandler = handleProgress(video);
         const metadataHandler = handleLoadedMetadata(video);
         const dataHandler = handleLoadedData(video);
+        const canPlayHandler = handleCanPlay(video);
+        const canPlayThroughHandler = handleCanPlayThrough(video);
         const errorHandler = handleError(video);
         const loadStartHandler = handleLoadStart(video);
 
         video.addEventListener('timeupdate', progressHandler);
+        video.addEventListener('progress', downloadProgressHandler);
         video.addEventListener('loadedmetadata', metadataHandler);
-        video.addEventListener('loadeddata', dataHandler); // Adicionar fallback
+        video.addEventListener('loadeddata', dataHandler);
+        video.addEventListener('canplay', canPlayHandler);
+        video.addEventListener('canplaythrough', canPlayThroughHandler);
         video.addEventListener('ended', handleEnded);
         video.addEventListener('error', errorHandler);
         video.addEventListener('loadstart', loadStartHandler);
-        video.addEventListener('canplay', handleCanPlay);
         video.addEventListener('waiting', handleWaiting);
         video.addEventListener('playing', handlePlaying);
         video.addEventListener('pause', handlePause);
@@ -123,18 +130,21 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
           readyState: video.readyState,
           networkState: video.networkState,
           currentSrc: video.currentSrc,
-          duration: video.duration
+          duration: video.duration,
+          fileType: src.toLowerCase().includes('.mov') ? '.mov' : 'other'
         });
 
         return () => {
           clearTimeout(loadingTimeout);
           video.removeEventListener('timeupdate', progressHandler);
+          video.removeEventListener('progress', downloadProgressHandler);
           video.removeEventListener('loadedmetadata', metadataHandler);
           video.removeEventListener('loadeddata', dataHandler);
+          video.removeEventListener('canplay', canPlayHandler);
+          video.removeEventListener('canplaythrough', canPlayThroughHandler);
           video.removeEventListener('ended', handleEnded);
           video.removeEventListener('error', errorHandler);
           video.removeEventListener('loadstart', loadStartHandler);
-          video.removeEventListener('canplay', handleCanPlay);
           video.removeEventListener('waiting', handleWaiting);
           video.removeEventListener('playing', handlePlaying);
           video.removeEventListener('pause', handlePause);

@@ -24,10 +24,31 @@ export const createVideoEventHandlers = ({
   const stateRef = {
     isLoading: true,
     hasError: false,
-    metadataLoaded: false
+    metadataLoaded: false,
+    lastActivity: Date.now(),
+    downloadProgress: 0
+  };
+
+  const getTimeoutDuration = () => {
+    const isMov = src.toLowerCase().includes('.mov');
+    const isLargeFile = src.includes('supabase.co'); // Assume arquivos do Supabase podem ser grandes
+    
+    if (isMov) {
+      console.log('🎬 [PLAYER] Arquivo .mov detectado - usando timeout estendido de 45s');
+      return 45000; // 45 segundos para .mov
+    }
+    
+    if (isLargeFile) {
+      console.log('🎬 [PLAYER] Arquivo possivelmente grande - usando timeout de 30s');
+      return 30000; // 30 segundos para arquivos grandes
+    }
+    
+    return 15000; // 15 segundos para outros arquivos
   };
 
   const updateProgress = (video: HTMLVideoElement) => () => {
+    stateRef.lastActivity = Date.now();
+    
     if (video.duration && !isNaN(video.duration)) {
       const newProgress = (video.currentTime / video.duration) * 100;
       setProgress(newProgress);
@@ -35,54 +56,78 @@ export const createVideoEventHandlers = ({
     }
   };
 
+  const handleProgress = (video: HTMLVideoElement) => (e: Event) => {
+    stateRef.lastActivity = Date.now();
+    const target = e.target as HTMLVideoElement;
+    
+    if (target.buffered.length > 0) {
+      const bufferedEnd = target.buffered.end(target.buffered.length - 1);
+      const duration = target.duration;
+      
+      if (duration > 0) {
+        stateRef.downloadProgress = (bufferedEnd / duration) * 100;
+        console.log(`📊 [PLAYER] Progresso de download: ${stateRef.downloadProgress.toFixed(1)}%`);
+      }
+    }
+  };
+
+  const finalizeLoading = (reason: string) => {
+    console.log(`✅ [PLAYER] Finalizando loading: ${reason}`);
+    stateRef.isLoading = false;
+    setIsLoading(false);
+    setHasError(false);
+    setErrorDetails('');
+  };
+
   const handleLoadedMetadata = (video: HTMLVideoElement) => () => {
     console.log('✅ [PLAYER] Metadados carregados, duração:', video.duration);
     stateRef.metadataLoaded = true;
+    stateRef.lastActivity = Date.now();
     
     if (video.duration && !isNaN(video.duration)) {
       setDuration(video.duration);
     }
     
-    // Para arquivos .mov, forçar saída do loading aqui
-    console.log('✅ [PLAYER] Finalizando carregamento após metadados');
-    stateRef.isLoading = false;
-    setIsLoading(false);
-    setHasError(false);
-    setErrorDetails('');
+    // Para arquivos .mov, finalizar loading aqui se readyState >= 2
+    if (video.readyState >= 2) {
+      finalizeLoading('metadados carregados com readyState >= 2');
+    }
   };
 
   const handleLoadedData = (video: HTMLVideoElement) => () => {
-    console.log('✅ [PLAYER] Dados do vídeo carregados (fallback)');
+    console.log('✅ [PLAYER] Dados do vídeo carregados, readyState:', video.readyState);
+    stateRef.lastActivity = Date.now();
     
     // Fallback para quando loadedmetadata não dispara
-    if (!stateRef.metadataLoaded) {
+    if (!stateRef.metadataLoaded && video.duration && !isNaN(video.duration)) {
       console.log('🔄 [PLAYER] Usando loadeddata como fallback para metadados');
-      
-      if (video.duration && !isNaN(video.duration)) {
-        setDuration(video.duration);
-      }
+      setDuration(video.duration);
       stateRef.metadataLoaded = true;
     }
     
-    // Sempre finalizar loading no loadeddata
-    stateRef.isLoading = false;
-    setIsLoading(false);
-    setHasError(false);
-    setErrorDetails('');
+    // Sempre finalizar loading no loadeddata para arquivos .mov
+    if (src.toLowerCase().includes('.mov') || video.readyState >= 3) {
+      finalizeLoading('dados carregados (.mov ou readyState >= 3)');
+    }
   };
 
-  const handleCanPlay = () => {
-    console.log('✅ [PLAYER] Vídeo pode ser reproduzido');
+  const handleCanPlay = (video: HTMLVideoElement) => () => {
+    console.log('✅ [PLAYER] Vídeo pode ser reproduzido, readyState:', video.readyState);
+    stateRef.lastActivity = Date.now();
     
     // Garantir que o loading seja finalizado
     if (stateRef.isLoading) {
-      console.log('🔄 [PLAYER] Finalizando loading no canplay');
-      stateRef.isLoading = false;
-      setIsLoading(false);
+      finalizeLoading('canplay event');
     }
+  };
+
+  const handleCanPlayThrough = (video: HTMLVideoElement) => () => {
+    console.log('✅ [PLAYER] Vídeo completamente carregado');
+    stateRef.lastActivity = Date.now();
     
-    setHasError(false);
-    setErrorDetails('');
+    if (stateRef.isLoading) {
+      finalizeLoading('canplaythrough event');
+    }
   };
 
   const handleError = (video: HTMLVideoElement) => (e: Event) => {
@@ -109,7 +154,7 @@ export const createVideoEventHandlers = ({
       }
     }
     
-    console.error('❌ [PLAYER] Erro ao carregar vídeo:', {
+    console.error('❌ [PLAYER] Erro real ao carregar vídeo:', {
       src,
       errorCode: error?.code,
       errorMessage,
@@ -130,40 +175,43 @@ export const createVideoEventHandlers = ({
     stateRef.isLoading = true;
     stateRef.hasError = false;
     stateRef.metadataLoaded = false;
+    stateRef.lastActivity = Date.now();
+    stateRef.downloadProgress = 0;
     
     setIsLoading(true);
     setHasError(false);
     setErrorDetails('');
     
     // Verificar suporte do navegador para o formato
-    const canPlayType = video.canPlayType('video/quicktime'); // Para .mov
+    const canPlayType = video.canPlayType('video/quicktime');
     const canPlayMp4 = video.canPlayType('video/mp4');
     
     console.log('🎬 [PLAYER] Suporte do navegador:', {
       quicktime: canPlayType,
       mp4: canPlayMp4,
       url: src,
-      readyState: video.readyState
+      readyState: video.readyState,
+      timeoutDuration: getTimeoutDuration()
     });
     
-    if (src.toLowerCase().includes('.mov') && !canPlayType && !canPlayMp4) {
-      console.warn('⚠️ [PLAYER] Arquivo .mov pode não ser suportado neste navegador');
+    if (src.toLowerCase().includes('.mov')) {
+      console.log('📹 [PLAYER] Carregando arquivo .mov - pode demorar mais...');
     }
   };
 
   const handleWaiting = () => {
     console.log('⏳ [PLAYER] Vídeo está aguardando dados (buffering)...');
+    stateRef.lastActivity = Date.now();
     // NÃO alterar isLoading aqui para evitar conflitos
   };
 
   const handlePlaying = () => {
     console.log('▶️ [PLAYER] Vídeo está reproduzindo');
+    stateRef.lastActivity = Date.now();
     
     // Garantir que loading seja finalizado quando começar a reproduzir
     if (stateRef.isLoading) {
-      console.log('🔄 [PLAYER] Finalizando loading durante reprodução');
-      stateRef.isLoading = false;
-      setIsLoading(false);
+      finalizeLoading('reprodução iniciada');
     }
     
     setIsPlaying(true);
@@ -181,33 +229,56 @@ export const createVideoEventHandlers = ({
 
   const handleStalled = () => {
     console.warn('⚠️ [PLAYER] Vídeo travou durante carregamento');
+    stateRef.lastActivity = Date.now();
   };
 
   const handleSuspend = () => {
     console.log('⏸️ [PLAYER] Carregamento do vídeo foi suspenso');
+    stateRef.lastActivity = Date.now();
   };
 
   const createTimeout = () => {
+    const timeoutDuration = getTimeoutDuration();
+    
     return setTimeout(() => {
-      // Verificar estado atual via refs
-      if (stateRef.isLoading && !stateRef.hasError) {
-        console.warn('⏰ [PLAYER] Timeout no carregamento do vídeo - forçando finalização');
+      const now = Date.now();
+      const timeSinceLastActivity = now - stateRef.lastActivity;
+      const hasRecentActivity = timeSinceLastActivity < 5000; // 5 segundos
+      
+      console.log('⏰ [PLAYER] Verificando timeout:', {
+        isLoading: stateRef.isLoading,
+        hasError: stateRef.hasError,
+        downloadProgress: stateRef.downloadProgress,
+        timeSinceLastActivity,
+        hasRecentActivity,
+        timeoutDuration
+      });
+      
+      // Só ativar timeout se realmente não houver atividade E não estiver progredindo
+      if (stateRef.isLoading && !stateRef.hasError && !hasRecentActivity && stateRef.downloadProgress < 10) {
+        console.warn('⏰ [PLAYER] Timeout real - sem atividade detectada');
         stateRef.isLoading = false;
         stateRef.hasError = true;
         setHasError(true);
         setIsLoading(false);
-        setErrorDetails('Timeout no carregamento - vídeo pode estar inacessível ou formato não suportado');
+        
+        const fileType = src.toLowerCase().includes('.mov') ? 'arquivo .mov' : 'vídeo';
+        setErrorDetails(`Timeout no carregamento do ${fileType} - verifique sua conexão ou tente novamente`);
+      } else if (stateRef.isLoading && (hasRecentActivity || stateRef.downloadProgress >= 10)) {
+        console.log('🔄 [PLAYER] Timeout ignorado - atividade detectada ou progresso suficiente');
       }
-    }, 10000); // Reduzido para 10 segundos
+    }, timeoutDuration);
   };
 
   return {
     updateProgress,
+    handleProgress,
     handleLoadedMetadata,
     handleLoadedData,
+    handleCanPlay,
+    handleCanPlayThrough,
     handleError,
     handleLoadStart,
-    handleCanPlay,
     handleWaiting,
     handlePlaying,
     handlePause,
