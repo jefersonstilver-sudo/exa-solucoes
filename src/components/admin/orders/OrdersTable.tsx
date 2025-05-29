@@ -31,23 +31,23 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pago_pendente_video':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Aguardando Vídeo</Badge>;
+        return <Badge className="bg-orange-600 text-white text-xs px-2 py-1 font-semibold">Aguardando Vídeo</Badge>;
       case 'video_enviado':
-        return <Badge className="bg-[#3C1361] text-white font-semibold">Vídeo Enviado</Badge>;
+        return <Badge className="bg-blue-600 text-white text-xs px-2 py-1 font-semibold">Vídeo Enviado</Badge>;
       case 'video_aprovado':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Vídeo Aprovado</Badge>;
+        return <Badge className="bg-green-600 text-white text-xs px-2 py-1 font-semibold">Vídeo Aprovado</Badge>;
       case 'video_rejeitado':
-        return <Badge className="bg-red-500 text-white font-semibold">Vídeo Rejeitado</Badge>;
+        return <Badge className="bg-red-600 text-white text-xs px-2 py-1 font-semibold">Vídeo Rejeitado</Badge>;
       case 'pago':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Pago</Badge>;
+        return <Badge className="bg-green-600 text-white text-xs px-2 py-1 font-semibold">Pago</Badge>;
       case 'pendente':
-        return <Badge className="bg-slate-500 text-white font-semibold">Pendente</Badge>;
+        return <Badge className="bg-gray-600 text-white text-xs px-2 py-1 font-semibold">Pendente</Badge>;
       case 'ativo':
-        return <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">Ativo</Badge>;
+        return <Badge className="bg-green-600 text-white text-xs px-2 py-1 font-semibold">Ativo</Badge>;
       case 'cancelado':
-        return <Badge className="bg-red-500 text-white font-semibold">Cancelado</Badge>;
+        return <Badge className="bg-red-600 text-white text-xs px-2 py-1 font-semibold">Cancelado</Badge>;
       default:
-        return <Badge className="bg-slate-500 text-white font-semibold">{status}</Badge>;
+        return <Badge className="bg-gray-600 text-white text-xs px-2 py-1 font-semibold">{status}</Badge>;
     }
   };
 
@@ -65,8 +65,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-white text-lg">Nenhum pedido encontrado</div>
-        <p className="text-slate-400 mt-2">Tente ajustar os filtros de busca</p>
+        <div className="text-gray-800 text-lg">Nenhum pedido encontrado</div>
+        <p className="text-gray-600 mt-2">Tente ajustar os filtros de busca</p>
       </div>
     );
   }
@@ -75,50 +75,50 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="border-slate-600 hover:bg-slate-700/50">
-            <TableHead className="text-slate-300 font-semibold">ID do Pedido</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Cliente</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Data</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Status</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Valor</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Plano</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Painéis</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Período</TableHead>
-            <TableHead className="text-slate-300 font-semibold">Ações</TableHead>
+          <TableRow className="border-gray-200 hover:bg-gray-50">
+            <TableHead className="text-gray-700 font-semibold">ID do Pedido</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Cliente</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Data</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Status</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Valor</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Plano</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Painéis</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Período</TableHead>
+            <TableHead className="text-gray-700 font-semibold">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((order) => (
-            <TableRow key={order.id} className="border-slate-600 hover:bg-slate-700/30">
-              <TableCell className="font-mono text-sm text-slate-300">
+            <TableRow key={order.id} className="border-gray-200 hover:bg-gray-50">
+              <TableCell className="font-mono text-sm text-gray-700">
                 {order.id.substring(0, 8)}...
               </TableCell>
               <TableCell>
                 <div className="flex flex-col">
-                  <span className="font-medium text-white">{order.client_name}</span>
-                  <span className="text-sm text-slate-400">{order.client_email}</span>
+                  <span className="font-medium text-gray-900">{order.client_name}</span>
+                  <span className="text-sm text-gray-600">{order.client_email}</span>
                 </div>
               </TableCell>
-              <TableCell className="text-slate-300">
+              <TableCell className="text-gray-700">
                 {formatDate(order.created_at)}
               </TableCell>
               <TableCell>
                 {getStatusBadge(order.status)}
               </TableCell>
-              <TableCell className="font-semibold text-[#00FFAB]">
+              <TableCell className="font-semibold text-green-700">
                 {formatCurrency(order.valor_total)}
               </TableCell>
-              <TableCell className="text-slate-300">
+              <TableCell className="text-gray-700">
                 {order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}
               </TableCell>
               <TableCell>
-                <div className="flex items-center text-slate-300">
+                <div className="flex items-center text-gray-700">
                   <MapPin className="h-3 w-3 mr-1" />
                   <span>{order.lista_paineis?.length || 0}</span>
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex items-center text-sm text-slate-300">
+                <div className="flex items-center text-sm text-gray-700">
                   <Calendar className="h-3 w-3 mr-1" />
                   <span className="whitespace-nowrap">
                     {formatDate(order.data_inicio)} - {formatDate(order.data_fim)}
