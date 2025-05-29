@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -143,7 +144,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   // Determinar se o card deve ter visual de bloqueio
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
-  const cardClasses = `transition-all duration-200 ${
+  const cardClasses = `transition-all duration-200 bg-white border ${
     slot.selected_for_display 
       ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
       : slot.is_active 
@@ -159,7 +160,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         {/* Header do Slot */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <h3 className="font-semibold text-lg text-black">Slot {slot.slot_position}</h3>
+            <h3 className="font-semibold text-lg text-gray-900">Slot {slot.slot_position}</h3>
             {slot.video_data && getStatusIcon(slot.approval_status)}
             {slot.video_data && getSelectionIcon(slot)}
             {isBlocked && (
@@ -175,8 +176,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         {currentProgress !== undefined && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Enviando vídeo...</span>
-              <span className="text-sm text-gray-500">{Math.round(currentProgress)}%</span>
+              <span className="text-sm font-medium text-gray-900">Enviando vídeo...</span>
+              <span className="text-sm text-gray-600">{Math.round(currentProgress)}%</span>
             </div>
             <Progress value={currentProgress} className="h-2" />
           </div>
@@ -214,7 +215,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
             {/* Informações do Vídeo */}
             <div className="space-y-2">
-              <h4 className="font-medium text-sm truncate text-black" title={slot.video_data.nome}>
+              <h4 className="font-medium text-sm truncate text-gray-900" title={slot.video_data.nome}>
                 {slot.video_data.nome}
               </h4>
               <div className="flex justify-between text-xs text-gray-600">

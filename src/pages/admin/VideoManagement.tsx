@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -243,197 +242,199 @@ const VideoManagement = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
-        <p className="ml-2 text-lg">Carregando vídeos...</p>
+        <p className="ml-2 text-lg text-gray-900">Carregando vídeos...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Gestão de Vídeos</h1>
-          <p className="text-slate-400 mt-1">
-            Gerencie todos os vídeos enviados pelos clientes
-          </p>
-        </div>
-      </div>
-
-      {/* Filtros */}
-      <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar por nome do vídeo, cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-slate-700 border-slate-600 text-white placeholder-slate-400"
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48 bg-slate-700 border-slate-600 text-white">
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="approved">Aprovado</SelectItem>
-                <SelectItem value="rejected">Rejeitado</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestão de Vídeos</h1>
+            <p className="text-gray-600 mt-1">
+              Gerencie todos os vídeos enviados pelos clientes
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Lista de Vídeos */}
-      <div className="grid gap-4">
-        {filteredVideos.map((video) => (
-          <Card key={video.id} className="bg-slate-800/50 border-slate-700/50">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-start space-x-4">
-                  {/* Preview do Vídeo */}
-                  <div className="w-24 h-16 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Play className="h-6 w-6 text-white opacity-60" />
+        {/* Filtros */}
+        <Card className="bg-white border-gray-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nome do vídeo, cliente..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                  />
+                </div>
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48 bg-white border-gray-300 text-gray-900">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="approved">Aprovado</SelectItem>
+                  <SelectItem value="rejected">Rejeitado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Lista de Vídeos */}
+        <div className="grid gap-4">
+          {filteredVideos.map((video) => (
+            <Card key={video.id} className="bg-white border-gray-200 shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex items-start space-x-4">
+                    {/* Preview do Vídeo */}
+                    <div className="w-24 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Play className="h-6 w-6 text-gray-600" />
+                    </div>
+
+                    {/* Informações do Vídeo */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="font-medium text-gray-900 truncate">{video.video.nome}</h3>
+                        {getStatusIcon(video.approval_status)}
+                        {getStatusBadge(video.approval_status, video.is_active)}
+                      </div>
+                      
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div className="flex items-center space-x-4">
+                          <span className="flex items-center">
+                            <User className="h-3 w-3 mr-1" />
+                            {video.client_name} ({video.client_email})
+                          </span>
+                          <span className="flex items-center">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {formatDate(video.created_at)}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <span>Slot {video.slot_position}</span>
+                          <span>{video.video.duracao}s</span>
+                          <span>{formatFileSize(video.video.tamanho_arquivo)}</span>
+                          <span>Pedido: {formatCurrency(video.pedido_valor)}</span>
+                        </div>
+                      </div>
+
+                      {video.rejection_reason && (
+                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                          <strong>Motivo da rejeição:</strong> {video.rejection_reason}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Informações do Vídeo */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-medium text-white truncate">{video.video.nome}</h3>
-                      {getStatusIcon(video.approval_status)}
-                      {getStatusBadge(video.approval_status, video.is_active)}
-                    </div>
-                    
-                    <div className="space-y-1 text-sm text-slate-400">
-                      <div className="flex items-center space-x-4">
-                        <span className="flex items-center">
-                          <User className="h-3 w-3 mr-1" />
-                          {video.client_name} ({video.client_email})
-                        </span>
-                        <span className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {formatDate(video.created_at)}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <span>Slot {video.slot_position}</span>
-                        <span>{video.video.duracao}s</span>
-                        <span>{formatFileSize(video.video.tamanho_arquivo)}</span>
-                        <span>Pedido: {formatCurrency(video.pedido_valor)}</span>
-                      </div>
-                    </div>
+                  {/* Ações */}
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(video.video.url, '_blank')}
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      Download
+                    </Button>
 
-                    {video.rejection_reason && (
-                      <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-sm">
-                        <strong>Motivo da rejeição:</strong> {video.rejection_reason}
-                      </div>
+                    {video.approval_status === 'pending' && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => approveVideo(video.id)}
+                          disabled={actionLoading}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Aprovar
+                        </Button>
+
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedVideo(video)}
+                              className="border-red-300 text-red-600 hover:bg-red-50"
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Rejeitar
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="bg-white border-gray-200">
+                            <DialogHeader>
+                              <DialogTitle className="text-gray-900">Rejeitar Vídeo</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium text-gray-700">
+                                  Motivo da rejeição:
+                                </label>
+                                <Textarea
+                                  value={rejectionReason}
+                                  onChange={(e) => setRejectionReason(e.target.value)}
+                                  placeholder="Explique o motivo da rejeição..."
+                                  className="mt-1 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                  rows={3}
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedVideo(null);
+                                    setRejectionReason('');
+                                  }}
+                                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  onClick={() => selectedVideo && rejectVideo(selectedVideo.id, rejectionReason)}
+                                  disabled={!rejectionReason.trim() || actionLoading}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  Rejeitar Vídeo
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </>
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-                {/* Ações */}
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(video.video.url, '_blank')}
-                    className="border-slate-600 text-slate-300"
-                  >
-                    <Download className="h-3 w-3 mr-1" />
-                    Download
-                  </Button>
-
-                  {video.approval_status === 'pending' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => approveVideo(video.id)}
-                        disabled={actionLoading}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Aprovar
-                      </Button>
-
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedVideo(video)}
-                            className="border-red-500 text-red-400 hover:bg-red-500/10"
-                          >
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Rejeitar
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-slate-800 border-slate-700">
-                          <DialogHeader>
-                            <DialogTitle className="text-white">Rejeitar Vídeo</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium text-slate-300">
-                                Motivo da rejeição:
-                              </label>
-                              <Textarea
-                                value={rejectionReason}
-                                onChange={(e) => setRejectionReason(e.target.value)}
-                                placeholder="Explique o motivo da rejeição..."
-                                className="mt-1 bg-slate-700 border-slate-600 text-white"
-                                rows={3}
-                              />
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedVideo(null);
-                                  setRejectionReason('');
-                                }}
-                                className="border-slate-600 text-slate-300"
-                              >
-                                Cancelar
-                              </Button>
-                              <Button
-                                onClick={() => selectedVideo && rejectVideo(selectedVideo.id, rejectionReason)}
-                                disabled={!rejectionReason.trim() || actionLoading}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Rejeitar Vídeo
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </>
-                  )}
-                </div>
-              </div>
+        {filteredVideos.length === 0 && (
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <Video className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-xl font-medium text-gray-900 mb-2">Nenhum vídeo encontrado</h3>
+              <p className="text-gray-600">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'Tente ajustar os filtros de busca.' 
+                  : 'Nenhum vídeo foi enviado ainda.'}
+              </p>
             </CardContent>
           </Card>
-        ))}
+        )}
       </div>
-
-      {filteredVideos.length === 0 && (
-        <Card className="bg-slate-800/50 border-slate-700/50">
-          <CardContent className="p-12 text-center">
-            <Video className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-            <h3 className="text-xl font-medium text-white mb-2">Nenhum vídeo encontrado</h3>
-            <p className="text-slate-400">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Tente ajustar os filtros de busca.' 
-                : 'Nenhum vídeo foi enviado ainda.'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
