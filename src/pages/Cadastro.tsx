@@ -117,9 +117,9 @@ export default function Cadastro() {
         transition={{ duration: 0.5 }}
         className="flex items-center justify-center min-h-[80vh] px-4 py-8"
       >
-        <Card className="w-full max-w-lg shadow-lg border-indexa-purple/10">
+        <Card className="w-full max-w-xl shadow-lg border-indexa-purple/10">
           <RegistrationHeader />
-          <CardContent className="px-8">
+          <CardContent className="px-8 pb-6">
             {error && <ErrorDisplay error={error} />}
             
             <RegistrationForm
@@ -137,7 +137,7 @@ export default function Cadastro() {
               onSubmit={handleSignUp}
             />
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4 pt-0 px-8">
+          <CardFooter className="flex flex-col space-y-4 pt-0 px-8 pb-8">
             <div className="text-center text-sm">
               <span className="text-muted-foreground">Já tem uma conta?</span>{' '}
               <Link 
