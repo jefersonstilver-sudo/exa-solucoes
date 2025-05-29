@@ -14,6 +14,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [isElementReady, setIsElementReady] = useState(false);
 
   // Validar se a URL do vídeo é válida - CORRIGIDO para aceitar URLs do Supabase Storage
   const isValidVideoUrl = (url: string) => {
@@ -58,16 +59,47 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     }
   };
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) {
-      console.log('❌ [PLAYER] Elemento de vídeo não encontrado');
-      setHasError(true);
-      setIsLoading(false);
-      setErrorDetails('Elemento de vídeo não foi inicializado');
-      return;
-    }
+  // Função para aguardar elemento estar pronto
+  const waitForVideoElement = (): Promise<HTMLVideoElement> => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 20; // 2 segundos com intervalos de 100ms
+      
+      const checkElement = () => {
+        const video = videoRef.current;
+        
+        if (video) {
+          console.log('✅ [PLAYER] Elemento de vídeo encontrado após', attempts, 'tentativas');
+          setIsElementReady(true);
+          resolve(video);
+          return;
+        }
+        
+        attempts++;
+        if (attempts >= maxAttempts) {
+          console.error('❌ [PLAYER] Timeout: elemento de vídeo não encontrado após', maxAttempts, 'tentativas');
+          reject(new Error('Elemento de vídeo não foi encontrado'));
+          return;
+        }
+        
+        console.log('⏳ [PLAYER] Aguardando elemento... tentativa', attempts);
+        setTimeout(checkElement, 100);
+      };
+      
+      checkElement();
+    });
+  };
 
+  useEffect(() => {
+    console.log('🎬 [PLAYER] useEffect iniciado com src:', src);
+    
+    // Reset states
+    setHasError(false);
+    setIsLoading(true);
+    setErrorDetails('');
+    setIsElementReady(false);
+
+    // Verificar URL primeiro
     if (!isValidVideoUrl(src)) {
       console.log('❌ [PLAYER] URL inválida, definindo erro');
       setHasError(true);
@@ -76,169 +108,183 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       return;
     }
 
-    console.log('🎥 [PLAYER] Inicializando player para:', src);
-    setHasError(false);
-    setIsLoading(true);
-    setErrorDetails('');
+    // Aguardar elemento estar pronto
+    waitForVideoElement()
+      .then((video) => {
+        console.log('🎥 [PLAYER] Inicializando player para:', src);
+        
+        // Verificar suporte do navegador para o formato
+        const checkBrowserSupport = () => {
+          const canPlayType = video.canPlayType('video/quicktime'); // Para .mov
+          const canPlayMp4 = video.canPlayType('video/mp4');
+          
+          console.log('🎬 [PLAYER] Suporte do navegador:', {
+            quicktime: canPlayType,
+            mp4: canPlayMp4,
+            url: src
+          });
+          
+          if (src.toLowerCase().includes('.mov') && !canPlayType && !canPlayMp4) {
+            console.warn('⚠️ [PLAYER] Arquivo .mov pode não ser suportado neste navegador');
+          }
+        };
 
-    // Verificar suporte do navegador para o formato
-    const checkBrowserSupport = () => {
-      const canPlayType = video.canPlayType('video/quicktime'); // Para .mov
-      const canPlayMp4 = video.canPlayType('video/mp4');
-      
-      console.log('🎬 [PLAYER] Suporte do navegador:', {
-        quicktime: canPlayType,
-        mp4: canPlayMp4,
-        url: src
-      });
-      
-      if (src.toLowerCase().includes('.mov') && !canPlayType && !canPlayMp4) {
-        console.warn('⚠️ [PLAYER] Arquivo .mov pode não ser suportado neste navegador');
-      }
-    };
+        const updateProgress = () => {
+          if (video.duration && !isNaN(video.duration)) {
+            const newProgress = (video.currentTime / video.duration) * 100;
+            setProgress(newProgress);
+            setCurrentTime(video.currentTime);
+          }
+        };
 
-    const updateProgress = () => {
-      if (video.duration && !isNaN(video.duration)) {
-        const newProgress = (video.currentTime / video.duration) * 100;
-        setProgress(newProgress);
-        setCurrentTime(video.currentTime);
-      }
-    };
+        const updateDuration = () => {
+          console.log('✅ [PLAYER] Metadados carregados, duração:', video.duration);
+          if (video.duration && !isNaN(video.duration)) {
+            setDuration(video.duration);
+          }
+          setIsLoading(false);
+          setHasError(false);
+          setErrorDetails('');
+        };
 
-    const updateDuration = () => {
-      console.log('✅ [PLAYER] Metadados carregados, duração:', video.duration);
-      if (video.duration && !isNaN(video.duration)) {
-        setDuration(video.duration);
-      }
-      setIsLoading(false);
-      setHasError(false);
-      setErrorDetails('');
-    };
+        const handleError = (e: Event) => {
+          const target = e.target as HTMLVideoElement;
+          const error = target.error;
+          
+          let errorMessage = 'Erro desconhecido ao carregar vídeo';
+          if (error) {
+            switch (error.code) {
+              case MediaError.MEDIA_ERR_ABORTED:
+                errorMessage = 'Carregamento do vídeo foi abortado';
+                break;
+              case MediaError.MEDIA_ERR_NETWORK:
+                errorMessage = 'Erro de rede ao carregar vídeo';
+                break;
+              case MediaError.MEDIA_ERR_DECODE:
+                errorMessage = 'Erro ao decodificar vídeo - formato pode não ser suportado';
+                break;
+              case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                errorMessage = 'Formato de vídeo não suportado pelo navegador';
+                break;
+              default:
+                errorMessage = `Erro de vídeo (código: ${error.code})`;
+            }
+          }
+          
+          console.error('❌ [PLAYER] Erro ao carregar vídeo:', {
+            src,
+            errorCode: error?.code,
+            errorMessage,
+            networkState: target.networkState,
+            readyState: target.readyState,
+            userAgent: navigator.userAgent
+          });
+          
+          setHasError(true);
+          setIsLoading(false);
+          setErrorDetails(errorMessage);
+        };
 
-    const handleError = (e: Event) => {
-      const target = e.target as HTMLVideoElement;
-      const error = target.error;
-      
-      let errorMessage = 'Erro desconhecido ao carregar vídeo';
-      if (error) {
-        switch (error.code) {
-          case MediaError.MEDIA_ERR_ABORTED:
-            errorMessage = 'Carregamento do vídeo foi abortado';
-            break;
-          case MediaError.MEDIA_ERR_NETWORK:
-            errorMessage = 'Erro de rede ao carregar vídeo';
-            break;
-          case MediaError.MEDIA_ERR_DECODE:
-            errorMessage = 'Erro ao decodificar vídeo - formato pode não ser suportado';
-            break;
-          case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-            errorMessage = 'Formato de vídeo não suportado pelo navegador';
-            break;
-          default:
-            errorMessage = `Erro de vídeo (código: ${error.code})`;
-        }
-      }
-      
-      console.error('❌ [PLAYER] Erro ao carregar vídeo:', {
-        src,
-        errorCode: error?.code,
-        errorMessage,
-        networkState: target.networkState,
-        readyState: target.readyState,
-        userAgent: navigator.userAgent
-      });
-      
-      setHasError(true);
-      setIsLoading(false);
-      setErrorDetails(errorMessage);
-    };
+        const handleLoadStart = () => {
+          console.log('🔄 [PLAYER] Iniciando carregamento do vídeo');
+          setIsLoading(true);
+          setHasError(false);
+          setErrorDetails('');
+          checkBrowserSupport();
+        };
 
-    const handleLoadStart = () => {
-      console.log('🔄 [PLAYER] Iniciando carregamento do vídeo');
-      setIsLoading(true);
-      setHasError(false);
-      setErrorDetails('');
-      checkBrowserSupport();
-    };
+        const handleCanPlay = () => {
+          console.log('✅ [PLAYER] Vídeo pode ser reproduzido');
+          setIsLoading(false);
+          setHasError(false);
+          setErrorDetails('');
+        };
 
-    const handleCanPlay = () => {
-      console.log('✅ [PLAYER] Vídeo pode ser reproduzido');
-      setIsLoading(false);
-      setHasError(false);
-      setErrorDetails('');
-    };
+        const handleWaiting = () => {
+          console.log('⏳ [PLAYER] Vídeo está aguardando dados...');
+          setIsLoading(true);
+        };
 
-    const handleWaiting = () => {
-      console.log('⏳ [PLAYER] Vídeo está aguardando dados...');
-      setIsLoading(true);
-    };
+        const handlePlaying = () => {
+          console.log('▶️ [PLAYER] Vídeo está reproduzindo');
+          setIsLoading(false);
+          setIsPlaying(true);
+        };
 
-    const handlePlaying = () => {
-      console.log('▶️ [PLAYER] Vídeo está reproduzindo');
-      setIsLoading(false);
-      setIsPlaying(true);
-    };
+        const handlePause = () => {
+          console.log('⏸️ [PLAYER] Vídeo pausado');
+          setIsPlaying(false);
+        };
 
-    const handlePause = () => {
-      console.log('⏸️ [PLAYER] Vídeo pausado');
-      setIsPlaying(false);
-    };
+        const handleEnded = () => {
+          console.log('🏁 [PLAYER] Vídeo finalizado');
+          setIsPlaying(false);
+        };
 
-    const handleEnded = () => {
-      console.log('🏁 [PLAYER] Vídeo finalizado');
-      setIsPlaying(false);
-    };
+        const handleStalled = () => {
+          console.warn('⚠️ [PLAYER] Vídeo travou durante carregamento');
+        };
 
-    const handleStalled = () => {
-      console.warn('⚠️ [PLAYER] Vídeo travou durante carregamento');
-    };
+        const handleSuspend = () => {
+          console.log('⏸️ [PLAYER] Carregamento do vídeo foi suspenso');
+        };
 
-    const handleSuspend = () => {
-      console.log('⏸️ [PLAYER] Carregamento do vídeo foi suspenso');
-    };
+        // Timeout para evitar loading infinito
+        const loadingTimeout = setTimeout(() => {
+          if (isLoading && !hasError) {
+            console.warn('⏰ [PLAYER] Timeout no carregamento do vídeo');
+            setHasError(true);
+            setIsLoading(false);
+            setErrorDetails('Timeout no carregamento - vídeo pode estar inacessível');
+          }
+        }, 15000); // 15 segundos timeout
 
-    // Timeout para evitar loading infinito
-    const loadingTimeout = setTimeout(() => {
-      if (isLoading && !hasError) {
-        console.warn('⏰ [PLAYER] Timeout no carregamento do vídeo');
+        // Event listeners
+        video.addEventListener('timeupdate', updateProgress);
+        video.addEventListener('loadedmetadata', updateDuration);
+        video.addEventListener('ended', handleEnded);
+        video.addEventListener('error', handleError);
+        video.addEventListener('loadstart', handleLoadStart);
+        video.addEventListener('canplay', handleCanPlay);
+        video.addEventListener('waiting', handleWaiting);
+        video.addEventListener('playing', handlePlaying);
+        video.addEventListener('pause', handlePause);
+        video.addEventListener('stalled', handleStalled);
+        video.addEventListener('suspend', handleSuspend);
+
+        return () => {
+          clearTimeout(loadingTimeout);
+          video.removeEventListener('timeupdate', updateProgress);
+          video.removeEventListener('loadedmetadata', updateDuration);
+          video.removeEventListener('ended', handleEnded);
+          video.removeEventListener('error', handleError);
+          video.removeEventListener('loadstart', handleLoadStart);
+          video.removeEventListener('canplay', handleCanPlay);
+          video.removeEventListener('waiting', handleWaiting);
+          video.removeEventListener('playing', handlePlaying);
+          video.removeEventListener('pause', handlePause);
+          video.removeEventListener('stalled', handleStalled);
+          video.removeEventListener('suspend', handleSuspend);
+        };
+      })
+      .catch((error) => {
+        console.error('❌ [PLAYER] Falha ao aguardar elemento de vídeo:', error);
         setHasError(true);
         setIsLoading(false);
-        setErrorDetails('Timeout no carregamento - vídeo pode estar inacessível');
-      }
-    }, 15000); // 15 segundos timeout
-
-    // Event listeners
-    video.addEventListener('timeupdate', updateProgress);
-    video.addEventListener('loadedmetadata', updateDuration);
-    video.addEventListener('ended', handleEnded);
-    video.addEventListener('error', handleError);
-    video.addEventListener('loadstart', handleLoadStart);
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('waiting', handleWaiting);
-    video.addEventListener('playing', handlePlaying);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('stalled', handleStalled);
-    video.addEventListener('suspend', handleSuspend);
-
-    return () => {
-      clearTimeout(loadingTimeout);
-      video.removeEventListener('timeupdate', updateProgress);
-      video.removeEventListener('loadedmetadata', updateDuration);
-      video.removeEventListener('ended', handleEnded);
-      video.removeEventListener('error', handleError);
-      video.removeEventListener('loadstart', handleLoadStart);
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('waiting', handleWaiting);
-      video.removeEventListener('playing', handlePlaying);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('stalled', handleStalled);
-      video.removeEventListener('suspend', handleSuspend);
-    };
+        setErrorDetails('Elemento de vídeo não foi inicializado - aguardando...');
+        
+        // Tentar novamente após um delay maior
+        setTimeout(() => {
+          console.log('🔄 [PLAYER] Tentando recarregar após falha...');
+          setIsLoading(true);
+          setHasError(false);
+        }, 2000);
+      });
   }, [src]);
 
   const togglePlay = () => {
     const video = videoRef.current;
-    if (!video || hasError) return;
+    if (!video || hasError || !isElementReady) return;
 
     if (isPlaying) {
       video.pause();
@@ -253,7 +299,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
 
   const toggleMute = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isElementReady) return;
 
     video.muted = !isMuted;
     setIsMuted(!isMuted);
@@ -261,7 +307,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
 
   const handleVolumeChange = (value: number[]) => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isElementReady) return;
 
     const newVolume = value[0];
     video.volume = newVolume;
@@ -278,7 +324,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
 
   const handleProgressChange = (value: number[]) => {
     const video = videoRef.current;
-    if (!video || !duration) return;
+    if (!video || !duration || !isElementReady) return;
 
     const newTime = (value[0] / 100) * duration;
     video.currentTime = newTime;
@@ -287,7 +333,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
 
   const toggleFullscreen = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isElementReady) return;
 
     if (!isFullscreen) {
       if (video.requestFullscreen) {
@@ -303,7 +349,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
 
   const restart = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isElementReady) return;
 
     video.currentTime = 0;
     setProgress(0);
