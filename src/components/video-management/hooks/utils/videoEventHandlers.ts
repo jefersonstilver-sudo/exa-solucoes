@@ -8,8 +8,6 @@ interface VideoEventHandlerProps {
   setErrorDetails: (details: string) => void;
   setIsPlaying: (playing: boolean) => void;
   src: string;
-  isLoading: boolean;
-  hasError: boolean;
 }
 
 export const createVideoEventHandlers = ({
@@ -20,10 +18,15 @@ export const createVideoEventHandlers = ({
   setHasError,
   setErrorDetails,
   setIsPlaying,
-  src,
-  isLoading,
-  hasError
+  src
 }: VideoEventHandlerProps) => {
+  // Use refs to track current state for timeout
+  const stateRef = {
+    isLoading: true,
+    hasError: false,
+    metadataLoaded: false
+  };
+
   const updateProgress = (video: HTMLVideoElement) => () => {
     if (video.duration && !isNaN(video.duration)) {
       const newProgress = (video.currentTime / video.duration) * 100;
@@ -32,12 +35,52 @@ export const createVideoEventHandlers = ({
     }
   };
 
-  const updateDuration = (video: HTMLVideoElement) => () => {
+  const handleLoadedMetadata = (video: HTMLVideoElement) => () => {
     console.log('✅ [PLAYER] Metadados carregados, duração:', video.duration);
+    stateRef.metadataLoaded = true;
+    
     if (video.duration && !isNaN(video.duration)) {
       setDuration(video.duration);
     }
+    
+    // Para arquivos .mov, forçar saída do loading aqui
+    console.log('✅ [PLAYER] Finalizando carregamento após metadados');
+    stateRef.isLoading = false;
     setIsLoading(false);
+    setHasError(false);
+    setErrorDetails('');
+  };
+
+  const handleLoadedData = (video: HTMLVideoElement) => () => {
+    console.log('✅ [PLAYER] Dados do vídeo carregados (fallback)');
+    
+    // Fallback para quando loadedmetadata não dispara
+    if (!stateRef.metadataLoaded) {
+      console.log('🔄 [PLAYER] Usando loadeddata como fallback para metadados');
+      
+      if (video.duration && !isNaN(video.duration)) {
+        setDuration(video.duration);
+      }
+      stateRef.metadataLoaded = true;
+    }
+    
+    // Sempre finalizar loading no loadeddata
+    stateRef.isLoading = false;
+    setIsLoading(false);
+    setHasError(false);
+    setErrorDetails('');
+  };
+
+  const handleCanPlay = () => {
+    console.log('✅ [PLAYER] Vídeo pode ser reproduzido');
+    
+    // Garantir que o loading seja finalizado
+    if (stateRef.isLoading) {
+      console.log('🔄 [PLAYER] Finalizando loading no canplay');
+      stateRef.isLoading = false;
+      setIsLoading(false);
+    }
+    
     setHasError(false);
     setErrorDetails('');
   };
@@ -75,6 +118,8 @@ export const createVideoEventHandlers = ({
       userAgent: navigator.userAgent
     });
     
+    stateRef.hasError = true;
+    stateRef.isLoading = false;
     setHasError(true);
     setIsLoading(false);
     setErrorDetails(errorMessage);
@@ -82,6 +127,10 @@ export const createVideoEventHandlers = ({
 
   const handleLoadStart = (video: HTMLVideoElement) => () => {
     console.log('🔄 [PLAYER] Iniciando carregamento do vídeo');
+    stateRef.isLoading = true;
+    stateRef.hasError = false;
+    stateRef.metadataLoaded = false;
+    
     setIsLoading(true);
     setHasError(false);
     setErrorDetails('');
@@ -93,7 +142,8 @@ export const createVideoEventHandlers = ({
     console.log('🎬 [PLAYER] Suporte do navegador:', {
       quicktime: canPlayType,
       mp4: canPlayMp4,
-      url: src
+      url: src,
+      readyState: video.readyState
     });
     
     if (src.toLowerCase().includes('.mov') && !canPlayType && !canPlayMp4) {
@@ -101,21 +151,21 @@ export const createVideoEventHandlers = ({
     }
   };
 
-  const handleCanPlay = () => {
-    console.log('✅ [PLAYER] Vídeo pode ser reproduzido');
-    setIsLoading(false);
-    setHasError(false);
-    setErrorDetails('');
-  };
-
   const handleWaiting = () => {
-    console.log('⏳ [PLAYER] Vídeo está aguardando dados...');
-    setIsLoading(true);
+    console.log('⏳ [PLAYER] Vídeo está aguardando dados (buffering)...');
+    // NÃO alterar isLoading aqui para evitar conflitos
   };
 
   const handlePlaying = () => {
     console.log('▶️ [PLAYER] Vídeo está reproduzindo');
-    setIsLoading(false);
+    
+    // Garantir que loading seja finalizado quando começar a reproduzir
+    if (stateRef.isLoading) {
+      console.log('🔄 [PLAYER] Finalizando loading durante reprodução');
+      stateRef.isLoading = false;
+      setIsLoading(false);
+    }
+    
     setIsPlaying(true);
   };
 
@@ -139,18 +189,22 @@ export const createVideoEventHandlers = ({
 
   const createTimeout = () => {
     return setTimeout(() => {
-      if (isLoading && !hasError) {
-        console.warn('⏰ [PLAYER] Timeout no carregamento do vídeo');
+      // Verificar estado atual via refs
+      if (stateRef.isLoading && !stateRef.hasError) {
+        console.warn('⏰ [PLAYER] Timeout no carregamento do vídeo - forçando finalização');
+        stateRef.isLoading = false;
+        stateRef.hasError = true;
         setHasError(true);
         setIsLoading(false);
-        setErrorDetails('Timeout no carregamento - vídeo pode estar inacessível');
+        setErrorDetails('Timeout no carregamento - vídeo pode estar inacessível ou formato não suportado');
       }
-    }, 15000); // 15 segundos timeout
+    }, 10000); // Reduzido para 10 segundos
   };
 
   return {
     updateProgress,
-    updateDuration,
+    handleLoadedMetadata,
+    handleLoadedData,
     handleError,
     handleLoadStart,
     handleCanPlay,

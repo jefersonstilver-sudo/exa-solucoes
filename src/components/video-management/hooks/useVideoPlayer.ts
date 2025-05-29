@@ -72,7 +72,8 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
         // Create event handlers
         const {
           updateProgress,
-          updateDuration,
+          handleLoadedMetadata,
+          handleLoadedData,
           handleError,
           handleLoadStart,
           handleCanPlay,
@@ -91,9 +92,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
           setHasError,
           setErrorDetails,
           setIsPlaying,
-          src,
-          isLoading,
-          hasError
+          src
         });
 
         // Timeout para evitar loading infinito
@@ -101,12 +100,14 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
 
         // Event listeners
         const progressHandler = updateProgress(video);
-        const durationHandler = updateDuration(video);
+        const metadataHandler = handleLoadedMetadata(video);
+        const dataHandler = handleLoadedData(video);
         const errorHandler = handleError(video);
         const loadStartHandler = handleLoadStart(video);
 
         video.addEventListener('timeupdate', progressHandler);
-        video.addEventListener('loadedmetadata', durationHandler);
+        video.addEventListener('loadedmetadata', metadataHandler);
+        video.addEventListener('loadeddata', dataHandler); // Adicionar fallback
         video.addEventListener('ended', handleEnded);
         video.addEventListener('error', errorHandler);
         video.addEventListener('loadstart', loadStartHandler);
@@ -117,10 +118,19 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
         video.addEventListener('stalled', handleStalled);
         video.addEventListener('suspend', handleSuspend);
 
+        // Log do estado inicial
+        console.log('📊 [PLAYER] Estado inicial do vídeo:', {
+          readyState: video.readyState,
+          networkState: video.networkState,
+          currentSrc: video.currentSrc,
+          duration: video.duration
+        });
+
         return () => {
           clearTimeout(loadingTimeout);
           video.removeEventListener('timeupdate', progressHandler);
-          video.removeEventListener('loadedmetadata', durationHandler);
+          video.removeEventListener('loadedmetadata', metadataHandler);
+          video.removeEventListener('loadeddata', dataHandler);
           video.removeEventListener('ended', handleEnded);
           video.removeEventListener('error', errorHandler);
           video.removeEventListener('loadstart', loadStartHandler);
