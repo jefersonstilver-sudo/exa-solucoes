@@ -1,100 +1,64 @@
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { AdminOrderHeader } from '@/components/admin/orders/AdminOrderHeader';
-import { AdminOrderCustomerCard } from '@/components/admin/orders/AdminOrderCustomerCard';
-import { AdminOrderInfoCard } from '@/components/admin/orders/AdminOrderInfoCard';
-import { AdminOrderFinancialCard } from '@/components/admin/orders/AdminOrderFinancialCard';
-import { AdminOrderItemsCard } from '@/components/admin/orders/AdminOrderItemsCard';
+import { Loader2 } from 'lucide-react';
+import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
+import { RealOrderHeader } from '@/components/admin/orders/RealOrderHeader';
+import { RealOrderCustomerCard } from '@/components/admin/orders/RealOrderCustomerCard';
+import { RealOrderInfoCard } from '@/components/admin/orders/RealOrderInfoCard';
+import { RealOrderFinancialCard } from '@/components/admin/orders/RealOrderFinancialCard';
+import { RealOrderPanelsCard } from '@/components/admin/orders/RealOrderPanelsCard';
+import { RealOrderVideosCard } from '@/components/admin/orders/RealOrderVideosCard';
 
 const OrderDetails = () => {
   const { id } = useParams();
+  const { loading, orderDetails, orderVideos, panelData } = useRealOrderDetails(id || '');
 
-  // Mock data - em produção viria da API/Supabase
-  const order = {
-    id: id,
-    orderNumber: 'PED-2024-001',
-    customer: {
-      name: 'João Silva',
-      email: 'joao@exemplo.com',
-      phone: '(11) 99999-9999',
-      document: '123.456.789-00'
-    },
-    status: 'completed',
-    total: 2500.00,
-    subtotal: 2200.00,
-    discount: 200.00,
-    tax: 500.00,
-    createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-01-16T14:20:00Z',
-    paymentMethod: 'Cartão de Crédito',
-    transactionId: 'TXN-789123456',
-    items: [
-      {
-        id: '1',
-        panelCode: 'P001',
-        panelName: 'Painel Shopping Center Norte',
-        location: 'São Paulo, SP',
-        duration: '30 dias',
-        price: 800.00,
-        startDate: '2024-02-01',
-        endDate: '2024-03-01'
-      },
-      {
-        id: '2',
-        panelCode: 'P002',
-        panelName: 'Painel Av. Paulista',
-        location: 'São Paulo, SP',
-        duration: '30 dias',
-        price: 1200.00,
-        startDate: '2024-02-01',
-        endDate: '2024-03-01'
-      },
-      {
-        id: '3',
-        panelCode: 'P003',
-        panelName: 'Painel Centro Comercial',
-        location: 'São Paulo, SP',
-        duration: '15 dias',
-        price: 400.00,
-        startDate: '2024-02-15',
-        endDate: '2024-03-01'
-      }
-    ]
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-indexa-purple mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900">Carregando detalhes do pedido...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (!orderDetails) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900">Pedido não encontrado</h2>
+          <p className="text-gray-600 mt-2">O pedido solicitado não existe ou foi removido.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <AdminOrderHeader
-        orderNumber={order.orderNumber}
-        status={order.status}
-      />
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <RealOrderHeader order={orderDetails} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Customer Information */}
-        <AdminOrderCustomerCard customer={order.customer} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Customer Information */}
+          <RealOrderCustomerCard order={orderDetails} />
 
-        {/* Order Information */}
-        <AdminOrderInfoCard
-          status={order.status}
-          createdAt={order.createdAt}
-          updatedAt={order.updatedAt}
-          paymentMethod={order.paymentMethod}
-          transactionId={order.transactionId}
-        />
+          {/* Order Information */}
+          <RealOrderInfoCard order={orderDetails} />
 
-        {/* Financial Summary */}
-        <AdminOrderFinancialCard
-          subtotal={order.subtotal}
-          discount={order.discount}
-          tax={order.tax}
-          total={order.total}
-        />
+          {/* Financial Summary */}
+          <RealOrderFinancialCard order={orderDetails} />
+        </div>
+
+        {/* Panels Information */}
+        <RealOrderPanelsCard panels={panelData} order={orderDetails} />
+
+        {/* Videos Management */}
+        <RealOrderVideosCard videos={orderVideos} orderId={orderDetails.id} />
       </div>
-
-      {/* Order Items */}
-      <AdminOrderItemsCard items={order.items} />
     </div>
   );
 };
