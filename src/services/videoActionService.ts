@@ -4,7 +4,10 @@ import { toast } from 'sonner';
 import { deleteVideoFromStorage } from '@/services/videoStorageService';
 import { VideoSlot } from '@/types/videoManagement';
 
-export const selectVideoForDisplay = async (slotId: string): Promise<boolean> => {
+export const selectVideoForDisplay = async (
+  slotId: string, 
+  onSuccess?: (videoName?: string) => void
+): Promise<boolean> => {
   try {
     console.log('🔄 [VIDEO_ACTION] Iniciando seleção de vídeo:', slotId);
     
@@ -59,6 +62,21 @@ export const selectVideoForDisplay = async (slotId: string): Promise<boolean> =>
 
     if (data) {
       console.log('✅ [VIDEO_ACTION] Vídeo selecionado com sucesso (troca permitida)');
+      
+      // Buscar nome do vídeo para o popup
+      const { data: videoInfo } = await supabase
+        .from('pedido_videos')
+        .select('videos(nome)')
+        .eq('id', slotId)
+        .single();
+
+      const videoName = videoInfo?.videos?.nome;
+      
+      // Chamar callback de sucesso se fornecido
+      if (onSuccess) {
+        onSuccess(videoName);
+      }
+      
       toast.success('✅ Vídeo selecionado para exibição!');
       return true;
     } else {

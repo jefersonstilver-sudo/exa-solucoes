@@ -8,6 +8,7 @@ import {
 } from '@/services/videoActionService';
 import { uploadVideo as uploadVideoAction } from '@/services/videoUploadService';
 import { toast } from 'sonner';
+import { useSuccessPopup } from './useSuccessPopup';
 
 export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
@@ -15,6 +16,9 @@ export const useOrderVideoManagement = (orderId: string) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Hook do popup de sucesso
+  const { isOpen: isSuccessOpen, videoName, showSuccess, hideSuccess } = useSuccessPopup();
 
   const refreshSlots = async () => {
     if (!orderId) {
@@ -75,7 +79,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     }
 
     // Chamar o serviço que fará a validação real no servidor
-    const success = await selectVideoAction(slotId);
+    const success = await selectVideoAction(slotId, showSuccess);
     if (success) {
       refreshSlots();
     }
@@ -154,6 +158,10 @@ export const useOrderVideoManagement = (orderId: string) => {
     activateVideo,
     removeVideo,
     uploadVideo,
-    refreshSlots
+    refreshSlots,
+    // Estados do popup de sucesso
+    isSuccessOpen,
+    videoName,
+    hideSuccess
   };
 };
