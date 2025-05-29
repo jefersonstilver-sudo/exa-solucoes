@@ -4,7 +4,6 @@ import { CartItem } from '@/types/cart';
 import Header from './Header';
 import CartDrawer from '@/components/cart/CartDrawer';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
-import AlascaSeteMonitor from '@/components/system/AlascaSeteMonitor';
 import { useCartManager } from '@/hooks/useCartManager';
 import { setupPeriodicCleanup } from '@/services/realtimeCleanupService';
 
@@ -57,9 +56,6 @@ const Layout: React.FC<LayoutProps> = memo(({
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col relative">
-      {/* ALASCA SETE: Monitor de sistema */}
-      <AlascaSeteMonitor />
-      
       {/* Header Fixed */}
       <Header 
         cartItemsCount={cartItems.length}
