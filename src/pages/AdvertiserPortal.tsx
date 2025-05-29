@@ -6,12 +6,12 @@ import { VideoManagementPage } from './VideoManagementPage';
 
 export const AdvertiserPortal = () => {
   return (
-    <AdvertiserLayout>
-      <Routes>
-        <Route path="/pedido/:pedidoId" element={<VideoManagementPage />} />
-        <Route path="/" element={<div>Dashboard do Anunciante</div>} />
-      </Routes>
-    </AdvertiserLayout>
+    <Routes>
+      <Route path="/*" element={<AdvertiserLayout />}>
+        <Route path="pedido/:pedidoId" element={<VideoManagementPage />} />
+        <Route path="" element={<div>Dashboard do Anunciante</div>} />
+      </Route>
+    </Routes>
   );
 };
 
