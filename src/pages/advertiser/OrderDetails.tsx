@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +9,8 @@ import {
   DollarSign, 
   Video, 
   Loader2,
-  AlertCircle
+  AlertCircle,
+  MapPin
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useOrderVideoManagement } from '@/hooks/useOrderVideoManagement';
 import { VideoSlotGrid } from '@/components/video-management/VideoSlotGrid';
 import { VideoActivationSuccessPopup } from '@/components/video-management/VideoActivationSuccessPopup';
+import { LocationsTooltip } from '@/components/order/LocationsTooltip';
 
 interface OrderDetails {
   id: string;
@@ -161,13 +162,15 @@ const OrderDetails = () => {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <Monitor className="h-8 w-8 text-blue-500" />
-                <div>
-                  <p className="font-medium">Painéis</p>
-                  <p className="text-lg">{orderDetails.lista_paineis?.length || 0} selecionados</p>
+              <LocationsTooltip listaPaineis={orderDetails.lista_paineis || []}>
+                <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
+                  <MapPin className="h-8 w-8 text-blue-500" />
+                  <div>
+                    <p className="font-medium">Locais</p>
+                    <p className="text-lg">{orderDetails.lista_paineis?.length || 0} selecionados</p>
+                  </div>
                 </div>
-              </div>
+              </LocationsTooltip>
               
               <div className="flex items-center space-x-3">
                 <Calendar className="h-8 w-8 text-purple-500" />
