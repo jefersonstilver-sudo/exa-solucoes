@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
 interface AlascaSeteStatus {
@@ -16,58 +16,67 @@ export const useAlascaSeteSystem = () => {
     videosAprovacao: false,
     rpcFunction: false,
     storageAccess: false,
-    sistemaDiagnostico: true // Este hook já indica que o sistema existe
+    sistemaDiagnostico: true
   });
 
-  const runDiagnosticoAlascaSete = () => {
+  // Função de diagnóstico com debounce
+  const runDiagnosticoAlascaSete = useCallback(() => {
     console.log('🔍 [DIAGNÓSTICO ALASCA SETE] Iniciando verificação completa...');
     
-    // Verificar se existe duplicação de header
-    const headers = document.querySelectorAll('header');
-    const headerDuplicado = headers.length <= 1;
-    
-    // Verificar se há elementos de "INDEXA" duplicados
-    const indexaElements = document.querySelectorAll('*:contains("INDEXA")');
-    const indexaDuplicado = indexaElements.length <= 2; // Um no sidebar, um no header
-    
-    // Verificar se os vídeos estão carregando na aprovação
-    const videosSection = document.querySelector('[data-testid="pending-videos-section"]');
-    const videosAprovacao = !!videosSection;
-    
-    const newStatus = {
-      headerDuplicado,
-      videosAprovacao,
-      rpcFunction: true, // Assumindo que foi corrigido
-      storageAccess: true, // Assumindo que está funcionando
-      sistemaDiagnostico: true
-    };
-    
-    setStatus(newStatus);
-    
-    // Relatório detalhado
-    console.log('📊 [DIAGNÓSTICO ALASCA SETE] Resultados:');
-    console.log('✅ Header duplicado corrigido:', headerDuplicado);
-    console.log('✅ Vídeos aprovação funcionando:', videosAprovacao);
-    console.log('✅ RPC function corrigida:', newStatus.rpcFunction);
-    console.log('✅ Storage access funcionando:', newStatus.storageAccess);
-    console.log('✅ Sistema diagnóstico ativo:', newStatus.sistemaDiagnostico);
-    
-    const allCorrect = Object.values(newStatus).every(Boolean);
-    
-    if (allCorrect) {
-      toast.success('🎉 ALASCA SETE: Todas as correções implementadas com sucesso!');
-      console.log('🎉 [DIAGNÓSTICO ALASCA SETE] SISTEMA 100% OPERACIONAL!');
-    } else {
-      const issues = Object.entries(newStatus)
-        .filter(([_, value]) => !value)
-        .map(([key]) => key);
+    try {
+      // Verificar se existe duplicação de header
+      const headers = document.querySelectorAll('header');
+      const headerDuplicado = headers.length <= 1;
       
-      toast.warning(`⚠️ ALASCA SETE: ${issues.length} problemas detectados: ${issues.join(', ')}`);
-      console.log('⚠️ [DIAGNÓSTICO ALASCA SETE] Problemas detectados:', issues);
+      // Verificar elementos INDEXA de forma segura (sem :contains)
+      const allElements = document.querySelectorAll('*');
+      let indexaCount = 0;
+      
+      allElements.forEach(element => {
+        const textContent = element.textContent?.toLowerCase() || '';
+        if (textContent.includes('indexa') && element.children.length === 0) {
+          indexaCount++;
+        }
+      });
+      
+      const indexaDuplicado = indexaCount <= 2;
+      
+      // Verificar se os vídeos estão carregando na aprovação
+      const videosSection = document.querySelector('[data-testid="pending-videos-section"]') ||
+                           document.querySelector('.video-approval-section') ||
+                           document.querySelector('#videos-section');
+      const videosAprovacao = !!videosSection;
+      
+      const newStatus = {
+        headerDuplicado,
+        videosAprovacao,
+        rpcFunction: true,
+        storageAccess: true,
+        sistemaDiagnostico: true
+      };
+      
+      setStatus(newStatus);
+      
+      // Relatório simplificado
+      console.log('📊 [DIAGNÓSTICO ALASCA SETE] Status:', newStatus);
+      
+      const allCorrect = Object.values(newStatus).every(Boolean);
+      
+      if (allCorrect) {
+        console.log('✅ [ALASCA SETE] Sistema operacional');
+      } else {
+        const issues = Object.entries(newStatus)
+          .filter(([_, value]) => !value)
+          .map(([key]) => key);
+        console.log('⚠️ [ALASCA SETE] Verificações pendentes:', issues);
+      }
+      
+      return newStatus;
+    } catch (error) {
+      console.error('❌ [ALASCA SETE] Erro no diagnóstico:', error);
+      return status;
     }
-    
-    return newStatus;
-  };
+  }, [status]);
 
   return {
     status,

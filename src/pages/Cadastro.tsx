@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -71,21 +72,23 @@ export default function Cadastro() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
-    if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
-    
-    if (!validateDocument()) {
-      setError(`${documentType.toUpperCase()} inválido. Verifique se digitou corretamente.`);
-      return;
-    }
-    
-    setIsLoading(true);
-    setError(null);
-    
     try {
+      // Validate form
+      if (password.length < 6) {
+        setError("A senha deve ter pelo menos 6 caracteres.");
+        return;
+      }
+      
+      if (!validateDocument()) {
+        setError(`${documentType.toUpperCase()} inválido. Verifique se digitou corretamente.`);
+        return;
+      }
+      
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('🔄 [CADASTRO] Iniciando processo de cadastro...');
+      
       // Sign up with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -99,38 +102,43 @@ export default function Cadastro() {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [CADASTRO] Erro no cadastro:', error);
+        throw error;
+      }
       
       if (data.user) {
+        console.log('✅ [CADASTRO] Usuário criado com sucesso');
+        
         toast({
           title: "Conta criada com sucesso",
           description: "Bem-vindo(a) à Indexa!"
         });
         
-        // In real production, would need to verify email before login
-        // For better UX in this implementation, we'll log them in right away
+        // Auto-login for better UX
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password
         });
         
         if (signInError) {
-          console.error("Auto-login error:", signInError);
-          // If auto-login fails, redirect to login page
+          console.error("❌ [CADASTRO] Erro no auto-login:", signInError);
           navigate(`/login?redirect=${encodeURIComponent(redirectPath)}`);
           return;
         }
         
-        // Redirect to the intended page
+        console.log('🎯 [CADASTRO] Redirecionando para:', redirectPath);
         navigate(redirectPath);
       }
     } catch (error: any) {
-      console.error("Signup error:", error);
-      setError(error.message || "Erro ao criar conta. Tente novamente.");
+      console.error("💥 [CADASTRO] Erro crítico:", error);
+      const errorMessage = error.message || "Erro ao criar conta. Tente novamente.";
+      setError(errorMessage);
+      
       toast({
         variant: "destructive",
         title: "Erro ao criar conta",
-        description: error.message || "Verifique os dados e tente novamente."
+        description: errorMessage
       });
     } finally {
       setIsLoading(false);

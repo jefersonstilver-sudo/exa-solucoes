@@ -6,40 +6,60 @@ const AlascaSeteMonitor: React.FC = () => {
   const { runDiagnosticoAlascaSete } = useAlascaSeteSystem();
 
   useEffect(() => {
-    // Listener global para comando de diagnóstico
+    let diagnosticInterval: NodeJS.Timeout;
+
+    // Listener global para comando de diagnóstico (apenas Ctrl + Alt + D)
     const handleGlobalCommand = (event: KeyboardEvent) => {
-      // Ctrl + Alt + D para diagnóstico rápido
       if (event.ctrlKey && event.altKey && event.key === 'd') {
         event.preventDefault();
         runDiagnosticoAlascaSete();
       }
     };
 
-    // Listener para console
-    const originalConsoleLog = console.log;
-    console.log = (...args) => {
-      const message = args.join(' ').toLowerCase();
-      if (message.includes('diagnóstico alasca sete') || message.includes('diagnostico alasca sete')) {
-        setTimeout(() => runDiagnosticoAlascaSete(), 100);
-      }
-      originalConsoleLog.apply(console, args);
+    // Console interceptor mais seguro
+    const setupConsoleListener = () => {
+      const originalConsoleLog = console.log;
+      console.log = (...args) => {
+        try {
+          const message = args.join(' ').toLowerCase();
+          if (message.includes('diagnóstico alasca sete') || message.includes('diagnostico alasca sete')) {
+            setTimeout(() => runDiagnosticoAlascaSete(), 100);
+          }
+        } catch (error) {
+          // Silently fail to avoid breaking the app
+        }
+        originalConsoleLog.apply(console, args);
+      };
+      return originalConsoleLog;
     };
 
+    const originalConsoleLog = setupConsoleListener();
     document.addEventListener('keydown', handleGlobalCommand);
 
-    // Auto-diagnóstico na inicialização
-    setTimeout(() => {
+    // Diagnóstico inicial mais suave (apenas uma vez após 2 segundos)
+    const initialTimeout = setTimeout(() => {
       console.log('🔧 [ALASCA SETE] Sistema de monitoramento ativo');
-      console.log('📝 [ALASCA SETE] Use Ctrl+Alt+D ou digite "diagnóstico Alasca sete" no console');
-    }, 1000);
+      console.log('📝 [ALASCA SETE] Use Ctrl+Alt+D para diagnóstico manual');
+    }, 2000);
+
+    // Diagnóstico periódico reduzido (a cada 5 minutos, apenas se necessário)
+    diagnosticInterval = setInterval(() => {
+      // Só executa se não houver erros visíveis na página
+      const hasErrors = document.querySelector('.error') || document.querySelector('[data-error]');
+      if (!hasErrors) {
+        runDiagnosticoAlascaSete();
+      }
+    }, 300000); // 5 minutos
 
     return () => {
       document.removeEventListener('keydown', handleGlobalCommand);
       console.log = originalConsoleLog;
+      clearTimeout(initialTimeout);
+      clearInterval(diagnosticInterval);
     };
   }, [runDiagnosticoAlascaSete]);
 
-  return null; // Componente invisível
+  return null;
 };
 
 export default AlascaSeteMonitor;
