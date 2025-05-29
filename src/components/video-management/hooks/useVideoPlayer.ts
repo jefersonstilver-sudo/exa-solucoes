@@ -15,48 +15,104 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
   const [isLoading, setIsLoading] = useState(true);
   const [errorDetails, setErrorDetails] = useState<string>('');
 
-  // Validar se a URL do vídeo é válida
+  // Validar se a URL do vídeo é válida - CORRIGIDO para aceitar URLs do Supabase Storage
   const isValidVideoUrl = (url: string) => {
+    console.log('🔍 [PLAYER] Validando URL:', url);
+    
+    // Verificar se URL não está vazia ou é pendente
     if (!url || url === 'pending_upload' || url.trim() === '') {
-      console.log('❌ URL inválida ou vazia:', url);
+      console.log('❌ [PLAYER] URL inválida ou vazia:', url);
       return false;
     }
+
+    // Verificar se é uma URL válida
     try {
-      new URL(url);
-      console.log('✅ URL válida:', url);
-      return true;
-    } catch {
-      console.log('❌ URL malformada:', url);
+      const urlObj = new URL(url);
+      
+      // CORREÇÃO: Aceitar especificamente URLs do Supabase Storage
+      const isSupabaseStorage = url.includes('supabase.co/storage/v1/object/public/');
+      const isHttps = urlObj.protocol === 'https:';
+      const hasVideoExtension = /\.(mp4|webm|ogg|avi|mov|mkv|m4v)(\?.*)?$/i.test(url);
+      
+      if (isSupabaseStorage && isHttps) {
+        console.log('✅ [PLAYER] URL válida do Supabase Storage:', url);
+        return true;
+      }
+      
+      if (isHttps && hasVideoExtension) {
+        console.log('✅ [PLAYER] URL de vídeo válida:', url);
+        return true;
+      }
+      
+      console.log('⚠️ [PLAYER] URL não reconhecida como vídeo válido:', {
+        url,
+        isSupabaseStorage,
+        isHttps,
+        hasVideoExtension
+      });
+      return false;
+      
+    } catch (error) {
+      console.log('❌ [PLAYER] URL malformada:', url, error);
       return false;
     }
   };
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isValidVideoUrl(src)) {
-      console.log('❌ Vídeo ou URL inválida, definindo erro');
+    if (!video) {
+      console.log('❌ [PLAYER] Elemento de vídeo não encontrado');
       setHasError(true);
       setIsLoading(false);
-      setErrorDetails(!src ? 'URL não fornecida' : 'URL inválida');
+      setErrorDetails('Elemento de vídeo não foi inicializado');
       return;
     }
 
-    console.log('🎥 Inicializando player para:', src);
+    if (!isValidVideoUrl(src)) {
+      console.log('❌ [PLAYER] URL inválida, definindo erro');
+      setHasError(true);
+      setIsLoading(false);
+      setErrorDetails(!src ? 'URL não fornecida' : 'URL inválida ou formato não suportado');
+      return;
+    }
+
+    console.log('🎥 [PLAYER] Inicializando player para:', src);
     setHasError(false);
     setIsLoading(true);
     setErrorDetails('');
 
+    // Verificar suporte do navegador para o formato
+    const checkBrowserSupport = () => {
+      const canPlayType = video.canPlayType('video/quicktime'); // Para .mov
+      const canPlayMp4 = video.canPlayType('video/mp4');
+      
+      console.log('🎬 [PLAYER] Suporte do navegador:', {
+        quicktime: canPlayType,
+        mp4: canPlayMp4,
+        url: src
+      });
+      
+      if (src.toLowerCase().includes('.mov') && !canPlayType && !canPlayMp4) {
+        console.warn('⚠️ [PLAYER] Arquivo .mov pode não ser suportado neste navegador');
+      }
+    };
+
     const updateProgress = () => {
-      if (video.duration) {
-        setProgress((video.currentTime / video.duration) * 100);
+      if (video.duration && !isNaN(video.duration)) {
+        const newProgress = (video.currentTime / video.duration) * 100;
+        setProgress(newProgress);
         setCurrentTime(video.currentTime);
       }
     };
 
     const updateDuration = () => {
-      console.log('✅ Metadados carregados, duração:', video.duration);
-      setDuration(video.duration);
+      console.log('✅ [PLAYER] Metadados carregados, duração:', video.duration);
+      if (video.duration && !isNaN(video.duration)) {
+        setDuration(video.duration);
+      }
       setIsLoading(false);
+      setHasError(false);
+      setErrorDetails('');
     };
 
     const handleError = (e: Event) => {
@@ -73,22 +129,23 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
             errorMessage = 'Erro de rede ao carregar vídeo';
             break;
           case MediaError.MEDIA_ERR_DECODE:
-            errorMessage = 'Erro ao decodificar vídeo';
+            errorMessage = 'Erro ao decodificar vídeo - formato pode não ser suportado';
             break;
           case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-            errorMessage = 'Formato de vídeo não suportado';
+            errorMessage = 'Formato de vídeo não suportado pelo navegador';
             break;
           default:
             errorMessage = `Erro de vídeo (código: ${error.code})`;
         }
       }
       
-      console.error('❌ Erro ao carregar vídeo:', {
+      console.error('❌ [PLAYER] Erro ao carregar vídeo:', {
         src,
         errorCode: error?.code,
         errorMessage,
         networkState: target.networkState,
-        readyState: target.readyState
+        readyState: target.readyState,
+        userAgent: navigator.userAgent
       });
       
       setHasError(true);
@@ -97,58 +154,83 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     };
 
     const handleLoadStart = () => {
-      console.log('🔄 Iniciando carregamento do vídeo');
+      console.log('🔄 [PLAYER] Iniciando carregamento do vídeo');
       setIsLoading(true);
       setHasError(false);
       setErrorDetails('');
+      checkBrowserSupport();
     };
 
     const handleCanPlay = () => {
-      console.log('✅ Vídeo pode ser reproduzido');
+      console.log('✅ [PLAYER] Vídeo pode ser reproduzido');
       setIsLoading(false);
       setHasError(false);
       setErrorDetails('');
     };
 
     const handleWaiting = () => {
-      console.log('⏳ Vídeo está aguardando dados...');
+      console.log('⏳ [PLAYER] Vídeo está aguardando dados...');
       setIsLoading(true);
     };
 
     const handlePlaying = () => {
-      console.log('▶️ Vídeo está reproduzindo');
+      console.log('▶️ [PLAYER] Vídeo está reproduzindo');
       setIsLoading(false);
+      setIsPlaying(true);
+    };
+
+    const handlePause = () => {
+      console.log('⏸️ [PLAYER] Vídeo pausado');
+      setIsPlaying(false);
+    };
+
+    const handleEnded = () => {
+      console.log('🏁 [PLAYER] Vídeo finalizado');
+      setIsPlaying(false);
     };
 
     const handleStalled = () => {
-      console.warn('⚠️ Vídeo travou durante carregamento');
+      console.warn('⚠️ [PLAYER] Vídeo travou durante carregamento');
     };
 
     const handleSuspend = () => {
-      console.log('⏸️ Carregamento do vídeo foi suspenso');
+      console.log('⏸️ [PLAYER] Carregamento do vídeo foi suspenso');
     };
+
+    // Timeout para evitar loading infinito
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading && !hasError) {
+        console.warn('⏰ [PLAYER] Timeout no carregamento do vídeo');
+        setHasError(true);
+        setIsLoading(false);
+        setErrorDetails('Timeout no carregamento - vídeo pode estar inacessível');
+      }
+    }, 15000); // 15 segundos timeout
 
     // Event listeners
     video.addEventListener('timeupdate', updateProgress);
     video.addEventListener('loadedmetadata', updateDuration);
-    video.addEventListener('ended', () => setIsPlaying(false));
+    video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
     video.addEventListener('loadstart', handleLoadStart);
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('playing', handlePlaying);
+    video.addEventListener('pause', handlePause);
     video.addEventListener('stalled', handleStalled);
     video.addEventListener('suspend', handleSuspend);
 
     return () => {
+      clearTimeout(loadingTimeout);
       video.removeEventListener('timeupdate', updateProgress);
       video.removeEventListener('loadedmetadata', updateDuration);
-      video.removeEventListener('ended', () => setIsPlaying(false));
+      video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
       video.removeEventListener('loadstart', handleLoadStart);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('pause', handlePause);
       video.removeEventListener('stalled', handleStalled);
       video.removeEventListener('suspend', handleSuspend);
     };
@@ -162,12 +244,11 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       video.pause();
     } else {
       video.play().catch((error) => {
-        console.error('❌ Erro ao reproduzir vídeo:', error);
+        console.error('❌ [PLAYER] Erro ao reproduzir vídeo:', error);
         setHasError(true);
-        setErrorDetails('Erro ao iniciar reprodução');
+        setErrorDetails('Erro ao iniciar reprodução - clique para tentar novamente');
       });
     }
-    setIsPlaying(!isPlaying);
   };
 
   const toggleMute = () => {
@@ -230,6 +311,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
   };
 
   const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
