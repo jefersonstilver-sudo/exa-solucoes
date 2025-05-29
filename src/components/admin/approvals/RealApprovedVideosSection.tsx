@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Play, User, RefreshCw, Download, Eye } from 'lucide-react';
+import { CheckCircle, Play, User, RefreshCw, Download, Eye, UserCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -19,6 +19,8 @@ interface ApprovedVideo {
   pedido_valor: number;
   video_nome: string;
   video_url: string;
+  approved_by_email?: string;
+  approved_by_name?: string;
 }
 
 interface RealApprovedVideosSectionProps {
@@ -34,17 +36,107 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
   const fetchApprovedVideos = async () => {
     try {
       setLoadingVideos(true);
-      console.log('✅ Buscando vídeos aprovados recentemente...');
+      console.log('✅ Buscando vídeos aprovados com informações do aprovador...');
       
-      const { data, error } = await supabase.rpc('get_recently_approved_videos');
+      // Query direta para buscar vídeos aprovados com informações do aprovador
+      const { data, error } = await supabase
+        .from('pedido_videos')
+        .select(`
+          id,
+          pedido_id,
+          video_id,
+          slot_position,
+          approved_at,
+          is_active,
+          approved_by,
+          videos (
+            nome,
+            url
+          ),
+          pedidos (
+            valor_total,
+            client_id
+          )
+        `)
+        .eq('approval_status', 'approved')
+        .not('approved_at', 'is', null)
+        .order('approved_at', { ascending: false })
+        .limit(20);
 
       if (error) {
         console.error('❌ Erro ao buscar vídeos aprovados:', error);
         throw error;
       }
 
-      console.log('✅ Vídeos aprovados encontrados:', data?.length || 0);
-      setApprovedVideos(data || []);
+      console.log('📊 Vídeos aprovados encontrados:', data?.length || 0);
+      
+      // Enriquecer com dados do cliente e aprovador
+      const enrichedVideos = await Promise.all(
+        (data || []).map(async (video: any) => {
+          try {
+            // Buscar dados do cliente
+            const { data: clientData } = await supabase
+              .from('users')
+              .select('email')
+              .eq('id', video.pedidos.client_id)
+              .single();
+
+            const { data: clientAuthData } = await supabase.auth.admin.getUserById(video.pedidos.client_id);
+
+            // Buscar dados do aprovador
+            let approvedByEmail = 'Admin não encontrado';
+            let approvedByName = 'Admin não encontrado';
+            
+            if (video.approved_by) {
+              const { data: approverAuthData } = await supabase.auth.admin.getUserById(video.approved_by);
+              if (approverAuthData.user) {
+                approvedByEmail = approverAuthData.user.email || 'Email não encontrado';
+                approvedByName = approverAuthData.user.user_metadata?.full_name || 
+                                approverAuthData.user.user_metadata?.name || 
+                                approverAuthData.user.email || 'Nome não encontrado';
+              }
+            }
+
+            return {
+              id: video.id,
+              pedido_id: video.pedido_id,
+              video_id: video.video_id,
+              slot_position: video.slot_position,
+              approved_at: video.approved_at,
+              is_active: video.is_active,
+              client_email: clientData?.email || clientAuthData.user?.email || 'Email não encontrado',
+              client_name: clientAuthData.user?.user_metadata?.full_name || 
+                          clientAuthData.user?.user_metadata?.name || 
+                          clientAuthData.user?.email || 'Nome não encontrado',
+              pedido_valor: video.pedidos.valor_total,
+              video_nome: video.videos.nome,
+              video_url: video.videos.url,
+              approved_by_email: approvedByEmail,
+              approved_by_name: approvedByName
+            };
+          } catch (error) {
+            console.warn(`Erro ao buscar dados do vídeo ${video.id}:`, error);
+            return {
+              id: video.id,
+              pedido_id: video.pedido_id,
+              video_id: video.video_id,
+              slot_position: video.slot_position,
+              approved_at: video.approved_at,
+              is_active: video.is_active,
+              client_email: 'Email não encontrado',
+              client_name: 'Nome não encontrado',
+              pedido_valor: video.pedidos?.valor_total || 0,
+              video_nome: video.videos?.nome || 'Nome não encontrado',
+              video_url: video.videos?.url || '',
+              approved_by_email: 'Admin não encontrado',
+              approved_by_name: 'Admin não encontrado'
+            };
+          }
+        })
+      );
+
+      console.log('✅ Vídeos aprovados enriquecidos:', enrichedVideos.length);
+      setApprovedVideos(enrichedVideos);
     } catch (error) {
       console.error('💥 Erro ao carregar vídeos aprovados:', error);
       toast.error('Erro ao carregar vídeos aprovados');
@@ -71,6 +163,7 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
       toast.success(`Vídeo de ${clientName} ativado com sucesso!`);
       fetchApprovedVideos();
+      onRefresh(); // Refresh parent stats
     } catch (error) {
       console.error('Erro ao ativar vídeo:', error);
       toast.error('Erro ao ativar vídeo');
@@ -115,7 +208,7 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
         <CardHeader className="border-b border-slate-700/50">
           <CardTitle className="flex items-center text-white">
             <CheckCircle className="h-5 w-5 mr-2 text-[#00FFAB]" />
-            Vídeos Aprovados Recentemente
+            Vídeos Aprovados Recentemente ({approvedVideos.length})
           </CardTitle>
           <CardDescription className="text-slate-300">
             Vídeos aprovados nos últimos 30 dias - Pronto para ativação
@@ -154,11 +247,22 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                     </div>
                     
                     <div className="space-y-3">
+                      {/* Informações do Cliente */}
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-2 text-[#00FFAB]" />
                         <div>
                           <span className="font-medium text-white">{video.client_name}</span>
                           <div className="text-xs text-slate-400">{video.client_email}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Informações do Aprovador */}
+                      <div className="flex items-center">
+                        <UserCheck className="h-4 w-4 mr-2 text-green-400" />
+                        <div>
+                          <span className="font-medium text-green-400">Aprovado por:</span>
+                          <div className="text-sm text-white">{video.approved_by_name}</div>
+                          <div className="text-xs text-slate-400">{video.approved_by_email}</div>
                         </div>
                       </div>
                       
