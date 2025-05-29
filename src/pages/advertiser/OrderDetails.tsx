@@ -12,13 +12,16 @@ import {
   Loader2,
   AlertCircle,
   Star,
-  CheckCircle
+  CheckCircle,
+  Settings
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useOrderVideoManagement } from '@/hooks/useOrderVideoManagement';
 import { VideoSlotGrid } from '@/components/video-management/VideoSlotGrid';
+import { VideoHealthDiagnostic } from '@/components/video-management/VideoHealthDiagnostic';
 
 interface OrderDetails {
   id: string;
@@ -225,41 +228,60 @@ const OrderDetails = () => {
         </Card>
       )}
 
-      {/* Video Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Video className="h-5 w-5 mr-2" />
-            Gestão de Vídeos (4 Slots)
-          </CardTitle>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>
-              Envie até 4 vídeos (máx. 15s, horizontal, 100MB). <strong>Você deve selecionar qual vídeo será exibido.</strong>
-            </p>
-            <p className="text-green-600 font-medium">
-              ✓ Áudio será automaticamente silenciado durante reprodução
-            </p>
-            <p className="text-blue-600">
-              ⭐ Use o botão "Selecionar para Exibição" para escolher qual vídeo será mostrado nos painéis
-            </p>
-            <p className="text-purple-600">
-              📁 Arquivos são salvos de forma segura no seu storage pessoal
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <VideoSlotGrid
-            videoSlots={videoSlots}
-            uploading={uploading}
-            uploadProgress={uploadProgress}
-            onUpload={handleVideoUpload}
-            onActivate={activateVideo}
-            onRemove={removeVideo}
-            onSelectForDisplay={selectVideoForDisplay}
-            onDownload={handleVideoDownload}
-          />
-        </CardContent>
-      </Card>
+      {/* Tabs for Video Management and Diagnostics */}
+      <Tabs defaultValue="videos" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="videos" className="flex items-center space-x-2">
+            <Video className="h-4 w-4" />
+            <span>Gestão de Vídeos</span>
+          </TabsTrigger>
+          <TabsTrigger value="diagnostics" className="flex items-center space-x-2">
+            <Settings className="h-4 w-4" />
+            <span>Diagnóstico</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="videos" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Video className="h-5 w-5 mr-2" />
+                Gestão de Vídeos (4 Slots)
+              </CardTitle>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>
+                  Envie até 4 vídeos (máx. 15s, horizontal, 100MB). <strong>Você deve selecionar qual vídeo será exibido.</strong>
+                </p>
+                <p className="text-green-600 font-medium">
+                  ✓ Áudio será automaticamente silenciado durante reprodução
+                </p>
+                <p className="text-blue-600">
+                  ⭐ Use o botão "Selecionar para Exibição" para escolher qual vídeo será mostrado nos painéis
+                </p>
+                <p className="text-purple-600">
+                  📁 Arquivos são salvos de forma segura no seu storage pessoal
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <VideoSlotGrid
+                videoSlots={videoSlots}
+                uploading={uploading}
+                uploadProgress={uploadProgress}
+                onUpload={handleVideoUpload}
+                onActivate={activateVideo}
+                onRemove={removeVideo}
+                onSelectForDisplay={selectVideoForDisplay}
+                onDownload={handleVideoDownload}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="diagnostics" className="space-y-4">
+          <VideoHealthDiagnostic orderId={id || ''} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

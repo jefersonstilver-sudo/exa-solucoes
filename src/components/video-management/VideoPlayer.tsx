@@ -39,6 +39,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowControls,
     hasError,
     isLoading,
+    errorDetails,
     isValidVideoUrl,
     togglePlay,
     toggleMute,
@@ -51,6 +52,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const isValidUrl = isValidVideoUrl(src);
 
+  const handleRetry = () => {
+    console.log('🔄 Tentando recarregar vídeo...');
+    const video = videoRef.current;
+    if (video) {
+      video.load(); // Força o recarregamento do vídeo
+    }
+  };
+
   // Show error or loading states
   if (!isValidUrl || hasError || isLoading) {
     return (
@@ -59,7 +68,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         isLoading={isLoading}
         hasError={hasError}
         isValidUrl={isValidUrl}
+        errorDetails={errorDetails}
+        videoUrl={src}
         onDownload={onDownload}
+        onRetry={handleRetry}
       />
     );
   }
