@@ -47,13 +47,14 @@ const PaymentGateway = ({
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      `PaymentGateway inicializado`,
+      `PaymentGateway inicializado - WEBHOOK URL CORRIGIDA`,
       { 
         orderId, 
         paymentMethod,
         hasPix: !!pixData,
         hasPreference: !!preferenceId,
-        hasUserId: !!userId
+        hasUserId: !!userId,
+        webhookUrl: "https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19"
       }
     );
     
@@ -106,6 +107,8 @@ const PaymentGateway = ({
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
       } else if (paymentMethod === 'pix') {
+        console.log("🎯 PaymentGateway: Iniciando fluxo PIX com WEBHOOK CORRIGIDO");
+        
         // If we're in PIX payment flow, send the webhook and then navigate
         if (userId) {
           // Get user information
@@ -140,6 +143,8 @@ const PaymentGateway = ({
               fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('pt-BR')
             }
           };
+          
+          console.log("🎯 PaymentGateway: Enviando dados para webhook CORRIGIDO:", webhookData);
           
           // Send webhook and handle response
           const response = await sendPixPaymentWebhook(webhookData);

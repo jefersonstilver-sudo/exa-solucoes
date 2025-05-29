@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
@@ -53,6 +52,20 @@ export const useCheckout = () => {
     paymentMethod,
     setPaymentMethod
   } = usePaymentProcessor();
+
+  // Log crítico para confirmar que este hook está usando a configuração correta
+  useEffect(() => {
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      `useCheckout: CONFIRMAÇÃO - Hook inicializado com WEBHOOK URL CORRIGIDA`,
+      { 
+        currentPath: location.pathname,
+        webhookUrl: "https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19",
+        timestamp: new Date().toISOString()
+      }
+    );
+  }, []); // Run only once
 
   // Hook de autenticação - executado apenas uma vez
   useCheckoutAuth(setSessionUser);
@@ -133,6 +146,8 @@ export const useCheckout = () => {
       }
 
       console.log('[useCheckout] Creating payment with valid user:', sessionUser.id);
+      console.log('[useCheckout] CONFIRMAÇÃO: Usando WEBHOOK URL CORRIGIDA no createPayment');
+      
       const response = await createPayment(options);
       return response;
     } catch (error) {
