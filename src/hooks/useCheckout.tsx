@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
@@ -76,29 +75,30 @@ export const useCheckout = () => {
   // Hook de validação do carrinho - com debounce
   const debouncedCartValidation = useCallback(() => {
     if (cartItems.length > 0) {
-      // Remove logs excessivos do cart validation
       console.log(`[useCheckout] Cart validated: ${cartItems.length} items`);
     }
-  }, [cartItems.length]); // Depend only on length to reduce re-runs
+  }, [cartItems.length]);
 
   useEffect(() => {
     const timeout = setTimeout(debouncedCartValidation, 500);
     return () => clearTimeout(timeout);
   }, [debouncedCartValidation]);
 
-  // Set step baseado na rota - memoizado para evitar loops
+  // Set step baseado na rota - corrigido para nova ordem
   const currentPath = location.pathname;
   useEffect(() => {
-    if (currentPath === '/checkout/cupom') {
+    if (currentPath === '/selecionar-plano') {
       setStep(0);
-    } else if (currentPath === '/checkout/resumo') {
+    } else if (currentPath === '/checkout/cupom') {
       setStep(1);
+    } else if (currentPath === '/checkout/resumo') {
+      setStep(2);
     } else if (currentPath === '/checkout') {
-      setStep(2);
-    } else if (currentPath === '/checkout/finalizar') {
       setStep(3);
+    } else if (currentPath === '/checkout/finalizar') {
+      setStep(4);
     } else if (currentPath.startsWith('/pix-payment')) {
-      setStep(2);
+      setStep(3);
     }
   }, [currentPath, setStep]);
 
@@ -115,17 +115,17 @@ export const useCheckout = () => {
     } catch (error) {
       console.error('[useCheckout] Erro ao carregar plano:', error);
     }
-  }, []); // Empty deps to run only once
+  }, []);
   
   // Verifica disponibilidade dos painéis - apenas quando necessário
   useEffect(() => {
-    if (step === 1 && cartItems.length > 0) {
+    if (step === 2 && cartItems.length > 0) {
       const timeout = setTimeout(() => {
         checkPanelAvailability(cartItems, startDate, endDate);
-      }, 1000); // Debounce availability check
+      }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [step, cartItems.length, startDate, endDate]); // Simplified dependencies
+  }, [step, cartItems.length, startDate, endDate]);
 
   // NOVA FUNCIONALIDADE: Capturar tentativa quando usuário chega no checkout
   useEffect(() => {
@@ -133,21 +133,20 @@ export const useCheckout = () => {
       sessionUser?.id && 
       cartItems.length > 0 && 
       selectedPlan &&
-      (step === 1 || step === 2); // Resumo ou pagamento
+      (step === 2 || step === 3); // Resumo ou pagamento
     
     if (shouldCaptureAttempt) {
       const totalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
       
-      // Capturar tentativa em background
       const timeout = setTimeout(() => {
         captureAttempt(sessionUser.id, cartItems, totalPrice);
-      }, 2000); // Aguardar 2 segundos para confirmar intenção
+      }, 2000);
       
       return () => clearTimeout(timeout);
     }
   }, [sessionUser?.id, cartItems.length, selectedPlan, step, couponDiscount, couponValid]);
 
-  // Memoizar cálculos para evitar re-computações desnecessárias
+  // Usar os novos cálculos dinâmicos
   const orderTotal = useMemo(() => {
     return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   }, [selectedPlan, cartItems, couponDiscount, couponValid]);
@@ -159,7 +158,6 @@ export const useCheckout = () => {
   // Função wrapper para createPayment - com validação robusta
   const wrappedCreatePayment = useCallback(async (options: any): Promise<any> => {
     try {
-      // CRITICAL: Validate authentication before creating payment
       if (!sessionUser?.id) {
         throw new Error("Usuário não autenticado");
       }
@@ -173,7 +171,6 @@ export const useCheckout = () => {
       
       const response = await createPayment(options);
       
-      // NOVA FUNCIONALIDADE: Limpar tentativa após conversão bem-sucedida
       if (response && response.success) {
         await clearAttempt(sessionUser.id);
       }
@@ -214,7 +211,6 @@ export const useCheckout = () => {
   const handleNextStepWithPayment = useCallback((paymentMethod?: string) => {
     console.log(`[useCheckout] handleNextStepWithPayment: ${paymentMethod || 'default'}`);
     
-    // CRITICAL: Validate authentication before proceeding
     if (!sessionUser?.id) {
       console.error('[useCheckout] Cannot proceed - user not authenticated');
       return;

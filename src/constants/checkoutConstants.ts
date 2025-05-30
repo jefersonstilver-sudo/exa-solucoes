@@ -2,13 +2,13 @@
 // Etapas do checkout (reordered to show PLAN first)
 export const CHECKOUT_STEPS = {
   PLAN: 0,
-  REVIEW: 1,
-  COUPON: 2,
+  COUPON: 1,
+  REVIEW: 2,
   PAYMENT: 3,
   UPLOAD: 4
 };
 
-// Planos disponíveis with updated pricing and benefits
+// Planos disponíveis with updated structure - preços são calculados dinamicamente
 export const PLANS = {
   1: {
     id: 1,
@@ -17,8 +17,7 @@ export const PLANS = {
     months: 1,
     discount: 0,
     mostPopular: false,
-    pricePerMonth: 300,
-    extras: ['Nenhum vídeo incluso', 'Produção adicional disponível'],
+    extras: ['Flexibilidade total', 'Ideal para testes', 'Sem compromisso'],
     productionIncluded: false,
     additionalProduction: {
       available: true,
@@ -33,8 +32,7 @@ export const PLANS = {
     months: 3,
     discount: 5,
     mostPopular: true,
-    pricePerMonth: 230,
-    extras: ['1 vídeo por mês incluído', 'Economize R$70/mês', 'Maior visibilidade'],
+    extras: ['Economize 5%', 'Maior visibilidade', 'Melhor custo-benefício'],
     productionIncluded: true,
     videosPerMonth: 1,
     color: 'green',
@@ -47,8 +45,7 @@ export const PLANS = {
     months: 6,
     discount: 15,
     mostPopular: false,
-    pricePerMonth: 199,
-    extras: ['1 vídeo por mês incluído', 'Uso mensal do Estúdio Indexa', 'Presença contínua'],
+    extras: ['Economize 15%', 'Presença contínua', 'Máximo alcance'],
     productionIncluded: true,
     videosPerMonth: 1,
     studioUse: true,
@@ -62,14 +59,13 @@ export const PLANS = {
     months: 12,
     discount: 35,
     mostPopular: false,
-    pricePerMonth: 180,
-    extras: ['1 vídeo por mês incluído', 'Bônus institucional', 'Exibição estendida de 30s'],
+    extras: ['Economize 35%', 'Máxima economia', 'Presença anual garantida'],
     productionIncluded: true,
     videosPerMonth: 1,
     extendedDisplay: true,
     corporateBonus: true,
     color: 'blue',
-    tag: '💎 Plano Empresarial'
+    tag: '💎 Máxima Economia'
   }
 };
 

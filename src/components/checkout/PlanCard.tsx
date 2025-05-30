@@ -7,14 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plan, PlanKey } from '@/types/checkout';
 import { formatCurrency } from '@/utils/priceUtils';
+import { getPlanWithDynamicPricing } from '@/utils/checkoutUtils';
+import { Panel } from '@/types/panel';
+
+interface CartItem {
+  panel: Panel;
+  duration: number;
+}
 
 interface PlanCardProps {
   plan: Plan;
   planKey: PlanKey;
   isSelected: boolean;
   onSelect: () => void;
-  borderColorClass: string;
-  selectedBgClass: string;
+  cartItems: CartItem[];
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({
@@ -22,48 +28,63 @@ const PlanCard: React.FC<PlanCardProps> = ({
   planKey,
   isSelected,
   onSelect,
-  borderColorClass,
-  selectedBgClass
+  cartItems
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Cálculo do valor total do plano
-  const totalValue = plan.pricePerMonth * plan.months;
+  // Calcular preços dinamicamente baseados no carrinho
+  const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
+  const { dynamicPricePerMonth, dynamicTotalPrice, dynamicSavings } = dynamicPlan;
   
-  // Definir cores mais suaves
-  const softColors = {
-    border: {
-      gray: 'border-gray-300 hover:border-gray-400',
-      green: 'border-green-300 hover:border-green-400',
-      purple: 'border-[#D6BCFA] hover:border-[#B794F4]',
-      blue: 'border-blue-300 hover:border-blue-400'
-    },
-    bg: {
-      gray: 'bg-gray-50',
-      green: 'bg-green-50',
-      purple: 'bg-[#F1F0FB]',
-      blue: 'bg-blue-50'
-    },
-    text: {
-      gray: 'text-gray-700',
-      green: 'text-green-700',
-      purple: 'text-[#1A1F2C]',
-      blue: 'text-blue-700'
-    },
-    header: {
-      gray: 'bg-gray-200 text-gray-700',
-      green: 'bg-green-200 text-green-800',
-      purple: 'bg-[#D6BCFA] text-[#1A1F2C]',
-      blue: 'bg-blue-200 text-blue-800'
+  // Definir cores mais suaves baseadas no tipo de plano
+  const getCardColors = () => {
+    if (planKey === 6) {
+      return {
+        border: isSelected ? 'border-[#B794F4] bg-[#F1F0FB]' : 'border-gray-300 hover:border-[#B794F4] bg-white',
+        text: 'text-[#1A1F2C]',
+        header: 'bg-[#D6BCFA] text-[#1A1F2C]',
+        accent: 'text-[#B794F4]'
+      };
     }
+    
+    const colorMap = {
+      gray: {
+        border: isSelected ? 'border-gray-400 bg-gray-50' : 'border-gray-300 hover:border-gray-400 bg-white',
+        text: 'text-gray-700',
+        header: 'bg-gray-200 text-gray-700',
+        accent: 'text-gray-600'
+      },
+      green: {
+        border: isSelected ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-green-400 bg-white',
+        text: 'text-green-700',
+        header: 'bg-green-200 text-green-800',
+        accent: 'text-green-600'
+      },
+      blue: {
+        border: isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400 bg-white',
+        text: 'text-blue-700',
+        header: 'bg-blue-200 text-blue-800',
+        accent: 'text-blue-600'
+      }
+    };
+    
+    return colorMap[plan.color as keyof typeof colorMap] || colorMap.gray;
   };
   
-  // Definir cor atual com base no plano, destacando o de 6 meses
-  const color = planKey === 6 ? 'purple' : plan.color || 'gray';
-  const borderColor = softColors.border[color as keyof typeof softColors.border];
-  const bgColor = softColors.bg[color as keyof typeof softColors.bg];
-  const textColor = softColors.text[color as keyof typeof softColors.text];
-  const headerColor = softColors.header[color as keyof typeof softColors.header];
+  const colors = getCardColors();
+
+  // Não mostrar card se carrinho estiver vazio
+  if (!cartItems.length) {
+    return (
+      <Card className="border-2 border-gray-200 bg-gray-50 opacity-50">
+        <CardContent className="p-4 sm:p-5 text-center">
+          <p className="text-gray-500 text-sm">
+            Adicione prédios ao carrinho para ver os preços
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <motion.div
@@ -74,7 +95,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
       transition={{ duration: 0.4 }}
       whileHover={{ 
         scale: 1.02, 
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.07)' 
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)' 
       }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
@@ -82,35 +103,34 @@ const PlanCard: React.FC<PlanCardProps> = ({
       <Card 
         className={`
           overflow-hidden transition-all cursor-pointer h-full flex flex-col border-2
-          ${isSelected 
-            ? `${borderColor} ${bgColor} shadow-lg` 
-            : `border-gray-200 hover:${borderColor} bg-white`
-          }
+          ${colors.border}
           ${planKey === 6 ? 'ring-2 ring-[#B794F4] ring-opacity-50' : ''}
         `}
         onClick={onSelect}
       >
+        {/* Header Tags */}
         {plan.mostPopular && (
-          <div className={`${headerColor} text-center py-1 text-xs font-medium`}>
+          <div className={`${colors.header} text-center py-1.5 text-xs font-medium`}>
             🔥 MAIS VENDIDO
           </div>
         )}
         
         {plan.tag && !plan.mostPopular && (
-          <div className={`text-center py-1 text-xs font-medium ${headerColor}`}>
+          <div className={`text-center py-1.5 text-xs font-medium ${colors.header}`}>
             {plan.tag}
           </div>
         )}
         
         {planKey === 6 && !plan.tag && (
-          <div className="bg-[#D6BCFA] text-[#1A1F2C] text-center py-1 text-xs font-medium">
+          <div className="bg-[#D6BCFA] text-[#1A1F2C] text-center py-1.5 text-xs font-medium">
             ✨ PLANO RECOMENDADO
           </div>
         )}
         
-        <CardContent className="p-5 flex-grow flex flex-col">
+        <CardContent className="p-4 sm:p-5 flex-grow flex flex-col">
+          {/* Plan Title */}
           <div className="text-center mb-4">
-            <h3 className={`text-xl font-bold ${textColor}`}>
+            <h3 className={`text-lg sm:text-xl font-bold ${colors.text}`}>
               {plan.name}
             </h3>
             <p className="text-sm text-gray-500">
@@ -118,60 +138,62 @@ const PlanCard: React.FC<PlanCardProps> = ({
             </p>
           </div>
           
-          <div className="text-center mb-6">
-            <div className="flex justify-center items-baseline">
-              <span className={`text-3xl font-bold ${planKey === 6 ? 'text-[#1A1F2C]' : 'text-indexa-purple'}`}>
-                {formatCurrency(plan.pricePerMonth)}
+          {/* Dynamic Pricing */}
+          <div className="text-center mb-4 sm:mb-6">
+            <div className="flex justify-center items-baseline mb-2">
+              <span className={`text-2xl sm:text-3xl font-bold ${planKey === 6 ? 'text-[#1A1F2C]' : 'text-[#3C1361]'}`}>
+                {formatCurrency(dynamicPricePerMonth)}
               </span>
               <span className="text-gray-500 text-sm ml-1">/mês</span>
             </div>
             
-            {/* Valor total do plano (visível em hover ou quando selecionado) */}
+            {/* Total Price on Hover/Selection */}
             {(isHovered || isSelected) && (
-              <div className="mt-2 bg-gray-50 py-1 px-2 rounded-lg shadow-sm border border-gray-100">
-                <span className="text-sm font-medium text-gray-700">
-                  Total: {formatCurrency(totalValue)}
-                </span>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gray-50 py-2 px-3 rounded-lg shadow-sm border border-gray-100 mb-2"
+              >
+                <div className="text-sm font-medium text-gray-700">
+                  Total: {formatCurrency(dynamicTotalPrice)}
+                </div>
+                {plan.months > 1 && (
+                  <div className="text-xs text-gray-500">
+                    ({plan.months} meses)
+                  </div>
+                )}
+              </motion.div>
             )}
             
+            {/* Discount Badge */}
             {plan.discount > 0 && (
-              <Badge className="mt-2 bg-green-100 text-green-800 hover:bg-green-100">
-                Economize {plan.discount}%
-              </Badge>
+              <div className="flex justify-center gap-2">
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">
+                  Economize {plan.discount}%
+                </Badge>
+                {dynamicSavings > 0 && (
+                  <Badge variant="outline" className="text-xs">
+                    -{formatCurrency(dynamicSavings)}
+                  </Badge>
+                )}
+              </div>
             )}
           </div>
           
-          <div className="space-y-3 mt-auto">
+          {/* Features */}
+          <div className="space-y-2 sm:space-y-3 mt-auto">
             {plan.extras.map((extra, idx) => (
               <div key={idx} className="flex items-start gap-2">
-                <CheckCircle className={`h-5 w-5 ${planKey === 6 ? 'text-[#B794F4]' : 'text-green-500'} flex-shrink-0`} />
-                <span className="text-sm text-gray-600">{extra}</span>
+                <CheckCircle className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
+                <span className="text-xs sm:text-sm text-gray-600 leading-tight">{extra}</span>
               </div>
             ))}
-            
-            {plan.id === 1 && plan.additionalProduction && plan.additionalProduction.available && (
-              <div className="mt-4 pt-3 border-t border-gray-200">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="w-full text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Add logic to add production service
-                  }}
-                >
-                  <Video className="h-3 w-3 mr-1" />
-                  Adicionar produção (+R$ {plan.additionalProduction.price.toFixed(2)})
-                </Button>
-              </div>
-            )}
           </div>
         </CardContent>
         
         <CardFooter className={`
-          px-5 py-3 border-t flex justify-between items-center
-          ${isSelected ? `border-t-green-200 bg-white/50` : 'border-t-gray-100'}
+          px-4 sm:px-5 py-3 border-t flex justify-between items-center
+          ${isSelected ? 'border-t-green-200 bg-white/50' : 'border-t-gray-100'}
         `}>
           {isSelected ? (
             <span className="text-sm font-medium text-green-600 flex items-center">
@@ -185,14 +207,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
           )}
           
           <div className={`
-            h-6 w-6 rounded-full border flex items-center justify-center
+            h-5 w-5 sm:h-6 sm:w-6 rounded-full border flex items-center justify-center
             ${isSelected 
               ? planKey === 6 ? 'border-[#B794F4] bg-[#B794F4]' : 'border-green-500 bg-green-500' 
               : 'border-gray-300'}`
             }
           >
             {isSelected && (
-              <CheckCircle className="h-4 w-4 text-white" />
+              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
             )}
           </div>
         </CardFooter>

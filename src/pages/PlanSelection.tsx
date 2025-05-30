@@ -4,23 +4,19 @@ import Layout from '@/components/layout/Layout';
 import PlanLoginNotification from '@/components/checkout/PlanLoginNotification';
 import PlanSelectionContent from '@/components/checkout/PlanSelectionContent';
 import PlanLoadingIndicator from '@/components/checkout/PlanLoadingIndicator';
+import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import { useUserSession } from '@/hooks/useUserSession';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { usePlanSelection } from '@/hooks/checkout/usePlanSelection';
 import { useCartVerification } from '@/hooks/checkout/useCartVerification';
 
 const PlanSelection = () => {
-  // Estados de autenticação - deixar o estado de sessão primeiro para garantir inicialização correta
   const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
-  
-  // Para evitar re-renderizações desnecessárias
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [authVerified, setAuthVerified] = useState(false);
   
-  // Estado do carrinho
   const { hasCart, initialLoadDone } = useCartVerification(authVerified);
   
-  // Seleção de plano - somente inicializar quando o resto estiver carregado
   const { 
     selectedPlan, 
     setSelectedPlan, 
@@ -30,7 +26,6 @@ const PlanSelection = () => {
     handleGoToCoupon
   } = usePlanSelection(hasCart);
   
-  // Log de informação quando o componente é montado (apenas uma vez)
   useEffect(() => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
@@ -39,32 +34,20 @@ const PlanSelection = () => {
       { isLoggedIn, userId: user?.id || 'não autenticado' }
     );
     
-    // Verificar e marcar autenticação como verificada quando o carregamento da sessão terminar
     if (!isSessionLoading) {
-      console.log("Sessão inicializada, autenticação verificada:", isLoggedIn);
       setAuthVerified(true);
-      
-      // Se já estiver autenticado, podemos continuar com a próxima etapa
-      if (isLoggedIn) {
-        setIsPageLoading(false);
-      } else {
-        // Se não estiver autenticado, ainda não é necessário carregar outros dados
-        setIsPageLoading(false);
-      }
+      setIsPageLoading(false);
     }
   }, [isSessionLoading, isLoggedIn, user]);
   
-  // Memoizar status de carregamento para evitar re-renderizações desnecessárias
   const isLoading = useMemo(() => {
     return isSessionLoading || isPageLoading;
   }, [isSessionLoading, isPageLoading]);
   
-  // Loading screen while checking session or cart
   if (isLoading) {
     return <PlanLoadingIndicator />;
   }
   
-  // Exibir botão de login se não estiver logado, independentemente do carregamento do carrinho
   if (!isLoggedIn) {
     return (
       <Layout>
@@ -75,14 +58,25 @@ const PlanSelection = () => {
   
   return (
     <Layout>
-      <PlanSelectionContent
-        selectedPlan={selectedPlan}
-        onSelectPlan={setSelectedPlan}
-        plans={PLANS}
-        panelCount={cartItems.length}
-        totalPrice={calculateEstimatedPrice()}
-        onContinue={handleGoToCoupon}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
+          {/* Unified Progress Header */}
+          <div className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8">
+            <UnifiedCheckoutProgress currentStep={0} />
+          </div>
+
+          {/* Main Content */}
+          <PlanSelectionContent
+            selectedPlan={selectedPlan}
+            onSelectPlan={setSelectedPlan}
+            plans={PLANS}
+            panelCount={cartItems.length}
+            totalPrice={calculateEstimatedPrice()}
+            onContinue={handleGoToCoupon}
+            cartItems={cartItems}
+          />
+        </div>
+      </div>
     </Layout>
   );
 };

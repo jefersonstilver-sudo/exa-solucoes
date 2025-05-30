@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import PaymentProgressHeader from '@/components/checkout/payment/PaymentProgressHeader';
+import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import ReviewStep from '@/components/checkout/ReviewStep';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
@@ -51,7 +51,6 @@ const CheckoutSummary = () => {
   };
 
   const handleNext = () => {
-    // Navegação direta e simples para a página de pagamento
     navigate('/checkout');
   };
 
@@ -59,13 +58,13 @@ const CheckoutSummary = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-center"
           >
-            <div className="h-8 w-8 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Verificando autenticação...</p>
           </motion.div>
         </div>
@@ -76,14 +75,14 @@ const CheckoutSummary = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Progress Header */}
+        <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+          {/* Unified Progress Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8"
           >
-            <PaymentProgressHeader currentStep={1} />
+            <UnifiedCheckoutProgress currentStep={2} />
           </motion.div>
 
           {/* Main Content */}
@@ -91,7 +90,7 @@ const CheckoutSummary = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-lg border p-6 sm:p-8"
+            className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 lg:p-8"
           >
             <ReviewStep />
           </motion.div>
@@ -101,18 +100,18 @@ const CheckoutSummary = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex flex-col sm:flex-row justify-between items-center mt-8 gap-4"
+            className="flex flex-col sm:flex-row justify-between items-center mt-6 sm:mt-8 gap-4"
           >
             <Button
               variant="outline"
               onClick={handleBack}
-              className="flex items-center space-x-2 w-full sm:w-auto"
+              className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Voltar</span>
             </Button>
 
-            <div className="text-center order-first sm:order-none">
+            <div className="text-center order-1 sm:order-2">
               <p className="text-lg font-semibold text-gray-900">
                 Total: R$ {totalPrice.toFixed(2)}
               </p>
@@ -126,7 +125,7 @@ const CheckoutSummary = () => {
             <Button
               onClick={handleNext}
               disabled={!isLoggedIn || cartItems.length === 0}
-              className="flex items-center space-x-2 bg-[#1E1B4B] hover:bg-[#1E1B4B]/90 w-full sm:w-auto"
+              className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
               <span>Ir para Pagamento</span>
               <ArrowRight className="h-4 w-4" />

@@ -1,102 +1,98 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Plan, PlanKey } from '@/types/checkout';
 import PlanCard from './PlanCard';
-import PlanHeader from './PlanHeader';
-import PlanContinueButton from './PlanContinueButton';
+import { Plan, PlanKey } from '@/types/checkout';
+import { Panel } from '@/types/panel';
+
+interface CartItem {
+  panel: Panel;
+  duration: number;
+}
 
 interface PlanSelectorProps {
   selectedPlan: PlanKey;
   onSelectPlan: (plan: PlanKey) => void;
   plans: Record<number, Plan>;
   panelCount: number;
-  totalPrice?: number;
-  onContinue?: () => void;
+  cartItems: CartItem[];
 }
 
 const PlanSelector: React.FC<PlanSelectorProps> = ({ 
   selectedPlan, 
   onSelectPlan, 
-  plans,
+  plans, 
   panelCount,
-  totalPrice,
-  onContinue
+  cartItems 
 }) => {
-  const planKeys = Object.keys(plans).map(key => parseInt(key)) as Array<PlanKey>;
-  
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-  
-  // Get color class based on plan
-  const getPlanColorClass = (planKey: PlanKey) => {
-    const colorMap = {
-      'gray': 'border-gray-300 hover:border-gray-400',
-      'green': 'border-green-500 hover:border-green-600',
-      'purple': 'border-purple-500 hover:border-purple-600',
-      'blue': 'border-blue-500 hover:border-blue-600'
-    };
-    
-    const color = plans[planKey].color || 'gray';
-    return colorMap[color] || colorMap.gray;
-  };
-  
-  const getSelectedBgClass = (planKey: PlanKey) => {
-    const colorMap = {
-      'gray': 'bg-gray-50',
-      'green': 'bg-green-50',
-      'purple': 'bg-purple-50',
-      'blue': 'bg-blue-50'
-    };
-    
-    const color = plans[planKey].color || 'gray';
-    return colorMap[color] || colorMap.gray;
-  };
-  
+  const planKeys = Object.keys(plans).map(Number) as PlanKey[];
+
   return (
     <div className="space-y-6">
-      <PlanHeader />
-      
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      {/* Header with cart info */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
       >
-        {planKeys.map((planKey) => {
-          const plan = plans[planKey];
-          const isSelected = selectedPlan === planKey;
-          const borderColorClass = getPlanColorClass(planKey);
-          const selectedBgClass = getSelectedBgClass(planKey);
-          
-          return (
-            <PlanCard
-              key={planKey}
-              plan={plan}
-              planKey={planKey}
-              isSelected={isSelected}
-              onSelect={() => onSelectPlan(planKey)}
-              borderColorClass={borderColorClass}
-              selectedBgClass={selectedBgClass}
-            />
-          );
-        })}
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+          Escolha seu Plano
+        </h2>
+        <p className="text-sm sm:text-base text-gray-600 mb-4">
+          Selecione o período de veiculação da sua campanha
+        </p>
+        {panelCount > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-blue-800">
+              📍 {panelCount} {panelCount === 1 ? 'prédio selecionado' : 'prédios selecionados'} no seu carrinho
+            </p>
+          </div>
+        )}
       </motion.div>
 
-      {/* Continue Button */}
-      {onContinue && (
-        <PlanContinueButton
-          selectedPlan={selectedPlan}
-          onContinue={onContinue}
-        />
+      {/* Plans Grid */}
+      <motion.div 
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { 
+            opacity: 1,
+            transition: { 
+              staggerChildren: 0.1 
+            }
+          }
+        }}
+        initial="hidden"
+        animate="visible"
+      >
+        {planKeys.map((planKey) => (
+          <PlanCard
+            key={planKey}
+            plan={plans[planKey]}
+            planKey={planKey}
+            isSelected={selectedPlan === planKey}
+            onSelect={() => onSelectPlan(planKey)}
+            cartItems={cartItems}
+          />
+        ))}
+      </motion.div>
+
+      {/* Help text */}
+      {cartItems.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-8"
+        >
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-600 mb-2">
+              Você precisa adicionar prédios ao carrinho primeiro
+            </p>
+            <p className="text-sm text-gray-500">
+              Vá para a loja de prédios e selecione os locais para sua campanha
+            </p>
+          </div>
+        </motion.div>
       )}
     </div>
   );
