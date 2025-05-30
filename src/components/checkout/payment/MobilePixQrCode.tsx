@@ -41,10 +41,10 @@ const MobilePixQrCode = ({
   };
 
   const redirectToOrders = () => {
-    console.log("🔄 Mobile: Redirecionando para /advertiser/pedidos");
+    console.log("🔄 Mobile: Redirecionando para /anunciante/pedidos");
     
     // Usar navigate do React Router para redirecionamento imediato
-    navigate('/advertiser/pedidos');
+    navigate('/anunciante/pedidos');
   };
 
   const handleClose = () => {

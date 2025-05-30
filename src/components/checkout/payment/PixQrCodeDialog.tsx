@@ -54,7 +54,7 @@ const PixQrCodeDialog = ({
   };
 
   const redirectToOrders = () => {
-    console.log("🔄 Redirecionando para /advertiser/pedidos");
+    console.log("🔄 Redirecionando para /anunciante/pedidos");
     
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT,
@@ -64,7 +64,7 @@ const PixQrCodeDialog = ({
     );
 
     // Usar navigate do React Router para redirecionamento imediato
-    navigate('/advertiser/pedidos');
+    navigate('/anunciante/pedidos');
   };
 
   const handleClose = () => {
