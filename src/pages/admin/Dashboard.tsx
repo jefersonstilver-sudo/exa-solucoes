@@ -15,14 +15,29 @@ import {
   TrendingUp,
   Crown,
   Shield,
-  Zap
+  Zap,
+  Download
 } from 'lucide-react';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useMonthlyDashboardData } from '@/hooks/useMonthlyDashboardData';
 import DashboardCharts from '@/components/admin/charts/DashboardCharts';
+import MonthSelector from '@/components/admin/dashboard/MonthSelector';
+import DashboardBreadcrumb from '@/components/admin/dashboard/DashboardBreadcrumb';
+import GrowthIndicator from '@/components/admin/dashboard/GrowthIndicator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
-  const { stats, chartData, loading, refetch } = useSupabaseData();
+  const { 
+    selectedMonth, 
+    stats, 
+    comparison,
+    chartData, 
+    loading, 
+    error,
+    handleMonthChange,
+    refetch,
+    growthData
+  } = useMonthlyDashboardData();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -31,22 +46,41 @@ const Dashboard = () => {
     }).format(value);
   };
 
-  const statsCards = [
+  const handleExportReport = () => {
+    toast.info('Funcionalidade de exportação será implementada em breve');
+  };
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="text-red-600 text-lg font-semibold">Erro ao carregar dashboard</div>
+          <p className="text-gray-600">{error}</p>
+          <Button onClick={refetch} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const statsCards = stats ? [
     {
-      title: 'Total de Usuários',
-      value: stats.totalUsers.toString(),
-      change: `+${Math.round(stats.totalUsers * 0.12)} este mês`,
-      changeType: 'positive',
+      title: 'Usuários do Mês',
+      value: stats.total_users.toString(),
+      accumulated: stats.total_users_accumulated,
+      growth: growthData?.users || 0,
       icon: Users,
       color: 'from-blue-500 to-blue-600',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600'
     },
     {
-      title: 'Prédios Cadastrados',
-      value: stats.totalBuildings.toString(),
-      change: `${stats.totalBuildings} ativos`,
-      changeType: 'neutral',
+      title: 'Prédios do Mês',
+      value: stats.total_buildings.toString(),
+      accumulated: stats.total_buildings_accumulated,
+      growth: growthData?.buildings || 0,
       icon: Building2,
       color: 'from-emerald-500 to-emerald-600',
       iconBg: 'bg-emerald-100',
@@ -54,56 +88,56 @@ const Dashboard = () => {
     },
     {
       title: 'Painéis Online',
-      value: `${stats.onlinePanels}/${stats.totalPanels}`,
-      change: `${Math.round((stats.onlinePanels/stats.totalPanels) * 100)}% funcionando`,
-      changeType: stats.onlinePanels === stats.totalPanels ? 'positive' : 'warning',
+      value: `${stats.online_panels}/${stats.total_panels_accumulated}`,
+      accumulated: stats.total_panels_accumulated,
+      growth: 0,
       icon: MonitorPlay,
       color: 'from-purple-500 to-purple-600',
       iconBg: 'bg-purple-100',
       iconColor: 'text-purple-600'
     },
     {
-      title: 'Receita Mensal',
-      value: formatCurrency(stats.monthlyRevenue),
-      change: '+15.3% vs mês anterior',
-      changeType: 'positive',
+      title: 'Receita do Mês',
+      value: formatCurrency(stats.monthly_revenue),
+      accumulated: null,
+      growth: growthData?.revenue || 0,
       icon: DollarSign,
       color: 'from-amber-500 to-amber-600',
       iconBg: 'bg-amber-100',
       iconColor: 'text-amber-600'
     }
-  ];
+  ] : [];
 
-  const recentActivities = [
+  const recentActivities = stats ? [
     { 
       id: 1, 
-      action: `Sistema operando com ${stats.totalUsers} usuários registrados`, 
-      time: 'Status atual', 
+      action: `${stats.total_users} novos usuários cadastrados este mês`, 
+      time: 'Dados do mês atual', 
       type: 'success',
       icon: Users
     },
     { 
       id: 2, 
-      action: `Receita mensal confirmada: ${formatCurrency(stats.monthlyRevenue)}`, 
+      action: `Receita mensal: ${formatCurrency(stats.monthly_revenue)}`, 
       time: 'Atualizado agora', 
       type: 'success',
       icon: TrendingUp
     },
     { 
       id: 3, 
-      action: `${stats.onlinePanels} painéis operacionais de ${stats.totalPanels} total`, 
-      time: 'Monitoramento ativo', 
-      type: stats.onlinePanels === stats.totalPanels ? 'success' : 'warning',
+      action: `${stats.online_panels} painéis operacionais de ${stats.total_panels_accumulated} total`, 
+      time: 'Status atual', 
+      type: stats.online_panels === stats.total_panels_accumulated ? 'success' : 'warning',
       icon: MonitorPlay
     },
     { 
       id: 4, 
-      action: `${stats.totalBuildings} prédios na plataforma`, 
-      time: 'Base cadastral', 
+      action: `${stats.total_orders} pedidos realizados este mês`, 
+      time: 'Performance mensal', 
       type: 'neutral',
-      icon: Building2
+      icon: ShoppingBag
     }
-  ];
+  ] : [];
 
   if (loading) {
     return (
@@ -136,29 +170,42 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
       {/* Header do Dashboard */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center space-x-3 mb-2">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-indexa-purple to-indexa-purple-dark rounded-xl flex items-center justify-center shadow-lg">
               <Crown className="h-6 w-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard Executivo</h1>
               <p className="text-gray-600">
-                Visão geral completa do sistema INDEXA • {stats.totalUsers} usuários • {stats.totalBuildings} prédios
+                Relatórios mensais detalhados do sistema INDEXA
               </p>
             </div>
           </div>
+          
+          <DashboardBreadcrumb selectedMonth={selectedMonth} />
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={refetch} className="shadow-sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-          <Button className="bg-indexa-purple hover:bg-indexa-purple-dark shadow-lg">
-            <Zap className="h-4 w-4 mr-2" />
-            Ações Rápidas
-          </Button>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+          <MonthSelector 
+            selectedMonth={selectedMonth} 
+            onMonthChange={handleMonthChange} 
+          />
+          
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={refetch} className="shadow-sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
+            <Button 
+              onClick={handleExportReport}
+              className="bg-indexa-purple hover:bg-indexa-purple-dark shadow-lg"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -176,15 +223,16 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
-              <div className="flex items-center text-sm">
-                <div className={`flex items-center ${
-                  stat.changeType === 'positive' ? 'text-green-600' : 
-                  stat.changeType === 'warning' ? 'text-yellow-600' : 
-                  'text-gray-600'
-                }`}>
-                  {stat.changeType === 'positive' && <ArrowUpRight className="h-4 w-4 mr-1" />}
-                  {stat.change}
-                </div>
+              <div className="space-y-1">
+                <GrowthIndicator 
+                  value={stat.growth} 
+                  label="vs mês anterior" 
+                />
+                {stat.accumulated !== null && (
+                  <div className="text-xs text-gray-500">
+                    Total acumulado: {stat.accumulated.toLocaleString()}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -201,7 +249,7 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Activity className="h-5 w-5 mr-3 text-indexa-purple" />
-              Atividades do Sistema
+              Atividades do Mês
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -239,49 +287,60 @@ const Dashboard = () => {
           <CardContent className="space-y-3">
             <Button className="w-full justify-start bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg">
               <Users className="h-4 w-4 mr-3" />
-              Gerenciar Usuários ({stats.totalUsers})
+              Gerenciar Usuários ({stats?.total_users_accumulated || 0})
             </Button>
             <Button variant="outline" className="w-full justify-start shadow-sm hover:shadow-md transition-shadow">
               <Building2 className="h-4 w-4 mr-3" />
-              Gerenciar Prédios ({stats.totalBuildings})
+              Gerenciar Prédios ({stats?.total_buildings_accumulated || 0})
             </Button>
             <Button variant="outline" className="w-full justify-start shadow-sm hover:shadow-md transition-shadow">
               <ShoppingBag className="h-4 w-4 mr-3" />
-              Ver Pedidos ({stats.totalOrders})
+              Ver Pedidos ({stats?.total_orders || 0})
             </Button>
             <Button variant="outline" className="w-full justify-start shadow-sm hover:shadow-md transition-shadow">
               <MonitorPlay className="h-4 w-4 mr-3" />
-              Monitorar Painéis ({stats.totalPanels})
+              Monitorar Painéis ({stats?.total_panels_accumulated || 0})
             </Button>
           </CardContent>
         </Card>
       </div>
 
       {/* Card de Resumo Financeiro */}
-      <Card className="bg-gradient-to-r from-indexa-purple via-indexa-purple-dark to-indexa-purple text-white shadow-2xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center text-white">
-            <DollarSign className="h-6 w-6 mr-3" />
-            Resumo Financeiro INDEXA
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2">{formatCurrency(stats.monthlyRevenue)}</div>
-              <p className="text-sm opacity-80">Receita Mensal</p>
+      {stats && (
+        <Card className="bg-gradient-to-r from-indexa-purple via-indexa-purple-dark to-indexa-purple text-white shadow-2xl border-0">
+          <CardHeader>
+            <CardTitle className="flex items-center text-white">
+              <DollarSign className="h-6 w-6 mr-3" />
+              Resumo Financeiro - {selectedMonth}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
+              <div className="text-center">
+                <div className="text-4xl font-bold mb-2">{formatCurrency(stats.monthly_revenue)}</div>
+                <p className="text-sm opacity-80">Receita do Mês</p>
+                {growthData && (
+                  <div className="mt-2">
+                    <GrowthIndicator 
+                      value={growthData.revenue} 
+                      label="vs anterior"
+                      className="justify-center text-white opacity-80"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold mb-2">{stats.active_orders}</div>
+                <p className="text-sm opacity-80">Pedidos Ativos</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold mb-2">{stats.pending_orders}</div>
+                <p className="text-sm opacity-80">Pedidos Pendentes</p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2">{stats.activeOrders}</div>
-              <p className="text-sm opacity-80">Pedidos Ativos</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2">{stats.pendingOrders}</div>
-              <p className="text-sm opacity-80">Pedidos Pendentes</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

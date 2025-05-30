@@ -922,6 +922,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_dashboard_stats_by_month: {
+        Args: { p_year: number; p_month: number }
+        Returns: Json
+      }
+      get_last_12_months_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_monthly_comparison: {
+        Args: { p_year: number; p_month: number }
+        Returns: Json
+      }
       get_paid_orders_without_video: {
         Args: Record<PropertyKey, never>
         Returns: {
