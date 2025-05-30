@@ -11,12 +11,22 @@ export const usePlanCalculations = () => {
   ) => {
     if (!selectedPlan || !cartItems.length) return 0;
     
-    // Base calculation: number of panels * basic price per panel * months
-    const pricePerPanelPerMonth = 250; // Example base price
+    // Use actual plan pricing calculation
+    const plan = PLANS[selectedPlan];
+    const pricePerPanelPerMonth = 250; // Base price per panel per month
     const totalPanels = cartItems.length;
-    const months = PLANS[selectedPlan].months;
+    const months = plan.months;
     
-    return totalPanels * pricePerPanelPerMonth * months;
+    // Calculate base price
+    let totalPrice = totalPanels * pricePerPanelPerMonth * months;
+    
+    // Apply plan discount
+    if (plan.discount > 0) {
+      const discountMultiplier = (100 - plan.discount) / 100;
+      totalPrice = totalPrice * discountMultiplier;
+    }
+    
+    return totalPrice;
   };
 
   return {

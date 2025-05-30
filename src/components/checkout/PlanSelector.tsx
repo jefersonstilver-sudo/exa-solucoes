@@ -29,7 +29,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header with cart info */}
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -38,16 +38,9 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
           Escolha seu Plano
         </h2>
-        <p className="text-sm sm:text-base text-gray-600 mb-4">
+        <p className="text-sm sm:text-base text-gray-600">
           Selecione o período de veiculação da sua campanha
         </p>
-        {panelCount > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-            <p className="text-sm text-blue-800">
-              📍 {panelCount} {panelCount === 1 ? 'prédio selecionado' : 'prédios selecionados'} no seu carrinho
-            </p>
-          </div>
-        )}
       </motion.div>
 
       {/* Plans Grid */}
@@ -77,7 +70,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         ))}
       </motion.div>
 
-      {/* Help text */}
+      {/* Help text when cart is empty */}
       {cartItems.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
