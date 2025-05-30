@@ -16,15 +16,6 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
     return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
   };
 
-  const getPadraoColor = (padrao: string) => {
-    const colors = {
-      alto: 'bg-purple-100 text-purple-800 border-purple-300',
-      medio: 'bg-blue-100 text-blue-800 border-blue-300',
-      normal: 'bg-gray-100 text-gray-800 border-gray-300'
-    };
-    return colors[padrao as keyof typeof colors] || colors.normal;
-  };
-
   const primaryImage = getImageUrl(building.imagem_principal);
   const imageUrls = getBuildingImageUrls(building);
   const totalImages = imageUrls.length;
@@ -43,11 +34,8 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
         </div>
       )}
       
-      {/* Badges no topo da imagem */}
+      {/* Badge apenas para venue_type - removido o badge de padrão público */}
       <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-        <Badge className={`${getPadraoColor(building.padrao_publico)} text-xs px-2 py-1`}>
-          {building.padrao_publico.charAt(0).toUpperCase() + building.padrao_publico.slice(1)}
-        </Badge>
         <Badge className="bg-indigo-500/90 text-white border-0 text-xs px-2 py-1">
           {building.venue_type || 'Residencial'}
         </Badge>
