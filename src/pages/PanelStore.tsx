@@ -13,6 +13,21 @@ import StoreLayout from '@/components/panel-store/StoreLayout';
 import SimpleBuildingGrid from '@/components/building-store/SimpleBuildingGrid';
 import MobileBuildingGrid from '@/components/building-store/MobileBuildingGrid';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { Panel } from '@/types/panel';
+
+// Type adapter function to convert SimpleBuildingStore to Building format expected by MobileBuildingGrid
+const adaptBuildingForMobileGrid = (building: any) => ({
+  id: building.id,
+  nome: building.nome,
+  endereco: building.endereco,
+  bairro: building.bairro,
+  cidade: building.bairro, // Use bairro as cidade for now
+  basePrice: building.preco_base,
+  paineis_count: building.quantidade_telas,
+  tipo_perfil: building.padrao_publico,
+  rating: 4.5, // Default rating
+  views_mes: building.visualizacoes_mes
+});
 
 export default function PanelStore() {
   const [searchParams] = useSearchParams();
@@ -91,6 +106,31 @@ export default function PanelStore() {
       { cartItemCount: cartItems.length, timestamp: Date.now() }
     );
     handleProceedToCheckout();
+  };
+
+  // Create a function that handles adding building to cart by converting to panel
+  const handleAddBuildingToCart = (building: any) => {
+    // Convert building to panel format for cart
+    const panel: Panel = {
+      id: building.id,
+      code: `${building.nome.substring(0, 3).toUpperCase()}-${building.id.substring(0, 8)}`,
+      building_id: building.id,
+      buildings: {
+        id: building.id,
+        nome: building.nome,
+        endereco: building.endereco,
+        bairro: building.bairro,
+        cidade: building.bairro, // Use bairro as cidade
+        estado: 'SP', // Default state
+        cep: '00000-000', // Default CEP
+        latitude: building.latitude || 0,
+        longitude: building.longitude || 0,
+        basePrice: building.basePrice || building.preco_base,
+        venue_type: building.venue_type || 'Residencial'
+      }
+    };
+    
+    handleAddToCart(panel, 30); // Default 30 days duration
   };
 
   // Determine which error to show
@@ -173,9 +213,9 @@ export default function PanelStore() {
             {/* Mobile-first grid */}
             {isMobile ? (
               <MobileBuildingGrid 
-                buildings={buildings}
+                buildings={buildings.map(adaptBuildingForMobileGrid)}
                 isLoading={buildingsLoading}
-                onAddToCart={handleAddToCart}
+                onAddToCart={handleAddBuildingToCart}
               />
             ) : (
               <SimpleBuildingGrid 
