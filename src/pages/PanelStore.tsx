@@ -15,20 +15,6 @@ import MobileBuildingGrid from '@/components/building-store/MobileBuildingGrid';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { Panel } from '@/types/panel';
 
-// Type adapter function to convert SimpleBuildingStore to Building format expected by MobileBuildingGrid
-const adaptBuildingForMobileGrid = (building: any) => ({
-  id: building.id,
-  nome: building.nome,
-  endereco: building.endereco,
-  bairro: building.bairro,
-  cidade: building.bairro, // Use bairro as cidade for now
-  basePrice: building.preco_base,
-  paineis_count: building.quantidade_telas,
-  tipo_perfil: building.padrao_publico,
-  rating: 4.5, // Default rating
-  views_mes: building.visualizacoes_mes
-});
-
 export default function PanelStore() {
   const [searchParams] = useSearchParams();
   const buildingId = searchParams.get('building_id');
@@ -72,6 +58,49 @@ export default function PanelStore() {
   const { isLoggedIn } = useUserSession();
   const [showPromotion, setShowPromotion] = useState(true);
 
+  // Type adapter function to convert SimpleBuildingStore to Building format expected by MobileBuildingGrid
+  const adaptBuildingForMobileGrid = (building: any) => ({
+    id: building.id,
+    nome: building.nome,
+    endereco: building.endereco,
+    bairro: building.bairro,
+    cidade: building.bairro, // Use bairro as cidade for now
+    basePrice: building.preco_base || 0,
+    paineis_count: building.quantidade_telas || 0,
+    tipo_perfil: building.padrao_publico || 'normal',
+    rating: 4.5, // Default rating
+    views_mes: building.visualizacoes_mes || 0
+  });
+
+  // Create a function that handles adding building to cart by converting to panel
+  const handleAddBuildingToCart = (building: any) => {
+    try {
+      // Convert building to panel format for cart
+      const panel: Panel = {
+        id: building.id,
+        code: `${building.nome.substring(0, 3).toUpperCase()}-${building.id.substring(0, 8)}`,
+        building_id: building.id,
+        buildings: {
+          id: building.id,
+          nome: building.nome,
+          endereco: building.endereco,
+          bairro: building.bairro,
+          cidade: building.bairro, // Use bairro as cidade
+          estado: 'SP', // Default state
+          cep: '00000-000', // Default CEP
+          latitude: building.latitude || 0,
+          longitude: building.longitude || 0,
+          basePrice: building.basePrice || building.preco_base || 0,
+          venue_type: building.venue_type || 'Residencial'
+        }
+      };
+      
+      handleAddToCart(panel, 30); // Default 30 days duration
+    } catch (error) {
+      console.error('Error adding building to cart:', error);
+    }
+  };
+
   // Effect to hide promotion when user logs in or adds items to cart
   useEffect(() => {
     if (isLoggedIn || cartItems.length > 0) {
@@ -106,31 +135,6 @@ export default function PanelStore() {
       { cartItemCount: cartItems.length, timestamp: Date.now() }
     );
     handleProceedToCheckout();
-  };
-
-  // Create a function that handles adding building to cart by converting to panel
-  const handleAddBuildingToCart = (building: any) => {
-    // Convert building to panel format for cart
-    const panel: Panel = {
-      id: building.id,
-      code: `${building.nome.substring(0, 3).toUpperCase()}-${building.id.substring(0, 8)}`,
-      building_id: building.id,
-      buildings: {
-        id: building.id,
-        nome: building.nome,
-        endereco: building.endereco,
-        bairro: building.bairro,
-        cidade: building.bairro, // Use bairro as cidade
-        estado: 'SP', // Default state
-        cep: '00000-000', // Default CEP
-        latitude: building.latitude || 0,
-        longitude: building.longitude || 0,
-        basePrice: building.basePrice || building.preco_base,
-        venue_type: building.venue_type || 'Residencial'
-      }
-    };
-    
-    handleAddToCart(panel, 30); // Default 30 days duration
   };
 
   // Determine which error to show
@@ -221,7 +225,7 @@ export default function PanelStore() {
               <SimpleBuildingGrid 
                 buildings={buildings}
                 isLoading={buildingsLoading}
-                onAddToCart={handleAddToCart}
+                onAddToCart={handleAddBuildingToCart}
               />
             )}
           </div>

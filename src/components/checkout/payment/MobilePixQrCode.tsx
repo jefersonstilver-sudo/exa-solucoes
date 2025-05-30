@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, ExternalLink, RefreshCw } from 'lucide-react';
+import { X, RefreshCw, Copy, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 interface MobilePixQrCodeProps {
@@ -11,196 +12,154 @@ interface MobilePixQrCodeProps {
   qrCodeBase64?: string;
   qrCodeText?: string;
   amount: number;
-  onRefresh?: () => void;
-  isRefreshing?: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
-const MobilePixQrCode = ({ 
-  isOpen, 
-  onClose, 
-  qrCodeBase64, 
-  qrCodeText, 
+const MobilePixQrCode = ({
+  isOpen,
+  onClose,
+  qrCodeBase64,
+  qrCodeText,
   amount,
   onRefresh,
-  isRefreshing = false
+  isRefreshing
 }: MobilePixQrCodeProps) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    if (!qrCodeText) return;
-    
-    try {
-      await navigator.clipboard.writeText(qrCodeText);
-      setCopied(true);
-      toast.success('Código PIX copiado!');
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      toast.error('Erro ao copiar código PIX');
+  const copyPixCode = async () => {
+    if (qrCodeText) {
+      try {
+        await navigator.clipboard.writeText(qrCodeText);
+        toast.success('Código PIX copiado!');
+      } catch (error) {
+        console.error('Erro ao copiar:', error);
+        toast.error('Erro ao copiar código PIX');
+      }
     }
   };
 
-  const openBankApp = () => {
-    // Try to open common bank apps
-    const bankApps = [
-      'nubank://',
-      'itau://',
-      'bradesco://',
-      'caixa://',
-      'santander://',
-      'banco-do-brasil://'
-    ];
-    
-    // Try to open first available bank app
-    const tryOpenApp = (index: number = 0) => {
-      if (index >= bankApps.length) {
-        toast.info('Abra o aplicativo do seu banco manualmente');
-        return;
-      }
-      
-      const timeout = setTimeout(() => tryOpenApp(index + 1), 1000);
-      window.location.href = bankApps[index];
-      clearTimeout(timeout);
-    };
-    
-    tryOpenApp();
-  };
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={onClose}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="bg-white rounded-lg shadow-xl max-w-sm w-full max-h-[90vh] overflow-y-auto"
         >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", damping: 20 }}
-            className="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold">Pagamento PIX</h2>
-                  <p className="text-green-100 text-sm">R$ {amount.toFixed(2)}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="text-white hover:bg-green-600 h-8 w-8"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold text-gray-900">Pagamento PIX</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="p-2"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 space-y-4">
+            {/* Amount */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Valor a pagar</p>
+              <p className="text-2xl font-bold text-green-600">
+                R$ {amount.toFixed(2)}
+              </p>
             </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* QR Code */}
-              <div className="text-center">
-                {qrCodeBase64 ? (
-                  <div className="bg-white p-4 rounded-xl border-2 border-gray-100 inline-block">
-                    <img
-                      src={`data:image/png;base64,${qrCodeBase64}`}
-                      alt="QR Code PIX"
-                      className="w-48 h-48 mx-auto"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-48 h-48 mx-auto bg-gray-100 rounded-xl flex items-center justify-center">
-                    <div className="text-center text-gray-500">
-                      <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-sm">Gerando QR Code...</p>
+            {/* QR Code */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center space-y-3">
+                  {qrCodeBase64 ? (
+                    <div className="flex justify-center">
+                      <img
+                        src={`data:image/png;base64,${qrCodeBase64}`}
+                        alt="QR Code PIX"
+                        className="w-48 h-48 border rounded-lg"
+                      />
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Instructions */}
-              <div className="text-center space-y-2">
-                <h3 className="font-semibold text-gray-900">Como pagar com PIX</h3>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p>1. Escaneie o QR code acima</p>
-                  <p>2. Ou copie e cole o código PIX</p>
-                  <p>3. Confirme o pagamento no seu banco</p>
+                  ) : (
+                    <div className="w-48 h-48 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
+                      <QrCode className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-600">
+                    Escaneie o QR code com o app do seu banco
+                  </p>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                {/* Copy Code Button */}
-                {qrCodeText && (
-                  <Button
-                    onClick={handleCopy}
-                    className="w-full h-12 bg-gray-100 hover:bg-gray-200 text-gray-900 border-2 border-gray-200"
-                    disabled={!qrCodeText}
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-5 w-5 mr-2 text-green-600" />
-                        Código Copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-5 w-5 mr-2" />
-                        Copiar Código PIX
-                      </>
-                    )}
-                  </Button>
-                )}
+            {/* PIX Code */}
+            {qrCodeText && (
+              <Card>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-gray-900">
+                      Ou copie o código PIX:
+                    </p>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-xs text-gray-600 break-all font-mono">
+                        {qrCodeText.substring(0, 50)}...
+                      </p>
+                    </div>
+                    <Button
+                      onClick={copyPixCode}
+                      variant="outline"
+                      className="w-full"
+                      size="sm"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar código PIX
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-                {/* Open Bank App Button */}
-                <Button
-                  onClick={openBankApp}
-                  className="w-full h-12 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <ExternalLink className="h-5 w-5 mr-2" />
-                  Abrir App do Banco
-                </Button>
+            {/* Instructions */}
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">
+                  Como pagar:
+                </h4>
+                <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+                  <li>Abra o app do seu banco</li>
+                  <li>Escolha "Pagar com PIX"</li>
+                  <li>Escaneie o QR code ou cole o código</li>
+                  <li>Confirme o pagamento</li>
+                </ol>
+              </CardContent>
+            </Card>
 
-                {/* Refresh Button */}
-                {onRefresh && (
-                  <Button
-                    onClick={onRefresh}
-                    variant="outline"
-                    className="w-full h-12"
-                    disabled={isRefreshing}
-                  >
-                    {isRefreshing ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Atualizando...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Atualizar QR Code
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              {/* Timer/Status */}
-              <div className="bg-blue-50 rounded-lg p-3 text-center">
-                <p className="text-sm text-blue-800">
-                  ⏱️ QR Code válido por mais 10 minutos
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  O pagamento será confirmado automaticamente
-                </p>
-              </div>
-            </div>
-          </motion.div>
+            {/* Refresh button */}
+            <Button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              variant="outline"
+              className="w-full"
+            >
+              {isRefreshing ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
+                  Atualizando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Atualizar QR Code
+                </>
+              )}
+            </Button>
+          </div>
         </motion.div>
-      )}
+      </div>
     </AnimatePresence>
   );
 };
