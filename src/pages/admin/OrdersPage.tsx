@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useOrdersWithAttempts } from '@/hooks/useOrdersWithAttempts';
 import OrdersStatsCards from '@/components/admin/orders/OrdersStatsCards';
-import DataMigrationPanel from '@/components/admin/orders/DataMigrationPanel';
 import OrdersTabs from '@/components/admin/orders/OrdersTabs';
 
 const OrdersPage = () => {
@@ -105,9 +104,6 @@ const OrdersPage = () => {
           </Button>
         </div>
       </div>
-
-      {/* Data Migration Panel */}
-      <DataMigrationPanel />
 
       {/* Enhanced Stats Cards */}
       <OrdersStatsCards stats={stats} />
@@ -201,7 +197,7 @@ const OrdersPage = () => {
         </CardContent>
       </Card>
 
-      {/* NEW: Sistema de Abas */}
+      {/* Sistema de Abas */}
       <OrdersTabs />
     </div>
   );
