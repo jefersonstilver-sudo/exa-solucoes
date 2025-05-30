@@ -60,7 +60,7 @@ const OrdersPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gerenciar Pedidos e Tentativas</h1>
-          <p className="text-gray-700 font-medium">Sistema completo incluindo tentativas abandonadas e pedidos finalizados</p>
+          <p className="text-gray-800 font-medium">Sistema completo incluindo tentativas abandonadas e pedidos finalizados</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button 
@@ -86,7 +86,7 @@ const OrdersPage = () => {
       <OrdersStatsCards stats={stats} />
 
       {/* Filters and Search */}
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-white border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 font-bold">
             <TrendingUp className="h-5 w-5 mr-2 text-indexa-purple" />
@@ -97,12 +97,12 @@ const OrdersPage = () => {
           <div className="flex gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-600" />
                 <Input
                   placeholder="Buscar por ID, nome ou email do cliente..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
+                  className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-600 focus:border-indexa-purple focus:ring-indexa-purple"
                 />
               </div>
             </div>
@@ -169,10 +169,10 @@ const OrdersPage = () => {
       </Card>
 
       {/* Orders and Attempts Table */}
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-white border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-900 font-bold">Lista Completa - Pedidos e Tentativas</CardTitle>
-          <CardDescription className="text-gray-700 font-medium">
+          <CardDescription className="text-gray-800 font-medium">
             Visualização completa incluindo tentativas abandonadas e pedidos finalizados
           </CardDescription>
         </CardHeader>

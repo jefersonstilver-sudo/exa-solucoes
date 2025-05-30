@@ -20,12 +20,12 @@ const DataMigrationPanel: React.FC = () => {
   };
 
   return (
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-white border-gray-200 shadow-sm">
       <CardHeader>
-        <CardTitle className="flex items-center text-black">
-          <Database className="h-5 w-5 mr-2 text-[#00FFAB]" />
+        <CardTitle className="flex items-center text-gray-900 font-bold">
+          <Database className="h-5 w-5 mr-2 text-indexa-purple" />
           Migração e Sincronização de Dados
-          <Badge className="ml-2 bg-red-100 text-red-800 border-red-300">Sistema Crítico</Badge>
+          <Badge className="ml-2 bg-red-100 text-red-800 border-red-300 font-semibold">Sistema Crítico</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -33,7 +33,7 @@ const DataMigrationPanel: React.FC = () => {
           <Button
             onClick={runFullMigration}
             disabled={isMigrating}
-            className="bg-[#00FFAB] hover:bg-[#00FFAB]/80 text-white font-semibold"
+            className="bg-indexa-purple hover:bg-indexa-purple/90 text-white font-semibold"
           >
             {isMigrating ? (
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -47,7 +47,7 @@ const DataMigrationPanel: React.FC = () => {
             onClick={migrateMissingOrders}
             disabled={isMigrating}
             variant="outline"
-            className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
+            className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-semibold"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Migrar Pedidos
@@ -57,7 +57,7 @@ const DataMigrationPanel: React.FC = () => {
             onClick={syncVideoStatus}
             disabled={isMigrating}
             variant="outline"
-            className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
+            className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-semibold"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Sync Status
@@ -67,7 +67,7 @@ const DataMigrationPanel: React.FC = () => {
             onClick={cleanupOrphanedData}
             disabled={isMigrating}
             variant="outline"
-            className="border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-black"
+            className="border-gray-500 text-gray-700 hover:bg-gray-500 hover:text-white font-semibold"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Limpar Dados
@@ -75,12 +75,12 @@ const DataMigrationPanel: React.FC = () => {
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-medium text-black mb-2">Sobre esta ferramenta:</h4>
-          <ul className="text-sm text-gray-700 space-y-1">
-            <li>• <strong>Migração Completa:</strong> Executa todas as operações de uma vez</li>
-            <li>• <strong>Migrar Pedidos:</strong> Recupera pedidos perdidos das tentativas de compra</li>
-            <li>• <strong>Sync Status:</strong> Sincroniza status entre pedidos e aprovações de vídeo</li>
-            <li>• <strong>Limpar Dados:</strong> Remove registros órfãos e duplicados</li>
+          <h4 className="font-semibold text-gray-900 mb-2">Sobre esta ferramenta:</h4>
+          <ul className="text-sm text-gray-800 space-y-1">
+            <li>• <strong className="text-gray-900">Migração Completa:</strong> Executa todas as operações de uma vez</li>
+            <li>• <strong className="text-gray-900">Migrar Pedidos:</strong> Recupera pedidos perdidos das tentativas de compra</li>
+            <li>• <strong className="text-gray-900">Sync Status:</strong> Sincroniza status entre pedidos e aprovações de vídeo</li>
+            <li>• <strong className="text-gray-900">Limpar Dados:</strong> Remove registros órfãos e duplicados</li>
           </ul>
         </div>
       </CardContent>
