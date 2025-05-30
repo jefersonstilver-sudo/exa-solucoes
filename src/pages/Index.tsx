@@ -1,19 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
-
-interface HomepageConfig {
-  id: string;
-  service_type: string;
-  title: string;
-  image_url: string;
-  button_text: string;
-  button_icon: 'calendar' | 'monitor' | 'info';
-  href: string;
-}
+import { HomepageConfig } from '@/hooks/useHomepageImages';
 
 const Index = () => {
   const [configs, setConfigs] = useState<HomepageConfig[]>([]);
@@ -38,7 +28,8 @@ const Index = () => {
               image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80',
               button_text: 'Agende um café',
               button_icon: 'calendar',
-              href: '/marketing'
+              href: '/marketing',
+              updated_at: new Date().toISOString()
             },
             {
               id: '2',
@@ -47,7 +38,8 @@ const Index = () => {
               image_url: 'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80',
               button_text: 'Nossos trabalhos',
               button_icon: 'monitor',
-              href: '/produtora'
+              href: '/produtora',
+              updated_at: new Date().toISOString()
             },
             {
               id: '3',
@@ -56,7 +48,8 @@ const Index = () => {
               image_url: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80',
               button_text: 'Saiba mais',
               button_icon: 'info',
-              href: '/paineis-digitais/loja'
+              href: '/paineis-digitais/loja',
+              updated_at: new Date().toISOString()
             }
           ]);
         } else {
