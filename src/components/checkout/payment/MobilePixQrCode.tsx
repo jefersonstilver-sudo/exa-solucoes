@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RefreshCw, Copy, QrCode } from 'lucide-react';
+import { X, Copy, QrCode, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -37,125 +37,113 @@ const MobilePixQrCode = ({
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => {
+      window.location.href = '/advertiser/pedidos';
+    }, 300);
+  };
+
+  const handlePaymentConfirmed = () => {
+    toast.success("Redirecionando para seus pedidos...");
+    onClose();
+    setTimeout(() => {
+      window.location.href = '/advertiser/pedidos';
+    }, 1000);
+  };
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-white rounded-lg shadow-xl max-w-sm w-full max-h-[90vh] overflow-y-auto"
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-gray-900">Pagamento PIX</h3>
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
+                <QrCode className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">PIX</h3>
+                <p className="text-sm text-gray-500">Pagamento instantâneo</p>
+              </div>
+            </div>
             <Button
               variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="p-2"
+              size="icon"
+              onClick={handleClose}
+              className="h-10 w-10 rounded-full hover:bg-gray-100"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
 
           {/* Content */}
-          <div className="p-4 space-y-4">
+          <div className="p-6 space-y-6">
             {/* Amount */}
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Valor a pagar</p>
-              <p className="text-2xl font-bold text-green-600">
+            <div className="text-center bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+              <p className="text-sm text-green-700 mb-1">Valor a pagar</p>
+              <p className="text-3xl font-bold text-green-800">
                 R$ {amount.toFixed(2)}
               </p>
             </div>
 
             {/* QR Code */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center space-y-3">
+            <Card className="border-2 border-gray-200 shadow-lg">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
                   {qrCodeBase64 ? (
                     <div className="flex justify-center">
-                      <img
-                        src={`data:image/png;base64,${qrCodeBase64}`}
-                        alt="QR Code PIX"
-                        className="w-48 h-48 border rounded-lg"
-                      />
+                      <div className="bg-white p-4 rounded-xl border-2 border-gray-100">
+                        <img
+                          src={`data:image/png;base64,${qrCodeBase64}`}
+                          alt="QR Code PIX"
+                          className="w-48 h-48 rounded-lg"
+                        />
+                      </div>
                     </div>
                   ) : (
-                    <div className="w-48 h-48 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
-                      <QrCode className="h-12 w-12 text-gray-400" />
+                    <div className="w-48 h-48 mx-auto bg-gray-100 rounded-xl flex items-center justify-center border-2 border-gray-200">
+                      <QrCode className="h-16 w-16 text-gray-400" />
                     </div>
                   )}
-                  
-                  <p className="text-xs text-gray-600">
-                    Escaneie o QR code com o app do seu banco
-                  </p>
                 </div>
               </CardContent>
             </Card>
 
             {/* PIX Code */}
             {qrCodeText && (
-              <Card>
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-gray-900">
-                      Ou copie o código PIX:
-                    </p>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-600 break-all font-mono">
-                        {qrCodeText.substring(0, 50)}...
-                      </p>
-                    </div>
-                    <Button
-                      onClick={copyPixCode}
-                      variant="outline"
-                      className="w-full"
-                      size="sm"
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar código PIX
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                  <p className="text-xs text-gray-600 break-all font-mono bg-white p-3 rounded-lg border">
+                    {qrCodeText.substring(0, 50)}...
+                  </p>
+                </div>
+                <Button
+                  onClick={copyPixCode}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl"
+                  size="lg"
+                >
+                  <Copy className="h-5 w-5 mr-2" />
+                  Copiar código PIX
+                </Button>
+              </div>
             )}
 
-            {/* Instructions */}
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">
-                  Como pagar:
-                </h4>
-                <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-                  <li>Abra o app do seu banco</li>
-                  <li>Escolha "Pagar com PIX"</li>
-                  <li>Escaneie o QR code ou cole o código</li>
-                  <li>Confirme o pagamento</li>
-                </ol>
-              </CardContent>
-            </Card>
-
-            {/* Refresh button */}
+            {/* Botão "Já Paguei" */}
             <Button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              variant="outline"
-              className="w-full"
+              onClick={handlePaymentConfirmed}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-semibold rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
+              size="lg"
             >
-              {isRefreshing ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
-                  Atualizando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Atualizar QR Code
-                </>
-              )}
+              <CheckCircle className="h-6 w-6 mr-3" />
+              Já Paguei
             </Button>
           </div>
         </motion.div>

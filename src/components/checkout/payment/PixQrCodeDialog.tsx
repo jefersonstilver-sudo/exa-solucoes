@@ -3,12 +3,11 @@ import React from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, CheckCircle } from 'lucide-react';
+import { Copy, CheckCircle, X } from 'lucide-react';
 import { QRCodeDisplay } from '@/components/checkout/payment/QRCodeDisplay';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
@@ -39,10 +38,9 @@ const PixQrCodeDialog = ({
   const handleCopyQrCode = () => {
     if (finalQrCodeText) {
       navigator.clipboard.writeText(finalQrCodeText)
-        .then(() => toast.success("Código PIX copiado para a área de transferência"))
+        .then(() => toast.success("Código PIX copiado!"))
         .catch(() => toast.error("Erro ao copiar código PIX"));
       
-      // Log copy action
       logCheckoutEvent(
         CheckoutEvent.USER_ACTION,
         LogLevel.INFO,
@@ -52,8 +50,14 @@ const PixQrCodeDialog = ({
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => {
+      window.location.href = '/advertiser/pedidos';
+    }, 300);
+  };
+
   const handlePaymentConfirmed = () => {
-    // Log payment confirmation
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_EVENT,
       LogLevel.INFO,
@@ -61,93 +65,83 @@ const PixQrCodeDialog = ({
       { timestamp: new Date().toISOString() }
     );
     
-    toast.success("Pagamento confirmado! Redirecionando...");
+    toast.success("Redirecionando para seus pedidos...");
     
-    // Close dialog
     onClose();
-    
-    // Redirect to advertiser portal (correct route)
     setTimeout(() => {
-      window.location.href = '/anunciante/pedidos';
+      window.location.href = '/advertiser/pedidos';
     }, 1000);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center text-xl font-bold flex items-center justify-center gap-3">
-            <img 
-              src="https://logospng.org/wp-content/uploads/mercado-pago.png" 
-              alt="Mercado Pago" 
-              className="h-8 w-auto"
-            />
-            Pagamento PIX
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 shadow-2xl">
+        <DialogHeader className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClose}
+            className="absolute -right-2 -top-2 h-8 w-8 rounded-full hover:bg-gray-100"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          
+          <DialogTitle className="text-center text-2xl font-bold flex items-center justify-center gap-3 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
+              <img 
+                src="https://logospng.org/wp-content/uploads/mercado-pago.png" 
+                alt="PIX" 
+                className="h-8 w-auto filter brightness-0 invert"
+              />
+            </div>
+            <div>
+              <div className="text-gray-900">Pagamento PIX</div>
+              <div className="text-sm font-normal text-gray-500">Escaneie ou copie o código</div>
+            </div>
           </DialogTitle>
-          <DialogDescription className="text-center text-gray-600">
-            Escaneie o QR Code ou copie o código para pagar
-          </DialogDescription>
         </DialogHeader>
         
-        <div className="flex flex-col items-center space-y-6 py-4">
+        <div className="flex flex-col items-center space-y-6 py-6">
           {finalQrCodeBase64 && (
-            <div className="w-full flex flex-col items-center space-y-3">
-              <div className="w-full flex justify-center">
-                <div className="bg-white p-4 rounded-xl border-2 border-gray-100 shadow-sm">
-                  <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
-                </div>
+            <div className="w-full flex justify-center">
+              <div className="bg-white p-6 rounded-2xl border-2 border-gray-200 shadow-lg">
+                <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
               </div>
             </div>
           )}
           
           {finalQrCodeText && (
-            <div className="w-full">
-              <div className="flex flex-col space-y-3">
-                <label className="text-sm font-medium text-gray-700 text-center">
-                  Ou copie e cole o código PIX:
-                </label>
-                <div className="relative">
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-xs overflow-x-auto max-w-full whitespace-nowrap">
-                    {finalQrCodeText.length > 50 ? `${finalQrCodeText.substring(0, 50)}...` : finalQrCodeText}
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="default"
-                    onClick={handleCopyQrCode}
-                    className="w-full mt-2 bg-green-600 hover:bg-green-700"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copiar Código PIX
-                  </Button>
+            <div className="w-full space-y-4">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                <div className="text-xs text-gray-600 break-all font-mono bg-white p-3 rounded-lg border">
+                  {finalQrCodeText.length > 60 ? `${finalQrCodeText.substring(0, 60)}...` : finalQrCodeText}
                 </div>
               </div>
+              <Button 
+                onClick={handleCopyQrCode}
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
+                size="lg"
+              >
+                <Copy className="h-5 w-5 mr-2" />
+                Copiar Código PIX
+              </Button>
             </div>
           )}
 
-          {/* Botão "Já Paguei" */}
-          <div className="w-full pt-4 border-t border-gray-200">
+          {/* Botão "Já Paguei" em destaque */}
+          <div className="w-full pt-2">
             <Button
               onClick={handlePaymentConfirmed}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-semibold rounded-xl shadow-xl transition-all duration-200 hover:shadow-2xl transform hover:scale-105"
               size="lg"
             >
-              <CheckCircle className="h-5 w-5 mr-2" />
+              <CheckCircle className="h-6 w-6 mr-3" />
               Já Paguei
             </Button>
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Clique aqui após realizar o pagamento PIX
+            <p className="text-xs text-gray-500 text-center mt-3">
+              Clique aqui após realizar o pagamento
             </p>
           </div>
-        </div>
-        
-        <div className="flex justify-center gap-2 mt-4">
-          <Button 
-            variant="outline" 
-            onClick={onClose}
-            className="flex-1"
-          >
-            Cancelar
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
