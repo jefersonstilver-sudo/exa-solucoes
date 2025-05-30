@@ -6,7 +6,7 @@ export interface Plan {
   months: number;
   discount: number;
   mostPopular: boolean;
-  pricePerMonth: number;
+  pricePerMonth?: number; // Make optional since we calculate dynamically
   extras: string[];
   
   // New fields needed for PlanSelector and CheckoutSummary

@@ -122,6 +122,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
               onSelectPlan={setSelectedPlan}
               plans={PLANS}
               panelCount={cartItems.length}
+              cartItems={cartItems}
             />
           </div>
           <TrustIndicators />

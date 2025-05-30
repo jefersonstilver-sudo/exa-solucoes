@@ -11,6 +11,7 @@ export interface Building {
   longitude: number;
   imageUrl?: string;
   basePrice?: number;
+  preco_base?: number; // Add this property for database compatibility
   venue_type: string; // Campo correto usado no banco
   
   // Updated condominiumProfile to be either an object or a string
