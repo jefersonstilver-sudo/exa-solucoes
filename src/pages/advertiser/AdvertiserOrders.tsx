@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
-
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -13,8 +13,7 @@ import {
   Filter,
   Search,
   Eye,
-  Download,
-  AlertCircle,
+  AlertTriangle,
   CheckCircle,
   Clock,
   XCircle
@@ -26,108 +25,62 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-
-interface Order {
-  id: string;
-  created_at: string;
-  status: string;
-  valor_total: number;
-  lista_paineis: string[];
-  plano_meses: number;
-  data_inicio?: string;
-  data_fim?: string;
-}
-
-interface OrderStats {
-  total: number;
-  valorTotal: number;
-  pendentes: number;
-  pagos: number;
-}
+import { useState } from 'react';
 
 const AdvertiserOrders = () => {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { userProfile } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
-  const [stats, setStats] = useState<OrderStats>({
-    total: 0,
-    valorTotal: 0,
-    pendentes: 0,
-    pagos: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
-
-  // Effects must also be called before conditional returns
-  useEffect(() => {
-    loadOrders();
-  }, [userProfile]);
-
-  useEffect(() => {
-    filterOrders();
-  }, [searchTerm, statusFilter, orders]);
+  const [typeFilter, setTypeFilter] = useState('todos');
 
   // NOW we can do conditional rendering after all hooks are called
   if (isMobile) {
     return <MobileAdvertiserOrders />;
   }
 
-  const loadOrders = async () => {
-    if (!userProfile?.id) return;
-
-    try {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('client_id', userProfile.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setOrders(data || []);
-      calculateStats(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar pedidos:', error);
-      toast.error('Erro ao carregar pedidos');
-    } finally {
-      setLoading(false);
-    }
+  // Calcular estatísticas
+  const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
+  const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
+  
+  const stats = {
+    total: orders.length,
+    valorTotal: orders.reduce((sum, order) => sum + (order.valor_total || 0), 0),
+    pendentes: orders.filter(order => order.status === 'pendente').length,
+    pagos: orders.filter(order => ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status)).length,
+    tentativas: attempts.length,
+    valorTentativas: attempts.reduce((sum, attempt) => sum + (attempt.valor_total || 0), 0)
   };
 
-  const calculateStats = (ordersList: Order[]) => {
-    const total = ordersList.length;
-    const valorTotal = ordersList.reduce((sum, order) => sum + (order.valor_total || 0), 0);
-    const pendentes = ordersList.filter(order => order.status === 'pendente').length;
-    const pagos = ordersList.filter(order => ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status)).length;
+  // Filtrar itens
+  const filteredItems = userOrdersAndAttempts.filter(item => {
+    const matchesSearch = 
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.valor_total.toString().includes(searchTerm);
+    
+    const matchesStatus = 
+      statusFilter === 'todos' || 
+      (item.type === 'order' && item.status === statusFilter) ||
+      (item.type === 'attempt' && statusFilter === 'tentativa');
+    
+    const matchesType = typeFilter === 'todos' || item.type === typeFilter;
 
-    setStats({ total, valorTotal, pendentes, pagos });
-  };
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
-  const filterOrders = () => {
-    let filtered = orders;
-
-    if (searchTerm) {
-      filtered = filtered.filter(order =>
-        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.valor_total.toString().includes(searchTerm)
-      );
+  const getStatusConfig = (item: any) => {
+    if (item.type === 'attempt') {
+      return {
+        label: 'Tentativa Abandonada',
+        color: 'bg-orange-100 text-orange-800 border-orange-200',
+        icon: AlertTriangle
+      };
     }
 
-    if (statusFilter !== 'todos') {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
-
-    setFilteredOrders(filtered);
-  };
-
-  const getStatusConfig = (status: string) => {
-    switch (status) {
+    switch (item.status) {
       case 'pendente':
         return {
           label: 'Pendente',
@@ -147,6 +100,12 @@ const AdvertiserOrders = () => {
           color: 'bg-blue-100 text-blue-800 border-blue-200',
           icon: CheckCircle
         };
+      case 'ativo':
+        return {
+          label: 'Ativo',
+          color: 'bg-green-100 text-green-800 border-green-200',
+          icon: CheckCircle
+        };
       case 'cancelado':
         return {
           label: 'Cancelado',
@@ -155,9 +114,9 @@ const AdvertiserOrders = () => {
         };
       default:
         return {
-          label: status,
+          label: item.status,
           color: 'bg-gray-100 text-gray-800 border-gray-200',
-          icon: AlertCircle
+          icon: AlertTriangle
         };
     }
   };
@@ -188,7 +147,7 @@ const AdvertiserOrders = () => {
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos</h1>
-          <p className="text-gray-600 mt-1">Acompanhe o status e histórico de todas as suas campanhas</p>
+          <p className="text-gray-600 mt-1">Acompanhe o status e histórico de todas as suas campanhas e tentativas</p>
         </div>
         <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
           <ShoppingBag className="h-4 w-4 mr-2" />
@@ -197,37 +156,48 @@ const AdvertiserOrders = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">Total de Pedidos</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-800">Pedidos Finalizados</CardTitle>
             <ShoppingBag className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
-            <p className="text-xs text-blue-600">pedidos realizados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Valor Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900">{formatCurrency(stats.valorTotal)}</div>
-            <p className="text-xs text-green-600">investimento total</p>
+            <p className="text-xs text-blue-600">pedidos completos</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-800">Pendentes</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium text-orange-800">Tentativas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{stats.pendentes}</div>
-            <p className="text-xs text-orange-600">aguardando pagamento</p>
+            <div className="text-2xl font-bold text-orange-900">{stats.tentativas}</div>
+            <p className="text-xs text-orange-600">não finalizadas</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-green-800">Valor Realizado</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-900">{formatCurrency(stats.valorTotal)}</div>
+            <p className="text-xs text-green-600">em pedidos</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-red-800">Valor Perdido</CardTitle>
+            <DollarSign className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-900">{formatCurrency(stats.valorTentativas)}</div>
+            <p className="text-xs text-red-600">em tentativas</p>
           </CardContent>
         </Card>
 
@@ -238,7 +208,18 @@ const AdvertiserOrders = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-900">{stats.pagos}</div>
-            <p className="text-xs text-purple-600">campanhas em execução</p>
+            <p className="text-xs text-purple-600">em execução</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-800">Pendentes</CardTitle>
+            <Clock className="h-4 w-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{stats.pendentes}</div>
+            <p className="text-xs text-gray-600">aguardando</p>
           </CardContent>
         </Card>
       </div>
@@ -258,6 +239,17 @@ const AdvertiserOrders = () => {
                 />
               </div>
             </div>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filtrar por tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Tipos</SelectItem>
+                <SelectItem value="order">Pedidos Completos</SelectItem>
+                <SelectItem value="attempt">Tentativas</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[200px]">
                 <Filter className="h-4 w-4 mr-2" />
@@ -265,9 +257,11 @@ const AdvertiserOrders = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os Status</SelectItem>
+                <SelectItem value="tentativa">Tentativas</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="pago">Pago</SelectItem>
                 <SelectItem value="video_aprovado">Aprovado</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
                 <SelectItem value="cancelado">Cancelado</SelectItem>
               </SelectContent>
             </Select>
@@ -276,20 +270,20 @@ const AdvertiserOrders = () => {
       </Card>
 
       {/* Orders List */}
-      {filteredOrders.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
               <ShoppingBag className="h-8 w-8 text-gray-500" />
             </div>
             <h3 className="text-xl font-medium mb-2">
-              {searchTerm || statusFilter !== 'todos' 
+              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
                 ? 'Nenhum pedido encontrado' 
                 : 'Você ainda não fez nenhum pedido'
               }
             </h3>
             <p className="text-gray-500 mb-6">
-              {searchTerm || statusFilter !== 'todos'
+              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
                 ? 'Tente ajustar os filtros para encontrar seus pedidos.'
                 : 'Comece criando sua primeira campanha publicitária.'
               }
@@ -301,23 +295,30 @@ const AdvertiserOrders = () => {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {filteredOrders.map((order) => {
-            const statusConfig = getStatusConfig(order.status);
+          {filteredItems.map((item) => {
+            const statusConfig = getStatusConfig(item);
             const StatusIcon = statusConfig.icon;
+            const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
 
             return (
-              <Card key={order.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-indexa-purple">
+              <Card key={`${item.type}-${item.id}`} className={`hover:shadow-lg transition-all duration-200 border-l-4 ${item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-indexa-purple'}`}>
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
-                          <ShoppingBag className="h-5 w-5 text-indexa-purple" />
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-indexa-purple/10'}`}>
+                          {item.type === 'attempt' ? (
+                            <AlertTriangle className="h-5 w-5 text-orange-500" />
+                          ) : (
+                            <ShoppingBag className="h-5 w-5 text-indexa-purple" />
+                          )}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-lg">Pedido #{order.id.substring(0, 8)}</h3>
+                          <h3 className="font-semibold text-lg">
+                            {item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #{item.id.substring(0, 8)}
+                          </h3>
                           <p className="text-sm text-gray-500">
-                            Criado em {formatDate(order.created_at)}
+                            Criado em {formatDate(item.created_at)}
                           </p>
                         </div>
                       </div>
@@ -325,21 +326,25 @@ const AdvertiserOrders = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500">Valor Total</p>
-                          <p className="font-semibold text-lg">{formatCurrency(order.valor_total || 0)}</p>
+                          <p className={`font-semibold text-lg ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
+                            {formatCurrency(item.valor_total || 0)}
+                          </p>
                         </div>
                         <div>
                           <p className="text-gray-500">Duração</p>
-                          <p className="font-medium">{order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}</p>
+                          <p className="font-medium">
+                            {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
+                          </p>
                         </div>
                         <div>
                           <p className="text-gray-500">Painéis</p>
-                          <p className="font-medium">{order.lista_paineis?.length || 0} selecionados</p>
+                          <p className="font-medium">{painelsList.length} selecionados</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Período</p>
                           <p className="font-medium flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {order.data_inicio ? formatDate(order.data_inicio) : 'A definir'}
+                            {item.type === 'order' && item.data_inicio ? formatDate(item.data_inicio) : 'A definir'}
                           </p>
                         </div>
                       </div>
@@ -352,14 +357,29 @@ const AdvertiserOrders = () => {
                       </Badge>
 
                       <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/anunciante/pedido/${order.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Detalhes
-                        </Button>
+                        {item.type === 'order' ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/anunciante/pedido/${item.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Detalhes
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              toast.info('Esta foi uma tentativa não finalizada. Experimente fazer um novo pedido!');
+                              navigate('/paineis-digitais/loja');
+                            }}
+                            className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white"
+                          >
+                            <AlertTriangle className="h-4 w-4 mr-1" />
+                            Finalizar Compra
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>

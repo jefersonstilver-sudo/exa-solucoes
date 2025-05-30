@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter } from 'lucide-react';
+import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useUserSession } from '@/hooks/useUserSession';
+import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import Layout from '@/components/layout/Layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -15,25 +15,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface Pedido {
-  id: string;
-  created_at: string;
-  status: string | boolean;
-  valor_total: number;
-  lista_paineis: string[] | null;
-  plano_meses: number;
-  data_inicio?: string;
-  data_fim?: string;
-  client_id?: string;
-}
-
 const Pedidos: React.FC = () => {
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [filteredPedidos, setFilteredPedidos] = useState<Pedido[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [typeFilter, setTypeFilter] = useState('todos');
   const { isLoggedIn, user, hasRole } = useUserSession();
+  const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(user?.id);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -41,119 +28,53 @@ const Pedidos: React.FC = () => {
 
   // LOGS DE DEBUG para diagnóstico
   console.log('📋 Pedidos: Componente renderizado');
-  console.log('📋 Pedidos: URL atual:', window.location.pathname);
   console.log('📋 Pedidos: Usuário logado:', isLoggedIn);
   console.log('📋 Pedidos: Dados do usuário:', user);
   console.log('📋 Pedidos: É admin:', isAdmin);
+  console.log('📋 Pedidos: Pedidos e tentativas carregados:', userOrdersAndAttempts.length);
 
-  // Carregar os pedidos baseado no perfil do usuário
-  useEffect(() => {
-    const fetchPedidos = async () => {
-      try {
-        console.log('📋 Pedidos: Iniciando carregamento de pedidos...');
-        setIsLoading(true);
-        
-        let query = supabase.from('pedidos').select('*').order('created_at', { ascending: false });
-        
-        // Se não for admin, filtrar apenas os pedidos do usuário logado
-        if (!isAdmin && user?.id) {
-          console.log('📋 Pedidos: Filtrando por client_id:', user.id);
-          query = query.eq('client_id', user.id);
-        } else {
-          console.log('📋 Pedidos: Carregando todos os pedidos (usuário admin)');
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error('❌ Pedidos: Erro detalhado ao carregar pedidos:', error);
-          throw error;
-        }
-        
-        console.log("✅ Pedidos: Dados carregados com sucesso:", data);
-        console.log("📊 Pedidos: Quantidade de pedidos:", data?.length || 0);
-        setPedidos(data || []);
-        setFilteredPedidos(data || []);
-      } catch (error: any) {
-        console.error('💥 Pedidos: Erro crítico ao carregar pedidos:', error.message || error);
-        toast.error('Não foi possível carregar os pedidos');
-      } finally {
-        console.log('📋 Pedidos: Finalizando carregamento...');
-        setIsLoading(false);
-      }
-    };
+  // Filtrar pedidos e tentativas
+  const filteredItems = userOrdersAndAttempts.filter(item => {
+    const matchesSearch = 
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(item.valor_total).includes(searchTerm);
+    
+    const matchesStatus = 
+      statusFilter === 'todos' || 
+      (item.type === 'order' && item.status.toLowerCase() === statusFilter.toLowerCase()) ||
+      (item.type === 'attempt' && statusFilter === 'tentativa');
+    
+    const matchesType = 
+      typeFilter === 'todos' || 
+      item.type === typeFilter;
 
-    if (user) {
-      console.log('📋 Pedidos: Usuário disponível, iniciando carregamento');
-      fetchPedidos();
-    } else {
-      console.log('📋 Pedidos: Aguardando dados do usuário...');
-    }
-
-    // Configurar inscrição em tempo real para atualizações de pedidos
-    const channel = supabase
-      .channel('public:pedidos')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'pedidos' 
-        }, 
-        (payload) => {
-          console.log('🔄 Pedidos: Mudança detectada em tempo real:', payload);
-          if (user) {
-            fetchPedidos(); // Recarregar todos os pedidos quando houver mudanças
-          }
-        }
-      )
-      .subscribe();
-
-    // Limpar inscrição ao desmontar
-    return () => {
-      console.log('🧹 Pedidos: Limpando inscrições de tempo real');
-      supabase.removeChannel(channel);
-    };
-  }, [isAdmin, user]);
-
-  // Filtrar pedidos quando o termo de pesquisa ou filtro de status mudar
-  useEffect(() => {
-    if (pedidos.length === 0) return;
-
-    console.log('🔍 Pedidos: Aplicando filtros - Termo:', searchTerm, 'Status:', statusFilter);
-
-    const filtered = pedidos.filter(pedido => {
-      const matchesSearch = 
-        pedido.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (pedido.data_inicio && pedido.data_inicio.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        String(pedido.valor_total).includes(searchTerm);
-      
-      const matchesStatus = 
-        statusFilter === 'todos' || 
-        String(pedido.status).toLowerCase() === statusFilter.toLowerCase();
-
-      return matchesSearch && matchesStatus;
-    });
-
-    console.log('📊 Pedidos: Resultados filtrados:', filtered.length);
-    setFilteredPedidos(filtered);
-  }, [searchTerm, statusFilter, pedidos]);
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   // Formatador de status para exibição
-  const formatStatus = (status: string | boolean) => {
-    // Convertendo o status para string para garantir compatibilidade
-    const statusString = String(status).toLowerCase();
-    
-    switch (statusString) {
+  const formatStatus = (item: any) => {
+    if (item.type === 'attempt') {
+      return { 
+        label: 'Tentativa Abandonada', 
+        color: 'bg-orange-600 text-white text-xs px-2 py-1 font-semibold border-0' 
+      };
+    }
+
+    const status = item.status.toLowerCase();
+    switch (status) {
       case 'pendente':
-      case 'false':
         return { label: 'Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'pago':
-      case 'true':
+      case 'pago_pendente_video':
         return { label: 'Pago', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+      case 'video_aprovado':
+        return { label: 'Aprovado', color: 'bg-blue-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+      case 'ativo':
+        return { label: 'Ativo', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'cancelado':
         return { label: 'Cancelado', color: 'bg-red-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       default:
-        return { label: statusString || 'Desconhecido', color: 'bg-gray-700 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: status || 'Desconhecido', color: 'bg-gray-700 text-white text-xs px-2 py-1 font-semibold border-0' };
     }
   };
 
@@ -164,36 +85,51 @@ const Pedidos: React.FC = () => {
   };
 
   // Renderização de card para visualização mobile
-  const renderMobileCard = (pedido: Pedido) => {
-    const status = formatStatus(pedido.status);
-    const paineisList = Array.isArray(pedido.lista_paineis) ? pedido.lista_paineis : [];
+  const renderMobileCard = (item: any) => {
+    const status = formatStatus(item);
+    const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
 
     return (
-      <Card key={pedido.id} className="mb-4 p-4 bg-white border-gray-200">
+      <Card key={`${item.type}-${item.id}`} className="mb-4 p-4 bg-white border-gray-200">
         <div className="flex justify-between items-start mb-2">
-          <div>
-            <Badge className={status.color}>{status.label}</Badge>
-            <h3 className="font-semibold mt-2 text-gray-900">ID: {pedido.id.substring(0, 8)}...</h3>
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center space-x-2">
+              <Badge className={status.color}>{status.label}</Badge>
+              {item.type === 'attempt' && (
+                <Badge variant="outline" className="border-orange-500 text-orange-700">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Tentativa
+                </Badge>
+              )}
+            </div>
+            <h3 className="font-semibold text-gray-900">ID: {item.id.substring(0, 8)}...</h3>
           </div>
-          <p className="text-right font-bold text-gray-900 text-lg">
-            R$ {pedido.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
+          <p className={`text-right font-bold text-lg ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
+            R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
           </p>
         </div>
         
         <div className="grid grid-cols-2 gap-2 text-sm mt-3">
           <div>
-            <p className="text-gray-700 font-medium">Data do Pedido</p>
-            <p className="text-gray-900 font-semibold">{new Date(pedido.created_at).toLocaleDateString('pt-BR')}</p>
+            <p className="text-gray-700 font-medium">Data</p>
+            <p className="text-gray-900 font-semibold">{formatDate(item.created_at)}</p>
           </div>
           <div>
             <p className="text-gray-700 font-medium">Duração</p>
-            <p className="text-gray-900 font-semibold">{pedido.plano_meses} {pedido.plano_meses === 1 ? 'mês' : 'meses'}</p>
+            <p className="text-gray-900 font-semibold">
+              {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
+            </p>
           </div>
           <div>
             <p className="text-gray-700 font-medium">Período</p>
             <p className="flex items-center text-gray-900 font-semibold">
               <CalendarClock className="h-3 w-3 mr-1 text-indexa-purple" />
-              <span>{formatDate(pedido.data_inicio)} - {formatDate(pedido.data_fim)}</span>
+              <span>
+                {item.type === 'order' && item.data_inicio 
+                  ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
+                  : 'Não definido'
+                }
+              </span>
             </p>
           </div>
           <div>
@@ -202,19 +138,34 @@ const Pedidos: React.FC = () => {
           </div>
         </div>
         
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate(`/pedido-confirmado?id=${pedido.id}`)}
-          className="w-full mt-3 border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-        >
-          Ver Detalhes
-        </Button>
+        {item.type === 'order' ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/pedido-confirmado?id=${item.id}`)}
+            className="w-full mt-3 border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
+          >
+            Ver Detalhes
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              toast.info('Esta foi uma tentativa não finalizada. Experimente fazer um novo pedido!');
+              navigate('/paineis-digitais/loja');
+            }}
+            className="w-full mt-3 border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
+          >
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Finalizar Compra
+          </Button>
+        )}
       </Card>
     );
   };
 
-  if (isLoading) {
+  if (loading) {
     console.log('⏳ Pedidos: Exibindo tela de carregamento');
     return (
       <Layout>
@@ -241,42 +192,54 @@ const Pedidos: React.FC = () => {
         >
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
             <ShoppingBag className="mr-2 h-6 w-6 md:h-8 md:w-8 text-indexa-purple" />
-            {isAdmin ? "Todos os Pedidos" : "Meus Pedidos"}
+            Meus Pedidos e Tentativas
           </h1>
           <p className="text-gray-700 mt-1 font-medium">
-            {isAdmin ? "Lista completa de todos os pedidos do sistema" : "Confira o histórico e status de todas as suas campanhas"}
+            Confira o histórico completo de pedidos finalizados e tentativas de compra
           </p>
         </motion.div>
 
         {/* Filtros */}
         <div className="mb-6 flex flex-col md:flex-row gap-3">
           <Input
-            placeholder="Buscar por ID, data ou valor..."
+            placeholder="Buscar por ID ou valor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="md:max-w-xs bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
           />
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full md:w-[180px] bg-white border-gray-300 text-gray-900">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="order">Apenas Pedidos</SelectItem>
+              <SelectItem value="attempt">Apenas Tentativas</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full md:w-[180px] bg-white border-gray-300 text-gray-900">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="bg-white">
               <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="tentativa">Tentativas</SelectItem>
               <SelectItem value="pendente">Pendente</SelectItem>
               <SelectItem value="pago">Pago</SelectItem>
+              <SelectItem value="ativo">Ativo</SelectItem>
               <SelectItem value="cancelado">Cancelado</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {filteredPedidos.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <Card className="p-8 text-center bg-white border-gray-200">
             <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
               <AlertCircle className="h-8 w-8 text-gray-600" />
             </div>
             <h2 className="text-xl font-semibold mb-2 text-gray-900">Nenhum pedido encontrado</h2>
             <p className="text-gray-700 mb-6 font-medium">
-              {searchTerm || statusFilter !== 'todos' 
+              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
                 ? 'Nenhum pedido corresponde aos filtros aplicados.'
                 : 'Você ainda não realizou nenhum pedido em nossa plataforma.'}
             </p>
@@ -292,7 +255,7 @@ const Pedidos: React.FC = () => {
         ) : (
           <>
             {/* Versão Mobile - Cards */}
-            {isMobile && filteredPedidos.map(renderMobileCard)}
+            {isMobile && filteredItems.map(renderMobileCard)}
 
             {/* Versão Desktop - Tabela */}
             {!isMobile && (
@@ -301,7 +264,8 @@ const Pedidos: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-gray-200">
-                        <TableHead className="text-gray-900 font-semibold">ID do Pedido</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Tipo</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">ID</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Data</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Status</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Valor</TableHead>
@@ -312,34 +276,49 @@ const Pedidos: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredPedidos.map((pedido) => {
-                        const status = formatStatus(pedido.status);
-                        const paineisList = Array.isArray(pedido.lista_paineis) ? pedido.lista_paineis : [];
+                      {filteredItems.map((item) => {
+                        const status = formatStatus(item);
+                        const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
                         
                         return (
-                          <TableRow key={pedido.id} className="border-gray-200 hover:bg-gray-50">
+                          <TableRow key={`${item.type}-${item.id}`} className="border-gray-200 hover:bg-gray-50">
+                            <TableCell>
+                              {item.type === 'attempt' ? (
+                                <Badge variant="outline" className="border-orange-500 text-orange-700">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Tentativa
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-green-500 text-green-700">
+                                  Pedido
+                                </Badge>
+                              )}
+                            </TableCell>
                             <TableCell className="font-medium text-gray-900">
-                              {pedido.id.substring(0, 8)}...
+                              {item.id.substring(0, 8)}...
                             </TableCell>
                             <TableCell className="text-gray-800 font-medium">
-                              {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
+                              {formatDate(item.created_at)}
                             </TableCell>
                             <TableCell>
                               <Badge className={status.color}>
                                 {status.label}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-gray-900 font-bold text-base">
-                              R$ {pedido.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
+                            <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
+                              R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
                             </TableCell>
                             <TableCell className="text-gray-800 font-medium">
-                              {pedido.plano_meses} {pedido.plano_meses === 1 ? 'mês' : 'meses'}
+                              {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
                             </TableCell>
                             <TableCell className="whitespace-nowrap">
                               <div className="flex items-center text-gray-800 font-medium">
                                 <CalendarClock className="h-4 w-4 mr-1 text-indexa-purple" />
                                 <span>
-                                  {formatDate(pedido.data_inicio)} - {formatDate(pedido.data_fim)}
+                                  {item.type === 'order' && item.data_inicio 
+                                    ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
+                                    : 'Não definido'
+                                  }
                                 </span>
                               </div>
                             </TableCell>
@@ -347,14 +326,29 @@ const Pedidos: React.FC = () => {
                               {paineisList.length}
                             </TableCell>
                             <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/pedido-confirmado?id=${pedido.id}`)}
-                                className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-                              >
-                                Detalhes
-                              </Button>
+                              {item.type === 'order' ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => navigate(`/pedido-confirmado?id=${item.id}`)}
+                                  className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
+                                >
+                                  Detalhes
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    toast.info('Tentativa não finalizada. Experimente fazer um novo pedido!');
+                                    navigate('/paineis-digitais/loja');
+                                  }}
+                                  className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
+                                >
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Finalizar
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
