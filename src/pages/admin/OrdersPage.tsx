@@ -18,9 +18,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useOrdersWithAttempts } from '@/hooks/useOrdersWithAttempts';
-import OrdersAndAttemptsTable from '@/components/admin/orders/OrdersAndAttemptsTable';
 import OrdersStatsCards from '@/components/admin/orders/OrdersStatsCards';
 import DataMigrationPanel from '@/components/admin/orders/DataMigrationPanel';
+import OrdersTabs from '@/components/admin/orders/OrdersTabs';
 
 const OrdersPage = () => {
   const { ordersAndAttempts, stats, loading, refetch } = useOrdersWithAttempts();
@@ -68,7 +68,7 @@ const OrdersPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gerenciar Todos os Pedidos</h1>
-          <p className="text-gray-800 font-medium">Sistema completo incluindo pedidos pendentes, tentativas abandonadas e pedidos finalizados</p>
+          <p className="text-gray-800 font-medium">Sistema completo incluindo pedidos concluídos e tentativas de compra para CRM</p>
           
           {/* Alertas importantes */}
           {pendingOrders > 0 && (
@@ -84,7 +84,7 @@ const OrdersPage = () => {
             <div className="mt-2 flex items-center text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
               <AlertCircle className="h-4 w-4 mr-2" />
               <span className="text-sm font-medium">
-                {totalAttempts} tentativa{totalAttempts > 1 ? 's' : ''} de compra abandonada{totalAttempts > 1 ? 's' : ''}
+                {totalAttempts} tentativa{totalAttempts > 1 ? 's' : ''} de compra - Oportunidades de CRM
               </span>
             </div>
           )}
@@ -201,20 +201,8 @@ const OrdersPage = () => {
         </CardContent>
       </Card>
 
-      {/* Orders and Attempts Table */}
-      <Card className="bg-white border-gray-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-900 font-bold">
-            Lista Completa - Todos os Pedidos ({filteredItems.length} itens)
-          </CardTitle>
-          <CardDescription className="text-gray-800 font-medium">
-            Visualização completa incluindo pedidos pendentes, tentativas abandonadas e pedidos finalizados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrdersAndAttemptsTable ordersAndAttempts={filteredItems} />
-        </CardContent>
-      </Card>
+      {/* NEW: Sistema de Abas */}
+      <OrdersTabs />
     </div>
   );
 };

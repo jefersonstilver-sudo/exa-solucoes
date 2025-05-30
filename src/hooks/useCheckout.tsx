@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
 import { usePanelAvailability } from '@/hooks/usePanelAvailability';
 import { usePaymentProcessor } from '@/hooks/payment/usePaymentProcessor';
+import { useAttemptCapture } from '@/hooks/useAttemptCapture';
 import { calculateTotalPrice, calculateCartSubtotal } from '@/utils/checkoutUtils';
 import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
 import { useCheckoutState } from '@/hooks/checkout/useCheckoutState';
@@ -23,6 +25,7 @@ export const useCheckout = () => {
   const orderId = searchParams.get('id');
   
   const { cartItems, handleClearCart } = useCartManager();
+  const { captureAttempt, clearAttempt } = useAttemptCapture();
   
   const {
     step, setStep,
@@ -124,6 +127,26 @@ export const useCheckout = () => {
     }
   }, [step, cartItems.length, startDate, endDate]); // Simplified dependencies
 
+  // NOVA FUNCIONALIDADE: Capturar tentativa quando usuário chega no checkout
+  useEffect(() => {
+    const shouldCaptureAttempt = 
+      sessionUser?.id && 
+      cartItems.length > 0 && 
+      selectedPlan &&
+      (step === 1 || step === 2); // Resumo ou pagamento
+    
+    if (shouldCaptureAttempt) {
+      const totalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+      
+      // Capturar tentativa em background
+      const timeout = setTimeout(() => {
+        captureAttempt(sessionUser.id, cartItems, totalPrice);
+      }, 2000); // Aguardar 2 segundos para confirmar intenção
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [sessionUser?.id, cartItems.length, selectedPlan, step, couponDiscount, couponValid]);
+
   // Memoizar cálculos para evitar re-computações desnecessárias
   const orderTotal = useMemo(() => {
     return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
@@ -149,12 +172,18 @@ export const useCheckout = () => {
       console.log('[useCheckout] CONFIRMAÇÃO: Usando WEBHOOK URL CORRIGIDA no createPayment');
       
       const response = await createPayment(options);
+      
+      // NOVA FUNCIONALIDADE: Limpar tentativa após conversão bem-sucedida
+      if (response && response.success) {
+        await clearAttempt(sessionUser.id);
+      }
+      
       return response;
     } catch (error) {
       console.error('[useCheckout] Payment error:', error);
       throw error;
     }
-  }, [createPayment, sessionUser?.id, cartItems.length]);
+  }, [createPayment, sessionUser?.id, cartItems.length, clearAttempt]);
 
   // Usa o hook de navegação - com validações melhoradas
   const navigation = useCheckoutNavigation({
