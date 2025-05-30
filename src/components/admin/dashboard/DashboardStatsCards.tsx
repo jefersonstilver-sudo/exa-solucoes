@@ -1,0 +1,97 @@
+
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Building2, MonitorPlay, DollarSign } from 'lucide-react';
+import GrowthIndicator from './GrowthIndicator';
+import { MonthlyDashboardStats } from '@/hooks/useMonthlyDashboardData';
+
+interface DashboardStatsCardsProps {
+  stats: MonthlyDashboardStats;
+  growthData: {
+    users: number;
+    revenue: number;
+    orders: number;
+    buildings: number;
+  } | null;
+}
+
+const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) => {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const statsCards = [
+    {
+      title: 'Usuários do Mês',
+      value: stats.total_users.toString(),
+      accumulated: stats.total_users_accumulated,
+      growth: growthData?.users || 0,
+      icon: Users,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600'
+    },
+    {
+      title: 'Prédios do Mês',
+      value: stats.total_buildings.toString(),
+      accumulated: stats.total_buildings_accumulated,
+      growth: growthData?.buildings || 0,
+      icon: Building2,
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Painéis Online',
+      value: `${stats.online_panels}/${stats.total_panels_accumulated}`,
+      accumulated: stats.total_panels_accumulated,
+      growth: 0,
+      icon: MonitorPlay,
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600'
+    },
+    {
+      title: 'Receita do Mês',
+      value: formatCurrency(stats.monthly_revenue),
+      accumulated: null,
+      growth: growthData?.revenue || 0,
+      icon: DollarSign,
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600'
+    }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {statsCards.map((stat, index) => (
+        <Card key={index} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              {stat.title}
+            </CardTitle>
+            <div className={`w-12 h-12 ${stat.iconBg} rounded-xl flex items-center justify-center`}>
+              <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
+            <div className="space-y-1">
+              <GrowthIndicator 
+                value={stat.growth} 
+                label="vs mês anterior" 
+              />
+              {stat.accumulated !== null && (
+                <div className="text-xs text-gray-500">
+                  Total acumulado: {stat.accumulated.toLocaleString()}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+export default DashboardStatsCards;

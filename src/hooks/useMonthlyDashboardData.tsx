@@ -26,6 +26,7 @@ export interface MonthlyChartData {
   revenueData: Array<{ month: string; revenue: number }>;
   orderStatusData: Array<{ name: string; value: number; color: string }>;
   userGrowthData: Array<{ month: string; users: number }>;
+  panelStatusData: Array<{ status: string; count: number }>;
   last12Months: MonthlyDashboardStats[];
 }
 
@@ -41,6 +42,7 @@ export const useMonthlyDashboardData = () => {
     revenueData: [],
     orderStatusData: [],
     userGrowthData: [],
+    panelStatusData: [],
     last12Months: []
   });
   const [loading, setLoading] = useState(true);
@@ -76,12 +78,17 @@ export const useMonthlyDashboardData = () => {
       
       if (historyError) throw historyError;
       
-      setStats(monthlyData);
-      setComparison(comparisonData);
+      // Type casting with proper validation
+      const typedMonthlyData = monthlyData as MonthlyDashboardStats;
+      const typedComparisonData = comparisonData as MonthlyComparison;
+      const typedHistoryData = historyData as { months: MonthlyDashboardStats[] };
+      
+      setStats(typedMonthlyData);
+      setComparison(typedComparisonData);
       
       // Processar dados para gráficos
-      if (historyData?.months) {
-        const months = historyData.months;
+      if (typedHistoryData?.months) {
+        const months = typedHistoryData.months;
         
         setChartData({
           revenueData: months.map((month: MonthlyDashboardStats) => ({
@@ -89,13 +96,17 @@ export const useMonthlyDashboardData = () => {
             revenue: Number(month.monthly_revenue) || 0
           })),
           orderStatusData: [
-            { name: 'Ativos', value: monthlyData.active_orders, color: '#10b981' },
-            { name: 'Pendentes', value: monthlyData.pending_orders, color: '#f97316' },
+            { name: 'Ativos', value: typedMonthlyData.active_orders, color: '#10b981' },
+            { name: 'Pendentes', value: typedMonthlyData.pending_orders, color: '#f97316' },
           ].filter(item => item.value > 0),
           userGrowthData: months.map((month: MonthlyDashboardStats) => ({
             month: month.month_year,
             users: month.total_users_accumulated || 0
           })),
+          panelStatusData: [
+            { status: 'Online', count: typedMonthlyData.online_panels },
+            { status: 'Offline', count: typedMonthlyData.total_panels_accumulated - typedMonthlyData.online_panels }
+          ].filter(item => item.count > 0),
           last12Months: months
         });
       }
