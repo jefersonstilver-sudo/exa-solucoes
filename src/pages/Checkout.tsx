@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -12,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import PaymentMethodCard from '@/components/checkout/payment/PaymentMethodCard';
-import PaymentProgressHeader from '@/components/checkout/payment/PaymentProgressHeader';
+import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import MobileCheckoutStepper from '@/components/checkout/MobileCheckoutStepper';
 import MobilePaymentMethods from '@/components/checkout/MobilePaymentMethods';
 import MobilePixQrCode from '@/components/checkout/payment/MobilePixQrCode';
@@ -176,7 +175,7 @@ const Checkout = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl shadow-lg p-8 text-center"
           >
-            <div className="h-8 w-8 border-4 border-[#1E1B4B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Carregando pagamento...</p>
           </motion.div>
         </div>
@@ -192,30 +191,16 @@ const Checkout = () => {
 
   return (
     <Layout>
-      <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ${isMobile ? '' : ''}`}>
-        {/* Mobile Stepper */}
-        {isMobile && <MobileCheckoutStepper currentStep={2} />}
-        
-        <div className={`${isMobile ? 'px-4 py-6' : 'container mx-auto px-4 py-8 max-w-4xl'}`}>
-          {/* Header with back button - Desktop only */}
-          {!isMobile && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
-            >
-              <Button
-                variant="ghost"
-                onClick={handleBack}
-                className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Voltar para resumo
-              </Button>
-              
-              <PaymentProgressHeader currentStep={2} />
-            </motion.div>
-          )}
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+          {/* Unified Progress Header - SEMPRE na mesma posição */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8"
+          >
+            <UnifiedCheckoutProgress currentStep={3} />
+          </motion.div>
 
           {/* Mobile Back Button */}
           {isMobile && (
@@ -229,7 +214,7 @@ const Checkout = () => {
             </Button>
           )}
 
-          {/* Main content - Mobile-first layout */}
+          {/* Main content - Layout minimalista */}
           <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-8'}`}>
             {/* Payment methods */}
             <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
@@ -289,7 +274,7 @@ const Checkout = () => {
                   </Card>
                 )}
                 
-                {/* Terms acceptance - Mobile-first */}
+                {/* Terms acceptance - Layout minimalista */}
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -303,18 +288,18 @@ const Checkout = () => {
                           id="terms" 
                           checked={acceptTerms} 
                           onCheckedChange={(checked) => setAcceptTerms(!!checked)}
-                          className="h-5 w-5 mt-0.5 border-gray-300 text-[#1E1B4B] focus:ring-[#1E1B4B]"
+                          className="h-5 w-5 mt-0.5 border-gray-300 text-[#3C1361] focus:ring-[#3C1361]"
                         />
                         <Label 
                           htmlFor="terms" 
                           className={`text-gray-600 cursor-pointer leading-relaxed ${isMobile ? 'text-sm' : 'text-sm'}`}
                         >
                           Li e concordo com os{' '}
-                          <a href="/termos" className="text-[#1E1B4B] hover:underline font-medium">
+                          <a href="/termos" className="text-[#3C1361] hover:underline font-medium">
                             Termos de Uso
                           </a>{' '}
                           e a{' '}
-                          <a href="/privacidade" className="text-[#1E1B4B] hover:underline font-medium">
+                          <a href="/privacidade" className="text-[#3C1361] hover:underline font-medium">
                             Política de Privacidade
                           </a>
                           .
@@ -368,7 +353,7 @@ const Checkout = () => {
               </motion.div>
             </div>
 
-            {/* Summary sidebar - Desktop only */}
+            {/* Summary sidebar - Desktop only - Layout minimalista */}
             {!isMobile && (
               <div className="lg:col-span-1">
                 <motion.div
@@ -400,7 +385,7 @@ const Checkout = () => {
                         <div className="border-t pt-3">
                           <div className="flex justify-between text-lg font-bold">
                             <span>Total</span>
-                            <span className="text-[#1E1B4B]">
+                            <span className="text-[#3C1361]">
                               R$ {selectedMethod === 'pix' ? pixAmount.toFixed(2) : totalAmount.toFixed(2)}
                             </span>
                           </div>

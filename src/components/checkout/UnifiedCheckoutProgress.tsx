@@ -12,6 +12,7 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
     { 
       name: 'Plano', 
       shortName: 'Plano',
+      mobileShort: 'Plano',
       icon: Calendar,
       description: 'Período',
       motivationalText: 'Escolha seu período ideal!'
@@ -19,6 +20,7 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
     { 
       name: 'Cupom', 
       shortName: 'Cupom',
+      mobileShort: 'Cupom',
       icon: Tag,
       description: 'Desconto',
       motivationalText: 'Economize ainda mais!'
@@ -26,6 +28,7 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
     { 
       name: 'Resumo', 
       shortName: 'Resumo',
+      mobileShort: 'Resumo',
       icon: ShoppingCart,
       description: 'Revisão',
       motivationalText: 'Quase lá!'
@@ -33,6 +36,7 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
     { 
       name: 'Pagamento', 
       shortName: 'Pag.',
+      mobileShort: 'Pag.',
       icon: CreditCard,
       description: 'Finalizar',
       motivationalText: 'Último passo!'
@@ -40,6 +44,7 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
     { 
       name: 'Upload', 
       shortName: 'Upload',
+      mobileShort: 'Upload',
       icon: Upload,
       description: 'Material',
       motivationalText: 'Sua campanha começa aqui!'
@@ -48,21 +53,21 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
 
   return (
     <div className="w-full">
-      {/* Progress Header - Responsivo */}
+      {/* Progress Header - Super compacto em mobile */}
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-4 md:mb-6"
+        className="text-center mb-3 md:mb-6"
       >
-        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">
+        <h3 className="text-sm md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">
           Progresso do Seu Pedido
         </h3>
-        <p className="text-xs md:text-sm text-gray-600">
+        <p className="text-xs md:text-sm text-gray-600 hidden sm:block">
           {steps[currentStep]?.motivationalText || 'Continue para finalizar!'}
         </p>
       </motion.div>
 
-      {/* Desktop/Tablet View */}
+      {/* Desktop/Tablet View - A partir de 640px */}
       <div className="hidden sm:flex justify-between items-center mb-4 md:mb-6">
         {steps.map((step, index) => {
           const StepIcon = step.icon;
@@ -119,14 +124,14 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
               
               {/* Step Info */}
               <motion.div 
-                className="text-center mt-2 md:mt-3 max-w-[70px] md:max-w-[80px]"
+                className="text-center mt-2 md:mt-3 max-w-[60px] md:max-w-[80px]"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 + 0.2 }}
               >
                 <span 
                   className={`
-                    text-xs font-medium block mb-1
+                    text-xs font-medium block mb-1 leading-tight
                     ${isCurrent 
                       ? 'text-[#3C1361] font-bold' 
                       : isCompleted 
@@ -146,72 +151,77 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
         })}
       </div>
 
-      {/* Mobile View - Horizontal Compact */}
-      <div className="flex sm:hidden justify-between items-center mb-4 px-2">
-        {steps.map((step, index) => {
-          const StepIcon = step.icon;
-          const isCompleted = currentStep > index;
-          const isCurrent = currentStep === index;
-          
-          return (
-            <div 
-              key={step.name} 
-              className="flex flex-col items-center relative"
-            >
-              {/* Connection Line */}
-              {index < steps.length - 1 && (
-                <div className="absolute top-4 left-6 w-8 h-0.5 z-0">
-                  <div className="h-full bg-gray-200 rounded-full" />
-                  <motion.div 
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#3C1361] to-[#00FFAB] rounded-full"
-                    initial={{ width: '0%' }}
-                    animate={{ 
-                      width: isCompleted ? '100%' : '0%'
-                    }}
-                    transition={{ duration: 0.6 }}
-                  />
-                </div>
-              )}
-              
-              {/* Step Circle */}
-              <motion.div 
-                className={`
-                  relative z-10 flex items-center justify-center w-8 h-8 rounded-full shadow-md
-                  ${isCompleted 
-                    ? 'bg-gradient-to-r from-[#3C1361] to-[#00FFAB] text-white' 
-                    : isCurrent 
-                      ? 'bg-[#3C1361] text-white ring-2 ring-[#00FFAB]/30' 
-                      : 'bg-white text-gray-400 border border-gray-200'
-                  }
-                `}
-                initial={{ scale: 0.8 }}
-                animate={{ scale: isCurrent ? 1.1 : 1 }}
+      {/* Mobile View - Ultra compacto */}
+      <div className="flex sm:hidden justify-center items-center mb-3 px-1">
+        <div className="flex items-center space-x-2 max-w-full overflow-hidden">
+          {steps.map((step, index) => {
+            const StepIcon = step.icon;
+            const isCompleted = currentStep > index;
+            const isCurrent = currentStep === index;
+            const isVisible = Math.abs(index - currentStep) <= 1; // Mostra apenas atual e adjacentes
+            
+            if (!isVisible) return null;
+            
+            return (
+              <div 
+                key={step.name} 
+                className="flex items-center"
               >
-                {isCompleted ? (
-                  <Check className="w-3 h-3" />
-                ) : (
-                  <StepIcon className="w-3 h-3" />
+                {/* Connection Line para mobile */}
+                {index > 0 && isVisible && (
+                  <div className="w-4 h-0.5 mx-1">
+                    <div className="h-full bg-gray-200 rounded-full" />
+                    <motion.div 
+                      className="absolute h-0.5 bg-gradient-to-r from-[#3C1361] to-[#00FFAB] rounded-full"
+                      initial={{ width: '0%' }}
+                      animate={{ 
+                        width: isCompleted ? '100%' : '0%'
+                      }}
+                      transition={{ duration: 0.6 }}
+                    />
+                  </div>
                 )}
-              </motion.div>
-              
-              {/* Step Name - Only show current step name */}
-              {isCurrent && (
-                <motion.span 
-                  className="text-xs font-medium text-[#3C1361] mt-1 whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                
+                {/* Step Circle */}
+                <motion.div 
+                  className={`
+                    flex items-center justify-center w-6 h-6 rounded-full shadow-md
+                    ${isCompleted 
+                      ? 'bg-gradient-to-r from-[#3C1361] to-[#00FFAB] text-white' 
+                      : isCurrent 
+                        ? 'bg-[#3C1361] text-white ring-2 ring-[#00FFAB]/30' 
+                        : 'bg-white text-gray-400 border border-gray-200'
+                    }
+                  `}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: isCurrent ? 1.2 : 1 }}
                 >
-                  {step.shortName}
-                </motion.span>
-              )}
-            </div>
-          );
-        })}
+                  {isCompleted ? (
+                    <Check className="w-3 h-3" />
+                  ) : (
+                    <StepIcon className="w-3 h-3" />
+                  )}
+                </motion.div>
+                
+                {/* Step Name - Apenas para o atual */}
+                {isCurrent && (
+                  <motion.span 
+                    className="text-xs font-bold text-[#3C1361] ml-2 whitespace-nowrap"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    {step.mobileShort}
+                  </motion.span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
       
       {/* Progress Bar */}
       <div className="relative">
-        <div className="w-full h-1.5 md:h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-full h-1 md:h-2 bg-gray-200 rounded-full overflow-hidden">
           <motion.div 
             className="h-full bg-gradient-to-r from-[#3C1361] to-[#00FFAB] rounded-full"
             initial={{ width: '0%' }}
@@ -230,8 +240,8 @@ const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ curre
           <span className="text-xs text-gray-500">
             Etapa {currentStep + 1} de {steps.length}
           </span>
-          <span className="mx-2 text-gray-300 hidden sm:inline">•</span>
-          <span className="text-xs font-medium text-[#3C1361] hidden sm:inline">
+          <span className="mx-2 text-gray-300 hidden md:inline">•</span>
+          <span className="text-xs font-medium text-[#3C1361] hidden md:inline">
             {Math.round((currentStep / (steps.length - 1)) * 100)}% concluído
           </span>
         </motion.div>
