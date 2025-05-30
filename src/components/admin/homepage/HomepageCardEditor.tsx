@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Eye, Save, RotateCcw } from 'lucide-react';
+import { Upload, Eye, Save, RotateCcw, Trash2 } from 'lucide-react';
 import { HomepageConfig } from '@/hooks/useHomepageImages';
 import { toast } from 'sonner';
 
@@ -13,6 +13,7 @@ interface HomepageCardEditorProps {
   config: HomepageConfig;
   onUpdate: (serviceType: string, updates: Partial<HomepageConfig>) => Promise<boolean>;
   onUploadImage: (file: File, serviceType: string) => Promise<string | null>;
+  onDeleteImage?: (imageUrl: string) => Promise<boolean>;
   isSaving: boolean;
 }
 
@@ -26,6 +27,7 @@ const HomepageCardEditor: React.FC<HomepageCardEditorProps> = ({
   config,
   onUpdate,
   onUploadImage,
+  onDeleteImage,
   isSaving
 }) => {
   const [localConfig, setLocalConfig] = useState(config);
@@ -54,15 +56,26 @@ const HomepageCardEditor: React.FC<HomepageCardEditorProps> = ({
     }
 
     setUploadingImage(true);
-    const imageUrl = await onUploadImage(file, config.service_type);
     
-    if (imageUrl) {
-      handleInputChange('image_url', imageUrl);
-      toast.success('Imagem carregada com sucesso!');
+    try {
+      // Deletar imagem anterior se for do Storage
+      if (localConfig.image_url.includes('supabase') && onDeleteImage) {
+        await onDeleteImage(localConfig.image_url);
+      }
+
+      const imageUrl = await onUploadImage(file, config.service_type);
+      
+      if (imageUrl) {
+        handleInputChange('image_url', imageUrl);
+        toast.success('Imagem carregada com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast.error('Erro ao fazer upload da imagem');
+    } finally {
+      setUploadingImage(false);
+      event.target.value = '';
     }
-    
-    setUploadingImage(false);
-    event.target.value = '';
   };
 
   const handleSave = async () => {
@@ -107,7 +120,16 @@ const HomepageCardEditor: React.FC<HomepageCardEditorProps> = ({
               src={localConfig.image_url}
               alt={localConfig.title}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800';
+              }}
             />
+            {uploadingImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div className="text-white text-sm">Carregando...</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -134,9 +156,9 @@ const HomepageCardEditor: React.FC<HomepageCardEditorProps> = ({
               <Upload className="h-4 w-4" />
             </Button>
           </div>
-          {uploadingImage && (
-            <p className="text-sm text-gray-500">Fazendo upload...</p>
-          )}
+          <p className="text-xs text-gray-500">
+            Formatos aceitos: JPG, PNG, WebP, GIF (máx. 5MB)
+          </p>
         </div>
 
         {/* Título */}
@@ -196,16 +218,16 @@ const HomepageCardEditor: React.FC<HomepageCardEditorProps> = ({
         <div className="flex gap-2 pt-4">
           <Button
             onClick={handleSave}
-            disabled={!hasChanges || isSaving}
+            disabled={!hasChanges || isSaving || uploadingImage}
             className="flex-1 bg-indexa-purple hover:bg-indexa-purple/90"
           >
             <Save className="h-4 w-4 mr-2" />
-            Salvar
+            {isSaving ? 'Salvando...' : 'Salvar'}
           </Button>
           <Button
             onClick={handleReset}
             variant="outline"
-            disabled={!hasChanges}
+            disabled={!hasChanges || isSaving}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>

@@ -2,12 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Eye, RefreshCw } from 'lucide-react';
+import { Loader2, Eye, RefreshCw, Upload } from 'lucide-react';
 import { useHomepageImages } from '@/hooks/useHomepageImages';
 import HomepageCardEditor from '@/components/admin/homepage/HomepageCardEditor';
 
 const HomepageImagesPage = () => {
-  const { configs, isLoading, isSaving, updateConfig, uploadImage, refetch } = useHomepageImages();
+  const { configs, isLoading, isSaving, updateConfig, uploadImage, deleteImage, refetch } = useHomepageImages();
 
   const openHomepage = () => {
     window.open('/', '_blank');
@@ -28,7 +28,8 @@ const HomepageImagesPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestão de Imagens da Homepage</h1>
           <p className="text-gray-600 mt-2">
-            Gerencie as imagens, títulos e links dos cards da página inicial
+            Gerencie as imagens, títulos e links dos cards da página inicial. 
+            As imagens são armazenadas no Supabase Storage.
           </p>
         </div>
         
@@ -53,7 +54,7 @@ const HomepageImagesPage = () => {
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
@@ -86,6 +87,20 @@ const HomepageImagesPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
+              Storage
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Upload className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-gray-900">Supabase Storage</span>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
               Status
             </CardTitle>
           </CardHeader>
@@ -106,6 +121,7 @@ const HomepageImagesPage = () => {
             config={config}
             onUpdate={updateConfig}
             onUploadImage={uploadImage}
+            onDeleteImage={deleteImage}
             isSaving={isSaving}
           />
         ))}
@@ -114,10 +130,11 @@ const HomepageImagesPage = () => {
       {configs.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-gray-500">
-              Nenhuma configuração encontrada. As configurações padrão devem ser criadas automaticamente.
+            <p className="text-gray-500 mb-4">
+              Nenhuma configuração encontrada. Os dados padrão foram inseridos automaticamente.
             </p>
-            <Button onClick={refetch} className="mt-4">
+            <Button onClick={refetch} className="bg-indexa-purple hover:bg-indexa-purple/90">
+              <RefreshCw className="h-4 w-4 mr-2" />
               Recarregar
             </Button>
           </CardContent>

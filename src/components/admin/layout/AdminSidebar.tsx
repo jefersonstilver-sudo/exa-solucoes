@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -16,8 +17,18 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminSidebar = () => {
-  const { userProfile } = useAuth();
-  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
+  const { userProfile, session } = useAuth();
+  
+  // Verificação simplificada e robusta do Super Admin
+  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' || 
+                      session?.user?.email === 'jefersonstilver@gmail.com';
+  
+  console.log('AdminSidebar - Debug:', {
+    userEmail: userProfile?.email,
+    sessionEmail: session?.user?.email,
+    userRole: userProfile?.role,
+    isSuperAdmin
+  });
   
   const navItems = [
     {
@@ -99,6 +110,7 @@ const AdminSidebar = () => {
         {/* Navegação */}
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
+            // Mostrar o item se não requer Super Admin OU se o usuário é Super Admin
             if (item.requireSuperAdmin && !isSuperAdmin) {
               return null;
             }

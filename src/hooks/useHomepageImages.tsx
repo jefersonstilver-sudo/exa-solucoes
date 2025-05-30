@@ -69,25 +69,68 @@ export const useHomepageImages = () => {
 
   const uploadImage = async (file: File, serviceType: string) => {
     try {
+      // Validar arquivo
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Tipo de arquivo não suportado. Use JPG, PNG, WebP ou GIF.');
+        return null;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Arquivo muito grande. Máximo 5MB.');
+        return null;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${serviceType}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Fazendo upload do arquivo:', fileName);
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('homepage-images')
-        .upload(filePath, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        throw uploadError;
+      }
 
-      const { data } = supabase.storage
+      console.log('Upload bem-sucedido:', uploadData);
+
+      // Obter URL pública
+      const { data: urlData } = supabase.storage
         .from('homepage-images')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
-      return data.publicUrl;
+      console.log('URL pública:', urlData.publicUrl);
+
+      return urlData.publicUrl;
     } catch (error) {
       console.error('Erro ao fazer upload da imagem:', error);
-      toast.error('Erro ao fazer upload da imagem');
+      toast.error('Erro ao fazer upload da imagem. Verifique se você tem permissão.');
       return null;
+    }
+  };
+
+  const deleteImage = async (imageUrl: string) => {
+    try {
+      // Extrair nome do arquivo da URL
+      const fileName = imageUrl.split('/').pop();
+      if (!fileName) return false;
+
+      const { error } = await supabase.storage
+        .from('homepage-images')
+        .remove([fileName]);
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao deletar imagem:', error);
+      return false;
     }
   };
 
@@ -101,6 +144,7 @@ export const useHomepageImages = () => {
     isSaving,
     updateConfig,
     uploadImage,
+    deleteImage,
     refetch: fetchConfigs
   };
 };
