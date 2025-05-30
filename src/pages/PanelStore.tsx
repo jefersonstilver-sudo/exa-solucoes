@@ -7,14 +7,17 @@ import { usePanelStore } from '@/hooks/usePanelStore';
 import { useSimpleBuildingStore } from '@/hooks/useSimpleBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useUserSession } from '@/hooks/useUserSession';
+import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
 import SimpleBuildingGrid from '@/components/building-store/SimpleBuildingGrid';
+import MobileBuildingGrid from '@/components/building-store/MobileBuildingGrid';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
   const [searchParams] = useSearchParams();
   const buildingId = searchParams.get('building_id');
+  const { isMobile } = useMobileBreakpoints();
   
   // Panel store state (for specific building)
   const {
@@ -66,11 +69,12 @@ export default function PanelStore() {
   // Log do estado atual
   useEffect(() => {
     console.log('🔄 [PANEL STORE] === ESTADO ATUAL ===');
+    console.log('🔄 [PANEL STORE] isMobile:', isMobile);
     console.log('🔄 [PANEL STORE] buildingId:', buildingId);
     console.log('🔄 [PANEL STORE] buildings.length:', buildings.length);
     console.log('🔄 [PANEL STORE] buildingsLoading:', buildingsLoading);
     console.log('🔄 [PANEL STORE] buildingsError:', buildingsError);
-  }, [buildingId, buildings, buildingsLoading, buildingsError]);
+  }, [isMobile, buildingId, buildings, buildingsLoading, buildingsError]);
 
   // Handle going back to building list
   const handleBackToBuildings = () => {
@@ -125,15 +129,17 @@ export default function PanelStore() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto px-4 md:px-6 py-8"
+        className={`${isMobile ? 'px-4 py-4' : 'container mx-auto px-4 md:px-6 py-8'}`}
       >
-        {/* Promotional Welcome Banner */}
-        <AnimatePresence>
-          <PromotionBanner 
-            showPromotion={showPromotion}
-            setShowPromotion={setShowPromotion}
-          />
-        </AnimatePresence>
+        {/* Promotional Welcome Banner - só em desktop */}
+        {!isMobile && (
+          <AnimatePresence>
+            <PromotionBanner 
+              showPromotion={showPromotion}
+              setShowPromotion={setShowPromotion}
+            />
+          </AnimatePresence>
+        )}
         
         {/* Conditional rendering based on whether we're viewing a specific building or the main store */}
         {buildingId ? (
@@ -153,22 +159,31 @@ export default function PanelStore() {
             onAddToCart={handleAddToCart}
           />
         ) : (
-          // Show building selection (main store view) - SIMPLIFIED
+          // Show building selection (main store view) - MOBILE-FIRST
           <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-[#3C1361] mb-2">
-                Loja de Prédios
+            <div className={`text-center ${isMobile ? 'px-2' : ''}`}>
+              <h1 className={`font-bold text-[#3C1361] mb-2 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
+                {isMobile ? 'Prédios Disponíveis' : 'Loja de Prédios'}
               </h1>
-              <p className="text-gray-600">
-                Selecione um prédio para ver os painéis disponíveis
+              <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>
+                {isMobile ? 'Toque para ver os painéis' : 'Selecione um prédio para ver os painéis disponíveis'}
               </p>
             </div>
             
-            <SimpleBuildingGrid 
-              buildings={buildings}
-              isLoading={buildingsLoading}
-              onAddToCart={handleAddToCart}
-            />
+            {/* Mobile-first grid */}
+            {isMobile ? (
+              <MobileBuildingGrid 
+                buildings={buildings}
+                isLoading={buildingsLoading}
+                onAddToCart={handleAddToCart}
+              />
+            ) : (
+              <SimpleBuildingGrid 
+                buildings={buildings}
+                isLoading={buildingsLoading}
+                onAddToCart={handleAddToCart}
+              />
+            )}
           </div>
         )}
       </motion.div>

@@ -1,6 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
+import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Shield, Lock, Award } from 'lucide-react';
@@ -11,12 +13,15 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import PaymentMethodCard from '@/components/checkout/payment/PaymentMethodCard';
 import PaymentProgressHeader from '@/components/checkout/payment/PaymentProgressHeader';
-import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import MobileCheckoutStepper from '@/components/checkout/MobileCheckoutStepper';
+import MobilePaymentMethods from '@/components/checkout/MobilePaymentMethods';
+import MobilePixQrCode from '@/components/checkout/payment/MobilePixQrCode';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
+  const { isMobile } = useMobileBreakpoints();
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -94,7 +99,7 @@ const Checkout = () => {
         nome_usuario: user.email?.split('@')[0] || 'Cliente',
         email_usuario: user.email || '',
         plano_escolhido: planNames[selectedPlan as keyof typeof planNames] || '1 mês',
-        periodo_meses: parseInt(selectedPlan), // Novo campo com o número de meses
+        periodo_meses: parseInt(selectedPlan),
         valor_total: (totalAmount * 0.95).toFixed(2), // 5% discount for PIX
         predios_escolhidos: prediosEscolhidos,
         quantidade_paineis: prediosEscolhidos.length
@@ -126,7 +131,6 @@ const Checkout = () => {
           console.warn('[PIX Webhook] Resposta sem dados PIX esperados:', responseData);
           toast.success("Dados enviados com sucesso! Processando pagamento PIX...");
           
-          // Navigate to PIX payment page or show success
           setTimeout(() => {
             toast.info("Em breve você será redirecionado para o PIX");
           }, 1500);
@@ -188,226 +192,267 @@ const Checkout = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Header with back button */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
+      <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ${isMobile ? '' : ''}`}>
+        {/* Mobile Stepper */}
+        {isMobile && <MobileCheckoutStepper currentStep={2} />}
+        
+        <div className={`${isMobile ? 'px-4 py-6' : 'container mx-auto px-4 py-8 max-w-4xl'}`}>
+          {/* Header with back button - Desktop only */}
+          {!isMobile && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <Button
+                variant="ghost"
+                onClick={handleBack}
+                className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Voltar para resumo
+              </Button>
+              
+              <PaymentProgressHeader currentStep={2} />
+            </motion.div>
+          )}
+
+          {/* Mobile Back Button */}
+          {isMobile && (
             <Button
               variant="ghost"
               onClick={handleBack}
-              className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
+              className="flex items-center text-gray-600 hover:text-gray-800 mb-4 -ml-2"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Voltar para resumo
+              Voltar
             </Button>
-            
-            <PaymentProgressHeader currentStep={2} />
-          </motion.div>
+          )}
 
-          {/* Main content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main content - Mobile-first layout */}
+          <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-8'}`}>
             {/* Payment methods */}
-            <div className="lg:col-span-2">
+            <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <Card className="shadow-lg border-0">
-                  <CardContent className="p-6 sm:p-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      Como você deseja pagar?
-                    </h2>
-                    <p className="text-gray-600 mb-8">
-                      Escolha a forma de pagamento que preferir
-                    </p>
+                {isMobile ? (
+                  // Mobile payment methods
+                  <div className="space-y-6">
+                    <MobilePaymentMethods 
+                      selectedMethod={selectedMethod}
+                      onSelectMethod={setSelectedMethod}
+                      totalAmount={totalAmount}
+                    />
+                  </div>
+                ) : (
+                  // Desktop payment methods
+                  <Card className="shadow-lg border-0">
+                    <CardContent className="p-6 sm:p-8">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Como você deseja pagar?
+                      </h2>
+                      <p className="text-gray-600 mb-8">
+                        Escolha a forma de pagamento que preferir
+                      </p>
 
-                    <div className="space-y-4 mb-8">
-                      {/* PIX Payment Method */}
-                      <PaymentMethodCard
-                        id="pix"
-                        title="PIX"
-                        description="Pagamento instantâneo"
-                        originalAmount={totalAmount}
-                        finalAmount={pixAmount}
-                        discount={5}
-                        icon="pix"
-                        selected={selectedMethod === 'pix'}
-                        onSelect={setSelectedMethod}
-                        highlight={true}
-                      />
+                      <div className="space-y-4 mb-8">
+                        {/* PIX Payment Method */}
+                        <PaymentMethodCard
+                          id="pix"
+                          title="PIX"
+                          description="Pagamento instantâneo"
+                          originalAmount={totalAmount}
+                          finalAmount={pixAmount}
+                          discount={5}
+                          icon="pix"
+                          selected={selectedMethod === 'pix'}
+                          onSelect={setSelectedMethod}
+                          highlight={true}
+                        />
 
-                      {/* Credit Card Payment Method */}
-                      <PaymentMethodCard
-                        id="credit_card"
-                        title="Cartão de Crédito"
-                        description="Visa, Mastercard, Elo, American Express"
-                        originalAmount={totalAmount}
-                        finalAmount={totalAmount}
-                        icon="credit_card"
-                        selected={selectedMethod === 'credit_card'}
-                        onSelect={setSelectedMethod}
-                      />
-                    </div>
+                        {/* Credit Card Payment Method */}
+                        <PaymentMethodCard
+                          id="credit_card"
+                          title="Cartão de Crédito"
+                          description="Visa, Mastercard, Elo, American Express"
+                          originalAmount={totalAmount}
+                          finalAmount={totalAmount}
+                          icon="credit_card"
+                          selected={selectedMethod === 'credit_card'}
+                          onSelect={setSelectedMethod}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Terms acceptance - Mobile-first */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className={`${isMobile ? 'mt-6' : 'mt-8'}`}
+                >
+                  <Card className={`${isMobile ? '' : 'shadow-lg border-0'}`}>
+                    <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+                      <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                        <Checkbox 
+                          id="terms" 
+                          checked={acceptTerms} 
+                          onCheckedChange={(checked) => setAcceptTerms(!!checked)}
+                          className="h-5 w-5 mt-0.5 border-gray-300 text-[#1E1B4B] focus:ring-[#1E1B4B]"
+                        />
+                        <Label 
+                          htmlFor="terms" 
+                          className={`text-gray-600 cursor-pointer leading-relaxed ${isMobile ? 'text-sm' : 'text-sm'}`}
+                        >
+                          Li e concordo com os{' '}
+                          <a href="/termos" className="text-[#1E1B4B] hover:underline font-medium">
+                            Termos de Uso
+                          </a>{' '}
+                          e a{' '}
+                          <a href="/privacidade" className="text-[#1E1B4B] hover:underline font-medium">
+                            Política de Privacidade
+                          </a>
+                          .
+                        </Label>
+                      </div>
 
-                    {/* Terms acceptance */}
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                      className="flex items-start space-x-3 mb-8 p-4 bg-gray-50 rounded-lg"
-                    >
-                      <Checkbox 
-                        id="terms" 
-                        checked={acceptTerms} 
-                        onCheckedChange={(checked) => setAcceptTerms(!!checked)}
-                        className="h-5 w-5 mt-0.5 border-gray-300 text-[#1E1B4B] focus:ring-[#1E1B4B]"
-                      />
-                      <Label 
-                        htmlFor="terms" 
-                        className="text-sm text-gray-600 cursor-pointer leading-relaxed"
-                      >
-                        Li e concordo com os{' '}
-                        <a href="/termos" className="text-[#1E1B4B] hover:underline font-medium">
-                          Termos de Uso
-                        </a>{' '}
-                        e a{' '}
-                        <a href="/privacidade" className="text-[#1E1B4B] hover:underline font-medium">
-                          Política de Privacidade
-                        </a>
-                        .
-                      </Label>
-                    </motion.div>
+                      {/* Payment button */}
+                      {selectedMethod && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`space-y-3 ${isMobile ? 'mt-4' : 'mt-6'}`}
+                        >
+                          {selectedMethod === 'pix' ? (
+                            <Button
+                              onClick={handlePixPayment}
+                              disabled={!acceptTerms || isProcessingPayment}
+                              className={`w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${isMobile ? 'h-12 text-base' : 'py-4 text-lg'}`}
+                              size="lg"
+                            >
+                              {isProcessingPayment ? (
+                                <>
+                                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                  Processando...
+                                </>
+                              ) : (
+                                `Pagar com PIX - R$ ${pixAmount.toFixed(2)}`
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={handleCreditCardPayment}
+                              disabled={!acceptTerms}
+                              className={`w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${isMobile ? 'h-12 text-base' : 'py-4 text-lg'}`}
+                              size="lg"
+                            >
+                              Pagar com Cartão - R$ {totalAmount.toFixed(2)}
+                            </Button>
+                          )}
+                          
+                          {!acceptTerms && selectedMethod && (
+                            <p className={`text-amber-600 text-center ${isMobile ? 'text-sm' : 'text-sm'}`}>
+                              ⚠️ Aceite os termos para continuar
+                            </p>
+                          )}
+                        </motion.div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            </div>
 
-                    {/* Payment button */}
-                    {selectedMethod && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="space-y-3"
-                      >
-                        {selectedMethod === 'pix' ? (
-                          <Button
-                            onClick={handlePixPayment}
-                            disabled={!acceptTerms || isProcessingPayment}
-                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 text-lg font-semibold rounded-xl transition-colors"
-                            size="lg"
-                          >
-                            {isProcessingPayment ? (
-                              <>
-                                <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                Processando...
-                              </>
-                            ) : (
-                              `Pagar com PIX - R$ ${pixAmount.toFixed(2)}`
-                            )}
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={handleCreditCardPayment}
-                            disabled={!acceptTerms}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 text-lg font-semibold rounded-xl transition-colors"
-                            size="lg"
-                          >
-                            Pagar com Cartão - R$ {totalAmount.toFixed(2)}
-                          </Button>
+            {/* Summary sidebar - Desktop only */}
+            {!isMobile && (
+              <div className="lg:col-span-1">
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-6 sticky top-8"
+                >
+                  {/* Order summary */}
+                  <Card className="shadow-lg border-0">
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Resumo do Pedido
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Subtotal</span>
+                          <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
+                        </div>
+                        
+                        {selectedMethod === 'pix' && (
+                          <div className="flex justify-between text-sm text-green-600">
+                            <span>Desconto PIX (5%)</span>
+                            <span>-R$ {(totalAmount * 0.05).toFixed(2)}</span>
+                          </div>
                         )}
                         
-                        {!acceptTerms && selectedMethod && (
-                          <p className="text-sm text-amber-600 text-center">
-                            ⚠️ Aceite os termos para continuar
-                          </p>
-                        )}
-                      </motion.div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
-
-            {/* Summary sidebar - responsivo */}
-            <div className="lg:col-span-1">
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className="space-y-6 sticky top-8"
-              >
-                {/* Order summary */}
-                <Card className="shadow-lg border-0">
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Resumo do Pedido
-                    </h3>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal</span>
-                        <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
-                      </div>
-                      
-                      {selectedMethod === 'pix' && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>Desconto PIX (5%)</span>
-                          <span>-R$ {(totalAmount * 0.05).toFixed(2)}</span>
-                        </div>
-                      )}
-                      
-                      <div className="border-t pt-3">
-                        <div className="flex justify-between text-lg font-bold">
-                          <span>Total</span>
-                          <span className="text-[#1E1B4B]">
-                            R$ {selectedMethod === 'pix' ? pixAmount.toFixed(2) : totalAmount.toFixed(2)}
-                          </span>
+                        <div className="border-t pt-3">
+                          <div className="flex justify-between text-lg font-bold">
+                            <span>Total</span>
+                            <span className="text-[#1E1B4B]">
+                              R$ {selectedMethod === 'pix' ? pixAmount.toFixed(2) : totalAmount.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
 
-                {/* Security badges */}
-                <Card className="shadow-lg border-0">
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Pagamento Seguro
-                    </h3>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <Shield className="h-5 w-5 text-green-600" />
-                        <span className="text-sm text-gray-600">SSL 256 bits</span>
-                      </div>
+                  {/* Security badges */}
+                  <Card className="shadow-lg border-0">
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Pagamento Seguro
+                      </h3>
                       
-                      <div className="flex items-center space-x-3">
-                        <Lock className="h-5 w-5 text-green-600" />
-                        <span className="text-sm text-gray-600">Dados protegidos</span>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <Shield className="h-5 w-5 text-green-600" />
+                          <span className="text-sm text-gray-600">SSL 256 bits</span>
+                        </div>
+                        
+                        <div className="flex items-center space-x-3">
+                          <Lock className="h-5 w-5 text-green-600" />
+                          <span className="text-sm text-gray-600">Dados protegidos</span>
+                        </div>
+                        
+                        <div className="flex items-center space-x-3">
+                          <Award className="h-5 w-5 text-green-600" />
+                          <span className="text-sm text-gray-600">Certificado PCI DSS</span>
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <Award className="h-5 w-5 text-green-600" />
-                        <span className="text-sm text-gray-600">Certificado PCI DSS</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* PIX Dialog Popup */}
-      <PixQrCodeDialog
+      {/* Mobile PIX QR Code Dialog */}
+      <MobilePixQrCode
         isOpen={showPixDialog}
         onClose={handleClosePixDialog}
         qrCodeBase64={pixData.pix_base64}
         qrCodeText={pixData.pix_url}
-        pix_url={pixData.pix_url}
-        pix_base64={pixData.pix_base64}
+        amount={pixAmount}
+        onRefresh={() => {
+          handleClosePixDialog();
+          sendPixWebhook();
+        }}
+        isRefreshing={isProcessingPayment}
       />
     </Layout>
   );
