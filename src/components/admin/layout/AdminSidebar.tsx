@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -10,7 +9,8 @@ import {
   Users, 
   Shield,
   Crown,
-  Video
+  Video,
+  Images
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -49,6 +49,12 @@ const AdminSidebar = () => {
       icon: <MonitorPlay className="h-5 w-5" />,
       href: '/super_admin/paineis',
       requireSuperAdmin: false,
+    },
+    {
+      label: 'Homepage Imagens',
+      icon: <Images className="h-5 w-5" />,
+      href: '/super_admin/homepage-imagens',
+      requireSuperAdmin: true,
     },
     {
       label: 'Usuários',

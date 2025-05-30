@@ -13,6 +13,7 @@ import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import CouponsPage from '@/pages/admin/CouponsPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
+import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -40,6 +41,9 @@ const SuperAdminRoutes = () => {
       
       {/* Gestão de Painéis */}
       <Route path="/paineis" element={<PanelsPage />} />
+      
+      {/* Homepage Imagens */}
+      <Route path="/homepage-imagens" element={<HomepageImagesPage />} />
       
       {/* Gestão de Cupons */}
       <Route path="/cupons" element={<CouponsPage />} />

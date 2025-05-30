@@ -336,6 +336,42 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_config: {
+        Row: {
+          button_icon: string
+          button_text: string
+          created_at: string
+          href: string
+          id: string
+          image_url: string
+          service_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          button_icon: string
+          button_text: string
+          created_at?: string
+          href: string
+          id?: string
+          image_url: string
+          service_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          button_icon?: string
+          button_text?: string
+          created_at?: string
+          href?: string
+          id?: string
+          image_url?: string
+          service_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       log_eventos_sistema: {
         Row: {
           created_at: string | null
