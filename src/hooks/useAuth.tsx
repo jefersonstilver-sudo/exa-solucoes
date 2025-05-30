@@ -11,7 +11,31 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
   const initialized = useRef(false);
 
-  // Função para extrair role do JWT - memoizada
+  // NOVA: Função para buscar role do banco de dados diretamente
+  const fetchUserRoleFromDB = useCallback(async (userId: string): Promise<UserRole | null> => {
+    try {
+      console.log('🔍 Buscando role do usuário no banco:', userId);
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('role, email')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('❌ Erro ao buscar role do banco:', error);
+        return null;
+      }
+      
+      console.log('✅ Role encontrado no banco:', data);
+      return data?.role as UserRole || null;
+    } catch (error) {
+      console.error('💥 Exceção ao buscar role do banco:', error);
+      return null;
+    }
+  }, []);
+
+  // Função para extrair role do JWT - mantida como fallback
   const extractUserRoleFromJWT = useCallback((session: Session | null): UserRole | null => {
     if (!session?.access_token) {
       return null;
@@ -26,13 +50,27 @@ export const useAuth = () => {
     }
   }, []);
 
-  // Função para criar perfil do usuário - memoizada
-  const createUserProfileFromSession = useCallback((session: Session | null): UserProfile | null => {
+  // MELHORADA: Função para criar perfil do usuário com fallback para DB
+  const createUserProfileFromSession = useCallback(async (session: Session | null): Promise<UserProfile | null> => {
     if (!session?.user) {
       return null;
     }
 
-    const userRole = extractUserRoleFromJWT(session);
+    // Primeiro tenta extrair do JWT
+    let userRole = extractUserRoleFromJWT(session);
+    
+    // Se não encontrou no JWT, busca no banco de dados
+    if (!userRole) {
+      console.log('⚠️ Role não encontrado no JWT, buscando no banco...');
+      userRole = await fetchUserRoleFromDB(session.user.id);
+    }
+    
+    console.log('📋 Criando perfil do usuário:', {
+      id: session.user.id,
+      email: session.user.email,
+      role: userRole,
+      source: userRole === extractUserRoleFromJWT(session) ? 'JWT' : 'Database'
+    });
     
     return {
       id: session.user.id,
@@ -40,45 +78,59 @@ export const useAuth = () => {
       role: userRole,
       data_criacao: session.user.created_at
     };
-  }, [extractUserRoleFromJWT]);
+  }, [extractUserRoleFromJWT, fetchUserRoleFromDB]);
 
-  // FIXED: Verificação Super Admin mais robusta
+  // CORRIGIDA: Verificação Super Admin mais robusta com múltiplas verificações
   const isSuperAdmin = useCallback((profile: UserProfile | null, sessionData: Session | null): boolean => {
     if (!profile || !sessionData) {
       console.log('🔍 SUPER ADMIN CHECK: Sem perfil ou sessão');
       return false;
     }
 
-    const isCorrectEmail = profile.email === 'jefersonstilver@gmail.com' || 
-                          sessionData.user?.email === 'jefersonstilver@gmail.com';
-    const isCorrectRole = profile.role === 'super_admin';
+    // Verificações múltiplas para robustez
+    const emailMatch = profile.email === 'jefersonstilver@gmail.com' || 
+                      sessionData.user?.email === 'jefersonstilver@gmail.com';
+    const roleMatch = profile.role === 'super_admin';
     
-    console.log('🔍 SUPER ADMIN CHECK:', {
+    // NOVA: Verificação adicional de ID específico (caso tenha)
+    const isTargetUser = sessionData.user?.id && 
+                        (profile.email === 'jefersonstilver@gmail.com' || 
+                         sessionData.user.email === 'jefersonstilver@gmail.com');
+    
+    const result = emailMatch && roleMatch && isTargetUser;
+    
+    console.log('🔍 SUPER ADMIN CHECK DETALHADO:', {
       email: profile.email,
       sessionEmail: sessionData.user?.email,
       role: profile.role,
-      isCorrectEmail,
-      isCorrectRole,
-      result: isCorrectEmail && isCorrectRole
+      userId: sessionData.user?.id,
+      emailMatch,
+      roleMatch,
+      isTargetUser,
+      finalResult: result
     });
     
-    return isCorrectEmail && isCorrectRole;
+    return result;
   }, []);
 
-  // FIXED: Otimização crítica para evitar re-renderizações excessivas
-  const updateAuthState = useCallback((newSession: Session | null) => {
+  // OTIMIZADA: Atualização de estado com verificação melhorada
+  const updateAuthState = useCallback(async (newSession: Session | null) => {
     const newUser = newSession?.user ?? null;
-    const newProfile = newSession ? createUserProfileFromSession(newSession) : null;
     
-    // Log para debug
-    console.log('🔄 AUTH UPDATE:', {
+    // NOVA: Criar perfil com busca no banco
+    const newProfile = newSession ? await createUserProfileFromSession(newSession) : null;
+    
+    // Log detalhado para debug
+    console.log('🔄 AUTH UPDATE DETALHADO:', {
       hasSession: !!newSession,
       email: newUser?.email,
-      role: newProfile?.role,
-      isSuperAdmin: isSuperAdmin(newProfile, newSession)
+      userId: newUser?.id,
+      profileRole: newProfile?.role,
+      isSuperAdminResult: isSuperAdmin(newProfile, newSession),
+      sessionCreatedAt: newSession?.user?.created_at
     });
     
-    // Só atualiza se realmente mudou para evitar loops
+    // Atualização atômica do estado
     setSession(prevSession => {
       if (prevSession?.access_token !== newSession?.access_token) {
         return newSession;
@@ -103,19 +155,33 @@ export const useAuth = () => {
     setIsLoading(false);
   }, [createUserProfileFromSession, isSuperAdmin]);
 
-  // Inicialização e listener de auth - OTIMIZADA
+  // NOVA: Função para refrescar perfil do usuário
+  const refreshUserProfile = useCallback(async () => {
+    if (session?.user?.id) {
+      console.log('🔄 Refreshing user profile...');
+      const role = await fetchUserRoleFromDB(session.user.id);
+      if (role && userProfile) {
+        setUserProfile(prev => prev ? { ...prev, role } : null);
+      }
+    }
+  }, [session?.user?.id, userProfile, fetchUserRoleFromDB]);
+
+  // Inicialização melhorada
   useEffect(() => {
     if (initialized.current) return;
     
     let mounted = true;
     initialized.current = true;
 
+    console.log('🚀 Inicializando autenticação...');
+
     const initializeAuth = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (mounted) {
-          updateAuthState(initialSession);
+          console.log('📡 Sessão inicial obtida:', !!initialSession);
+          await updateAuthState(initialSession);
         }
       } catch (error) {
         console.error('💥 Erro na inicialização:', error);
@@ -125,17 +191,13 @@ export const useAuth = () => {
       }
     };
 
-    // FIXED: Listener otimizado para prevenir loops
+    // Listener otimizado
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (!mounted) return;
         
-        // CRITICAL: Apenas log para eventos importantes
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          console.log('🔄 AUTH: State changed:', event);
-        }
-        
-        updateAuthState(session);
+        console.log('🔄 AUTH EVENT:', event, !!session);
+        await updateAuthState(session);
       }
     );
 
@@ -145,11 +207,13 @@ export const useAuth = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // CRITICAL: Dependências vazias para executar apenas uma vez
+  }, []); // Dependências vazias para executar apenas uma vez
 
   // Função de logout melhorada
   const logout = useCallback(async () => {
     try {
+      console.log('🚪 Iniciando logout...');
+      
       // Limpar estado local primeiro
       setUser(null);
       setSession(null);
@@ -159,11 +223,13 @@ export const useAuth = () => {
       localStorage.clear();
       sessionStorage.clear();
       
-      // Tentar logout no Supabase (mesmo se falhar, já limpamos o local)
+      // Logout no Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.warn('⚠️ Erro no logout do Supabase (já limpo localmente):', error);
+        console.warn('⚠️ Erro no logout do Supabase:', error);
+      } else {
+        console.log('✅ Logout realizado com sucesso');
       }
       
       return { success: true, error: null };
@@ -173,7 +239,7 @@ export const useAuth = () => {
     }
   }, []);
 
-  // Função de verificação de role - memoizada
+  // Função de verificação de role
   const hasRole = useCallback((requiredRole: string): boolean => {
     if (!userProfile?.role) {
       return false;
@@ -186,8 +252,26 @@ export const useAuth = () => {
     return userProfile.role === requiredRole;
   }, [userProfile?.role]);
 
-  // Estado computado - memoizado
+  // Estado computado
   const isLoggedIn = Boolean(user && session && userProfile);
+  const computedIsSuperAdmin = isSuperAdmin(userProfile, session);
+
+  // NOVA: Log periódico para debug (apenas em desenvolvimento)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (process.env.NODE_ENV === 'development' && userProfile) {
+        console.log('🔍 AUTH STATUS:', {
+          isLoggedIn,
+          userEmail: userProfile.email,
+          userRole: userProfile.role,
+          isSuperAdmin: computedIsSuperAdmin,
+          sessionValid: !!session
+        });
+      }
+    }, 10000); // Log a cada 10 segundos
+
+    return () => clearInterval(interval);
+  }, [isLoggedIn, userProfile, computedIsSuperAdmin, session]);
 
   return {
     user,
@@ -197,7 +281,7 @@ export const useAuth = () => {
     isLoggedIn,
     logout,
     hasRole,
-    // Adicionar verificação direta de Super Admin
-    isSuperAdmin: isSuperAdmin(userProfile, session)
+    refreshUserProfile, // NOVA função para refresh manual
+    isSuperAdmin: computedIsSuperAdmin
   };
 };
