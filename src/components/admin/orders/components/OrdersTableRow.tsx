@@ -2,7 +2,7 @@
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Eye, Calendar, MapPin, AlertTriangle } from 'lucide-react';
+import { Eye, Calendar, MapPin, AlertTriangle, Clock, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { OrderOrAttempt } from '@/hooks/useOrdersWithAttempts';
 import {
@@ -24,8 +24,19 @@ interface OrdersTableRowProps {
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item }) => {
   const navigate = useNavigate();
 
+  // Determinar cor da linha baseada no status
+  const getRowClassName = (item: OrderOrAttempt) => {
+    if (item.type === 'attempt') {
+      return "border-gray-200 hover:bg-red-25 bg-red-25/30"; // Tentativas em vermelho claro
+    }
+    if (item.type === 'order' && item.status === 'pendente') {
+      return "border-gray-200 hover:bg-orange-25 bg-orange-25/30"; // Pendentes em laranja claro
+    }
+    return "border-gray-200 hover:bg-gray-50"; // Normal
+  };
+
   return (
-    <TableRow key={`${item.type}-${item.id}`} className="border-gray-200 hover:bg-gray-50">
+    <TableRow className={getRowClassName(item)}>
       <TableCell>
         {getTypeBadge(item)}
       </TableCell>
@@ -44,7 +55,11 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item }) => {
       <TableCell>
         {getStatusBadge(item)}
       </TableCell>
-      <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-green-700'}`}>
+      <TableCell className={`font-bold text-base ${
+        item.type === 'attempt' ? 'text-red-600' : 
+        item.type === 'order' && item.status === 'pendente' ? 'text-orange-600' : 
+        'text-green-700'
+      }`}>
         {formatCurrency(item.valor_total || 0)}
       </TableCell>
       <TableCell className="text-gray-800 font-medium">
@@ -66,15 +81,28 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item }) => {
       </TableCell>
       <TableCell>
         {item.type === 'order' ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/super_admin/pedidos/${item.id}`)}
-            className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-          >
-            <Eye className="h-3 w-3 mr-1" />
-            Ver
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/super_admin/pedidos/${item.id}`)}
+              className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Ver
+            </Button>
+            {item.status === 'pendente' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white font-medium"
+                title="Aguardando pagamento"
+              >
+                <Clock className="h-3 w-3 mr-1" />
+                Pendente
+              </Button>
+            )}
+          </div>
         ) : (
           <Button
             variant="outline"
@@ -83,7 +111,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item }) => {
             className="border-gray-300 text-gray-500 cursor-not-allowed"
           >
             <AlertTriangle className="h-3 w-3 mr-1" />
-            Tentativa
+            Abandonada
           </Button>
         )}
       </TableCell>
