@@ -12,11 +12,14 @@ import {
   Video,
   Ticket,
   Settings,
-  Bell
+  Bell,
+  Images
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const ModernAdminSidebar = () => {
   const location = useLocation();
+  const { isSuperAdmin } = useAuth();
 
   const sidebarItems = [
     {
@@ -54,6 +57,12 @@ const ModernAdminSidebar = () => {
       title: 'Painéis',
       href: '/super_admin/paineis',
       icon: MonitorPlay
+    },
+    {
+      title: 'Homepage Imagens',
+      href: '/super_admin/homepage-imagens',
+      icon: Images,
+      requireSuperAdmin: true
     },
     {
       title: 'Cupons',
@@ -94,21 +103,28 @@ const ModernAdminSidebar = () => {
         </div>
         
         <nav className="space-y-2">
-          {sidebarItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
-                isActive(item.href, item.exact)
-                  ? 'bg-[#00FFAB] text-[#3C1361] shadow-lg font-semibold'
-                  : 'text-purple-100 hover:text-white hover:bg-white/10 hover:translate-x-1'
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.title}</span>
-            </Link>
-          ))}
+          {sidebarItems.map((item) => {
+            // Verificar se é um item que requer Super Admin
+            if (item.requireSuperAdmin && !isSuperAdmin) {
+              return null;
+            }
+            
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={cn(
+                  'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
+                  isActive(item.href, item.exact)
+                    ? 'bg-[#00FFAB] text-[#3C1361] shadow-lg font-semibold'
+                    : 'text-purple-100 hover:text-white hover:bg-white/10 hover:translate-x-1'
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.title}</span>
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </div>
