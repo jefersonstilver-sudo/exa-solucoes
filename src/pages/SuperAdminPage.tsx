@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 const SuperAdminPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userProfile, isLoading, isLoggedIn } = useAuth();
+  const { userProfile, isLoading, isLoggedIn, isSuperAdmin } = useAuth();
   const [accessGranted, setAccessGranted] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
 
@@ -19,6 +19,7 @@ const SuperAdminPage = () => {
       isLoading,
       isLoggedIn,
       hasChecked,
+      isSuperAdmin,
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
       currentPath: location.pathname
@@ -47,10 +48,7 @@ const SuperAdminPage = () => {
       return;
     }
 
-    // Verificação de super admin RIGOROSA
-    const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && 
-                        userProfile?.role === 'super_admin';
-
+    // CORRIGIDO: Usar a propriedade isSuperAdmin do hook
     console.log('🔍 VERIFICAÇÃO SUPER ADMIN:', {
       email: userProfile?.email,
       role: userProfile?.role,
@@ -78,7 +76,7 @@ const SuperAdminPage = () => {
     
     setAccessGranted(true);
     setHasChecked(true);
-  }, [userProfile, isLoading, isLoggedIn, navigate, hasChecked, location.pathname]);
+  }, [userProfile, isLoading, isLoggedIn, isSuperAdmin, navigate, hasChecked, location.pathname]);
 
   // Timeout de segurança para evitar loading infinito
   useEffect(() => {

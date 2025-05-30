@@ -17,13 +17,9 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminSidebar = () => {
-  const { userProfile, session } = useAuth();
+  const { userProfile, session, isSuperAdmin } = useAuth();
   
-  // Verificação simplificada e robusta do Super Admin
-  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' || 
-                      session?.user?.email === 'jefersonstilver@gmail.com';
-  
-  console.log('AdminSidebar - Debug:', {
+  console.log('AdminSidebar - Debug Simplificado:', {
     userEmail: userProfile?.email,
     sessionEmail: session?.user?.email,
     userRole: userProfile?.role,
@@ -97,12 +93,15 @@ const AdminSidebar = () => {
           </div>
         </div>
 
-        {/* Status do usuário */}
+        {/* Status do usuário - CORRIGIDO */}
         {isSuperAdmin && (
           <div className="p-4 border-b border-indexa-purple-light">
             <div className="flex items-center space-x-2 text-indexa-mint">
               <Crown className="h-4 w-4" />
               <span className="text-xs font-bold">Super Admin Access</span>
+            </div>
+            <div className="text-xs text-white/70 mt-1">
+              {userProfile?.email}
             </div>
           </div>
         )}
@@ -110,7 +109,7 @@ const AdminSidebar = () => {
         {/* Navegação */}
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
-            // Mostrar o item se não requer Super Admin OU se o usuário é Super Admin
+            // CORRIGIDO: Usar a propriedade isSuperAdmin diretamente
             if (item.requireSuperAdmin && !isSuperAdmin) {
               return null;
             }

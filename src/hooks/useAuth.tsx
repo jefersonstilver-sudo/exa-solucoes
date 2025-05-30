@@ -42,10 +42,41 @@ export const useAuth = () => {
     };
   }, [extractUserRoleFromJWT]);
 
+  // FIXED: Verificação Super Admin mais robusta
+  const isSuperAdmin = useCallback((profile: UserProfile | null, sessionData: Session | null): boolean => {
+    if (!profile || !sessionData) {
+      console.log('🔍 SUPER ADMIN CHECK: Sem perfil ou sessão');
+      return false;
+    }
+
+    const isCorrectEmail = profile.email === 'jefersonstilver@gmail.com' || 
+                          sessionData.user?.email === 'jefersonstilver@gmail.com';
+    const isCorrectRole = profile.role === 'super_admin';
+    
+    console.log('🔍 SUPER ADMIN CHECK:', {
+      email: profile.email,
+      sessionEmail: sessionData.user?.email,
+      role: profile.role,
+      isCorrectEmail,
+      isCorrectRole,
+      result: isCorrectEmail && isCorrectRole
+    });
+    
+    return isCorrectEmail && isCorrectRole;
+  }, []);
+
   // FIXED: Otimização crítica para evitar re-renderizações excessivas
   const updateAuthState = useCallback((newSession: Session | null) => {
     const newUser = newSession?.user ?? null;
     const newProfile = newSession ? createUserProfileFromSession(newSession) : null;
+    
+    // Log para debug
+    console.log('🔄 AUTH UPDATE:', {
+      hasSession: !!newSession,
+      email: newUser?.email,
+      role: newProfile?.role,
+      isSuperAdmin: isSuperAdmin(newProfile, newSession)
+    });
     
     // Só atualiza se realmente mudou para evitar loops
     setSession(prevSession => {
@@ -70,7 +101,7 @@ export const useAuth = () => {
     });
     
     setIsLoading(false);
-  }, [createUserProfileFromSession]);
+  }, [createUserProfileFromSession, isSuperAdmin]);
 
   // Inicialização e listener de auth - OTIMIZADA
   useEffect(() => {
@@ -116,16 +147,30 @@ export const useAuth = () => {
     };
   }, []); // CRITICAL: Dependências vazias para executar apenas uma vez
 
-  // Função de logout - memoizada
+  // Função de logout melhorada
   const logout = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
+    try {
+      // Limpar estado local primeiro
       setUser(null);
       setSession(null);
       setUserProfile(null);
+      
+      // Limpar storage
       localStorage.clear();
+      sessionStorage.clear();
+      
+      // Tentar logout no Supabase (mesmo se falhar, já limpamos o local)
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.warn('⚠️ Erro no logout do Supabase (já limpo localmente):', error);
+      }
+      
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('💥 Erro no logout:', error);
+      return { success: false, error };
     }
-    return { success: !error, error };
   }, []);
 
   // Função de verificação de role - memoizada
@@ -151,6 +196,8 @@ export const useAuth = () => {
     isLoading,
     isLoggedIn,
     logout,
-    hasRole
+    hasRole,
+    // Adicionar verificação direta de Super Admin
+    isSuperAdmin: isSuperAdmin(userProfile, session)
   };
 };
