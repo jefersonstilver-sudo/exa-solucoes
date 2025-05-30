@@ -30,8 +30,19 @@ export const usePlanSelection = (hasCart: boolean) => {
 
   // Wrapper para cálculo de preço com estado atual - memoizado
   const calculateEstimatedPrice = useCallback(() => {
-    console.log("💰 Calculando preço estimado:", { selectedPlan, cartItemsLength: cartItems.length });
-    return calculatePrice(selectedPlan, cartItems, PLANS);
+    console.log("💰 usePlanSelection - Calculando preço estimado:", { 
+      selectedPlan, 
+      cartItemsLength: cartItems.length,
+      cartItems: cartItems.map(item => ({
+        panel_id: item.panel.id,
+        building_name: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
+      }))
+    });
+    
+    const result = calculatePrice(selectedPlan, cartItems, PLANS);
+    console.log("💰 usePlanSelection - Resultado do cálculo:", result);
+    return result;
   }, [calculatePrice, selectedPlan, cartItems, PLANS]);
 
   // Memoizar o retorno para evitar re-renderizações desnecessárias

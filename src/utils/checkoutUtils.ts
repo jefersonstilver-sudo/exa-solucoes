@@ -11,8 +11,8 @@ interface CartItem {
 
 // Get panel price considering its individual price (if available)
 export const getPanelPrice = (panel: Panel, duration: number): number => {
-  // Use the building's base price with fallback to default
-  const monthlyPrice = panel.buildings?.preco_base || panel.buildings?.basePrice || 250;
+  // Use the building's base price with fallback to a very low default (centavos)
+  const monthlyPrice = panel.buildings?.preco_base || 0.05; // 5 centavos como fallback
   const months = duration / 30; // Convert days to months
   return monthlyPrice * months;
 };
@@ -32,19 +32,20 @@ export const calculatePricePerMonth = (
 ): number => {
   if (!cartItems.length) return 0;
   
-  const cartSubtotal = calculateCartSubtotal(cartItems);
   const plan = PLANS[selectedPlan];
   
-  // Calculate total for the plan period
-  const totalWithoutDiscount = cartSubtotal * plan.months;
+  // Calculate monthly price per panel
+  const monthlyPricePerPanel = cartItems.reduce((total, item) => {
+    const panelMonthlyPrice = item.panel.buildings?.preco_base || 0.05;
+    return total + panelMonthlyPrice;
+  }, 0);
   
-  // Apply plan discount
-  const totalWithDiscount = plan.discount > 0 
-    ? calculatePriceWithDiscount(totalWithoutDiscount, plan.discount)
-    : totalWithoutDiscount;
+  // Apply plan discount to monthly price
+  const discountedMonthlyPrice = plan.discount > 0 
+    ? calculatePriceWithDiscount(monthlyPricePerPanel, plan.discount)
+    : monthlyPricePerPanel;
   
-  // Return price per month
-  return totalWithDiscount / plan.months;
+  return discountedMonthlyPrice;
 };
 
 // Calculate total price for the whole order
@@ -56,12 +57,16 @@ export const calculateTotalPrice = (
 ): number => {
   if (!cartItems.length) return 0;
   
-  // Calculate base price from actual panel prices for the selected period
-  const cartSubtotal = calculateCartSubtotal(cartItems);
   const plan = PLANS[selectedPlan];
   
+  // Calculate monthly price per panel
+  const monthlyPricePerPanel = cartItems.reduce((total, item) => {
+    const panelMonthlyPrice = item.panel.buildings?.preco_base || 0.05;
+    return total + panelMonthlyPrice;
+  }, 0);
+  
   // Calculate total for the plan period
-  let totalPrice = cartSubtotal * plan.months;
+  let totalPrice = monthlyPricePerPanel * plan.months;
   
   // Apply plan discount first
   if (plan.discount > 0) {
@@ -73,10 +78,12 @@ export const calculateTotalPrice = (
     totalPrice = calculatePriceWithDiscount(totalPrice, couponDiscount);
   }
   
-  console.log("Cálculo de preço:", {
-    cartSubtotal,
+  console.log("💰 Cálculo de preço detalhado:", {
+    monthlyPricePerPanel,
     planMonths: plan.months,
     planDiscount: plan.discount,
+    priceBeforeDiscount: monthlyPricePerPanel * plan.months,
+    priceAfterPlanDiscount: totalPrice,
     couponDiscount: couponValid ? couponDiscount : 0,
     finalTotal: totalPrice
   });
@@ -91,11 +98,16 @@ export const calculatePlanSavings = (
 ): number => {
   if (!cartItems.length || selectedPlan === 1) return 0;
   
-  const cartSubtotal = calculateCartSubtotal(cartItems);
   const plan = PLANS[selectedPlan];
   
+  // Calculate monthly price per panel
+  const monthlyPricePerPanel = cartItems.reduce((total, item) => {
+    const panelMonthlyPrice = item.panel.buildings?.preco_base || 0.05;
+    return total + panelMonthlyPrice;
+  }, 0);
+  
   // Price without any discount (monthly rate * months)
-  const fullPrice = cartSubtotal * plan.months;
+  const fullPrice = monthlyPricePerPanel * plan.months;
   
   // Price with plan discount
   const discountedPrice = plan.discount > 0 
@@ -113,7 +125,12 @@ export const getPlanWithDynamicPricing = (
   const plan = PLANS[planKey];
   const pricePerMonth = calculatePricePerMonth(planKey, cartItems);
   const savings = calculatePlanSavings(planKey, cartItems);
-  const cartSubtotal = calculateCartSubtotal(cartItems);
+  
+  // Calculate monthly price per panel for subtotal
+  const cartSubtotal = cartItems.reduce((total, item) => {
+    const panelMonthlyPrice = item.panel.buildings?.preco_base || 0.05;
+    return total + panelMonthlyPrice;
+  }, 0);
   
   return {
     ...plan,
