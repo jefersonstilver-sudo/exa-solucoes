@@ -78,10 +78,10 @@ export const useMonthlyDashboardData = () => {
       
       if (historyError) throw historyError;
       
-      // Type casting with proper validation
-      const typedMonthlyData = monthlyData as MonthlyDashboardStats;
-      const typedComparisonData = comparisonData as MonthlyComparison;
-      const typedHistoryData = historyData as { months: MonthlyDashboardStats[] };
+      // Type casting with proper validation - convert to unknown first
+      const typedMonthlyData = monthlyData as unknown as MonthlyDashboardStats;
+      const typedComparisonData = comparisonData as unknown as MonthlyComparison;
+      const typedHistoryData = historyData as unknown as { months: MonthlyDashboardStats[] };
       
       setStats(typedMonthlyData);
       setComparison(typedComparisonData);
