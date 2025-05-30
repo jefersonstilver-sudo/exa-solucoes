@@ -11,6 +11,8 @@ import Payment from '@/pages/Payment';
 import PixPayment from '@/pages/PixPayment';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 import Index from '@/pages/Index';
+import Marketing from '@/pages/Marketing';
+import Produtora from '@/pages/Produtora';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import Login from '@/pages/Login';
@@ -57,6 +59,10 @@ const App = () => {
         
         {/* Public Routes - PÁGINA PRINCIPAL COM OS 3 CARDS ROXOS */}
         <Route path="/" element={<Index />} />
+        
+        {/* NOVAS ROTAS DOS CARDS DA HOMEPAGE */}
+        <Route path="/marketing" element={<Marketing />} />
+        <Route path="/produtora" element={<Produtora />} />
         
         {/* CORREÇÃO CRÍTICA: TODAS AS ROTAS DE LOJA REDIRECIONAM PARA A FUNCIONAL */}
         <Route path="/loja" element={<Navigate to="/paineis-digitais/loja" replace />} />

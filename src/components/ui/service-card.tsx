@@ -3,12 +3,14 @@ import React from 'react';
 import { Coffee, Film, Satellite } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface ServiceCardProps {
   title: string;
   backgroundImage: string;
   buttonText: string;
   buttonIcon: 'calendar' | 'monitor' | 'info';
+  href: string;
   className?: string;
 }
 
@@ -17,8 +19,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   backgroundImage,
   buttonText,
   buttonIcon,
+  href,
   className,
 }) => {
+  const navigate = useNavigate();
+
   const renderIcon = () => {
     switch (buttonIcon) {
       case 'calendar':
@@ -32,10 +37,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
     }
   };
 
+  const handleClick = () => {
+    navigate(href);
+  };
+
   return (
     <div 
       className={cn(
-        'relative h-[420px] overflow-hidden rounded-2xl group transition-all duration-300 p-6 transform hover:-translate-y-2 hover:shadow-xl',
+        'relative h-[420px] overflow-hidden rounded-2xl group transition-all duration-300 p-6 transform hover:-translate-y-2 hover:shadow-xl cursor-pointer',
         className
       )}
       style={{
@@ -43,6 +52,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
+      onClick={handleClick}
     >
       {/* Overlay escurecido para melhorar legibilidade */}
       <div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-30 transition-all duration-300"></div>
@@ -55,6 +65,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         
         <Button 
           className="mt-auto self-start bg-indexa-mint text-indexa-purple-dark hover:bg-white rounded-full flex items-center space-x-2 text-base font-medium px-6 py-2 hover:scale-110 transition-transform shadow-lg"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick();
+          }}
         >
           {renderIcon()}
           <span className="ml-2">{buttonText}</span>

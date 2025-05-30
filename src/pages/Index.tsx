@@ -26,18 +26,21 @@ const Index = () => {
               backgroundImage="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80"
               buttonText="Agende um café"
               buttonIcon="calendar"
+              href="/marketing"
             />
             <ServiceCard
               title="Produtora"
               backgroundImage="https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80"
               buttonText="Nossos trabalhos"
               buttonIcon="monitor"
+              href="/produtora"
             />
             <ServiceCard
               title="Painéis Publicitários"
               backgroundImage="https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80"
               buttonText="Saiba mais"
               buttonIcon="info"
+              href="/paineis-digitais/loja"
             />
           </div>
         </div>
