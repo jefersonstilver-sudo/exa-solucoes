@@ -15,11 +15,18 @@ interface DatabaseStatus {
   lastUpdated: string;
 }
 
+interface DashboardStats {
+  total_users: number;
+  total_buildings: number;
+  total_panels: number;
+  online_panels: number;
+}
+
 const SuperAdminDebugPanel = () => {
   const [debugData, setDebugData] = useState<DatabaseStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [revenue, setRevenue] = useState<number>(0);
-  const [systemStats, setSystemStats] = useState({
+  const [systemStats, setSystemStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalBuildings: 0,
     totalPanels: 0,
@@ -96,7 +103,7 @@ const SuperAdminDebugPanel = () => {
       console.error('💥 Erro na função de receita:', err);
     }
 
-    // Testar estatísticas do sistema
+    // Testar estatísticas do sistema com casting correto
     try {
       const { data: statsData, error: statsError } = await supabase
         .rpc('get_dashboard_stats');
@@ -105,11 +112,13 @@ const SuperAdminDebugPanel = () => {
         console.error('❌ Erro nas estatísticas:', statsError);
       } else {
         console.log('📊 Estatísticas do sistema:', statsData);
+        // Cast correto para o tipo esperado
+        const stats = statsData as DashboardStats;
         setSystemStats({
-          totalUsers: statsData?.total_users || 0,
-          totalBuildings: statsData?.total_buildings || 0,
-          totalPanels: statsData?.total_panels || 0,
-          onlinePanels: statsData?.online_panels || 0
+          totalUsers: stats.total_users || 0,
+          totalBuildings: stats.total_buildings || 0,
+          totalPanels: stats.total_panels || 0,
+          onlinePanels: stats.online_panels || 0
         });
       }
     } catch (err) {
