@@ -9,7 +9,9 @@ import {
   DollarSign, 
   ChevronDown, 
   ChevronUp,
-  CheckCircle
+  CheckCircle,
+  MapPin,
+  Hash
 } from 'lucide-react';
 
 interface PurchaseInfoCardProps {
@@ -21,6 +23,7 @@ interface PurchaseInfoCardProps {
     plano_meses: number;
     log_pagamento?: any;
     status: string;
+    lista_paineis?: string[];
   };
 }
 
@@ -49,6 +52,16 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
     return 'PIX'; // Default baseado no contexto
   };
 
+  const getTransactionId = () => {
+    const logPagamento = orderDetails.log_pagamento;
+    if (!logPagamento) return 'N/A';
+    
+    return logPagamento.payment_id || 
+           logPagamento.external_reference || 
+           logPagamento.preferenceId ||
+           'N/A';
+  };
+
   const getPaymentStatus = () => {
     if (orderDetails.log_pagamento?.payment_status === 'approved') {
       return { label: 'Pagamento Aprovado', color: 'text-green-600' };
@@ -59,8 +72,26 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
     return { label: 'Processando', color: 'text-yellow-600' };
   };
 
+  const getContractPeriod = () => {
+    if (orderDetails.data_inicio && orderDetails.data_fim) {
+      const startDate = new Date(orderDetails.data_inicio).toLocaleDateString('pt-BR');
+      const endDate = new Date(orderDetails.data_fim).toLocaleDateString('pt-BR');
+      return `${startDate} - ${endDate}`;
+    }
+    return `${orderDetails.plano_meses} ${orderDetails.plano_meses === 1 ? 'mês' : 'meses'}`;
+  };
+
   const purchaseDateTime = formatDateTime(orderDetails.created_at);
   const paymentStatus = getPaymentStatus();
+  const transactionId = getTransactionId();
+  const panelsCount = orderDetails.lista_paineis?.length || 0;
+
+  console.log('💳 [PURCHASE_INFO] Dados do pedido:', {
+    orderDetails,
+    transactionId,
+    paymentMethod: getPaymentMethod(),
+    contractPeriod: getContractPeriod()
+  });
 
   return (
     <Card>
@@ -83,23 +114,32 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
       
       {/* Informações básicas sempre visíveis */}
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="flex items-center space-x-3">
             <Calendar className="h-6 w-6 text-blue-500" />
             <div>
               <p className="text-sm text-gray-600">Data da Compra</p>
               <p className="font-medium">{purchaseDateTime.date}</p>
+              <p className="text-xs text-gray-500">{purchaseDateTime.time}</p>
             </div>
           </div>
           
           <div className="flex items-center space-x-3">
-            <Clock className="h-6 w-6 text-purple-500" />
+            <DollarSign className="h-6 w-6 text-green-500" />
             <div>
-              <p className="text-sm text-gray-600">Horário</p>
-              <p className="font-medium">{purchaseDateTime.time}</p>
+              <p className="text-sm text-gray-600">Valor Total</p>
+              <p className="font-bold text-lg">{formatCurrency(orderDetails.valor_total)}</p>
             </div>
           </div>
           
+          <div className="flex items-center space-x-3">
+            <MapPin className="h-6 w-6 text-purple-500" />
+            <div>
+              <p className="text-sm text-gray-600">Painéis Contratados</p>
+              <p className="font-medium">{panelsCount} {panelsCount === 1 ? 'painel' : 'painéis'}</p>
+            </div>
+          </div>
+
           <div className="flex items-center space-x-3">
             <CheckCircle className="h-6 w-6 text-green-500" />
             <div>
@@ -120,15 +160,25 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
                     <span className="text-gray-600">Método:</span>
                     <span className="font-medium">{getPaymentMethod()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Valor Total:</span>
-                    <span className="font-bold text-lg">{formatCurrency(orderDetails.valor_total)}</span>
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-600">ID Transação:</span>
+                    <div className="text-right">
+                      <div className="flex items-center space-x-1">
+                        <Hash className="h-3 w-3 text-gray-400" />
+                        <span className="font-mono text-xs">
+                          {transactionId.length > 20 ? 
+                            `${transactionId.substring(0, 20)}...` : 
+                            transactionId
+                          }
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  {orderDetails.log_pagamento?.payment_id && (
+                  {orderDetails.log_pagamento?.processed_at && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">ID Transação:</span>
-                      <span className="font-mono text-xs">
-                        {orderDetails.log_pagamento.payment_id.substring(0, 16)}...
+                      <span className="text-gray-600">Processado em:</span>
+                      <span className="text-xs">
+                        {new Date(orderDetails.log_pagamento.processed_at).toLocaleString('pt-BR')}
                       </span>
                     </div>
                   )}
@@ -136,46 +186,29 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
               </div>
 
               <div>
-                <h4 className="font-semibold mb-3">Período de Exibição</h4>
+                <h4 className="font-semibold mb-3">Período do Contrato</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Duração:</span>
-                    <span className="font-medium">{orderDetails.plano_meses} meses</span>
+                    <span className="font-medium">{orderDetails.plano_meses} {orderDetails.plano_meses === 1 ? 'mês' : 'meses'}</span>
                   </div>
-                  {orderDetails.data_inicio && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Início:</span>
-                      <span className="font-medium">
-                        {new Date(orderDetails.data_inicio).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                  )}
-                  {orderDetails.data_fim && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Término:</span>
-                      <span className="font-medium">
-                        {new Date(orderDetails.data_fim).toLocaleDateString('pt-BR')}
-                      </span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Período:</span>
+                    <span className="font-medium text-sm">{getContractPeriod()}</span>
+                  </div>
+                  {orderDetails.lista_paineis && orderDetails.lista_paineis.length > 0 && (
+                    <div className="mt-3">
+                      <span className="text-gray-600 text-sm">Painéis Selecionados:</span>
+                      <div className="mt-1 max-h-20 overflow-y-auto text-xs text-gray-500">
+                        {orderDetails.lista_paineis.map((panel, index) => (
+                          <div key={index} className="truncate">• {panel}</div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Log técnico se disponível */}
-            {orderDetails.log_pagamento && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h5 className="text-sm font-medium text-gray-700 mb-2">Informações Técnicas</h5>
-                <div className="text-xs text-gray-600 space-y-1">
-                  {orderDetails.log_pagamento.processed_at && (
-                    <div>Processado em: {new Date(orderDetails.log_pagamento.processed_at).toLocaleString('pt-BR')}</div>
-                  )}
-                  {orderDetails.log_pagamento.migrated_from_tentativa && (
-                    <div>Migrado automaticamente do sistema anterior</div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </CardContent>

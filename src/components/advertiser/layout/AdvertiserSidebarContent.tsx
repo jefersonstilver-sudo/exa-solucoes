@@ -1,167 +1,96 @@
 
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Video, 
-  Play, 
-  Settings, 
-  LogOut,
-  BarChart3
-} from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useUserSession } from '@/hooks/useUserSession';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Video,
+  User,
+  Settings,
+  HelpCircle
+} from 'lucide-react';
 
 interface AdvertiserSidebarContentProps {
   onItemClick?: () => void;
 }
 
 const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps) => {
-  const { user } = useUserSession();
-  const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast.success('Logout realizado com sucesso');
-      navigate('/');
-    } catch (error) {
-      toast.error('Erro ao realizar logout');
-    }
-  };
-
-  const menuItems = [
+  const sidebarItems = [
     {
+      title: 'Dashboard',
+      href: '/anunciante',
       icon: LayoutDashboard,
-      label: 'Dashboard',
-      path: '/anunciante',
-      description: 'Visão geral das suas campanhas'
+      exact: true
     },
     {
-      icon: ShoppingBag,
-      label: 'Meus Pedidos',
-      path: '/anunciante/pedidos',
-      description: 'Histórico de compras e status'
+      title: 'Meus Pedidos',
+      href: '/anunciante/pedidos',
+      icon: ShoppingBag
     },
     {
-      icon: Play,
-      label: 'Campanhas',
-      path: '/anunciante/campanhas',
-      description: 'Gerencie suas campanhas ativas'
+      title: 'Meus Vídeos',
+      href: '/anunciante/videos',
+      icon: Video
     },
     {
-      icon: Video,
-      label: 'Meus Vídeos',
-      path: '/anunciante/videos',
-      description: 'Upload e gestão de vídeos'
+      title: 'Perfil',
+      href: '/anunciante/perfil',
+      icon: User
     },
     {
-      icon: BarChart3,
-      label: 'Relatórios',
-      path: '/anunciante/relatorios',
-      description: 'Métricas e performance'
+      title: 'Configurações',
+      href: '/anunciante/configuracoes',
+      icon: Settings
     },
     {
-      icon: Settings,
-      label: 'Configurações',
-      path: '/anunciante/configuracoes',
-      description: 'Dados pessoais e preferências'
+      title: 'Suporte',
+      href: '/anunciante/suporte',
+      icon: HelpCircle
     }
   ];
 
-  const isActiveRoute = (path: string) => {
-    if (path === '/anunciante') {
-      return location.pathname === '/anunciante' || location.pathname === '/anunciante/';
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact) {
+      return location.pathname === href;
     }
-    return location.pathname.startsWith(path);
+    return location.pathname.startsWith(href);
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-[#3C1361] to-[#2A0D47] text-white">
-      {/* Header */}
-      <div className="p-6 border-b border-white/10">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-[#00FFAB] rounded-lg flex items-center justify-center">
-            <span className="text-[#3C1361] font-bold text-lg">I</span>
-          </div>
-          <div>
-            <h2 className="font-bold text-lg">Indexa</h2>
-            <p className="text-sm text-gray-300">Portal do Anunciante</p>
-          </div>
-        </div>
-      </div>
-
-      {/* User Info */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-[#00FFAB] rounded-full flex items-center justify-center">
-            <span className="text-[#3C1361] font-semibold text-sm">
-              {user?.email?.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div>
-            <p className="font-medium text-sm">{user?.email}</p>
-            <p className="text-xs text-gray-400">Anunciante</p>
+    <div className="bg-gradient-to-b from-[#3C1361] to-[#2A0D47] border-r border-purple-800/30 w-full h-full">
+      <div className="p-6">
+        {/* Logo da Indexa */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="w-20 h-20 flex items-center justify-center">
+            <img 
+              src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
+              alt="Indexa Logo" 
+              className="w-full h-full object-contain filter brightness-0 invert"
+            />
           </div>
         </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = isActiveRoute(item.path);
-          
-          return (
-            <button
-              key={item.path}
-              onClick={() => {
-                navigate(item.path);
-                onItemClick?.();
-              }}
+        
+        <nav className="space-y-2">
+          {sidebarItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={onItemClick}
               className={cn(
-                "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group text-left",
-                isActive 
-                  ? "bg-[#00FFAB] text-[#3C1361] shadow-lg" 
-                  : "hover:bg-white/10 text-gray-200 hover:text-white"
+                'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
+                isActive(item.href, item.exact)
+                  ? 'bg-[#00FFAB] text-[#3C1361] shadow-lg font-semibold'
+                  : 'text-purple-100 hover:text-white hover:bg-white/10 hover:translate-x-1'
               )}
             >
-              <Icon className={cn(
-                "h-5 w-5 transition-colors",
-                isActive ? "text-[#3C1361]" : "text-gray-300 group-hover:text-white"
-              )} />
-              <div className="flex-1">
-                <p className={cn(
-                  "font-medium text-sm",
-                  isActive ? "text-[#3C1361]" : "text-gray-200 group-hover:text-white"
-                )}>
-                  {item.label}
-                </p>
-                <p className={cn(
-                  "text-xs",
-                  isActive ? "text-[#3C1361]/70" : "text-gray-400 group-hover:text-gray-300"
-                )}>
-                  {item.description}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Logout Button */}
-      <div className="p-4 border-t border-white/10">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-red-500/20 text-gray-200 hover:text-red-300 transition-all duration-200"
-        >
-          <LogOut className="h-5 w-5" />
-          <span className="font-medium text-sm">Sair</span>
-        </button>
+              <item.icon className="h-5 w-5" />
+              <span>{item.title}</span>
+            </Link>
+          ))}
+        </nav>
       </div>
     </div>
   );

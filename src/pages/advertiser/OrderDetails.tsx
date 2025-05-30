@@ -15,6 +15,7 @@ import { OrderSummaryCard } from '@/components/order/OrderSummaryCard';
 import { OrderStatusAlerts } from '@/components/order/OrderStatusAlerts';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
 import { ContractStatusAlert } from '@/components/order/ContractStatusAlert';
+import { VideoDisplayStatus } from '@/components/order/VideoDisplayStatus';
 import { useContractStatus } from '@/hooks/useContractStatus';
 
 interface OrderDetails {
@@ -27,6 +28,7 @@ interface OrderDetails {
   data_inicio?: string;
   data_fim?: string;
   client_id: string;
+  log_pagamento?: any;
 }
 
 const OrderDetails = () => {
@@ -73,6 +75,8 @@ const OrderDetails = () => {
     if (!id || !userProfile?.id) return;
 
     try {
+      console.log('📊 [ORDER_DETAILS] Carregando pedido:', id);
+      
       const { data: userOrder, error: userError } = await supabase
         .from('pedidos')
         .select('*')
@@ -84,10 +88,11 @@ const OrderDetails = () => {
 
       console.log('📊 [ORDER_DETAILS] Pedido carregado:', userOrder);
       console.log('📍 [ORDER_DETAILS] Lista de painéis:', userOrder?.lista_paineis);
+      console.log('💳 [ORDER_DETAILS] Log de pagamento:', userOrder?.log_pagamento);
       
       setOrderDetails(userOrder);
     } catch (error) {
-      console.error('Erro ao carregar pedido:', error);
+      console.error('❌ [ORDER_DETAILS] Erro ao carregar pedido:', error);
       toast.error('Erro ao carregar detalhes do pedido');
     } finally {
       setLoading(false);
@@ -169,6 +174,9 @@ const OrderDetails = () => {
           daysRemaining={contractStatus.daysRemaining}
           expiryDate={contractStatus.expiryDate}
         />
+
+        {/* Status de Exibição */}
+        <VideoDisplayStatus orderId={orderDetails.id} />
 
         {/* Informações de Compra */}
         <PurchaseInfoCard orderDetails={orderDetails} />

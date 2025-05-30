@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import OnlineStoreButton from '@/components/layout/header/OnlineStoreButton';
 
 const ModernAdvertiserHeader = () => {
   const { user } = useUserSession();
@@ -31,9 +32,12 @@ const ModernAdvertiserHeader = () => {
   };
 
   return (
-    <header className="bg-indexa-purple border-b border-purple-800/30 px-6 py-3 shadow-sm">
+    <header className="bg-indexa-purple border-b border-purple-800/30 px-6 py-3 shadow-sm hidden lg:block">
       <div className="flex items-center justify-end">
         <div className="flex items-center space-x-4">
+          {/* Botão Loja Online */}
+          <OnlineStoreButton />
+
           {/* Menu do Usuário */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
