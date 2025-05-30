@@ -434,7 +434,7 @@ const Checkout = () => {
                       </div>
                     </CardContent>
                   </Card>
-                )}
+                </motion.div>
               </div>
             )}
           </div>
