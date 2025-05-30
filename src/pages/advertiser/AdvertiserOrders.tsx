@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
@@ -47,8 +46,10 @@ interface OrderStats {
 }
 
 const AdvertiserOrders = () => {
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStats>({
@@ -61,13 +62,7 @@ const AdvertiserOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
 
-  const isMobile = useIsMobile();
-
-  // Use mobile version for mobile devices
-  if (isMobile) {
-    return <MobileAdvertiserOrders />;
-  }
-
+  // Effects must also be called before conditional returns
   useEffect(() => {
     loadOrders();
   }, [userProfile]);
@@ -75,6 +70,11 @@ const AdvertiserOrders = () => {
   useEffect(() => {
     filterOrders();
   }, [searchTerm, statusFilter, orders]);
+
+  // NOW we can do conditional rendering after all hooks are called
+  if (isMobile) {
+    return <MobileAdvertiserOrders />;
+  }
 
   const loadOrders = async () => {
     if (!userProfile?.id) return;
