@@ -41,7 +41,7 @@ const OrdersPageFixed = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
-          <span className="ml-2 text-indexa-purple">Carregando pedidos com nova política RLS...</span>
+          <span className="ml-2 text-indexa-purple">Carregando pedidos conectados ao banco...</span>
         </div>
       </div>
     );
@@ -52,8 +52,8 @@ const OrdersPageFixed = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Pedidos (Corrigido)</h1>
-          <p className="text-gray-600">Visualize e gerencie todos os pedidos com status de vídeo</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Pedidos</h1>
+          <p className="text-gray-600">Visualize e gerencie todos os pedidos com dados reais do sistema</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline" onClick={refetch} disabled={loading}>
@@ -67,7 +67,7 @@ const OrdersPageFixed = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Todos conectados com dados reais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -76,7 +76,7 @@ const OrdersPageFixed = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <p className="text-xs text-green-600">Sistema conectado</p>
+            <p className="text-xs text-green-600">Dados do banco de dados</p>
           </CardContent>
         </Card>
 
@@ -89,7 +89,7 @@ const OrdersPageFixed = () => {
             <div className="text-2xl font-bold text-gray-900">
               R$ {stats.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-green-600">Pedidos pagos</p>
+            <p className="text-xs text-green-600">Pedidos pagos confirmados</p>
           </CardContent>
         </Card>
 
@@ -100,7 +100,7 @@ const OrdersPageFixed = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{stats.awaiting_video}</div>
-            <p className="text-xs text-orange-500">Clientes pagaram</p>
+            <p className="text-xs text-orange-500">Status: pago_pendente_video</p>
           </CardContent>
         </Card>
 
@@ -111,7 +111,7 @@ const OrdersPageFixed = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{stats.video_sent}</div>
-            <p className="text-xs text-blue-600">Vídeos enviados</p>
+            <p className="text-xs text-blue-600">Status: video_enviado</p>
           </CardContent>
         </Card>
       </div>
@@ -174,7 +174,7 @@ const OrdersPageFixed = () => {
         <CardHeader>
           <CardTitle className="text-gray-900">Lista de Pedidos</CardTitle>
           <CardDescription className="text-gray-600">
-            {filteredOrders.length} pedidos encontrados
+            {filteredOrders.length} pedidos encontrados - Dados em tempo real
           </CardDescription>
         </CardHeader>
         <CardContent>
