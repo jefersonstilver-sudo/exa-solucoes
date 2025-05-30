@@ -27,7 +27,7 @@ const Index = () => {
               title: 'Marketing',
               image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80',
               button_text: 'Agende um café',
-              button_icon: 'calendar',
+              button_icon: 'calendar' as const,
               href: '/marketing',
               updated_at: new Date().toISOString()
             },
@@ -37,7 +37,7 @@ const Index = () => {
               title: 'Produtora',
               image_url: 'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80',
               button_text: 'Nossos trabalhos',
-              button_icon: 'monitor',
+              button_icon: 'monitor' as const,
               href: '/produtora',
               updated_at: new Date().toISOString()
             },
@@ -47,13 +47,18 @@ const Index = () => {
               title: 'Painéis Publicitários',
               image_url: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80',
               button_text: 'Saiba mais',
-              button_icon: 'info',
+              button_icon: 'info' as const,
               href: '/paineis-digitais/loja',
               updated_at: new Date().toISOString()
             }
           ]);
         } else {
-          setConfigs(data || []);
+          // Cast the data to ensure proper typing
+          const typedData = (data || []).map(item => ({
+            ...item,
+            button_icon: item.button_icon as 'calendar' | 'monitor' | 'info'
+          }));
+          setConfigs(typedData);
         }
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
