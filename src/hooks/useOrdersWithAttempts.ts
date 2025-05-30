@@ -59,23 +59,14 @@ export const useOrdersWithAttempts = () => {
       setLoading(true);
       console.log('🔍 Buscando pedidos e tentativas...');
 
-      // Buscar pedidos completos
+      // Buscar pedidos completos primeiro (prioridade para fazer aparecer)
       const { data: orders, error: ordersError } = await supabase.rpc('get_pedidos_com_clientes');
-      if (ordersError) throw ordersError;
-
-      // Buscar tentativas de compra
-      const { data: attempts, error: attemptsError } = await supabase
-        .from('tentativas_compra')
-        .select(`
-          *,
-          users!tentativas_compra_id_user_fkey(email)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (attemptsError) throw attemptsError;
+      if (ordersError) {
+        console.error('Erro ao buscar pedidos:', ordersError);
+        throw ordersError;
+      }
 
       console.log('✅ Pedidos encontrados:', orders?.length || 0);
-      console.log('✅ Tentativas encontradas:', attempts?.length || 0);
 
       // Processar pedidos completos
       const processedOrders: CompleteOrder[] = (orders || []).map(order => ({
@@ -83,20 +74,66 @@ export const useOrdersWithAttempts = () => {
         type: 'order' as const
       }));
 
-      // Processar tentativas
-      const processedAttempts: OrderAttempt[] = (attempts || []).map(attempt => ({
-        id: attempt.id,
-        created_at: attempt.created_at,
-        id_user: attempt.id_user,
-        valor_total: attempt.valor_total || 0,
-        predios_selecionados: attempt.predios_selecionados || [],
-        credencial: attempt.credencial,
-        predio: attempt.predio,
-        type: 'attempt' as const,
-        status: 'tentativa' as const,
-        client_email: (attempt as any).users?.email || 'Email não encontrado',
-        client_name: (attempt as any).users?.email || 'Nome não disponível'
-      }));
+      // Buscar tentativas de compra (sem foreign key problemática)
+      let processedAttempts: OrderAttempt[] = [];
+      try {
+        const { data: attempts, error: attemptsError } = await supabase
+          .from('tentativas_compra')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (attemptsError) {
+          console.error('Erro ao buscar tentativas (não crítico):', attemptsError);
+        } else {
+          console.log('✅ Tentativas encontradas:', attempts?.length || 0);
+          
+          // Para cada tentativa, buscar o email do usuário separadamente
+          if (attempts && attempts.length > 0) {
+            for (const attempt of attempts) {
+              try {
+                const { data: userData, error: userError } = await supabase
+                  .from('users')
+                  .select('email')
+                  .eq('id', attempt.id_user)
+                  .single();
+
+                processedAttempts.push({
+                  id: attempt.id,
+                  created_at: attempt.created_at,
+                  id_user: attempt.id_user,
+                  valor_total: attempt.valor_total || 0,
+                  predios_selecionados: attempt.predios_selecionados || [],
+                  credencial: attempt.credencial,
+                  predio: attempt.predio,
+                  type: 'attempt' as const,
+                  status: 'tentativa' as const,
+                  client_email: userData?.email || 'Email não encontrado',
+                  client_name: userData?.email || 'Nome não disponível'
+                });
+              } catch (error) {
+                console.warn('Erro ao buscar dados do usuário para tentativa:', attempt.id);
+                // Ainda assim adicionar a tentativa mesmo sem email
+                processedAttempts.push({
+                  id: attempt.id,
+                  created_at: attempt.created_at,
+                  id_user: attempt.id_user,
+                  valor_total: attempt.valor_total || 0,
+                  predios_selecionados: attempt.predios_selecionados || [],
+                  credencial: attempt.credencial,
+                  predio: attempt.predio,
+                  type: 'attempt' as const,
+                  status: 'tentativa' as const,
+                  client_email: 'Email não encontrado',
+                  client_name: 'Nome não disponível'
+                });
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Erro não crítico ao buscar tentativas:', error);
+        // Continuar sem tentativas se houver erro
+      }
 
       // Combinar e ordenar por data
       const combined = [...processedOrders, ...processedAttempts]
@@ -132,7 +169,7 @@ export const useOrdersWithAttempts = () => {
   useEffect(() => {
     fetchOrdersAndAttempts();
 
-    // Configurar escuta em tempo real
+    // Configurar escuta em tempo real apenas para pedidos (que funcionam)
     const channel = supabase
       .channel('orders-and-attempts-changes')
       .on('postgres_changes', 
@@ -143,17 +180,6 @@ export const useOrdersWithAttempts = () => {
         }, 
         (payload) => {
           console.log('🔄 Mudança detectada em pedidos:', payload);
-          fetchOrdersAndAttempts();
-        }
-      )
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'tentativas_compra' 
-        }, 
-        (payload) => {
-          console.log('🔄 Mudança detectada em tentativas:', payload);
           fetchOrdersAndAttempts();
         }
       )

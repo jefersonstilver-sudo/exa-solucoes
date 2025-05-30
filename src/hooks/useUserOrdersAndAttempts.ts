@@ -42,26 +42,19 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
       setLoading(true);
       console.log('🔍 Buscando pedidos e tentativas do usuário:', userId);
 
-      // Buscar pedidos completos do usuário
+      // Buscar pedidos completos do usuário primeiro (prioridade)
       const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
         .select('*')
         .eq('client_id', userId)
         .order('created_at', { ascending: false });
 
-      if (ordersError) throw ordersError;
-
-      // Buscar tentativas de compra do usuário
-      const { data: attempts, error: attemptsError } = await supabase
-        .from('tentativas_compra')
-        .select('*')
-        .eq('id_user', userId)
-        .order('created_at', { ascending: false });
-
-      if (attemptsError) throw attemptsError;
+      if (ordersError) {
+        console.error('Erro ao buscar pedidos do usuário:', ordersError);
+        throw ordersError;
+      }
 
       console.log('✅ Pedidos do usuário encontrados:', orders?.length || 0);
-      console.log('✅ Tentativas do usuário encontradas:', attempts?.length || 0);
 
       // Processar pedidos completos
       const processedOrders: UserCompleteOrder[] = (orders || []).map(order => ({
@@ -76,17 +69,35 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         type: 'order' as const
       }));
 
-      // Processar tentativas
-      const processedAttempts: UserOrderAttempt[] = (attempts || []).map(attempt => ({
-        id: attempt.id,
-        created_at: attempt.created_at,
-        valor_total: attempt.valor_total || 0,
-        predios_selecionados: attempt.predios_selecionados || [],
-        credencial: attempt.credencial,
-        predio: attempt.predio,
-        type: 'attempt' as const,
-        status: 'tentativa' as const
-      }));
+      // Buscar tentativas de compra do usuário (sem foreign key problemática)
+      let processedAttempts: UserOrderAttempt[] = [];
+      try {
+        const { data: attempts, error: attemptsError } = await supabase
+          .from('tentativas_compra')
+          .select('*')
+          .eq('id_user', userId)
+          .order('created_at', { ascending: false });
+
+        if (attemptsError) {
+          console.warn('Erro ao buscar tentativas do usuário (não crítico):', attemptsError);
+        } else {
+          console.log('✅ Tentativas do usuário encontradas:', attempts?.length || 0);
+
+          processedAttempts = (attempts || []).map(attempt => ({
+            id: attempt.id,
+            created_at: attempt.created_at,
+            valor_total: attempt.valor_total || 0,
+            predios_selecionados: attempt.predios_selecionados || [],
+            credencial: attempt.credencial,
+            predio: attempt.predio,
+            type: 'attempt' as const,
+            status: 'tentativa' as const
+          }));
+        }
+      } catch (error) {
+        console.warn('Erro não crítico ao buscar tentativas do usuário:', error);
+        // Continuar sem tentativas se houver erro
+      }
 
       // Combinar e ordenar por data
       const combined = [...processedOrders, ...processedAttempts]
@@ -106,7 +117,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
     fetchUserOrdersAndAttempts();
 
     if (userId) {
-      // Configurar escuta em tempo real
+      // Configurar escuta em tempo real apenas para pedidos (que funcionam)
       const channel = supabase
         .channel(`user-orders-${userId}`)
         .on('postgres_changes', 
@@ -118,18 +129,6 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           }, 
           (payload) => {
             console.log('🔄 Mudança detectada em pedidos do usuário:', payload);
-            fetchUserOrdersAndAttempts();
-          }
-        )
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'tentativas_compra',
-            filter: `id_user=eq.${userId}`
-          }, 
-          (payload) => {
-            console.log('🔄 Mudança detectada em tentativas do usuário:', payload);
             fetchUserOrdersAndAttempts();
           }
         )
