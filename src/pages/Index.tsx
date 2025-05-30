@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
@@ -103,7 +104,7 @@ const Index = () => {
                 title={config.title}
                 backgroundImage={config.image_url}
                 buttonText={config.button_text}
-                buttonIcon={config.button_icon}
+                buttonIcon={config.button_icon as 'calendar' | 'monitor' | 'info'}
                 href={config.href}
               />
             ))}
