@@ -7,9 +7,8 @@ interface FloatingCTAProps {
 }
 
 const FloatingCTA: React.FC<FloatingCTAProps> = ({ onScrollToForm }) => {
-  // Só mostra em dispositivos móveis (usando media query CSS)
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 px-2 block md:hidden">
+    <div className="fixed bottom-4 left-4 right-4 z-50 px-2 md:hidden">
       <button
         onClick={onScrollToForm}
         className="w-full bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white shadow-2xl h-16 px-8 text-lg rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2"

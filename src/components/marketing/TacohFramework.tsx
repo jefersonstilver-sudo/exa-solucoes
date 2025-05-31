@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import { 
   BarChart3, 
   Trophy, 
@@ -90,12 +89,11 @@ const TacohFramework: React.FC = () => {
               {strategyElements.map((element, index) => (
                 <div
                   key={index}
-                  className={cn(
-                    "bg-gradient-to-br from-[#3C1361] to-[#00FFAB] rounded-md sm:rounded-lg border border-[#00FFAB]/50 flex items-center justify-center transition-all duration-500 transform",
+                  className={`bg-gradient-to-br from-[#3C1361] to-[#00FFAB] rounded-md sm:rounded-lg border border-[#00FFAB]/50 flex items-center justify-center transition-all duration-500 transform ${
                     animatedPieces.includes(element.piece) 
                       ? 'opacity-100 scale-100 rotate-0' 
                       : 'opacity-30 scale-75 rotate-12'
-                  )}
+                  }`}
                   style={{
                     animationDelay: `${index * 200}ms`
                   }}
@@ -112,10 +110,9 @@ const TacohFramework: React.FC = () => {
           {strategyElements.map((element, index) => (
             <Card 
               key={index} 
-              className={cn(
-                "bg-white/5 border-white/10 text-white hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden group",
+              className={`bg-white/5 border-white/10 text-white hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden group ${
                 animatedPieces.includes(element.piece) ? 'ring-2 ring-[#00FFAB]/30' : ''
-              )}
+              }`}
             >
               <CardContent className="p-4 sm:p-6 h-full flex flex-col">
                 <div className="flex items-center mb-3 sm:mb-4">
