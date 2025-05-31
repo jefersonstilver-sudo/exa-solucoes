@@ -45,10 +45,10 @@ const Header: React.FC<HeaderProps> = ({
               Planos
             </Link>
             <Link 
-              to="/sobre" 
+              to="/paineis-publicitarios" 
               className="text-white hover:text-[#00FFAB] transition-colors font-medium"
             >
-              Sobre
+              Painéis Digitais
             </Link>
             <Link 
               to="/sou-sindico" 

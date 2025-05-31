@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Zap, Clock, Users, CheckCircle, Star, TrendingUp, Award, Bot, Phone, Building2 } from 'lucide-react';
+import { MessageSquare, Zap, Clock, Users, CheckCircle, Star, TrendingUp, Award, Bot, Building2, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
@@ -200,16 +199,6 @@ const SouSindico = () => {
         >
           <FinalCTASection isVisible={visibleSections['final-cta']} />
         </section>
-
-        {/* WhatsApp Fixo */}
-        <a
-          href="https://wa.me/5545999999999"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-2xl transform transition-all duration-300 hover:scale-110"
-        >
-          <Phone className="w-8 h-8 text-white" />
-        </a>
       </div>
     </Layout>
   );
