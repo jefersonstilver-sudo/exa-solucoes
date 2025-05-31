@@ -1,8 +1,9 @@
+
 import { Suspense, lazy } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Layout from './components/layout/Layout';
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
@@ -28,41 +29,51 @@ const queryClient = new QueryClient({
   },
 });
 
+const LayoutWrapper = () => {
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+};
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <Routes>
-            {/* Rotas com Layout */}
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Index />} />
-              <Route path="marketing" element={<Marketing />} />
-              <Route path="produtora" element={<Produtora />} />
-              <Route path="loja" element={<BuildingStore />} />
-              <Route path="paineis-publicitarios" element={<PaineisPublicitarios />} />
-              <Route path="sou-sindico" element={<SouSindico />} />
-              <Route path="panel-store" element={<PanelStore />} />
-              <Route path="painel-store" element={<PainelStore />} />
-            </Route>
+    <ErrorBoundary fallback={<div>Something went wrong</div>}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <Routes>
+              {/* Rotas com Layout */}
+              <Route path="/" element={<LayoutWrapper />}>
+                <Route index element={<Index />} />
+                <Route path="marketing" element={<Marketing />} />
+                <Route path="produtora" element={<Produtora />} />
+                <Route path="loja" element={<BuildingStore />} />
+                <Route path="paineis-publicitarios" element={<PaineisPublicitarios />} />
+                <Route path="sou-sindico" element={<SouSindico />} />
+                <Route path="panel-store" element={<PanelStore />} />
+                <Route path="painel-store" element={<PainelStore />} />
+              </Route>
 
-            {/* Rotas sem Layout */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/super_admin/*" element={
-              <AuthProvider>
-                <SuperAdminPage />
-              </AuthProvider>
-            } />
-            <Route path="/admin/*" element={
-              <AuthProvider>
-                <AdminPage />
-              </AuthProvider>
-            } />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+              {/* Rotas sem Layout */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/super_admin/*" element={
+                <AuthProvider>
+                  <SuperAdminPage />
+                </AuthProvider>
+              } />
+              <Route path="/admin/*" element={
+                <AuthProvider>
+                  <AdminPage />
+                </AuthProvider>
+              } />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

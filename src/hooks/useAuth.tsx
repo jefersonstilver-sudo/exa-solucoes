@@ -1,10 +1,24 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, UserRole } from '@/types/userTypes';
 
-export const useAuth = () => {
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  userProfile: UserProfile | null;
+  isLoading: boolean;
+  isLoggedIn: boolean;
+  logout: () => Promise<{ success: boolean; error: any }>;
+  hasRole: (requiredRole: string) => boolean;
+  refreshUserProfile: () => Promise<void>;
+  isSuperAdmin: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -256,24 +270,7 @@ export const useAuth = () => {
   const isLoggedIn = Boolean(user && session && userProfile);
   const computedIsSuperAdmin = isSuperAdmin(userProfile, session);
 
-  // NOVA: Log periódico para debug (apenas em desenvolvimento)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (process.env.NODE_ENV === 'development' && userProfile) {
-        console.log('🔍 AUTH STATUS:', {
-          isLoggedIn,
-          userEmail: userProfile.email,
-          userRole: userProfile.role,
-          isSuperAdmin: computedIsSuperAdmin,
-          sessionValid: !!session
-        });
-      }
-    }, 10000); // Log a cada 10 segundos
-
-    return () => clearInterval(interval);
-  }, [isLoggedIn, userProfile, computedIsSuperAdmin, session]);
-
-  return {
+  const value: AuthContextType = {
     user,
     session,
     userProfile,
@@ -281,7 +278,21 @@ export const useAuth = () => {
     isLoggedIn,
     logout,
     hasRole,
-    refreshUserProfile, // NOVA função para refresh manual
+    refreshUserProfile,
     isSuperAdmin: computedIsSuperAdmin
   };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

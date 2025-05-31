@@ -21,13 +21,6 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { to: '/', label: 'Home' },
-    { to: '/produtora', label: 'Produtora' },
-    { to: '/paineis-publicitarios', label: 'Painéis Digitais' },
-    { to: '/sou-sindico', label: 'Sou Síndico' }
-  ];
-
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -56,6 +49,12 @@ const Header: React.FC<HeaderProps> = ({
               className="text-white hover:text-[#00FFAB] transition-colors font-medium"
             >
               Home
+            </Link>
+            <Link 
+              to="/marketing" 
+              className="text-white hover:text-[#00FFAB] transition-colors font-medium"
+            >
+              Marketing
             </Link>
             <Link 
               to="/produtora" 
@@ -117,7 +116,6 @@ const Header: React.FC<HeaderProps> = ({
       <MobileMenu 
         isOpen={isMobileMenuOpen}
         onClose={closeMobileMenu}
-        navItems={navItems}
       />
     </header>
   );
