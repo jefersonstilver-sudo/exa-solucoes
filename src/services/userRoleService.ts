@@ -42,8 +42,11 @@ export const hasUserRole = (
   // Super admin has access to all roles
   if (userRole === 'super_admin') return true;
   
-  // Admin has access to admin and client roles
+  // Admin has access to admin and client roles (but not admin_marketing specific)
   if (userRole === 'admin' && (requiredRole === 'admin' || requiredRole === 'client')) return true;
+  
+  // Admin marketing has access only to admin_marketing and client roles
+  if (userRole === 'admin_marketing' && (requiredRole === 'admin_marketing' || requiredRole === 'client')) return true;
   
   // Client has access only to client role
   if (userRole === 'client' && requiredRole === 'client') return true;
@@ -77,4 +80,39 @@ export const updateUserRoleInDB = async (userId: string, role: UserRole): Promis
     console.error('Exception updating user role:', error);
     return { success: false, error };
   }
+};
+
+/**
+ * Get role display information
+ */
+export const getRoleDisplayInfo = (role: UserRole) => {
+  const roleInfo = {
+    super_admin: {
+      label: 'Super Administrador',
+      description: 'Acesso total ao sistema',
+      color: 'bg-yellow-100 text-yellow-800 border-yellow-300'
+    },
+    admin: {
+      label: 'Administrador Geral',
+      description: 'Gestão completa de prédios, painéis e pedidos',
+      color: 'bg-blue-100 text-blue-800 border-blue-300'
+    },
+    admin_marketing: {
+      label: 'Administrador Marketing',
+      description: 'Gestão de leads, campanhas e conteúdo',
+      color: 'bg-purple-100 text-purple-800 border-purple-300'
+    },
+    client: {
+      label: 'Cliente',
+      description: 'Acesso às funcionalidades de cliente',
+      color: 'bg-gray-100 text-gray-800 border-gray-300'
+    },
+    painel: {
+      label: 'Painel',
+      description: 'Dispositivo de exibição',
+      color: 'bg-green-100 text-green-800 border-green-300'
+    }
+  };
+
+  return roleInfo[role] || roleInfo.client;
 };

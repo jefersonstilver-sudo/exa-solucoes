@@ -133,12 +133,18 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
         }
       }
 
-      toast.success(`Conta administrativa criada com sucesso!`, {
+      const roleLabels = {
+        admin: 'Administrador Geral',
+        admin_marketing: 'Administrador Marketing',
+        super_admin: 'Super Administrador'
+      };
+
+      toast.success(`Conta ${roleLabels[newUserRole as keyof typeof roleLabels]} criada com sucesso!`, {
         description: `Email: ${newUserEmail} | Senha: indexa2025`
       });
 
       // Copiar credenciais para área de transferência
-      const credentials = `Email: ${newUserEmail}\nSenha: indexa2025\nRole: ${newUserRole}`;
+      const credentials = `Email: ${newUserEmail}\nSenha: indexa2025\nTipo: ${roleLabels[newUserRole as keyof typeof roleLabels]}`;
       navigator.clipboard.writeText(credentials);
       toast.info('Credenciais copiadas para área de transferência');
 
@@ -185,6 +191,8 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
         return <Crown className="h-4 w-4 text-yellow-500" />;
       case 'admin':
         return <Shield className="h-4 w-4 text-blue-500" />;
+      case 'admin_marketing':
+        return <UserCheck className="h-4 w-4 text-purple-500" />;
       default:
         return <UserCheck className="h-4 w-4 text-gray-500" />;
     }
@@ -203,7 +211,14 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
         return (
           <Badge className="bg-blue-100 text-blue-800 border-blue-300">
             <Shield className="h-3 w-3 mr-1" />
-            Admin
+            Admin Geral
+          </Badge>
+        );
+      case 'admin_marketing':
+        return (
+          <Badge className="bg-purple-100 text-purple-800 border-purple-300">
+            <UserCheck className="h-3 w-3 mr-1" />
+            Admin Marketing
           </Badge>
         );
       default:
@@ -266,14 +281,39 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
                   />
                 </div>
                 <div>
-                  <Label htmlFor="role" className="text-black">Função</Label>
+                  <Label htmlFor="role" className="text-black">Tipo de Administrador</Label>
                   <Select value={newUserRole} onValueChange={setNewUserRole}>
                     <SelectTrigger className="bg-white border-gray-300 text-black">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white border-gray-300">
-                      <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="super_admin">Super Administrador</SelectItem>
+                      <SelectItem value="admin">
+                        <div className="flex items-center space-x-2">
+                          <Shield className="h-4 w-4 text-blue-500" />
+                          <div>
+                            <div className="font-medium">Administrador Geral</div>
+                            <div className="text-xs text-gray-500">Gestão completa de prédios, painéis e pedidos</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="admin_marketing">
+                        <div className="flex items-center space-x-2">
+                          <UserCheck className="h-4 w-4 text-purple-500" />
+                          <div>
+                            <div className="font-medium">Administrador Marketing</div>
+                            <div className="text-xs text-gray-500">Apenas leads, campanhas e homepage</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="super_admin">
+                        <div className="flex items-center space-x-2">
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                          <div>
+                            <div className="font-medium">Super Administrador</div>
+                            <div className="text-xs text-gray-500">Acesso total ao sistema</div>
+                          </div>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -281,6 +321,11 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
                   <p className="text-sm text-gray-600">
                     <strong>Senha padrão:</strong> indexa2025
                   </p>
+                  <div className="mt-2 text-xs text-gray-500">
+                    {newUserRole === 'admin' && "✅ Gestão de prédios, painéis, pedidos e aprovações"}
+                    {newUserRole === 'admin_marketing' && "✅ Apenas leads, campanhas, homepage e aprovações de conteúdo"}
+                    {newUserRole === 'super_admin' && "✅ Acesso total incluindo criação de usuários"}
+                  </div>
                 </div>
               </div>
               <DialogFooter>

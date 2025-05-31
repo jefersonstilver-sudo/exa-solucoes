@@ -21,15 +21,18 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const AdminSidebar = () => {
   const { userProfile, session, isSuperAdmin } = useAuth();
+  const { permissions, userInfo } = useUserPermissions();
   
   console.log('AdminSidebar - Debug:', {
     userEmail: userProfile?.email,
     sessionEmail: session?.user?.email,
     userRole: userProfile?.role,
-    isSuperAdmin
+    isSuperAdmin,
+    permissions
   });
   
   const navItems = [
@@ -39,21 +42,24 @@ const AdminSidebar = () => {
       icon: <LayoutDashboard className="h-5 w-5" />,
       href: '/super_admin',
       requireSuperAdmin: false,
-      section: 'main'
+      section: 'main',
+      permission: 'canViewDashboard'
     },
     {
       label: 'Pedidos',
       icon: <ShoppingBag className="h-5 w-5" />,
       href: '/super_admin/pedidos',
       requireSuperAdmin: false,
-      section: 'main'
+      section: 'main',
+      permission: 'canViewOrders'
     },
     {
       label: 'Aprovações',
       icon: <CheckSquare className="h-5 w-5" />,
       href: '/super_admin/aprovacoes',
       requireSuperAdmin: false,
-      section: 'main'
+      section: 'main',
+      permission: 'canViewApprovals'
     },
     
     // ATIVOS
@@ -62,14 +68,16 @@ const AdminSidebar = () => {
       icon: <Building2 className="h-5 w-5" />,
       href: '/super_admin/predios',
       requireSuperAdmin: false,
-      section: 'assets'
+      section: 'assets',
+      permission: 'canManageBuildings'
     },
     {
       label: 'Painéis',
       icon: <MonitorPlay className="h-5 w-5" />,
       href: '/super_admin/paineis',
       requireSuperAdmin: false,
-      section: 'assets'
+      section: 'assets',
+      permission: 'canManagePanels'
     },
     
     // LEADS & CLIENTES
@@ -78,21 +86,24 @@ const AdminSidebar = () => {
       icon: <UserCheck className="h-5 w-5" />,
       href: '/super_admin/sindicos-interessados',
       requireSuperAdmin: false,
-      section: 'leads'
+      section: 'leads',
+      permission: 'canViewSindicosInteressados'
     },
     {
       label: 'Leads Produtora',
       icon: <Coffee className="h-5 w-5" />,
       href: '/super_admin/leads-produtora',
       requireSuperAdmin: false,
-      section: 'leads'
+      section: 'leads',
+      permission: 'canViewLeadsProdutora'
     },
     {
       label: 'Leads de Marketing',
       icon: <Megaphone className="h-5 w-5" />,
       href: '/super_admin/leads-campanhas',
       requireSuperAdmin: false,
-      section: 'leads'
+      section: 'leads',
+      permission: 'canViewLeadsCampanhas'
     },
     
     // SISTEMA
@@ -101,28 +112,32 @@ const AdminSidebar = () => {
       icon: <Users className="h-5 w-5" />,
       href: '/super_admin/usuarios',
       requireSuperAdmin: true,
-      section: 'system'
+      section: 'system',
+      permission: 'canManageUsers'
     },
     {
       label: 'Cupons',
       icon: <Ticket className="h-5 w-5" />,
       href: '/super_admin/cupons',
       requireSuperAdmin: false,
-      section: 'system'
+      section: 'system',
+      permission: 'canManageCoupons'
     },
     {
       label: 'Homepage Config',
       icon: <Images className="h-5 w-5" />,
       href: '/super_admin/homepage-config',
-      requireSuperAdmin: true,
-      section: 'system'
+      requireSuperAdmin: false, // Marketing admin também pode acessar
+      section: 'system',
+      permission: 'canManageHomepageConfig'
     },
     {
       label: 'Configurações',
       icon: <Settings className="h-5 w-5" />,
       href: '/super_admin/configuracoes',
       requireSuperAdmin: true,
-      section: 'system'
+      section: 'system',
+      permission: 'canManageSystemSettings'
     },
     
     // CONTEÚDO
@@ -131,14 +146,16 @@ const AdminSidebar = () => {
       icon: <Video className="h-5 w-5" />,
       href: '/super_admin/videos',
       requireSuperAdmin: false,
-      section: 'content'
+      section: 'content',
+      permission: 'canManageVideos'
     },
     {
       label: 'Notificações',
       icon: <Bell className="h-5 w-5" />,
       href: '/super_admin/notificacoes',
       requireSuperAdmin: false,
-      section: 'content'
+      section: 'content',
+      permission: 'canManageNotifications'
     }
   ];
 
@@ -150,11 +167,53 @@ const AdminSidebar = () => {
     content: 'Conteúdo'
   };
 
-  const groupedItems = navItems.reduce((acc, item) => {
+  // Filtrar itens baseado nas permissões do usuário
+  const filteredNavItems = navItems.filter(item => {
+    // Se requer super admin e não é super admin, não mostrar
+    if (item.requireSuperAdmin && !isSuperAdmin) {
+      return false;
+    }
+    
+    // Verificar permissão específica
+    if (item.permission && !permissions[item.permission as keyof typeof permissions]) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  const groupedItems = filteredNavItems.reduce((acc, item) => {
     if (!acc[item.section]) acc[item.section] = [];
     acc[item.section].push(item);
     return acc;
   }, {} as Record<string, typeof navItems>);
+
+  // Função para obter a cor do badge baseado no tipo de admin
+  const getAdminBadgeColor = () => {
+    switch (userInfo.role) {
+      case 'super_admin':
+        return 'text-yellow-400';
+      case 'admin':
+        return 'text-blue-400';
+      case 'admin_marketing':
+        return 'text-purple-400';
+      default:
+        return 'text-indexa-mint';
+    }
+  };
+
+  const getAdminTitle = () => {
+    switch (userInfo.role) {
+      case 'super_admin':
+        return 'Super Admin Access';
+      case 'admin':
+        return 'Admin Geral Access';
+      case 'admin_marketing':
+        return 'Admin Marketing Access';
+      default:
+        return 'Admin Access';
+    }
+  };
   
   return (
     <aside className="w-64 min-h-screen bg-indexa-purple shadow-lg">
@@ -176,11 +235,13 @@ const AdminSidebar = () => {
         </div>
 
         {/* Status do usuário */}
-        {isSuperAdmin && (
+        {(isSuperAdmin || userInfo.isAdmin || userInfo.isMarketingAdmin) && (
           <div className="p-4 border-b border-indexa-purple-light">
-            <div className="flex items-center space-x-2 text-indexa-mint">
-              <Crown className="h-4 w-4" />
-              <span className="text-xs font-bold">Super Admin Access</span>
+            <div className="flex items-center space-x-2">
+              <Crown className={`h-4 w-4 ${getAdminBadgeColor()}`} />
+              <span className={`text-xs font-bold ${getAdminBadgeColor()}`}>
+                {getAdminTitle()}
+              </span>
             </div>
             <div className="text-xs text-white/70 mt-1">
               {userProfile?.email}
@@ -196,27 +257,21 @@ const AdminSidebar = () => {
                 {sections[sectionKey as keyof typeof sections]}
               </h3>
               <div className="space-y-1">
-                {items.map((item) => {
-                  if (item.requireSuperAdmin && !isSuperAdmin) {
-                    return null;
-                  }
-                  
-                  return (
-                    <NavLink
-                      key={item.href}
-                      to={item.href}
-                      className={({ isActive }) => cn(
-                        "flex items-center px-3 py-2 text-white rounded-lg hover:bg-indexa-purple-light hover:text-white transition-all duration-200 font-medium text-sm",
-                        isActive ? "bg-white text-indexa-purple font-bold shadow-sm" : ""
-                      )}
-                    >
-                      <div className="mr-3">
-                        {item.icon}
-                      </div>
-                      <span>{item.label}</span>
-                    </NavLink>
-                  );
-                })}
+                {items.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    className={({ isActive }) => cn(
+                      "flex items-center px-3 py-2 text-white rounded-lg hover:bg-indexa-purple-light hover:text-white transition-all duration-200 font-medium text-sm",
+                      isActive ? "bg-white text-indexa-purple font-bold shadow-sm" : ""
+                    )}
+                  >
+                    <div className="mr-3">
+                      {item.icon}
+                    </div>
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
               </div>
             </div>
           ))}
