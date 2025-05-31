@@ -216,6 +216,42 @@ export type Database = {
           },
         ]
       }
+      campanhas_portfolio: {
+        Row: {
+          capa_url: string | null
+          categoria: string
+          cliente: string
+          created_at: string
+          descricao: string | null
+          id: string
+          titulo: string
+          updated_at: string
+          url_video: string
+        }
+        Insert: {
+          capa_url?: string | null
+          categoria: string
+          cliente: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          titulo: string
+          updated_at?: string
+          url_video: string
+        }
+        Update: {
+          capa_url?: string | null
+          categoria?: string
+          cliente?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          titulo?: string
+          updated_at?: string
+          url_video?: string
+        }
+        Relationships: []
+      }
       configuracoes_sistema: {
         Row: {
           created_at: string | null
@@ -369,6 +405,45 @@ export type Database = {
           service_type?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      leads_campanhas: {
+        Row: {
+          cargo: string
+          contato_realizado: boolean
+          created_at: string
+          id: string
+          nome_completo: string
+          nome_empresa: string
+          objetivo: string | null
+          status: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          cargo: string
+          contato_realizado?: boolean
+          created_at?: string
+          id?: string
+          nome_completo: string
+          nome_empresa: string
+          objetivo?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          cargo?: string
+          contato_realizado?: boolean
+          created_at?: string
+          id?: string
+          nome_completo?: string
+          nome_empresa?: string
+          objetivo?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp?: string
         }
         Relationships: []
       }

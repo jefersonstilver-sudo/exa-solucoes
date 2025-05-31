@@ -16,7 +16,8 @@ import {
   UserCheck,
   Coffee,
   Ticket,
-  Bell
+  Bell,
+  Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -83,6 +84,13 @@ const AdminSidebar = () => {
       label: 'Leads Produtora',
       icon: <Coffee className="h-5 w-5" />,
       href: '/super_admin/leads-produtora',
+      requireSuperAdmin: false,
+      section: 'leads'
+    },
+    {
+      label: 'Leads de Marketing',
+      icon: <Megaphone className="h-5 w-5" />,
+      href: '/super_admin/leads-campanhas',
       requireSuperAdmin: false,
       section: 'leads'
     },
