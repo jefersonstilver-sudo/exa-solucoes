@@ -1,69 +1,13 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Eye, Building, Users, TrendingUp } from 'lucide-react';
+import React from 'react';
+import { reasons } from './why-it-works/reasonsData';
+import ReasonCard from './why-it-works/ReasonCard';
+import NavigationDots from './why-it-works/NavigationDots';
+import ResultSummary from './why-it-works/ResultSummary';
+import { useWhyItWorksAnimation } from './why-it-works/useWhyItWorksAnimation';
 
 const WhyItWorksSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
-  const sectionRef = useRef<HTMLElement>(null);
-
-  const reasons = [
-    {
-      icon: Eye,
-      title: 'Atenção Cativa',
-      number: '100%',
-      description: 'Público não pode "pular" ou ignorar',
-      detail: 'Durante a espera e trajeto no elevador, seu público está 100% focado na tela'
-    },
-    {
-      icon: Building,
-      title: 'Primeira Fase do Projeto',
-      number: '50',
-      description: 'Prédios selecionados estrategicamente',
-      detail: 'Localizações premium escolhidas para máximo impacto e visibilidade'
-    },
-    {
-      icon: Users,
-      title: 'Pessoas na Primeira Fase',
-      number: '22 mil',
-      description: 'Alcance garantido diariamente',
-      detail: 'Base sólida de pessoas expostas à sua marca todos os dias'
-    },
-    {
-      icon: TrendingUp,
-      title: 'Recall de Marca',
-      number: '245x',
-      description: 'Exibições diárias por painel',
-      detail: 'Alta frequência gera lembrança e reconhecimento instantâneo da marca'
-    }
-  ];
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.3 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (isVisible) {
-      const interval = setInterval(() => {
-        setActiveStep((prev) => (prev + 1) % reasons.length);
-      }, 3000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [isVisible, reasons.length]);
+  const { isVisible, activeStep, setActiveStep, sectionRef } = useWhyItWorksAnimation(reasons.length);
 
   return (
     <section 
@@ -85,98 +29,25 @@ const WhyItWorksSection = () => {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {reasons.map((reason, index) => {
-              const IconComponent = reason.icon;
-              const isActive = index === activeStep;
-              
-              return (
-                <div
-                  key={index}
-                  className={`transform transition-all duration-500 cursor-pointer ${
-                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                  } ${isActive ? 'scale-105' : 'hover:scale-102'}`}
-                  style={{ transitionDelay: `${index * 100}ms` }}
-                  onClick={() => setActiveStep(index)}
-                >
-                  <div className={`relative bg-gray-800/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border transition-all duration-300 ${
-                    isActive 
-                      ? 'border-indexa-mint/60 shadow-lg shadow-indexa-mint/20' 
-                      : 'border-white/10 hover:border-indexa-mint/30'
-                  }`}>
-                    
-                    <div className={`text-center mb-4 sm:mb-6 transition-all duration-300 ${
-                      isActive ? 'scale-110' : 'scale-100'
-                    }`}>
-                      <div className={`text-4xl sm:text-5xl font-bold mb-2 transition-colors duration-300 ${
-                        isActive ? 'text-indexa-mint' : 'text-white'
-                      }`}>
-                        {reason.number}
-                      </div>
-                      
-                      <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full flex items-center justify-center transition-all duration-300 ${
-                        isActive 
-                          ? 'bg-indexa-mint/20 scale-110' 
-                          : 'bg-white/10'
-                      }`}>
-                        <IconComponent className={`w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-300 ${
-                          isActive ? 'text-indexa-mint' : 'text-white'
-                        }`} />
-                      </div>
-                    </div>
-
-                    <h3 className={`text-lg sm:text-xl font-bold text-center mb-2 sm:mb-3 transition-colors duration-300 ${
-                      isActive ? 'text-indexa-mint' : 'text-white'
-                    }`}>
-                      {reason.title}
-                    </h3>
-
-                    <p className="text-white/90 text-center text-sm sm:text-base mb-3 sm:mb-4">
-                      {reason.description}
-                    </p>
-
-                    <div className={`overflow-hidden transition-all duration-300 ${
-                      isActive ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
-                    }`}>
-                      <div className="border-t border-indexa-mint/30 pt-3 sm:pt-4">
-                        <p className="text-white/80 text-xs sm:text-sm text-center">
-                          {reason.detail}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className={`absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-full transition-all duration-300 ${
-                      isActive ? 'bg-indexa-mint w-12' : 'bg-white/30'
-                    }`} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex justify-center mt-8 sm:mt-12 space-x-2 sm:space-x-3">
-            {reasons.map((_, index) => (
-              <button
+            {reasons.map((reason, index) => (
+              <ReasonCard
                 key={index}
+                {...reason}
+                isActive={index === activeStep}
+                index={index}
+                isVisible={isVisible}
                 onClick={() => setActiveStep(index)}
-                className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 ${
-                  index === activeStep 
-                    ? 'bg-indexa-mint scale-125' 
-                    : 'bg-white/30 hover:bg-white/50'
-                }`}
               />
             ))}
           </div>
 
-          <div className="text-center mt-12 sm:mt-16">
-            <div className="bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border border-indexa-mint/30 max-w-3xl mx-auto">
-              <p className="text-xl sm:text-2xl font-bold text-white mb-2">
-                <span className="text-indexa-mint">Resultado:</span> 95% de taxa de atenção
-              </p>
-              <p className="text-white/80 text-base sm:text-lg">
-                Muito superior a qualquer outra mídia digital
-              </p>
-            </div>
-          </div>
+          <NavigationDots
+            itemsCount={reasons.length}
+            activeIndex={activeStep}
+            onDotClick={setActiveStep}
+          />
+
+          <ResultSummary />
         </div>
       </div>
     </section>
