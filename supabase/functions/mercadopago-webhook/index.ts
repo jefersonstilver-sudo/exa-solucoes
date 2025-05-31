@@ -19,7 +19,7 @@ serve(async (req) => {
     });
   }
 
-  console.log("🔔 WEBHOOK MERCADOPAGO: Requisição recebida", {
+  console.log("🔔 WEBHOOK MERCADOPAGO ENHANCED: Requisição recebida", {
     method: req.method,
     url: req.url,
     headers: Object.fromEntries(req.headers.entries())
@@ -62,13 +62,13 @@ serve(async (req) => {
     // Obter dados do pagamento
     const paymentData = await req.json();
     
-    console.log("🔄 WEBHOOK: Dados do pagamento recebidos:", JSON.stringify(paymentData, null, 2));
+    console.log("🔄 WEBHOOK ENHANCED: Dados do pagamento recebidos:", JSON.stringify(paymentData, null, 2));
 
     // Log do webhook recebido
     await supabase
       .from('webhook_logs')
       .insert({
-        origem: 'mercadopago_webhook',
+        origem: 'mercadopago_webhook_enhanced',
         status: 'received',
         payload: paymentData
       });
@@ -77,17 +77,17 @@ serve(async (req) => {
     const paymentId = paymentData?.data?.id || paymentData?.id;
     const status = paymentData?.action || paymentData?.type;
     
-    console.log("📦 WEBHOOK: Dados extraídos:", { paymentId, status });
+    console.log("📦 WEBHOOK ENHANCED: Dados extraídos:", { paymentId, status });
 
     // Se for uma notificação de pagamento aprovado
     if (status === 'payment.updated' || status === 'payment.created') {
-      console.log("💰 WEBHOOK: Processando notificação de pagamento");
+      console.log("💰 WEBHOOK ENHANCED: Processando notificação de pagamento");
       
       // Buscar detalhes do pagamento via API do MercadoPago
       const mpAccessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
       
       if (mpAccessToken && paymentId) {
-        console.log("🔍 WEBHOOK: Buscando detalhes do pagamento:", paymentId);
+        console.log("🔍 WEBHOOK ENHANCED: Buscando detalhes completos do pagamento:", paymentId);
         
         const paymentDetailsResponse = await fetch(
           `https://api.mercadopago.com/v1/payments/${paymentId}`,
@@ -101,40 +101,47 @@ serve(async (req) => {
         if (paymentDetailsResponse.ok) {
           const paymentDetails = await paymentDetailsResponse.json();
           
-          console.log("💳 WEBHOOK: Detalhes do pagamento:", {
+          console.log("💳 WEBHOOK ENHANCED: Detalhes completos do pagamento:", {
             id: paymentDetails.id,
             status: paymentDetails.status,
             external_reference: paymentDetails.external_reference,
-            transaction_amount: paymentDetails.transaction_amount
+            transaction_amount: paymentDetails.transaction_amount,
+            payment_method_id: paymentDetails.payment_method_id,
+            payer: paymentDetails.payer ? {
+              email: paymentDetails.payer.email,
+              identification: paymentDetails.payer.identification
+            } : null,
+            transaction_details: paymentDetails.transaction_details
           });
           
           // Se o pagamento foi aprovado
           if (paymentDetails.status === 'approved' && paymentDetails.external_reference) {
-            console.log("🎉 WEBHOOK: Pagamento aprovado! Processando...");
+            console.log("🎉 WEBHOOK ENHANCED: Pagamento aprovado! Processando com dados de compliance...");
             
-            // Processar pagamento aprovado
+            // Processar pagamento aprovado com função aprimorada
             const { data: result, error } = await supabase.rpc(
-              'process_mercadopago_webhook_with_cleanup',
+              'process_mercadopago_webhook_enhanced',
               { p_payment_data: paymentDetails }
             );
             
             if (error) {
-              console.error("❌ WEBHOOK: Erro ao processar pagamento:", error);
+              console.error("❌ WEBHOOK ENHANCED: Erro ao processar pagamento:", error);
               throw error;
             }
             
-            console.log("✅ WEBHOOK: Pagamento processado com sucesso:", result);
+            console.log("✅ WEBHOOK ENHANCED: Pagamento processado com dados de compliance:", result);
             
             // Log de sucesso
             await supabase
               .from('webhook_logs')
               .insert({
-                origem: 'mercadopago_payment_approved',
+                origem: 'mercadopago_payment_approved_enhanced',
                 status: 'success',
                 payload: {
                   payment_id: paymentDetails.id,
                   external_reference: paymentDetails.external_reference,
                   amount: paymentDetails.transaction_amount,
+                  compliance_captured: true,
                   processed_result: result
                 }
               });
@@ -142,9 +149,10 @@ serve(async (req) => {
             return new Response(
               JSON.stringify({
                 success: true,
-                message: 'Pagamento aprovado processado com sucesso',
+                message: 'Pagamento aprovado processado com dados de compliance',
                 payment_id: paymentDetails.id,
-                pedido_id: result?.pedido_id
+                pedido_id: result?.pedido_id,
+                compliance_data_captured: result?.compliance_data_captured
               }),
               {
                 status: 200,
@@ -152,10 +160,10 @@ serve(async (req) => {
               }
             );
           } else {
-            console.log("ℹ️ WEBHOOK: Pagamento não aprovado ainda:", paymentDetails.status);
+            console.log("ℹ️ WEBHOOK ENHANCED: Pagamento não aprovado ainda:", paymentDetails.status);
           }
         } else {
-          console.error("❌ WEBHOOK: Erro ao buscar detalhes do pagamento:", paymentDetailsResponse.status);
+          console.error("❌ WEBHOOK ENHANCED: Erro ao buscar detalhes do pagamento:", paymentDetailsResponse.status);
         }
       }
     }
@@ -164,7 +172,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Webhook recebido e processado',
+        message: 'Webhook enhanced recebido e processado',
         status: status
       }),
       {
@@ -174,7 +182,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("💥 WEBHOOK: Erro crítico:", error);
+    console.error("💥 WEBHOOK ENHANCED: Erro crítico:", error);
     
     // Log do erro
     try {
@@ -185,7 +193,7 @@ serve(async (req) => {
       await supabase
         .from('webhook_logs')
         .insert({
-          origem: 'mercadopago_webhook_error',
+          origem: 'mercadopago_webhook_enhanced_error',
           status: 'error',
           payload: {
             error: error.message,
@@ -200,7 +208,7 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message || 'Erro interno do servidor',
-        message: 'Falha ao processar webhook'
+        message: 'Falha ao processar webhook enhanced'
       }),
       {
         status: 500,

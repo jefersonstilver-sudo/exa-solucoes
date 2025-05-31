@@ -760,6 +760,7 @@ export type Database = {
       pedidos: {
         Row: {
           client_id: string
+          compliance_data: Json | null
           created_at: string | null
           cupom_id: string | null
           data_fim: string | null
@@ -775,6 +776,7 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          compliance_data?: Json | null
           created_at?: string | null
           cupom_id?: string | null
           data_fim?: string | null
@@ -790,6 +792,7 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          compliance_data?: Json | null
           created_at?: string | null
           cupom_id?: string | null
           data_fim?: string | null
@@ -1110,6 +1113,10 @@ export type Database = {
           is_consistent: boolean
         }[]
       }
+      extract_compliance_data: {
+        Args: { payment_data: Json }
+        Returns: Json
+      }
       generate_coupon_code: {
         Args: { prefix?: string }
         Returns: string
@@ -1296,6 +1303,10 @@ export type Database = {
       }
       migrate_orphaned_payments: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      process_mercadopago_webhook_enhanced: {
+        Args: { p_payment_data: Json }
         Returns: Json
       }
       process_mercadopago_webhook_with_cleanup: {

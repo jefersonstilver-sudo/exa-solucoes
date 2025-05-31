@@ -17,6 +17,7 @@ interface OrderWithClient {
   client_name: string;
   video_status: string;
   log_pagamento?: any;
+  compliance_data?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
 }
@@ -60,18 +61,46 @@ export const useRealOrderDetails = (orderId: string) => {
       try {
         setLoading(true);
 
-        // Buscar dados do pedido com cliente
-        const { data: orders, error: orderError } = await supabase.rpc('get_pedidos_com_clientes');
+        // Buscar dados do pedido com cliente - incluindo compliance_data
+        const { data: orders, error: orderError } = await supabase
+          .from('pedidos')
+          .select(`
+            *,
+            compliance_data
+          `)
+          .eq('id', orderId);
         
         if (orderError) throw orderError;
 
-        const order = orders?.find((o: any) => o.id === orderId);
-        if (!order) {
+        if (!orders || orders.length === 0) {
           toast.error('Pedido não encontrado');
           return;
         }
 
-        setOrderDetails(order);
+        const order = orders[0];
+
+        // Buscar dados do cliente
+        const { data: clientData, error: clientError } = await supabase
+          .from('auth.users')
+          .select('email, raw_user_meta_data')
+          .eq('id', order.client_id)
+          .single();
+
+        if (clientError) {
+          console.warn('Erro ao buscar dados do cliente:', clientError);
+        }
+
+        // Combinar dados do pedido com dados do cliente
+        const orderWithClient: OrderWithClient = {
+          ...order,
+          client_email: clientData?.email || 'Email não encontrado',
+          client_name: clientData?.raw_user_meta_data?.full_name || 
+                      clientData?.raw_user_meta_data?.name || 
+                      'Nome não disponível',
+          video_status: order.status // Mapeamento simples do status
+        };
+
+        setOrderDetails(orderWithClient);
 
         // Buscar vídeos do pedido
         const { data: videos, error: videosError } = await supabase
