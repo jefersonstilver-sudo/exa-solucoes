@@ -38,7 +38,7 @@ const HeroSection = () => {
       </div>
 
       <div className="relative z-20 max-w-6xl mx-auto flex items-center justify-center min-h-[calc(100vh-8rem)]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 xl:gap-16 items-center w-full">
           
           {/* Texto Principal */}
           <div className={`order-2 lg:order-1 text-center lg:text-left transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
@@ -53,24 +53,24 @@ const HeroSection = () => {
             </h1>
 
             {/* Subtítulo */}
-            <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 leading-relaxed font-light">
+            <p className="text-base sm:text-lg md:text-xl lg:text-xl xl:text-2xl text-white/90 mb-6 leading-relaxed font-light">
               Os elevadores da cidade agora são <br className="hidden sm:block" />
               <span className="text-indexa-mint font-medium">vitrines inteligentes.</span>
             </p>
 
             {/* Selo de Destaque */}
-            <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 py-2 mb-6 border border-white/20">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-indexa-mint mr-2" />
-              <span className="text-white text-xs sm:text-sm font-medium">Exibição média: 245 vezes ao dia por painel</span>
+            <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 lg:px-5 py-2 mb-6 lg:mb-8 border border-white/20">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-indexa-mint mr-2" />
+              <span className="text-white text-xs sm:text-sm lg:text-base font-medium">Exibição média: 245 vezes ao dia por painel</span>
             </div>
 
             {/* Botão CTA Principal */}
             <button
               onClick={handleCTAClick}
-              className="group relative bg-indexa-mint text-indexa-purple-dark text-base sm:text-lg font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1"
+              className="group relative bg-indexa-mint text-indexa-purple-dark text-base sm:text-lg lg:text-xl font-bold py-3 sm:py-4 lg:py-5 px-6 sm:px-8 lg:px-10 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1"
             >
               <span className="relative flex items-center space-x-2 z-10">
-                <Play className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 group-hover:translate-x-1 transition-transform duration-300" />
                 <span>Acessar Loja Online</span>
               </span>
             </button>
@@ -78,9 +78,9 @@ const HeroSection = () => {
 
           {/* Vídeo Totem Central */}
           <div className={`order-1 lg:order-2 flex flex-col items-center transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <div className="relative group w-full max-w-sm mx-auto">
+            <div className="relative group w-full max-w-sm lg:max-w-lg xl:max-w-xl mx-auto">
               {/* Moldura do Painel Digital (Totem) */}
-              <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 p-2 sm:p-3 rounded-xl sm:rounded-2xl shadow-2xl border border-gray-700">
+              <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 p-2 sm:p-3 lg:p-4 rounded-xl sm:rounded-2xl shadow-2xl border border-gray-700">
                 {/* Sombra externa para criar efeito de profundidade */}
                 <div className="absolute inset-0 bg-indexa-purple/30 rounded-xl sm:rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-70" />
                 
@@ -108,10 +108,10 @@ const HeroSection = () => {
                 </div>
 
                 {/* LEDs indicadores */}
-                <div className="absolute top-1 right-1 sm:top-2 sm:right-2 flex space-x-1">
-                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-green-400 rounded-full animate-pulse" />
-                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-blue-400 rounded-full animate-pulse delay-300" />
-                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-indexa-mint rounded-full animate-pulse delay-700" />
+                <div className="absolute top-1 right-1 sm:top-2 sm:right-2 lg:top-3 lg:right-3 flex space-x-1">
+                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 lg:w-2 lg:h-2 bg-green-400 rounded-full animate-pulse" />
+                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 lg:w-2 lg:h-2 bg-blue-400 rounded-full animate-pulse delay-300" />
+                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 lg:w-2 lg:h-2 bg-indexa-mint rounded-full animate-pulse delay-700" />
                 </div>
               </div>
             </div>
@@ -119,9 +119,9 @@ const HeroSection = () => {
             {/* Botão embaixo do vídeo */}
             <button
               onClick={handleVideoClick}
-              className="mt-3 sm:mt-4 bg-black/70 hover:bg-black/90 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full text-white text-xs sm:text-sm font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
+              className="mt-3 sm:mt-4 lg:mt-6 bg-black/70 hover:bg-black/90 backdrop-blur-sm px-3 sm:px-4 lg:px-5 py-2 lg:py-3 rounded-full text-white text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
             >
-              <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />
+              <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
               <span>Assistir com som em tela cheia</span>
             </button>
           </div>
