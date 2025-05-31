@@ -17,7 +17,8 @@ import {
   Coffee,
   Ticket,
   Bell,
-  Megaphone
+  Megaphone,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -114,6 +115,13 @@ const AdminSidebar = () => {
       label: 'Homepage Config',
       icon: <Images className="h-5 w-5" />,
       href: '/super_admin/homepage-config',
+      requireSuperAdmin: true,
+      section: 'system'
+    },
+    {
+      label: 'Logos dos Clientes',
+      icon: <Star className="h-5 w-5" />,
+      href: '/super_admin/client-logos',
       requireSuperAdmin: true,
       section: 'system'
     },
