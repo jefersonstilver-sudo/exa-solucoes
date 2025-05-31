@@ -14,6 +14,7 @@ import Index from '@/pages/Index';
 import Marketing from '@/pages/Marketing';
 import Produtora from '@/pages/Produtora';
 import PaineisPublicitarios from '@/pages/PaineisPublicitarios';
+import SouSindico from '@/pages/SouSindico';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import Login from '@/pages/Login';
@@ -63,6 +64,9 @@ const App = () => {
         
         {/* NOVA ROTA PARA PAINÉIS PUBLICITÁRIOS */}
         <Route path="/paineis-publicitarios" element={<PaineisPublicitarios />} />
+        
+        {/* NOVA ROTA PARA SOU SÍNDICO */}
+        <Route path="/sou-sindico" element={<SouSindico />} />
         
         {/* NOVAS ROTAS DOS CARDS DA HOMEPAGE */}
         <Route path="/marketing" element={<Marketing />} />
