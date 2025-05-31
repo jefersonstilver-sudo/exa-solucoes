@@ -1,12 +1,13 @@
 
 import React, { useEffect } from 'react';
-import ScrollProgressBar from '@/components/paineis-landing/ScrollProgressBar';
+import Layout from '@/components/layout/Layout';
 import HeroSection from '@/components/paineis-landing/HeroSection';
-import Logo3DSection from '@/components/paineis-landing/Logo3DSection';
 import AboutSection from '@/components/paineis-landing/AboutSection';
 import GallerySection from '@/components/paineis-landing/GallerySection';
 import BenefitsSection from '@/components/paineis-landing/BenefitsSection';
+import HowItWorksSection from '@/components/paineis-landing/HowItWorksSection';
 import CTASection from '@/components/paineis-landing/CTASection';
+import ScrollProgressBar from '@/components/paineis-landing/ScrollProgressBar';
 
 const PaineisPublicitarios = () => {
   console.log('PaineisPublicitarios component rendering...');
@@ -23,22 +24,20 @@ const PaineisPublicitarios = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <Layout>
       {/* Barra de progresso do scroll */}
       <ScrollProgressBar />
       
-      {/* Logo 3D flutuante */}
-      <Logo3DSection />
-      
-      {/* Seções principais */}
+      {/* Seções principais com scroll snap */}
       <div className="snap-y snap-mandatory">
         <HeroSection />
         <AboutSection />
         <GallerySection />
         <BenefitsSection />
+        <HowItWorksSection />
         <CTASection />
       </div>
-    </div>
+    </Layout>
   );
 };
 
