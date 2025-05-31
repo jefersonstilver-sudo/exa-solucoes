@@ -52,11 +52,18 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 };
 
 const MobileOptimizedFooter = () => {
+  console.log('🦶 Footer: Renderizando MobileOptimizedFooter');
+  
   return (
     <footer 
-      id="indexa-main-footer" 
-      className="bg-indexa-purple-dark text-white"
-      data-footer-id="main-footer"
+      id="unique-indexa-footer" 
+      className="bg-indexa-purple-dark text-white w-full"
+      style={{ 
+        position: 'relative',
+        zIndex: 1,
+        display: 'block'
+      }}
+      data-footer-debug="single-footer"
     >
       <div className="container mx-auto px-4 lg:px-6">
         

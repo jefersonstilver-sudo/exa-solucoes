@@ -7,6 +7,8 @@ import { Loader2 } from 'lucide-react';
 import { HomepageConfig } from '@/hooks/useHomepageImages';
 
 const Index = () => {
+  console.log('🏠 Index: Renderizando página inicial');
+  
   const [configs, setConfigs] = useState<HomepageConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

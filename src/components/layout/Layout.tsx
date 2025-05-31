@@ -1,4 +1,3 @@
-
 import React, { memo } from 'react';
 import { CartItem } from '@/types/cart';
 import Header from './Header';
@@ -24,6 +23,8 @@ const Layout: React.FC<LayoutProps> = memo(({
   onChangeDuration: externalOnChangeDuration,
   onProceedToCheckout: externalOnProceedToCheckout
 }) => {
+  console.log('🏗️ Layout: Renderizando layout principal');
+  
   // Use o hook interno do carrinho para gerenciar o estado
   const {
     cartItems: internalCartItems,
@@ -63,13 +64,15 @@ const Layout: React.FC<LayoutProps> = memo(({
         onToggleCart={handleToggleCart}
       />
       
-      {/* Main Content sem padding-top para eliminar espaço branco */}
+      {/* Main Content */}
       <main className="flex-1 w-full">
         {children}
       </main>
       
-      {/* Footer - renderizado apenas uma vez */}
-      <MobileOptimizedFooter />
+      {/* Footer - renderizado apenas uma vez com verificação */}
+      {!document.querySelector('[data-footer-debug="single-footer"]') && (
+        <MobileOptimizedFooter />
+      )}
       
       {/* Cart Drawer */}
       <CartDrawer
