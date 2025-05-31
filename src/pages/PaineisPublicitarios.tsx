@@ -22,9 +22,15 @@ const PaineisPublicitarios = () => {
     // Scroll suave para toda a página
     document.documentElement.style.scrollBehavior = 'smooth';
     
+    // Prevenir overflow horizontal
+    document.body.style.overflowX = 'hidden';
+    document.documentElement.style.overflowX = 'hidden';
+    
     // Cleanup
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
+      document.body.style.overflowX = 'auto';
+      document.documentElement.style.overflowX = 'auto';
     };
   }, []);
 
@@ -39,8 +45,8 @@ const PaineisPublicitarios = () => {
       {/* Barra de progresso do scroll */}
       <ScrollProgressBar />
       
-      {/* Seções principais da landing page - REORGANIZADA */}
-      <div className="relative z-10">
+      {/* Container principal com overflow controlado */}
+      <div className="relative z-10 overflow-x-hidden w-full">
         {/* 1. Hero - Vídeo ajustado e botão embaixo */}
         <HeroSection />
         

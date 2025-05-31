@@ -76,30 +76,30 @@ const AboutPanelsSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center py-16 sm:py-20 px-4"
+      className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center py-12 sm:py-16 px-4 overflow-x-hidden"
     >
-      <div className="max-w-7xl mx-auto text-center">
+      <div className="max-w-6xl mx-auto text-center w-full">
         <div className={`transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da Seção */}
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
             <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
               O que são os Painéis da Indexa?
             </span>
           </h2>
 
-          <p className="text-lg sm:text-xl md:text-2xl text-white/80 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-white/80 mb-4 sm:mb-6 max-w-4xl mx-auto leading-relaxed">
             Uma tecnologia de gestão condominial que transforma elevadores em canais de mídia digital altamente visíveis.
           </p>
 
-          <p className="text-base sm:text-lg text-white/70 mb-12 sm:mb-16 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-white/70 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed">
             Nossos painéis inteligentes informam os moradores com conteúdo útil e relevante, 
             intercalando essas informações com sua publicidade de forma estratégica e não invasiva.
           </p>
 
           {/* Grid de Cards Interativos com Flip - RESPONSIVO */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12 w-full">
             {cards.map((card, index) => {
               const IconComponent = card.icon;
               const isFlipped = flippedCard === index;
@@ -107,7 +107,7 @@ const AboutPanelsSection = () => {
               return (
                 <div
                   key={index}
-                  className={`relative h-56 sm:h-64 cursor-pointer transform transition-all duration-700 hover:scale-105 ${
+                  className={`relative h-48 sm:h-56 cursor-pointer transform transition-all duration-700 hover:scale-105 w-full ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                   }`}
                   style={{ transitionDelay: `${index * 100}ms` }}
@@ -119,22 +119,22 @@ const AboutPanelsSection = () => {
                   }`}>
                     
                     {/* Front Face */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br ${card.color} rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center text-white shadow-2xl border border-white/10`}>
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center mb-3 sm:mb-4">
-                        <IconComponent className="w-6 h-6 sm:w-8 sm:h-8" />
+                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br ${card.color} rounded-xl p-4 sm:p-5 flex flex-col items-center justify-center text-white shadow-2xl border border-white/10`}>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mb-2 sm:mb-3">
+                        <IconComponent className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold mb-2">{card.title}</h3>
-                      <p className="text-white/90 text-center text-sm">{card.front}</p>
-                      <div className="mt-3 sm:mt-4 text-xs text-white/70">Toque para ver mais</div>
+                      <h3 className="text-base sm:text-lg font-bold mb-2 text-center">{card.title}</h3>
+                      <p className="text-white/90 text-center text-xs sm:text-sm">{card.front}</p>
+                      <div className="mt-2 sm:mt-3 text-xs text-white/70">Toque para ver mais</div>
                     </div>
 
                     {/* Back Face */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center text-white shadow-2xl border border-indexa-mint/30`}>
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indexa-mint/20 rounded-full flex items-center justify-center mb-3 sm:mb-4">
-                        <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-indexa-mint" />
+                    <div className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 sm:p-5 flex flex-col items-center justify-center text-white shadow-2xl border border-indexa-mint/30`}>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indexa-mint/20 rounded-full flex items-center justify-center mb-2 sm:mb-3">
+                        <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 text-indexa-mint" />
                       </div>
-                      <h3 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 text-indexa-mint">{card.title}</h3>
-                      <p className="text-white/90 text-center text-xs sm:text-sm leading-relaxed">{card.back}</p>
+                      <h3 className="text-sm sm:text-base font-bold mb-2 text-indexa-mint text-center">{card.title}</h3>
+                      <p className="text-white/90 text-center text-xs leading-relaxed">{card.back}</p>
                     </div>
                   </div>
                 </div>
@@ -143,20 +143,20 @@ const AboutPanelsSection = () => {
           </div>
 
           {/* Destaque Final - RESPONSIVO */}
-          <div className="relative inline-block">
-            <div className="bg-gradient-to-r from-indexa-purple to-indexa-mint p-1 rounded-2xl">
-              <div className="bg-gray-900 px-6 sm:px-8 py-4 sm:py-6 rounded-2xl">
-                <p className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-2">
+          <div className="relative inline-block w-full max-w-2xl mx-auto">
+            <div className="bg-gradient-to-r from-indexa-purple to-indexa-mint p-1 rounded-xl sm:rounded-2xl">
+              <div className="bg-gray-900 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl">
+                <p className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">
                   Conteúdo útil + Sua marca =
                 </p>
-                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent">
                   Impacto Garantido
                 </p>
               </div>
             </div>
             
             {/* Efeito de brilho */}
-            <div className="absolute inset-0 bg-gradient-to-r from-indexa-mint/20 to-indexa-purple/20 rounded-2xl blur-xl opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-r from-indexa-mint/20 to-indexa-purple/20 rounded-xl sm:rounded-2xl blur-xl opacity-50" />
           </div>
         </div>
       </div>
