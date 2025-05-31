@@ -29,7 +29,15 @@ import {
   BarChart3,
   Heart,
   Shield,
-  Zap
+  Zap,
+  Search,
+  Brain,
+  Camera,
+  Lightbulb,
+  ChartLine,
+  Eye,
+  Palette,
+  Gauge
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,90 +55,119 @@ const Marketing = () => {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const formRef = useRef<HTMLElement>(null);
 
-  // Framework TACOH com os pilares corretos
+  // Framework TACOH com descrições estratégicas
   const tacohFramework = [
     {
       title: "Técnico",
-      description: "Use dados e provas sociais para conquistar a confiança. Estudos de caso, métricas e resultados reais.",
+      description: "Provas, dados, métricas, estudos de caso que demonstram resultados reais e impacto mensurável.",
+      application: "Dados que geram confiança",
       icon: <BarChart3 className="h-8 w-8 text-[#00FFAB]" />,
       bgColor: "bg-gradient-to-br from-blue-500 to-blue-700"
     },
     {
       title: "Autoridade",
-      description: "Destaque prêmios, conquistas e validações. Reconhecimento do mercado gera respeito.",
+      description: "Reconhecimentos, prêmios, selos, depoimentos que posicionam sua marca como referência no mercado.",
+      application: "Credibilidade que convence",
       icon: <Trophy className="h-8 w-8 text-[#00FFAB]" />,
       bgColor: "bg-gradient-to-br from-purple-500 to-purple-700"
     },
     {
       title: "Crescimento",
-      description: "Mostre como o cliente pode crescer com sua empresa. Histórias de sucesso e gráficos reais.",
+      description: "Cases reais de crescimento impulsionado pela campanha, histórias de evolução e resultados.",
+      application: "Evolução que inspira",
       icon: <TrendingUp className="h-8 w-8 text-[#00FFAB]" />,
       bgColor: "bg-gradient-to-br from-green-500 to-green-700"
     },
     {
       title: "Conexão",
-      description: "Conte histórias que gerem empatia e envolvimento. Humanize sua marca com storytelling.",
+      description: "Narrativas com emoção e empatia que criam vínculos verdadeiros entre marca e público.",
+      application: "Emoção que conecta",
       icon: <Heart className="h-8 w-8 text-[#00FFAB]" />,
       bgColor: "bg-gradient-to-br from-red-500 to-red-700"
     },
     {
       title: "Objeção",
-      description: "Antecipe e elimine as dúvidas do seu público. Reforce garantias, provas e ROI.",
+      description: "Antecipação e anulação de dúvidas, reforço de ROI e eliminação de barreiras de decisão.",
+      application: "Clareza que converte",
       icon: <Shield className="h-8 w-8 text-[#00FFAB]" />,
       bgColor: "bg-gradient-to-br from-orange-500 to-orange-700"
     },
     {
       title: "Hype",
-      description: "Use tendências, gatilhos e tecnologias do momento. Posicione-se como marca do agora.",
+      description: "Elementos modernos, tendências e virais estratégicos que mantêm sua marca sempre relevante.",
+      application: "Relevância que engaja",
       icon: <Zap className="h-8 w-8 text-[#00FFAB]" />,
       bgColor: "bg-gradient-to-br from-indigo-500 to-indigo-700"
     }
   ];
 
-  // Processo em 6 etapas
+  // Processo estratégico em 6 etapas
   const processSteps = [
     {
       number: "01",
-      title: "Reunião estratégica com especialistas",
-      description: "Análise profunda do negócio e definição de objetivos estratégicos"
+      title: "Reunião estratégica com nossos especialistas",
+      description: "Mergulho na cultura, propósito e metas da empresa",
+      icon: <Brain className="h-6 w-6 text-[#00FFAB]" />
     },
     {
       number: "02", 
-      title: "Planejamento e definição de linguagem",
-      description: "Criação da estratégia de comunicação e tom de voz da marca"
+      title: "Diagnóstico de posicionamento atual",
+      description: "Benchmark, SWOT, análise de canais e presença digital",
+      icon: <Search className="h-6 w-6 text-[#00FFAB]" />
     },
     {
       number: "03",
-      title: "Criação de identidade visual, slogan e storytelling", 
-      description: "Desenvolvimento da identidade completa e narrativa da marca"
+      title: "Criação da estratégia de campanha", 
+      description: "Público-alvo, diferenciação, voz da marca e cronograma",
+      icon: <Target className="h-6 w-6 text-[#00FFAB]" />
     },
     {
       number: "04",
-      title: "Roteirização e cronograma de entregas",
-      description: "Planejamento detalhado de conteúdo e timeline de execução"
+      title: "Identidade visual, slogan e arquitetura da comunicação",
+      description: "Construção de marca ou revitalização completa",
+      icon: <Palette className="h-6 w-6 text-[#00FFAB]" />
     },
     {
       number: "05",
-      title: "Produção audiovisual com estúdios e IAs",
-      description: "Criação de conteúdo com tecnologia de ponta e qualidade cinematográfica"
+      title: "Produção de criativos integrados à campanha",
+      description: "Roteiros, vídeos, trilhas sensoriais, artes e conteúdo escrito",
+      icon: <Camera className="h-6 w-6 text-[#00FFAB]" />
     },
     {
       number: "06",
-      title: "Lançamento com tráfego pago, performance e relatórios",
-      description: "Execução da campanha com acompanhamento de resultados em tempo real"
+      title: "Gestão completa de campanha com performance",
+      description: "Tráfego pago, testes A/B, relatórios e otimizações",
+      icon: <Gauge className="h-6 w-6 text-[#00FFAB]" />
     }
   ];
 
-  // Entregáveis específicos
+  // Entregáveis estratégicos
   const deliverables = [
-    { item: "Planejamento completo de campanha", included: true },
-    { item: "Branding, identidade e slogan", included: true },
-    { item: "Produção de vídeos TACOH", included: true },
-    { item: "Sessões de gravação sensoriais", included: true },
-    { item: "Roteiros, artes, tráfego pago", included: true },
-    { item: "Relatórios e otimizações mensais", included: true },
-    { item: "Equipe completa em produção", included: true },
-    { item: "Manual tático de marketing", included: true, highlight: true }
+    { item: "Planejamento estratégico completo", included: true },
+    { item: "Arquitetura de branding, slogan e voz da marca", included: true },
+    { item: "Roteiros e narrativas alinhadas com posicionamento", included: true },
+    { item: "Produção de criativos modernos (vídeo, reels, artes, textos)", included: true },
+    { item: "Gerenciamento de tráfego pago e performance", included: true },
+    { item: "Otimizações e relatórios mensais", included: true },
+    { item: "Equipe especializada em estratégia e criatividade", included: true },
+    { item: "Manual de Marketing Personalizado da Indexa", included: true, highlight: true }
+  ];
+
+  // Equipamentos do estúdio
+  const studioEquipment = [
+    { name: "Chroma Key 360º", description: "Cenários infinitos" },
+    { name: "Teleprompter", description: "Gravações fluidas" },
+    { name: "Painéis Touch", description: "Controle de iluminação" },
+    { name: "Blackmagic 6K", description: "Qualidade cinematográfica" },
+    { name: "Drone FPV", description: "Tomadas aéreas únicas" }
+  ];
+
+  // Usos da IA
+  const aiApplications = [
+    "Análise de linguagem e tom de voz ideal",
+    "Brainstorm criativo com IA generativa",
+    "Produção acelerada de rascunhos, scripts e headlines",
+    "Otimização de anúncios com machine learning"
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -159,7 +196,7 @@ const Marketing = () => {
         whatsapp: '',
         objetivo: ''
       });
-      toast.success('Obrigado! Nossa equipe entrará em contato para marcar seu café. Você vai adorar o nosso estúdio.');
+      toast.success('Obrigado! Nossa equipe entrará em contato para marcar a conversa estratégica e entregar o manual.');
     } catch (error) {
       console.error('Erro ao enviar formulário:', error);
     } finally {
@@ -180,7 +217,7 @@ const Marketing = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Hero Section Cinematográfica */}
+      {/* Hero Section Estratégico */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Vídeo de fundo */}
         <div className="absolute inset-0 z-0">
@@ -198,15 +235,16 @@ const Marketing = () => {
 
         <div className="relative z-10 text-center max-w-6xl mx-auto px-4">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-            <span className="block mb-2">Campanhas Cinematográficas</span>
-            <span className="block mb-2">para Empresas que Querem</span>
+            <span className="block mb-2">Estratégia, Criatividade e Resultados</span>
+            <span className="block mb-2">em Campanhas de Marketing que</span>
             <span className="block bg-gradient-to-r from-[#00FFAB] to-white bg-clip-text text-transparent">
-              Dominar o Jogo.
+              Movimentam Empresas
             </span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Muito além de posts. Criamos movimentos. E transformamos marcas em potências.
+          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto">
+            Nós planejamos, executamos e geramos impacto real.<br/>
+            Sua empresa precisa de muito mais do que posts: ela precisa de posicionamento, presença e performance.
           </p>
 
           <Button
@@ -214,42 +252,90 @@ const Marketing = () => {
             size="lg"
             className="bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white font-bold py-4 px-8 rounded-full shadow-2xl hover:shadow-[#00FFAB]/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 text-lg"
           >
-            <Gift className="w-5 h-5 mr-2" />
-            Marcar um Tour + Ganhar o Manual Exclusivo
+            <Coffee className="w-5 h-5 mr-2" />
+            Agendar Conversa com Especialistas
           </Button>
         </div>
       </section>
 
-      {/* Nossa Missão */}
+      {/* Missão Estratégica */}
       <section className="py-20 bg-black">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            <span className="text-[#00FFAB]">Criar campanhas</span> que marcam, tocam e convertem.
+            <span className="text-[#00FFAB]">Transformamos ideias</span> em campanhas memoráveis.
           </h2>
           <div className="max-w-4xl mx-auto text-lg md:text-xl text-gray-300 leading-relaxed space-y-6">
             <p>
-              Na Indexa, não vendemos apenas vídeos: <strong className="text-white">entregamos identidade, presença e autoridade.</strong>
+              Na Indexa, criar uma campanha não é apenas rodar um anúncio. É mergulhar na essência da marca, extrair sua verdade mais profunda e transformá-la em movimento, linguagem e conexão real com seu público.
+            </p>
+            <p className="text-2xl text-white font-semibold">
+              Antes de ligar as câmeras, ligamos o cérebro e o coração.
             </p>
             <p>
-              Nosso processo mergulha na essência da empresa, traduz seus valores em uma linguagem visual atual e sensorial, e constrói uma narrativa capaz de movimentar audiências e gerar resultados reais.
+              Ajudamos marcas a se comunicarem de forma poderosa com seus públicos. Começamos entendendo a essência da empresa em reuniões profundas com nossos especialistas. Depois, traduzimos tudo isso em uma campanha estruturada: <strong className="text-[#00FFAB]">estratégia + branding + linguagem + conteúdo + tráfego + performance.</strong>
             </p>
           </div>
         </div>
       </section>
 
-      {/* Framework TACOH */}
+      {/* Planejamento */}
       <section className="py-20 bg-gradient-to-b from-black to-[#3C1361]/20">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
+            <div className="flex items-center justify-center mb-6">
+              <Search className="h-12 w-12 text-[#00FFAB] mr-4" />
+              <h2 className="text-4xl md:text-5xl font-bold">
+                Tudo começa com <span className="text-[#00FFAB]">planejamento</span>
+              </h2>
+            </div>
+            <p className="text-xl text-gray-300 max-w-4xl mx-auto">
+              Reunimos nossos especialistas em posicionamento, linguagem e estratégia para entender a fundo sua empresa, seus valores, seus diferenciais e seus objetivos. Nessa imersão criativa e analítica, desenhamos um plano robusto e sob medida que direciona toda a campanha.
+            </p>
+            <p className="text-2xl text-[#00FFAB] font-bold mt-6">
+              Essa é a base de toda campanha de verdade.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Framework TACOH Estratégico */}
+      <section className="py-20 bg-black">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Framework <span className="text-[#00FFAB]">TACOH</span>
+              O FRAMEWORK EXCLUSIVO INDEXA: <span className="text-[#00FFAB]">TACOH™</span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              O que toda campanha precisa conter
+            <p className="text-xl text-gray-300 max-w-4xl mx-auto">
+              Cada campanha é construída com base no nosso método proprietário TACOH, que garante que sua empresa comunique com clareza, emoção e resultado.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Tabela TACOH */}
+          <div className="overflow-x-auto mb-12">
+            <div className="min-w-full bg-white/5 rounded-2xl border border-white/10">
+              {/* Cabeçalho da tabela */}
+              <div className="grid grid-cols-3 gap-4 p-6 border-b border-white/10 bg-[#3C1361]/20">
+                <div className="text-[#00FFAB] font-bold text-lg">Elemento</div>
+                <div className="text-[#00FFAB] font-bold text-lg">O que fazemos</div>
+                <div className="text-[#00FFAB] font-bold text-lg">Por que importa</div>
+              </div>
+              
+              {/* Linhas da tabela */}
+              {tacohFramework.map((item, index) => (
+                <div key={index} className="grid grid-cols-3 gap-4 p-6 border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <div className="flex items-center">
+                    {item.icon}
+                    <span className="ml-3 font-bold text-white">{item.title}</span>
+                  </div>
+                  <div className="text-gray-300">{item.description}</div>
+                  <div className="text-[#00FFAB] font-semibold">{item.application}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cards do Framework para mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:hidden">
             {tacohFramework.map((item, index) => (
               <Card key={index} className={`${item.bgColor} border-none text-white hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden group`}>
                 <CardContent className="p-6 h-full flex flex-col">
@@ -257,10 +343,9 @@ const Marketing = () => {
                     {item.icon}
                     <h3 className="text-2xl font-bold ml-3">{item.title}</h3>
                   </div>
-                  <p className="text-white/90 leading-relaxed flex-1 group-hover:text-white transition-colors duration-300">{item.description}</p>
-                  <div className="mt-4 flex items-center text-[#00FFAB] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <ArrowRight className="h-4 w-4" />
-                    <span className="ml-2 text-sm font-semibold">Saiba mais</span>
+                  <p className="text-white/90 leading-relaxed flex-1 mb-4">{item.description}</p>
+                  <div className="text-[#00FFAB] font-semibold text-sm">
+                    {item.application}
                   </div>
                 </CardContent>
               </Card>
@@ -269,15 +354,15 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* Como Funciona */}
-      <section className="py-20 bg-black">
+      {/* Processo Estratégico */}
+      <section className="py-20 bg-gradient-to-b from-black to-[#3C1361]/10">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Como <span className="text-[#00FFAB]">Funciona</span>
+              Jornada de Campanha <span className="text-[#00FFAB]">Indexa</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Jornada em 6 etapas para campanhas que geram resultados
+              Processo estratégico em 6 etapas para campanhas que geram resultados reais
             </p>
           </div>
 
@@ -287,6 +372,9 @@ const Marketing = () => {
                 <div className="bg-gradient-to-br from-[#3C1361] to-[#00FFAB] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                   <span className="text-white font-bold text-xl">{step.number}</span>
                 </div>
+                <div className="mb-3">
+                  {step.icon}
+                </div>
                 <h3 className="text-xl font-bold mb-3 text-[#00FFAB]">{step.title}</h3>
                 <p className="text-gray-300 leading-relaxed">{step.description}</p>
               </div>
@@ -295,15 +383,84 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* Entregáveis */}
-      <section className="py-20 bg-gradient-to-b from-black to-[#3C1361]/10">
+      {/* Conteúdos Sensoriais */}
+      <section className="py-20 bg-black">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              🎬 Conteúdos Sensoriais, <span className="text-[#00FFAB]">Gravados em Estúdio Cinematográfico</span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-4xl mx-auto mb-8">
+              Utilizamos técnicas de resposta sensorial para criar vídeos que emocionam, prendem atenção e permanecem na memória.
+            </p>
+            <div className="text-lg text-white space-y-2">
+              <p>🎯 <strong>Um de cada tipo.</strong></p>
+              <p>📌 <strong>Para cada pilar.</strong></p>
+              <p>🚀 <strong>Para que nenhuma empresa dependa de sorte na comunicação.</strong></p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            {studioEquipment.map((equipment, index) => (
+              <Card key={index} className="bg-white/5 border-white/10 text-white hover:scale-105 transition-all duration-300">
+                <CardContent className="p-6 text-center">
+                  <Camera className="h-8 w-8 text-[#00FFAB] mx-auto mb-4" />
+                  <h3 className="text-lg font-bold mb-2">{equipment.name}</h3>
+                  <p className="text-gray-300 text-sm">{equipment.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <p className="text-center text-lg text-gray-300">
+            Da essência ao resultado, você está em boas mãos.
+          </p>
+        </div>
+      </section>
+
+      {/* IA + Marketing */}
+      <section className="py-20 bg-gradient-to-r from-[#3C1361]/30 to-[#00FFAB]/10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              🤖 IA + MARKETING: <span className="text-[#00FFAB]">A NOVA ERA É AGORA</span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-4xl mx-auto mb-8">
+              Utilizamos inteligência artificial para potencializar todas as fases da campanha:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            {aiApplications.map((application, index) => (
+              <div key={index} className="flex items-center bg-white/5 rounded-lg p-4 border border-white/10">
+                <Lightbulb className="h-6 w-6 text-[#00FFAB] mr-4 flex-shrink-0" />
+                <span className="text-white">{application}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-[#00FFAB]/20 border border-[#00FFAB]/50 rounded-2xl p-8 text-center">
+            <Gift className="h-12 w-12 text-[#00FFAB] mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-[#00FFAB] mb-4">Manual Gratuito Exclusivo</h3>
+            <p className="text-lg text-white mb-2">
+              <strong>"Como usar IA e Apps para vender mais, com menos esforço"</strong>
+            </p>
+            <p className="text-gray-300">
+              Entregue ao agendar seu café conosco - especialmente para empresários de Foz do Iguaçu.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Entregáveis Estratégicos */}
+      <section className="py-20 bg-black">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Incluso nas <span className="text-[#00FFAB]">Campanhas Indexa</span>
+              Tudo que sua empresa precisa para <span className="text-[#00FFAB]">uma campanha de verdade</span>
             </h2>
             <p className="text-xl text-gray-300">
-              Entregáveis completos para dominar o seu mercado
+              Entregáveis estratégicos completos
             </p>
           </div>
 
@@ -332,14 +489,14 @@ const Marketing = () => {
 
       {/* Portfólio */}
       {campanhas.length > 0 && (
-        <section className="py-20 bg-black">
+        <section className="py-20 bg-gradient-to-b from-black to-[#3C1361]/10">
           <div className="max-w-6xl mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                Portfólio de <span className="text-[#00FFAB]">Campanhas</span>
+                Portfólio de <span className="text-[#00FFAB]">Campanhas Estratégicas</span>
               </h2>
               <p className="text-xl text-gray-300 mb-8">
-                Empresas que já dominam o jogo com nossa metodologia
+                Empresas que já dominam o mercado com nossa metodologia
               </p>
 
               {/* Filtros por categoria */}
@@ -398,27 +555,33 @@ const Marketing = () => {
         </section>
       )}
 
-      {/* Frase de Encerramento */}
+      {/* CTA Café com Estratégia */}
       <section className="py-16 bg-gradient-to-r from-[#3C1361] to-[#2A0D47]">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            📍 Conheça nosso estúdio, tome um café com a gente
+            ☕ Agende um café com a estratégia
           </h2>
-          <p className="text-xl text-[#00FFAB] font-semibold">
-            e leve gratuitamente o Manual de Marketing para empresas de Foz.
+          <p className="text-xl text-[#00FFAB] font-semibold mb-2">
+            Campanhas incríveis nascem de boas conversas.
+          </p>
+          <p className="text-lg text-white">
+            Você está a um café de transformar sua empresa.
           </p>
         </div>
       </section>
 
-      {/* Formulário de Qualificação */}
+      {/* Formulário Estratégico */}
       <section ref={formRef} id="form-section" className="py-20 bg-gradient-to-b from-black to-[#3C1361]/20">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Agende seu café com <span className="text-[#00FFAB]">especialistas</span>
+              Agende uma conversa com <span className="text-[#00FFAB]">nossos especialistas</span>
             </h2>
             <p className="text-xl text-gray-300 mb-4">
-              Ganhe gratuitamente o nosso Manual de Marketing para empresas locais com dicas práticas, IA, apps e estratégias.
+              Ideal para empresas em fase de crescimento ou reposicionamento, e líderes que buscam inovação real com resultado concreto.
+            </p>
+            <p className="text-lg text-white">
+              Preencha o briefing rápido e nossa equipe vai entrar em contato para marcar a reunião estratégica presencial, apresentar o manual e mostrar como a Indexa pode construir a campanha mais completa da sua história.
             </p>
           </div>
 
@@ -453,15 +616,17 @@ const Marketing = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="cargo" className="text-white mb-2 block">Cargo com Poder de Decisão *</Label>
+                    <Label htmlFor="cargo" className="text-white mb-2 block">Cargo *</Label>
                     <Select value={formData.cargo} onValueChange={(value) => handleInputChange('cargo', value)}>
                       <SelectTrigger className="bg-white/10 border-white/30 text-white">
                         <SelectValue placeholder="Selecione seu cargo" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="CEO">CEO</SelectItem>
-                        <SelectItem value="Diretor(a) de Marketing">Diretor(a) de Marketing</SelectItem>
-                        <SelectItem value="Consultor(a) ou agência com poder de decisão">Consultor(a) ou agência com poder de decisão</SelectItem>
+                        <SelectItem value="Diretor">Diretor</SelectItem>
+                        <SelectItem value="Fundador">Fundador</SelectItem>
+                        <SelectItem value="Gerente de Marketing">Gerente de Marketing</SelectItem>
+                        <SelectItem value="Tomador de decisão externo">Tomador de decisão externo</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -480,26 +645,26 @@ const Marketing = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="objetivo" className="text-white mb-2 block">Objetivo com a campanha</Label>
+                  <Label htmlFor="objetivo" className="text-white mb-2 block">Objetivo principal da campanha</Label>
                   <Textarea
                     id="objetivo"
                     value={formData.objetivo}
                     onChange={(e) => handleInputChange('objetivo', e.target.value)}
                     className="bg-white/10 border-white/30 text-white placeholder:text-gray-400"
-                    placeholder="Conte-nos qual o principal objetivo da sua empresa com uma campanha..."
+                    placeholder="Conte-nos qual o principal objetivo da sua empresa com uma campanha estratégica..."
                     rows={4}
                   />
                 </div>
 
-                <div className="bg-[#00FFAB]/20 border border-[#00FFAB]/50 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <Gift className="h-6 w-6 text-[#00FFAB] flex-shrink-0 mt-1" />
+                <div className="bg-[#00FFAB]/20 border border-[#00FFAB]/50 rounded-lg p-6">
+                  <div className="flex items-start space-x-4">
+                    <Gift className="h-8 w-8 text-[#00FFAB] flex-shrink-0 mt-1" />
                     <div>
-                      <h4 className="text-[#00FFAB] font-semibold mb-2">O que você receberá:</h4>
-                      <ul className="text-white text-sm space-y-1">
-                        <li className="flex items-center"><Coffee className="h-4 w-4 mr-2 text-[#00FFAB]" />Tour presencial pelo estúdio</li>
-                        <li className="flex items-center"><BookOpen className="h-4 w-4 mr-2 text-[#00FFAB]" />Manual de Marketing (impresso)</li>
-                        <li className="flex items-center"><Calendar className="h-4 w-4 mr-2 text-[#00FFAB]" />Consultoria estratégica personalizada</li>
+                      <h4 className="text-[#00FFAB] font-semibold mb-3 text-lg">🎁 Benefícios ao agendar:</h4>
+                      <ul className="text-white space-y-2">
+                        <li className="flex items-center"><Eye className="h-4 w-4 mr-3 text-[#00FFAB]" />Diagnóstico inicial gratuito com especialista</li>
+                        <li className="flex items-center"><BookOpen className="h-4 w-4 mr-3 text-[#00FFAB]" />Manual de Marketing impresso com frameworks, exemplos e planejamento</li>
+                        <li className="flex items-center"><Coffee className="h-4 w-4 mr-3 text-[#00FFAB]" />Tour pela sede da Indexa e degustação de ideias criativas</li>
                       </ul>
                     </div>
                   </div>
@@ -517,8 +682,8 @@ const Marketing = () => {
                     </div>
                   ) : (
                     <div className="flex items-center">
-                      <Gift className="w-5 h-5 mr-2" />
-                      Marcar um Tour + Ganhar o Manual Exclusivo
+                      <Coffee className="w-5 h-5 mr-2" />
+                      Agendar Conversa + Receber Manual Estratégico
                     </div>
                   )}
                 </Button>
@@ -534,8 +699,8 @@ const Marketing = () => {
           onClick={scrollToForm}
           className="w-full bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white font-bold py-4 rounded-full shadow-2xl"
         >
-          <Gift className="w-5 h-5 mr-2" />
-          Marcar Tour + Manual Gratuito
+          <Coffee className="w-5 h-5 mr-2" />
+          Agendar Conversa Estratégica
         </Button>
       </div>
     </div>
