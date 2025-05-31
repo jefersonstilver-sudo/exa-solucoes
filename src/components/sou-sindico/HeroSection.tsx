@@ -19,7 +19,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
   };
 
   return (
-    <section className="relative min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 pt-24 md:pt-32 overflow-hidden">
+    <section className="relative min-h-[calc(100vh-2rem)] md:min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pt-24 md:pt-32 pb-20 overflow-hidden">
       {/* Background Video */}
       <video
         className="absolute inset-0 w-full h-full object-cover blur-sm"
@@ -62,7 +62,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
         </div>
 
         <div className={`flex justify-center lg:justify-end transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-          <div className="relative max-w-xs mx-auto">
+          <div className="relative max-w-xs mx-auto transform -translate-y-8 mb-16">
             <div className="relative bg-gray-800 rounded-[2.8rem] p-3 shadow-2xl">
               <div className="bg-black rounded-[2.3rem] overflow-hidden aspect-[9/19.5] relative">
                 <div className="h-8 bg-black relative flex items-center justify-center">
@@ -88,7 +88,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
               </div>
             </div>
             
-            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
+            <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2">
               <Button
                 onClick={toggleMute}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0 shadow-lg px-4 py-2 rounded-full transform transition-all duration-300 hover:scale-105"
