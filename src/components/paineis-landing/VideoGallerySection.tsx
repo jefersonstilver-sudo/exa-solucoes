@@ -1,32 +1,28 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const VideoGallerySection = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [playingVideo, setPlayingVideo] = useState<number | null>(null);
+  const [currentVideo, setCurrentVideo] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const sectionRef = useRef<HTMLElement>(null);
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
-  // Vídeos em mosaico cinemático (usando placeholders)
   const videos = [
     {
-      src: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=800&q=80',
-      title: 'Pincelada Visual 1',
-      description: 'Sua marca aparece de forma sutil mas marcante',
-      isVideo: false // placeholder image
+      src: 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc0ODY1MTk1MywiZXhwIjoyMDY0MDExOTUzfQ.LOZ9ZkHKPoAATrM6egV9XCnKjI1vcSirbhM57eeC6eY',
+      title: 'Painel Principal',
+      description: 'Demonstração do painel em funcionamento'
     },
     {
-      src: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=800&q=80',
-      title: 'Pincelada Visual 2', 
-      description: 'Fragmentos que constroem memória visual',
-      isVideo: false // placeholder image
+      src: 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc0ODY1MTk1MywiZXhwIjoyMDY0MDExOTUzfQ.LOZ9ZkHKPoAATrM6egV9XCnKjI1vcSirbhM57eeC6eY',
+      title: 'Interface Dinâmica',
+      description: 'Transições suaves entre conteúdos'
     },
     {
-      src: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=800&q=80',
-      title: 'Pincelada Visual 3',
-      description: 'Presença constante sem saturação',
-      isVideo: false // placeholder image
+      src: 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc0ODY1MTk1MywiZXhwIjoyMDY0MDExOTUzfQ.LOZ9ZkHKPoAATrM6egV9XCnKjI1vcSirbhM57eeC6eY',
+      title: 'Qualidade Premium',
+      description: 'Resolução HD para máximo impacto'
     }
   ];
 
@@ -47,141 +43,135 @@ const VideoGallerySection = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleVideoToggle = (index: number) => {
-    const video = videoRefs.current[index];
-    if (!video) return;
+  const nextVideo = () => {
+    setCurrentVideo((prev) => (prev + 1) % videos.length);
+  };
 
-    if (playingVideo === index) {
-      video.pause();
-      setPlayingVideo(null);
-    } else {
-      // Pausar outros vídeos
-      videoRefs.current.forEach((v, i) => {
-        if (v && i !== index) {
-          v.pause();
-        }
-      });
-      video.play();
-      setPlayingVideo(index);
-    }
+  const prevVideo = () => {
+    setCurrentVideo((prev) => (prev - 1 + videos.length) % videos.length);
   };
 
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center py-20 px-4"
+      className="min-h-screen bg-gradient-to-br from-gray-800 to-black flex items-center justify-center py-16 sm:py-20 px-4"
     >
       <div className="max-w-7xl mx-auto">
         <div className={`transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da Seção */}
-          <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white mb-4 sm:mb-6">
             <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
-              Galeria Vídeo Pinceladas
+              Galeria de Vídeos
             </span>
           </h2>
 
-          <p className="text-xl md:text-2xl text-white/80 mb-16 text-center max-w-4xl mx-auto leading-relaxed">
-            Pinceladas visuais que marcam presença sem saturar
+          <p className="text-lg sm:text-xl md:text-2xl text-white/80 mb-12 sm:mb-16 text-center max-w-4xl mx-auto leading-relaxed">
+            Veja os painéis em ação e a qualidade cinematográfica das pinceladas
           </p>
 
-          {/* Mosaico Cinemático */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            {videos.map((video, index) => (
-              <div
-                key={index}
-                className={`group relative overflow-hidden rounded-2xl shadow-2xl transform transition-all duration-700 hover:scale-105 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
-                style={{ transitionDelay: `${index * 200}ms` }}
+          {/* Vídeo Principal - RESPONSIVO */}
+          <div className="relative max-w-4xl mx-auto mb-8 sm:mb-12">
+            <div className="relative overflow-hidden rounded-2xl shadow-2xl group">
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-2xl z-10">
+                  <div className="w-12 h-12 border-4 border-indexa-mint border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+
+              <video
+                key={currentVideo}
+                className="w-full h-64 sm:h-96 md:h-[500px] object-cover rounded-2xl"
+                autoPlay
+                loop
+                muted
+                playsInline
+                onLoadStart={() => setIsLoading(true)}
+                onCanPlay={() => setIsLoading(false)}
               >
-                {/* Container do vídeo/imagem */}
-                <div className="relative aspect-video bg-gray-900">
-                  {video.isVideo ? (
-                    <video
-                      ref={(el) => {videoRefs.current[index] = el}}
-                      className="w-full h-full object-cover"
-                      loop
-                      muted
-                      playsInline
-                    >
-                      <source src={video.src} type="video/mp4" />
-                    </video>
-                  ) : (
-                    <img
-                      src={video.src}
-                      alt={video.title}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  
-                  {/* Overlay escuro */}
-                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-500" />
-                  
-                  {/* Botão de play (apenas para vídeos futuros) */}
-                  {video.isVideo && (
-                    <button
-                      onClick={() => handleVideoToggle(index)}
-                      className="absolute inset-0 flex items-center justify-center text-white hover:text-indexa-mint transition-colors duration-300"
-                    >
-                      <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-indexa-mint/30 transition-all duration-300">
-                        {playingVideo === index ? (
-                          <Pause className="w-8 h-8" />
-                        ) : (
-                          <Play className="w-8 h-8 ml-1" />
-                        )}
-                      </div>
-                    </button>
-                  )}
-
-                  {/* Indicador de placeholder */}
-                  {!video.isVideo && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="bg-indexa-purple/80 backdrop-blur-sm px-4 py-2 rounded-full">
-                        <span className="text-white text-sm font-medium">Preview Visual</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Informações sobre o vídeo */}
-                  <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                    <h3 className="text-white font-bold text-lg mb-2">{video.title}</h3>
-                    <p className="text-white/80 text-sm">{video.description}</p>
-                  </div>
-
-                  {/* Efeito de brilho no hover */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indexa-mint/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <source src={videos[currentVideo].src} type="video/mp4" />
+              </video>
+              
+              {/* Overlay com play button */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl flex items-center justify-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white ml-1" />
                 </div>
               </div>
+
+              {/* Controles do carrossel - RESPONSIVOS */}
+              <button
+                onClick={prevVideo}
+                className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 sm:p-3 rounded-full shadow-lg transition-all duration-300"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              
+              <button
+                onClick={nextVideo}
+                className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 sm:p-3 rounded-full shadow-lg transition-all duration-300"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+
+              {/* Informações do vídeo */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 sm:p-6 rounded-b-2xl">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">
+                  {videos[currentVideo].title}
+                </h3>
+                <p className="text-white/80 text-sm sm:text-base">
+                  {videos[currentVideo].description}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Indicadores de vídeo - RESPONSIVOS */}
+          <div className="flex justify-center space-x-2 sm:space-x-3 mb-8 sm:mb-12">
+            {videos.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentVideo(index)}
+                className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 ${
+                  index === currentVideo 
+                    ? 'bg-indexa-mint shadow-lg scale-125' 
+                    : 'bg-white/60 hover:bg-white/80'
+                }`}
+              />
             ))}
           </div>
 
-          {/* Explicação do conceito */}
-          <div className="text-center">
-            <div className="bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 backdrop-blur-sm p-8 rounded-2xl border border-indexa-mint/30 max-w-4xl mx-auto">
-              <h3 className="text-2xl font-bold text-white mb-4">
-                <span className="text-indexa-mint">Estratégia das Pinceladas:</span> Presença Sutil e Eficaz
-              </h3>
-              <p className="text-white/90 text-lg leading-relaxed mb-4">
-                Sua marca não interrompe, ela se integra. Pequenos fragmentos visuais que se acumulam na memória do público, 
-                criando reconhecimento sem saturação.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/80">
-                <div>
-                  <span className="text-indexa-mint font-semibold">15 segundos</span><br />
-                  Duração ideal por exposição
-                </div>
-                <div>
-                  <span className="text-indexa-mint font-semibold">Não invasivo</span><br />
-                  Integrado ao conteúdo útil
-                </div>
-                <div>
-                  <span className="text-indexa-mint font-semibold">Alta frequência</span><br />
-                  Múltiplas exposições diárias
+          {/* Thumbnails - DESKTOP ONLY */}
+          <div className="hidden md:grid md:grid-cols-3 gap-6">
+            {videos.map((video, index) => (
+              <div
+                key={index}
+                className={`relative overflow-hidden rounded-xl cursor-pointer transform transition-all duration-500 ${
+                  index === currentVideo 
+                    ? 'scale-105 ring-2 ring-indexa-mint' 
+                    : 'hover:scale-102'
+                }`}
+                onClick={() => setCurrentVideo(index)}
+              >
+                <video
+                  className="w-full h-48 object-cover"
+                  muted
+                  loop
+                  autoPlay={index === currentVideo}
+                >
+                  <source src={video.src} type="video/mp4" />
+                </video>
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h4 className="text-white font-semibold text-sm">{video.title}</h4>
+                    <p className="text-white/80 text-xs">{video.description}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

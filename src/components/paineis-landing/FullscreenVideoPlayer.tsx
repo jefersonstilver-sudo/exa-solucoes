@@ -11,12 +11,18 @@ interface FullscreenVideoPlayerProps {
 const FullscreenVideoPlayer = ({ isOpen, onClose, videoSrc }: FullscreenVideoPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (isOpen && videoRef.current) {
-      videoRef.current.play();
-      setIsPlaying(true);
+      setIsLoading(true);
+      videoRef.current.play().then(() => {
+        setIsPlaying(true);
+        setIsLoading(false);
+      }).catch(() => {
+        setIsLoading(false);
+      });
     }
   }, [isOpen]);
 
@@ -29,7 +35,11 @@ const FullscreenVideoPlayer = ({ isOpen, onClose, videoSrc }: FullscreenVideoPla
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+        document.body.style.overflow = 'unset';
+      };
     }
   }, [isOpen, onClose]);
 
@@ -61,53 +71,67 @@ const FullscreenVideoPlayer = ({ isOpen, onClose, videoSrc }: FullscreenVideoPla
         onClick={onClose}
       />
 
-      {/* Botão de fechar no canto superior direito */}
+      {/* Botão de fechar no canto superior direito - MELHORADO */}
       <button
         onClick={onClose}
-        className="absolute top-6 right-6 z-20 bg-black/70 hover:bg-black/90 text-white p-4 rounded-full transition-all duration-300 hover:scale-110"
+        className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 bg-red-600/80 hover:bg-red-600 text-white p-3 sm:p-4 rounded-full transition-all duration-300 hover:scale-110 shadow-2xl"
+        aria-label="Fechar vídeo"
       >
-        <X className="w-6 h-6" />
+        <X className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
 
       {/* Container do vídeo */}
       <div className="relative w-full h-full max-w-6xl max-h-[90vh] mx-4 z-10">
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg z-30">
+            <div className="w-12 h-12 border-4 border-indexa-mint border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
         <video
           ref={videoRef}
           className="w-full h-full object-contain rounded-lg cursor-pointer"
           loop
           playsInline
           onClick={togglePlayPause}
+          onLoadStart={() => setIsLoading(true)}
+          onCanPlay={() => setIsLoading(false)}
         >
           <source src={videoSrc} type="video/mp4" />
         </video>
 
-        {/* Controles visíveis */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 bg-black/70 backdrop-blur-sm px-8 py-4 rounded-full border border-white/20">
+        {/* Controles visíveis - MELHORADOS */}
+        <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-3 sm:space-x-4 bg-black/80 backdrop-blur-sm px-6 sm:px-8 py-3 sm:py-4 rounded-full border border-white/20">
           <button
             onClick={togglePlayPause}
             className="text-white hover:text-indexa-mint transition-colors duration-300 p-2"
+            aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
           >
-            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+            {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6" />}
           </button>
           
           <button
             onClick={toggleMute}
             className="text-white hover:text-indexa-mint transition-colors duration-300 p-2"
+            aria-label={isMuted ? 'Ativar som' : 'Desativar som'}
           >
-            {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+            {isMuted ? <VolumeX className="w-5 h-5 sm:w-6 sm:h-6" /> : <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />}
           </button>
 
           <button
             onClick={onClose}
-            className="text-white hover:text-red-400 transition-colors duration-300 p-2 ml-4"
+            className="text-white hover:text-red-400 transition-colors duration-300 p-2 ml-2 sm:ml-4"
+            aria-label="Fechar"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        {/* Indicação de tecla ESC */}
-        <div className="absolute top-6 left-6 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white/70 text-sm">
-          Pressione ESC para fechar
+        {/* Indicação de tecla ESC - RESPONSIVA */}
+        <div className="absolute top-4 sm:top-6 left-4 sm:left-6 bg-black/50 backdrop-blur-sm px-3 sm:px-4 py-1 sm:py-2 rounded-full text-white/70 text-xs sm:text-sm">
+          <span className="hidden sm:inline">Pressione ESC para fechar</span>
+          <span className="sm:hidden">ESC para fechar</span>
         </div>
       </div>
     </div>
