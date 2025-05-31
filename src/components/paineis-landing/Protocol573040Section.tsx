@@ -17,7 +17,7 @@ const Protocol573040Section = () => {
     },
     {
       icon: Wifi,
-      title: 'Monitoramento 24/7',
+      title: 'Monitoramento 24h',
       description: 'Supervisão constante de todos os painéis',
       details: 'Equipe técnica monitora cada painel em tempo real, detectando e corrigindo problemas automaticamente',
       color: 'from-green-500 to-emerald-500'
@@ -192,13 +192,13 @@ const Protocol573040Section = () => {
               
               <div className="text-center">
                 <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-3" />
-                <h4 className="text-lg font-bold text-white mb-2">Recuperação < 30s</h4>
+                <h4 className="text-lg font-bold text-white mb-2">Recuperação &lt; 30s</h4>
                 <p className="text-white/80 text-sm">Reativação automática em menos de 30 segundos</p>
               </div>
               
               <div className="text-center">
                 <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-3" />
-                <h4 className="text-lg font-bold text-white mb-2">Suporte 24/7</h4>
+                <h4 className="text-lg font-bold text-white mb-2">Suporte 24h</h4>
                 <p className="text-white/80 text-sm">Monitoramento e suporte técnico 24 horas por dia</p>
               </div>
             </div>
