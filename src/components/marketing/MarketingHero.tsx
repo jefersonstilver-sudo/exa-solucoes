@@ -1,6 +1,7 @@
 
 import React, { RefObject } from 'react';
 import { Coffee } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import ResponsiveContainer from '@/components/responsive/ResponsiveContainer';
 import ResponsiveTypography from '@/components/responsive/ResponsiveTypography';
 import ResponsiveButton from '@/components/responsive/ResponsiveButton';
