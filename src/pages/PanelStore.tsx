@@ -45,13 +45,10 @@ export default function PanelStore() {
 
   const {
     cartItems,
-    cartOpen,
-    setCartOpen,
     handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
-    cartAnimation,
     handleProceedToCheckout
   } = useCartManager();
 
@@ -162,18 +159,12 @@ export default function PanelStore() {
   }
 
   return (
-    <Layout 
-      cartItems={cartItems}
-      onRemoveFromCart={handleRemoveFromCart}
-      onClearCart={handleClearCart}
-      onChangeDuration={handleChangeDuration}
-      onProceedToCheckout={handleCheckoutStart}
-    >
+    <Layout>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className={`${isMobile ? 'px-4 py-4' : 'container mx-auto px-4 md:px-6 py-8'}`}
+        className={`${isMobile ? 'px-4 py-4' : 'container mx-auto px-4 md:px-6 py-8'} mobile-scroll-fix`}
       >
         {/* Promotional Welcome Banner - só em desktop */}
         {!isMobile && (
