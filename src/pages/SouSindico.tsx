@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Building2, Shield, Zap, Clock, Users, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin, Calendar, Layers, Wifi, Monitor, Lock, Smartphone, MessageSquare, TrendingUp, Award, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -153,7 +154,7 @@ const SouSindico = () => {
 
         {/* 2. SOBRE O PROJETO */}
         <section 
-          ref={el => sectionsRef.current['about'] = el}
+          ref={el => { sectionsRef.current['about'] = el; }}
           data-section="about"
           className={`py-20 px-4 relative transition-all duration-1000 ${visibleSections['about'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -188,7 +189,7 @@ const SouSindico = () => {
 
         {/* 3. BENEFÍCIOS PARA O SÍNDICO */}
         <section 
-          ref={el => sectionsRef.current['benefits'] = el}
+          ref={el => { sectionsRef.current['benefits'] = el; }}
           data-section="benefits"
           className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['benefits'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -219,7 +220,7 @@ const SouSindico = () => {
 
         {/* 4. COMO FUNCIONA */}
         <section 
-          ref={el => sectionsRef.current['how-it-works'] = el}
+          ref={el => { sectionsRef.current['how-it-works'] = el; }}
           data-section="how-it-works"
           className={`py-20 px-4 transition-all duration-1000 ${visibleSections['how-it-works'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -259,7 +260,7 @@ const SouSindico = () => {
 
         {/* 5. DEPOIMENTOS */}
         <section 
-          ref={el => sectionsRef.current['testimonials'] = el}
+          ref={el => { sectionsRef.current['testimonials'] = el; }}
           data-section="testimonials"
           className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['testimonials'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -292,7 +293,7 @@ const SouSindico = () => {
 
         {/* 6. GALERIA VISUAL */}
         <section 
-          ref={el => sectionsRef.current['gallery'] = el}
+          ref={el => { sectionsRef.current['gallery'] = el; }}
           data-section="gallery"
           className={`py-20 px-4 transition-all duration-1000 ${visibleSections['gallery'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -345,7 +346,7 @@ const SouSindico = () => {
 
         {/* 7. PROTOCOLO DE SEGURANÇA */}
         <section 
-          ref={el => sectionsRef.current['security'] = el}
+          ref={el => { sectionsRef.current['security'] = el; }}
           data-section="security"
           className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['security'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -380,7 +381,7 @@ const SouSindico = () => {
 
         {/* 8. ANTES VS DEPOIS */}
         <section 
-          ref={el => sectionsRef.current['before-after'] = el}
+          ref={el => { sectionsRef.current['before-after'] = el; }}
           data-section="before-after"
           className={`py-20 px-4 transition-all duration-1000 ${visibleSections['before-after'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -447,7 +448,7 @@ const SouSindico = () => {
 
         {/* 9. TECNOLOGIA DE PONTA */}
         <section 
-          ref={el => sectionsRef.current['technology'] = el}
+          ref={el => { sectionsRef.current['technology'] = el; }}
           data-section="technology"
           className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['technology'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -484,7 +485,7 @@ const SouSindico = () => {
 
         {/* 10. VANTAGENS EXCLUSIVAS */}
         <section 
-          ref={el => sectionsRef.current['exclusive'] = el}
+          ref={el => { sectionsRef.current['exclusive'] = el; }}
           data-section="exclusive"
           className={`py-20 px-4 transition-all duration-1000 ${visibleSections['exclusive'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -522,7 +523,7 @@ const SouSindico = () => {
         {/* 11. FORMULÁRIO DE INTERESSE */}
         <section 
           id="formulario" 
-          ref={el => sectionsRef.current['form'] = el}
+          ref={el => { sectionsRef.current['form'] = el; }}
           data-section="form"
           className={`py-20 px-4 bg-gray-800/50 transition-all duration-1000 ${visibleSections['form'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -619,7 +620,7 @@ const SouSindico = () => {
 
         {/* 12. CTA FINAL */}
         <section 
-          ref={el => sectionsRef.current['final-cta'] = el}
+          ref={el => { sectionsRef.current['final-cta'] = el; }}
           data-section="final-cta"
           className={`py-20 px-4 transition-all duration-1000 ${visibleSections['final-cta'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
