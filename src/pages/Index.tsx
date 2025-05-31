@@ -4,7 +4,15 @@ import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
-import { HomepageConfig } from '@/hooks/useHomepageImages';
+
+interface HomepageConfig {
+  id: string;
+  service_type: string;
+  title: string;
+  image_url: string;
+  href: string;
+  updated_at: string;
+}
 
 const Index = () => {
   console.log('🏠 Index: Renderizando página inicial');
@@ -29,8 +37,6 @@ const Index = () => {
               service_type: 'marketing',
               title: 'Marketing',
               image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80',
-              button_text: 'Agende um café',
-              button_icon: 'calendar' as const,
               href: '/marketing',
               updated_at: new Date().toISOString()
             },
@@ -39,8 +45,6 @@ const Index = () => {
               service_type: 'produtora',
               title: 'Produtora',
               image_url: 'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80',
-              button_text: 'Nossos trabalhos',
-              button_icon: 'monitor' as const,
               href: '/produtora',
               updated_at: new Date().toISOString()
             },
@@ -49,19 +53,12 @@ const Index = () => {
               service_type: 'paineis',
               title: 'Painéis Publicitários',
               image_url: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80',
-              button_text: 'Saiba mais',
-              button_icon: 'info' as const,
               href: '/paineis-digitais/loja',
               updated_at: new Date().toISOString()
             }
           ]);
         } else {
-          // Cast the data to ensure proper typing
-          const typedData = (data || []).map(item => ({
-            ...item,
-            button_icon: item.button_icon as 'calendar' | 'monitor' | 'info'
-          }));
-          setConfigs(typedData);
+          setConfigs(data || []);
         }
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
@@ -105,8 +102,6 @@ const Index = () => {
                 key={config.id}
                 title={config.title}
                 backgroundImage={config.image_url}
-                buttonText={config.button_text}
-                buttonIcon={config.button_icon as 'calendar' | 'monitor' | 'info'}
                 href={config.href}
                 className="h-[180px] md:h-[420px]"
               />
