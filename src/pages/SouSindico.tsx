@@ -6,7 +6,9 @@ import SindicoPageContainer from '@/components/sou-sindico/SindicoPageContainer'
 const SouSindico = () => {
   return (
     <Layout>
-      <SindicoPageContainer />
+      <div className="mobile-scroll-container">
+        <SindicoPageContainer />
+      </div>
     </Layout>
   );
 };

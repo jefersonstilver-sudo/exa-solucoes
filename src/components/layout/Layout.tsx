@@ -1,93 +1,37 @@
-import React, { memo } from 'react';
-import { CartItem } from '@/types/cart';
+
+import React, { ReactNode } from 'react';
 import Header from './Header';
-import CartDrawer from '@/components/cart/CartDrawer';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import { useCartManager } from '@/hooks/useCartManager';
-import { setupPeriodicCleanup } from '@/services/realtimeCleanupService';
 
 interface LayoutProps {
-  children: React.ReactNode;
-  cartItems?: CartItem[];
-  onRemoveFromCart?: (panelId: string) => void;
-  onClearCart?: () => void;
-  onChangeDuration?: (panelId: string, duration: number) => void;
-  onProceedToCheckout?: () => void;
+  children: ReactNode;
+  className?: string;
 }
 
-const Layout: React.FC<LayoutProps> = memo(({ 
-  children,
-  cartItems: externalCartItems,
-  onRemoveFromCart: externalOnRemoveFromCart,
-  onClearCart: externalOnClearCart,
-  onChangeDuration: externalOnChangeDuration,
-  onProceedToCheckout: externalOnProceedToCheckout
-}) => {
-  console.log('🏗️ Layout: Renderizando layout principal');
-  
-  // Use o hook interno do carrinho para gerenciar o estado
-  const {
-    cartItems: internalCartItems,
-    cartOpen,
-    setCartOpen,
-    handleRemoveFromCart: internalHandleRemoveFromCart,
-    handleClearCart: internalHandleClearCart,
-    handleChangeDuration: internalHandleChangeDuration,
-    handleProceedToCheckout: internalHandleProceedToCheckout,
-    cartAnimation,
-    toggleCart
+const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
+  const { 
+    cartItemsCount, 
+    isCartOpen, 
+    toggleCart, 
+    cartAnimation 
   } = useCartManager();
 
-  const cartItems = externalCartItems || internalCartItems;
-  const onRemoveFromCart = externalOnRemoveFromCart || internalHandleRemoveFromCart;
-  const onClearCart = externalOnClearCart || internalHandleClearCart;
-  const onChangeDuration = externalOnChangeDuration || internalHandleChangeDuration;
-  const onProceedToCheckout = externalOnProceedToCheckout || internalHandleProceedToCheckout;
-
-  React.useEffect(() => {
-    const cancelCleanup = setupPeriodicCleanup();
-    return cancelCleanup;
-  }, []);
-
-  const handleToggleCart = React.useCallback(() => {
-    if (cartItems.length > 0) {
-      toggleCart();
-    }
-  }, [cartItems.length, toggleCart]);
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col relative">
-      {/* Header Fixed */}
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       <Header 
-        cartItemsCount={cartItems.length}
+        cartItemsCount={cartItemsCount}
         cartAnimation={cartAnimation}
-        onToggleCart={handleToggleCart}
+        onToggleCart={toggleCart}
       />
       
-      {/* Main Content */}
-      <main className="flex-1 w-full">
+      <main className={`flex-1 relative ${className}`}>
         {children}
       </main>
       
-      {/* Footer - renderizado apenas uma vez com verificação */}
-      {!document.querySelector('[data-footer-debug="single-footer"]') && (
-        <MobileOptimizedFooter />
-      )}
-      
-      {/* Cart Drawer */}
-      <CartDrawer
-        cartItems={cartItems}
-        isOpen={cartOpen}
-        onClose={() => setCartOpen(false)}
-        onRemoveFromCart={onRemoveFromCart}
-        onClearCart={onClearCart}
-        onChangeDuration={onChangeDuration}
-        onProceedToCheckout={onProceedToCheckout}
-      />
+      <MobileOptimizedFooter />
     </div>
   );
-});
-
-Layout.displayName = 'Layout';
+};
 
 export default Layout;
