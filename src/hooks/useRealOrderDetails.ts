@@ -61,43 +61,49 @@ export const useRealOrderDetails = (orderId: string) => {
       try {
         setLoading(true);
 
-        // Buscar dados do pedido com cliente - incluindo compliance_data
-        const { data: orders, error: orderError } = await supabase
-          .from('pedidos')
-          .select(`
-            *,
-            compliance_data
-          `)
-          .eq('id', orderId);
+        // Usar a função RPC existente que já faz o join com dados do cliente
+        const { data: allOrders, error: ordersError } = await supabase
+          .rpc('get_pedidos_com_clientes');
         
-        if (orderError) throw orderError;
+        if (ordersError) throw ordersError;
 
-        if (!orders || orders.length === 0) {
+        // Encontrar o pedido específico
+        const order = allOrders?.find((o: any) => o.id === orderId);
+        
+        if (!order) {
           toast.error('Pedido não encontrado');
           return;
         }
 
-        const order = orders[0];
-
-        // Buscar dados do cliente
-        const { data: clientData, error: clientError } = await supabase
-          .from('auth.users')
-          .select('email, raw_user_meta_data')
-          .eq('id', order.client_id)
+        // Buscar dados adicionais de compliance diretamente
+        const { data: fullOrderData, error: complianceError } = await supabase
+          .from('pedidos')
+          .select('compliance_data, log_pagamento, cupom_id, termos_aceitos')
+          .eq('id', orderId)
           .single();
 
-        if (clientError) {
-          console.warn('Erro ao buscar dados do cliente:', clientError);
+        if (complianceError) {
+          console.warn('Erro ao buscar dados de compliance:', complianceError);
         }
 
-        // Combinar dados do pedido com dados do cliente
+        // Montar objeto completo do pedido
         const orderWithClient: OrderWithClient = {
-          ...order,
-          client_email: clientData?.email || 'Email não encontrado',
-          client_name: clientData?.raw_user_meta_data?.full_name || 
-                      clientData?.raw_user_meta_data?.name || 
-                      'Nome não disponível',
-          video_status: order.status // Mapeamento simples do status
+          id: order.id,
+          created_at: order.created_at,
+          status: order.status,
+          valor_total: order.valor_total,
+          lista_paineis: order.lista_paineis || [],
+          plano_meses: order.plano_meses,
+          data_inicio: order.data_inicio,
+          data_fim: order.data_fim,
+          client_id: order.client_id,
+          client_email: order.client_email,
+          client_name: order.client_name,
+          video_status: order.video_status,
+          log_pagamento: fullOrderData?.log_pagamento,
+          compliance_data: fullOrderData?.compliance_data,
+          cupom_id: fullOrderData?.cupom_id,
+          termos_aceitos: fullOrderData?.termos_aceitos
         };
 
         setOrderDetails(orderWithClient);
