@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Sparkles, CheckCircle, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -128,11 +129,6 @@ const FinalCTASection = () => {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Rodapé */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/40 text-sm text-center">
-        <p>© 2025 Indexa Mídia. Todos os direitos reservados.</p>
       </div>
     </section>
   );
