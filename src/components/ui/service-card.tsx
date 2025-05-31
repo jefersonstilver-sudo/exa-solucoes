@@ -29,11 +29,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const renderIcon = () => {
     switch (buttonIcon) {
       case 'calendar':
-        return <Coffee className="w-5 h-5" />;
+        return <Coffee className="w-4 h-4 md:w-5 md:h-5" />;
       case 'monitor':
-        return <Film className="w-5 h-5" />;
+        return <Film className="w-4 h-4 md:w-5 md:h-5" />;
       case 'info':
-        return <Satellite className="w-5 h-5" />;
+        return <Satellite className="w-4 h-4 md:w-5 md:h-5" />;
       default:
         return null;
     }
@@ -55,7 +55,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <div 
       className={cn(
-        'relative h-[420px] overflow-hidden rounded-2xl group transition-all duration-300 p-6 transform hover:-translate-y-2 hover:shadow-xl cursor-pointer',
+        'relative h-[300px] md:h-[420px] overflow-hidden rounded-2xl group transition-all duration-300 p-4 md:p-6 transform hover:-translate-y-2 hover:shadow-xl cursor-pointer',
         className
       )}
       style={{
@@ -71,11 +71,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       {/* Blur effect that disappears on hover */}
       <div className="absolute inset-0 backdrop-blur-[2px] group-hover:backdrop-blur-0 transition-all duration-300"></div>
       
-      <div className="absolute inset-0 p-6 flex flex-col justify-between">
-        <h2 className="text-2xl font-bold text-white relative z-10 transform group-hover:scale-110 transition-transform duration-300">{title}</h2>
+      <div className="absolute inset-0 p-4 md:p-6 flex flex-col justify-between">
+        <h2 className="text-xl md:text-2xl font-bold text-white relative z-10 transform group-hover:scale-110 transition-transform duration-300">{title}</h2>
         
         <Button 
-          className="mt-auto self-start bg-indexa-mint text-indexa-purple-dark hover:bg-white rounded-full flex items-center space-x-2 text-base font-medium px-6 py-2 hover:scale-110 transition-transform shadow-lg"
+          className="mt-auto self-start bg-indexa-mint text-indexa-purple-dark hover:bg-white rounded-full flex items-center space-x-2 text-sm md:text-base font-medium px-4 md:px-6 py-2 hover:scale-110 transition-transform shadow-lg"
           onClick={(e) => {
             e.stopPropagation();
             handleClick();

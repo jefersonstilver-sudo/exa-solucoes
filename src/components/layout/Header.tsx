@@ -104,10 +104,8 @@ const Header: React.FC<HeaderProps> = ({
               onToggleCart={onToggleCart}
             />
 
-            {/* User Menu - componente profissional que já existe */}
-            <div className="hidden lg:block">
-              <UserMenu />
-            </div>
+            {/* User Menu - Agora visível em todas as telas */}
+            <UserMenu />
           </div>
         </div>
       </div>
