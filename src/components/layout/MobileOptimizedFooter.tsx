@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
@@ -53,22 +54,13 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 };
 
 const MobileOptimizedFooter = () => {
-  const [email, setEmail] = useState('');
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Newsletter logic here
-    console.log('Newsletter subscription:', email);
-    setEmail('');
-  };
-
   return (
     <footer className="bg-indexa-purple-dark text-white">
       <div className="container mx-auto px-4 lg:px-6">
         
-        {/* Desktop Layout - 4 columns (unchanged) */}
+        {/* Desktop Layout - 3 columns (removed Newsletter) */}
         <div className="hidden md:block py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {/* Logo e Descrição */}
             <div className="col-span-1">
               <div className="mb-4">
@@ -83,10 +75,10 @@ const MobileOptimizedFooter = () => {
               <h3 className="text-lg font-semibold mb-4">Links Rápidos</h3>
               <ul className="space-y-2">
                 <li><Link to="/" className="text-white/80 text-base hover:text-white transition-colors">Home</Link></li>
-                <li><Link to="/servicos" className="text-white/80 text-base hover:text-white transition-colors">Serviços</Link></li>
-                <li><Link to="/portfolio" className="text-white/80 text-base hover:text-white transition-colors">Portfolio</Link></li>
-                <li><Link to="/blog" className="text-white/80 text-base hover:text-white transition-colors">Blog</Link></li>
-                <li><Link to="/sobre-nos" className="text-white/80 text-base hover:text-white transition-colors">Sobre Nós</Link></li>
+                <li><Link to="/marketing" className="text-white/80 text-base hover:text-white transition-colors">Marketing</Link></li>
+                <li><Link to="/produtora" className="text-white/80 text-base hover:text-white transition-colors">Produtora</Link></li>
+                <li><Link to="/paineis-publicitarios" className="text-white/80 text-base hover:text-white transition-colors">Painéis Digitais</Link></li>
+                <li><Link to="/sou-sindico" className="text-white/80 text-base hover:text-white transition-colors">Sou Síndico</Link></li>
                 <li><Link to="/contato" className="text-white/80 text-base hover:text-white transition-colors">Contato</Link></li>
               </ul>
             </div>
@@ -110,29 +102,6 @@ const MobileOptimizedFooter = () => {
                   </span>
                 </li>
               </ul>
-            </div>
-
-            {/* Newsletter */}
-            <div className="col-span-1">
-              <h3 className="text-lg font-semibold mb-4">Newsletter</h3>
-              <p className="text-base text-white/80 mb-4">
-                Receba novidades e atualizações direto no seu e-mail.
-              </p>
-              <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-                <input 
-                  type="email" 
-                  placeholder="Seu e-mail" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 bg-transparent border border-gray-600 rounded-full text-white text-base placeholder-gray-400 focus:outline-none focus:border-indexa-mint"
-                />
-                <Button 
-                  type="submit"
-                  className="w-full rounded-full bg-indexa-mint text-indexa-purple-dark hover:bg-opacity-90 text-base font-medium"
-                >
-                  Inscrever-se
-                </Button>
-              </form>
             </div>
           </div>
         </div>
@@ -161,9 +130,10 @@ const MobileOptimizedFooter = () => {
             <AccordionSection title="Links Rápidos" defaultOpen={true}>
               <ul className="space-y-3">
                 <li><Link to="/" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Home</Link></li>
-                <li><Link to="/paineis-digitais/loja" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Loja Online</Link></li>
-                <li><Link to="/planos" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Planos</Link></li>
-                <li><Link to="/sobre" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Sobre</Link></li>
+                <li><Link to="/marketing" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Marketing</Link></li>
+                <li><Link to="/produtora" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Produtora</Link></li>
+                <li><Link to="/paineis-publicitarios" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Painéis Digitais</Link></li>
+                <li><Link to="/sou-sindico" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Sou Síndico</Link></li>
                 <li><Link to="/contato" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Contato</Link></li>
               </ul>
             </AccordionSection>
@@ -198,29 +168,6 @@ const MobileOptimizedFooter = () => {
                     Av. Paraná, 974 - Sala 301, And. 3 - Centro, Foz do Iguaçu - PR, 85852-000
                   </span>
                 </div>
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Newsletter">
-              <div className="space-y-4">
-                <p className="text-white/80 text-sm">
-                  Receba novidades e atualizações direto no seu e-mail.
-                </p>
-                <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-                  <input 
-                    type="email" 
-                    placeholder="Seu e-mail" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-indexa-mint focus:bg-white/15 transition-all duration-200"
-                  />
-                  <Button 
-                    type="submit"
-                    className="w-full rounded-xl bg-indexa-mint text-indexa-purple-dark hover:bg-indexa-mint/90 font-medium py-3 transition-all duration-200"
-                  >
-                    Inscrever-se
-                  </Button>
-                </form>
               </div>
             </AccordionSection>
           </div>

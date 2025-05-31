@@ -8,7 +8,6 @@ import ProcessoProducaoSection from '@/components/produtora/ProcessoProducaoSect
 import PortfolioSection from '@/components/produtora/PortfolioSection';
 import CafeManualSection from '@/components/produtora/CafeManualSection';
 import BriefingFormSection from '@/components/produtora/BriefingFormSection';
-import ProdutoraFooter from '@/components/layout/ProdutoraFooter';
 
 const Produtora = () => {
   console.log('Produtora: Página da produtora carregada');
@@ -36,9 +35,6 @@ const Produtora = () => {
         
         {/* 7. Formulário de Briefing */}
         <BriefingFormSection />
-        
-        {/* 8. Footer */}
-        <ProdutoraFooter />
       </div>
     </Layout>
   );
