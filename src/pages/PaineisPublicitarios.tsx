@@ -10,23 +10,15 @@ import VideoGallerySection from '@/components/paineis-landing/VideoGallerySectio
 import QRCodeTrackingSection from '@/components/paineis-landing/QRCodeTrackingSection';
 import FAQSection from '@/components/paineis-landing/FAQSection';
 import FinalCTASection from '@/components/paineis-landing/FinalCTASection';
-import ParticleBackground from '@/components/paineis-landing/ParticleBackground';
-import FloatingLogo from '@/components/paineis-landing/FloatingLogo';
-import ScrollProgressBar from '@/components/paineis-landing/ScrollProgressBar';
 
 const PaineisPublicitarios = () => {
-  console.log('PaineisPublicitarios: Página atualizada com melhorias implementadas');
+  console.log('PaineisPublicitarios: Página refatorada para melhor responsividade');
 
   useEffect(() => {
-    console.log('PaineisPublicitarios: Página reorganizada - FAQ movido para final');
-    // Scroll suave para toda a página
     document.documentElement.style.scrollBehavior = 'smooth';
-    
-    // Prevenir overflow horizontal
     document.body.style.overflowX = 'hidden';
     document.documentElement.style.overflowX = 'hidden';
     
-    // Cleanup
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
       document.body.style.overflowX = 'auto';
@@ -36,42 +28,15 @@ const PaineisPublicitarios = () => {
 
   return (
     <Layout>
-      {/* Background com partículas */}
-      <ParticleBackground />
-      
-      {/* Logo flutuante 3D */}
-      <FloatingLogo />
-      
-      {/* Barra de progresso do scroll */}
-      <ScrollProgressBar />
-      
-      {/* Container principal com overflow controlado */}
-      <div className="relative z-10 overflow-x-hidden w-full">
-        {/* 1. Hero - Vídeo ajustado e botão embaixo */}
+      <div className="relative overflow-x-hidden w-full">
         <HeroSection />
-        
-        {/* 2. O que são os Painéis - Cores uniformizadas e descrição melhorada */}
         <AboutPanelsSection />
-        
-        {/* 3. Por que funciona tanto? */}
         <WhyItWorksSection />
-        
-        {/* 4. Como Funciona */}
         <HowItWorksSection />
-        
-        {/* 5. Benefícios Exclusivos */}
         <ExclusiveBenefitsSection />
-        
-        {/* 6. Galeria Vídeo Pinceladas */}
         <VideoGallerySection />
-        
-        {/* 7. Rastreabilidade QR Code */}
         <QRCodeTrackingSection />
-        
-        {/* 8. FAQ Expansível - MOVIDO PARA FINAL */}
         <FAQSection />
-        
-        {/* 9. CTA Final - Botão corrigido */}
         <FinalCTASection />
       </div>
     </Layout>

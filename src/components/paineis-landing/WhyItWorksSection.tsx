@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, Clock, Target, TrendingUp } from 'lucide-react';
+import { Eye, Building, Users, TrendingUp } from 'lucide-react';
 
 const WhyItWorksSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -16,18 +16,18 @@ const WhyItWorksSection = () => {
       detail: 'Durante a espera e trajeto no elevador, seu público está 100% focado na tela'
     },
     {
-      icon: Clock,
-      title: 'Tempo de Exposição',
-      number: '60s',
-      description: 'Visualização completa garantida',
-      detail: 'Entre espera e trajeto, cada pessoa assiste seu anúncio por até 60 segundos'
+      icon: Building,
+      title: 'Primeira Fase do Projeto',
+      number: '50',
+      description: 'Prédios selecionados estrategicamente',
+      detail: 'Localizações premium escolhidas para máximo impacto e visibilidade'
     },
     {
-      icon: Target,
-      title: 'Repetição Estratégica',
-      number: '4x',
-      description: 'Múltiplas visualizações por dia',
-      detail: 'Moradores veem sua marca 4x ao dia, visitantes e funcionários também'
+      icon: Users,
+      title: 'Pessoas na Primeira Fase',
+      number: '22 mil',
+      description: 'Alcance garantido diariamente',
+      detail: 'Base sólida de pessoas expostas à sua marca todos os dias'
     },
     {
       icon: TrendingUp,
@@ -55,7 +55,6 @@ const WhyItWorksSection = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Auto-cycle através dos reasons
   useEffect(() => {
     if (isVisible) {
       const interval = setInterval(() => {
@@ -69,24 +68,22 @@ const WhyItWorksSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-black to-gray-900 flex items-center justify-center py-16 sm:py-20 px-4"
+      className="py-16 sm:py-20 px-4 bg-gradient-to-br from-black to-gray-900"
     >
       <div className="max-w-7xl mx-auto">
-        <div className={`transform transition-all duration-1000 ${
-          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
+        <div className={`transform transition-all duration-700 ${
+          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
         }`}>
-          {/* Título da Seção */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white mb-4 sm:mb-6">
-            <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
+            <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent">
               Por que funciona tanto?
             </span>
           </h2>
 
-          <p className="text-lg sm:text-xl md:text-2xl text-white/80 mb-12 sm:mb-16 text-center max-w-4xl mx-auto leading-relaxed">
-            Ciência por trás da efetividade dos painéis em elevadores
+          <p className="text-lg sm:text-xl text-white/80 mb-12 sm:mb-16 text-center max-w-4xl mx-auto">
+            Dados que comprovam a efetividade dos painéis em elevadores
           </p>
 
-          {/* Grid de Razões - RESPONSIVO */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {reasons.map((reason, index) => {
               const IconComponent = reason.icon;
@@ -95,72 +92,60 @@ const WhyItWorksSection = () => {
               return (
                 <div
                   key={index}
-                  className={`group relative transform transition-all duration-700 cursor-pointer ${
+                  className={`transform transition-all duration-500 cursor-pointer ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                   } ${isActive ? 'scale-105' : 'hover:scale-102'}`}
-                  style={{ transitionDelay: `${index * 150}ms` }}
+                  style={{ transitionDelay: `${index * 100}ms` }}
                   onClick={() => setActiveStep(index)}
                 >
-                  {/* Card Principal */}
-                  <div className={`relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border transition-all duration-500 ${
+                  <div className={`relative bg-gray-800/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border transition-all duration-300 ${
                     isActive 
-                      ? 'border-indexa-mint/60 shadow-2xl shadow-indexa-mint/20' 
+                      ? 'border-indexa-mint/60 shadow-lg shadow-indexa-mint/20' 
                       : 'border-white/10 hover:border-indexa-mint/30'
                   }`}>
                     
-                    {/* Número destacado */}
-                    <div className={`text-center mb-4 sm:mb-6 transition-all duration-500 ${
+                    <div className={`text-center mb-4 sm:mb-6 transition-all duration-300 ${
                       isActive ? 'scale-110' : 'scale-100'
                     }`}>
-                      <div className={`text-4xl sm:text-6xl font-bold mb-2 transition-colors duration-500 ${
+                      <div className={`text-4xl sm:text-5xl font-bold mb-2 transition-colors duration-300 ${
                         isActive ? 'text-indexa-mint' : 'text-white'
                       }`}>
                         {reason.number}
                       </div>
                       
-                      {/* Ícone */}
-                      <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full flex items-center justify-center transition-all duration-500 ${
+                      <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full flex items-center justify-center transition-all duration-300 ${
                         isActive 
                           ? 'bg-indexa-mint/20 scale-110' 
                           : 'bg-white/10'
                       }`}>
-                        <IconComponent className={`w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-500 ${
+                        <IconComponent className={`w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-300 ${
                           isActive ? 'text-indexa-mint' : 'text-white'
                         }`} />
                       </div>
                     </div>
 
-                    {/* Título */}
-                    <h3 className={`text-lg sm:text-xl font-bold text-center mb-2 sm:mb-3 transition-colors duration-500 ${
+                    <h3 className={`text-lg sm:text-xl font-bold text-center mb-2 sm:mb-3 transition-colors duration-300 ${
                       isActive ? 'text-indexa-mint' : 'text-white'
                     }`}>
                       {reason.title}
                     </h3>
 
-                    {/* Descrição */}
                     <p className="text-white/90 text-center text-sm sm:text-base mb-3 sm:mb-4">
                       {reason.description}
                     </p>
 
-                    {/* Detalhes expandidos */}
-                    <div className={`overflow-hidden transition-all duration-500 ${
+                    <div className={`overflow-hidden transition-all duration-300 ${
                       isActive ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
                     }`}>
                       <div className="border-t border-indexa-mint/30 pt-3 sm:pt-4">
-                        <p className="text-white/80 text-xs sm:text-sm text-center leading-relaxed">
+                        <p className="text-white/80 text-xs sm:text-sm text-center">
                           {reason.detail}
                         </p>
                       </div>
                     </div>
 
-                    {/* Indicador de atividade */}
-                    <div className={`absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-full transition-all duration-500 ${
+                    <div className={`absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-full transition-all duration-300 ${
                       isActive ? 'bg-indexa-mint w-12' : 'bg-white/30'
-                    }`} />
-
-                    {/* Efeito de brilho */}
-                    <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-indexa-mint/5 to-transparent transform -skew-x-12 transition-transform duration-1000 rounded-2xl ${
-                      isActive ? 'translate-x-full' : '-translate-x-full'
                     }`} />
                   </div>
                 </div>
@@ -168,7 +153,6 @@ const WhyItWorksSection = () => {
             })}
           </div>
 
-          {/* Indicadores de progresso - RESPONSIVO */}
           <div className="flex justify-center mt-8 sm:mt-12 space-x-2 sm:space-x-3">
             {reasons.map((_, index) => (
               <button
@@ -183,7 +167,6 @@ const WhyItWorksSection = () => {
             ))}
           </div>
 
-          {/* Conclusão motivacional */}
           <div className="text-center mt-12 sm:mt-16">
             <div className="bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border border-indexa-mint/30 max-w-3xl mx-auto">
               <p className="text-xl sm:text-2xl font-bold text-white mb-2">
