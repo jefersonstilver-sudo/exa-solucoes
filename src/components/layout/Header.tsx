@@ -3,8 +3,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import CartButton from './header/CartButton';
-import HeaderLogo from './header/HeaderLogo';
 import UserMenu from '@/components/user/UserMenu';
+import ThemeToggle from '@/components/ui/theme-toggle';
 
 interface HeaderProps {
   cartItemsCount?: number;
@@ -22,12 +22,17 @@ const Header: React.FC<HeaderProps> = ({
   console.log('🏢 Header: onToggleCart function:', !!onToggleCart);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#3C1361] to-[#2A0D47] shadow-lg">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#3C1361] to-[#2A0D47] dark:from-gray-900 dark:to-gray-800 shadow-lg">
       <div className="container mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo com mais espaço */}
+          {/* Logo da Indexa - mantido apenas o essencial */}
           <div className="flex-shrink-0">
-            <HeaderLogo />
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-indexa-mint to-indexa-purple rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">I</span>
+              </div>
+              <span className="text-white font-bold text-xl hidden sm:block">Indexa</span>
+            </Link>
           </div>
 
           {/* Navigation */}
@@ -58,8 +63,11 @@ const Header: React.FC<HeaderProps> = ({
             </Link>
           </nav>
 
-          {/* Right side - Cart and User actions */}
-          <div className="flex items-center space-x-5">
+          {/* Right side - Theme Toggle, Cart and User actions */}
+          <div className="flex items-center space-x-3">
+            {/* Theme Toggle Button - NOVO */}
+            <ThemeToggle />
+
             {/* Loja Online Button */}
             <Link to="/paineis-digitais/loja">
               <Button 
@@ -77,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({
               onToggleCart={onToggleCart}
             />
 
-            {/* User Menu - componente profissional que já existe */}
+            {/* User Menu */}
             <UserMenu />
           </div>
         </div>
