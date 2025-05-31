@@ -10,6 +10,8 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
+  console.log('🏗️ Layout: Renderizando Layout com footer único');
+  
   const { 
     cartItems, 
     cartOpen, 

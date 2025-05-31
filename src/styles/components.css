@@ -15,3 +15,26 @@ footer[data-footer-debug="single-footer"]:not(:first-of-type) {
 body footer:not([data-footer-debug="single-footer"]) {
   display: none !important;
 }
+
+/* Proteção adicional contra footers duplicados em seções */
+section footer {
+  display: none !important;
+}
+
+/* Permitir apenas o footer do layout principal */
+#unique-indexa-footer {
+  display: block !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Esconder qualquer footer que não seja o principal */
+footer:not(#unique-indexa-footer) {
+  display: none !important;
+}
+
+/* Proteção contra footers absolutos duplicados */
+.absolute footer,
+section .absolute:has(footer) {
+  display: none !important;
+}
