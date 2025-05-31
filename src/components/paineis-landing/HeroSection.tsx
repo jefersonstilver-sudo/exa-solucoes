@@ -76,10 +76,10 @@ const HeroSection = () => {
             </button>
           </div>
 
-          {/* Vídeo Totem Central - CORRIGIDO PARA VERTICAL */}
+          {/* Vídeo Totem Central - REDUZIDO E VERTICAL */}
           <div className={`order-1 lg:order-2 flex flex-col items-center transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <div className="relative group w-full max-w-xs sm:max-w-sm lg:max-w-md xl:max-w-lg mx-auto">
-              {/* Moldura do Painel Digital (Totem) - AJUSTADO PARA VERTICAL */}
+            <div className="relative group w-full max-w-[240px] sm:max-w-[280px] lg:max-w-[300px] xl:max-w-[320px] mx-auto">
+              {/* Moldura do Painel Digital (Totem) - MENOR E VERTICAL */}
               <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 p-2 sm:p-3 lg:p-4 rounded-xl sm:rounded-2xl shadow-2xl border border-gray-700">
                 {/* Sombra externa para criar efeito de profundidade */}
                 <div className="absolute inset-0 bg-indexa-purple/30 rounded-xl sm:rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-70" />
@@ -87,7 +87,7 @@ const HeroSection = () => {
                 {/* Brilho interno */}
                 <div className="absolute inset-1 bg-gradient-to-t from-transparent via-white/5 to-white/10 rounded-lg sm:rounded-xl pointer-events-none" />
                 
-                {/* Vídeo Principal com aspect ratio VERTICAL 9:16 */}
+                {/* Vídeo Principal com aspect ratio VERTICAL 9:16 - MENOR */}
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl">
                   <div className="aspect-[9/16] w-full">
                     <video
