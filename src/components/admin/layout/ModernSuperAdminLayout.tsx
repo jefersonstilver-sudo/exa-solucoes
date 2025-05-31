@@ -9,7 +9,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className="w-64 fixed inset-y-0 z-30">
-        <ModernAdminSidebar />
+        <ModernAdminSidebar isCollapsed={false} />
       </div>
 
       {/* Main Content */}

@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Building2, Shield, Zap, Clock, Users, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin, Calendar, MessageSquare, TrendingUp, Award, Sparkles, Bot, Smartphone } from 'lucide-react';
+import { Building2, Shield, Zap, Clock, Users, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin, Calendar, MessageSquare, TrendingUp, Award, Sparkles, Bot, Smartphone, Volume, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +11,8 @@ const SouSindico = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [formData, setFormData] = useState({
     nomeCompleto: '',
     nomePredio: '',
@@ -94,6 +95,13 @@ const SouSindico = () => {
     }
   };
 
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   const benefits = [
     { icon: MessageSquare, title: 'Comunicação via WhatsApp', desc: 'Gerencie tudo direto pelo WhatsApp, sem complicação' },
     { icon: Bot, title: 'IA Especializada', desc: 'Assistente inteligente para facilitar suas tarefas' },
@@ -164,15 +172,38 @@ const SouSindico = () => {
                     </div>
                     
                     <video
-                      className="w-full h-96 object-cover"
+                      ref={videoRef}
+                      className="w-full h-80 object-cover object-top"
                       autoPlay
-                      muted
+                      muted={isMuted}
                       loop
                       playsInline
                     >
                       <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/2dac60f0-421e-4729-ac22-0d32dc360292.MP4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzJkYWM2MGYwLTQyMWUtNDcyOS1hYzIyLTBkMzJkYzM2MDI5Mi5NUDQiLCJpYXQiOjE3NDg2OTY5NTksImV4cCI6MTc4MDIzMjk1OX0.sJEjs0bci_thXgU-BTrLFmuF9M8H4XFRcPpigrjQCjw" type="video/mp4" />
                     </video>
                   </div>
+                </div>
+                
+                {/* Botão para assistir com som */}
+                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+                  <Button
+                    onClick={toggleMute}
+                    variant="outline"
+                    size="sm"
+                    className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-900 border-gray-300 shadow-lg"
+                  >
+                    {isMuted ? (
+                      <>
+                        <VolumeX className="w-4 h-4 mr-2" />
+                        Assistir com som
+                      </>
+                    ) : (
+                      <>
+                        <Volume className="w-4 h-4 mr-2" />
+                        Silenciar
+                      </>
+                    )}
+                  </Button>
                 </div>
                 
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-[3rem] blur-xl" />

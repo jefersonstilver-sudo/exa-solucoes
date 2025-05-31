@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Building2, User, MapPin, Phone, Mail, Calendar, Eye, Filter, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -132,13 +131,13 @@ const SindicosInteressados = () => {
   });
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      'novo': 'default',
-      'contatado': 'secondary', 
-      'interessado': 'success',
-      'nao_interessado': 'destructive',
-      'instalado': 'success'
-    } as const;
+    const badgeProps = {
+      'novo': { variant: 'default' as const, className: 'bg-blue-500 text-white' },
+      'contatado': { variant: 'secondary' as const, className: '' },
+      'interessado': { variant: 'default' as const, className: 'bg-green-500 text-white' },
+      'nao_interessado': { variant: 'destructive' as const, className: '' },
+      'instalado': { variant: 'default' as const, className: 'bg-emerald-500 text-white' }
+    };
 
     const labels = {
       'novo': 'Novo',
@@ -148,9 +147,12 @@ const SindicosInteressados = () => {
       'instalado': 'Instalado'
     };
 
+    const props = badgeProps[status as keyof typeof badgeProps] || { variant: 'default' as const, className: '' };
+    const label = labels[status as keyof typeof labels] || status;
+
     return (
-      <Badge variant={variants[status as keyof typeof variants] || 'default'}>
-        {labels[status as keyof typeof labels] || status}
+      <Badge variant={props.variant} className={props.className}>
+        {label}
       </Badge>
     );
   };
