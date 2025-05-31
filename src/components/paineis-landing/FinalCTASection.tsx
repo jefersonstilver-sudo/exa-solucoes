@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Sparkles, CheckCircle, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +8,6 @@ const FinalCTASection = () => {
   const navigate = useNavigate();
 
   const benefits = [
-    'Sem compromissos longos',
     'Configuração rápida',
     'Suporte especializado'
   ];
@@ -103,7 +101,7 @@ const FinalCTASection = () => {
             </div>
           </div>
 
-          {/* Botão CTA Principal - CORRIGIDO */}
+          {/* Botão CTA Principal */}
           <div className="relative inline-block mb-8">
             <button
               onClick={handleCTAClick}
