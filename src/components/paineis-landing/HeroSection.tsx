@@ -66,22 +66,19 @@ const HeroSection = () => {
           {/* Botão CTA Principal */}
           <button
             onClick={handleCTAClick}
-            className="group relative bg-indexa-mint text-indexa-purple-dark text-xl font-bold py-6 px-12 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 animate-pulse-soft"
+            className="group relative bg-indexa-mint text-indexa-purple-dark text-xl font-bold py-6 px-12 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1"
           >
             <span className="relative flex items-center space-x-3 z-10">
               <Play className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-300" />
               <span>Acessar Loja Online</span>
             </span>
-            
-            {/* Efeito pulse-glow */}
-            <div className="absolute inset-0 bg-indexa-mint/30 rounded-full animate-ping" />
           </button>
         </div>
 
-        {/* Vídeo Totem Central - MAIOR */}
-        <div className={`order-1 lg:order-2 flex justify-center transform transition-all duration-1500 delay-500 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+        {/* Vídeo Totem Central */}
+        <div className={`order-1 lg:order-2 flex flex-col items-center transform transition-all duration-1500 delay-500 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
           <div className="relative group">
-            {/* Moldura do Painel Digital (Totem) - AUMENTADO */}
+            {/* Moldura do Painel Digital (Totem) */}
             <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 p-4 rounded-3xl shadow-2xl border border-gray-700">
               {/* Sombra externa para criar efeito de profundidade */}
               <div className="absolute inset-0 bg-indexa-purple/30 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 opacity-70" />
@@ -89,7 +86,7 @@ const HeroSection = () => {
               {/* Brilho interno */}
               <div className="absolute inset-2 bg-gradient-to-t from-transparent via-white/5 to-white/10 rounded-2xl pointer-events-none" />
               
-              {/* Vídeo Principal - TAMANHO AUMENTADO */}
+              {/* Vídeo Principal */}
               <div className="relative overflow-hidden rounded-2xl">
                 <video
                   className="w-full max-w-md h-[500px] md:h-[600px] object-cover rounded-2xl cursor-pointer"
@@ -114,16 +111,16 @@ const HeroSection = () => {
                 <div className="w-2 h-2 bg-indexa-mint rounded-full animate-pulse delay-700" />
               </div>
             </div>
-
-            {/* Botão sutil para assistir com som em tela cheia */}
-            <button
-              onClick={handleVideoClick}
-              className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 hover:bg-black/90 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
-            >
-              <Volume2 className="w-4 h-4" />
-              <span>Assistir com som em tela cheia</span>
-            </button>
           </div>
+
+          {/* Botão embaixo do vídeo */}
+          <button
+            onClick={handleVideoClick}
+            className="mt-6 bg-black/70 hover:bg-black/90 backdrop-blur-sm px-6 py-3 rounded-full text-white text-sm font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
+          >
+            <Volume2 className="w-4 h-4" />
+            <span>Assistir com som em tela cheia</span>
+          </button>
         </div>
       </div>
 

@@ -6,20 +6,19 @@ import AboutPanelsSection from '@/components/paineis-landing/AboutPanelsSection'
 import WhyItWorksSection from '@/components/paineis-landing/WhyItWorksSection';
 import HowItWorksSection from '@/components/paineis-landing/HowItWorksSection';
 import ExclusiveBenefitsSection from '@/components/paineis-landing/ExclusiveBenefitsSection';
-import FAQSection from '@/components/paineis-landing/FAQSection';
 import VideoGallerySection from '@/components/paineis-landing/VideoGallerySection';
 import QRCodeTrackingSection from '@/components/paineis-landing/QRCodeTrackingSection';
-import TrustSection from '@/components/paineis-landing/TrustSection';
+import FAQSection from '@/components/paineis-landing/FAQSection';
 import FinalCTASection from '@/components/paineis-landing/FinalCTASection';
 import ParticleBackground from '@/components/paineis-landing/ParticleBackground';
 import FloatingLogo from '@/components/paineis-landing/FloatingLogo';
 import ScrollProgressBar from '@/components/paineis-landing/ScrollProgressBar';
 
 const PaineisPublicitarios = () => {
-  console.log('PaineisPublicitarios: Iniciando página com todas as melhorias aplicadas');
+  console.log('PaineisPublicitarios: Página atualizada com melhorias implementadas');
 
   useEffect(() => {
-    console.log('PaineisPublicitarios: Página montada com todas as novas features');
+    console.log('PaineisPublicitarios: Página reorganizada - FAQ movido para final');
     // Scroll suave para toda a página
     document.documentElement.style.scrollBehavior = 'smooth';
     
@@ -40,12 +39,12 @@ const PaineisPublicitarios = () => {
       {/* Barra de progresso do scroll */}
       <ScrollProgressBar />
       
-      {/* Seções principais da landing page */}
+      {/* Seções principais da landing page - REORGANIZADA */}
       <div className="relative z-10">
-        {/* 1. Hero - Vídeo maior e botão de fullscreen */}
+        {/* 1. Hero - Vídeo ajustado e botão embaixo */}
         <HeroSection />
         
-        {/* 2. O que são os Painéis - Cores das imagens aplicadas */}
+        {/* 2. O que são os Painéis - Cores uniformizadas e descrição melhorada */}
         <AboutPanelsSection />
         
         {/* 3. Por que funciona tanto? */}
@@ -54,22 +53,19 @@ const PaineisPublicitarios = () => {
         {/* 4. Como Funciona */}
         <HowItWorksSection />
         
-        {/* 5. Benefícios Exclusivos - Protocolo removido */}
+        {/* 5. Benefícios Exclusivos */}
         <ExclusiveBenefitsSection />
         
-        {/* 6. FAQ Expansível - 10 perguntas frequentes */}
-        <FAQSection />
-        
-        {/* 7. Galeria Vídeo Pinceladas */}
+        {/* 6. Galeria Vídeo Pinceladas */}
         <VideoGallerySection />
         
-        {/* 8. Rastreabilidade QR Code - Nova seção */}
+        {/* 7. Rastreabilidade QR Code */}
         <QRCodeTrackingSection />
         
-        {/* 9. Quem confia já está dentro */}
-        <TrustSection />
+        {/* 8. FAQ Expansível - MOVIDO PARA FINAL */}
+        <FAQSection />
         
-        {/* 10. CTA Final - Sem urgência artificial */}
+        {/* 9. CTA Final - Botão corrigido */}
         <FinalCTASection />
       </div>
     </Layout>

@@ -13,42 +13,42 @@ const AboutPanelsSection = () => {
       title: 'Clima ao Vivo',
       front: 'Previsão do tempo atualizada',
       back: 'Temperatura, umidade e condições climáticas em tempo real para Foz do Iguaçu',
-      color: 'from-blue-600 to-blue-800' // Azul como na imagem
+      color: 'from-purple-400 to-purple-600' // Cor uniforme roxo claro
     },
     {
       icon: DollarSign,
       title: 'Cotações do Dólar',
       front: 'Valores atualizados da moeda',
       back: 'Cotação do dólar, peso argentino e guarani paraguaio em tempo real',
-      color: 'from-green-600 to-green-800' // Verde como na imagem
+      color: 'from-purple-400 to-purple-600' // Cor uniforme roxo claro
     },
     {
       icon: Bell,
       title: 'Avisos do Síndico',
       front: 'Comunicados importantes',
       back: 'Informações sobre assembleias, manutenções e avisos gerais do condomínio',
-      color: 'from-orange-500 to-yellow-600' // Laranja/Amarelo como na imagem
+      color: 'from-purple-400 to-purple-600' // Cor uniforme roxo claro
     },
     {
       icon: Newspaper,
       title: 'Notícias da Cidade',
       front: 'Informações locais relevantes',
       back: 'Principais acontecimentos de Foz do Iguaçu e região da tríplice fronteira',
-      color: 'from-purple-600 to-purple-800' // Roxo como na imagem
+      color: 'from-purple-400 to-purple-600' // Cor uniforme roxo claro
     },
     {
       icon: Car,
       title: 'Trânsito Ponte da Amizade',
       front: 'Situação da fronteira',
       back: 'Tempo de espera, fluxo de veículos e condições de travessia atualizados',
-      color: 'from-red-600 to-red-800' // Vermelho como na imagem
+      color: 'from-purple-400 to-purple-600' // Cor uniforme roxo claro
     },
     {
       icon: Play,
       title: 'Publicidade 15s',
       front: 'Sua marca em destaque',
       back: 'Vídeos comerciais de 15 segundos intercalados com o conteúdo informativo',
-      color: 'from-indexa-purple to-indexa-mint' // Gradient Indexa
+      color: 'from-indexa-purple to-indexa-mint' // Gradient Indexa mantido
     }
   ];
 
@@ -89,12 +89,16 @@ const AboutPanelsSection = () => {
             </span>
           </h2>
 
-          <p className="text-xl md:text-2xl text-white/80 mb-16 max-w-4xl mx-auto leading-relaxed">
-            Transformamos elevadores em canais de mídia digital altamente visíveis. 
-            Nossos painéis exibem conteúdo dinâmico intercalado com sua publicidade.
+          <p className="text-xl md:text-2xl text-white/80 mb-8 max-w-4xl mx-auto leading-relaxed">
+            Uma tecnologia de gestão condominial que transforma elevadores em canais de mídia digital altamente visíveis.
           </p>
 
-          {/* Grid de Cards Interativos com Flip - CORES DAS IMAGENS */}
+          <p className="text-lg text-white/70 mb-16 max-w-3xl mx-auto leading-relaxed">
+            Nossos painéis inteligentes informam os moradores com conteúdo útil e relevante, 
+            intercalando essas informações com sua publicidade de forma estratégica e não invasiva.
+          </p>
+
+          {/* Grid de Cards Interativos com Flip */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
             {cards.map((card, index) => {
               const IconComponent = card.icon;
@@ -114,7 +118,7 @@ const AboutPanelsSection = () => {
                     isFlipped ? 'rotate-y-180' : ''
                   }`}>
                     
-                    {/* Front Face - CORES APLICADAS */}
+                    {/* Front Face */}
                     <div className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br ${card.color} rounded-xl p-6 flex flex-col items-center justify-center text-white shadow-2xl border border-white/10`}>
                       <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <IconComponent className="w-8 h-8" />

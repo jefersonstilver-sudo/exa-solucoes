@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles, CheckCircle, Crown, Shield } from 'lucide-react';
+import { ArrowRight, Sparkles, CheckCircle, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const FinalCTASection = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [rippleKey, setRippleKey] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
@@ -33,10 +32,7 @@ const FinalCTASection = () => {
   }, []);
 
   const handleCTAClick = () => {
-    setRippleKey(prev => prev + 1);
-    setTimeout(() => {
-      navigate('/paineis-digitais/loja');
-    }, 300);
+    navigate('/paineis-digitais/loja');
   };
 
   return (
@@ -107,24 +103,12 @@ const FinalCTASection = () => {
             </div>
           </div>
 
-          {/* Botão CTA Gigante com múltiplos efeitos */}
+          {/* Botão CTA Principal - CORRIGIDO */}
           <div className="relative inline-block mb-8">
             <button
               onClick={handleCTAClick}
-              className="group relative bg-gradient-to-r from-indexa-mint via-indexa-purple to-indexa-mint text-white text-2xl md:text-3xl font-bold py-8 px-16 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-110 hover:-translate-y-2 overflow-hidden"
-              style={{
-                background: 'linear-gradient(45deg, #58E3AB, #4A0968, #58E3AB)',
-                backgroundSize: '200% 200%',
-                animation: 'gradient-shift 3s ease infinite'
-              }}
+              className="group relative bg-gradient-to-r from-indexa-mint to-indexa-purple text-white text-2xl md:text-3xl font-bold py-8 px-16 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-2 overflow-hidden"
             >
-              {/* Efeito ripple */}
-              <div 
-                key={rippleKey}
-                className="absolute inset-0 bg-white/20 rounded-full animate-ping"
-                style={{ animationDuration: '0.6s' }}
-              />
-              
               {/* Conteúdo do botão */}
               <span className="relative flex items-center space-x-4 z-10">
                 <span>Acessar Loja Online</span>
@@ -134,10 +118,6 @@ const FinalCTASection = () => {
               {/* Brilho deslizante */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             </button>
-
-            {/* Sombras pulsantes externas */}
-            <div className="absolute inset-0 bg-indexa-mint/20 rounded-full animate-ping opacity-75" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute inset-0 bg-indexa-purple/20 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
 
           {/* Lista de benefícios com ícones */}
@@ -148,14 +128,6 @@ const FinalCTASection = () => {
                 <span>{benefit}</span>
               </div>
             ))}
-          </div>
-
-          {/* Garantia */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center bg-green-500/20 backdrop-blur-sm px-6 py-3 rounded-full border border-green-400/30">
-              <Shield className="w-5 h-5 text-green-400 mr-2" />
-              <span className="text-green-300 font-medium">Garantia de 30 dias ou seu dinheiro de volta</span>
-            </div>
           </div>
         </div>
       </div>
