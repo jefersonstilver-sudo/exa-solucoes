@@ -52,14 +52,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       {/* Blur effect that disappears on hover */}
       <div className="absolute inset-0 backdrop-blur-[2px] group-hover:backdrop-blur-0 transition-all duration-300"></div>
       
-      {/* Service name at the top */}
-      <div className="absolute top-3 md:top-6 left-3 md:left-6 right-3 md:right-6 z-20">
-        <h3 className="text-sm md:text-lg font-semibold text-white bg-black bg-opacity-50 px-3 py-1 rounded-lg backdrop-blur-sm">
-          {title}
-        </h3>
-      </div>
-      
-      {/* Main title in the center */}
       <div className="absolute inset-0 p-3 md:p-6 flex items-center justify-center">
         <h2 className="text-lg md:text-2xl font-bold text-white relative z-10 transform group-hover:scale-110 transition-transform duration-300 leading-tight text-center">{title}</h2>
       </div>
