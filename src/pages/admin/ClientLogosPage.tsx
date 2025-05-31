@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,6 +68,59 @@ const ClientLogosPage = () => {
       toast.error('Erro ao carregar logos');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const addSampleLogos = async () => {
+    const sampleLogos = [
+      {
+        name: 'Microsoft',
+        logo_url: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=200&h=100&fit=crop&auto=format',
+        link: 'https://microsoft.com',
+        is_active: true,
+        order_position: 1
+      },
+      {
+        name: 'Google',
+        logo_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&h=100&fit=crop&auto=format',
+        link: 'https://google.com',
+        is_active: true,
+        order_position: 2
+      },
+      {
+        name: 'Apple',
+        logo_url: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=200&h=100&fit=crop&auto=format',
+        link: 'https://apple.com',
+        is_active: true,
+        order_position: 3
+      },
+      {
+        name: 'Amazon',
+        logo_url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=200&h=100&fit=crop&auto=format',
+        link: 'https://amazon.com',
+        is_active: true,
+        order_position: 4
+      },
+      {
+        name: 'Netflix',
+        logo_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=200&h=100&fit=crop&auto=format',
+        link: 'https://netflix.com',
+        is_active: true,
+        order_position: 5
+      }
+    ];
+
+    try {
+      const { error } = await supabase
+        .from('client_logos')
+        .insert(sampleLogos);
+
+      if (error) throw error;
+      toast.success('Logos de exemplo adicionados!');
+      fetchLogos();
+    } catch (error) {
+      console.error('Erro ao adicionar logos de exemplo:', error);
+      toast.error('Erro ao adicionar logos de exemplo');
     }
   };
 
@@ -198,91 +250,99 @@ const ClientLogosPage = () => {
             Gerencie os logos que aparecem no carrossel da página de marketing e no rodapé
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => openDialog()} className="bg-indexa-purple hover:bg-indexa-purple/90">
+        <div className="flex gap-2">
+          {logos.length === 0 && (
+            <Button onClick={addSampleLogos} variant="outline">
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar Logo
+              Adicionar Exemplos
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingLogo ? 'Editar Logo' : 'Adicionar Novo Logo'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nome do Cliente/Parceiro</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: TechCorp Solutions"
-                />
-              </div>
-              <div>
-                <Label htmlFor="logo_url">URL do Logo (PNG branco, fundo transparente)</Label>
-                <Input
-                  id="logo_url"
-                  value={formData.logo_url}
-                  onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                  placeholder="https://exemplo.com/logo.png"
-                />
-              </div>
-              <div>
-                <Label htmlFor="link">Link (Site/Instagram/etc.) - Opcional</Label>
-                <Input
-                  id="link"
-                  value={formData.link}
-                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                  placeholder="https://exemplo.com ou https://instagram.com/perfil"
-                />
-              </div>
-              <div>
-                <Label htmlFor="order">Posição na Ordem</Label>
-                <Input
-                  id="order"
-                  type="number"
-                  value={formData.order_position}
-                  onChange={(e) => setFormData({ ...formData, order_position: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
-                <Label htmlFor="active">Logo ativo</Label>
-              </div>
-              {formData.logo_url && (
-                <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                  <Label>Preview:</Label>
-                  <div className="mt-2 flex items-center justify-center h-20 bg-gray-800 rounded">
-                    <img
-                      src={formData.logo_url}
-                      alt="Preview"
-                      className="max-h-full max-w-full object-contain filter brightness-0 invert"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  </div>
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => openDialog()} className="bg-indexa-purple hover:bg-indexa-purple/90">
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Logo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingLogo ? 'Editar Logo' : 'Adicionar Novo Logo'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Nome do Cliente/Parceiro</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Ex: TechCorp Solutions"
+                  />
                 </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSave} disabled={!formData.name || !formData.logo_url}>
-                {editingLogo ? 'Atualizar' : 'Adicionar'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                <div>
+                  <Label htmlFor="logo_url">URL do Logo (PNG branco, fundo transparente)</Label>
+                  <Input
+                    id="logo_url"
+                    value={formData.logo_url}
+                    onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
+                    placeholder="https://exemplo.com/logo.png"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="link">Link (Site/Instagram/etc.) - Opcional</Label>
+                  <Input
+                    id="link"
+                    value={formData.link}
+                    onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                    placeholder="https://exemplo.com ou https://instagram.com/perfil"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="order">Posição na Ordem</Label>
+                  <Input
+                    id="order"
+                    type="number"
+                    value={formData.order_position}
+                    onChange={(e) => setFormData({ ...formData, order_position: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                  <Label htmlFor="active">Logo ativo</Label>
+                </div>
+                {formData.logo_url && (
+                  <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                    <Label>Preview:</Label>
+                    <div className="mt-2 flex items-center justify-center h-20 bg-gray-800 rounded">
+                      <img
+                        src={formData.logo_url}
+                        alt="Preview"
+                        className="max-h-full max-w-full object-contain filter brightness-0 invert"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSave} disabled={!formData.name || !formData.logo_url}>
+                  {editingLogo ? 'Atualizar' : 'Adicionar'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats Cards */}

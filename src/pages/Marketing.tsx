@@ -11,7 +11,6 @@ import DeliverablesSection from '@/components/marketing/DeliverablesSection';
 import PortfolioSection from '@/components/marketing/PortfolioSection';
 import ObjectionsSection from '@/components/marketing/ObjectionsSection';
 import CTASection from '@/components/marketing/CTASection';
-import ClientLogosCarousel from '@/components/marketing/ClientLogosCarousel';
 import MarketingForm from '@/components/marketing/MarketingForm';
 import FloatingCTA from '@/components/marketing/FloatingCTA';
 
@@ -35,7 +34,6 @@ const Marketing = () => {
       <PortfolioSection />
       <ObjectionsSection onScrollToForm={scrollToForm} />
       <CTASection />
-      <ClientLogosCarousel />
       <MarketingForm formRef={formRef} />
       <FloatingCTA onScrollToForm={scrollToForm} />
     </div>
