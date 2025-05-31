@@ -13,42 +13,42 @@ const AboutPanelsSection = () => {
       title: 'Clima ao Vivo',
       front: 'Previsão do tempo atualizada',
       back: 'Temperatura, umidade e condições climáticas em tempo real para Foz do Iguaçu',
-      color: 'from-blue-500 to-blue-700'
+      color: 'from-blue-600 to-blue-800' // Azul como na imagem
     },
     {
       icon: DollarSign,
       title: 'Cotações do Dólar',
       front: 'Valores atualizados da moeda',
       back: 'Cotação do dólar, peso argentino e guarani paraguaio em tempo real',
-      color: 'from-green-500 to-green-700'
+      color: 'from-green-600 to-green-800' // Verde como na imagem
     },
     {
       icon: Bell,
       title: 'Avisos do Síndico',
       front: 'Comunicados importantes',
       back: 'Informações sobre assembleias, manutenções e avisos gerais do condomínio',
-      color: 'from-yellow-500 to-orange-500'
+      color: 'from-orange-500 to-yellow-600' // Laranja/Amarelo como na imagem
     },
     {
       icon: Newspaper,
       title: 'Notícias da Cidade',
       front: 'Informações locais relevantes',
       back: 'Principais acontecimentos de Foz do Iguaçu e região da tríplice fronteira',
-      color: 'from-purple-500 to-purple-700'
+      color: 'from-purple-600 to-purple-800' // Roxo como na imagem
     },
     {
       icon: Car,
       title: 'Trânsito Ponte da Amizade',
       front: 'Situação da fronteira',
       back: 'Tempo de espera, fluxo de veículos e condições de travessia atualizados',
-      color: 'from-red-500 to-red-700'
+      color: 'from-red-600 to-red-800' // Vermelho como na imagem
     },
     {
       icon: Play,
       title: 'Publicidade 15s',
       front: 'Sua marca em destaque',
       back: 'Vídeos comerciais de 15 segundos intercalados com o conteúdo informativo',
-      color: 'from-indexa-purple to-indexa-mint'
+      color: 'from-indexa-purple to-indexa-mint' // Gradient Indexa
     }
   ];
 
@@ -94,7 +94,7 @@ const AboutPanelsSection = () => {
             Nossos painéis exibem conteúdo dinâmico intercalado com sua publicidade.
           </p>
 
-          {/* Grid de Cards Interativos com Flip */}
+          {/* Grid de Cards Interativos com Flip - CORES DAS IMAGENS */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
             {cards.map((card, index) => {
               const IconComponent = card.icon;
@@ -114,7 +114,7 @@ const AboutPanelsSection = () => {
                     isFlipped ? 'rotate-y-180' : ''
                   }`}>
                     
-                    {/* Front Face */}
+                    {/* Front Face - CORES APLICADAS */}
                     <div className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br ${card.color} rounded-xl p-6 flex flex-col items-center justify-center text-white shadow-2xl border border-white/10`}>
                       <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <IconComponent className="w-8 h-8" />

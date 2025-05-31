@@ -150,12 +150,6 @@ const FinalCTASection = () => {
             ))}
           </div>
 
-          {/* Urgência e escassez */}
-          <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 backdrop-blur-sm p-4 rounded-xl border border-red-400/30 mb-12 max-w-lg mx-auto">
-            <p className="text-red-300 font-bold text-lg mb-1">⏰ Oportunidade limitada</p>
-            <p className="text-white/80">Apenas 3 vagas restantes por segmento nesta região</p>
-          </div>
-
           {/* Garantia */}
           <div className="text-center mb-16">
             <div className="inline-flex items-center bg-green-500/20 backdrop-blur-sm px-6 py-3 rounded-full border border-green-400/30">

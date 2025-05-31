@@ -6,21 +6,20 @@ import AboutPanelsSection from '@/components/paineis-landing/AboutPanelsSection'
 import WhyItWorksSection from '@/components/paineis-landing/WhyItWorksSection';
 import HowItWorksSection from '@/components/paineis-landing/HowItWorksSection';
 import ExclusiveBenefitsSection from '@/components/paineis-landing/ExclusiveBenefitsSection';
-import ObjectionsSection from '@/components/paineis-landing/ObjectionsSection';
+import FAQSection from '@/components/paineis-landing/FAQSection';
 import VideoGallerySection from '@/components/paineis-landing/VideoGallerySection';
-import ExclusivitySection from '@/components/paineis-landing/ExclusivitySection';
+import QRCodeTrackingSection from '@/components/paineis-landing/QRCodeTrackingSection';
 import TrustSection from '@/components/paineis-landing/TrustSection';
-import Protocol573040Section from '@/components/paineis-landing/Protocol573040Section';
 import FinalCTASection from '@/components/paineis-landing/FinalCTASection';
 import ParticleBackground from '@/components/paineis-landing/ParticleBackground';
 import FloatingLogo from '@/components/paineis-landing/FloatingLogo';
 import ScrollProgressBar from '@/components/paineis-landing/ScrollProgressBar';
 
 const PaineisPublicitarios = () => {
-  console.log('PaineisPublicitarios: Iniciando página reconstruída');
+  console.log('PaineisPublicitarios: Iniciando página com todas as melhorias aplicadas');
 
   useEffect(() => {
-    console.log('PaineisPublicitarios: Página montada com sucesso');
+    console.log('PaineisPublicitarios: Página montada com todas as novas features');
     // Scroll suave para toda a página
     document.documentElement.style.scrollBehavior = 'smooth';
     
@@ -43,10 +42,10 @@ const PaineisPublicitarios = () => {
       
       {/* Seções principais da landing page */}
       <div className="relative z-10">
-        {/* 1. Hero - Impacto Visual Imediato */}
+        {/* 1. Hero - Vídeo maior e botão de fullscreen */}
         <HeroSection />
         
-        {/* 2. O que são os Painéis da Indexa? */}
+        {/* 2. O que são os Painéis - Cores das imagens aplicadas */}
         <AboutPanelsSection />
         
         {/* 3. Por que funciona tanto? */}
@@ -55,25 +54,22 @@ const PaineisPublicitarios = () => {
         {/* 4. Como Funciona */}
         <HowItWorksSection />
         
-        {/* 5. Benefícios Exclusivos */}
+        {/* 5. Benefícios Exclusivos - Protocolo removido */}
         <ExclusiveBenefitsSection />
         
-        {/* 6. Respostas às Objeções */}
-        <ObjectionsSection />
+        {/* 6. FAQ Expansível - 10 perguntas frequentes */}
+        <FAQSection />
         
         {/* 7. Galeria Vídeo Pinceladas */}
         <VideoGallerySection />
         
-        {/* 8. Exclusividade por segmento */}
-        <ExclusivitySection />
+        {/* 8. Rastreabilidade QR Code - Nova seção */}
+        <QRCodeTrackingSection />
         
         {/* 9. Quem confia já está dentro */}
         <TrustSection />
         
-        {/* 10. Protocolo 573040 */}
-        <Protocol573040Section />
-        
-        {/* 11. CTA Final */}
+        {/* 10. CTA Final - Sem urgência artificial */}
         <FinalCTASection />
       </div>
     </Layout>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Target, Wifi, Film, Headphones, Shield } from 'lucide-react';
+import { MapPin, Target, Wifi, Film, Headphones } from 'lucide-react';
 
 const ExclusiveBenefitsSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -42,13 +42,6 @@ const ExclusiveBenefitsSection = () => {
       description: 'Atendimento personalizado durante toda a campanha',
       details: 'Equipe especializada disponível para otimizar resultados e esclarecer dúvidas',
       color: 'from-orange-500 to-yellow-500'
-    },
-    {
-      icon: Shield,
-      title: 'Protocolo 573040',
-      description: 'Sistema de segurança avançado para garantir funcionamento contínuo',
-      details: 'Protocolo proprietário com backup automático, monitoramento 24/7 e recuperação instantânea',
-      color: 'from-indexa-purple to-indexa-mint'
     }
   ];
 
@@ -89,7 +82,7 @@ const ExclusiveBenefitsSection = () => {
             Vantagens que só a Indexa oferece para maximizar o impacto da sua marca
           </p>
 
-          {/* Grid de Benefícios em Colmeia */}
+          {/* Grid de Benefícios - REMOVIDO PROTOCOLO */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => {
               const IconComponent = benefit.icon;
@@ -157,15 +150,15 @@ const ExclusiveBenefitsSection = () => {
             })}
           </div>
 
-          {/* Destaque do Protocolo 573040 */}
+          {/* Destaque de Segurança - SEM PROTOCOLO */}
           <div className="mt-16 text-center">
             <div className="relative inline-block">
               <div className="bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 backdrop-blur-sm p-6 rounded-2xl border border-indexa-mint/30">
                 <h3 className="text-2xl font-bold text-white mb-2">
-                  <span className="text-indexa-mint">Protocolo 573040:</span> Segurança Garantida
+                  <span className="text-indexa-mint">Sistema de Segurança Avançado</span>
                 </h3>
                 <p className="text-white/80 text-lg">
-                  Sistema proprietário que mantém seus anúncios sempre ativos, mesmo com falhas de rede ou energia
+                  Monitoramento 24h, backup automático e garantia de funcionamento contínuo
                 </p>
               </div>
             </div>
