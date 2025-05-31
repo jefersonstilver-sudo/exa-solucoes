@@ -372,6 +372,45 @@ export type Database = {
         }
         Relationships: []
       }
+      leads_produtora: {
+        Row: {
+          agendar_cafe: boolean
+          contato_realizado: boolean
+          created_at: string
+          email: string
+          empresa: string | null
+          id: string
+          nome: string
+          objetivo: string | null
+          tipo_video: string | null
+          whatsapp: string
+        }
+        Insert: {
+          agendar_cafe?: boolean
+          contato_realizado?: boolean
+          created_at?: string
+          email: string
+          empresa?: string | null
+          id?: string
+          nome: string
+          objetivo?: string | null
+          tipo_video?: string | null
+          whatsapp: string
+        }
+        Update: {
+          agendar_cafe?: boolean
+          contato_realizado?: boolean
+          created_at?: string
+          email?: string
+          empresa?: string | null
+          id?: string
+          nome?: string
+          objetivo?: string | null
+          tipo_video?: string | null
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       log_eventos_sistema: {
         Row: {
           created_at: string | null
@@ -672,6 +711,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      portfolio_produtora: {
+        Row: {
+          categoria: string
+          created_at: string
+          descricao: string | null
+          id: string
+          titulo: string
+          url_video: string
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          titulo: string
+          url_video: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          titulo?: string
+          url_video?: string
+        }
+        Relationships: []
       }
       qr_codes: {
         Row: {

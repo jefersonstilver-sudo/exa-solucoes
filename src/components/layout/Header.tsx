@@ -23,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({
 
   const navItems = [
     { to: '/', label: 'Home' },
-    { to: '/planos', label: 'Planos' },
+    { to: '/produtora', label: 'Produtora' },
     { to: '/paineis-publicitarios', label: 'Painéis Digitais' },
     { to: '/sou-sindico', label: 'Sou Síndico' }
   ];
@@ -58,10 +58,10 @@ const Header: React.FC<HeaderProps> = ({
               Home
             </Link>
             <Link 
-              to="/planos" 
+              to="/produtora" 
               className="text-white hover:text-[#00FFAB] transition-colors font-medium"
             >
-              Planos
+              Produtora
             </Link>
             <Link 
               to="/paineis-publicitarios" 

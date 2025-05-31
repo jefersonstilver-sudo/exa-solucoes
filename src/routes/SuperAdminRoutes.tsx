@@ -13,6 +13,7 @@ import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
+import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 
 const SuperAdminRoutes = () => {
   return (
@@ -30,6 +31,7 @@ const SuperAdminRoutes = () => {
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="videos" element={<VideoManagement />} />
+      <Route path="leads-produtora" element={<LeadsProdutora />} />
     </Routes>
   );
 };

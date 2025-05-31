@@ -3,17 +3,19 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Building, 
+  Building2, 
   Monitor, 
-  ShoppingBag, 
+  ShoppingCart, 
+  CheckSquare, 
   Users, 
-  Settings, 
-  Image,
+  UserCheck, 
+  Ticket, 
+  ImageIcon,
   Bell,
-  CreditCard,
-  CheckSquare,
-  UserCheck,
-  Home
+  Settings,
+  Play,
+  Camera,
+  Coffee
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,119 +23,156 @@ interface SidebarProps {
   isCollapsed: boolean;
 }
 
-const ModernAdminSidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
+const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
   const location = useLocation();
-  
-  const menuItems = [
+
+  const navigationItems = [
     {
       title: 'Dashboard',
+      href: '/admin',
       icon: LayoutDashboard,
-      href: '/super_admin',
-      exact: true
+      description: 'Visão geral do sistema'
     },
     {
       title: 'Prédios',
-      icon: Building,
-      href: '/super_admin/predios'
+      href: '/admin/predios',
+      icon: Building2,
+      description: 'Gestão de edifícios'
     },
     {
       title: 'Painéis',
+      href: '/admin/paineis',
       icon: Monitor,
-      href: '/super_admin/paineis'
+      description: 'Dispositivos de exibição'
     },
     {
       title: 'Pedidos',
-      icon: ShoppingBag,
-      href: '/super_admin/pedidos'
+      href: '/admin/pedidos',
+      icon: ShoppingCart,
+      description: 'Vendas e transações'
     },
     {
       title: 'Aprovações',
+      href: '/admin/aprovacoes',
       icon: CheckSquare,
-      href: '/super_admin/aprovacoes'
+      description: 'Aprovação de vídeos'
     },
     {
       title: 'Usuários',
+      href: '/admin/usuarios',
       icon: Users,
-      href: '/super_admin/usuarios'
+      description: 'Gestão de usuários'
     },
     {
       title: 'Síndicos Interessados',
+      href: '/admin/sindicos-interessados',
       icon: UserCheck,
-      href: '/super_admin/sindicos-interessados'
+      description: 'Leads de síndicos'
+    },
+    {
+      title: 'Leads Produtora',
+      href: '/admin/leads-produtora',
+      icon: Coffee,
+      description: 'Leads da produtora'
     },
     {
       title: 'Cupons',
-      icon: CreditCard,
-      href: '/super_admin/cupons'
+      href: '/admin/cupons',
+      icon: Ticket,
+      description: 'Códigos de desconto'
     },
     {
-      title: 'Homepage',
-      icon: Home,
-      href: '/super_admin/homepage-config'
+      title: 'Config Homepage',
+      href: '/admin/homepage-config',
+      icon: ImageIcon,
+      description: 'Imagens da página inicial'
     },
     {
       title: 'Notificações',
+      href: '/admin/notificacoes',
       icon: Bell,
-      href: '/super_admin/notificacoes'
+      description: 'Central de notificações'
+    },
+    {
+      title: 'Vídeos',
+      href: '/admin/videos',
+      icon: Play,
+      description: 'Gestão de vídeos'
     },
     {
       title: 'Configurações',
+      href: '/admin/configuracoes',
       icon: Settings,
-      href: '/super_admin/configuracoes'
+      description: 'Configurações do sistema'
     }
   ];
 
-  const isActiveRoute = (href: string, exact?: boolean) => {
-    if (exact) {
-      return location.pathname === href;
-    }
-    return location.pathname.startsWith(href);
-  };
-
   return (
-    <div className="h-full bg-gradient-to-b from-purple-900 to-purple-800 text-white">
+    <div className="h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-purple-700">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-            <Building className="w-5 h-5 text-purple-900" />
+          <div className="w-8 h-8 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">I</span>
           </div>
           {!isCollapsed && (
             <div>
-              <h1 className="font-bold text-lg">INDEXA</h1>
-              <p className="text-xs text-purple-200">Admin Panel</p>
+              <h2 className="text-lg font-semibold text-gray-900">INDEXA</h2>
+              <p className="text-xs text-gray-500">Admin Panel</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="mt-6 px-3">
-        <div className="space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = isActiveRoute(item.href, item.exact);
-            
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  'flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
-                  'hover:bg-purple-700/50 hover:text-white',
-                  isActive 
-                    ? 'bg-white text-purple-900 shadow-lg' 
-                    : 'text-purple-100',
-                  isCollapsed ? 'justify-center' : 'justify-start'
-                )}
-              >
-                <Icon className={cn('w-5 h-5', !isCollapsed && 'mr-3')} />
-                {!isCollapsed && <span>{item.title}</span>}
-              </Link>
-            );
-          })}
-        </div>
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        {navigationItems.map((item) => {
+          const isActive = location.pathname === item.href;
+          const Icon = item.icon;
+          
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group",
+                isActive
+                  ? "bg-indexa-purple text-white shadow-lg"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-indexa-purple"
+              )}
+              title={isCollapsed ? item.title : undefined}
+            >
+              <Icon className={cn(
+                "flex-shrink-0 transition-colors duration-200",
+                isActive ? "text-white" : "text-gray-400 group-hover:text-indexa-purple",
+                isCollapsed ? "h-5 w-5" : "h-4 w-4 mr-3"
+              )} />
+              
+              {!isCollapsed && (
+                <div className="flex flex-col">
+                  <span>{item.title}</span>
+                  <span className={cn(
+                    "text-xs transition-colors duration-200",
+                    isActive ? "text-white/80" : "text-gray-500"
+                  )}>
+                    {item.description}
+                  </span>
+                </div>
+              )}
+            </Link>
+          );
+        })}
       </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-200">
+        <div className={cn(
+          "text-xs text-gray-500",
+          isCollapsed ? "text-center" : ""
+        )}>
+          {isCollapsed ? "v2.0" : "INDEXA Admin v2.0"}
+        </div>
+      </div>
     </div>
   );
 };
