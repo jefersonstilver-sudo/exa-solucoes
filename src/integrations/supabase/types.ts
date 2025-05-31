@@ -705,6 +705,57 @@ export type Database = {
           },
         ]
       }
+      sindicos_interessados: {
+        Row: {
+          celular: string
+          created_at: string
+          data_contato: string | null
+          email: string
+          endereco: string
+          id: string
+          nome_completo: string
+          nome_predio: string
+          numero_andares: number
+          numero_unidades: number
+          observacoes: string | null
+          responsavel_contato: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          celular: string
+          created_at?: string
+          data_contato?: string | null
+          email: string
+          endereco: string
+          id?: string
+          nome_completo: string
+          nome_predio: string
+          numero_andares: number
+          numero_unidades: number
+          observacoes?: string | null
+          responsavel_contato?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          celular?: string
+          created_at?: string
+          data_contato?: string | null
+          email?: string
+          endereco?: string
+          id?: string
+          nome_completo?: string
+          nome_predio?: string
+          numero_andares?: number
+          numero_unidades?: number
+          observacoes?: string | null
+          responsavel_contato?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tentativas_compra: {
         Row: {
           created_at: string

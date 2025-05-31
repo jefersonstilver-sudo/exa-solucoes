@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Building2, Shield, Zap, Clock, Users, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin, Calendar, Layers, Wifi, Monitor, Lock, Smartphone, MessageSquare, TrendingUp, Award, Sparkles } from 'lucide-react';
+import { Building2, Shield, Zap, Clock, Users, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin, Calendar, MessageSquare, TrendingUp, Award, Sparkles, Bot, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
+import { supabase } from '@/integrations/supabase/client';
 
 const SouSindico = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     nomeCompleto: '',
     nomePredio: '',
@@ -41,12 +43,10 @@ const SouSindico = () => {
       { threshold: 0.2 }
     );
 
-    // Observe hero section
     if (heroRef.current) {
       observer.observe(heroRef.current);
     }
 
-    // Observe all other sections
     Object.values(sectionsRef.current).forEach(section => {
       if (section) observer.observe(section);
     });
@@ -54,31 +54,66 @@ const SouSindico = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Formulário enviado! Entraremos em contato em breve.');
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('sindicos_interessados')
+        .insert({
+          nome_completo: formData.nomeCompleto,
+          nome_predio: formData.nomePredio,
+          endereco: formData.endereco,
+          numero_andares: parseInt(formData.numeroAndares),
+          numero_unidades: parseInt(formData.numeroUnidades),
+          email: formData.email,
+          celular: formData.celular
+        });
+
+      if (error) {
+        console.error('Erro ao enviar formulário:', error);
+        toast.error('Erro ao enviar formulário. Tente novamente.');
+      } else {
+        toast.success('Formulário enviado com sucesso! Nossa equipe entrará em contato em breve.');
+        setFormData({
+          nomeCompleto: '',
+          nomePredio: '',
+          endereco: '',
+          numeroAndares: '',
+          numeroUnidades: '',
+          email: '',
+          celular: ''
+        });
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Erro inesperado. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const benefits = [
-    { icon: MessageSquare, title: 'Comunicação em tempo real', desc: 'Avisos instantâneos para todos os moradores' },
-    { icon: TrendingUp, title: 'Redução de papel e burocracia', desc: 'Gestão 100% digital e sustentável' },
-    { icon: Award, title: 'Modernização da imagem', desc: 'Prédio tecnológico e valorizado' },
-    { icon: Zap, title: 'Canal direto de gestão', desc: 'Agilidade total na comunicação' },
-    { icon: Users, title: 'Suporte técnico especializado', desc: '24h de monitoramento e assistência' },
-    { icon: Shield, title: 'Sistema 100% seguro', desc: 'Auditável e criptografado' },
-    { icon: CheckCircle, title: 'Zero custos', desc: 'Sem instalação ou manutenção' }
+    { icon: MessageSquare, title: 'Comunicação via WhatsApp', desc: 'Gerencie tudo direto pelo WhatsApp, sem complicação' },
+    { icon: Bot, title: 'IA Especializada', desc: 'Assistente inteligente para facilitar suas tarefas' },
+    { icon: Zap, title: 'Avisos em 20 minutos', desc: 'Publique comunicados instantaneamente' },
+    { icon: TrendingUp, title: 'Zero papel e burocracia', desc: 'Gestão 100% digital e sustentável' },
+    { icon: Award, title: 'Modernização do prédio', desc: 'Valorize seu condomínio com tecnologia' },
+    { icon: Users, title: 'Suporte 24h', desc: 'Assistência técnica sempre disponível' },
+    { icon: CheckCircle, title: 'Sem custos de instalação', desc: 'Implementação gratuita e manutenção incluída' }
   ];
 
   const howItWorksSteps = [
-    { step: '1', title: 'Instalação sem custos', desc: 'Nossa equipe instala gratuitamente', icon: Building2 },
-    { step: '2', title: 'Acesso ao painel', desc: 'App ou navegador para gestão', icon: Smartphone },
-    { step: '3', title: 'Publicação com 1 clique', desc: 'Avisos publicados instantaneamente', icon: Zap },
-    { step: '4', title: 'Moradores veem em tempo real', desc: 'Informação chega a todos no elevador', icon: Users }
+    { step: '1', title: 'Instalação gratuita', desc: 'Nossa equipe instala o painel sem custo', icon: Building2 },
+    { step: '2', title: 'WhatsApp conectado', desc: 'Receba acesso ao nosso bot especializado', icon: MessageSquare },
+    { step: '3', title: 'Publique com facilidade', desc: 'Envie textos ou imagens pelo WhatsApp', icon: Zap },
+    { step: '4', title: 'Avisos no ar em 20min', desc: 'Moradores veem as informações no elevador', icon: Users }
   ];
 
   const testimonials = [
-    { text: 'A comunicação ficou instantânea e os moradores adoraram.', author: 'Carlos Silva', building: 'Edifício Gardens' },
-    { text: 'É como ter uma central de informações dentro do elevador.', author: 'Maria Santos', building: 'Residencial Plaza' }
+    { text: 'Nunca foi tão fácil comunicar com os moradores. Pelo WhatsApp é muito simples!', author: 'Carlos Silva', building: 'Edifício Gardens' },
+    { text: 'Em 20 minutos o aviso já está no elevador. A praticidade é incrível.', author: 'Maria Santos', building: 'Residencial Plaza' }
   ];
 
   return (
@@ -97,42 +132,37 @@ const SouSindico = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20" />
           
           <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-            {/* Conteúdo Textual */}
             <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
                 <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                  Transforme a comunicação
+                  Gerencie seu condomínio
                 </span>
                 <span className="block text-white">
-                  do seu condomínio.
+                  direto pelo WhatsApp.
                 </span>
               </h1>
               
               <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
-                Chegou a nova geração de painéis digitais em elevadores.
+                Painéis digitais + IA no WhatsApp = Comunicação simples e eficiente.
               </p>
               
               <Button 
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-8 py-6 rounded-full shadow-2xl transform transition-all duration-300 hover:scale-105"
                 onClick={() => document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Quero conhecer o projeto
+                Quero modernizar meu prédio
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
 
-            {/* Vídeo Mockup Smartphone */}
             <div className={`transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
               <div className="relative max-w-xs mx-auto">
-                {/* Moldura do smartphone */}
                 <div className="relative bg-gray-800 rounded-[3rem] p-4 shadow-2xl">
                   <div className="bg-black rounded-[2.5rem] overflow-hidden">
-                    {/* Notch */}
                     <div className="h-6 bg-black relative">
                       <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-full" />
                     </div>
                     
-                    {/* Vídeo */}
                     <video
                       className="w-full h-96 object-cover"
                       autoPlay
@@ -145,7 +175,6 @@ const SouSindico = () => {
                   </div>
                 </div>
                 
-                {/* Glow effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-[3rem] blur-xl" />
               </div>
             </div>
@@ -154,34 +183,34 @@ const SouSindico = () => {
 
         {/* 2. SOBRE O PROJETO */}
         <section 
-          ref={el => { sectionsRef.current['about'] = el; }}
+          ref={(el) => { sectionsRef.current['about'] = el; }}
           data-section="about"
           className={`py-20 px-4 relative transition-all duration-1000 ${visibleSections['about'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
           <div className="max-w-6xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-8">
               <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Sobre o Projeto Indexa Painéis
+                Painéis + WhatsApp + IA
               </span>
             </h2>
             
             <div className="grid md:grid-cols-3 gap-8 mt-16">
               <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl border border-purple-500/20">
-                <Monitor className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-4">Substituição Inteligente</h3>
-                <p className="text-gray-300">Murais físicos substituídos por painéis digitais modernos e interativos.</p>
+                <Building2 className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-4">Painel Digital no Elevador</h3>
+                <p className="text-gray-300">Substitui murais físicos por tela moderna e profissional.</p>
               </div>
               
               <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl border border-blue-500/20">
-                <Layers className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-4">Conteúdo Dinâmico</h3>
-                <p className="text-gray-300">Avisos, clima, câmbio, notícias, curiosidades e informações da ponte.</p>
+                <MessageSquare className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-4">Gestão via WhatsApp</h3>
+                <p className="text-gray-300">Publique avisos, imagens e programe comunicados pelo WhatsApp.</p>
               </div>
               
               <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl border border-purple-500/20">
-                <Wifi className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-4">Sistema Remoto</h3>
-                <p className="text-gray-300">100% conectado à internet com atualizações automáticas OTA.</p>
+                <Bot className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-4">IA Especializada</h3>
+                <p className="text-gray-300">Assistente inteligente que facilita toda gestão de comunicação.</p>
               </div>
             </div>
           </div>
@@ -189,7 +218,7 @@ const SouSindico = () => {
 
         {/* 3. BENEFÍCIOS PARA O SÍNDICO */}
         <section 
-          ref={el => { sectionsRef.current['benefits'] = el; }}
+          ref={(el) => { sectionsRef.current['benefits'] = el; }}
           data-section="benefits"
           className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['benefits'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -220,7 +249,7 @@ const SouSindico = () => {
 
         {/* 4. COMO FUNCIONA */}
         <section 
-          ref={el => { sectionsRef.current['how-it-works'] = el; }}
+          ref={(el) => { sectionsRef.current['how-it-works'] = el; }}
           data-section="how-it-works"
           className={`py-20 px-4 transition-all duration-1000 ${visibleSections['how-it-works'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
@@ -258,11 +287,54 @@ const SouSindico = () => {
           </div>
         </section>
 
-        {/* 5. DEPOIMENTOS */}
+        {/* 5. WHATSAPP EM DESTAQUE */}
         <section 
-          ref={el => { sectionsRef.current['testimonials'] = el; }}
+          ref={(el) => { sectionsRef.current['whatsapp'] = el; }}
+          data-section="whatsapp"
+          className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['whatsapp'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+        >
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8">
+              <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                Tudo pelo WhatsApp
+              </span>
+            </h2>
+            
+            <div className="bg-gradient-to-br from-green-900/30 to-blue-900/30 p-12 rounded-3xl border border-green-500/30">
+              <MessageSquare className="w-24 h-24 text-green-400 mx-auto mb-8" />
+              
+              <h3 className="text-2xl font-bold mb-6">Simples como uma conversa</h3>
+              
+              <div className="grid md:grid-cols-2 gap-8 text-left">
+                <div>
+                  <h4 className="font-bold text-green-400 mb-4">📝 Publicar Avisos:</h4>
+                  <p className="text-gray-300 mb-4">"Publique: Reunião de condomínio dia 15/02 às 19h no salão de festas"</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-bold text-green-400 mb-4">📸 Enviar Imagens:</h4>
+                  <p className="text-gray-300 mb-4">Envie fotos de avisos, comunicados ou informações importantes</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-bold text-green-400 mb-4">⏰ Programar:</h4>
+                  <p className="text-gray-300 mb-4">"Programe: Amanhã 8h - Limpeza da caixa d'água, água será interrompida"</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-bold text-green-400 mb-4">🤖 IA Ajuda:</h4>
+                  <p className="text-gray-300 mb-4">Assistente inteligente formata e otimiza seus comunicados automaticamente</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 6. DEPOIMENTOS */}
+        <section 
+          ref={(el) => { sectionsRef.current['testimonials'] = el; }}
           data-section="testimonials"
-          className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['testimonials'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+          className={`py-20 px-4 transition-all duration-1000 ${visibleSections['testimonials'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-16">
@@ -291,203 +363,11 @@ const SouSindico = () => {
           </div>
         </section>
 
-        {/* 6. GALERIA VISUAL */}
+        {/* 7. VANTAGENS EXCLUSIVAS */}
         <section 
-          ref={el => { sectionsRef.current['gallery'] = el; }}
-          data-section="gallery"
-          className={`py-20 px-4 transition-all duration-1000 ${visibleSections['gallery'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
-        >
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Galeria Visual
-              </span>
-            </h2>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="group relative overflow-hidden rounded-2xl">
-                <img 
-                  src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=800&q=80" 
-                  alt="Painel digital no elevador"
-                  className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <p className="text-white font-semibold">Painel Digital Premium</p>
-                </div>
-              </div>
-              
-              <div className="group relative overflow-hidden rounded-2xl">
-                <img 
-                  src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&w=800&q=80" 
-                  alt="Prédio moderno"
-                  className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <p className="text-white font-semibold">Prédios Selecionados</p>
-                </div>
-              </div>
-              
-              <div className="group relative overflow-hidden rounded-2xl">
-                <img 
-                  src="https://images.unsplash.com/photo-1466442929976-97f336a657be?auto=format&fit=crop&w=800&q=80" 
-                  alt="Tecnologia avançada"
-                  className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <p className="text-white font-semibold">Tecnologia de Ponta</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 7. PROTOCOLO DE SEGURANÇA */}
-        <section 
-          ref={el => { sectionsRef.current['security'] = el; }}
-          data-section="security"
-          className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['security'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
-        >
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-8">
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Protocolo de Segurança 573040
-              </span>
-            </h2>
-            
-            <div className="grid md:grid-cols-3 gap-8 mt-16">
-              <div className="bg-gray-900/50 backdrop-blur-sm p-6 rounded-2xl border border-red-500/20">
-                <Lock className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-4">Reboot Automático</h3>
-                <p className="text-gray-300">Sistema reinicia automaticamente após queda de energia.</p>
-              </div>
-              
-              <div className="bg-gray-900/50 backdrop-blur-sm p-6 rounded-2xl border border-yellow-500/20">
-                <Shield className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-4">Sistema Offline</h3>
-                <p className="text-gray-300">Contingência automática mantém funcionamento local.</p>
-              </div>
-              
-              <div className="bg-gray-900/50 backdrop-blur-sm p-6 rounded-2xl border border-green-500/20">
-                <Sparkles className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-4">Chave Criptográfica</h3>
-                <p className="text-gray-300">Desbloqueio externo com criptografia avançada.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 8. ANTES VS DEPOIS */}
-        <section 
-          ref={el => { sectionsRef.current['before-after'] = el; }}
-          data-section="before-after"
-          className={`py-20 px-4 transition-all duration-1000 ${visibleSections['before-after'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
-        >
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Antes vs Depois
-              </span>
-            </h2>
-            
-            <div className="grid md:grid-cols-2 gap-12">
-              {/* ANTES */}
-              <div className="text-center">
-                <h3 className="text-2xl font-bold mb-8 text-red-400">❌ ANTES</h3>
-                <div className="bg-red-900/20 p-8 rounded-2xl border border-red-500/20">
-                  <ul className="space-y-4 text-left">
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-red-400 rounded-full mr-3"></span>
-                      Papel rasgado e desatualizado
-                    </li>
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-red-400 rounded-full mr-3"></span>
-                      Dificuldade de comunicação
-                    </li>
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-red-400 rounded-full mr-3"></span>
-                      Desperdício e poluição
-                    </li>
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-red-400 rounded-full mr-3"></span>
-                      Gestão manual e lenta
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              
-              {/* DEPOIS */}
-              <div className="text-center">
-                <h3 className="text-2xl font-bold mb-8 text-green-400">✅ DEPOIS</h3>
-                <div className="bg-green-900/20 p-8 rounded-2xl border border-green-500/20">
-                  <ul className="space-y-4 text-left">
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                      Organização total e digital
-                    </li>
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                      Impacto visual profissional
-                    </li>
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                      Sustentabilidade 100%
-                    </li>
-                    <li className="flex items-center text-gray-300">
-                      <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                      Gestão digital instantânea
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 9. TECNOLOGIA DE PONTA */}
-        <section 
-          ref={el => { sectionsRef.current['technology'] = el; }}
-          data-section="technology"
-          className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['technology'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
-        >
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-16">
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Tecnologia de Ponta
-              </span>
-            </h2>
-            
-            <div className="bg-gray-900/50 backdrop-blur-sm p-12 rounded-3xl border border-purple-500/20">
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="text-center">
-                  <Monitor className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Tela Robusta</h3>
-                  <p className="text-gray-300">Hardware industrial de alta durabilidade</p>
-                </div>
-                
-                <div className="text-center">
-                  <Smartphone className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Software Proprietário</h3>
-                  <p className="text-gray-300">Desenvolvido exclusivamente pela Indexa</p>
-                </div>
-                
-                <div className="text-center">
-                  <Wifi className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Nuvem Integrada</h3>
-                  <p className="text-gray-300">Atualizações automáticas em tempo real</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 10. VANTAGENS EXCLUSIVAS */}
-        <section 
-          ref={el => { sectionsRef.current['exclusive'] = el; }}
+          ref={(el) => { sectionsRef.current['exclusive'] = el; }}
           data-section="exclusive"
-          className={`py-20 px-4 transition-all duration-1000 ${visibleSections['exclusive'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+          className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${visibleSections['exclusive'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-16">
@@ -499,8 +379,8 @@ const SouSindico = () => {
             <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 p-12 rounded-3xl border border-purple-500/30">
               <div className="grid md:grid-cols-3 gap-8">
                 <div className="text-center">
-                  <Award className="w-16 h-16 text-gold-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2 text-yellow-400">Predial Exclusivo</h3>
+                  <Award className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold mb-2 text-yellow-400">Prédio Exclusivo</h3>
                   <p className="text-gray-300">Apenas 1 painel por prédio na região</p>
                 </div>
                 
@@ -520,12 +400,12 @@ const SouSindico = () => {
           </div>
         </section>
 
-        {/* 11. FORMULÁRIO DE INTERESSE */}
+        {/* 8. FORMULÁRIO DE INTERESSE */}
         <section 
           id="formulario" 
-          ref={el => { sectionsRef.current['form'] = el; }}
+          ref={(el) => { sectionsRef.current['form'] = el; }}
           data-section="form"
-          className={`py-20 px-4 bg-gray-800/50 transition-all duration-1000 ${visibleSections['form'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+          className={`py-20 px-4 transition-all duration-1000 ${visibleSections['form'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-12">
@@ -604,37 +484,37 @@ const SouSindico = () => {
                 
                 <Button 
                   type="submit"
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg py-6 rounded-xl shadow-2xl transform transition-all duration-300 hover:scale-105"
+                  disabled={isSubmitting}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg py-6 rounded-xl shadow-2xl transform transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:scale-100"
                 >
-                  Enviar Solicitação
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  {isSubmitting ? 'Enviando...' : 'Enviar Solicitação'}
+                  {!isSubmitting && <ArrowRight className="ml-2 w-5 h-5" />}
                 </Button>
               </div>
               
               <p className="text-center text-sm text-gray-400 mt-6">
-                *Observação: A Indexa avalia e entra em contato apenas com os prédios selecionados
+                *A Indexa avalia e entra em contato apenas com os prédios selecionados via WhatsApp
               </p>
             </form>
           </div>
         </section>
 
-        {/* 12. CTA FINAL */}
+        {/* 9. CTA FINAL */}
         <section 
-          ref={el => { sectionsRef.current['final-cta'] = el; }}
+          ref={(el) => { sectionsRef.current['final-cta'] = el; }}
           data-section="final-cta"
           className={`py-20 px-4 transition-all duration-1000 ${visibleSections['final-cta'] ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-8">
               <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Transforme a comunicação do seu prédio.
+                Modernize seu prédio com tecnologia + WhatsApp.
               </span>
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              Preencha o formulário acima e entraremos em contato.
+              Preencha o formulário e nossa equipe entrará em contato via WhatsApp.
             </p>
             
-            {/* Footer com logo */}
             <div className="mt-16 pt-8 border-t border-gray-700">
               <div className="flex items-center justify-center space-x-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
