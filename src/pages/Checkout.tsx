@@ -21,7 +21,8 @@ const Checkout = () => {
   const [searchParams] = useSearchParams();
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   const { isMobile } = useMobileBreakpoints();
-  const [selectedMethod, setSelectedMethod] = useState<string>('');
+  // CRITICAL CHANGE: Default to PIX since credit card is temporarily disabled
+  const [selectedMethod, setSelectedMethod] = useState<string>('pix');
   const [totalAmount, setTotalAmount] = useState(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -57,6 +58,14 @@ const Checkout = () => {
       navigate('/login?redirect=/checkout');
     }
   }, [isLoggedIn, isSessionLoading, navigate]);
+
+  // Ensure PIX is always selected (since credit card is disabled)
+  useEffect(() => {
+    if (selectedMethod !== 'pix') {
+      console.log("[Checkout] Forcing PIX selection (credit card disabled)");
+      setSelectedMethod('pix');
+    }
+  }, [selectedMethod]);
 
   const handleBack = () => {
     navigate('/checkout/resumo');
@@ -153,12 +162,9 @@ const Checkout = () => {
     sendPixWebhook();
   };
 
+  // Remove credit card payment handler since it's disabled
   const handleCreditCardPayment = () => {
-    if (!acceptTerms) {
-      toast.error("Você precisa aceitar os termos para continuar");
-      return;
-    }
-    toast.info("Redirecionando para pagamento com cartão...");
+    toast.info("Pagamento com cartão estará disponível em breve!");
   };
 
   const handleClosePixDialog = () => {
@@ -240,11 +246,11 @@ const Checkout = () => {
                         Como você deseja pagar?
                       </h2>
                       <p className="text-gray-600 mb-8">
-                        Escolha a forma de pagamento que preferir
+                        Atualmente disponível apenas pagamento via PIX
                       </p>
 
                       <div className="space-y-4 mb-8">
-                        {/* PIX Payment Method */}
+                        {/* PIX Payment Method - Only option available */}
                         <PaymentMethodCard
                           id="pix"
                           title="PIX"
@@ -253,22 +259,20 @@ const Checkout = () => {
                           finalAmount={pixAmount}
                           discount={5}
                           icon="pix"
-                          selected={selectedMethod === 'pix'}
+                          selected={true} // Always selected since it's the only option
                           onSelect={setSelectedMethod}
                           highlight={true}
                         />
-
-                        {/* Credit Card Payment Method */}
-                        <PaymentMethodCard
-                          id="credit_card"
-                          title="Cartão de Crédito"
-                          description="Visa, Mastercard, Elo, American Express"
-                          originalAmount={totalAmount}
-                          finalAmount={totalAmount}
-                          icon="credit_card"
-                          selected={selectedMethod === 'credit_card'}
-                          onSelect={setSelectedMethod}
-                        />
+                        
+                        {/* Credit card coming soon notice */}
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <CreditCard className="h-5 w-5 text-blue-600" />
+                            <span className="text-blue-700 font-medium">
+                              💳 Cartão de crédito estará disponível em breve!
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -306,47 +310,34 @@ const Checkout = () => {
                         </Label>
                       </div>
 
-                      {/* Payment button */}
-                      {selectedMethod && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`space-y-3 ${isMobile ? 'mt-4' : 'mt-6'}`}
+                      {/* Payment button - Only PIX available */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`space-y-3 ${isMobile ? 'mt-4' : 'mt-6'}`}
+                      >
+                        <Button
+                          onClick={handlePixPayment}
+                          disabled={!acceptTerms || isProcessingPayment}
+                          className={`w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${isMobile ? 'h-12 text-base' : 'py-4 text-lg'}`}
+                          size="lg"
                         >
-                          {selectedMethod === 'pix' ? (
-                            <Button
-                              onClick={handlePixPayment}
-                              disabled={!acceptTerms || isProcessingPayment}
-                              className={`w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${isMobile ? 'h-12 text-base' : 'py-4 text-lg'}`}
-                              size="lg"
-                            >
-                              {isProcessingPayment ? (
-                                <>
-                                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                  Processando...
-                                </>
-                              ) : (
-                                `Pagar com PIX - R$ ${pixAmount.toFixed(2)}`
-                              )}
-                            </Button>
+                          {isProcessingPayment ? (
+                            <>
+                              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                              Processando...
+                            </>
                           ) : (
-                            <Button
-                              onClick={handleCreditCardPayment}
-                              disabled={!acceptTerms}
-                              className={`w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${isMobile ? 'h-12 text-base' : 'py-4 text-lg'}`}
-                              size="lg"
-                            >
-                              Pagar com Cartão - R$ {totalAmount.toFixed(2)}
-                            </Button>
+                            `Pagar com PIX - R$ ${pixAmount.toFixed(2)}`
                           )}
-                          
-                          {!acceptTerms && selectedMethod && (
-                            <p className={`text-amber-600 text-center ${isMobile ? 'text-sm' : 'text-sm'}`}>
-                              ⚠️ Aceite os termos para continuar
-                            </p>
-                          )}
-                        </motion.div>
-                      )}
+                        </Button>
+                        
+                        {!acceptTerms && (
+                          <p className={`text-amber-600 text-center ${isMobile ? 'text-sm' : 'text-sm'}`}>
+                            ⚠️ Aceite os termos para continuar
+                          </p>
+                        )}
+                      </motion.div>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -375,18 +366,16 @@ const Checkout = () => {
                           <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
                         </div>
                         
-                        {selectedMethod === 'pix' && (
-                          <div className="flex justify-between text-sm text-green-600">
-                            <span>Desconto PIX (5%)</span>
-                            <span>-R$ {(totalAmount * 0.05).toFixed(2)}</span>
-                          </div>
-                        )}
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Desconto PIX (5%)</span>
+                          <span>-R$ {(totalAmount * 0.05).toFixed(2)}</span>
+                        </div>
                         
                         <div className="border-t pt-3">
                           <div className="flex justify-between text-lg font-bold">
                             <span>Total</span>
                             <span className="text-[#3C1361]">
-                              R$ {selectedMethod === 'pix' ? pixAmount.toFixed(2) : totalAmount.toFixed(2)}
+                              R$ {pixAmount.toFixed(2)}
                             </span>
                           </div>
                         </div>
@@ -404,7 +393,7 @@ const Checkout = () => {
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
                           <Shield className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">SSL 256 bits</span>
+                          <span className="text-sm text-gray-600">PIX Banco Central</span>
                         </div>
                         
                         <div className="flex items-center space-x-3">
@@ -414,7 +403,7 @@ const Checkout = () => {
                         
                         <div className="flex items-center space-x-3">
                           <Award className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">Certificado PCI DSS</span>
+                          <span className="text-sm text-gray-600">Aprovação instantânea</span>
                         </div>
                       </div>
                     </CardContent>

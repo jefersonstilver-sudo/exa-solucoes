@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Smartphone, Zap, ChevronRight } from 'lucide-react';
+import { Smartphone, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,7 @@ interface MobilePaymentMethodsProps {
 const MobilePaymentMethods = ({ selectedMethod, onSelectMethod, totalAmount }: MobilePaymentMethodsProps) => {
   const pixAmount = totalAmount * 0.95; // 5% discount
 
+  // Only PIX method available now
   const methods: PaymentMethod[] = [
     {
       id: 'pix',
@@ -37,14 +38,6 @@ const MobilePaymentMethods = ({ selectedMethod, onSelectMethod, totalAmount }: M
       finalAmount: pixAmount,
       discount: 5,
       highlight: true
-    },
-    {
-      id: 'credit_card',
-      title: 'Cartão de Crédito',
-      description: 'Visa, Mastercard, Elo',
-      icon: CreditCard,
-      finalAmount: totalAmount,
-      installments: 'até 12x sem juros'
     }
   ];
 
@@ -79,52 +72,38 @@ const MobilePaymentMethods = ({ selectedMethod, onSelectMethod, totalAmount }: M
                     {/* Icon */}
                     <div className={cn(
                       "w-12 h-12 rounded-full flex items-center justify-center",
-                      method.id === 'pix' && "bg-green-100",
-                      method.id === 'credit_card' && "bg-blue-100"
+                      "bg-green-100"
                     )}>
-                      <Icon className={cn(
-                        "h-6 w-6",
-                        method.id === 'pix' && "text-green-600",
-                        method.id === 'credit_card' && "text-blue-600"
-                      )} />
+                      <Icon className="h-6 w-6 text-green-600" />
                     </div>
                     
                     {/* Method Info */}
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
                         <h4 className="font-semibold text-gray-900">{method.title}</h4>
-                        {method.highlight && (
-                          <Badge className="bg-green-100 text-green-800 text-xs">
-                            <Zap className="h-3 w-3 mr-1" />
-                            Recomendado
-                          </Badge>
-                        )}
+                        <Badge className="bg-green-100 text-green-800 text-xs">
+                          <Zap className="h-3 w-3 mr-1" />
+                          Recomendado
+                        </Badge>
                       </div>
                       
                       <p className="text-sm text-gray-600 mt-1">{method.description}</p>
-                      
-                      {method.installments && (
-                        <p className="text-xs text-gray-500 mt-1">{method.installments}</p>
-                      )}
+                      <p className="text-xs text-green-600 mt-1">Aprovação instantânea</p>
                     </div>
                   </div>
                   
                   {/* Price and Selection */}
                   <div className="flex items-center space-x-3">
                     <div className="text-right">
-                      {method.discount && method.originalAmount && (
-                        <div className="text-xs text-gray-500 line-through">
-                          R$ {method.originalAmount.toFixed(2)}
-                        </div>
-                      )}
+                      <div className="text-xs text-gray-500 line-through">
+                        R$ {method.originalAmount?.toFixed(2)}
+                      </div>
                       <div className="font-bold text-gray-900">
                         R$ {method.finalAmount.toFixed(2)}
                       </div>
-                      {method.discount && (
-                        <div className="text-xs text-green-600 font-medium">
-                          -{method.discount}% OFF
-                        </div>
-                      )}
+                      <div className="text-xs text-green-600 font-medium">
+                        -{method.discount}% OFF
+                      </div>
                     </div>
                     
                     {/* Selection Indicator */}
@@ -150,13 +129,23 @@ const MobilePaymentMethods = ({ selectedMethod, onSelectMethod, totalAmount }: M
         );
       })}
       
+      {/* Temporary notice about credit card */}
+      <div className="bg-blue-50 rounded-lg p-3 mt-4">
+        <div className="flex items-center space-x-2 text-sm text-blue-700">
+          <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-2 h-2 bg-white rounded-full"></div>
+          </div>
+          <span>💳 Cartão de crédito disponível em breve!</span>
+        </div>
+      </div>
+      
       {/* Security Note */}
-      <div className="bg-gray-50 rounded-lg p-3 mt-4">
+      <div className="bg-gray-50 rounded-lg p-3">
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
             <div className="w-2 h-2 bg-white rounded-full"></div>
           </div>
-          <span>Pagamento 100% seguro via MercadoPago</span>
+          <span>Pagamento 100% seguro via PIX</span>
         </div>
       </div>
     </div>

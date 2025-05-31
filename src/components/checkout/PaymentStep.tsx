@@ -31,14 +31,21 @@ const PaymentStep = ({
   paymentMethod: externalPaymentMethod, 
   setPaymentMethod: externalSetPaymentMethod 
 }: PaymentStepProps) => {
-  const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>("credit_card");
+  // CRITICAL CHANGE: Default to PIX since credit card is temporarily disabled
+  const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>("pix");
   
   // Use either external or internal state for payment method
   const selectedMethod = externalPaymentMethod || internalPaymentMethod;
   
-  // CRITICAL FIX: Ensure payment method is properly set
+  // CRITICAL FIX: Ensure payment method is properly set to PIX only
   const setSelectedMethod = (method: string) => {
     console.log("[PaymentStep] Setting payment method to:", method);
+    
+    // Only allow PIX for now
+    if (method !== 'pix') {
+      console.log("[PaymentStep] Credit card temporarily disabled, forcing PIX");
+      method = 'pix';
+    }
     
     if (externalSetPaymentMethod) {
       externalSetPaymentMethod(method);
@@ -55,13 +62,13 @@ const PaymentStep = ({
     );
   };
   
-  // Ensure a payment method is always selected
+  // Ensure PIX is always selected when component mounts
   useEffect(() => {
-    if (!selectedMethod) {
-      console.log("[PaymentStep] No payment method selected, defaulting to credit_card");
-      setSelectedMethod("credit_card");
+    if (selectedMethod !== 'pix') {
+      console.log("[PaymentStep] Forcing PIX as default payment method");
+      setSelectedMethod("pix");
     }
-  }, [selectedMethod]);
+  }, []);
 
   return (
     <motion.div 
@@ -75,7 +82,7 @@ const PaymentStep = ({
           Como você deseja pagar sua campanha?
         </h2>
         <p className="text-sm text-muted-foreground">
-          Escolha como deseja pagar sua campanha
+          Atualmente disponível apenas pagamento via PIX
         </p>
       </div>
 
@@ -85,14 +92,14 @@ const PaymentStep = ({
         totalPrice={totalPrice} 
       />
 
-      {/* Redirect Information - Clean and minimal */}
+      {/* PIX Information - Updated messaging */}
       <PaymentInfoBox 
         variant="info" 
         icon={<ExternalLink className="h-4 w-4" />} 
-        title="Você será redirecionado ao ambiente seguro do Mercado Pago para finalizar sua compra."
+        title="Pagamento instantâneo via PIX com 5% de desconto."
       >
         <p className="text-sm text-blue-600 font-medium">
-          Após concluir o pagamento, você retornará automaticamente para continuar o processo.
+          Após gerar o QR Code, você pode pagar diretamente pelo seu banco ou carteira digital.
         </p>
       </PaymentInfoBox>
 

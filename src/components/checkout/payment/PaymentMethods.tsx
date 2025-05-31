@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import PaymentMethodOption from "./PaymentMethodOption";
-import { CreditCard } from "lucide-react";
 import { formatCurrency } from '@/utils/priceUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
@@ -13,19 +12,17 @@ interface PaymentMethodsProps {
 }
 
 const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: PaymentMethodsProps) => {
-  const [installments, setInstallments] = useState<number>(1);
   const [pixTotal, setPixTotal] = useState<number>(totalPrice);
-  const [cardTotal, setCardTotal] = useState<number>(totalPrice);
   
-  // CRITICAL FIX: Ensure payment method is properly initialized
+  // CRITICAL FIX: Ensure payment method defaults to PIX since credit card is disabled
   useEffect(() => {
     // Log the current payment method for debugging
     console.log("[PaymentMethods] Current selected method:", selectedMethod);
     
-    // If no method is selected, default to credit_card
-    if (!selectedMethod) {
-      console.log("[PaymentMethods] No method selected, defaulting to credit_card");
-      setSelectedMethod('credit_card');
+    // Force PIX as the only available method
+    if (selectedMethod !== 'pix') {
+      console.log("[PaymentMethods] Setting method to PIX (only available option)");
+      setSelectedMethod('pix');
     }
   }, [selectedMethod, setSelectedMethod]);
   
@@ -34,15 +31,15 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     // Apply 5% discount for PIX payments
     const pixDiscount = 0.05; // 5%
     setPixTotal(totalPrice * (1 - pixDiscount));
-    
-    // For credit card, keep the original price
-    setCardTotal(totalPrice);
   }, [totalPrice]);
 
   // Function to handle method selection with webhook call
   const handleMethodSelect = async (method: string) => {
-    // Check if method is changing to PIX
-    const isChangingToPix = method === 'pix' && selectedMethod !== 'pix';
+    // Only allow PIX selection
+    if (method !== 'pix') {
+      console.log("[PaymentMethods] Credit card temporarily disabled");
+      return;
+    }
     
     // Set the selected method
     setSelectedMethod(method);
@@ -58,7 +55,7 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     );
   };
   
-  // Payment method options
+  // Payment method options - Only PIX available
   const paymentMethods = [
     { 
       id: "pix", 
@@ -74,64 +71,8 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
       installments: false,
       totalValue: pixTotal,
       highlight: true
-    },
-    { 
-      id: "credit_card", 
-      name: "Cartão de crédito", 
-      description: "Visa, Mastercard, AMEX, ELO", 
-      icon: <CreditCard className="h-5 w-5" />,
-      installments: true,
-      totalValue: cardTotal
     }
   ];
-
-  // Calculate installment amount
-  const getInstallmentValue = (installment: number) => {
-    // Apply interest rates based on number of installments
-    const interestRates: Record<number, number> = {
-      1: 0,    // No interest for 1 installment
-      2: 0,    // No interest for 2 installments
-      3: 0,    // No interest for 3 installments
-      4: 0.01, // 1% for 4 installments
-      5: 0.01, // 1% for 5 installments
-      6: 0.015,// 1.5% for 6 installments
-      7: 0.02, // 2% for 7+ installments
-      8: 0.02,
-      9: 0.025,
-      10: 0.025,
-      11: 0.03,
-      12: 0.03
-    };
-
-    const rate = interestRates[installment] || 0.03;
-    
-    // Para a primeira parcela, retornamos o valor total (método de pagamento específico)
-    if (installment === 1) {
-      return cardTotal;
-    }
-    
-    // Apply compound interest formula: P(1 + r)^n
-    const finalAmount = cardTotal * Math.pow(1 + rate, installment);
-    
-    // Display total on installment selector
-    const installmentValue = finalAmount / installment;
-    
-    // Return the installment value with compound interest
-    return installmentValue;
-  };
-
-  // Calcular valor total a ser pago com cartão de crédito (com juros)
-  const getTotalWithInterest = (installment: number) => {
-    if (installment === 1) return cardTotal;
-    
-    const interestRates: Record<number, number> = {
-      1: 0, 2: 0, 3: 0, 4: 0.01, 5: 0.01, 6: 0.015,
-      7: 0.02, 8: 0.02, 9: 0.025, 10: 0.025, 11: 0.03, 12: 0.03
-    };
-    
-    const rate = interestRates[installment] || 0.03;
-    return cardTotal * Math.pow(1 + rate, installment);
-  };
 
   return (
     <div className="space-y-4">
@@ -140,17 +81,22 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
           key={method.id}
           method={{
             ...method,
-            description: method.id === "pix" 
-              ? `Pagamento instantâneo com 5% de desconto — Total: ${formatCurrency(pixTotal)}` 
-              : `Visa, Mastercard, AMEX, ELO — Total: ${formatCurrency(getTotalWithInterest(installments))}`
+            description: `Pagamento instantâneo com 5% de desconto — Total: ${formatCurrency(pixTotal)}`
           }}
           selectedMethod={selectedMethod}
           onSelect={handleMethodSelect}
-          installments={installments}
-          setInstallments={method.installments ? setInstallments : undefined}
-          getInstallmentValue={method.installments ? getInstallmentValue : undefined}
+          installments={undefined}
+          setInstallments={undefined}
+          getInstallmentValue={undefined}
         />
       ))}
+      
+      {/* Temporary notice about credit card */}
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-700">
+          💳 Pagamento com cartão de crédito estará disponível em breve!
+        </p>
+      </div>
     </div>
   );
 };
