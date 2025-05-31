@@ -1,4 +1,5 @@
 
+
 /* Garantir que apenas um footer seja exibido */
 footer[data-footer-debug="single-footer"] {
   display: block !important;
@@ -38,3 +39,4 @@ footer:not(#unique-indexa-footer) {
 section .absolute:has(footer) {
   display: none !important;
 }
+

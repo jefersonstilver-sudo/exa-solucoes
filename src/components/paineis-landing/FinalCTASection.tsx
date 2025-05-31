@@ -34,6 +34,8 @@ const FinalCTASection = () => {
     navigate('/paineis-digitais/loja');
   };
 
+  console.log('🎯 FinalCTASection: Renderizando sem footer próprio');
+
   return (
     <section 
       ref={sectionRef}
@@ -135,3 +137,4 @@ const FinalCTASection = () => {
 };
 
 export default FinalCTASection;
+

@@ -12,7 +12,7 @@ import FAQSection from '@/components/paineis-landing/FAQSection';
 import FinalCTASection from '@/components/paineis-landing/FinalCTASection';
 
 const PaineisPublicitarios = () => {
-  console.log('PaineisPublicitarios: Página refatorada para melhor responsividade');
+  console.log('🎯 PaineisPublicitarios: Renderizando página SEM footer adicional');
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = 'smooth';
@@ -38,9 +38,11 @@ const PaineisPublicitarios = () => {
         <QRCodeTrackingSection />
         <FAQSection />
         <FinalCTASection />
+        {/* REMOVIDO: Qualquer footer adicional que possa existir aqui */}
       </div>
     </Layout>
   );
 };
 
 export default PaineisPublicitarios;
+
