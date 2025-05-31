@@ -18,11 +18,10 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Upload, 
-  Move,
   Eye,
   EyeOff,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -31,6 +30,7 @@ interface ClientLogo {
   id: string;
   name: string;
   logo_url: string;
+  link?: string;
   is_active: boolean;
   order_position: number;
   created_at: string;
@@ -45,6 +45,7 @@ const ClientLogosPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     logo_url: '',
+    link: '',
     is_active: true,
     order_position: 0
   });
@@ -73,11 +74,26 @@ const ClientLogosPage = () => {
 
   const handleSave = async () => {
     try {
+      // Validar URL se fornecida
+      if (formData.link && formData.link.trim()) {
+        try {
+          new URL(formData.link);
+        } catch {
+          toast.error('Por favor, insira uma URL válida para o link');
+          return;
+        }
+      }
+
+      const dataToSave = {
+        ...formData,
+        link: formData.link.trim() || null
+      };
+
       if (editingLogo) {
         // Atualizar logo existente
         const { error } = await supabase
           .from('client_logos')
-          .update(formData)
+          .update(dataToSave)
           .eq('id', editingLogo.id);
 
         if (error) throw error;
@@ -86,7 +102,7 @@ const ClientLogosPage = () => {
         // Criar novo logo
         const { error } = await supabase
           .from('client_logos')
-          .insert(formData);
+          .insert(dataToSave);
 
         if (error) throw error;
         toast.success('Logo adicionado com sucesso!');
@@ -94,7 +110,7 @@ const ClientLogosPage = () => {
 
       setDialogOpen(false);
       setEditingLogo(null);
-      setFormData({ name: '', logo_url: '', is_active: true, order_position: 0 });
+      setFormData({ name: '', logo_url: '', link: '', is_active: true, order_position: 0 });
       fetchLogos();
     } catch (error) {
       console.error('Erro ao salvar:', error);
@@ -142,6 +158,7 @@ const ClientLogosPage = () => {
       setFormData({
         name: logo.name,
         logo_url: logo.logo_url,
+        link: logo.link || '',
         is_active: logo.is_active,
         order_position: logo.order_position
       });
@@ -151,6 +168,7 @@ const ClientLogosPage = () => {
       setFormData({ 
         name: '', 
         logo_url: '', 
+        link: '',
         is_active: true, 
         order_position: nextPosition 
       });
@@ -177,7 +195,7 @@ const ClientLogosPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Logos dos Clientes</h1>
           <p className="text-gray-600 mt-2">
-            Gerencie os logos que aparecem no carrossel da página de marketing
+            Gerencie os logos que aparecem no carrossel da página de marketing e no rodapé
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -210,6 +228,15 @@ const ClientLogosPage = () => {
                   value={formData.logo_url}
                   onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
                   placeholder="https://exemplo.com/logo.png"
+                />
+              </div>
+              <div>
+                <Label htmlFor="link">Link (Site/Instagram/etc.) - Opcional</Label>
+                <Input
+                  id="link"
+                  value={formData.link}
+                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                  placeholder="https://exemplo.com ou https://instagram.com/perfil"
                 />
               </div>
               <div>
@@ -280,11 +307,11 @@ const ClientLogosPage = () => {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Logos Inativos</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Com Links</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-500">
-              {logos.filter(l => !l.is_active).length}
+            <div className="text-2xl font-bold text-blue-600">
+              {logos.filter(l => l.link).length}
             </div>
           </CardContent>
         </Card>
@@ -335,6 +362,20 @@ const ClientLogosPage = () => {
                     </div>
                     
                     <h4 className="font-medium text-gray-900 mb-2">{logo.name}</h4>
+                    
+                    {logo.link && (
+                      <div className="mb-3">
+                        <a 
+                          href={logo.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Visitar Link
+                        </a>
+                      </div>
+                    )}
                     
                     <div className="flex items-center space-x-2">
                       <Button

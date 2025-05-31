@@ -257,6 +257,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          link: string | null
           logo_url: string
           name: string
           order_position: number
@@ -266,6 +267,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          link?: string | null
           logo_url: string
           name: string
           order_position?: number
@@ -275,6 +277,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          link?: string | null
           logo_url?: string
           name?: string
           order_position?: number

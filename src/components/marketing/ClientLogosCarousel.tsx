@@ -6,6 +6,7 @@ interface ClientLogo {
   id: string;
   name: string;
   logo_url: string;
+  link?: string;
   is_active: boolean;
   order_position: number;
 }
@@ -46,6 +47,12 @@ const ClientLogosCarousel: React.FC = () => {
   // Duplicar logos para criar efeito infinito
   const duplicatedLogos = [...logos, ...logos, ...logos];
 
+  const handleLogoClick = (link?: string) => {
+    if (link) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <section className="py-16 bg-gradient-to-b from-black to-[#3C1361]/20 overflow-hidden">
       <div className="max-w-6xl mx-auto px-4">
@@ -61,12 +68,18 @@ const ClientLogosCarousel: React.FC = () => {
             {duplicatedLogos.map((logo, index) => (
               <div
                 key={`${logo.id}-${index}`}
-                className="flex-shrink-0 flex items-center justify-center h-16 md:h-20 w-32 md:w-40"
+                className={`flex-shrink-0 flex items-center justify-center h-16 md:h-20 w-32 md:w-40 ${
+                  logo.link ? 'cursor-pointer' : ''
+                }`}
+                onClick={() => handleLogoClick(logo.link)}
+                title={logo.link ? `Visitar ${logo.name}` : logo.name}
               >
                 <img
                   src={logo.logo_url}
                   alt={logo.name}
-                  className="max-h-full max-w-full object-contain filter brightness-0 invert opacity-70 hover:opacity-100 transition-opacity duration-300"
+                  className={`max-h-full max-w-full object-contain filter brightness-0 invert opacity-70 transition-opacity duration-300 ${
+                    logo.link ? 'hover:opacity-100 hover:scale-105' : 'hover:opacity-100'
+                  }`}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
