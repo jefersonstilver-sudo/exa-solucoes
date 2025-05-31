@@ -18,20 +18,29 @@ import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 const SuperAdminRoutes = () => {
   return (
     <Routes>
+      {/* GESTÃO PRINCIPAL */}
       <Route index element={<Dashboard />} />
-      <Route path="predios" element={<BuildingsPage />} />
-      <Route path="paineis" element={<PanelsPage />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
-      <Route path="usuarios" element={<UsersPage />} />
+      
+      {/* ATIVOS */}
+      <Route path="predios" element={<BuildingsPage />} />
+      <Route path="paineis" element={<PanelsPage />} />
+      
+      {/* LEADS & CLIENTES */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
+      <Route path="leads-produtora" element={<LeadsProdutora />} />
+      
+      {/* SISTEMA */}
+      <Route path="usuarios" element={<UsersPage />} />
       <Route path="cupons" element={<CouponsPage />} />
       <Route path="homepage-config" element={<HomepageImagesPage />} />
-      <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
+      
+      {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />
-      <Route path="leads-produtora" element={<LeadsProdutora />} />
+      <Route path="notificacoes" element={<NotificationsPage />} />
     </Routes>
   );
 };

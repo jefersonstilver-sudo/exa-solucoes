@@ -32,19 +32,22 @@ export const usePortfolioData = () => {
   const fetchPortfolioItems = async () => {
     try {
       setLoading(true);
+      console.log('📊 Portfolio: Buscando dados...');
+      
       const { data, error } = await supabase
         .from('portfolio_produtora')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar portfólio:', error);
+        console.error('❌ Erro ao buscar portfólio:', error);
         toast.error('Erro ao carregar portfólio');
       } else {
+        console.log('✅ Portfólio carregado:', data?.length || 0, 'itens');
         setPortfolioItems(data || []);
       }
     } catch (error) {
-      console.error('Erro ao buscar portfólio:', error);
+      console.error('❌ Erro ao buscar portfólio:', error);
       toast.error('Erro ao carregar portfólio');
     } finally {
       setLoading(false);
@@ -65,19 +68,22 @@ export const useLeadsProdutoraData = () => {
   const fetchLeads = async () => {
     try {
       setLoading(true);
+      console.log('📊 Leads Produtora: Buscando dados...');
+      
       const { data, error } = await supabase
         .from('leads_produtora')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar leads:', error);
-        toast.error('Erro ao carregar leads');
+        console.error('❌ Erro ao buscar leads:', error);
+        toast.error('Erro ao carregar leads: ' + error.message);
       } else {
+        console.log('✅ Leads carregados:', data?.length || 0);
         setLeads(data || []);
       }
     } catch (error) {
-      console.error('Erro ao buscar leads:', error);
+      console.error('❌ Erro ao buscar leads:', error);
       toast.error('Erro ao carregar leads');
     } finally {
       setLoading(false);
@@ -86,21 +92,24 @@ export const useLeadsProdutoraData = () => {
 
   const markAsContacted = async (leadId: string) => {
     try {
+      console.log('🔄 Marcando lead como contatado:', leadId);
+      
       const { error } = await supabase
         .from('leads_produtora')
         .update({ contato_realizado: true })
         .eq('id', leadId);
 
       if (error) {
-        console.error('Erro ao marcar contato:', error);
-        toast.error('Erro ao marcar como contatado');
+        console.error('❌ Erro ao marcar contato:', error);
+        toast.error('Erro ao marcar como contatado: ' + error.message);
+        throw error;
       } else {
         toast.success('Lead marcado como contatado!');
         fetchLeads(); // Recarregar dados
       }
     } catch (error) {
-      console.error('Erro ao marcar contato:', error);
-      toast.error('Erro ao marcar como contatado');
+      console.error('❌ Erro ao marcar contato:', error);
+      throw error;
     }
   };
 
@@ -108,15 +117,17 @@ export const useLeadsProdutoraData = () => {
     fetchLeads();
 
     // Configurar realtime para novos leads
+    console.log('📡 Leads Produtora: Configurando realtime...');
     const channel = supabase
-      .channel('leads-produtora')
+      .channel('leads-produtora-realtime')
       .on('postgres_changes', 
         { 
           event: '*', 
           schema: 'public', 
           table: 'leads_produtora' 
         }, 
-        () => {
+        (payload) => {
+          console.log('📡 Leads Produtora: Dados atualizados em tempo real', payload);
           fetchLeads();
         }
       )

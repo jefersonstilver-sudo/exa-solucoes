@@ -10,6 +10,7 @@ import SindicosStatsCards from '@/components/admin/sindicos-interessados/Sindico
 import SindicosFilters from '@/components/admin/sindicos-interessados/SindicosFilters';
 import SindicosTable from '@/components/admin/sindicos-interessados/SindicosTable';
 import SindicoDetailsDialog from '@/components/admin/sindicos-interessados/SindicoDetailsDialog';
+import { Loader2, Database, AlertCircle } from 'lucide-react';
 
 const SindicosInteressados = () => {
   const [sindicos, setSindicos] = useState<SindicoInteressado[]>([]);
@@ -18,26 +19,54 @@ const SindicosInteressados = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedSindico, setSelectedSindico] = useState<SindicoInteressado | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSindicos();
+    
+    // Setup realtime subscription
+    const channel = supabase
+      .channel('sindicos-realtime')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'sindicos_interessados' 
+        }, 
+        () => {
+          console.log('📡 Sindicos: Dados atualizados em tempo real');
+          fetchSindicos();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchSindicos = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      console.log('📊 Sindicos: Buscando dados...');
+      
       const { data, error } = await supabase
         .from('sindicos_interessados')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar síndicos:', error);
+        console.error('❌ Erro ao buscar síndicos:', error);
+        setError('Erro ao carregar síndicos interessados: ' + error.message);
         toast.error('Erro ao carregar síndicos interessados');
       } else {
+        console.log('✅ Síndicos carregados:', data?.length || 0);
         setSindicos(data || []);
       }
     } catch (error) {
-      console.error('Erro:', error);
+      console.error('❌ Erro:', error);
+      setError('Erro inesperado ao carregar dados');
       toast.error('Erro inesperado ao carregar dados');
     } finally {
       setLoading(false);
@@ -46,6 +75,8 @@ const SindicosInteressados = () => {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
+      console.log('🔄 Atualizando status do síndico:', id, 'para:', newStatus);
+      
       const { error } = await supabase
         .from('sindicos_interessados')
         .update({ 
@@ -55,14 +86,14 @@ const SindicosInteressados = () => {
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao atualizar status:', error);
-        toast.error('Erro ao atualizar status');
+        console.error('❌ Erro ao atualizar status:', error);
+        toast.error('Erro ao atualizar status: ' + error.message);
       } else {
         toast.success('Status atualizado com sucesso');
         fetchSindicos();
       }
     } catch (error) {
-      console.error('Erro:', error);
+      console.error('❌ Erro:', error);
       toast.error('Erro inesperado');
     }
   };
@@ -100,6 +131,8 @@ const SindicosInteressados = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `sindicos_interessados_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
+    
+    toast.success('CSV exportado com sucesso!');
   };
 
   const filteredSindicos = sindicos.filter(sindico => {
@@ -131,8 +164,30 @@ const SindicosInteressados = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600">Carregando síndicos interessados...</p>
+          <Loader2 className="animate-spin h-12 w-12 text-indexa-purple mx-auto mb-4" />
+          <p className="text-gray-600">Carregando síndicos interessados...</p>
+          <div className="flex items-center justify-center space-x-2 mt-2">
+            <Database className="h-4 w-4 text-indexa-purple" />
+            <span className="text-sm text-indexa-purple">Conectando ao Supabase...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md p-6 bg-red-50 rounded-lg border border-red-200">
+          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Erro de Conexão</h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchSindicos}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            Tentar Novamente
+          </button>
         </div>
       </div>
     );
@@ -148,11 +203,27 @@ const SindicosInteressados = () => {
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
       />
-      <SindicosTable
-        sindicos={filteredSindicos}
-        onUpdateStatus={updateStatus}
-        onViewDetails={handleViewDetails}
-      />
+      
+      {filteredSindicos.length === 0 && !loading ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {sindicos.length === 0 ? 'Nenhum síndico cadastrado' : 'Nenhum resultado encontrado'}
+          </h3>
+          <p className="text-gray-500">
+            {sindicos.length === 0 
+              ? 'Os síndicos interessados aparecerão aqui quando forem cadastrados no formulário.'
+              : 'Tente ajustar os filtros de busca.'}
+          </p>
+        </div>
+      ) : (
+        <SindicosTable
+          sindicos={filteredSindicos}
+          onUpdateStatus={updateStatus}
+          onViewDetails={handleViewDetails}
+        />
+      )}
+      
       <SindicoDetailsDialog
         sindico={selectedSindico}
         isOpen={dialogOpen}

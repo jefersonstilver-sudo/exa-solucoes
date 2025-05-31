@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLayout';
+import SuperAdminLayout from '@/components/admin/layout/SuperAdminLayout';
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,13 +25,11 @@ const SuperAdminPage = () => {
       currentPath: location.pathname
     });
 
-    // CRÍTICO: Aguardar que o loading termine ANTES de verificar
     if (isLoading) {
       console.log('⏳ AGUARDANDO: Auth ainda está carregando...');
       return;
     }
 
-    // Se já verificamos, não verificar novamente
     if (hasChecked) {
       console.log('✅ JÁ VERIFICADO: Evitando re-verificação');
       return;
@@ -39,7 +37,6 @@ const SuperAdminPage = () => {
 
     console.log('🔍 INICIANDO VERIFICAÇÃO: Auth carregado, fazendo verificação de acesso');
 
-    // Verificação de login
     if (!isLoggedIn) {
       console.log('❌ NÃO LOGADO: Redirecionando para login');
       toast.error('Você precisa estar logado para acessar esta área.');
@@ -48,7 +45,6 @@ const SuperAdminPage = () => {
       return;
     }
 
-    // CORRIGIDO: Usar a propriedade isSuperAdmin do hook
     console.log('🔍 VERIFICAÇÃO SUPER ADMIN:', {
       email: userProfile?.email,
       role: userProfile?.role,
@@ -68,7 +64,6 @@ const SuperAdminPage = () => {
       return;
     }
 
-    // SUCESSO: Super admin verificado
     console.log('✅ ACESSO AUTORIZADO: Super admin confirmado');
     toast.success('Bem-vindo ao Painel Administrativo INDEXA!', {
       duration: 3000
@@ -78,20 +73,18 @@ const SuperAdminPage = () => {
     setHasChecked(true);
   }, [userProfile, isLoading, isLoggedIn, isSuperAdmin, navigate, hasChecked, location.pathname]);
 
-  // Timeout de segurança para evitar loading infinito
   useEffect(() => {
     const securityTimeout = setTimeout(() => {
       if (isLoading && !hasChecked) {
         console.log('⚠️ TIMEOUT DE SEGURANÇA: Forçando verificação após 3s');
         toast.warning('Verificação de acesso demorou muito. Tentando novamente...');
-        setHasChecked(false); // Força nova verificação
+        setHasChecked(false);
       }
-    }, 3000); // Reduzido para 3s
+    }, 3000);
 
     return () => clearTimeout(securityTimeout);
   }, [isLoading, hasChecked]);
 
-  // Loading state otimizado
   if (isLoading || !hasChecked) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indexa-purple to-purple-800">
@@ -116,7 +109,6 @@ const SuperAdminPage = () => {
     );
   }
 
-  // Access denied state
   if (!accessGranted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-red-100">
@@ -145,12 +137,11 @@ const SuperAdminPage = () => {
     );
   }
 
-  // Success state - render admin layout
   console.log('🎉 RENDERIZANDO: Painel administrativo autorizado');
   return (
-    <ModernSuperAdminLayout>
+    <SuperAdminLayout>
       <SuperAdminRoutes />
-    </ModernSuperAdminLayout>
+    </SuperAdminLayout>
   );
 };
 
