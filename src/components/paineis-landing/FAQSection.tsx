@@ -70,7 +70,7 @@ const FAQSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center py-20 px-4"
+      className="min-h-screen bg-gradient-to-br from-black to-gray-900 flex items-center justify-center py-20 px-4"
     >
       <div className="max-w-4xl mx-auto">
         <div className={`transform transition-all duration-1000 ${
@@ -84,13 +84,13 @@ const FAQSection = () => {
               </div>
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              <span className="bg-gradient-to-r from-indexa-mint to-gray-900 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
                 Perguntas Frequentes
               </span>
             </h2>
 
-            <p className="text-xl md:text-2xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-white/80 leading-relaxed max-w-3xl mx-auto">
               Tire suas dúvidas sobre publicidade em elevadores
             </p>
           </div>
@@ -102,7 +102,7 @@ const FAQSection = () => {
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`}
-                  className={`bg-gradient-to-r from-white/90 to-gray-50/90 backdrop-blur-sm border border-indexa-mint/20 rounded-xl overflow-hidden transform transition-all duration-500 hover:border-indexa-mint/40 shadow-lg ${
+                  className={`bg-gradient-to-r from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-indexa-mint/20 rounded-xl overflow-hidden transform transition-all duration-500 hover:border-indexa-mint/40 ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                   }`}
                   style={{ transitionDelay: `${index * 100}ms` }}
@@ -112,7 +112,7 @@ const FAQSection = () => {
                       <div className="w-8 h-8 bg-indexa-mint/20 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-indexa-mint/30 transition-colors duration-300">
                         <span className="text-indexa-mint font-bold text-sm">{index + 1}</span>
                       </div>
-                      <span className="text-gray-900 font-medium text-lg group-hover:text-indexa-mint transition-colors duration-300">
+                      <span className="text-white font-medium text-lg group-hover:text-indexa-mint transition-colors duration-300">
                         {faq.question}
                       </span>
                     </div>
@@ -120,7 +120,7 @@ const FAQSection = () => {
                   
                   <AccordionContent className="px-6 pb-6">
                     <div className="pl-12">
-                      <p className="text-gray-700 leading-relaxed text-base">
+                      <p className="text-white/90 leading-relaxed text-base">
                         {faq.answer}
                       </p>
                     </div>
@@ -132,11 +132,11 @@ const FAQSection = () => {
 
           {/* CTA motivacional */}
           <div className="text-center mt-16">
-            <div className="bg-gradient-to-r from-indexa-purple/10 to-indexa-mint/10 backdrop-blur-sm p-6 rounded-2xl border border-indexa-mint/30 max-w-2xl mx-auto shadow-lg">
-              <p className="text-xl font-bold text-gray-900 mb-2">
+            <div className="bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 backdrop-blur-sm p-6 rounded-2xl border border-indexa-mint/30 max-w-2xl mx-auto">
+              <p className="text-xl font-bold text-white mb-2">
                 <span className="text-indexa-mint">Ainda tem dúvidas?</span>
               </p>
-              <p className="text-gray-700 text-lg">
+              <p className="text-white/80 text-lg">
                 Nossa equipe está pronta para esclarecer tudo sobre sua campanha
               </p>
             </div>

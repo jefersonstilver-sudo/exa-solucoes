@@ -65,24 +65,24 @@ const ExclusiveBenefitsSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-gray-100 to-white flex items-center justify-center py-20 px-4"
+      className="min-h-screen bg-gradient-to-br from-gray-800 to-black flex items-center justify-center py-20 px-4"
     >
       <div className="max-w-7xl mx-auto">
         <div className={`transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da Seção */}
-          <h2 className="text-4xl md:text-5xl font-bold text-center text-gray-900 mb-6">
-            <span className="bg-gradient-to-r from-indexa-mint to-gray-900 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-6">
+            <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
               Benefícios Exclusivos
             </span>
           </h2>
 
-          <p className="text-xl md:text-2xl text-gray-700 mb-16 text-center max-w-4xl mx-auto leading-relaxed">
+          <p className="text-xl md:text-2xl text-white/80 mb-16 text-center max-w-4xl mx-auto leading-relaxed">
             Vantagens que só a Indexa oferece para maximizar o impacto da sua marca
           </p>
 
-          {/* Grid de Benefícios */}
+          {/* Grid de Benefícios - REMOVIDO PROTOCOLO */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => {
               const IconComponent = benefit.icon;
@@ -150,14 +150,14 @@ const ExclusiveBenefitsSection = () => {
             })}
           </div>
 
-          {/* Destaque de Segurança */}
+          {/* Destaque de Segurança - SEM PROTOCOLO */}
           <div className="mt-16 text-center">
             <div className="relative inline-block">
-              <div className="bg-gradient-to-r from-indexa-purple/10 to-indexa-mint/10 backdrop-blur-sm p-6 rounded-2xl border border-indexa-mint/30 shadow-lg">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              <div className="bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 backdrop-blur-sm p-6 rounded-2xl border border-indexa-mint/30">
+                <h3 className="text-2xl font-bold text-white mb-2">
                   <span className="text-indexa-mint">Sistema de Segurança Avançado</span>
                 </h3>
-                <p className="text-gray-700 text-lg">
+                <p className="text-white/80 text-lg">
                   Monitoramento 24h, backup automático e garantia de funcionamento contínuo
                 </p>
               </div>

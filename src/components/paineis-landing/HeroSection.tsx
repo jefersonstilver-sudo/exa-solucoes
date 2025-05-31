@@ -25,43 +25,43 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-32 md:pt-40">
-      {/* Background with subtle pattern */}
+    <section className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-black pt-24 md:pt-32">
+      {/* Background with blur */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-white/60 z-10" />
+        <div className="absolute inset-0 bg-black/60 z-10" />
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-5"
+          className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M20 20c0 11.046-8.954 20-20 20v20h40V20H20z'/%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M20 20c0 11.046-8.954 20-20 20v20h40V20H20z'/%3E%3C/g%3E%3C/svg%3E")`,
           }}
         />
       </div>
 
-      <div className="relative z-20 max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-center min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-10rem)]">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-center min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center w-full">
           
           {/* Texto Principal */}
           <div className={`order-2 lg:order-1 text-center lg:text-left transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
             {/* Título Principal */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
-              <span className="block bg-gradient-to-r from-gray-900 to-indexa-mint bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+              <span className="block bg-gradient-to-r from-white to-indexa-mint bg-clip-text text-transparent">
                 Publicidade que
               </span>
-              <span className="block text-gray-900">
+              <span className="block text-white glow-text">
                 sobe com o seu cliente.
               </span>
             </h1>
 
             {/* Subtítulo */}
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-6 sm:mb-8 leading-relaxed font-light">
+            <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-6 sm:mb-8 leading-relaxed font-light">
               Os elevadores da cidade agora são <br className="hidden sm:block" />
               <span className="text-indexa-mint font-medium">vitrines inteligentes.</span>
             </p>
 
             {/* Selo de Destaque */}
-            <div className="inline-flex items-center bg-gray-900/10 backdrop-blur-sm rounded-full px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8 border border-gray-900/20">
+            <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8 border border-white/20">
               <TrendingUp className="w-4 h-4 text-indexa-mint mr-2 sm:mr-3" />
-              <span className="text-gray-900 text-xs sm:text-sm font-medium">Exibição média: 245 vezes ao dia por painel</span>
+              <span className="text-white text-xs sm:text-sm font-medium">Exibição média: 245 vezes ao dia por painel</span>
             </div>
 
             {/* Botão CTA Principal */}
@@ -80,12 +80,12 @@ const HeroSection = () => {
           <div className={`order-1 lg:order-2 flex flex-col items-center transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
             <div className="relative group">
               {/* Moldura do Painel Digital (Totem) */}
-              <div className="relative bg-gradient-to-b from-gray-200 to-gray-300 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-300">
+              <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-700">
                 {/* Sombra externa para criar efeito de profundidade */}
-                <div className="absolute inset-0 bg-indexa-purple/20 rounded-2xl sm:rounded-3xl blur-xl sm:blur-2xl group-hover:blur-2xl sm:group-hover:blur-3xl transition-all duration-500 opacity-50" />
+                <div className="absolute inset-0 bg-indexa-purple/30 rounded-2xl sm:rounded-3xl blur-xl sm:blur-2xl group-hover:blur-2xl sm:group-hover:blur-3xl transition-all duration-500 opacity-70" />
                 
                 {/* Brilho interno */}
-                <div className="absolute inset-2 bg-gradient-to-t from-transparent via-gray-900/5 to-gray-900/10 rounded-xl sm:rounded-2xl pointer-events-none" />
+                <div className="absolute inset-2 bg-gradient-to-t from-transparent via-white/5 to-white/10 rounded-xl sm:rounded-2xl pointer-events-none" />
                 
                 {/* Vídeo Principal */}
                 <div className="relative overflow-hidden rounded-xl sm:rounded-2xl">
@@ -117,7 +117,7 @@ const HeroSection = () => {
             {/* Botão embaixo do vídeo */}
             <button
               onClick={handleVideoClick}
-              className="mt-4 sm:mt-6 bg-gray-900/70 hover:bg-gray-900/90 backdrop-blur-sm px-4 sm:px-6 py-2 sm:py-3 rounded-full text-white text-xs sm:text-sm font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
+              className="mt-4 sm:mt-6 bg-black/70 hover:bg-black/90 backdrop-blur-sm px-4 sm:px-6 py-2 sm:py-3 rounded-full text-white text-xs sm:text-sm font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
             >
               <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Assistir com som em tela cheia</span>

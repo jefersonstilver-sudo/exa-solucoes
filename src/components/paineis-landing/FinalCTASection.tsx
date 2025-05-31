@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Sparkles, CheckCircle, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +36,7 @@ const FinalCTASection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-white flex items-center justify-center py-20 px-4 relative overflow-hidden"
+      className="min-h-screen bg-black flex items-center justify-center py-20 px-4 relative overflow-hidden"
     >
       {/* Efeitos de fundo animados */}
       <div className="absolute inset-0">
@@ -71,33 +70,33 @@ const FinalCTASection = () => {
           </div>
 
           {/* Título Principal Impactante */}
-          <h2 className="text-4xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight">
+          <h2 className="text-4xl md:text-7xl font-bold text-white mb-8 leading-tight">
             Está na hora da sua marca
-            <span className="block bg-gradient-to-r from-indexa-mint to-indexa-purple bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
               ocupar o elevador certo.
             </span>
           </h2>
 
           {/* Subtítulo Motivacional */}
-          <p className="text-2xl md:text-3xl text-gray-700 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
+          <p className="text-2xl md:text-3xl text-white/90 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
             Transforme elevadores em vitrines digitais e alcance seu público no 
             <span className="text-indexa-mint font-bold"> momento perfeito.</span>
           </p>
 
           {/* Estatística de Impacto */}
-          <div className="bg-gradient-to-r from-indexa-purple/10 to-indexa-mint/10 backdrop-blur-sm p-6 rounded-2xl border border-indexa-mint/30 mb-12 max-w-2xl mx-auto shadow-lg">
+          <div className="bg-gradient-to-r from-indexa-purple/30 to-indexa-mint/30 backdrop-blur-sm p-6 rounded-2xl border border-indexa-mint/30 mb-12 max-w-2xl mx-auto">
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <div className="text-3xl font-bold text-indexa-mint mb-1">245</div>
-                <div className="text-gray-600 text-sm">visualizações/dia</div>
+                <div className="text-white/80 text-sm">visualizações/dia</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-indexa-mint mb-1">22k</div>
-                <div className="text-gray-600 text-sm">pessoas atingidas</div>
+                <div className="text-white/80 text-sm">pessoas atingidas</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-indexa-mint mb-1">95%</div>
-                <div className="text-gray-600 text-sm">taxa de atenção</div>
+                <div className="text-white/80 text-sm">taxa de atenção</div>
               </div>
             </div>
           </div>
@@ -120,7 +119,7 @@ const FinalCTASection = () => {
           </div>
 
           {/* Lista de benefícios com ícones */}
-          <div className="flex flex-wrap justify-center items-center gap-8 text-gray-600 text-lg mb-12">
+          <div className="flex flex-wrap justify-center items-center gap-8 text-white/70 text-lg mb-12">
             {benefits.map((benefit, index) => (
               <div key={index} className="flex items-center space-x-3">
                 <CheckCircle className="w-6 h-6 text-indexa-mint" />
@@ -132,7 +131,7 @@ const FinalCTASection = () => {
       </div>
 
       {/* Rodapé */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-500 text-sm text-center">
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/40 text-sm text-center">
         <p>© 2025 Indexa Mídia. Todos os direitos reservados.</p>
       </div>
     </section>
