@@ -160,23 +160,4 @@ export default {
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
-	// Purge ultra-rigoroso para produção
-	purge: {
-		enabled: process.env.NODE_ENV === 'production',
-		content: [
-			'./src/**/*.{js,jsx,ts,tsx}',
-			'./public/index.html',
-		],
-		options: {
-			safelist: [
-				// Classes essenciais que nunca devem ser removidas
-				'bg-indexa-purple',
-				'bg-indexa-mint',
-				'text-indexa-purple',
-				'text-indexa-mint',
-				'animate-spin',
-				'animate-pulse',
-			],
-		},
-	},
 } satisfies Config;

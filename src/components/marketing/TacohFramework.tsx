@@ -79,7 +79,7 @@ const TacohFramework: React.FC = () => {
 
   // Callback otimizado para animação
   const getAnimationDelay = useCallback((index: number) => {
-    return shouldUseReducedAnimations ? 0 : `${index * 200}ms`;
+    return shouldUseReducedAnimations ? '0ms' : `${index * 200}ms`;
   }, [shouldUseReducedAnimations]);
 
   // Valores responsivos otimizados

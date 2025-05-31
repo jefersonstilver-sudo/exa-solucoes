@@ -9,7 +9,6 @@ interface MarketingHeroProps {
 
 const MarketingHero: React.FC<MarketingHeroProps> = ({ onScrollToForm }) => {
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Memoizar URL do vídeo para evitar recriações
   const videoUrl = useMemo(() => 
@@ -22,13 +21,9 @@ const MarketingHero: React.FC<MarketingHeroProps> = ({ onScrollToForm }) => {
     onScrollToForm();
   }, [onScrollToForm]);
 
-  // Handlers de loading otimizados
+  // Handler de loading otimizado
   const handleVideoLoad = useCallback(() => {
     setVideoLoaded(true);
-  }, []);
-
-  const handleImageLoad = useCallback(() => {
-    setImageLoaded(true);
   }, []);
 
   return (
@@ -56,7 +51,6 @@ const MarketingHero: React.FC<MarketingHeroProps> = ({ onScrollToForm }) => {
           playsInline 
           preload="metadata"
           onLoadedData={handleVideoLoad}
-          loading="lazy"
         >
           <source src={videoUrl} type="video/mp4" />
         </video>

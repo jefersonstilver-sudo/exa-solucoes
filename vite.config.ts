@@ -3,9 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import obfuscator from "vite-plugin-obfuscator";
-import { compression } from "vite-plugin-compression";
-import { createHtmlPlugin } from "vite-plugin-html";
+import compression from "vite-plugin-compression";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -24,19 +22,6 @@ export default defineConfig(({ mode }) => ({
     mode === 'production' && compression({
       algorithm: 'brotliCompress',
       ext: '.br',
-    }),
-    // Obfuscação para produção
-    mode === 'production' && obfuscator({
-      options: {
-        compact: true,
-        controlFlowFlattening: true,
-        controlFlowFlatteningThreshold: 1,
-        numbersToExpressions: true,
-        simplify: true,
-        stringArrayShuffle: true,
-        splitStrings: true,
-        stringArrayThreshold: 1,
-      },
     }),
   ].filter(Boolean),
   resolve: {
