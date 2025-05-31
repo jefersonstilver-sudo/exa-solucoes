@@ -145,7 +145,7 @@ export const getUserPermissions = (role?: UserRole): UserPermissions => {
 };
 
 // Helper para verificar se usuário tem permissão específica
-export const hasPermission = (role?: UserRole, permission: keyof UserPermissions): boolean => {
+export const hasPermission = (permission: keyof UserPermissions, role?: UserRole): boolean => {
   const permissions = getUserPermissions(role);
   return permissions[permission];
 };
