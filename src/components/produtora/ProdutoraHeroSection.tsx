@@ -24,10 +24,10 @@ const ProdutoraHeroSection = () => {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden pt-20">
-      {/* Vídeo de fundo */}
+      {/* Vídeo de fundo com blur intenso */}
       <div className="absolute inset-0 z-0">
         <video
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover blur-lg"
           autoPlay
           loop
           muted
@@ -35,7 +35,7 @@ const ProdutoraHeroSection = () => {
         >
           <source src={heroVideoSrc} type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/70" />
       </div>
 
       {/* Conteúdo principal */}

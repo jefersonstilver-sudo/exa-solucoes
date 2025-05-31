@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Coffee, Gift, MapPin, Clock } from 'lucide-react';
+import { Coffee, Gift, MapPin } from 'lucide-react';
 
 const CafeManualSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -36,13 +36,13 @@ const CafeManualSection = () => {
     },
     {
       icon: Gift,
-      title: 'Manual Gratuito',
-      description: 'Dicas práticas de IA e apps para empresas de Foz'
+      title: 'Manual Impresso',
+      description: 'Dicas práticas de IA e apps para empresários de Foz'
     },
     {
-      icon: Clock,
-      title: 'Apenas 15 Cafés/Mês',
-      description: 'Experiência exclusiva e personalizada'
+      icon: MapPin,
+      title: 'Experiência Única',
+      description: 'Converse com nossa equipe e descubra novas possibilidades'
     }
   ];
 
@@ -66,21 +66,18 @@ const CafeManualSection = () => {
           {/* Título e texto emocional */}
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
-              Vamos tomar um café no 
-              <span className="block text-indexa-mint">nosso estúdio?</span>
+              Agende um café no 
+              <span className="block text-indexa-mint">nosso estúdio!</span>
             </h2>
             
             <div className="max-w-3xl mx-auto space-y-6">
               <p className="text-xl text-white/90 leading-relaxed">
-                Você verá de perto onde <span className="text-indexa-mint font-semibold">ideias viram vídeos que vendem</span>. 
-                Além disso, preparamos um presente especial:
+                Converse com a nossa equipe e <span className="text-indexa-mint font-semibold">ganhe um manual impresso</span> para dicas de como usar IA e apps no seu negócio para empresários de Foz do Iguaçu.
               </p>
               
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                 <p className="text-lg text-white leading-relaxed">
-                  <span className="text-indexa-mint font-bold">Um manual prático</span> com dicas de IA e apps 
-                  para empresas de Foz do Iguaçu. 
-                  <span className="block mt-2 font-semibold">Gratuito. Exclusivo. Para quem agenda.</span>
+                  <span className="text-indexa-mint font-bold">Experiência completa:</span> você verá de perto onde ideias viram vídeos que vendem, além de receber estratégias exclusivas para o seu negócio.
                 </p>
               </div>
             </div>
@@ -108,14 +105,6 @@ const CafeManualSection = () => {
             })}
           </div>
 
-          {/* Gatilho de escassez */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center bg-red-500/20 border border-red-400/30 rounded-full px-6 py-3">
-              <Clock className="w-5 h-5 text-red-300 mr-2" />
-              <span className="text-red-300 font-semibold">Apenas 15 cafés por mês agendados</span>
-            </div>
-          </div>
-
           {/* CTA Button */}
           <div className="text-center">
             <button
@@ -123,8 +112,8 @@ const CafeManualSection = () => {
               className="group bg-indexa-mint text-indexa-purple-dark font-bold py-4 px-8 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1"
             >
               <span className="flex items-center space-x-2">
-                <MapPin className="w-5 h-5 group-hover:bounce transition-transform duration-300" />
-                <span>Agendar Meu Café Exclusivo</span>
+                <Gift className="w-5 h-5 group-hover:bounce transition-transform duration-300" />
+                <span>Agendar Minha Reunião + Brinde</span>
               </span>
             </button>
           </div>
