@@ -1,10 +1,8 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Phone, Mail, MapPin, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
 
 interface AccordionSectionProps {
   title: string;
@@ -55,10 +53,14 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 
 const MobileOptimizedFooter = () => {
   return (
-    <footer className="bg-indexa-purple-dark text-white">
+    <footer 
+      id="indexa-main-footer" 
+      className="bg-indexa-purple-dark text-white"
+      data-footer-id="main-footer"
+    >
       <div className="container mx-auto px-4 lg:px-6">
         
-        {/* Desktop Layout - 3 columns (removed Newsletter) */}
+        {/* Desktop Layout - 3 columns */}
         <div className="hidden md:block py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {/* Logo e Descrição */}
@@ -79,7 +81,6 @@ const MobileOptimizedFooter = () => {
                 <li><Link to="/produtora" className="text-white/80 text-base hover:text-white transition-colors">Produtora</Link></li>
                 <li><Link to="/paineis-publicitarios" className="text-white/80 text-base hover:text-white transition-colors">Painéis Digitais</Link></li>
                 <li><Link to="/sou-sindico" className="text-white/80 text-base hover:text-white transition-colors">Sou Síndico</Link></li>
-                <li><Link to="/contato" className="text-white/80 text-base hover:text-white transition-colors">Contato</Link></li>
               </ul>
             </div>
 
@@ -134,7 +135,6 @@ const MobileOptimizedFooter = () => {
                 <li><Link to="/produtora" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Produtora</Link></li>
                 <li><Link to="/paineis-publicitarios" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Painéis Digitais</Link></li>
                 <li><Link to="/sou-sindico" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Sou Síndico</Link></li>
-                <li><Link to="/contato" className="block text-white/80 hover:text-indexa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Contato</Link></li>
               </ul>
             </AccordionSection>
 

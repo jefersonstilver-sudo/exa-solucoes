@@ -68,7 +68,7 @@ const Layout: React.FC<LayoutProps> = memo(({
         {children}
       </main>
       
-      {/* Footer - apenas o MobileOptimizedFooter */}
+      {/* Footer - renderizado apenas uma vez */}
       <MobileOptimizedFooter />
       
       {/* Cart Drawer */}
