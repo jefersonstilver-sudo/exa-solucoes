@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles, CheckCircle, Crown } from 'lucide-react';
+import { ArrowRight, Sparkles, CheckCircle, Crown, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const FinalCTASection = () => {
