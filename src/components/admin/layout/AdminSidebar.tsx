@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -80,16 +80,19 @@ const AdminSidebar = () => {
   return (
     <aside className="w-64 min-h-screen bg-indexa-purple shadow-lg">
       <div className="flex flex-col h-full">
-        {/* Logo da INDEXA - mesma da página principal */}
+        {/* Logo da INDEXA - agora clicável */}
         <div className="p-6 border-b border-indexa-purple-light">
           <div className="flex items-center justify-center">
-            <div className="w-16 h-16 flex items-center justify-center">
+            <Link 
+              to="/" 
+              className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+            >
               <img 
                 src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
                 alt="INDEXA Logo" 
                 className="w-full h-full object-contain filter brightness-0 invert"
               />
-            </div>
+            </Link>
           </div>
         </div>
 
