@@ -26,17 +26,12 @@ const MarketingHero: React.FC<MarketingHeroProps> = ({ onScrollToForm }) => {
 
       <div className="relative z-10 text-center max-w-6xl mx-auto px-4">
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-          <span className="block mb-2">Estratégia, Criatividade e Resultados</span>
-          <span className="block mb-2">em Campanhas de Marketing que</span>
+          <span className="block mb-2">Marketing com estratégia, presença e impacto real.</span>
+          <span className="block mb-2">Campanhas completas para marcas que querem crescer.</span>
           <span className="block bg-gradient-to-r from-[#00FFAB] to-white bg-clip-text text-transparent">
-            Movimentam Empresas
+            Planejamento, execução e performance no mesmo lugar.
           </span>
         </h1>
-        
-        <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto">
-          Nós planejamos, executamos e geramos impacto real.<br/>
-          Sua empresa precisa de muito mais do que posts: ela precisa de posicionamento, presença e performance.
-        </p>
 
         <Button
           onClick={onScrollToForm}
