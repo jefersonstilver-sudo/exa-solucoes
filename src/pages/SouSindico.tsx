@@ -136,10 +136,10 @@ const SouSindico = () => {
         </div>
 
         {/* 1. HERO SECTION */}
-        <section ref={heroRef} className="relative min-h-screen flex items-center justify-center px-4 py-20 mt-20">
+        <section ref={heroRef} className="relative min-h-screen flex items-start justify-center px-4 py-20 mt-20">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20" />
           
-          <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+          <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-start pt-8">
             <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
                 <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -164,20 +164,26 @@ const SouSindico = () => {
             </div>
 
             <div className={`transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-              <div className="relative max-w-xs mx-auto">
-                <div className="relative bg-gray-800 rounded-[3rem] p-4 shadow-2xl">
-                  <div className="bg-black rounded-[2.5rem] overflow-hidden">
+              <div className="relative max-w-sm mx-auto">
+                <div className="relative bg-gray-800 rounded-[2.5rem] p-3 shadow-2xl">
+                  <div className="bg-black rounded-[2rem] overflow-hidden aspect-[9/16]">
                     <div className="h-6 bg-black relative">
                       <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-full" />
                     </div>
                     
                     <video
                       ref={videoRef}
-                      className="w-full h-80 object-cover object-top"
+                      className="w-full h-full object-cover"
                       autoPlay
                       muted={isMuted}
                       loop
                       playsInline
+                      style={{ 
+                        width: '100%', 
+                        height: 'calc(100% - 24px)',
+                        objectFit: 'cover',
+                        objectPosition: 'center top'
+                      }}
                     >
                       <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/2dac60f0-421e-4729-ac22-0d32dc360292.MP4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzJkYWM2MGYwLTQyMWUtNDcyOS1hYzIyLTBkMzJkYzM2MDI5Mi5NUDQiLCJpYXQiOjE3NDg2OTY5NTksImV4cCI6MTc4MDIzMjk1OX0.sJEjs0bci_thXgU-BTrLFmuF9M8H4XFRcPpigrjQCjw" type="video/mp4" />
                     </video>
@@ -206,7 +212,7 @@ const SouSindico = () => {
                   </Button>
                 </div>
                 
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-[3rem] blur-xl" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-[2.5rem] blur-xl" />
               </div>
             </div>
           </div>
