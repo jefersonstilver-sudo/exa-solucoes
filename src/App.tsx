@@ -41,37 +41,31 @@ function App() {
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              {/* Rotas com Layout */}
-              <Route path="/" element={<LayoutWrapper />}>
-                <Route index element={<Index />} />
-                <Route path="marketing" element={<Marketing />} />
-                <Route path="produtora" element={<Produtora />} />
-                <Route path="loja" element={<BuildingStore />} />
-                <Route path="paineis-publicitarios" element={<PaineisPublicitarios />} />
-                <Route path="sou-sindico" element={<SouSindico />} />
-                <Route path="panel-store" element={<PanelStore />} />
-                <Route path="painel-store" element={<PainelStore />} />
-              </Route>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
+              <Routes>
+                {/* Rotas com Layout */}
+                <Route path="/" element={<LayoutWrapper />}>
+                  <Route index element={<Index />} />
+                  <Route path="marketing" element={<Marketing />} />
+                  <Route path="produtora" element={<Produtora />} />
+                  <Route path="loja" element={<BuildingStore />} />
+                  <Route path="paineis-publicitarios" element={<PaineisPublicitarios />} />
+                  <Route path="sou-sindico" element={<SouSindico />} />
+                  <Route path="panel-store" element={<PanelStore />} />
+                  <Route path="painel-store" element={<PainelStore />} />
+                </Route>
 
-              {/* Rotas sem Layout */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/super_admin/*" element={
-                <AuthProvider>
-                  <SuperAdminPage />
-                </AuthProvider>
-              } />
-              <Route path="/admin/*" element={
-                <AuthProvider>
-                  <AdminPage />
-                </AuthProvider>
-              } />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                {/* Rotas sem Layout */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/super_admin/*" element={<SuperAdminPage />} />
+                <Route path="/admin/*" element={<AdminPage />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
