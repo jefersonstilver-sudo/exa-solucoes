@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  ChevronDown,
   MessageCircle
 } from 'lucide-react';
 import {
@@ -10,17 +9,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import ResponsiveContainer from '@/components/responsive/ResponsiveContainer';
-import ResponsiveTypography from '@/components/responsive/ResponsiveTypography';
-import ResponsiveButton from '@/components/responsive/ResponsiveButton';
-import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 
 interface ObjectionsSectionProps {
   onScrollToForm: () => void;
 }
 
 const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm }) => {
-  const { isPhone } = useAdvancedResponsive();
   
   const objections = [
     {
@@ -77,24 +71,14 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
 
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-black to-[#3C1361]/20">
-      <ResponsiveContainer maxWidth="xl">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-          <ResponsiveTypography 
-            variant="h2" 
-            color="white"
-            align="center"
-            className="mb-4 sm:mb-6"
-          >
+          <h2 className="mb-4 sm:mb-6 text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-white">
             Ainda tem <span className="text-[#00FFAB]">dúvidas?</span> Entendemos.
-          </ResponsiveTypography>
-          <ResponsiveTypography 
-            variant="body" 
-            color="gray" 
-            align="center"
-            className="mb-6 sm:mb-8"
-          >
+          </h2>
+          <p className="mb-6 sm:mb-8 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-400">
             Respondemos as principais objeções de empresários sobre campanhas de marketing estratégico
-          </ResponsiveTypography>
+          </p>
         </div>
 
         <div className="bg-white/5 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6">
@@ -106,29 +90,18 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
                 className="border border-white/10 rounded-lg bg-white/5 px-3 sm:px-4"
               >
                 <AccordionTrigger className="text-left hover:no-underline py-4 sm:py-6">
-                  <ResponsiveTypography 
-                    variant={isPhone ? "h6" : "h5"} 
-                    color="white"
-                    className="pr-4 text-left"
-                  >
+                  <h6 className="pr-4 text-left text-sm sm:text-base md:text-lg lg:text-xl font-medium leading-normal text-white">
                     "{objection.objection}"
-                  </ResponsiveTypography>
+                  </h6>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4 sm:pb-6">
                   <div className="pt-3 sm:pt-4 border-t border-[#00FFAB]/20">
-                    <ResponsiveTypography 
-                      variant="h6" 
-                      className="text-[#00FFAB] mb-2 sm:mb-3"
-                    >
+                    <h6 className="text-[#00FFAB] mb-2 sm:mb-3 text-sm font-medium leading-normal">
                       ✓ Nossa resposta:
-                    </ResponsiveTypography>
-                    <ResponsiveTypography 
-                      variant="caption" 
-                      color="gray"
-                      className="leading-relaxed"
-                    >
+                    </h6>
+                    <p className="leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-gray-400">
                       {objection.answer}
-                    </ResponsiveTypography>
+                    </p>
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -140,32 +113,21 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
         <div className="text-center mt-12 sm:mt-16">
           <div className="bg-gradient-to-r from-[#3C1361]/20 to-[#00FFAB]/20 backdrop-blur-sm p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-[#00FFAB]/30">
             <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-[#00FFAB] mx-auto mb-3 sm:mb-4" />
-            <ResponsiveTypography 
-              variant="h3" 
-              color="white" 
-              align="center"
-              className="mb-3 sm:mb-4"
-            >
+            <h3 className="mb-3 sm:mb-4 text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-tight text-center text-white">
               Sua dúvida não está aqui?
-            </ResponsiveTypography>
-            <ResponsiveTypography 
-              variant="body" 
-              color="gray" 
-              align="center"
-              className="mb-4 sm:mb-6"
-            >
+            </h3>
+            <p className="mb-4 sm:mb-6 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-400">
               Agende uma conversa e esclarecemos tudo pessoalmente
-            </ResponsiveTypography>
-            <ResponsiveButton
+            </p>
+            <button
               onClick={onScrollToForm}
-              className="bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white hover:scale-105"
-              fullWidthOnMobile={isPhone}
+              className="bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white hover:scale-105 h-14 px-6 text-base rounded-full font-medium transition-all duration-200 w-full sm:w-auto"
             >
               Conversar com Especialista
-            </ResponsiveButton>
+            </button>
           </div>
         </div>
-      </ResponsiveContainer>
+      </div>
     </section>
   );
 };
