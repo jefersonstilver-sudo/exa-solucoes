@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   BarChart3, 
@@ -7,135 +7,107 @@ import {
   TrendingUp, 
   Heart, 
   Shield, 
-  Zap,
-  Puzzle
+  Zap 
 } from 'lucide-react';
 
 const TacohFramework: React.FC = () => {
-  const [animatedPieces, setAnimatedPieces] = useState<number[]>([]);
-
-  const strategyElements = [
+  const tacohFramework = [
     {
       title: "Técnico",
-      description: "Dados, métricas e estudos de caso que demonstram resultados reais",
-      icon: <BarChart3 className="h-6 w-6 text-[#00FFAB]" />,
-      piece: 1
+      description: "Provas, dados, métricas, estudos de caso que demonstram resultados reais e impacto mensurável.",
+      application: "Dados que geram confiança",
+      icon: <BarChart3 className="h-8 w-8 text-[#00FFAB]" />,
+      bgColor: "bg-gradient-to-br from-blue-500 to-blue-700"
     },
     {
       title: "Autoridade",
-      description: "Reconhecimentos e posicionamento como referência no mercado",
-      icon: <Trophy className="h-6 w-6 text-[#00FFAB]" />,
-      piece: 2
+      description: "Reconhecimentos, prêmios, selos, depoimentos que posicionam sua marca como referência no mercado.",
+      application: "Credibilidade que convence",
+      icon: <Trophy className="h-8 w-8 text-[#00FFAB]" />,
+      bgColor: "bg-gradient-to-br from-purple-500 to-purple-700"
     },
     {
       title: "Crescimento",
-      description: "Cases reais de evolução e resultados comprovados",
-      icon: <TrendingUp className="h-6 w-6 text-[#00FFAB]" />,
-      piece: 3
+      description: "Cases reais de crescimento impulsionado pela campanha, histórias de evolução e resultados.",
+      application: "Evolução que inspira",
+      icon: <TrendingUp className="h-8 w-8 text-[#00FFAB]" />,
+      bgColor: "bg-gradient-to-br from-green-500 to-green-700"
     },
     {
       title: "Conexão",
-      description: "Narrativas com emoção que criam vínculos verdadeiros",
-      icon: <Heart className="h-6 w-6 text-[#00FFAB]" />,
-      piece: 4
+      description: "Narrativas com emoção e empatia que criam vínculos verdadeiros entre marca e público.",
+      application: "Emoção que conecta",
+      icon: <Heart className="h-8 w-8 text-[#00FFAB]" />,
+      bgColor: "bg-gradient-to-br from-red-500 to-red-700"
     },
     {
       title: "Objeção",
-      description: "Antecipação de dúvidas e eliminação de barreiras",
-      icon: <Shield className="h-6 w-6 text-[#00FFAB]" />,
-      piece: 5
+      description: "Antecipação e anulação de dúvidas, reforço de ROI e eliminação de barreiras de decisão.",
+      application: "Clareza que converte",
+      icon: <Shield className="h-8 w-8 text-[#00FFAB]" />,
+      bgColor: "bg-gradient-to-br from-orange-500 to-orange-700"
     },
     {
-      title: "Relevância",
-      description: "Elementos modernos que mantêm sua marca sempre atual",
-      icon: <Zap className="h-6 w-6 text-[#00FFAB]" />,
-      piece: 6
+      title: "Hype",
+      description: "Elementos modernos, tendências e virais estratégicos que mantêm sua marca sempre relevante.",
+      application: "Relevância que engaja",
+      icon: <Zap className="h-8 w-8 text-[#00FFAB]" />,
+      bgColor: "bg-gradient-to-br from-indigo-500 to-indigo-700"
     }
   ];
-
-  useEffect(() => {
-    const animationInterval = setInterval(() => {
-      setAnimatedPieces(prev => {
-        if (prev.length >= strategyElements.length) {
-          return [];
-        }
-        return [...prev, prev.length + 1];
-      });
-    }, 800);
-
-    return () => clearInterval(animationInterval);
-  }, []);
 
   return (
     <section className="py-20 bg-black">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-6">
-            <Puzzle className="h-12 w-12 text-[#00FFAB] mr-4 animate-pulse" />
-            <h2 className="text-4xl md:text-5xl font-bold">
-              Estratégia como <span className="text-[#00FFAB]">Quebra-Cabeça</span>
-            </h2>
-          </div>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            O FRAMEWORK EXCLUSIVO INDEXA: <span className="text-[#00FFAB]">TACOH™</span>
+          </h2>
           <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-            Cada campanha é construída considerando todos os elementos estratégicos essenciais. 
-            Como um quebra-cabeça, cada peça tem seu lugar e propósito para formar o resultado completo.
+            Cada campanha é construída com base no nosso método proprietário TACOH, que garante que sua empresa comunique com clareza, emoção e resultado.
           </p>
         </div>
 
-        {/* Animação Central do Quebra-Cabeça */}
-        <div className="flex justify-center mb-12">
-          <div className="relative">
-            <div className="grid grid-cols-3 grid-rows-2 gap-2 w-48 h-32">
-              {strategyElements.map((element, index) => (
-                <div
-                  key={index}
-                  className={`
-                    bg-gradient-to-br from-[#3C1361] to-[#00FFAB] 
-                    rounded-lg border-2 border-[#00FFAB]/50
-                    flex items-center justify-center
-                    transition-all duration-500 transform
-                    ${animatedPieces.includes(element.piece) 
-                      ? 'opacity-100 scale-100 rotate-0' 
-                      : 'opacity-30 scale-75 rotate-12'
-                    }
-                  `}
-                  style={{
-                    animationDelay: `${index * 200}ms`
-                  }}
-                >
-                  {element.icon}
-                </div>
-              ))}
+        {/* Tabela TACOH */}
+        <div className="overflow-x-auto mb-12">
+          <div className="min-w-full bg-white/5 rounded-2xl border border-white/10">
+            {/* Cabeçalho da tabela */}
+            <div className="grid grid-cols-3 gap-4 p-6 border-b border-white/10 bg-[#3C1361]/20">
+              <div className="text-[#00FFAB] font-bold text-lg">Elemento</div>
+              <div className="text-[#00FFAB] font-bold text-lg">O que fazemos</div>
+              <div className="text-[#00FFAB] font-bold text-lg">Por que importa</div>
             </div>
+            
+            {/* Linhas da tabela */}
+            {tacohFramework.map((item, index) => (
+              <div key={index} className="grid grid-cols-3 gap-4 p-6 border-b border-white/5 hover:bg-white/5 transition-colors">
+                <div className="flex items-center">
+                  {item.icon}
+                  <span className="ml-3 font-bold text-white">{item.title}</span>
+                </div>
+                <div className="text-gray-300">{item.description}</div>
+                <div className="text-[#00FFAB] font-semibold">{item.application}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Grid de Elementos da Estratégia */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {strategyElements.map((element, index) => (
-            <Card 
-              key={index} 
-              className={`
-                bg-white/5 border-white/10 text-white hover:scale-105 
-                transition-all duration-300 cursor-pointer overflow-hidden group
-                ${animatedPieces.includes(element.piece) ? 'ring-2 ring-[#00FFAB]/30' : ''}
-              `}
-            >
+        {/* Cards do Framework para mobile */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:hidden">
+          {tacohFramework.map((item, index) => (
+            <Card key={index} className={`${item.bgColor} border-none text-white hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden group`}>
               <CardContent className="p-6 h-full flex flex-col">
                 <div className="flex items-center mb-4">
-                  {element.icon}
-                  <h3 className="text-xl font-bold ml-3 text-[#00FFAB]">{element.title}</h3>
+                  {item.icon}
+                  <h3 className="text-2xl font-bold ml-3">{item.title}</h3>
                 </div>
-                <p className="text-gray-300 leading-relaxed flex-1">{element.description}</p>
+                <p className="text-white/90 leading-relaxed flex-1 mb-4">{item.description}</p>
+                <div className="text-[#00FFAB] font-semibold text-sm">
+                  {item.application}
+                </div>
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        <div className="text-center mt-12">
-          <p className="text-lg text-gray-300">
-            <span className="text-[#00FFAB] font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
-          </p>
         </div>
       </div>
     </section>

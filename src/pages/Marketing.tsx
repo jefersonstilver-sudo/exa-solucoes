@@ -17,8 +17,6 @@ import FloatingCTA from '@/components/marketing/FloatingCTA';
 const Marketing = () => {
   const formRef = useRef<HTMLElement>(null);
 
-  console.log('Marketing page loaded successfully');
-
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
