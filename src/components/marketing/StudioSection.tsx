@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Camera } from 'lucide-react';
@@ -9,7 +8,7 @@ const StudioSection: React.FC = () => {
     { name: "Teleprompter", description: "Gravações fluidas" },
     { name: "Painéis Touch", description: "Controle de iluminação" },
     { name: "Blackmagic 6K", description: "Qualidade cinematográfica" },
-    { name: "Drone FPV", description: "Tomadas aéreas únicas" }
+    { name: "DRONE", description: "Tomadas aéreas únicas" }
   ];
 
   return (
