@@ -8,7 +8,7 @@ const OnlineStoreButton: React.FC = () => {
   const navigate = useNavigate();
 
   const handleStoreClick = () => {
-    navigate('/paineis-digitais/loja');
+    navigate('/loja');
   };
 
   return (

@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Shield, Lock, Award } from 'lucide-react';
+import { ChevronLeft, Shield, Lock, Award, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';

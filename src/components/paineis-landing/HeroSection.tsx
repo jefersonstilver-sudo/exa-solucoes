@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { Play, TrendingUp, Volume2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import FullscreenVideoPlayer from './FullscreenVideoPlayer';
 
 const HeroSection = () => {
   const [textVisible, setTextVisible] = useState(false);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const { isMobile } = useMobileBreakpoints();
   const navigate = useNavigate();
 
   const videoSrc = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc0ODY1MTk1MywiZXhwIjoyMDY0MDExOTUzfQ.LOZ9ZkHKPoAATrM6egV9XCnKjI1vcSirbhM57eeC6eY";
@@ -17,10 +19,18 @@ const HeroSection = () => {
   }, []);
 
   const handleCTAClick = () => {
-    navigate('/paineis-digitais/loja');
+    navigate('/loja');
   };
 
   const handleVideoClick = () => {
+    // Só abre tela cheia se NÃO for mobile
+    if (!isMobile) {
+      setShowVideoPlayer(true);
+    }
+  };
+
+  const handleVideoButtonClick = () => {
+    // Botão sempre pode abrir tela cheia, mesmo em mobile
     setShowVideoPlayer(true);
   };
 
@@ -91,7 +101,7 @@ const HeroSection = () => {
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl">
                   <div className="aspect-[9/16] w-full">
                     <video
-                      className="w-full h-full object-contain rounded-lg sm:rounded-xl cursor-pointer bg-black"
+                      className={`w-full h-full object-contain rounded-lg sm:rounded-xl bg-black ${!isMobile ? 'cursor-pointer' : ''}`}
                       autoPlay
                       loop
                       muted
@@ -118,7 +128,7 @@ const HeroSection = () => {
 
             {/* Botão embaixo do vídeo */}
             <button
-              onClick={handleVideoClick}
+              onClick={handleVideoButtonClick}
               className="mt-3 sm:mt-4 lg:mt-6 bg-black/70 hover:bg-black/90 backdrop-blur-sm px-3 sm:px-4 lg:px-5 py-2 lg:py-3 rounded-full text-white text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105"
             >
               <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />

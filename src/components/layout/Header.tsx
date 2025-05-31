@@ -87,7 +87,7 @@ const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Loja Online Button */}
-            <Link to="/paineis-digitais/loja">
+            <Link to="/loja">
               <Button 
                 variant="outline" 
                 className="bg-[#00FFAB] text-[#3C1361] border-[#00FFAB] hover:bg-[#00FFAB]/90 font-semibold px-3 lg:px-5 text-sm lg:text-base"
