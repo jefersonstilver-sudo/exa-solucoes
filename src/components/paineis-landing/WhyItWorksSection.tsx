@@ -69,20 +69,20 @@ const WhyItWorksSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-black to-gray-900 flex items-center justify-center py-16 sm:py-20 px-4"
+      className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex items-center justify-center py-16 sm:py-20 px-4"
     >
       <div className="max-w-7xl mx-auto">
         <div className={`transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da Seção */}
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white mb-4 sm:mb-6">
-            <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-gray-900 mb-4 sm:mb-6">
+            <span className="bg-gradient-to-r from-indexa-mint to-gray-900 bg-clip-text text-transparent">
               Por que funciona tanto?
             </span>
           </h2>
 
-          <p className="text-lg sm:text-xl md:text-2xl text-white/80 mb-12 sm:mb-16 text-center max-w-4xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-12 sm:mb-16 text-center max-w-4xl mx-auto leading-relaxed">
             Ciência por trás da efetividade dos painéis em elevadores
           </p>
 
@@ -102,10 +102,10 @@ const WhyItWorksSection = () => {
                   onClick={() => setActiveStep(index)}
                 >
                   {/* Card Principal */}
-                  <div className={`relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border transition-all duration-500 ${
+                  <div className={`relative bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border transition-all duration-500 shadow-lg ${
                     isActive 
                       ? 'border-indexa-mint/60 shadow-2xl shadow-indexa-mint/20' 
-                      : 'border-white/10 hover:border-indexa-mint/30'
+                      : 'border-gray-900/10 hover:border-indexa-mint/30'
                   }`}>
                     
                     {/* Número destacado */}
@@ -113,7 +113,7 @@ const WhyItWorksSection = () => {
                       isActive ? 'scale-110' : 'scale-100'
                     }`}>
                       <div className={`text-4xl sm:text-6xl font-bold mb-2 transition-colors duration-500 ${
-                        isActive ? 'text-indexa-mint' : 'text-white'
+                        isActive ? 'text-indexa-mint' : 'text-gray-900'
                       }`}>
                         {reason.number}
                       </div>
@@ -122,23 +122,23 @@ const WhyItWorksSection = () => {
                       <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full flex items-center justify-center transition-all duration-500 ${
                         isActive 
                           ? 'bg-indexa-mint/20 scale-110' 
-                          : 'bg-white/10'
+                          : 'bg-gray-900/10'
                       }`}>
                         <IconComponent className={`w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-500 ${
-                          isActive ? 'text-indexa-mint' : 'text-white'
+                          isActive ? 'text-indexa-mint' : 'text-gray-900'
                         }`} />
                       </div>
                     </div>
 
                     {/* Título */}
                     <h3 className={`text-lg sm:text-xl font-bold text-center mb-2 sm:mb-3 transition-colors duration-500 ${
-                      isActive ? 'text-indexa-mint' : 'text-white'
+                      isActive ? 'text-indexa-mint' : 'text-gray-900'
                     }`}>
                       {reason.title}
                     </h3>
 
                     {/* Descrição */}
-                    <p className="text-white/90 text-center text-sm sm:text-base mb-3 sm:mb-4">
+                    <p className="text-gray-700 text-center text-sm sm:text-base mb-3 sm:mb-4">
                       {reason.description}
                     </p>
 
@@ -147,7 +147,7 @@ const WhyItWorksSection = () => {
                       isActive ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
                     }`}>
                       <div className="border-t border-indexa-mint/30 pt-3 sm:pt-4">
-                        <p className="text-white/80 text-xs sm:text-sm text-center leading-relaxed">
+                        <p className="text-gray-600 text-xs sm:text-sm text-center leading-relaxed">
                           {reason.detail}
                         </p>
                       </div>
@@ -155,7 +155,7 @@ const WhyItWorksSection = () => {
 
                     {/* Indicador de atividade */}
                     <div className={`absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-full transition-all duration-500 ${
-                      isActive ? 'bg-indexa-mint w-12' : 'bg-white/30'
+                      isActive ? 'bg-indexa-mint w-12' : 'bg-gray-900/30'
                     }`} />
 
                     {/* Efeito de brilho */}
@@ -177,7 +177,7 @@ const WhyItWorksSection = () => {
                 className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 ${
                   index === activeStep 
                     ? 'bg-indexa-mint scale-125' 
-                    : 'bg-white/30 hover:bg-white/50'
+                    : 'bg-gray-900/30 hover:bg-gray-900/50'
                 }`}
               />
             ))}
@@ -185,11 +185,11 @@ const WhyItWorksSection = () => {
 
           {/* Conclusão motivacional */}
           <div className="text-center mt-12 sm:mt-16">
-            <div className="bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border border-indexa-mint/30 max-w-3xl mx-auto">
-              <p className="text-xl sm:text-2xl font-bold text-white mb-2">
+            <div className="bg-gradient-to-r from-indexa-purple/10 to-indexa-mint/10 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border border-indexa-mint/30 max-w-3xl mx-auto shadow-lg">
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 <span className="text-indexa-mint">Resultado:</span> 95% de taxa de atenção
               </p>
-              <p className="text-white/80 text-base sm:text-lg">
+              <p className="text-gray-700 text-base sm:text-lg">
                 Muito superior a qualquer outra mídia digital
               </p>
             </div>

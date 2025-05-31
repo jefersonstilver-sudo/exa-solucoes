@@ -65,20 +65,20 @@ const QRCodeTrackingSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-black to-gray-900 flex items-center justify-center py-16 sm:py-20 px-4"
+      className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex items-center justify-center py-16 sm:py-20 px-4"
     >
       <div className="max-w-7xl mx-auto">
         <div className={`transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da Seção */}
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white mb-4 sm:mb-6">
-            <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-gray-900 mb-4 sm:mb-6">
+            <span className="bg-gradient-to-r from-indexa-mint to-gray-900 bg-clip-text text-transparent">
               Rastreabilidade Total
             </span>
           </h2>
 
-          <p className="text-lg sm:text-xl md:text-2xl text-white/80 mb-12 sm:mb-16 text-center max-w-4xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-12 sm:mb-16 text-center max-w-4xl mx-auto leading-relaxed">
             QR Codes únicos para acompanhar cada interação e otimizar resultados
           </p>
 
@@ -88,15 +88,15 @@ const QRCodeTrackingSection = () => {
             <div className={`order-2 lg:order-1 transform transition-all duration-1000 delay-300 ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
             }`}>
-              <div className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border border-indexa-mint/30">
+              <div className="relative bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border border-indexa-mint/30 shadow-lg">
                 {/* QR Code simulado */}
-                <div className="bg-white p-4 sm:p-6 rounded-xl mb-4 sm:mb-6 mx-auto w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center">
+                <div className="bg-white p-4 sm:p-6 rounded-xl mb-4 sm:mb-6 mx-auto w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center border border-gray-200">
                   <div className="grid grid-cols-8 gap-1 w-full h-full">
                     {Array.from({ length: 64 }).map((_, i) => (
                       <div
                         key={i}
                         className={`aspect-square rounded-sm ${
-                          Math.random() > 0.5 ? 'bg-black' : 'bg-white'
+                          Math.random() > 0.5 ? 'bg-gray-900' : 'bg-white'
                         }`}
                       />
                     ))}
@@ -104,26 +104,26 @@ const QRCodeTrackingSection = () => {
                 </div>
 
                 <div className="text-center">
-                  <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     QR Code: ED-1205-FZ
                   </h3>
                   <p className="text-indexa-mint text-sm sm:text-base font-medium mb-2">
                     Edifício Premium Tower - 12º andar
                   </p>
-                  <p className="text-white/70 text-xs sm:text-sm">
+                  <p className="text-gray-600 text-xs sm:text-sm">
                     Escaneado 147 vezes hoje
                   </p>
                 </div>
 
                 {/* Métricas em tempo real */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4 sm:mt-6">
-                  <div className="bg-black/30 p-3 sm:p-4 rounded-lg text-center">
+                  <div className="bg-gray-900/10 p-3 sm:p-4 rounded-lg text-center">
                     <div className="text-xl sm:text-2xl font-bold text-indexa-mint">95</div>
-                    <div className="text-white/70 text-xs sm:text-sm">Scans hoje</div>
+                    <div className="text-gray-600 text-xs sm:text-sm">Scans hoje</div>
                   </div>
-                  <div className="bg-black/30 p-3 sm:p-4 rounded-lg text-center">
+                  <div className="bg-gray-900/10 p-3 sm:p-4 rounded-lg text-center">
                     <div className="text-xl sm:text-2xl font-bold text-indexa-mint">14:30</div>
-                    <div className="text-white/70 text-xs sm:text-sm">Pico de uso</div>
+                    <div className="text-gray-600 text-xs sm:text-sm">Pico de uso</div>
                   </div>
                 </div>
               </div>
@@ -142,8 +142,8 @@ const QRCodeTrackingSection = () => {
                     key={index}
                     className={`group relative p-4 sm:p-6 rounded-xl border transition-all duration-500 cursor-pointer ${
                       isActive 
-                        ? 'bg-gradient-to-r from-indexa-purple/20 to-indexa-mint/20 border-indexa-mint/50 scale-105' 
-                        : 'bg-gray-800/30 border-white/10 hover:border-indexa-mint/30'
+                        ? 'bg-gradient-to-r from-indexa-purple/10 to-indexa-mint/10 border-indexa-mint/50 scale-105 shadow-lg' 
+                        : 'bg-white/70 border-gray-900/10 hover:border-indexa-mint/30'
                     }`}
                     onClick={() => setActiveFeature(index)}
                   >
@@ -152,23 +152,23 @@ const QRCodeTrackingSection = () => {
                       <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-all duration-500 ${
                         isActive 
                           ? 'bg-indexa-mint/20 scale-110' 
-                          : 'bg-white/10 group-hover:bg-indexa-mint/10'
+                          : 'bg-gray-900/10 group-hover:bg-indexa-mint/10'
                       }`}>
                         <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors duration-500 ${
-                          isActive ? 'text-indexa-mint' : 'text-white'
+                          isActive ? 'text-indexa-mint' : 'text-gray-900'
                         }`} />
                       </div>
 
                       <div className="flex-1">
                         {/* Título */}
                         <h3 className={`text-base sm:text-lg font-bold mb-1 sm:mb-2 transition-colors duration-500 ${
-                          isActive ? 'text-indexa-mint' : 'text-white'
+                          isActive ? 'text-indexa-mint' : 'text-gray-900'
                         }`}>
                           {feature.title}
                         </h3>
 
                         {/* Descrição */}
-                        <p className="text-white/90 text-sm sm:text-base mb-2 sm:mb-3">
+                        <p className="text-gray-700 text-sm sm:text-base mb-2 sm:mb-3">
                           {feature.description}
                         </p>
 
@@ -176,7 +176,7 @@ const QRCodeTrackingSection = () => {
                         <div className={`overflow-hidden transition-all duration-500 ${
                           isActive ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
                         }`}>
-                          <p className="text-white/70 text-xs sm:text-sm leading-relaxed">
+                          <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
                             {feature.detail}
                           </p>
                         </div>
@@ -184,7 +184,7 @@ const QRCodeTrackingSection = () => {
 
                       {/* Indicador de status */}
                       <div className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                        isActive ? 'bg-indexa-mint animate-pulse' : 'bg-white/30'
+                        isActive ? 'bg-indexa-mint animate-pulse' : 'bg-gray-900/30'
                       }`} />
                     </div>
                   </div>
@@ -192,20 +192,20 @@ const QRCodeTrackingSection = () => {
               })}
 
               {/* Dashboard Preview */}
-              <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-indexa-mint/30 mt-6 sm:mt-8">
-                <h4 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Dashboard em Tempo Real</h4>
+              <div className="bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-indexa-mint/30 mt-6 sm:mt-8 shadow-lg">
+                <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Dashboard em Tempo Real</h4>
                 
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-white/70 text-sm sm:text-base">Total de visualizações</span>
+                    <span className="text-gray-600 text-sm sm:text-base">Total de visualizações</span>
                     <span className="text-indexa-mint font-bold text-sm sm:text-base">2.847</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-white/70 text-sm sm:text-base">QR Codes escaneados</span>
+                    <span className="text-gray-600 text-sm sm:text-base">QR Codes escaneados</span>
                     <span className="text-indexa-mint font-bold text-sm sm:text-base">342</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-white/70 text-sm sm:text-base">Taxa de engajamento</span>
+                    <span className="text-gray-600 text-sm sm:text-base">Taxa de engajamento</span>
                     <span className="text-indexa-mint font-bold text-sm sm:text-base">12.4%</span>
                   </div>
                 </div>

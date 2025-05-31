@@ -76,24 +76,24 @@ const AboutPanelsSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center py-16 sm:py-20 px-4"
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center py-16 sm:py-20 px-4"
     >
       <div className="max-w-7xl mx-auto text-center">
         <div className={`transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da Seção */}
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent glow-text">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
+            <span className="bg-gradient-to-r from-indexa-mint to-gray-900 bg-clip-text text-transparent">
               O que são os Painéis da Indexa?
             </span>
           </h2>
 
-          <p className="text-lg sm:text-xl md:text-2xl text-white/80 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed">
             Uma tecnologia de gestão condominial que transforma elevadores em canais de mídia digital altamente visíveis.
           </p>
 
-          <p className="text-base sm:text-lg text-white/70 mb-12 sm:mb-16 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-gray-600 mb-12 sm:mb-16 max-w-3xl mx-auto leading-relaxed">
             Nossos painéis inteligentes informam os moradores com conteúdo útil e relevante, 
             intercalando essas informações com sua publicidade de forma estratégica e não invasiva.
           </p>
@@ -129,12 +129,12 @@ const AboutPanelsSection = () => {
                     </div>
 
                     {/* Back Face */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center text-white shadow-2xl border border-indexa-mint/30`}>
+                    <div className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center text-gray-900 shadow-2xl border border-indexa-mint/30`}>
                       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indexa-mint/20 rounded-full flex items-center justify-center mb-3 sm:mb-4">
                         <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-indexa-mint" />
                       </div>
                       <h3 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 text-indexa-mint">{card.title}</h3>
-                      <p className="text-white/90 text-center text-xs sm:text-sm leading-relaxed">{card.back}</p>
+                      <p className="text-gray-700 text-center text-xs sm:text-sm leading-relaxed">{card.back}</p>
                     </div>
                   </div>
                 </div>
@@ -145,18 +145,18 @@ const AboutPanelsSection = () => {
           {/* Destaque Final - RESPONSIVO */}
           <div className="relative inline-block">
             <div className="bg-gradient-to-r from-indexa-purple to-indexa-mint p-1 rounded-2xl">
-              <div className="bg-gray-900 px-6 sm:px-8 py-4 sm:py-6 rounded-2xl">
-                <p className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-2">
+              <div className="bg-white px-6 sm:px-8 py-4 sm:py-6 rounded-2xl border border-gray-200">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2">
                   Conteúdo útil + Sua marca =
                 </p>
-                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent">
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indexa-mint to-indexa-purple bg-clip-text text-transparent">
                   Impacto Garantido
                 </p>
               </div>
             </div>
             
             {/* Efeito de brilho */}
-            <div className="absolute inset-0 bg-gradient-to-r from-indexa-mint/20 to-indexa-purple/20 rounded-2xl blur-xl opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-r from-indexa-mint/10 to-indexa-purple/10 rounded-2xl blur-xl opacity-30" />
           </div>
         </div>
       </div>
