@@ -33,8 +33,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
               Formulário de Interesse
             </span>
           </h2>
-          <p className="text-xl text-yellow-400 font-semibold mb-4">🔥 LIMITADO!</p>
-          <p className="text-lg text-gray-300">Solicite a avaliação gratuita para o seu condomínio.</p>
+          <p className="text-lg text-gray-300">Solicite uma avaliação do seu prédio.</p>
         </div>
         
         <form onSubmit={handleSubmit} className="bg-gray-900/50 backdrop-blur-sm p-8 rounded-3xl border border-purple-500/20">

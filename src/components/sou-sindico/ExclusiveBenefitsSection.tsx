@@ -20,14 +20,14 @@ const ExclusiveBenefitsSection: React.FC<ExclusiveBenefitsSectionProps> = ({ isV
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <Award className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2 text-yellow-400">Prédio Exclusivo</h3>
-              <p className="text-gray-300">Apenas 1 painel por prédio na região</p>
+              <h3 className="text-xl font-bold mb-2 text-yellow-400">Valor Agregado ao Prédio</h3>
+              <p className="text-gray-300">Mais conexão com os moradores</p>
             </div>
             
             <div className="text-center">
               <Star className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Síndicos Selecionados</h3>
-              <p className="text-gray-300">Análise criteriosa para participação</p>
+              <h3 className="text-xl font-bold mb-2">Melhores Prédios Selecionados</h3>
+              <p className="text-gray-300">Elevador passa a ser moderno</p>
             </div>
             
             <div className="text-center">
