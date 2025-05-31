@@ -9,9 +9,10 @@ import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider } from './hooks/useAuth';
-import { ErrorBoundary } from 'react-error-boundary';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import LazyLoadingFallback from './components/ui/LazyLoadingFallback';
 
-// Adicionar import da página Marketing
+// Lazy load das páginas com error boundaries individuais
 const Marketing = lazy(() => import('./pages/Marketing'));
 const Index = lazy(() => import('./pages/Index'));
 const Produtora = lazy(() => import('./pages/Produtora'));
@@ -25,21 +26,43 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000, // 1 minute
+      retry: (failureCount, error: any) => {
+        // Não retry para erros de tabela não encontrada
+        if (error?.message?.includes('does not exist')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
     },
   },
 });
 
 const LayoutWrapper = () => {
   return (
-    <Layout>
-      <Outlet />
-    </Layout>
+    <ErrorBoundary>
+      <Layout>
+        <Outlet />
+      </Layout>
+    </ErrorBoundary>
   );
 };
 
+// Wrapper para páginas lazy com ErrorBoundary
+const LazyPageWrapper = ({ children }: { children: React.ReactNode }) => (
+  <ErrorBoundary>
+    <Suspense fallback={<LazyLoadingFallback />}>
+      {children}
+    </Suspense>
+  </ErrorBoundary>
+);
+
 function App() {
+  console.log('🚀 App: Inicializando aplicação...');
+  
   return (
-    <ErrorBoundary fallback={<div>Something went wrong</div>}>
+    <ErrorBoundary onError={(error, errorInfo) => {
+      console.error('🚨 App: Erro global capturado:', { error, errorInfo });
+    }}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>
@@ -48,20 +71,64 @@ function App() {
               <Routes>
                 {/* Rotas com Layout */}
                 <Route path="/" element={<LayoutWrapper />}>
-                  <Route index element={<Index />} />
-                  <Route path="marketing" element={<Marketing />} />
-                  <Route path="produtora" element={<Produtora />} />
-                  <Route path="loja" element={<BuildingStore />} />
-                  <Route path="paineis-publicitarios" element={<PaineisPublicitarios />} />
-                  <Route path="sou-sindico" element={<SouSindico />} />
-                  <Route path="panel-store" element={<PanelStore />} />
-                  <Route path="painel-store" element={<PainelStore />} />
+                  <Route index element={
+                    <LazyPageWrapper>
+                      <Index />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="marketing" element={
+                    <LazyPageWrapper>
+                      <Marketing />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="produtora" element={
+                    <LazyPageWrapper>
+                      <Produtora />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="loja" element={
+                    <LazyPageWrapper>
+                      <BuildingStore />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="paineis-publicitarios" element={
+                    <LazyPageWrapper>
+                      <PaineisPublicitarios />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="sou-sindico" element={
+                    <LazyPageWrapper>
+                      <SouSindico />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="panel-store" element={
+                    <LazyPageWrapper>
+                      <PanelStore />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="painel-store" element={
+                    <LazyPageWrapper>
+                      <PainelStore />
+                    </LazyPageWrapper>
+                  } />
                 </Route>
 
                 {/* Rotas sem Layout */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/super_admin/*" element={<SuperAdminPage />} />
-                <Route path="/admin/*" element={<AdminPage />} />
+                <Route path="/login" element={
+                  <ErrorBoundary>
+                    <LoginPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/super_admin/*" element={
+                  <ErrorBoundary>
+                    <SuperAdminPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/admin/*" element={
+                  <ErrorBoundary>
+                    <AdminPage />
+                  </ErrorBoundary>
+                } />
               </Routes>
             </BrowserRouter>
           </TooltipProvider>

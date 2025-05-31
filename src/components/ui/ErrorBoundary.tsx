@@ -14,6 +14,7 @@ interface State {
   hasError: boolean;
   error?: Error;
   errorInfo?: ErrorInfo;
+  errorDetails?: string;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -22,36 +23,49 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
+    console.error('🚨 [ERROR BOUNDARY] Erro capturado:', error);
     return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🚨 [ERROR BOUNDARY] Erro capturado:', error, errorInfo);
+    console.error('🚨 [ERROR BOUNDARY] Detalhes do erro:', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack
+    });
     
-    // Detectar especificamente erros de hook order
+    // Detectar tipos específicos de erro
+    let errorDetails = '';
+    
     if (error.message.includes('Rendered more hooks than during the previous render')) {
-      console.error('🚨 [ERROR BOUNDARY] ERRO DE HOOK ORDER DETECTADO');
-      
-      // Limpar storage que pode estar causando problemas
-      try {
-        localStorage.removeItem('indexa_cart');
-        localStorage.removeItem('selectedPlan');
-        console.log('🧹 [ERROR BOUNDARY] Storage limpo');
-      } catch (e) {
-        console.error('❌ [ERROR BOUNDARY] Erro ao limpar storage:', e);
-      }
+      errorDetails = 'Erro de Hook Order - componente renderizando hooks condicionalmente';
+    } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+      errorDetails = 'Tabela do banco de dados não encontrada';
+    } else if (error.message.includes('supabase')) {
+      errorDetails = 'Erro de conexão com Supabase';
+    } else if (error.message.includes('ChunkLoadError')) {
+      errorDetails = 'Erro de carregamento de módulo';
+    } else if (error.message.includes('React')) {
+      errorDetails = 'Erro de renderização React';
+    } else {
+      errorDetails = error.message;
     }
     
-    this.setState({ errorInfo });
+    this.setState({ 
+      errorInfo, 
+      errorDetails
+    });
+    
     this.props.onError?.(error, errorInfo);
   }
 
   private handleRetry = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    console.log('🔄 [ERROR BOUNDARY] Tentando recuperar...');
+    this.setState({ hasError: false, error: undefined, errorInfo: undefined, errorDetails: undefined });
   };
 
   private handleGoHome = () => {
-    // Limpar todo o estado antes de ir para home
+    console.log('🏠 [ERROR BOUNDARY] Voltando para home...');
     localStorage.clear();
     window.location.href = '/';
   };
@@ -62,50 +76,42 @@ class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      const isHookError = this.state.error?.message.includes('hooks') || 
-                         this.state.error?.message.includes('render');
-
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center text-red-600">
                 <AlertTriangle className="h-5 w-5 mr-2" />
-                {isHookError ? 'Erro de Sistema' : 'Erro no Sistema'}
+                Erro no Sistema
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-600">
-                {isHookError 
-                  ? 'Detectamos um problema interno. Vamos resetar a aplicação para você.'
-                  : 'Ocorreu um erro inesperado. Tente recarregar a página ou volte ao início.'
-                }
+                Ocorreu um erro inesperado na aplicação.
               </p>
               
+              {this.state.errorDetails && (
+                <div className="bg-red-50 border border-red-200 rounded p-3">
+                  <p className="text-sm text-red-700 font-medium">Detalhes:</p>
+                  <p className="text-sm text-red-600">{this.state.errorDetails}</p>
+                </div>
+              )}
+              
               <div className="flex flex-col space-y-2">
-                {isHookError ? (
-                  <Button onClick={this.handleGoHome} className="w-full">
-                    <Home className="h-4 w-4 mr-2" />
-                    Voltar ao Início
-                  </Button>
-                ) : (
-                  <>
-                    <Button onClick={this.handleRetry} variant="outline" className="w-full">
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Tentar Novamente
-                    </Button>
-                    <Button onClick={this.handleGoHome} className="w-full">
-                      <Home className="h-4 w-4 mr-2" />
-                      Voltar ao Início
-                    </Button>
-                  </>
-                )}
+                <Button onClick={this.handleRetry} variant="outline" className="w-full">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Tentar Novamente
+                </Button>
+                <Button onClick={this.handleGoHome} className="w-full">
+                  <Home className="h-4 w-4 mr-2" />
+                  Voltar ao Início
+                </Button>
               </div>
               
               {this.state.error && (
                 <details className="mt-4">
                   <summary className="text-sm text-gray-500 cursor-pointer">
-                    Detalhes técnicos
+                    Detalhes técnicos (clique para expandir)
                   </summary>
                   <pre className="text-xs text-gray-400 mt-2 p-2 bg-gray-100 rounded max-h-32 overflow-auto">
                     {this.state.error.message}

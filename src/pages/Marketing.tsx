@@ -15,9 +15,12 @@ import MarketingForm from '@/components/marketing/MarketingForm';
 import FloatingCTA from '@/components/marketing/FloatingCTA';
 
 const Marketing = () => {
+  console.log('📄 Marketing: Inicializando página Marketing');
+  
   const formRef = useRef<HTMLElement>(null);
 
   const scrollToForm = () => {
+    console.log('📄 Marketing: Scroll para formulário');
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 

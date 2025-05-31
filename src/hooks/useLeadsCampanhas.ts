@@ -19,10 +19,12 @@ export interface LeadCampanha {
 export const useLeadsCampanhas = () => {
   const [leads, setLeads] = useState<LeadCampanha[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLeads = async () => {
     try {
       setLoading(true);
+      setError(null);
       console.log('📊 Leads Campanhas: Buscando dados...');
       
       const { data, error } = await supabase
@@ -32,14 +34,25 @@ export const useLeadsCampanhas = () => {
 
       if (error) {
         console.error('❌ Erro ao buscar leads:', error);
+        
+        // Se a tabela não existir, retornar array vazio
+        if (error.message.includes('relation "leads_campanhas" does not exist')) {
+          console.log('⚠️ Tabela leads_campanhas não existe, usando modo desenvolvimento');
+          setLeads([]);
+          setError('Tabela não encontrada - usando modo desenvolvimento');
+          return;
+        }
+        
+        setError(error.message);
         toast.error('Erro ao carregar leads de campanhas');
       } else {
         console.log('✅ Leads campanhas carregados:', data?.length || 0);
         setLeads(data || []);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Erro ao buscar leads:', error);
-      toast.error('Erro ao carregar leads de campanhas');
+      setError(error?.message || 'Erro desconhecido');
+      setLeads([]);
     } finally {
       setLoading(false);
     }
@@ -96,27 +109,29 @@ export const useLeadsCampanhas = () => {
   useEffect(() => {
     fetchLeads();
 
-    // Configurar realtime para novos leads
-    console.log('📡 Leads Campanhas: Configurando realtime...');
-    const channel = supabase
-      .channel('leads-campanhas-realtime')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'leads_campanhas' 
-        }, 
-        (payload) => {
-          console.log('📡 Leads Campanhas: Dados atualizados em tempo real', payload);
-          fetchLeads();
-        }
-      )
-      .subscribe();
+    // Só configurar realtime se não houver erro de tabela
+    if (!error?.includes('não existe')) {
+      console.log('📡 Leads Campanhas: Configurando realtime...');
+      const channel = supabase
+        .channel('leads-campanhas-realtime')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'leads_campanhas' 
+          }, 
+          (payload) => {
+            console.log('📡 Leads Campanhas: Dados atualizados em tempo real', payload);
+            fetchLeads();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [error]);
 
-  return { leads, loading, refetch: fetchLeads, markAsContacted, createLead };
+  return { leads, loading, error, refetch: fetchLeads, markAsContacted, createLead };
 };
