@@ -74,7 +74,7 @@ const Index = () => {
   if (isLoading) {
     return (
       <Layout>
-        <section className="py-16 px-4 min-h-[calc(100vh-200px)] flex items-center justify-center">
+        <section className="py-16 px-4 min-h-screen flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-indexa-purple" />
         </section>
       </Layout>
@@ -85,7 +85,7 @@ const Index = () => {
     <Layout>
       {/* Cards de Serviço com background image */}
       <section 
-        className="py-8 md:py-16 px-4 relative min-h-[calc(100vh-80px)] flex items-center" 
+        className="py-8 md:py-16 px-4 relative min-h-screen flex items-center" 
         style={{
           backgroundImage: "url('https://cdn.pixabay.com/photo/2015/05/04/20/03/purple-wallpaper-752886_1280.jpg')",
           backgroundSize: 'cover',

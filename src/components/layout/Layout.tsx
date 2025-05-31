@@ -63,12 +63,12 @@ const Layout: React.FC<LayoutProps> = memo(({
         onToggleCart={handleToggleCart}
       />
       
-      {/* Main Content com padding-top para compensar header fixo */}
-      <main className="flex-1 w-full pt-20">
+      {/* Main Content sem padding-top para eliminar espaço branco */}
+      <main className="flex-1 w-full">
         {children}
       </main>
       
-      {/* Footer */}
+      {/* Footer - apenas o MobileOptimizedFooter */}
       <MobileOptimizedFooter />
       
       {/* Cart Drawer */}
