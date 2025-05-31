@@ -25,10 +25,10 @@ const MarketingHero: React.FC<MarketingHeroProps> = ({ onScrollToForm }) => {
       </div>
 
       <div className="relative z-10 text-center max-w-6xl mx-auto px-4">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+        <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
           <span className="block mb-2">Marketing com estratégia, presença e impacto real.</span>
           <span className="block mb-2">Campanhas completas para marcas que querem crescer.</span>
-          <span className="block bg-gradient-to-r from-[#00FFAB] to-white bg-clip-text text-transparent">
+          <span className="block bg-gradient-to-r from-[#00FFAB] to-white bg-clip-text text-transparent text-lg md:text-2xl lg:text-3xl">
             Planejamento, execução e performance no mesmo lugar.
           </span>
         </h1>
