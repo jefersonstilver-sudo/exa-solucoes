@@ -10,7 +10,6 @@ import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider } from './hooks/useAuth';
 import { ErrorBoundary } from 'react-error-boundary';
-import MarketingErrorBoundary from './components/error/MarketingErrorBoundary';
 
 // Adicionar import da página Marketing
 const Marketing = lazy(() => import('./pages/Marketing'));
@@ -38,21 +37,6 @@ const LayoutWrapper = () => {
   );
 };
 
-const MarketingPage = () => (
-  <MarketingErrorBoundary>
-    <Suspense fallback={
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00FFAB] mx-auto mb-4"></div>
-          <p>Carregando página de marketing...</p>
-        </div>
-      </div>
-    }>
-      <Marketing />
-    </Suspense>
-  </MarketingErrorBoundary>
-);
-
 function App() {
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>
@@ -65,7 +49,7 @@ function App() {
                 {/* Rotas com Layout */}
                 <Route path="/" element={<LayoutWrapper />}>
                   <Route index element={<Index />} />
-                  <Route path="marketing" element={<MarketingPage />} />
+                  <Route path="marketing" element={<Marketing />} />
                   <Route path="produtora" element={<Produtora />} />
                   <Route path="loja" element={<BuildingStore />} />
                   <Route path="paineis-publicitarios" element={<PaineisPublicitarios />} />
