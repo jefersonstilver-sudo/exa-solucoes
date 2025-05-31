@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { 
   ChevronDown,
   MessageCircle
@@ -11,12 +10,18 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import ResponsiveContainer from '@/components/responsive/ResponsiveContainer';
+import ResponsiveTypography from '@/components/responsive/ResponsiveTypography';
+import ResponsiveButton from '@/components/responsive/ResponsiveButton';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 
 interface ObjectionsSectionProps {
   onScrollToForm: () => void;
 }
 
 const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm }) => {
+  const { isPhone } = useAdvancedResponsive();
+  
   const objections = [
     {
       id: "obj1",
@@ -71,38 +76,59 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-b from-black to-[#3C1361]/20">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-black to-[#3C1361]/20">
+      <ResponsiveContainer maxWidth="xl">
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <ResponsiveTypography 
+            variant="h2" 
+            color="white"
+            align="center"
+            className="mb-4 sm:mb-6"
+          >
             Ainda tem <span className="text-[#00FFAB]">dúvidas?</span> Entendemos.
-          </h2>
-          <p className="text-xl text-gray-300 mb-8">
+          </ResponsiveTypography>
+          <ResponsiveTypography 
+            variant="body" 
+            color="gray" 
+            align="center"
+            className="mb-6 sm:mb-8"
+          >
             Respondemos as principais objeções de empresários sobre campanhas de marketing estratégico
-          </p>
+          </ResponsiveTypography>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-          <Accordion type="single" collapsible className="w-full space-y-4">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-6">
+          <Accordion type="single" collapsible className="w-full space-y-3 sm:space-y-4">
             {objections.map((objection) => (
               <AccordionItem 
                 key={objection.id} 
                 value={objection.id}
-                className="border border-white/10 rounded-lg bg-white/5 px-4"
+                className="border border-white/10 rounded-lg bg-white/5 px-3 sm:px-4"
               >
-                <AccordionTrigger className="text-left hover:no-underline py-6">
-                  <span className="text-white font-medium text-lg pr-4">
+                <AccordionTrigger className="text-left hover:no-underline py-4 sm:py-6">
+                  <ResponsiveTypography 
+                    variant={isPhone ? "h6" : "h5"} 
+                    color="white"
+                    className="pr-4 text-left"
+                  >
                     "{objection.objection}"
-                  </span>
+                  </ResponsiveTypography>
                 </AccordionTrigger>
-                <AccordionContent className="pb-6">
-                  <div className="pt-4 border-t border-[#00FFAB]/20">
-                    <p className="text-[#00FFAB] font-semibold mb-3 text-lg">
+                <AccordionContent className="pb-4 sm:pb-6">
+                  <div className="pt-3 sm:pt-4 border-t border-[#00FFAB]/20">
+                    <ResponsiveTypography 
+                      variant="h6" 
+                      className="text-[#00FFAB] mb-2 sm:mb-3"
+                    >
                       ✓ Nossa resposta:
-                    </p>
-                    <p className="text-gray-300 leading-relaxed">
+                    </ResponsiveTypography>
+                    <ResponsiveTypography 
+                      variant="caption" 
+                      color="gray"
+                      className="leading-relaxed"
+                    >
                       {objection.answer}
-                    </p>
+                    </ResponsiveTypography>
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -111,24 +137,35 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
         </div>
 
         {/* CTA da Seção */}
-        <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-[#3C1361]/20 to-[#00FFAB]/20 backdrop-blur-sm p-8 rounded-2xl border border-[#00FFAB]/30">
-            <MessageCircle className="h-12 w-12 text-[#00FFAB] mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-white mb-4">
+        <div className="text-center mt-12 sm:mt-16">
+          <div className="bg-gradient-to-r from-[#3C1361]/20 to-[#00FFAB]/20 backdrop-blur-sm p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-[#00FFAB]/30">
+            <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-[#00FFAB] mx-auto mb-3 sm:mb-4" />
+            <ResponsiveTypography 
+              variant="h3" 
+              color="white" 
+              align="center"
+              className="mb-3 sm:mb-4"
+            >
               Sua dúvida não está aqui?
-            </h3>
-            <p className="text-lg text-gray-300 mb-6">
+            </ResponsiveTypography>
+            <ResponsiveTypography 
+              variant="body" 
+              color="gray" 
+              align="center"
+              className="mb-4 sm:mb-6"
+            >
               Agende uma conversa e esclarecemos tudo pessoalmente
-            </p>
-            <Button
+            </ResponsiveTypography>
+            <ResponsiveButton
               onClick={onScrollToForm}
-              className="bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white font-bold py-3 px-6 rounded-full hover:scale-105 transition-transform duration-300"
+              className="bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white hover:scale-105"
+              fullWidthOnMobile={isPhone}
             >
               Conversar com Especialista
-            </Button>
+            </ResponsiveButton>
           </div>
         </div>
-      </div>
+      </ResponsiveContainer>
     </section>
   );
 };
