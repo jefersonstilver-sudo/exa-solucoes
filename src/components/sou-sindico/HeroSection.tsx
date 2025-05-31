@@ -1,5 +1,4 @@
-
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ArrowRight, Volume, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -10,6 +9,7 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const backgroundVideoRef = useRef<HTMLVideoElement>(null);
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -18,11 +18,19 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
     }
   };
 
+  useEffect(() => {
+    if (backgroundVideoRef.current) {
+      // Reduzir a velocidade do vídeo de fundo para 0.7x
+      backgroundVideoRef.current.playbackRate = 0.7;
+    }
+  }, []);
+
   return (
     <section className="relative min-h-[calc(100vh-2rem)] md:min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pt-24 md:pt-32 pb-20 overflow-hidden">
       {/* Background Video */}
       <video
-        className="absolute inset-0 w-full h-full object-cover blur-sm"
+        ref={backgroundVideoRef}
+        className="absolute inset-0 w-full h-full object-cover blur-md"
         autoPlay
         muted
         loop
@@ -31,8 +39,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
         <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/F5D2914A-D793-496A-93DE-E5DB8F60E800.MOV?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlL0Y1RDI5MTRBLUQ3OTMtNDk2QS05M0RFLUU1REI4RjYwRTgwMC5NT1YiLCJpYXQiOjE3NDg3MDA3NzYsImV4cCI6MTc4MDIzNjc3Nn0.8TYDnwI7JHfKTgUaiAhHoWz9aCtfTcIRlrj6vUqLJSQ" type="video/mp4" />
       </video>
       
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/60" />
+      {/* Dark Overlay - mais escuro */}
+      <div className="absolute inset-0 bg-black/75" />
       
       {/* Additional Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900/20 to-blue-900/30" />
