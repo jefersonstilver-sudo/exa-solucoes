@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -440,4 +441,18 @@ body.drawer-open .drawer-overlay {
   .mobile-safe-area-bottom {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
+}
+
+/* Float animation para o logo 3D */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

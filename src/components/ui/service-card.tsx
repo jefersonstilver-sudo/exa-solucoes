@@ -38,7 +38,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   };
 
   const handleClick = () => {
-    navigate(href);
+    // Redirecionar para a nova landing page se for painéis publicitários
+    if (title === 'Painéis Publicitários' || href === '/paineis-digitais/loja') {
+      navigate('/paineis-publicitarios');
+    } else {
+      navigate(href);
+    }
   };
 
   return (

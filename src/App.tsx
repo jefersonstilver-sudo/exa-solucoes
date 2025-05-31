@@ -13,6 +13,7 @@ import OrderConfirmation from '@/pages/OrderConfirmation';
 import Index from '@/pages/Index';
 import Marketing from '@/pages/Marketing';
 import Produtora from '@/pages/Produtora';
+import PaineisPublicitarios from '@/pages/PaineisPublicitarios';
 import Pedidos from '@/pages/Pedidos';
 import PainelStore from '@/pages/PainelStore';
 import Login from '@/pages/Login';
