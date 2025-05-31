@@ -19,10 +19,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-start justify-center px-4 py-20 mt-20">
+    <section className="relative min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 pt-24 md:pt-32">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20" />
       
-      <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-start pt-8">
+      <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
         <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -46,7 +46,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
           </Button>
         </div>
 
-        <div className={`transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+        <div className={`flex justify-center lg:justify-end transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
           <div className="relative max-w-xs mx-auto">
             <div className="relative bg-gray-800 rounded-[2.8rem] p-3 shadow-2xl">
               <div className="bg-black rounded-[2.3rem] overflow-hidden aspect-[9/19.5] relative">
