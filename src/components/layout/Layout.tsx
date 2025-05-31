@@ -3,6 +3,7 @@ import React, { ReactNode } from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import { useCartManager } from '@/hooks/useCartManager';
+import '@/styles/components.css'; // Importar CSS para prevenir footer duplicado
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,7 +11,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
-  console.log('🏗️ Layout: Renderizando Layout com footer único');
+  console.log('🏗️ Layout: Renderizando Layout com footer ÚNICO');
   
   const { 
     cartItems, 
@@ -34,6 +35,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
         {children}
       </main>
       
+      {/* ÚNICO FOOTER DA APLICAÇÃO */}
       <MobileOptimizedFooter />
     </div>
   );

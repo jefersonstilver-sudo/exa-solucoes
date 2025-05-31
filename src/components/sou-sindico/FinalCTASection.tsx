@@ -7,6 +7,8 @@ interface FinalCTASectionProps {
 }
 
 const FinalCTASection: React.FC<FinalCTASectionProps> = ({ isVisible }) => {
+  console.log('🏢 SindicoFinalCTA: Renderizando SEM footer próprio');
+  
   return (
     <section className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
       <div className="max-w-4xl mx-auto text-center">
@@ -28,7 +30,7 @@ const FinalCTASection: React.FC<FinalCTASectionProps> = ({ isVisible }) => {
               INDEXA MÍDIA
             </span>
           </div>
-          <p className="text-gray-400 text-sm mt-4">© 2025 Indexa Mídia. Todos os direitos reservados.</p>
+          {/* REMOVIDO: Copyright - apenas o footer principal do Layout deve ter */}
         </div>
       </div>
     </section>

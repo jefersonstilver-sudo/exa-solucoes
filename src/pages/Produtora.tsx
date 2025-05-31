@@ -10,7 +10,7 @@ import CafeManualSection from '@/components/produtora/CafeManualSection';
 import BriefingFormSection from '@/components/produtora/BriefingFormSection';
 
 const Produtora = () => {
-  console.log('Produtora: Página da produtora carregada');
+  console.log('🎬 Produtora: Página da produtora carregada SEM footer adicional');
 
   return (
     <Layout>
@@ -35,6 +35,8 @@ const Produtora = () => {
         
         {/* 7. Formulário de Briefing */}
         <BriefingFormSection />
+        
+        {/* REMOVIDO: Qualquer footer adicional - apenas o Layout tem footer */}
       </div>
     </Layout>
   );

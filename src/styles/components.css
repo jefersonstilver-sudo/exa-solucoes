@@ -1,42 +1,65 @@
 
+/* FOOTER ÚNICO - Regras definitivas para prevenir duplicação */
 
-/* Garantir que apenas um footer seja exibido */
-footer[data-footer-debug="single-footer"] {
-  display: block !important;
+/* Garantir que apenas UM footer seja exibido em toda a aplicação */
+body {
   position: relative;
-  z-index: 1;
 }
 
-/* Prevenir duplicação de footers */
-footer[data-footer-debug="single-footer"]:not(:first-of-type) {
-  display: none !important;
-}
-
-/* Garantir que o footer seja único na página */
-body footer:not([data-footer-debug="single-footer"]) {
-  display: none !important;
-}
-
-/* Proteção adicional contra footers duplicados em seções */
-section footer {
-  display: none !important;
-}
-
-/* Permitir apenas o footer do layout principal */
+/* Permitir apenas o footer principal do layout */
 #unique-indexa-footer {
   display: block !important;
   position: relative !important;
-  z-index: 10 !important;
+  z-index: 9999 !important;
 }
 
-/* Esconder qualquer footer que não seja o principal */
-footer:not(#unique-indexa-footer) {
+/* ESCONDER ABSOLUTAMENTE QUALQUER OUTRO FOOTER */
+footer:not(#unique-indexa-footer),
+div[role="contentinfo"],
+section footer,
+.footer,
+[class*="footer"],
+[id*="footer"]:not(#unique-indexa-footer) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Proteção contra footers em seções específicas */
+section[class*="final"] footer,
+section[class*="cta"] footer,
+div[class*="final"] footer,
+div[class*="cta"] footer {
   display: none !important;
 }
 
-/* Proteção contra footers absolutos duplicados */
-.absolute footer,
-section .absolute:has(footer) {
+/* Esconder qualquer elemento que contenha copyright exceto o footer principal */
+*:not(#unique-indexa-footer) *:contains("©"),
+*:not(#unique-indexa-footer) *:contains("copyright"),
+*:not(#unique-indexa-footer) *:contains("direitos reservados") {
   display: none !important;
 }
 
+/* Regra específica para mobile */
+@media (max-width: 768px) {
+  footer:not(#unique-indexa-footer) {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Garantir que apenas um footer apareça por página */
+body footer:nth-of-type(n+2) {
+  display: none !important;
+}
+
+/* Proteção adicional - esconder footers em containers específicos */
+main footer,
+article footer,
+.container footer:not(#unique-indexa-footer) {
+  display: none !important;
+}

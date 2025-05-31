@@ -13,9 +13,10 @@ import ObjectionsSection from '@/components/marketing/ObjectionsSection';
 import CTASection from '@/components/marketing/CTASection';
 import MarketingForm from '@/components/marketing/MarketingForm';
 import FloatingCTA from '@/components/marketing/FloatingCTA';
+import Layout from '@/components/layout/Layout';
 
 const Marketing = () => {
-  console.log('📄 Marketing: Inicializando página Marketing');
+  console.log('📄 Marketing: Inicializando página Marketing SEM footer adicional');
   
   const formRef = useRef<HTMLElement>(null);
 
@@ -25,21 +26,24 @@ const Marketing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <MarketingHero onScrollToForm={scrollToForm} />
-      <MarketingMission />
-      <MarketingPlanning />
-      <TacohFramework />
-      <ProcessSteps />
-      <StudioSection />
-      <AISection />
-      <DeliverablesSection />
-      <PortfolioSection />
-      <ObjectionsSection onScrollToForm={scrollToForm} />
-      <CTASection />
-      <MarketingForm formRef={formRef} />
-      <FloatingCTA onScrollToForm={scrollToForm} />
-    </div>
+    <Layout>
+      <div className="min-h-screen bg-black text-white">
+        <MarketingHero onScrollToForm={scrollToForm} />
+        <MarketingMission />
+        <MarketingPlanning />
+        <TacohFramework />
+        <ProcessSteps />
+        <StudioSection />
+        <AISection />
+        <DeliverablesSection />
+        <PortfolioSection />
+        <ObjectionsSection onScrollToForm={scrollToForm} />
+        <CTASection />
+        <MarketingForm formRef={formRef} />
+        <FloatingCTA onScrollToForm={scrollToForm} />
+        {/* REMOVIDO: Qualquer footer adicional - apenas o Layout tem footer */}
+      </div>
+    </Layout>
   );
 };
 

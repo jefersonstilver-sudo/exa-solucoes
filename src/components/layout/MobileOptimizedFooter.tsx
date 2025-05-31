@@ -51,7 +51,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 };
 
 const MobileOptimizedFooter = () => {
-  console.log('🦶 Footer: Renderizando MobileOptimizedFooter ÚNICO');
+  console.log('🦶 Footer: Renderizando MobileOptimizedFooter ÚNICO - PREVENINDO DUPLICAÇÃO');
   
   return (
     <footer 
@@ -59,7 +59,7 @@ const MobileOptimizedFooter = () => {
       className="bg-indexa-purple-dark text-white w-full"
       style={{ 
         position: 'relative',
-        zIndex: 10,
+        zIndex: 9999,
         display: 'block'
       }}
       data-footer-debug="single-footer"
