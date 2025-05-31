@@ -117,10 +117,7 @@ const CTASection = () => {
         </div>
       </div>
 
-      {/* Rodapé simples */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/40 text-sm">
-        © 2025 Indexa Mídia. Todos os direitos reservados.
-      </div>
+      {/* REMOVIDO: Copyright duplicado que estava causando o problema */}
     </section>
   );
 };
