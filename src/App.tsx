@@ -61,6 +61,9 @@ const App = () => {
         {/* Public Routes - PÁGINA PRINCIPAL COM OS 3 CARDS ROXOS */}
         <Route path="/" element={<Index />} />
         
+        {/* NOVA ROTA PARA PAINÉIS PUBLICITÁRIOS */}
+        <Route path="/paineis-publicitarios" element={<PaineisPublicitarios />} />
+        
         {/* NOVAS ROTAS DOS CARDS DA HOMEPAGE */}
         <Route path="/marketing" element={<Marketing />} />
         <Route path="/produtora" element={<Produtora />} />

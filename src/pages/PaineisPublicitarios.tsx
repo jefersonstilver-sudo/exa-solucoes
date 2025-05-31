@@ -9,7 +9,10 @@ import BenefitsSection from '@/components/paineis-landing/BenefitsSection';
 import CTASection from '@/components/paineis-landing/CTASection';
 
 const PaineisPublicitarios = () => {
+  console.log('PaineisPublicitarios component rendering...');
+
   useEffect(() => {
+    console.log('PaineisPublicitarios mounted successfully');
     // Scroll suave para toda a página
     document.documentElement.style.scrollBehavior = 'smooth';
     

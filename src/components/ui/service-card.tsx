@@ -24,6 +24,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  console.log('ServiceCard props:', { title, href });
+
   const renderIcon = () => {
     switch (buttonIcon) {
       case 'calendar':
@@ -38,10 +40,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   };
 
   const handleClick = () => {
+    console.log('ServiceCard clicked:', { title, href });
+    
     // Redirecionar para a nova landing page se for painéis publicitários
-    if (title === 'Painéis Publicitários' || href === '/paineis-digitais/loja') {
+    if (title === 'Painéis Publicitários') {
+      console.log('Navigating to /paineis-publicitarios');
       navigate('/paineis-publicitarios');
     } else {
+      console.log('Navigating to:', href);
       navigate(href);
     }
   };
