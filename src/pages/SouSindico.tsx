@@ -164,25 +164,25 @@ const SouSindico = () => {
             </div>
 
             <div className={`transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-              <div className="relative max-w-sm mx-auto">
-                <div className="relative bg-gray-800 rounded-[2.5rem] p-3 shadow-2xl">
-                  <div className="bg-black rounded-[2rem] overflow-hidden aspect-[9/16]">
-                    <div className="h-6 bg-black relative">
-                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-full" />
+              <div className="relative max-w-xs mx-auto">
+                <div className="relative bg-gray-800 rounded-[2.8rem] p-3 shadow-2xl">
+                  <div className="bg-black rounded-[2.3rem] overflow-hidden aspect-[9/19.5] relative">
+                    <div className="h-8 bg-black relative flex items-center justify-center">
+                      <div className="w-20 h-1.5 bg-gray-600 rounded-full" />
                     </div>
                     
                     <video
                       ref={videoRef}
-                      className="w-full h-full object-cover"
+                      className="w-full object-cover"
                       autoPlay
                       muted={isMuted}
                       loop
                       playsInline
                       style={{ 
                         width: '100%', 
-                        height: 'calc(100% - 24px)',
+                        height: 'calc(100% - 32px)',
                         objectFit: 'cover',
-                        objectPosition: 'center top'
+                        objectPosition: 'center 10%'
                       }}
                     >
                       <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/2dac60f0-421e-4729-ac22-0d32dc360292.MP4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzJkYWM2MGYwLTQyMWUtNDcyOS1hYzIyLTBkMzJkYzM2MDI5Mi5NUDQiLCJpYXQiOjE3NDg2OTY5NTksImV4cCI6MTc4MDIzMjk1OX0.sJEjs0bci_thXgU-BTrLFmuF9M8H4XFRcPpigrjQCjw" type="video/mp4" />
@@ -190,13 +190,11 @@ const SouSindico = () => {
                   </div>
                 </div>
                 
-                {/* Botão para assistir com som */}
-                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+                {/* Botão para assistir com som - redesenhado */}
+                <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
                   <Button
                     onClick={toggleMute}
-                    variant="outline"
-                    size="sm"
-                    className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-900 border-gray-300 shadow-lg"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0 shadow-lg px-4 py-2 rounded-full transform transition-all duration-300 hover:scale-105"
                   >
                     {isMuted ? (
                       <>
@@ -212,7 +210,7 @@ const SouSindico = () => {
                   </Button>
                 </div>
                 
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-[2.5rem] blur-xl" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-[2.8rem] blur-xl" />
               </div>
             </div>
           </div>
