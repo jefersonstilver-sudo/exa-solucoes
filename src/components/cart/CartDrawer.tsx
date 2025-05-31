@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types/cart';
 import PanelCart from '@/components/panels/PanelCart';
+import EmptyCart from '@/components/cart/EmptyCart';
 
 interface CartDrawerProps {
   cartItems: CartItem[];
@@ -34,8 +35,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
     onClose();
   };
 
-  // Sempre renderizar o drawer quando houver itens, independente do estado isOpen
-  const shouldShow = cartItems.length > 0 && isOpen;
+  // MUDANÇA CRÍTICA: Sempre mostrar quando isOpen for true, independente de ter itens
+  const shouldShow = isOpen;
+  const isEmpty = cartItems.length === 0;
 
   return (
     <AnimatePresence>
@@ -65,7 +67,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                Seu Carrinho ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})
+                {isEmpty ? 'Seu Carrinho' : `Seu Carrinho (${cartItems.length} ${cartItems.length === 1 ? 'item' : 'itens'})`}
               </h2>
               <Button
                 variant="ghost"
@@ -79,13 +81,17 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
 
             {/* Cart Content */}
             <div className="flex-1 flex flex-col">
-              <PanelCart
-                cartItems={cartItems}
-                onRemove={onRemoveFromCart || (() => {})}
-                onClear={onClearCart || (() => {})}
-                onChangeDuration={onChangeDuration || (() => {})}
-                onProceedToCheckout={onProceedToCheckout || (() => {})}
-              />
+              {isEmpty ? (
+                <EmptyCart />
+              ) : (
+                <PanelCart
+                  cartItems={cartItems}
+                  onRemove={onRemoveFromCart || (() => {})}
+                  onClear={onClearCart || (() => {})}
+                  onChangeDuration={onChangeDuration || (() => {})}
+                  onProceedToCheckout={onProceedToCheckout || (() => {})}
+                />
+              )}
             </div>
           </motion.div>
         </>

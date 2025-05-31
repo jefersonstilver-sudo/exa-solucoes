@@ -48,11 +48,11 @@ const Layout: React.FC<LayoutProps> = memo(({
     return cancelCleanup;
   }, []);
 
+  // CARRINHO SEMPRE ABRE - remover restrição de itens vazios
   const handleToggleCart = React.useCallback(() => {
-    if (cartItems.length > 0) {
-      toggleCart();
-    }
-  }, [cartItems.length, toggleCart]);
+    console.log('🛒 Layout: Abrindo carrinho - sempre permitido');
+    toggleCart();
+  }, [toggleCart]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col relative">
@@ -71,7 +71,7 @@ const Layout: React.FC<LayoutProps> = memo(({
       {/* Footer */}
       <MobileOptimizedFooter />
       
-      {/* Cart Drawer */}
+      {/* Cart Drawer - SEMPRE MOSTRAR quando isOpen for true */}
       <CartDrawer
         cartItems={cartItems}
         isOpen={cartOpen}
