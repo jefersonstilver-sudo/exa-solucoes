@@ -27,7 +27,7 @@ const PaineisPublicitarios = () => {
   }, []);
 
   return (
-    <Layout>
+    <Layout className="bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
       <div className="relative overflow-x-hidden w-full">
         <HeroSection />
         <AboutPanelsSection />
@@ -38,11 +38,9 @@ const PaineisPublicitarios = () => {
         <QRCodeTrackingSection />
         <FAQSection />
         <FinalCTASection />
-        {/* REMOVIDO: Qualquer footer adicional que possa existir aqui */}
       </div>
     </Layout>
   );
 };
 
 export default PaineisPublicitarios;
-
