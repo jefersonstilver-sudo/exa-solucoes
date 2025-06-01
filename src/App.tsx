@@ -3,8 +3,7 @@ import { Suspense, lazy } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-import Layout from './components/layout/Layout';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
@@ -37,16 +36,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const LayoutWrapper = () => {
-  return (
-    <ErrorBoundary>
-      <Layout>
-        <Outlet />
-      </Layout>
-    </ErrorBoundary>
-  );
-};
-
 // Wrapper para páginas lazy com ErrorBoundary
 const LazyPageWrapper = ({ children }: { children: React.ReactNode }) => (
   <ErrorBoundary>
@@ -57,7 +46,7 @@ const LazyPageWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 function App() {
-  console.log('🚀 App: Inicializando aplicação...');
+  console.log('🚀 App: Inicializando aplicação SEM Layout duplo...');
   
   return (
     <ErrorBoundary onError={(error, errorInfo) => {
@@ -69,49 +58,47 @@ function App() {
             <Toaster />
             <BrowserRouter>
               <Routes>
-                {/* Rotas com Layout */}
-                <Route path="/" element={<LayoutWrapper />}>
-                  <Route index element={
-                    <LazyPageWrapper>
-                      <Index />
-                    </LazyPageWrapper>
-                  } />
-                  <Route path="marketing" element={
-                    <LazyPageWrapper>
-                      <Marketing />
-                    </LazyPageWrapper>
-                  } />
-                  <Route path="produtora" element={
-                    <LazyPageWrapper>
-                      <Produtora />
-                    </LazyPageWrapper>
-                  } />
-                  <Route path="loja" element={
-                    <LazyPageWrapper>
-                      <BuildingStore />
-                    </LazyPageWrapper>
-                  } />
-                  <Route path="paineis-publicitarios" element={
-                    <LazyPageWrapper>
-                      <PaineisPublicitarios />
-                    </LazyPageWrapper>
-                  } />
-                  <Route path="sou-sindico" element={
-                    <LazyPageWrapper>
-                      <SouSindico />
-                    </LazyPageWrapper>
-                  } />
-                  <Route path="panel-store" element={
-                    <LazyPageWrapper>
-                      <PanelStore />
-                    </LazyPageWrapper>
-                  } />
-                  <Route path="painel-store" element={
-                    <LazyPageWrapper>
-                      <PainelStore />
-                    </LazyPageWrapper>
-                  } />
-                </Route>
+                {/* Rotas principais - cada página tem seu próprio Layout */}
+                <Route path="/" element={
+                  <LazyPageWrapper>
+                    <Index />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/marketing" element={
+                  <LazyPageWrapper>
+                    <Marketing />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/produtora" element={
+                  <LazyPageWrapper>
+                    <Produtora />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/loja" element={
+                  <LazyPageWrapper>
+                    <BuildingStore />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/paineis-publicitarios" element={
+                  <LazyPageWrapper>
+                    <PaineisPublicitarios />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/sou-sindico" element={
+                  <LazyPageWrapper>
+                    <SouSindico />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/panel-store" element={
+                  <LazyPageWrapper>
+                    <PanelStore />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/painel-store" element={
+                  <LazyPageWrapper>
+                    <PainelStore />
+                  </LazyPageWrapper>
+                } />
 
                 {/* Rotas sem Layout */}
                 <Route path="/login" element={
