@@ -47,9 +47,7 @@ const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
           <LoginSubmitButton loading={loading} />
         </form>
         
-        <div className="mt-4 text-center text-sm text-gray-300">
-          © 2025 Indexa Mídia - Todos os direitos reservados
-        </div>
+        {/* REMOVIDO: Copyright duplicado - apenas o footer principal do Layout deve ter copyright */}
       </div>
     </div>
   );

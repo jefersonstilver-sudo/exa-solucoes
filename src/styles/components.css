@@ -1,5 +1,4 @@
 
-
 /* FOOTER ÚNICO - Regras definitivas para prevenir duplicação */
 
 /* Garantir que apenas UM footer seja exibido em toda a aplicação */
@@ -36,10 +35,12 @@ div[class*="cta"] footer {
   display: none !important;
 }
 
-/* Esconder qualquer elemento que contenha copyright exceto o footer principal */
+/* REGRAS ESPECÍFICAS PARA COPYRIGHTS - Esconder qualquer copyright exceto o footer principal */
 *:not(#unique-indexa-footer) *:contains("©"),
 *:not(#unique-indexa-footer) *:contains("copyright"),
-*:not(#unique-indexa-footer) *:contains("direitos reservados") {
+*:not(#unique-indexa-footer) *:contains("direitos reservados"),
+*:not(#unique-indexa-footer) *:contains("Indexa Mídia"),
+*:not(#unique-indexa-footer) *:contains("2025") {
   display: none !important;
 }
 
@@ -48,6 +49,15 @@ section *:contains("© 2025"),
 section *:contains("Todos os direitos reservados"),
 div:not(#unique-indexa-footer) *:contains("© 2025"),
 div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
+  display: none !important;
+}
+
+/* PROTEÇÃO ESPECÍFICA PARA COMPONENTES DE AUTH */
+.auth-container *:contains("©"),
+[class*="login"] *:contains("©"),
+[class*="auth"] *:contains("©"),
+.login-selector *:contains("©"),
+.login-footer *:contains("©") {
   display: none !important;
 }
 
@@ -62,7 +72,10 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
   
   /* Esconder copyrights duplicados em mobile */
   section div:contains("© 2025"),
-  .absolute.bottom-8:contains("©") {
+  .absolute.bottom-8:contains("©"),
+  .absolute.bottom-4:contains("©"),
+  .fixed.bottom-8:contains("©"),
+  .fixed.bottom-4:contains("©") {
     display: none !important;
   }
 }
@@ -87,10 +100,31 @@ article footer,
   display: none !important;
 }
 
-/* Proteção contra qualquer texto de copyright fora do footer oficial */
+/* PROTEÇÃO MÁXIMA - Esconder qualquer texto de copyright fora do footer oficial */
 *:not(#unique-indexa-footer) {
   & > *:contains("© 2025 Indexa Mídia") {
     display: none !important;
   }
+  & > *:contains("Todos os direitos reservados") {
+    display: none !important;
+  }
+  & > *:contains("© 2025") {
+    display: none !important;
+  }
 }
 
+/* NOVA PROTEÇÃO: Esconder elementos com ID ou classe específicos que possam conter copyright */
+#copyright,
+.copyright,
+[class*="copyright"],
+[id*="copyright"] {
+  display: none !important;
+}
+
+/* PROTEÇÃO CONTRA DIVS COM COPYRIGHT EM QUALQUER POSIÇÃO */
+div:contains("© 2025 Indexa"):not(#unique-indexa-footer *),
+div:contains("Todos os direitos"):not(#unique-indexa-footer *),
+span:contains("© 2025"):not(#unique-indexa-footer *),
+p:contains("© 2025"):not(#unique-indexa-footer *) {
+  display: none !important;
+}
