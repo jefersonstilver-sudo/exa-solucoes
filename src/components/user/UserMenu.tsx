@@ -411,7 +411,7 @@ const UserMenu = () => {
                           <div className="text-center space-y-1">
                             <p className="text-lg font-bold text-gray-900">Bem-vindo à Indexa</p>
                             <p className="text-xs text-gray-600">
-                              Entre para acessar todos os recursos
+                              Entre ou crie sua conta para acessar todos os recursos
                             </p>
                           </div>
                         </DropdownMenuLabel>

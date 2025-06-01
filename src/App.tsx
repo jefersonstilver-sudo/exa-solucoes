@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
+import Cadastro from './pages/Cadastro';
 import { AuthProvider } from './hooks/useAuth';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import LazyLoadingFallback from './components/ui/LazyLoadingFallback';
@@ -100,12 +101,19 @@ function App() {
                   </LazyPageWrapper>
                 } />
 
-                {/* Rotas sem Layout */}
+                {/* Rotas de autenticação */}
                 <Route path="/login" element={
                   <ErrorBoundary>
                     <LoginPage />
                   </ErrorBoundary>
                 } />
+                <Route path="/cadastro" element={
+                  <ErrorBoundary>
+                    <Cadastro />
+                  </ErrorBoundary>
+                } />
+
+                {/* Rotas administrativas */}
                 <Route path="/super_admin/*" element={
                   <ErrorBoundary>
                     <SuperAdminPage />
