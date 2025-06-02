@@ -1,4 +1,3 @@
-
 /* FOOTER ÚNICO - Regras definitivas para prevenir duplicação */
 
 /* Garantir que apenas UM footer seja exibido em toda a aplicação */
@@ -69,15 +68,23 @@ main {
   z-index: 1;
 }
 
-/* Header fixo - garantir z-index apropriado */
+/* Header fixo - garantir z-index apropriado E COR ROXA */
 header {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   z-index: 50 !important;
-  background: white !important;
+  background: linear-gradient(to right, #3C1361, #2A0D47) !important;
   border-bottom: 1px solid #e5e7eb !important;
+}
+
+/* FORÇAR cor roxa do header - proteção contra override */
+header[class*="header"],
+.header,
+[role="banner"] {
+  background: linear-gradient(to right, #3C1361, #2A0D47) !important;
+  color: white !important;
 }
 
 /* Proteção universal para páginas - evitar sobreposição */
@@ -85,8 +92,8 @@ header {
 .building-store-page,
 [class*="store"],
 [class*="loja"] {
-  padding-top: 80px !important;
-  min-height: calc(100vh - 80px) !important;
+  padding-top: 100px !important;
+  min-height: calc(100vh - 100px) !important;
 }
 
 /* OTIMIZAÇÕES PARA LOJA - GARANTIR VISIBILIDADE COMPLETA */
@@ -100,6 +107,7 @@ header {
   overflow: visible !important;
   position: relative !important;
   z-index: 10 !important;
+  margin-top: 20px !important;
 }
 
 /* Seção de busca - VISIBILIDADE TOTAL */
@@ -138,12 +146,16 @@ header {
     overflow-x: hidden !important;
   }
   
-  /* Proteção mobile para header */
+  /* Proteção mobile para header COM COR ROXA */
+  header {
+    background: linear-gradient(to right, #3C1361, #2A0D47) !important;
+  }
+  
   .page-content,
   .building-store-page,
   [class*="store"],
   [class*="loja"] {
-    padding-top: 70px !important;
+    padding-top: 90px !important;
   }
   
   /* Container da loja mobile */
@@ -224,6 +236,11 @@ header {
   
   .max-w-6xl {
     max-width: 72rem !important;
+  }
+  
+  /* Header desktop - cor roxa garantida */
+  header {
+    background: linear-gradient(to right, #3C1361, #2A0D47) !important;
   }
 }
 
