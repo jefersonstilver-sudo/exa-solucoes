@@ -33,7 +33,7 @@ const BuildingStore = () => {
   if (error) {
     return (
       <Layout>
-        <div className="mobile-scroll-container">
+        <div className="min-h-screen flex flex-col">
           <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
             <h2 className="text-2xl font-semibold text-red-500 mb-4">
               Erro ao carregar prédios
@@ -55,20 +55,23 @@ const BuildingStore = () => {
 
   return (
     <Layout>
-      <div className="mobile-scroll-container">
-        <BuildingStoreLayout 
-          buildings={buildings}
-          isLoading={isLoading}
-          isSearching={isSearching}
-          searchLocation={searchLocation}
-          setSearchLocation={setSearchLocation}
-          selectedLocation={selectedLocation}
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          handleSearch={handleSearch}
-          handleClearLocation={handleClearLocation}
-          onAddToCart={handleAddToCart}
-        />
+      <div className="min-h-screen flex flex-col">
+        {/* Main content container with proper spacing */}
+        <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-6">
+          <BuildingStoreLayout 
+            buildings={buildings}
+            isLoading={isLoading}
+            isSearching={isSearching}
+            searchLocation={searchLocation}
+            setSearchLocation={setSearchLocation}
+            selectedLocation={selectedLocation}
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            handleSearch={handleSearch}
+            handleClearLocation={handleClearLocation}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
       </div>
     </Layout>
   );

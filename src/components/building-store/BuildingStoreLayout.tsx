@@ -34,31 +34,35 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   onAddToCart
 }) => {
   return (
-    <>
-      {/* Search section */}
-      <BuildingStoreSearchSection 
-        searchLocation={searchLocation}
-        setSearchLocation={setSearchLocation}
-        selectedLocation={selectedLocation}
-        isSearching={isSearching}
-        filters={filters}
-        handleFilterChange={handleFilterChange}
-        handleSearch={handleSearch}
-        handleClearLocation={handleClearLocation}
-        buildings={buildings}
-      />
+    <div className="w-full space-y-6 building-store-main-content">
+      {/* Search section - SEMPRE VISÍVEL */}
+      <div className="w-full building-search-section">
+        <BuildingStoreSearchSection 
+          searchLocation={searchLocation}
+          setSearchLocation={setSearchLocation}
+          selectedLocation={selectedLocation}
+          isSearching={isSearching}
+          filters={filters}
+          handleFilterChange={handleFilterChange}
+          handleSearch={handleSearch}
+          handleClearLocation={handleClearLocation}
+          buildings={buildings}
+        />
+      </div>
       
       {/* Layout with sidebar and building grid */}
-      <BuildingStoreGridLayout 
-        buildings={buildings}
-        isLoading={isLoading}
-        isSearching={isSearching}
-        selectedLocation={selectedLocation}
-        filters={filters}
-        handleFilterChange={handleFilterChange}
-        onAddToCart={onAddToCart}
-      />
-    </>
+      <div className="w-full">
+        <BuildingStoreGridLayout 
+          buildings={buildings}
+          isLoading={isLoading}
+          isSearching={isSearching}
+          selectedLocation={selectedLocation}
+          filters={filters}
+          handleFilterChange={handleFilterChange}
+          onAddToCart={onAddToCart}
+        />
+      </div>
+    </div>
   );
 };
 

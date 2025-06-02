@@ -32,18 +32,20 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
   if (isMobile) {
     // Layout mobile: Stack vertical com filtros em drawer
     return (
-      <div className="space-y-4">
+      <div className="w-full space-y-4">
         {/* Filtros mobile */}
-        <MobileBuildingFilters 
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          isLoading={isLoading}
-          isSearching={isSearching}
-          buildingsCount={buildings?.length || 0}
-        />
+        <div className="w-full">
+          <MobileBuildingFilters 
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            isLoading={isLoading}
+            isSearching={isSearching}
+            buildingsCount={buildings?.length || 0}
+          />
+        </div>
         
         {/* Grid de prédios mobile */}
-        <div className="px-4">
+        <div className="w-full">
           <BuildingStoreGrid 
             buildings={buildings}
             isLoading={isLoading}
@@ -58,15 +60,17 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
 
   // Layout desktop: Grid com sidebar lateral
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative mt-8">
+    <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
       {/* Left sidebar with filters - Desktop only */}
       <div className="lg:col-span-4 xl:col-span-3">
-        <BuildingFilterSidebar 
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          isLoading={isLoading}
-          isSearching={isSearching}
-        />
+        <div className="sticky top-4">
+          <BuildingFilterSidebar 
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            isLoading={isLoading}
+            isSearching={isSearching}
+          />
+        </div>
       </div>
       
       {/* Main content with building grid */}
