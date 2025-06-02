@@ -56,8 +56,7 @@ export const useCartOperations = ({
             : item
         );
         
-        // Save to localStorage immediately
-        localStorage.setItem('panelCart', JSON.stringify(updated));
+        console.log('🛒 [useCartOperations] Cart atualizado:', updated.length, 'itens');
         return updated;
       } else {
         console.log('🛒 [useCartOperations] Adicionando novo item ao carrinho');
@@ -65,8 +64,7 @@ export const useCartOperations = ({
         const newItem = createCartItem(panel, duration);
         const newCart = [...prev, newItem];
         
-        // Save to localStorage immediately
-        localStorage.setItem('panelCart', JSON.stringify(newCart));
+        console.log('🛒 [useCartOperations] Novo cart:', newCart.length, 'itens');
         return newCart;
       }
     });
@@ -75,7 +73,7 @@ export const useCartOperations = ({
     setCartAnimation(true);
     setTimeout(() => setCartAnimation(false), 800);
     
-    // CRÍTICO: Forçar abertura do carrinho com delay para garantir sincronização
+    // Force cart open with delay to ensure synchronization
     setTimeout(() => {
       console.log('🛒 [useCartOperations] Forçando abertura do carrinho');
       setCartOpen(true);
@@ -109,12 +107,10 @@ export const useCartOperations = ({
     
     setCartItems(prev => {
       const filtered = prev.filter(item => item.panel.id !== panelId);
-      // Save to localStorage immediately
-      localStorage.setItem('panelCart', JSON.stringify(filtered));
+      console.log('🛒 [useCartOperations] Cart após remoção:', filtered.length, 'itens');
       return filtered;
     });
     
-    // Log event
     logCheckoutEvent(
       CheckoutEvent.REMOVE_FROM_CART,
       LogLevel.INFO,
@@ -148,9 +144,7 @@ export const useCartOperations = ({
 
     // Clear the cart
     setCartItems([]);
-    localStorage.removeItem('panelCart');
 
-    // Log event
     logCheckoutEvent(
       CheckoutEvent.CLEAR_CART,
       LogLevel.INFO,
@@ -179,15 +173,11 @@ export const useCartOperations = ({
           : item
       );
       
-      // Save to localStorage immediately
-      localStorage.setItem('panelCart', JSON.stringify(updated));
-      
       // Show toast notification about duration change
       const panel = prev.find(item => item.panel.id === panelId);
       const months = duration / 30;
       const monthText = months === 1 ? 'mês' : 'meses';
       
-      // Log event
       logCheckoutEvent(
         CheckoutEvent.UPDATE_CART,
         LogLevel.INFO,
@@ -202,6 +192,7 @@ export const useCartOperations = ({
         });
       }
       
+      console.log('🛒 [useCartOperations] Cart após mudança de duração:', updated.length, 'itens');
       return updated;
     });
   };
@@ -213,9 +204,8 @@ export const useCartOperations = ({
       if (lastCart) {
         const parsedCart = JSON.parse(lastCart);
         setCartItems(parsedCart);
-        sessionStorage.removeItem('lastCart'); // Clear the backup after restoring
+        sessionStorage.removeItem('lastCart');
         
-        // Log event
         logCheckoutEvent(
           CheckoutEvent.RESTORE_CART,
           LogLevel.INFO,

@@ -2,7 +2,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types/cart';
 import PanelCart from '@/components/panels/PanelCart';
 
@@ -10,10 +9,10 @@ interface CartDrawerProps {
   cartItems: CartItem[];
   isOpen: boolean;
   onClose: () => void;
-  onRemoveFromCart?: (panelId: string) => void;
-  onClearCart?: () => void;
-  onChangeDuration?: (panelId: string, duration: number) => void;
-  onProceedToCheckout?: () => void;
+  onRemoveFromCart: (id: string) => void;
+  onClearCart: () => void;
+  onChangeDuration: (id: string, duration: number) => void;
+  onProceedToCheckout: () => void;
 }
 
 const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -25,67 +24,57 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   onChangeDuration,
   onProceedToCheckout
 }) => {
-  console.log('🛒 CartDrawer: Renderizando');
-  console.log('🛒 CartDrawer: isOpen:', isOpen);
-  console.log('🛒 CartDrawer: cartItems.length:', cartItems.length);
-
-  const handleClose = () => {
-    console.log('🛒 CartDrawer: Fechando drawer');
-    onClose();
-  };
-
-  // Sempre renderizar o drawer quando houver itens, independente do estado isOpen
-  const shouldShow = cartItems.length > 0 && isOpen;
+  console.log('🛒 [CART DRAWER] Renderizando drawer:', {
+    isOpen,
+    cartItemsCount: cartItems.length,
+    items: cartItems.map(item => ({ id: item.id, panelId: item.panel.id, name: item.panel.buildings?.nome }))
+  });
 
   return (
     <AnimatePresence>
-      {shouldShow && (
+      {isOpen && (
         <>
-          {/* Overlay */}
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-            onClick={handleClose}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/50 z-40"
           />
-
+          
           {/* Drawer */}
           <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: "0%" }}
-            exit={{ x: "100%" }}
-            transition={{ 
-              type: "spring", 
-              damping: 30, 
-              stiffness: 300 
-            }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Seu Carrinho ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClose}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Carrinho ({cartItems.length})
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-            {/* Cart Content */}
-            <div className="flex-1 flex flex-col">
-              <PanelCart
-                cartItems={cartItems}
-                onRemove={onRemoveFromCart || (() => {})}
-                onClear={onClearCart || (() => {})}
-                onChangeDuration={onChangeDuration || (() => {})}
-                onProceedToCheckout={onProceedToCheckout || (() => {})}
-              />
+              {/* Cart Content */}
+              <div className="flex-1 overflow-auto">
+                <PanelCart
+                  cartItems={cartItems}
+                  onRemove={onRemoveFromCart}
+                  onClear={onClearCart}
+                  onChangeDuration={onChangeDuration}
+                  onProceedToCheckout={onProceedToCheckout}
+                />
+              </div>
             </div>
           </motion.div>
         </>

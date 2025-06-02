@@ -4,7 +4,7 @@ import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
 import { useCartManager } from '@/hooks/useCartManager';
-import '@/styles/components.css'; // Importar CSS para prevenir footer duplicado
+import '@/styles/components.css';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
-  console.log('🏗️ Layout: Renderizando Layout com footer ÚNICO e CartDrawer');
+  console.log('🏗️ [LAYOUT] Renderizando Layout com sistema de carrinho unificado');
   
   const { 
     cartItems, 
@@ -28,11 +28,15 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
   // Calculate cart items count from cartItems array
   const cartItemsCount = cartItems.length;
 
-  console.log('🏗️ Layout: Cart state:', {
+  console.log('🏗️ [LAYOUT] Estado do carrinho unificado:', {
     cartItemsCount,
     cartAnimation,
     cartOpen,
-    cartItems: cartItems.map(item => ({ id: item.id, panelId: item.panel.id }))
+    cartItems: cartItems.map(item => ({ 
+      id: item.id, 
+      panelId: item.panel.id, 
+      buildingName: item.panel.buildings?.nome 
+    }))
   });
 
   return (
@@ -47,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
         {children}
       </main>
       
-      {/* Cart Drawer - NOVO COMPONENTE ADICIONADO */}
+      {/* Cart Drawer - Sistema unificado */}
       <CartDrawer
         cartItems={cartItems}
         isOpen={cartOpen}
@@ -58,7 +62,6 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
         onProceedToCheckout={handleProceedToCheckout}
       />
       
-      {/* ÚNICO FOOTER DA APLICAÇÃO */}
       <MobileOptimizedFooter />
     </div>
   );

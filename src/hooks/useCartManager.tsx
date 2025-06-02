@@ -59,40 +59,35 @@ export const useCartManager = () => {
     setCartOpen
   });
 
-  // CRITICAL FIX: Drastically reduce logging frequency to prevent infinite loops
-  const cartValidationLog = useMemo(() => {
-    if (initialLoadDone && cartItems.length > 0) {
-      // Only log once per cart change, not continuously
-      const cartValid = cartItems.every(item => 
-        item && 
-        item.panel && 
-        typeof item.panel === 'object' && 
-        item.panel.id && 
-        typeof item.duration === 'number'
-      );
-      
-      if (!cartValid) {
-        // Only log critical errors
-        logCheckoutEvent(
-          CheckoutEvent.SAVE_CART,
-          LogLevel.ERROR,
-          `CRITICAL: Invalid cart structure detected`,
-          { cartItemsCount: cartItems.length }
-        );
-      }
+  // Log cart state periodically for debugging
+  React.useEffect(() => {
+    if (initialLoadDone) {
+      console.log('🔄 [useCartManager] Estado atual:', {
+        cartItemsLength: cartItems.length,
+        cartOpen,
+        cartAnimation,
+        items: cartItems.map(item => ({
+          id: item.id,
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          duration: item.duration,
+          price: item.price
+        }))
+      });
     }
-    return cartItems.length;
-  }, [initialLoadDone, cartItems.length]); // Only depend on length to reduce re-computations
+  }, [cartItems.length, cartOpen, initialLoadDone]);
 
-  // Memoized functions to prevent unnecessary re-renders
+  // Memoized function to prevent unnecessary re-renders
   const reloadCartFromStorage = useCallback(() => {
     try {
+      console.log('🔄 [useCartManager] Recarregando carrinho do storage...');
       const loadedLegacyCart = loadCartFromStorage();
       const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
       setCartItems(fullCartItems);
+      console.log('✅ [useCartManager] Carrinho recarregado:', fullCartItems.length, 'itens');
       return fullCartItems;
     } catch (error) {
-      console.error('[useCartManager] Error reloading cart:', error);
+      console.error('❌ [useCartManager] Erro ao recarregar carrinho:', error);
       return [];
     }
   }, [setCartItems]);
@@ -118,7 +113,7 @@ export const useCartManager = () => {
     handleProceedToCheckout,
     isNavigating,
     
-    // Debugging and testing - memoized
+    // Debugging and testing
     reloadCartFromStorage
   };
 };

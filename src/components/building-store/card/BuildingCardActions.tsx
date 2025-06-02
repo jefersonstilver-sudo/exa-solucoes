@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 interface BuildingCardActionsProps {
   building: BuildingStore;
   onAddToCart: (panel: Panel, duration?: number) => void;
-  isInCart: boolean; // NEW: Real cart state
+  isInCart: boolean;
 }
 
 const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ 
@@ -26,7 +26,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
 
   const handleAddToCart = async () => {
     if (isInCart) {
-      // If already in cart, show message instead of adding again
+      console.log('🛒 [BUILDING CARD] Item já está no carrinho:', building.nome);
       toast.info(`${building.nome} já está no carrinho!`, {
         description: "Verifique seu carrinho para gerenciar este item",
         duration: 3000,
@@ -35,10 +35,12 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
     }
     
     try {
+      console.log('🛒 [BUILDING CARD] Adicionando prédio ao carrinho:', building.nome);
+      
       // Converter Building para Panel antes de adicionar ao carrinho
       const panel = buildingToPanel(building);
       
-      console.log('🛒 [BUILDING STORE CARD] Adicionando ao carrinho:', {
+      console.log('🛒 [BUILDING CARD] Panel criado:', {
         building: building.nome,
         panel: panel.id,
         panelCode: panel.code
@@ -47,6 +49,8 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       // Chamar função real de adicionar ao carrinho
       await onAddToCart(panel, 30); // Duração padrão de 30 dias
       
+      console.log('✅ [BUILDING CARD] Prédio adicionado ao carrinho com sucesso');
+      
       // Toast de sucesso
       toast.success(`${building.nome} adicionado ao carrinho!`, {
         description: "Painel adicionado com duração de 30 dias",
@@ -54,7 +58,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       });
       
     } catch (error) {
-      console.error('❌ [BUILDING STORE CARD] Erro ao adicionar ao carrinho:', error);
+      console.error('❌ [BUILDING CARD] Erro ao adicionar ao carrinho:', error);
       
       toast.error('Erro ao adicionar ao carrinho', {
         description: "Tente novamente em alguns instantes",
@@ -79,7 +83,6 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       </div>
       
       <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>
-        {/* Botão Adicionar ao Carrinho - Estado baseado no carrinho real */}
         <motion.div
           whileHover={!isMobile ? { scale: 1.02 } : {}}
           whileTap={{ scale: 0.98 }}
