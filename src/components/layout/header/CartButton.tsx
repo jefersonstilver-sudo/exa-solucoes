@@ -14,15 +14,15 @@ const CartButton: React.FC<CartButtonProps> = ({
   onToggleCart
 }) => {
   const handleCartClick = () => {
-    console.log('🛒 CartButton: Clique no carrinho detectado');
-    console.log('🛒 CartButton: cartItemsCount:', cartItemsCount);
-    console.log('🛒 CartButton: onToggleCart function:', !!onToggleCart);
+    console.log('🛒 [CartButton] Clique no carrinho detectado');
+    console.log('🛒 [CartButton] cartItemsCount:', cartItemsCount);
+    console.log('🛒 [CartButton] onToggleCart function:', !!onToggleCart);
     
     if (onToggleCart) {
-      console.log('🛒 CartButton: Chamando função toggleCart');
+      console.log('🛒 [CartButton] Chamando função toggleCart');
       onToggleCart();
     } else {
-      console.error('🛒 CartButton: ERRO - onToggleCart não foi fornecida!');
+      console.error('🛒 [CartButton] ERRO - onToggleCart não foi fornecida!');
     }
   };
 
@@ -34,6 +34,13 @@ const CartButton: React.FC<CartButtonProps> = ({
         onClick={handleCartClick}
         variant="header"
       />
+      
+      {/* Debug: Mostrar estado do carrinho */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute -bottom-8 -right-2 text-xs bg-black text-white px-1 rounded opacity-50">
+          {cartItemsCount}
+        </div>
+      )}
     </div>
   );
 };

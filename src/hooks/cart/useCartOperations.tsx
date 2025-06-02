@@ -36,11 +36,14 @@ export const useCartOperations = ({
   };
 
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
+    console.log('🛒 [useCartOperations] Adicionando ao carrinho:', { panelId: panel.id, duration });
+    
     setCartItems(prev => {
       // Check if panel is already in cart
       const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
       
       if (existingIndex >= 0) {
+        console.log('🛒 [useCartOperations] Atualizando item existente no carrinho');
         // Update the existing item
         return prev.map((item, index) => 
           index === existingIndex 
@@ -53,17 +56,20 @@ export const useCartOperations = ({
             : item
         );
       } else {
-        // Trigger cart icon animation only
-        setCartAnimation(true);
-        setTimeout(() => setCartAnimation(false), 800);
-        
+        console.log('🛒 [useCartOperations] Adicionando novo item ao carrinho');
         // Add new panel to cart
         const newItem = createCartItem(panel, duration);
         return [...prev, newItem];
       }
     });
     
-    // DO NOT automatically open the cart - only open on manual click
+    // Trigger cart icon animation
+    setCartAnimation(true);
+    setTimeout(() => setCartAnimation(false), 800);
+    
+    // IMPORTANTE: Abrir o carrinho automaticamente quando um item é adicionado
+    console.log('🛒 [useCartOperations] Abrindo carrinho automaticamente');
+    setCartOpen(true);
     
     // Log event
     logCheckoutEvent(
@@ -85,6 +91,8 @@ export const useCartOperations = ({
   };
 
   const handleRemoveFromCart = (panelId: string) => {
+    console.log('🛒 [useCartOperations] Removendo do carrinho:', panelId);
+    
     // Get panel name before removing
     const panelToRemove = cartItems.find(item => item.panel.id === panelId);
     const panelName = panelToRemove?.panel.buildings?.nome || 'Painel';
@@ -111,6 +119,8 @@ export const useCartOperations = ({
   };
 
   const handleClearCart = () => {
+    console.log('🛒 [useCartOperations] Limpando carrinho');
+    
     // Save the cart temporarily before clearing (in case the user wants to undo)
     try {
       const currentCart = JSON.stringify(cartItems);
@@ -141,6 +151,8 @@ export const useCartOperations = ({
   };
 
   const handleChangeDuration = (panelId: string, duration: number) => {
+    console.log('🛒 [useCartOperations] Alterando duração:', { panelId, duration });
+    
     setCartItems(prev => {
       const updated = prev.map(item => 
         item.panel.id === panelId 
@@ -206,9 +218,14 @@ export const useCartOperations = ({
     return false;
   };
 
-  // Toggle cart open/close - only allow manual toggle
+  // Toggle cart open/close - allow manual toggle
   const toggleCart = () => {
-    setCartOpen(prev => !prev);
+    console.log('🛒 [useCartOperations] Alternando estado do carrinho');
+    setCartOpen(prev => {
+      const newState = !prev;
+      console.log('🛒 [useCartOperations] Novo estado do carrinho:', newState);
+      return newState;
+    });
   };
 
   return {
