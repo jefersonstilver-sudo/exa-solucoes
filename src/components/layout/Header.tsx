@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import CartButton from './header/CartButton';
 import HeaderLogo from './header/HeaderLogo';
@@ -20,7 +20,6 @@ const Header: React.FC<HeaderProps> = ({
   onToggleCart
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -28,10 +27,6 @@ const Header: React.FC<HeaderProps> = ({
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
-  };
-
-  const handleStoreClick = () => {
-    navigate('/loja');
   };
 
   console.log('🏢 Header: Renderizando header');
@@ -92,14 +87,15 @@ const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Loja Online Button */}
-            <Button 
-              variant="outline" 
-              onClick={handleStoreClick}
-              className="bg-[#00FFAB] text-[#3C1361] border-[#00FFAB] hover:bg-[#00FFAB]/90 font-semibold px-3 lg:px-5 text-sm lg:text-base"
-            >
-              <span className="hidden sm:inline">Loja Online</span>
-              <span className="sm:hidden">Loja</span>
-            </Button>
+            <Link to="/loja">
+              <Button 
+                variant="outline" 
+                className="bg-[#00FFAB] text-[#3C1361] border-[#00FFAB] hover:bg-[#00FFAB]/90 font-semibold px-3 lg:px-5 text-sm lg:text-base"
+              >
+                <span className="hidden sm:inline">Loja Online</span>
+                <span className="sm:hidden">Loja</span>
+              </Button>
+            </Link>
 
             {/* Cart Button */}
             <CartButton 

@@ -2,7 +2,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { Panel } from '@/types/panel';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,20 +14,17 @@ import BuildingCardActions from './card/BuildingCardActions';
 interface BuildingStoreCardProps {
   building: BuildingStore;
   onAddToCart: (panel: Panel, duration?: number) => void;
-  isInCart: boolean; // NEW: Cart state for this building
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
   building, 
-  onAddToCart,
-  isInCart
+  onAddToCart 
 }) => {
   const isMobile = useIsMobile();
 
   console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD ===');
   console.log('🏢 [BUILDING STORE CARD] isMobile:', isMobile);
   console.log('🏢 [BUILDING STORE CARD] Building:', building.nome);
-  console.log('🏢 [BUILDING STORE CARD] isInCart:', isInCart);
 
   if (isMobile) {
     // Layout mobile: Card vertical compacto com título no topo
@@ -70,21 +66,6 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                   </div>
                 </motion.div>
               )}
-
-              {/* Badge do carrinho se estiver adicionado */}
-              {isInCart && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="absolute top-2 left-2 z-10"
-                >
-                  <div className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center">
-                    <Check className="h-3 w-3 mr-1" />
-                    No Carrinho
-                  </div>
-                </motion.div>
-              )}
             </div>
 
             {/* Informações - Mobile: Layout compacto */}
@@ -109,7 +90,6 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                   <BuildingCardActions 
                     building={building}
                     onAddToCart={onAddToCart}
-                    isInCart={isInCart}
                   />
                 </div>
               </motion.div>
@@ -154,21 +134,6 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                 </div>
               </motion.div>
             )}
-
-            {/* Badge do carrinho se estiver adicionado - Desktop */}
-            {isInCart && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.4 }}
-                className="absolute top-3 left-3 z-10"
-              >
-                <div className="bg-green-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg flex items-center backdrop-blur-sm bg-green-600/90">
-                  <Check className="h-3 w-3 mr-1" />
-                  No Carrinho
-                </div>
-              </motion.div>
-            )}
           </div>
 
           {/* Informações - Desktop: Lado direito com título no topo */}
@@ -201,7 +166,6 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                   <BuildingCardActions 
                     building={building}
                     onAddToCart={onAddToCart}
-                    isInCart={isInCart}
                   />
                 </div>
               </div>

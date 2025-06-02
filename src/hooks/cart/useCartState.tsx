@@ -18,37 +18,30 @@ const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number })
 
 export const useCartState = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false); // Cart starts closed by default
   const [cartAnimation, setCartAnimation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-
-  // Carregamento inicial - SEM remover outras chaves do localStorage
+  
+  // Carregamento inicial - simplificado sem useCallback problemático
   useEffect(() => {
     if (initialLoadDone) return;
     
-    console.log('🔄 [useCartState] Carregando carrinho inicial...');
+    console.log("useCartState: Carregando carrinho inicial");
     const loadedLegacyCart = loadCartFromStorage();
     const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
     
-    console.log('📦 [useCartState] Carrinho carregado:', {
-      legacyItems: loadedLegacyCart.length,
-      fullItems: fullCartItems.length,
-      items: fullCartItems.map(item => ({ id: item.id, panelId: item.panel.id, name: item.panel.buildings?.nome }))
-    });
-    
     setCartItems(fullCartItems);
     setInitialLoadDone(true);
+    
+    console.log("useCartState: Carrinho carregado:", fullCartItems);
   }, [initialLoadDone]);
 
-  // Salvamento automático com logging detalhado
+  // Salvamento automático
   useEffect(() => {
     if (!initialLoadDone) return;
     
-    console.log('💾 [useCartState] Salvando carrinho automaticamente...', {
-      itemCount: cartItems.length,
-      items: cartItems.map(item => ({ id: item.id, panelId: item.panel.id, name: item.panel.buildings?.nome }))
-    });
+    console.log("useCartState: Salvando carrinho:", cartItems);
     
     const legacyCartItems = cartItems.map(item => ({
       panel: item.panel,
@@ -56,28 +49,15 @@ export const useCartState = () => {
     }));
     
     saveCartToStorage(legacyCartItems);
-    console.log('💾 [useCartState] Salvamento realizado');
-    
-    // Verify save by reading back
-    setTimeout(() => {
-      const verification = loadCartFromStorage();
-      console.log('🔍 [useCartState] Verificação pós-salvamento:', {
-        saved: legacyCartItems.length,
-        verified: verification.length,
-        match: verification.length === legacyCartItems.length
-      });
-    }, 100);
-    
   }, [cartItems, initialLoadDone]);
 
-  // Manage body class for drawer state
+  // DO NOT auto-open cart - only open on manual user action
   useEffect(() => {
+    // Only manage body class for drawer state, no auto-opening
     if (cartOpen) {
       document.body.classList.add('drawer-open');
-      console.log('🎨 [useCartState] Cart aberto - classe drawer-open adicionada');
     } else {
       document.body.classList.remove('drawer-open');
-      console.log('🎨 [useCartState] Cart fechado - classe drawer-open removida');
     }
 
     return () => {

@@ -36,22 +36,16 @@ export const useCartOperations = ({
   };
 
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
-    console.log('🛒 [useCartOperations] === INICIANDO ADIÇÃO AO CARRINHO ===');
-    console.log('🛒 [useCartOperations] Panel ID:', panel.id);
-    console.log('🛒 [useCartOperations] Panel Name:', panel.buildings?.nome);
-    console.log('🛒 [useCartOperations] Duration:', duration);
-    console.log('🛒 [useCartOperations] Current cart items:', cartItems.length);
+    console.log('🛒 [useCartOperations] Adicionando ao carrinho:', { panelId: panel.id, duration });
     
     setCartItems(prev => {
-      console.log('🛒 [useCartOperations] Cart anterior:', prev.length, 'itens');
-      
       // Check if panel is already in cart
       const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
       
       if (existingIndex >= 0) {
         console.log('🛒 [useCartOperations] Atualizando item existente no carrinho');
         // Update the existing item
-        const updated = prev.map((item, index) => 
+        return prev.map((item, index) => 
           index === existingIndex 
             ? {
                 ...item,
@@ -61,23 +55,11 @@ export const useCartOperations = ({
               }
             : item
         );
-        
-        console.log('🛒 [useCartOperations] Cart atualizado:', updated.length, 'itens');
-        return updated;
       } else {
         console.log('🛒 [useCartOperations] Adicionando novo item ao carrinho');
         // Add new panel to cart
         const newItem = createCartItem(panel, duration);
-        const newCart = [...prev, newItem];
-        
-        console.log('🛒 [useCartOperations] Novo cart:', newCart.length, 'itens');
-        console.log('🛒 [useCartOperations] Item adicionado:', {
-          id: newItem.id,
-          panelId: newItem.panel.id,
-          name: newItem.panel.buildings?.nome,
-          price: newItem.price
-        });
-        return newCart;
+        return [...prev, newItem];
       }
     });
     
@@ -85,11 +67,9 @@ export const useCartOperations = ({
     setCartAnimation(true);
     setTimeout(() => setCartAnimation(false), 800);
     
-    // Force cart open with delay to ensure synchronization
-    setTimeout(() => {
-      console.log('🛒 [useCartOperations] Forçando abertura do carrinho');
-      setCartOpen(true);
-    }, 200);
+    // IMPORTANTE: Abrir o carrinho automaticamente quando um item é adicionado
+    console.log('🛒 [useCartOperations] Abrindo carrinho automaticamente');
+    setCartOpen(true);
     
     // Log event
     logCheckoutEvent(
@@ -117,12 +97,9 @@ export const useCartOperations = ({
     const panelToRemove = cartItems.find(item => item.panel.id === panelId);
     const panelName = panelToRemove?.panel.buildings?.nome || 'Painel';
     
-    setCartItems(prev => {
-      const filtered = prev.filter(item => item.panel.id !== panelId);
-      console.log('🛒 [useCartOperations] Cart após remoção:', filtered.length, 'itens');
-      return filtered;
-    });
+    setCartItems(prev => prev.filter(item => item.panel.id !== panelId));
     
+    // Log event
     logCheckoutEvent(
       CheckoutEvent.REMOVE_FROM_CART,
       LogLevel.INFO,
@@ -156,7 +133,9 @@ export const useCartOperations = ({
 
     // Clear the cart
     setCartItems([]);
+    localStorage.removeItem('panelCart');
 
+    // Log event
     logCheckoutEvent(
       CheckoutEvent.CLEAR_CART,
       LogLevel.INFO,
@@ -190,6 +169,7 @@ export const useCartOperations = ({
       const months = duration / 30;
       const monthText = months === 1 ? 'mês' : 'meses';
       
+      // Log event
       logCheckoutEvent(
         CheckoutEvent.UPDATE_CART,
         LogLevel.INFO,
@@ -204,9 +184,38 @@ export const useCartOperations = ({
         });
       }
       
-      console.log('🛒 [useCartOperations] Cart após mudança de duração:', updated.length, 'itens');
       return updated;
     });
+  };
+
+  // Restore cart if needed (if it was cleared by mistake)
+  const handleRestoreCart = () => {
+    try {
+      const lastCart = sessionStorage.getItem('lastCart');
+      if (lastCart) {
+        const parsedCart = JSON.parse(lastCart);
+        setCartItems(parsedCart);
+        sessionStorage.removeItem('lastCart'); // Clear the backup after restoring
+        
+        // Log event
+        logCheckoutEvent(
+          CheckoutEvent.RESTORE_CART,
+          LogLevel.INFO,
+          "Carrinho restaurado do backup",
+          { itemCount: parsedCart.length }
+        );
+        
+        toast({
+          title: "Carrinho restaurado",
+          description: "Os itens foram restaurados com sucesso",
+        });
+        
+        return true;
+      }
+    } catch (e) {
+      console.error('Falha ao restaurar o carrinho', e);
+    }
+    return false;
   };
 
   // Toggle cart open/close - allow manual toggle
@@ -224,6 +233,7 @@ export const useCartOperations = ({
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
+    handleRestoreCart,
     toggleCart
   };
 };

@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Building2 } from 'lucide-react';
 import { SimpleBuildingStore } from '@/services/simpleBuildingService';
 import { Panel } from '@/types/panel';
-import { CartItem } from '@/types/cart';
 import { buildingToPanel } from '@/services/buildingStoreService';
 import BuildingStoreCard from './BuildingStoreCard';
 
@@ -12,7 +11,6 @@ interface SimpleBuildingGridProps {
   buildings: SimpleBuildingStore[];
   isLoading: boolean;
   onAddToCart: (panel: Panel, duration?: number) => void;
-  cartItems?: CartItem[]; // NEW: Add cartItems prop
 }
 
 // Adapter para converter SimpleBuildingStore para BuildingStore
@@ -44,25 +42,11 @@ const convertToBuildingStore = (building: SimpleBuildingStore) => {
 const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
   buildings,
   isLoading,
-  onAddToCart,
-  cartItems = [] // Default empty array
+  onAddToCart
 }) => {
   console.log('🏢 [SIMPLE GRID] === RENDERIZANDO ===');
   console.log('🏢 [SIMPLE GRID] buildings.length:', buildings.length);
   console.log('🏢 [SIMPLE GRID] isLoading:', isLoading);
-  console.log('🏢 [SIMPLE GRID] cartItems.length:', cartItems.length);
-
-  // Function to check if a building is in cart
-  const isBuildingInCart = (building: SimpleBuildingStore): boolean => {
-    if (!cartItems || cartItems.length === 0) return false;
-    
-    // Check if any cart item corresponds to this building
-    return cartItems.some(cartItem => {
-      // Compare by building_id if available, otherwise by building name
-      return cartItem.panel.building_id === building.id ||
-             cartItem.panel.buildings?.nome === building.nome;
-    });
-  };
 
   if (isLoading) {
     console.log('🔄 [SIMPLE GRID] Mostrando loading...');
@@ -111,9 +95,6 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
       {buildings.map((building, index) => {
         console.log(`🏢 [SIMPLE GRID] Renderizando prédio ${index + 1}: ${building.nome}`);
         const convertedBuilding = convertToBuildingStore(building);
-        const isInCart = isBuildingInCart(building);
-        
-        console.log(`🛒 [SIMPLE GRID] ${building.nome} está no carrinho:`, isInCart);
         
         return (
           <motion.div
@@ -129,7 +110,6 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
             <BuildingStoreCard
               building={convertedBuilding}
               onAddToCart={onAddToCart}
-              isInCart={isInCart}
             />
           </motion.div>
         );

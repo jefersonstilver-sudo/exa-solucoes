@@ -1,12 +1,14 @@
 
-import { useNavigate } from 'react-router-dom';
 import { CartItem } from '@/types/cart';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { validateCartForCheckout, saveCartForCheckout } from '@/services/cartValidationService';
+import { useCheckoutState } from '@/hooks/cart/useCheckoutState';
+import { useUserSession } from '@/hooks/useUserSession';
+import { useNavigate } from 'react-router-dom';
 
 interface UseCartCheckoutProps {
   cartItems: CartItem[];
-  setIsNavigating: React.Dispatch<React.SetStateAction<boolean>>;
-  setCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsNavigating: (isNavigating: boolean) => void;
+  setCartOpen: (isOpen: boolean) => void;
 }
 
 export const useCartCheckout = ({
@@ -14,40 +16,83 @@ export const useCartCheckout = ({
   setIsNavigating,
   setCartOpen
 }: UseCartCheckoutProps) => {
+  const { isLoggedIn } = useUserSession();
   const navigate = useNavigate();
-
+  const {
+    isCheckoutProcessed,
+    preventMultipleCheckout,
+    startCheckoutProcess,
+    resetCheckoutProcess,
+    handleCheckoutError,
+    showEmptyCartToast,
+    showAlreadyOnPageToast
+  } = useCheckoutState();
+  
   const handleProceedToCheckout = () => {
-    console.log('🚀 [useCartCheckout] Iniciando processo de checkout');
-    console.log('🚀 [useCartCheckout] Items no carrinho:', cartItems.length);
+    console.log('🛒 Cart Checkout: Iniciando processo, isLoggedIn:', isLoggedIn);
     
-    if (cartItems.length === 0) {
-      console.warn('🚀 [useCartCheckout] Tentativa de checkout com carrinho vazio');
+    // Prevent multiple checkouts
+    if (!preventMultipleCheckout()) {
+      return;
+    }
+    
+    // Validate cart
+    const validation = validateCartForCheckout(cartItems);
+    if (!validation.isValid) {
+      showEmptyCartToast();
       return;
     }
 
-    logCheckoutEvent(
-      CheckoutEvent.PROCEED_TO_CHECKOUT,
-      LogLevel.INFO,
-      `Iniciando checkout com ${cartItems.length} itens`,
-      { 
-        itemCount: cartItems.length,
-        totalPrice: cartItems.reduce((sum, item) => sum + item.price, 0)
+    try {
+      // Mark checkout as in processing
+      startCheckoutProcess(cartItems.length);
+      setIsNavigating(true);
+      
+      // Close cart
+      setCartOpen(false);
+      
+      // Save cart with validation
+      saveCartForCheckout(cartItems);
+      
+      // Check if already on target page
+      if (window.location.pathname === '/selecionar-plano') {
+        showAlreadyOnPageToast();
+        resetCheckoutProcess();
+        setIsNavigating(false);
+        return;
       }
-    );
+      
+      // Navigate based on authentication status
+      if (!isLoggedIn) {
+        console.log('🛒 Cart Checkout: Usuário não logado, redirecionando para login');
+        navigate('/login?redirect=/selecionar-plano');
+      } else {
+        console.log('🛒 Cart Checkout: Usuário logado, indo para seleção de planos');
+        navigate('/selecionar-plano');
+      }
+      
+      // Reset processing state after a short delay
+      setTimeout(() => {
+        resetCheckoutProcess();
+        setIsNavigating(false);
+      }, 1000);
 
-    setIsNavigating(true);
-    setCartOpen(false);
-    
-    // CORREÇÃO: Navegar para a primeira etapa do checkout (seleção de plano)
-    navigate('/checkout/plano');
-    
-    // Reset navigation state after a delay
-    setTimeout(() => {
+    } catch (error) {
+      console.error('Erro no checkout:', error);
+      handleCheckoutError(error);
       setIsNavigating(false);
-    }, 1000);
+      
+      // Fallback navigation
+      if (!isLoggedIn) {
+        navigate('/login?redirect=/selecionar-plano');
+      } else {
+        navigate('/selecionar-plano');
+      }
+    }
   };
-
+  
   return {
-    handleProceedToCheckout
+    handleProceedToCheckout,
+    isCheckoutProcessed
   };
 };

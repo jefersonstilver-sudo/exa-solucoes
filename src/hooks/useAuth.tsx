@@ -25,10 +25,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const initialized = useRef(false);
 
-  // Função para buscar role do banco de dados diretamente
+  // NOVA: Função para buscar role do banco de dados diretamente
   const fetchUserRoleFromDB = useCallback(async (userId: string): Promise<UserRole | null> => {
     try {
-      console.log('🔍 [AUTH DEBUG] Buscando role do usuário no banco:', userId);
+      console.log('🔍 Buscando role do usuário no banco:', userId);
       
       const { data, error } = await supabase
         .from('users')
@@ -37,15 +37,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
       
       if (error) {
-        console.error('❌ [AUTH DEBUG] Erro ao buscar role do banco:', error);
-        return 'client'; // Fallback para cliente
+        console.error('❌ Erro ao buscar role do banco:', error);
+        return null;
       }
       
-      console.log('✅ [AUTH DEBUG] Role encontrado no banco:', data);
-      return data?.role as UserRole || 'client';
+      console.log('✅ Role encontrado no banco:', data);
+      return data?.role as UserRole || null;
     } catch (error) {
-      console.error('💥 [AUTH DEBUG] Exceção ao buscar role do banco:', error);
-      return 'client'; // Fallback para cliente
+      console.error('💥 Exceção ao buscar role do banco:', error);
+      return null;
     }
   }, []);
 
@@ -57,113 +57,122 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       const payload = JSON.parse(atob(session.access_token.split('.')[1]));
-      console.log('🔍 [AUTH DEBUG] JWT payload:', payload);
       return payload.user_role as UserRole || null;
     } catch (error) {
-      console.error('❌ [AUTH DEBUG] Erro ao extrair role do JWT:', error);
+      console.error('❌ Erro ao extrair role do JWT:', error);
       return null;
     }
   }, []);
 
-  // CORRIGIDA: Função para criar perfil do usuário com fallback garantido
+  // MELHORADA: Função para criar perfil do usuário com fallback para DB
   const createUserProfileFromSession = useCallback(async (session: Session | null): Promise<UserProfile | null> => {
     if (!session?.user) {
-      console.log('⚠️ [AUTH DEBUG] Sem sessão/usuário para criar perfil');
       return null;
     }
 
-    console.log('🔄 [AUTH DEBUG] Criando perfil do usuário:', {
-      userId: session.user.id,
-      email: session.user.email
-    });
-
     // Primeiro tenta extrair do JWT
     let userRole = extractUserRoleFromJWT(session);
-    console.log('🔍 [AUTH DEBUG] Role do JWT:', userRole);
     
     // Se não encontrou no JWT, busca no banco de dados
     if (!userRole) {
-      console.log('⚠️ [AUTH DEBUG] Role não encontrado no JWT, buscando no banco...');
+      console.log('⚠️ Role não encontrado no JWT, buscando no banco...');
       userRole = await fetchUserRoleFromDB(session.user.id);
     }
     
-    // Garantir que sempre temos um role
-    if (!userRole) {
-      console.log('⚠️ [AUTH DEBUG] Nenhum role encontrado, usando client como fallback');
-      userRole = 'client';
-    }
+    console.log('📋 Criando perfil do usuário:', {
+      id: session.user.id,
+      email: session.user.email,
+      role: userRole,
+      source: userRole === extractUserRoleFromJWT(session) ? 'JWT' : 'Database'
+    });
     
-    const profile = {
+    return {
       id: session.user.id,
       email: session.user.email || '',
       role: userRole,
       data_criacao: session.user.created_at
     };
-    
-    console.log('✅ [AUTH DEBUG] Perfil criado com sucesso:', profile);
-    return profile;
   }, [extractUserRoleFromJWT, fetchUserRoleFromDB]);
 
-  // Verificação Super Admin
+  // CORRIGIDA: Verificação Super Admin mais robusta com múltiplas verificações
   const isSuperAdmin = useCallback((profile: UserProfile | null, sessionData: Session | null): boolean => {
     if (!profile || !sessionData) {
+      console.log('🔍 SUPER ADMIN CHECK: Sem perfil ou sessão');
       return false;
     }
 
+    // Verificações múltiplas para robustez
     const emailMatch = profile.email === 'jefersonstilver@gmail.com' || 
                       sessionData.user?.email === 'jefersonstilver@gmail.com';
     const roleMatch = profile.role === 'super_admin';
     
-    const result = emailMatch && roleMatch;
+    // NOVA: Verificação adicional de ID específico (caso tenha)
+    const isTargetUser = sessionData.user?.id && 
+                        (profile.email === 'jefersonstilver@gmail.com' || 
+                         sessionData.user.email === 'jefersonstilver@gmail.com');
     
-    console.log('🔍 [AUTH DEBUG] Super Admin Check:', {
+    const result = emailMatch && roleMatch && isTargetUser;
+    
+    console.log('🔍 SUPER ADMIN CHECK DETALHADO:', {
       email: profile.email,
+      sessionEmail: sessionData.user?.email,
       role: profile.role,
-      result
+      userId: sessionData.user?.id,
+      emailMatch,
+      roleMatch,
+      isTargetUser,
+      finalResult: result
     });
     
     return result;
   }, []);
 
-  // CORRIGIDA: Atualização de estado com logs detalhados
+  // OTIMIZADA: Atualização de estado com verificação melhorada
   const updateAuthState = useCallback(async (newSession: Session | null) => {
-    console.log('🔄 [AUTH DEBUG] ===== ATUALIZANDO ESTADO DE AUTH =====');
-    console.log('🔄 [AUTH DEBUG] Nova sessão recebida:', !!newSession);
-    
     const newUser = newSession?.user ?? null;
-    console.log('🔄 [AUTH DEBUG] Novo usuário:', {
-      hasUser: !!newUser,
-      userId: newUser?.id,
-      email: newUser?.email
-    });
     
-    // Criar perfil com busca no banco
+    // NOVA: Criar perfil com busca no banco
     const newProfile = newSession ? await createUserProfileFromSession(newSession) : null;
-    console.log('🔄 [AUTH DEBUG] Novo perfil:', newProfile);
     
-    // LÓGICA DE LOGIN SIMPLIFICADA E MAIS ROBUSTA
-    const newIsLoggedIn = !!(newSession && newUser && newProfile);
-    console.log('🔄 [AUTH DEBUG] Estado de login calculado:', {
+    // Log detalhado para debug
+    console.log('🔄 AUTH UPDATE DETALHADO:', {
       hasSession: !!newSession,
-      hasUser: !!newUser,
-      hasProfile: !!newProfile,
-      isLoggedIn: newIsLoggedIn
+      email: newUser?.email,
+      userId: newUser?.id,
+      profileRole: newProfile?.role,
+      isSuperAdminResult: isSuperAdmin(newProfile, newSession),
+      sessionCreatedAt: newSession?.user?.created_at
     });
     
     // Atualização atômica do estado
-    setSession(newSession);
-    setUser(newUser);
-    setUserProfile(newProfile);
-    setIsLoading(false);
+    setSession(prevSession => {
+      if (prevSession?.access_token !== newSession?.access_token) {
+        return newSession;
+      }
+      return prevSession;
+    });
     
-    console.log('✅ [AUTH DEBUG] Estado atualizado com sucesso');
-    console.log('🔄 [AUTH DEBUG] ===== FIM DA ATUALIZAÇÃO =====');
-  }, [createUserProfileFromSession]);
+    setUser(prevUser => {
+      if (prevUser?.id !== newUser?.id) {
+        return newUser;
+      }
+      return prevUser;
+    });
+    
+    setUserProfile(prevProfile => {
+      if (prevProfile?.id !== newProfile?.id || prevProfile?.role !== newProfile?.role) {
+        return newProfile;
+      }
+      return prevProfile;
+    });
+    
+    setIsLoading(false);
+  }, [createUserProfileFromSession, isSuperAdmin]);
 
-  // Função para refrescar perfil do usuário
+  // NOVA: Função para refrescar perfil do usuário
   const refreshUserProfile = useCallback(async () => {
     if (session?.user?.id) {
-      console.log('🔄 [AUTH DEBUG] Refreshing user profile...');
+      console.log('🔄 Refreshing user profile...');
       const role = await fetchUserRoleFromDB(session.user.id);
       if (role && userProfile) {
         setUserProfile(prev => prev ? { ...prev, role } : null);
@@ -171,52 +180,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [session?.user?.id, userProfile, fetchUserRoleFromDB]);
 
-  // Inicialização melhorada com logs
+  // Inicialização melhorada
   useEffect(() => {
     if (initialized.current) return;
     
     let mounted = true;
     initialized.current = true;
 
-    console.log('🚀 [AUTH DEBUG] ===== INICIALIZANDO AUTENTICAÇÃO =====');
+    console.log('🚀 Inicializando autenticação...');
 
     const initializeAuth = async () => {
       try {
-        console.log('🔍 [AUTH DEBUG] Obtendo sessão inicial...');
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        console.log('📡 [AUTH DEBUG] Sessão inicial:', {
-          hasSession: !!initialSession,
-          userId: initialSession?.user?.id,
-          email: initialSession?.user?.email
-        });
-        
         if (mounted) {
+          console.log('📡 Sessão inicial obtida:', !!initialSession);
           await updateAuthState(initialSession);
         }
       } catch (error) {
-        console.error('💥 [AUTH DEBUG] Erro na inicialização:', error);
+        console.error('💥 Erro na inicialização:', error);
         if (mounted) {
           setIsLoading(false);
         }
       }
     };
 
-    // Listener otimizado com logs
+    // Listener otimizado
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('🔄 [AUTH DEBUG] ===== AUTH STATE CHANGE =====');
-        console.log('🔄 [AUTH DEBUG] Event:', event);
-        console.log('🔄 [AUTH DEBUG] Session:', {
-          hasSession: !!session,
-          userId: session?.user?.id,
-          email: session?.user?.email
-        });
-        
+        console.log('🔄 AUTH EVENT:', event, !!session);
         await updateAuthState(session);
-        console.log('🔄 [AUTH DEBUG] ===== FIM AUTH STATE CHANGE =====');
       }
     );
 
@@ -231,7 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Função de logout melhorada
   const logout = useCallback(async () => {
     try {
-      console.log('🚪 [AUTH DEBUG] Iniciando logout...');
+      console.log('🚪 Iniciando logout...');
       
       // Limpar estado local primeiro
       setUser(null);
@@ -246,14 +241,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.warn('⚠️ [AUTH DEBUG] Erro no logout do Supabase:', error);
+        console.warn('⚠️ Erro no logout do Supabase:', error);
       } else {
-        console.log('✅ [AUTH DEBUG] Logout realizado com sucesso');
+        console.log('✅ Logout realizado com sucesso');
       }
       
       return { success: true, error: null };
     } catch (error) {
-      console.error('💥 [AUTH DEBUG] Erro no logout:', error);
+      console.error('💥 Erro no logout:', error);
       return { success: false, error };
     }
   }, []);
@@ -261,39 +256,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Função de verificação de role
   const hasRole = useCallback((requiredRole: string): boolean => {
     if (!userProfile?.role) {
-      console.log('⚠️ [AUTH DEBUG] hasRole: Sem role no perfil');
       return false;
     }
     
     if (userProfile.role === 'super_admin') {
-      console.log('✅ [AUTH DEBUG] hasRole: Super admin tem acesso total');
       return true;
     }
     
-    const hasAccess = userProfile.role === requiredRole;
-    console.log('🔍 [AUTH DEBUG] hasRole:', {
-      userRole: userProfile.role,
-      requiredRole,
-      hasAccess
-    });
-    
-    return hasAccess;
+    return userProfile.role === requiredRole;
   }, [userProfile?.role]);
 
-  // Estado computado com logs
+  // Estado computado
   const isLoggedIn = Boolean(user && session && userProfile);
   const computedIsSuperAdmin = isSuperAdmin(userProfile, session);
-
-  // Log do estado final a cada render
-  console.log('📊 [AUTH DEBUG] Estado atual:', {
-    hasUser: !!user,
-    hasSession: !!session,
-    hasUserProfile: !!userProfile,
-    isLoggedIn,
-    isLoading,
-    userEmail: user?.email,
-    userRole: userProfile?.role
-  });
 
   const value: AuthContextType = {
     user,

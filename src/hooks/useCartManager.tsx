@@ -1,8 +1,28 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useCartState } from '@/hooks/cart/useCartState';
 import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
+import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { 
+  saveCartToStorage, 
+  loadCartFromStorage, 
+  CART_STORAGE_KEY 
+} from '@/services/cartStorageService';
+import { getPanelPrice } from '@/utils/checkoutUtils';
+
+// Utility function to convert legacy cart item to full cart item
+const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number }): CartItem => {
+  return {
+    id: `cart_${legacyItem.panel.id}_${Date.now()}`,
+    panel: legacyItem.panel,
+    duration: legacyItem.duration,
+    addedAt: Date.now(),
+    price: getPanelPrice(legacyItem.panel, legacyItem.duration)
+  };
+};
 
 export const useCartManager = () => {
   const {
@@ -22,6 +42,7 @@ export const useCartManager = () => {
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
+    handleRestoreCart,
     toggleCart
   } = useCartOperations({
     cartItems,
@@ -38,22 +59,43 @@ export const useCartManager = () => {
     setCartOpen
   });
 
-  // Log cart state periodically for debugging
-  React.useEffect(() => {
-    if (initialLoadDone) {
-      console.log('🔄 [useCartManager] === ESTADO ATUAL DO CARRINHO ===');
-      console.log('🔄 [useCartManager] cartItemsLength:', cartItems.length);
-      console.log('🔄 [useCartManager] cartOpen:', cartOpen);
-      console.log('🔄 [useCartManager] cartAnimation:', cartAnimation);
-      console.log('🔄 [useCartManager] items:', cartItems.map(item => ({
-        id: item.id,
-        panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        duration: item.duration,
-        price: item.price
-      })));
+  // CRITICAL FIX: Drastically reduce logging frequency to prevent infinite loops
+  const cartValidationLog = useMemo(() => {
+    if (initialLoadDone && cartItems.length > 0) {
+      // Only log once per cart change, not continuously
+      const cartValid = cartItems.every(item => 
+        item && 
+        item.panel && 
+        typeof item.panel === 'object' && 
+        item.panel.id && 
+        typeof item.duration === 'number'
+      );
+      
+      if (!cartValid) {
+        // Only log critical errors
+        logCheckoutEvent(
+          CheckoutEvent.SAVE_CART,
+          LogLevel.ERROR,
+          `CRITICAL: Invalid cart structure detected`,
+          { cartItemsCount: cartItems.length }
+        );
+      }
     }
-  }, [cartItems.length, cartOpen, initialLoadDone]);
+    return cartItems.length;
+  }, [initialLoadDone, cartItems.length]); // Only depend on length to reduce re-computations
+
+  // Memoized functions to prevent unnecessary re-renders
+  const reloadCartFromStorage = useCallback(() => {
+    try {
+      const loadedLegacyCart = loadCartFromStorage();
+      const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
+      setCartItems(fullCartItems);
+      return fullCartItems;
+    } catch (error) {
+      console.error('[useCartManager] Error reloading cart:', error);
+      return [];
+    }
+  }, [setCartItems]);
 
   return {
     // Cart state
@@ -70,12 +112,13 @@ export const useCartManager = () => {
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
+    handleRestoreCart,
     
     // Checkout
     handleProceedToCheckout,
     isNavigating,
     
-    // Status
-    initialLoadDone
+    // Debugging and testing - memoized
+    reloadCartFromStorage
   };
 };

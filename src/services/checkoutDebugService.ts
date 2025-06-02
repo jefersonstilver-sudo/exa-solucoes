@@ -1,7 +1,6 @@
 
 export enum LogLevel {
   INFO = 'INFO',
-  WARN = 'WARN',
   WARNING = 'WARNING',
   ERROR = 'ERROR',
   DEBUG = 'DEBUG',
@@ -9,83 +8,124 @@ export enum LogLevel {
 }
 
 export enum CheckoutEvent {
-  PROCEED_TO_CHECKOUT = 'PROCEED_TO_CHECKOUT',
-  NAVIGATION_EVENT = 'NAVIGATION_EVENT',
-  DEBUG_EVENT = 'DEBUG_EVENT',
-  PAYMENT_EVENT = 'PAYMENT_EVENT',
-  AUTH_EVENT = 'AUTH_EVENT',
-  USER_ACTION = 'USER_ACTION',
+  CART_UPDATED = 'CART_UPDATED',
   PAYMENT_PROCESSING = 'PAYMENT_PROCESSING',
   PAYMENT_ERROR = 'PAYMENT_ERROR',
+  PAYMENT_UPDATE = 'PAYMENT_UPDATE',
+  PAYMENT_EVENT = 'PAYMENT_EVENT',
+  NAVIGATION_EVENT = 'NAVIGATION_EVENT',
+  NAVIGATION_ERROR = 'NAVIGATION_ERROR',
+  DEBUG_EVENT = 'DEBUG_EVENT',
+  AUTH_EVENT = 'AUTH_EVENT',
+  USER_ACTION = 'USER_ACTION',
+  AUDIT = 'AUDIT',
+  PROCEED_TO_CHECKOUT = 'PROCEED_TO_CHECKOUT',
+  SAVE_CART = 'SAVE_CART',
+  NAVIGATE_TO_PLAN = 'NAVIGATE_TO_PLAN',
+  CHECKOUT_INITIATION = 'CHECKOUT_INITIATION',
+  EMPTY_CART_ATTEMPT = 'EMPTY_CART_ATTEMPT',
   ADD_TO_CART = 'ADD_TO_CART',
   REMOVE_FROM_CART = 'REMOVE_FROM_CART',
   CLEAR_CART = 'CLEAR_CART',
   UPDATE_CART = 'UPDATE_CART',
   RESTORE_CART = 'RESTORE_CART',
-  NAVIGATE_TO_PLAN = 'NAVIGATE_TO_PLAN',
-  CHECKOUT_INITIATION = 'CHECKOUT_INITIATION',
-  EMPTY_CART_ATTEMPT = 'EMPTY_CART_ATTEMPT',
-  CHECKOUT_ERROR = 'CHECKOUT_ERROR',
-  NAVIGATION_ERROR = 'NAVIGATION_ERROR',
-  AUDIT = 'AUDIT'
+  LOAD_CART = 'LOAD_CART',
+  CHECKOUT_ERROR = 'CHECKOUT_ERROR'
 }
+
+// Store for logs with automatic cleanup to prevent memory leaks
+const checkoutLogs: any[] = [];
+const MAX_LOGS = 50; // REDUCED: Limit to prevent infinite growth
+
+// CRITICAL FIX: Implementação de throttling muito mais agressiva
+let lastLogTime = 0;
+const LOG_THROTTLE_MS = 1000; // INCREASED: Minimum 1 second between logs
+
+// CRITICAL: Map para rastrear logs únicos e evitar duplicatas
+const logCache = new Map<string, number>();
+const CACHE_DURATION = 5000; // 5 seconds
 
 export const logCheckoutEvent = (
   event: CheckoutEvent,
   level: LogLevel,
   message: string,
-  data?: any
+  data?: Record<string, any>
 ) => {
-  const timestamp = new Date().toISOString();
+  // CRITICAL: Throttle logs muito mais agressivamente
+  const now = Date.now();
+  if (now - lastLogTime < LOG_THROTTLE_MS) {
+    return; // Skip this log to prevent spam
+  }
+  
+  // CRITICAL: Evitar logs duplicados
+  const logKey = `${event}-${level}-${message}`;
+  const lastLoggedTime = logCache.get(logKey);
+  if (lastLoggedTime && (now - lastLoggedTime) < CACHE_DURATION) {
+    return; // Skip duplicate log
+  }
+  
+  lastLogTime = now;
+  logCache.set(logKey, now);
+
   const logEntry = {
-    timestamp,
     event,
     level,
     message,
-    data
+    details: data || {},
+    timestamp: new Date().toISOString()
   };
   
-  console.log(`[${level}] [${event}] ${message}`, data || '');
+  // Add to logs array with automatic cleanup
+  checkoutLogs.push(logEntry);
   
-  // Optionally store in localStorage for debugging
-  try {
-    const logs = JSON.parse(localStorage.getItem('checkoutLogs') || '[]');
-    logs.push(logEntry);
-    // Keep only last 50 logs
-    if (logs.length > 50) {
-      logs.splice(0, logs.length - 50);
-    }
-    localStorage.setItem('checkoutLogs', JSON.stringify(logs));
-  } catch (error) {
-    console.error('Error storing checkout log:', error);
+  // CRITICAL: Prevent memory leaks by limiting log storage
+  if (checkoutLogs.length > MAX_LOGS) {
+    checkoutLogs.splice(0, checkoutLogs.length - MAX_LOGS);
   }
+  
+  // CRITICAL: Only log errors and critical success events to console
+  if (level === LogLevel.ERROR) {
+    console.error(`[${event}] ${message}`, data || {});
+  } else if (level === LogLevel.SUCCESS) {
+    console.log(`[${event}] ${message}`, data || {});
+  }
+  
+  // REMOVED: All other console logs to reduce noise
 };
 
-// Additional exported functions that are missing
+// Export functions for debug components
 export const getAllCheckoutLogs = () => {
-  try {
-    return JSON.parse(localStorage.getItem('checkoutLogs') || '[]');
-  } catch (error) {
-    console.error('Error getting checkout logs:', error);
-    return [];
-  }
+  return [...checkoutLogs];
 };
 
 export const getCheckoutAuditSummary = () => {
-  const logs = getAllCheckoutLogs();
-  const errorLogs = logs.filter((log: any) => log.level === LogLevel.ERROR);
-  
-  return {
-    totalLogs: logs.length,
-    errorCount: errorLogs.length,
-    recentErrors: errorLogs.slice(-5) // Last 5 errors
+  const summary = {
+    totalLogs: checkoutLogs.length,
+    errorCount: checkoutLogs.filter(log => log.level === LogLevel.ERROR).length,
+    warningCount: checkoutLogs.filter(log => log.level === LogLevel.WARNING).length,
+    infoCount: checkoutLogs.filter(log => log.level === LogLevel.INFO).length,
+    successCount: checkoutLogs.filter(log => log.level === LogLevel.SUCCESS).length,
+    debugCount: checkoutLogs.filter(log => log.level === LogLevel.DEBUG).length,
+    lastLogTime: checkoutLogs.length > 0 ? checkoutLogs[checkoutLogs.length - 1].timestamp : null,
+    recentErrors: checkoutLogs.filter(log => log.level === LogLevel.ERROR).slice(-3) // REDUCED
   };
+  
+  return summary;
 };
 
+// CRITICAL: Enhanced cleanup function
 export const clearCheckoutLogs = () => {
-  try {
-    localStorage.removeItem('checkoutLogs');
-  } catch (error) {
-    console.error('Error clearing checkout logs:', error);
-  }
+  checkoutLogs.length = 0;
+  logCache.clear();
+  console.log('%c[SYSTEM] Checkout logs cleared', 'color: #4caf50');
 };
+
+// CRITICAL: Auto cleanup old cache entries
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, time] of logCache.entries()) {
+    if (now - time > CACHE_DURATION) {
+      logCache.delete(key);
+    }
+  }
+}, CACHE_DURATION);

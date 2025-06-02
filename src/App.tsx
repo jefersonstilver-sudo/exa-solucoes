@@ -12,7 +12,7 @@ import { AuthProvider } from './hooks/useAuth';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import LazyLoadingFallback from './components/ui/LazyLoadingFallback';
 
-// Lazy load das páginas principais
+// Lazy load das páginas com error boundaries individuais
 const Marketing = lazy(() => import('./pages/Marketing'));
 const Index = lazy(() => import('./pages/Index'));
 const Produtora = lazy(() => import('./pages/Produtora'));
@@ -21,30 +21,13 @@ const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
-const Pedidos = lazy(() => import('./pages/Pedidos'));
-const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
-
-// Lazy load das páginas de checkout
-const PlanSelection = lazy(() => import('./pages/PlanSelection'));
-const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
-const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
-const Checkout = lazy(() => import('./pages/Checkout'));
-const CheckoutFinish = lazy(() => import('./pages/CheckoutFinish'));
-
-// Lazy load das páginas do anunciante
-const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
-const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'));
-const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
-const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
-const AdvertiserReports = lazy(() => import('./pages/advertiser/AdvertiserReports'));
-const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
-const AdvertiserOrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000,
+      staleTime: 60 * 1000, // 1 minute
       retry: (failureCount, error: any) => {
+        // Não retry para erros de tabela não encontrada
         if (error?.message?.includes('does not exist')) {
           return false;
         }
@@ -64,7 +47,7 @@ const LazyPageWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 function App() {
-  console.log('🚀 App: Inicializando aplicação...');
+  console.log('🚀 App: Inicializando aplicação SEM Layout duplo...');
   
   return (
     <ErrorBoundary onError={(error, errorInfo) => {
@@ -76,7 +59,7 @@ function App() {
             <Toaster />
             <BrowserRouter>
               <Routes>
-                {/* Rotas principais */}
+                {/* Rotas principais - cada página tem seu próprio Layout */}
                 <Route path="/" element={
                   <LazyPageWrapper>
                     <Index />
@@ -93,11 +76,6 @@ function App() {
                   </LazyPageWrapper>
                 } />
                 <Route path="/loja" element={
-                  <LazyPageWrapper>
-                    <BuildingStore />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/paineis-digitais/loja" element={
                   <LazyPageWrapper>
                     <BuildingStore />
                   </LazyPageWrapper>
@@ -120,87 +98,6 @@ function App() {
                 <Route path="/painel-store" element={
                   <LazyPageWrapper>
                     <PainelStore />
-                  </LazyPageWrapper>
-                } />
-
-                {/* Rotas de pedidos para clientes */}
-                <Route path="/meus-pedidos" element={
-                  <LazyPageWrapper>
-                    <Pedidos />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/pedido-confirmado" element={
-                  <LazyPageWrapper>
-                    <OrderConfirmation />
-                  </LazyPageWrapper>
-                } />
-
-                {/* Rotas de checkout */}
-                <Route path="/checkout/plano" element={
-                  <LazyPageWrapper>
-                    <PlanSelection />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/checkout/cupom" element={
-                  <LazyPageWrapper>
-                    <CheckoutCoupon />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/checkout/resumo" element={
-                  <LazyPageWrapper>
-                    <CheckoutSummary />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/checkout" element={
-                  <LazyPageWrapper>
-                    <Checkout />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/checkout/finalizar" element={
-                  <LazyPageWrapper>
-                    <CheckoutFinish />
-                  </LazyPageWrapper>
-                } />
-
-                {/* Rotas do anunciante */}
-                <Route path="/anunciante" element={
-                  <LazyPageWrapper>
-                    <AdvertiserDashboard />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/anunciante/checkout" element={
-                  <LazyPageWrapper>
-                    <Checkout />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/anunciante/pedidos" element={
-                  <LazyPageWrapper>
-                    <AdvertiserOrders />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/anunciante/pedidos/:id" element={
-                  <LazyPageWrapper>
-                    <AdvertiserOrderDetails />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/anunciante/campanhas" element={
-                  <LazyPageWrapper>
-                    <MyCampaigns />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/anunciante/campanhas/:id" element={
-                  <LazyPageWrapper>
-                    <CampaignDetails />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/anunciante/videos" element={
-                  <LazyPageWrapper>
-                    <MyVideos />
-                  </LazyPageWrapper>
-                } />
-                <Route path="/anunciante/relatorios" element={
-                  <LazyPageWrapper>
-                    <AdvertiserReports />
                   </LazyPageWrapper>
                 } />
 

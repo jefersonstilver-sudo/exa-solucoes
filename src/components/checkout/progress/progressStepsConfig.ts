@@ -1,13 +1,22 @@
 
-import { Calendar, Tag, ShoppingCart, CreditCard, Upload } from 'lucide-react';
+import { Calendar, Tag, CreditCard, Upload, ShoppingCart } from 'lucide-react';
 
-export const PROGRESS_STEPS = [
+export interface ProgressStep {
+  name: string;
+  shortName: string;
+  mobileShort: string;
+  icon: any;
+  description: string;
+  motivationalText: string;
+}
+
+export const PROGRESS_STEPS: ProgressStep[] = [
   { 
     name: 'Plano', 
     shortName: 'Plano',
     mobileShort: 'Plano',
     icon: Calendar,
-    description: 'Período de veiculação',
+    description: 'Período',
     motivationalText: 'Escolha seu período ideal!'
   },
   { 
@@ -15,7 +24,7 @@ export const PROGRESS_STEPS = [
     shortName: 'Cupom',
     mobileShort: 'Cupom',
     icon: Tag,
-    description: 'Código de desconto',
+    description: 'Desconto',
     motivationalText: 'Economize ainda mais!'
   },
   { 
@@ -23,15 +32,15 @@ export const PROGRESS_STEPS = [
     shortName: 'Resumo',
     mobileShort: 'Resumo',
     icon: ShoppingCart,
-    description: 'Revisão do pedido',
+    description: 'Revisão',
     motivationalText: 'Quase lá!'
   },
   { 
     name: 'Pagamento', 
-    shortName: 'Pagamento',
-    mobileShort: 'Pagamento',
+    shortName: 'Pag.',
+    mobileShort: 'Pag.',
     icon: CreditCard,
-    description: 'Finalizar compra',
+    description: 'Finalizar',
     motivationalText: 'Último passo!'
   },
   { 
@@ -39,7 +48,7 @@ export const PROGRESS_STEPS = [
     shortName: 'Upload',
     mobileShort: 'Upload',
     icon: Upload,
-    description: 'Enviar material',
+    description: 'Material',
     motivationalText: 'Sua campanha começa aqui!'
   }
 ];

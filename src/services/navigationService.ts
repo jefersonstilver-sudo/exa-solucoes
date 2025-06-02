@@ -1,6 +1,7 @@
 
 import { logNavigation } from '@/services/navigationAuditService';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { useNavigate } from 'react-router-dom';
 
 type NavigationMethod = 'navigate' | 'direct' | 'history' | 'reload' | 'location' | 'error';
 
@@ -9,7 +10,7 @@ let navigationCooldown = false;
 let cooldownTimer: NodeJS.Timeout | null = null;
 
 /**
- * Navigate safely to a URL using window.location (for external links only)
+ * Navigate safely to a URL using React Router
  */
 export const navigateSafely = (url: string): boolean => {
   try {
@@ -30,7 +31,7 @@ export const navigateSafely = (url: string): boolean => {
 };
 
 /**
- * Force navigation to URL using window.location (for external links only)
+ * Force navigation to URL using window.location
  */
 export const forceNavigate = (url: string): boolean => {
   try {
@@ -52,13 +53,11 @@ export const forceNavigate = (url: string): boolean => {
 
 /**
  * Hook to provide safe navigation functions
- * USE THIS FOR ALL INTERNAL NAVIGATION
  */
 export const useSafeNavigation = () => {
-  // This will be implemented by importing useNavigate from react-router-dom
-  // in the component that uses this hook
+  const navigate = useNavigate();
   
-  const navigateToRoute = (route: string, navigate: (route: string) => void): boolean => {
+  const navigateToRoute = (route: string): boolean => {
     try {
       logNavigationEvent(route, 'navigate');
       logCheckoutEvent(
@@ -73,7 +72,14 @@ export const useSafeNavigation = () => {
     } catch (error) {
       console.error("Error in React Router navigation:", error);
       logNavigationError(route, String(error));
-      return false;
+      
+      // Fallback to direct navigation
+      try {
+        return forceNavigate(route);
+      } catch (fallbackError) {
+        logNavigationError(route, String(fallbackError));
+        return false;
+      }
     }
   };
   

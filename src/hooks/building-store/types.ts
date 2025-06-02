@@ -7,7 +7,6 @@ export interface BuildingFilters {
   audienceMin: number;
   standardProfile: string[];
   amenities: string[];
-  sortBy: string;
 }
 
 export interface BuildingStoreState {
@@ -31,4 +30,3 @@ export interface BuildingStoreState {
   initialized: boolean;
   initializeStore: () => Promise<void>;
 }
-

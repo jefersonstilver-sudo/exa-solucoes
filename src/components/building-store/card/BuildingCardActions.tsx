@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart,
@@ -14,42 +14,34 @@ import { toast } from 'sonner';
 interface BuildingCardActionsProps {
   building: BuildingStore;
   onAddToCart: (panel: Panel, duration?: number) => void;
-  isInCart: boolean;
 }
 
 const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ 
   building, 
-  onAddToCart,
-  isInCart
+  onAddToCart 
 }) => {
+  const [isAdded, setIsAdded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const isMobile = useIsMobile();
 
   const handleAddToCart = async () => {
-    if (isInCart) {
-      console.log('🛒 [BUILDING CARD] Item já está no carrinho:', building.nome);
-      toast.info(`${building.nome} já está no carrinho!`, {
-        description: "Verifique seu carrinho para gerenciar este item",
-        duration: 3000,
-      });
-      return;
-    }
+    if (isAdded) return;
     
     try {
-      console.log('🛒 [BUILDING CARD] Adicionando prédio ao carrinho:', building.nome);
-      
       // Converter Building para Panel antes de adicionar ao carrinho
       const panel = buildingToPanel(building);
       
-      console.log('🛒 [BUILDING CARD] Panel criado:', {
+      console.log('🛒 [BUILDING STORE CARD] Adicionando ao carrinho:', {
         building: building.nome,
         panel: panel.id,
         panelCode: panel.code
       });
       
+      setIsAnimating(true);
+      setIsAdded(true);
+      
       // Chamar função real de adicionar ao carrinho
       await onAddToCart(panel, 30); // Duração padrão de 30 dias
-      
-      console.log('✅ [BUILDING CARD] Prédio adicionado ao carrinho com sucesso');
       
       // Toast de sucesso
       toast.success(`${building.nome} adicionado ao carrinho!`, {
@@ -57,8 +49,20 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
         duration: 3000,
       });
       
+      // Animação de feedback
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 600);
+      
+      // Reset do botão após alguns segundos
+      setTimeout(() => {
+        setIsAdded(false);
+      }, 3000);
+      
     } catch (error) {
-      console.error('❌ [BUILDING CARD] Erro ao adicionar ao carrinho:', error);
+      console.error('❌ [BUILDING STORE CARD] Erro ao adicionar ao carrinho:', error);
+      setIsAdded(false);
+      setIsAnimating(false);
       
       toast.error('Erro ao adicionar ao carrinho', {
         description: "Tente novamente em alguns instantes",
@@ -83,26 +87,28 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       </div>
       
       <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>
+        {/* Botão Adicionar ao Carrinho */}
         <motion.div
-          whileHover={!isMobile ? { scale: 1.02 } : {}}
-          whileTap={{ scale: 0.98 }}
+          animate={isAnimating ? { scale: [1, 1.1, 1] } : {}}
+          transition={{ duration: 0.6 }}
           className={isMobile ? 'w-full' : ''}
         >
           <Button
             onClick={handleAddToCart}
             size={isMobile ? "default" : "sm"}
+            disabled={isAdded}
             className={`font-semibold transition-all duration-300 ${
               isMobile ? 'w-full py-3 text-base' : 'px-6 py-2 text-sm'
             } ${
-              isInCart 
-                ? 'bg-green-500 hover:bg-green-600 text-white' 
+              isAdded 
+                ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
                 : 'bg-indexa-purple hover:bg-indexa-purple-dark text-white hover:scale-105'
             }`}
           >
-            {isInCart ? (
+            {isAdded ? (
               <>
                 <Check className="h-4 w-4 mr-1" />
-                No Carrinho
+                Adicionado
               </>
             ) : (
               <>
