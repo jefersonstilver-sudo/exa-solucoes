@@ -3,6 +3,7 @@ import React from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingSearchSection from './BuildingSearchSection';
@@ -22,6 +23,7 @@ interface BuildingStoreLayoutProps {
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
   onAddToCart: (panel: Panel, duration?: number) => void;
+  cartItems: CartItem[]; // NEW: Cart items for synchronization
 }
 
 const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
@@ -35,7 +37,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   handleFilterChange,
   handleSearch,
   handleClearLocation,
-  onAddToCart
+  onAddToCart,
+  cartItems
 }) => {
   const isMobile = useIsMobile();
 
@@ -43,6 +46,7 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   console.log('🏗️ [BUILDING STORE LAYOUT] Buildings count:', buildings.length);
   console.log('🏗️ [BUILDING STORE LAYOUT] isLoading:', isLoading);
   console.log('🏗️ [BUILDING STORE LAYOUT] Filters:', filters);
+  console.log('🏗️ [BUILDING STORE LAYOUT] Cart items count:', cartItems.length);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -108,6 +112,7 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
                   isSearching={isSearching}
                   onAddToCart={onAddToCart}
                   selectedLocation={selectedLocation}
+                  cartItems={cartItems}
                 />
               </motion.div>
             </div>

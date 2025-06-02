@@ -126,6 +126,7 @@ export default function PainelStore() {
           handleSearch={handleSearch}
           handleClearLocation={handleClearLocation}
           onAddToCart={handleAddToCart}
+          cartItems={cartItems}
         />
       </motion.div>
     </Layout>

@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, MapPin, Sparkles } from 'lucide-react';
-import { BuildingStore } from '@/services/buildingStoreService';
+import { BuildingStore, buildingToPanel } from '@/services/buildingStoreService';
 import { Panel } from '@/types/panel';
+import { CartItem } from '@/types/cart';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingStoreCard from './BuildingStoreCard';
 
@@ -13,6 +13,7 @@ interface BuildingStoreGridProps {
   isSearching: boolean;
   onAddToCart: (panel: Panel, duration?: number) => void;
   selectedLocation: { lat: number, lng: number } | null;
+  cartItems: CartItem[]; // NEW: Cart items to check what's in cart
 }
 
 const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
@@ -20,13 +21,27 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   isLoading,
   isSearching,
   onAddToCart,
-  selectedLocation
+  selectedLocation,
+  cartItems
 }) => {
   const isMobile = useIsMobile();
 
   console.log('🏢 [BUILDING STORE GRID] === RENDERIZANDO GRID ===');
   console.log('🏢 [BUILDING STORE GRID] buildings?.length:', buildings?.length);
   console.log('🏢 [BUILDING STORE GRID] isMobile:', isMobile);
+  console.log('🏢 [BUILDING STORE GRID] cartItems.length:', cartItems.length);
+
+  // Function to check if a building is in cart
+  const isBuildingInCart = (building: BuildingStore): boolean => {
+    if (!cartItems || cartItems.length === 0) return false;
+    
+    // Check if any cart item corresponds to this building
+    return cartItems.some(cartItem => {
+      // Compare by building_id if available, otherwise by building name
+      return cartItem.panel.building_id === building.id ||
+             cartItem.panel.buildings?.nome === building.nome;
+    });
+  };
 
   // Loading state com skeleton responsivo
   if (isLoading || isSearching) {
@@ -192,6 +207,9 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
         {buildings.map((building, index) => {
           console.log(`🏢 [BUILDING STORE GRID] Renderizando prédio ${index + 1}: ${building.nome}`);
           
+          const isInCart = isBuildingInCart(building);
+          console.log(`🛒 [BUILDING STORE GRID] ${building.nome} está no carrinho:`, isInCart);
+          
           return (
             <motion.div
               key={building.id}
@@ -215,6 +233,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
               <BuildingStoreCard
                 building={building}
                 onAddToCart={onAddToCart}
+                isInCart={isInCart}
               />
             </motion.div>
           );

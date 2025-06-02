@@ -23,7 +23,7 @@ const BuildingStore = () => {
     initializeStore
   } = useBuildingStore();
 
-  const { handleAddToCart } = useCartManager();
+  const { handleAddToCart, cartItems } = useCartManager();
 
   // Initialize store on mount
   React.useEffect(() => {
@@ -70,6 +70,7 @@ const BuildingStore = () => {
             handleSearch={handleSearch}
             handleClearLocation={handleClearLocation}
             onAddToCart={handleAddToCart}
+            cartItems={cartItems}
           />
         </div>
       </div>
