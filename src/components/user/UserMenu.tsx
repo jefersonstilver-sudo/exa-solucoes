@@ -49,14 +49,19 @@ const UserMenu: React.FC = () => {
     navigate(path);
   };
 
-  const getUserInitials = (name?: string) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
+  const getUserInitials = (name?: string, email?: string) => {
+    if (name) {
+      return name
+        .split(' ')
+        .map(word => word.charAt(0))
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+    }
+    if (email) {
+      return email.charAt(0).toUpperCase();
+    }
+    return 'U';
   };
 
   const getUserRole = () => {
@@ -71,6 +76,21 @@ const UserMenu: React.FC = () => {
     if (hasRole('admin')) return 'bg-blue-500';
     if (hasRole('anunciante')) return 'bg-green-500';
     return 'bg-gray-500';
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.name) return user.name;
+    if (user?.nome) return user.nome;
+    if (user?.email) return user.email.split('@')[0];
+    return 'Usuário';
+  };
+
+  const getFirstName = () => {
+    const displayName = getUserDisplayName();
+    if (displayName.includes(' ')) {
+      return displayName.split(' ')[0];
+    }
+    return displayName;
   };
 
   if (!isLoggedIn) {
@@ -106,12 +126,12 @@ const UserMenu: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-[#00FFAB] text-[#3C1361] text-sm font-semibold">
-                {getUserInitials(user?.user_metadata?.full_name || user?.email)}
+                {getUserInitials(user?.name || user?.nome, user?.email)}
               </AvatarFallback>
             </Avatar>
             <div className="hidden md:flex flex-col items-start text-left">
               <span className="text-sm font-medium text-white">
-                {user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}
+                {getFirstName()}
               </span>
               <Badge className={`${getRoleColor()} text-white text-xs px-1 py-0 h-4`}>
                 {getUserRole()}
@@ -130,7 +150,7 @@ const UserMenu: React.FC = () => {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none text-gray-900">
-              {user?.user_metadata?.full_name || 'Usuário'}
+              {getUserDisplayName()}
             </p>
             <p className="text-xs leading-none text-gray-600">
               {user?.email}
