@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { Panel } from '@/types/panel';
+import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingCardImage from './card/BuildingCardImage';
 import BuildingCardHeader from './card/BuildingCardHeader';
 import BuildingCardMetrics from './card/BuildingCardMetrics';
@@ -19,24 +20,90 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   building, 
   onAddToCart 
 }) => {
-  console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD COMPACTO ===');
-  console.log('🏢 [BUILDING STORE CARD] Building recebido:', {
-    id: building.id,
-    nome: building.nome,
-    endereco: building.endereco,
-    bairro: building.bairro,
-    status: building.status,
-    preco_base: building.preco_base,
-    quantidade_telas: building.quantidade_telas,
-    venue_type: building.venue_type,
-    imagem_principal: building.imagem_principal
-  });
+  const isMobile = useIsMobile();
 
+  console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD ===');
+  console.log('🏢 [BUILDING STORE CARD] isMobile:', isMobile);
+  console.log('🏢 [BUILDING STORE CARD] Building:', building.nome);
+
+  if (isMobile) {
+    // Layout mobile: Card vertical compacto
+    return (
+      <Card className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative">
+        <CardContent className="p-0 relative">
+          <div className="flex flex-col">
+            {/* Imagem Principal - Mobile: Menor altura */}
+            <div className="relative overflow-hidden h-48">
+              <BuildingCardImage building={building} />
+              
+              {/* Badge de status */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="absolute top-2 right-2 z-10"
+              >
+                <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+                  ✨ Disponível
+                </div>
+              </motion.div>
+
+              {/* Badge premium */}
+              {building.padrao_publico === 'alto' && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="absolute bottom-2 right-2 z-10"
+                >
+                  <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+                    ⭐ Premium
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Informações - Mobile: Layout compacto */}
+            <div className="p-4 space-y-3">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Header com Nome e Localização */}
+                <BuildingCardHeader building={building} />
+
+                {/* Métricas Principais */}
+                <div className="mt-3">
+                  <BuildingCardMetrics building={building} />
+                </div>
+
+                {/* Amenities */}
+                <div className="mt-3">
+                  <BuildingCardAmenities building={building} />
+                </div>
+
+                {/* Preço e Ações */}
+                <div className="mt-4">
+                  <BuildingCardActions 
+                    building={building}
+                    onAddToCart={onAddToCart}
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Layout desktop: Card horizontal
   return (
     <Card className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative">
       <CardContent className="p-0 relative">
         <div className="flex flex-col lg:flex-row min-h-[320px]">
-          {/* Imagem Principal - Agora mais proeminente */}
+          {/* Imagem Principal - Desktop: Lado esquerdo */}
           <div className="lg:w-2/5 relative overflow-hidden">
             <BuildingCardImage building={building} />
             
@@ -67,7 +134,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
             )}
           </div>
 
-          {/* Informações - Lado Direito Mais Compacto */}
+          {/* Informações - Desktop: Lado direito */}
           <div className="lg:w-3/5 p-4 lg:p-6 relative flex flex-col justify-between">
             <motion.div
               initial={{ opacity: 0, x: 20 }}

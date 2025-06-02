@@ -128,3 +128,131 @@ span:contains("© 2025"):not(#unique-indexa-footer *),
 p:contains("© 2025"):not(#unique-indexa-footer *) {
   display: none !important;
 }
+
+/* OTIMIZAÇÕES ESPECÍFICAS PARA MOBILE - LOJA ONLINE */
+
+/* Container mobile scroll otimizado */
+.mobile-scroll-container {
+  overflow-x: hidden;
+  overflow-y: auto;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Fix para layout mobile da loja */
+@media (max-width: 768px) {
+  /* Container principal da loja */
+  .building-store-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Search section mobile */
+  .building-search-mobile {
+    padding: 1rem !important;
+    margin: 0.5rem !important;
+    border-radius: 1rem !important;
+  }
+  
+  /* Cards mobile otimizados */
+  .building-card-mobile {
+    margin: 0 1rem 1rem 1rem !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Imagens mobile otimizadas */
+  .building-image-mobile {
+    height: 12rem !important;
+    width: 100% !important;
+    object-fit: cover !important;
+  }
+  
+  /* Botões mobile touch-friendly */
+  .mobile-button {
+    min-height: 3rem !important;
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.75rem !important;
+    touch-action: manipulation !important;
+  }
+  
+  /* Sheet/Drawer mobile para filtros */
+  .mobile-filters-sheet {
+    width: 85vw !important;
+    max-width: 320px !important;
+  }
+  
+  /* Grid responsivo mobile */
+  .mobile-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 0 1rem !important;
+  }
+  
+  /* Typography mobile otimizada */
+  .mobile-heading {
+    font-size: 1.25rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .mobile-text {
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Spacing mobile otimizado */
+  .mobile-spacing {
+    padding: 0.75rem !important;
+    margin: 0.5rem !important;
+  }
+  
+  /* Form inputs mobile */
+  .mobile-input {
+    height: 3rem !important;
+    font-size: 1rem !important;
+    padding: 0 0.75rem !important;
+    border-radius: 0.75rem !important;
+  }
+}
+
+/* Animação shimmer para loading */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Otimizações para performance mobile */
+@media (max-width: 768px) {
+  /* Reduzir animações em mobile */
+  * {
+    animation-duration: 0.2s !important;
+    transition-duration: 0.2s !important;
+  }
+  
+  /* Otimizar scroll em mobile */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+  
+  /* Touch targets otimizados */
+  button,
+  [role="button"],
+  .touchable {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
