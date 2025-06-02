@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
@@ -63,8 +62,8 @@ export const useCartState = () => {
       duration: item.duration
     }));
     
-    const saveSuccess = saveCartToStorage(legacyCartItems);
-    console.log('💾 [useCartState] Salvamento resultado:', saveSuccess ? 'SUCESSO' : 'FALHOU');
+    saveCartToStorage(legacyCartItems);
+    console.log('💾 [useCartState] Salvamento realizado');
     
     // Verify save by reading back
     setTimeout(() => {

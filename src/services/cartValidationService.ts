@@ -1,105 +1,84 @@
 
-import { CartItem } from '@/types/cart';
-import { loadCartFromStorage, saveCartToStorage, CART_STORAGE_KEY, LegacyCartItem } from '@/services/cartStorageService';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
-export interface CartValidationResult {
-  isValid: boolean;
-  error?: string;
-  recoveredItems?: LegacyCartItem[];
-}
-
-export const validateCartForCheckout = (cartItems: CartItem[]): CartValidationResult => {
-  // Log detailed cart state
-  logCheckoutEvent(
-    CheckoutEvent.CHECKOUT_INITIATION,
-    LogLevel.INFO,
-    `Validating cart for checkout - Total items: ${cartItems.length}`,
-    { 
-      itemCount: cartItems.length,
-      currentPath: window.location.pathname,
-      storageKey: CART_STORAGE_KEY,
-      items: cartItems.map(item => ({
-        panelId: item.panel.id,
-        building: item.panel.buildings?.nome || 'Desconhecido',
-        duration: item.duration
-      }))
-    }
-  );
-
-  // Check localStorage directly
-  const localStorageCart = localStorage.getItem(CART_STORAGE_KEY);
-  console.log("Direct localStorage check before checkout:", localStorageCart);
+export const validateCartForCheckout = (cartItems: any[]) => {
+  console.log('🔍 [CartValidation] Validando carrinho para checkout:', cartItems.length, 'itens');
   
-  if (!localStorageCart || localStorageCart === '[]') {
-    console.error("CRITICAL ERROR: localStorage empty before checkout");
+  if (!cartItems || cartItems.length === 0) {
+    console.warn('🔍 [CartValidation] Carrinho vazio detectado');
+    
+    logCheckoutEvent(
+      CheckoutEvent.CHECKOUT_INITIATION,
+      LogLevel.ERROR,
+      "Tentativa de checkout com carrinho vazio"
+    );
+    
+    return {
+      isValid: false,
+      error: 'Carrinho vazio'
+    };
+  }
+  
+  // Verificar se todos os itens têm dados válidos
+  const invalidItems = cartItems.filter(item => 
+    !item.panel || !item.panel.id || !item.duration
+  );
+  
+  if (invalidItems.length > 0) {
+    console.warn('🔍 [CartValidation] Itens inválidos detectados:', invalidItems);
+    
     logCheckoutEvent(
       CheckoutEvent.EMPTY_CART_ATTEMPT,
       LogLevel.ERROR,
-      `CRITICAL ERROR: localStorage empty [${CART_STORAGE_KEY}] before checkout`,
-      { 
-        timestamp: Date.now(),
-        storageKey: CART_STORAGE_KEY,
-        localStorageValue: localStorageCart
-      }
+      `${invalidItems.length} itens inválidos no carrinho`,
+      { invalidItems }
     );
     
-    // Emergency recovery attempt
-    try {
-      const reloadedCart = loadCartFromStorage();
-      if (reloadedCart && reloadedCart.length > 0) {
-        console.log("Emergency recovery: cart recovered from localStorage", reloadedCart);
-        return { isValid: true, recoveredItems: reloadedCart };
-      } else {
-        return { isValid: false, error: "Carrinho vazio" };
-      }
-    } catch (e) {
-      console.error("Emergency recovery failed", e);
-      return { isValid: false, error: "Carrinho vazio" };
-    }
+    return {
+      isValid: false,
+      error: 'Itens inválidos no carrinho'
+    };
   }
   
-  // Check cart state
+  console.log('✅ [CartValidation] Carrinho válido para checkout');
+  return {
+    isValid: true,
+    error: null
+  };
+};
+
+export const getCartSummary = (cartItems: any[]) => {
   if (!cartItems || cartItems.length === 0) {
     logCheckoutEvent(
       CheckoutEvent.EMPTY_CART_ATTEMPT,
-      LogLevel.ERROR,
-      `CRITICAL ERROR: Checkout attempt with empty cart (state) [${CART_STORAGE_KEY}]`,
-      { 
-        timestamp: Date.now(),
-        storageKey: CART_STORAGE_KEY,
-        cartState: JSON.stringify(cartItems),
-        localStorageState: localStorage.getItem(CART_STORAGE_KEY)
-      }
+      LogLevel.WARNING,
+      "Tentativa de obter resumo de carrinho vazio"
     );
     
-    return { isValid: false, error: "Carrinho vazio" };
+    return {
+      totalItems: 0,
+      totalPrice: 0,
+      avgDuration: 0
+    };
   }
-
-  return { isValid: true };
+  
+  const totalPrice = cartItems.reduce((sum, item) => sum + (item.price || 0), 0);
+  const avgDuration = cartItems.reduce((sum, item) => sum + (item.duration || 0), 0) / cartItems.length;
+  
+  return {
+    totalItems: cartItems.length,
+    totalPrice,
+    avgDuration
+  };
 };
 
-export const saveCartForCheckout = (cartItems: CartItem[]): boolean => {
-  // Convert CartItem[] to legacy format
-  const legacyCartItems: LegacyCartItem[] = cartItems.map(item => ({
-    panel: item.panel,
-    duration: item.duration
-  }));
-  
-  console.log("Saving final cart before checkout:", legacyCartItems);
-  const saveSuccess = saveCartToStorage(legacyCartItems);
-  
-  if (!saveSuccess) {
-    throw new Error("Failed to save cart to localStorage");
+export const saveCartToLocalStorage = (cartItems: any[]) => {
+  try {
+    localStorage.setItem('indexa_cart', JSON.stringify(cartItems));
+    console.log('💾 [CartValidation] Carrinho salvo no localStorage');
+    return true;
+  } catch (error) {
+    console.error('❌ [CartValidation] Erro ao salvar carrinho:', error);
+    return false;
   }
-  
-  // Extra verification after saving
-  const verificationCart = localStorage.getItem(CART_STORAGE_KEY);
-  console.log("Verification after save before checkout:", verificationCart);
-  
-  if (!verificationCart || verificationCart === '[]') {
-    throw new Error("Critical failure: cart still empty after save attempt");
-  }
-
-  return true;
 };
