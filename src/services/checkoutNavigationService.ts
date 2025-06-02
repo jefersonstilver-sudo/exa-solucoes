@@ -1,15 +1,12 @@
 
-import { useNavigate } from 'react-router-dom';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { logNavigation } from '@/services/navigationAuditService';
-import { navigateSafely, isCurrentPath } from '@/services/navigationService';
+import { isCurrentPath } from '@/services/navigationService';
 
 export const useCheckoutNavigation = () => {
-  const navigate = useNavigate();
-
-  const navigateToCheckout = (): boolean => {
+  const navigateToCheckout = (navigate: (route: string) => void): boolean => {
     // Don't navigate if already on target page
-    if (isCurrentPath('/selecionar-plano')) {
+    if (isCurrentPath('/checkout/plano')) {
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
@@ -28,37 +25,28 @@ export const useCheckoutNavigation = () => {
         { timestamp: Date.now() }
       );
       
-      // Register navigation and navigate to plan selection
-      logNavigation('/selecionar-plano', 'navigate', true);
+      // Register navigation and navigate to plan selection using React Router
+      logNavigation('/checkout/plano', 'navigate', true);
       
-      // Use React Router for initial attempt
-      navigate('/selecionar-plano');
+      // Use React Router for navigation
+      navigate('/checkout/plano');
       
-      // Fallback navigation if React Router fails
-      setTimeout(() => {
-        if (!isCurrentPath('/selecionar-plano')) {
-          logCheckoutEvent(
-            CheckoutEvent.DEBUG_EVENT,
-            LogLevel.WARNING,
-            "React Router navigation didn't redirect correctly, using direct navigation",
-            { timestamp: Date.now() }
-          );
-          navigateSafely('/selecionar-plano');
-        } else {
-          logCheckoutEvent(
-            CheckoutEvent.DEBUG_EVENT,
-            LogLevel.SUCCESS,
-            "Navigation to plan selection completed successfully",
-            { timestamp: Date.now() }
-          );
-        }
-      }, 500);
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.SUCCESS,
+        "Navigation to plan selection completed successfully via React Router",
+        { timestamp: Date.now() }
+      );
 
       return true;
     } catch (error) {
       console.error("Navigation error:", error);
-      // Last resort - direct navigation
-      navigateSafely('/selecionar-plano');
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_ERROR,
+        LogLevel.ERROR,
+        `Navigation failed: ${error}`,
+        { error: String(error), timestamp: Date.now() }
+      );
       return false;
     }
   };

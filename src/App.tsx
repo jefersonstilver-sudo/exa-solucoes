@@ -12,7 +12,7 @@ import { AuthProvider } from './hooks/useAuth';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import LazyLoadingFallback from './components/ui/LazyLoadingFallback';
 
-// Lazy load das páginas com error boundaries individuais
+// Lazy load das páginas principais
 const Marketing = lazy(() => import('./pages/Marketing'));
 const Index = lazy(() => import('./pages/Index'));
 const Produtora = lazy(() => import('./pages/Produtora'));
@@ -22,8 +22,9 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const Pedidos = lazy(() => import('./pages/Pedidos'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 
-// Lazy load das páginas de checkout - ORDEM CORRETA
+// Lazy load das páginas de checkout
 const PlanSelection = lazy(() => import('./pages/PlanSelection'));
 const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
 const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
@@ -37,13 +38,13 @@ const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
 const AdvertiserReports = lazy(() => import('./pages/advertiser/AdvertiserReports'));
 const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
+const AdvertiserOrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
+      staleTime: 60 * 1000,
       retry: (failureCount, error: any) => {
-        // Não retry para erros de tabela não encontrada
         if (error?.message?.includes('does not exist')) {
           return false;
         }
@@ -63,7 +64,7 @@ const LazyPageWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 function App() {
-  console.log('🚀 App: Inicializando aplicação SEM Layout duplo...');
+  console.log('🚀 App: Inicializando aplicação...');
   
   return (
     <ErrorBoundary onError={(error, errorInfo) => {
@@ -75,7 +76,7 @@ function App() {
             <Toaster />
             <BrowserRouter>
               <Routes>
-                {/* Rotas principais - cada página tem seu próprio Layout */}
+                {/* Rotas principais */}
                 <Route path="/" element={
                   <LazyPageWrapper>
                     <Index />
@@ -122,14 +123,19 @@ function App() {
                   </LazyPageWrapper>
                 } />
 
-                {/* Rota para Meus Pedidos */}
+                {/* Rotas de pedidos para clientes */}
                 <Route path="/meus-pedidos" element={
                   <LazyPageWrapper>
                     <Pedidos />
                   </LazyPageWrapper>
                 } />
+                <Route path="/pedido-confirmado" element={
+                  <LazyPageWrapper>
+                    <OrderConfirmation />
+                  </LazyPageWrapper>
+                } />
 
-                {/* Rotas de checkout - FLUXO CORRETO */}
+                {/* Rotas de checkout */}
                 <Route path="/checkout/plano" element={
                   <LazyPageWrapper>
                     <PlanSelection />
@@ -170,6 +176,11 @@ function App() {
                 <Route path="/anunciante/pedidos" element={
                   <LazyPageWrapper>
                     <AdvertiserOrders />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/anunciante/pedidos/:id" element={
+                  <LazyPageWrapper>
+                    <AdvertiserOrderDetails />
                   </LazyPageWrapper>
                 } />
                 <Route path="/anunciante/campanhas" element={

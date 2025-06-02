@@ -81,11 +81,11 @@ export const useCheckoutNavigation = ({
       }
       setStep(prevStep);
     } else {
-      navigate('/selecionar-plano');
+      navigate('/checkout/plano');
     }
   }, [step, navigate, setStep]);
 
-  // Navegação simplificada e direta
+  // Navegação usando React Router
   const handleNextStep = useCallback(async (paymentMethod = 'pix') => {
     console.log("[useCheckoutNavigation] handleNextStep iniciado", {
       step,
@@ -119,7 +119,7 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // NAVEGAÇÃO DIRETA E SIMPLES
+      // NAVEGAÇÃO USANDO REACT ROUTER
       if (step === 1) {
         // Do resumo para pagamento - navegação direta
         console.log('[useCheckoutNavigation] Step 1 -> 2 - Direct navigation to checkout');
