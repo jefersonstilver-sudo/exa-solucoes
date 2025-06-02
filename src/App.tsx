@@ -21,6 +21,7 @@ const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
+const Pedidos = lazy(() => import('./pages/Pedidos'));
 
 // Lazy load das páginas de checkout - ORDEM CORRETA
 const PlanSelection = lazy(() => import('./pages/PlanSelection'));
@@ -118,6 +119,13 @@ function App() {
                 <Route path="/painel-store" element={
                   <LazyPageWrapper>
                     <PainelStore />
+                  </LazyPageWrapper>
+                } />
+
+                {/* Rota para Meus Pedidos */}
+                <Route path="/meus-pedidos" element={
+                  <LazyPageWrapper>
+                    <Pedidos />
                   </LazyPageWrapper>
                 } />
 
