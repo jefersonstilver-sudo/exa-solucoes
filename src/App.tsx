@@ -11,6 +11,7 @@ import Cadastro from './pages/Cadastro';
 import { AuthProvider } from './hooks/useAuth';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import LazyLoadingFallback from './components/ui/LazyLoadingFallback';
+import CompleteResponsiveLayout from './components/advertiser/layout/CompleteResponsiveLayout';
 
 // Lazy load das páginas com error boundaries individuais
 const Marketing = lazy(() => import('./pages/Marketing'));
@@ -21,7 +22,14 @@ const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
-const AdvertiserOrdersPage = lazy(() => import('./pages/advertiser/AdvertiserOrdersPage'));
+
+// Lazy load das páginas da área do anunciante
+const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
+const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'));
+const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
+const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
+const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
+const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -102,12 +110,43 @@ function App() {
                   </LazyPageWrapper>
                 } />
 
-                {/* ROTA PROTEGIDA: Meus Pedidos para clientes/anunciantes logados */}
-                <Route path="/meus-pedidos" element={
-                  <LazyPageWrapper>
-                    <AdvertiserOrdersPage />
-                  </LazyPageWrapper>
-                } />
+                {/* ÁREA DO ANUNCIANTE - Rotas protegidas com layout completo */}
+                <Route path="/anunciante/*" element={
+                  <ErrorBoundary>
+                    <CompleteResponsiveLayout />
+                  </ErrorBoundary>
+                }>
+                  <Route index element={
+                    <LazyPageWrapper>
+                      <AdvertiserDashboard />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="pedidos" element={
+                    <LazyPageWrapper>
+                      <AdvertiserOrders />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="pedido/:id" element={
+                    <LazyPageWrapper>
+                      <OrderDetails />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="campanhas" element={
+                    <LazyPageWrapper>
+                      <MyCampaigns />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="videos" element={
+                    <LazyPageWrapper>
+                      <MyVideos />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="perfil" element={
+                    <LazyPageWrapper>
+                      <AdvertiserSettings />
+                    </LazyPageWrapper>
+                  } />
+                </Route>
 
                 {/* Rotas de autenticação */}
                 <Route path="/login" element={
