@@ -105,7 +105,9 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
                 <BuildingStoreGrid
                   buildings={buildings}
                   isLoading={isLoading}
+                  isSearching={isSearching}
                   onAddToCart={onAddToCart}
+                  selectedLocation={selectedLocation}
                 />
               </motion.div>
             </div>

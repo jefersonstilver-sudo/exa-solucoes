@@ -1,4 +1,13 @@
 
 // Re-export for backward compatibility
 export { useBuildingStore as default, useBuildingStore } from './building-store/useBuildingStore';
-export type { BuildingFilters } from './building-store/types';
+
+export interface BuildingFilters {
+  neighborhood: string;
+  venueType: string[];
+  priceRange: [number, number];
+  audienceMin: number;
+  standardProfile: string[];
+  amenities: string[];
+  sortBy: string;
+}
