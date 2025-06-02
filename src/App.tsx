@@ -22,6 +22,20 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 
+// Lazy load das páginas de checkout
+const Checkout = lazy(() => import('./pages/Checkout'));
+const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
+const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
+const CheckoutFinish = lazy(() => import('./pages/CheckoutFinish'));
+
+// Lazy load das páginas do anunciante
+const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
+const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'));
+const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
+const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
+const AdvertiserReports = lazy(() => import('./pages/advertiser/AdvertiserReports'));
+const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -80,6 +94,11 @@ function App() {
                     <BuildingStore />
                   </LazyPageWrapper>
                 } />
+                <Route path="/paineis-digitais/loja" element={
+                  <LazyPageWrapper>
+                    <BuildingStore />
+                  </LazyPageWrapper>
+                } />
                 <Route path="/paineis-publicitarios" element={
                   <LazyPageWrapper>
                     <PaineisPublicitarios />
@@ -98,6 +117,65 @@ function App() {
                 <Route path="/painel-store" element={
                   <LazyPageWrapper>
                     <PainelStore />
+                  </LazyPageWrapper>
+                } />
+
+                {/* Rotas de checkout */}
+                <Route path="/checkout" element={
+                  <LazyPageWrapper>
+                    <Checkout />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/checkout/cupom" element={
+                  <LazyPageWrapper>
+                    <CheckoutCoupon />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/checkout/resumo" element={
+                  <LazyPageWrapper>
+                    <CheckoutSummary />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/checkout/finalizar" element={
+                  <LazyPageWrapper>
+                    <CheckoutFinish />
+                  </LazyPageWrapper>
+                } />
+
+                {/* Rotas do anunciante */}
+                <Route path="/anunciante" element={
+                  <LazyPageWrapper>
+                    <AdvertiserDashboard />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/anunciante/checkout" element={
+                  <LazyPageWrapper>
+                    <Checkout />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/anunciante/pedidos" element={
+                  <LazyPageWrapper>
+                    <AdvertiserOrders />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/anunciante/campanhas" element={
+                  <LazyPageWrapper>
+                    <MyCampaigns />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/anunciante/campanhas/:id" element={
+                  <LazyPageWrapper>
+                    <CampaignDetails />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/anunciante/videos" element={
+                  <LazyPageWrapper>
+                    <MyVideos />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/anunciante/relatorios" element={
+                  <LazyPageWrapper>
+                    <AdvertiserReports />
                   </LazyPageWrapper>
                 } />
 
