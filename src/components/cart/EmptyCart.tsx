@@ -8,11 +8,6 @@ import { useNavigate } from 'react-router-dom';
 const EmptyCart: React.FC = () => {
   const navigate = useNavigate();
   
-  const handleExploreClick = () => {
-    console.log('🔗 [EmptyCart] Navegando para /paineis-digitais/loja');
-    navigate('/paineis-digitais/loja');
-  };
-  
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -42,7 +37,7 @@ const EmptyCart: React.FC = () => {
       
       <Button 
         variant="outline" 
-        onClick={handleExploreClick}
+        onClick={() => navigate('/paineis-digitais/loja')}
         className="border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361] hover:text-white transition-colors px-8"
       >
         Explorar Painéis

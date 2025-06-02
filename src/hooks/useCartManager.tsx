@@ -59,40 +59,28 @@ export const useCartManager = () => {
     setCartOpen
   });
 
-  // Helper function to check if panel is in cart
-  const isPanelInCart = useCallback((panelId: string): boolean => {
-    const inCart = cartItems.some(item => item.panel.id === panelId);
-    console.log('🔍 [useCartManager] isPanelInCart check:', {
-      panelId,
-      inCart,
-      totalItems: cartItems.length,
-      cartItemIds: cartItems.map(item => item.panel.id)
-    });
-    return inCart;
-  }, [cartItems]);
-
   // Log cart state periodically for debugging
   React.useEffect(() => {
     if (initialLoadDone) {
-      console.log('🔄 [useCartManager] === ESTADO ATUAL DO CARRINHO ===');
-      console.log('🔄 [useCartManager] cartItemsLength:', cartItems.length);
-      console.log('🔄 [useCartManager] cartOpen:', cartOpen);
-      console.log('🔄 [useCartManager] cartAnimation:', cartAnimation);
-      console.log('🔄 [useCartManager] items:', cartItems.map(item => ({
-        id: item.id,
-        panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        duration: item.duration,
-        price: item.price
-      })));
-      console.log('🔄 [useCartManager] === FIM DO LOG ===');
+      console.log('🔄 [useCartManager] Estado atual:', {
+        cartItemsLength: cartItems.length,
+        cartOpen,
+        cartAnimation,
+        items: cartItems.map(item => ({
+          id: item.id,
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          duration: item.duration,
+          price: item.price
+        }))
+      });
     }
   }, [cartItems.length, cartOpen, initialLoadDone]);
 
   // Memoized function to prevent unnecessary re-renders
   const reloadCartFromStorage = useCallback(() => {
     try {
-      console.log('🔄 [useCartManager] === RECARREGANDO CARRINHO ===');
+      console.log('🔄 [useCartManager] Recarregando carrinho do storage...');
       const loadedLegacyCart = loadCartFromStorage();
       const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
       setCartItems(fullCartItems);
@@ -124,9 +112,6 @@ export const useCartManager = () => {
     // Checkout
     handleProceedToCheckout,
     isNavigating,
-    
-    // Helper functions
-    isPanelInCart,
     
     // Debugging and testing
     reloadCartFromStorage

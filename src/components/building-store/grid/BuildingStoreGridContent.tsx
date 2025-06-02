@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { BuildingStore, buildingToPanel } from '@/services/buildingStoreService';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BuildingStore } from '@/services/buildingStoreService';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,42 +11,54 @@ interface BuildingStoreGridContentProps {
   buildings: BuildingStore[];
   onAddToCart: (panel: Panel, duration?: number) => void;
   cartItems: CartItem[];
-  isPanelInCart?: (panelId: string) => boolean;
 }
 
 const BuildingStoreGridContent: React.FC<BuildingStoreGridContentProps> = ({
   buildings,
   onAddToCart,
-  cartItems,
-  isPanelInCart
+  cartItems
 }) => {
   const isMobile = useIsMobile();
 
-  console.log('🏗️ [BUILDING GRID CONTENT] Renderizando', buildings.length, 'prédios');
-  
+  // Function to check if a building is in cart
+  const isBuildingInCart = (building: BuildingStore): boolean => {
+    if (!cartItems || cartItems.length === 0) return false;
+    
+    // Check if any cart item corresponds to this building
+    return cartItems.some(cartItem => {
+      // Compare by building_id if available, otherwise by building name
+      return cartItem.panel.building_id === building.id ||
+             cartItem.panel.buildings?.nome === building.nome;
+    });
+  };
+
   return (
-    <div className={`grid gap-6 ${
-      isMobile 
-        ? 'grid-cols-1' 
-        : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-1'
-    }`}>
+    <AnimatePresence mode="popLayout">
       {buildings.map((building, index) => {
-        // Convert building to panel to check cart status
-        const panel = buildingToPanel(building);
-        const isInCart = isPanelInCart ? isPanelInCart(panel.id) : cartItems.some(item => item.panel.id === panel.id);
+        console.log(`🏢 [BUILDING STORE GRID] Renderizando prédio ${index + 1}: ${building.nome}`);
         
-        console.log('🏢 [BUILDING GRID CONTENT] Building:', building.nome, 'isInCart:', isInCart);
+        const isInCart = isBuildingInCart(building);
+        console.log(`🛒 [BUILDING STORE GRID] ${building.nome} está no carrinho:`, isInCart);
         
         return (
           <motion.div
             key={building.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            layout
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -30, scale: 0.95 }}
             transition={{ 
               duration: 0.5, 
               delay: index * 0.1,
-              ease: "easeOut"
+              type: "spring",
+              stiffness: 100,
+              damping: 15
             }}
+            whileHover={!isMobile ? { 
+              y: -8,
+              transition: { duration: 0.2, type: "spring", stiffness: 400 }
+            } : {}}
+            className="group"
           >
             <BuildingStoreCard
               building={building}
@@ -56,7 +68,7 @@ const BuildingStoreGridContent: React.FC<BuildingStoreGridContentProps> = ({
           </motion.div>
         );
       })}
-    </div>
+    </AnimatePresence>
   );
 };
 

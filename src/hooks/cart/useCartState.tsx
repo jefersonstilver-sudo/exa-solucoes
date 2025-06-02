@@ -28,100 +28,55 @@ export const useCartState = () => {
     // Remove conflicting modern cart keys
     localStorage.removeItem('indexa_modern_cart');
     localStorage.removeItem('indexa_cart_version');
-    localStorage.removeItem('modernCart');
-    localStorage.removeItem('cart_items');
-    console.log('🧹 [useCartState] Removed ALL conflicting cart storage keys');
+    console.log('🧹 [useCartState] Removed conflicting cart storage keys');
   }, []);
 
-  // Carregamento inicial com verificação de integridade
+  // Carregamento inicial
   useEffect(() => {
     if (initialLoadDone) return;
     
-    console.log('🔄 [useCartState] === CARREGAMENTO INICIAL DO CARRINHO ===');
+    console.log('🔄 [useCartState] Carregando carrinho inicial...');
+    const loadedLegacyCart = loadCartFromStorage();
+    const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
     
-    try {
-      const loadedLegacyCart = loadCartFromStorage();
-      const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
-      
-      console.log('📦 [useCartState] Carrinho carregado do storage:', {
-        legacyItems: loadedLegacyCart.length,
-        fullItems: fullCartItems.length,
-        items: fullCartItems.map(item => ({ 
-          id: item.id, 
-          panelId: item.panel.id, 
-          name: item.panel.buildings?.nome,
-          price: item.price
-        }))
-      });
-      
-      setCartItems(fullCartItems);
-      setInitialLoadDone(true);
-      
-      // Force a state verification after loading
-      setTimeout(() => {
-        console.log('🔍 [useCartState] Verificação pós-carregamento:', {
-          reactState: fullCartItems.length,
-          storage: loadCartFromStorage().length
-        });
-      }, 500);
-      
-    } catch (error) {
-      console.error('❌ [useCartState] Erro no carregamento inicial:', error);
-      setCartItems([]);
-      setInitialLoadDone(true);
-    }
+    console.log('📦 [useCartState] Carrinho carregado:', {
+      legacyItems: loadedLegacyCart.length,
+      fullItems: fullCartItems.length,
+      items: fullCartItems.map(item => ({ id: item.id, panelId: item.panel.id, name: item.panel.buildings?.nome }))
+    });
+    
+    setCartItems(fullCartItems);
+    setInitialLoadDone(true);
   }, [initialLoadDone]);
 
-  // Salvamento automático com verificação robusta
+  // Salvamento automático com logging detalhado
   useEffect(() => {
     if (!initialLoadDone) return;
     
-    console.log('💾 [useCartState] === SALVAMENTO AUTOMÁTICO ===');
-    console.log('💾 [useCartState] Itens no estado React:', {
-      count: cartItems.length,
-      items: cartItems.map(item => ({ 
-        id: item.id, 
-        panelId: item.panel.id, 
-        name: item.panel.buildings?.nome 
-      }))
+    console.log('💾 [useCartState] Salvando carrinho automaticamente...', {
+      itemCount: cartItems.length,
+      items: cartItems.map(item => ({ id: item.id, panelId: item.panel.id, name: item.panel.buildings?.nome }))
     });
     
-    try {
-      const legacyCartItems = cartItems.map(item => ({
-        panel: item.panel,
-        duration: item.duration
-      }));
-      
-      const saveSuccess = saveCartToStorage(legacyCartItems);
-      console.log('💾 [useCartState] Resultado do salvamento:', saveSuccess ? 'SUCESSO' : 'FALHOU');
-      
-      // Immediate verification
+    const legacyCartItems = cartItems.map(item => ({
+      panel: item.panel,
+      duration: item.duration
+    }));
+    
+    const saveSuccess = saveCartToStorage(legacyCartItems);
+    console.log('💾 [useCartState] Salvamento resultado:', saveSuccess ? 'SUCESSO' : 'FALHOU');
+    
+    // Verify save by reading back
+    setTimeout(() => {
       const verification = loadCartFromStorage();
-      console.log('🔍 [useCartState] Verificação imediata:', {
+      console.log('🔍 [useCartState] Verificação pós-salvamento:', {
         saved: legacyCartItems.length,
         verified: verification.length,
-        match: verification.length === legacyCartItems.length,
-        storageItems: verification.map(item => item.panel.id)
+        match: verification.length === legacyCartItems.length
       });
-      
-      if (verification.length !== legacyCartItems.length) {
-        console.error('⚠️ [useCartState] MISMATCH detectado entre React state e localStorage!');
-      }
-      
-    } catch (error) {
-      console.error('❌ [useCartState] Erro no salvamento:', error);
-    }
+    }, 100);
+    
   }, [cartItems, initialLoadDone]);
-
-  // Debug: Log state changes
-  useEffect(() => {
-    if (initialLoadDone) {
-      console.log('🔄 [useCartState] === MUDANÇA DE ESTADO ===');
-      console.log('🔄 [useCartState] cartItems.length:', cartItems.length);
-      console.log('🔄 [useCartState] cartOpen:', cartOpen);
-      console.log('🔄 [useCartState] cartAnimation:', cartAnimation);
-    }
-  }, [cartItems.length, cartOpen, cartAnimation, initialLoadDone]);
 
   // Manage body class for drawer state
   useEffect(() => {

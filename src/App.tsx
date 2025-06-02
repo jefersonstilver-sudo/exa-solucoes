@@ -80,12 +80,6 @@ function App() {
                     <BuildingStore />
                   </LazyPageWrapper>
                 } />
-                {/* NOVA ROTA ADICIONADA */}
-                <Route path="/paineis-digitais/loja" element={
-                  <LazyPageWrapper>
-                    <BuildingStore />
-                  </LazyPageWrapper>
-                } />
                 <Route path="/paineis-publicitarios" element={
                   <LazyPageWrapper>
                     <PaineisPublicitarios />
