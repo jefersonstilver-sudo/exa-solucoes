@@ -27,13 +27,18 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   console.log('🏢 [BUILDING STORE CARD] Building:', building.nome);
 
   if (isMobile) {
-    // Layout mobile: Card vertical compacto
+    // Layout mobile: Card vertical compacto com título no topo
     return (
       <Card className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative">
         <CardContent className="p-0 relative">
           <div className="flex flex-col">
+            {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
+            <div className="p-4 pb-2">
+              <BuildingCardHeader building={building} />
+            </div>
+
             {/* Imagem Principal - Mobile: Menor altura */}
-            <div className="relative overflow-hidden h-48">
+            <div className="relative overflow-hidden h-48 mx-4 rounded-lg">
               <BuildingCardImage building={building} />
               
               {/* Badge de status */}
@@ -64,22 +69,19 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
             </div>
 
             {/* Informações - Mobile: Layout compacto */}
-            <div className="p-4 space-y-3">
+            <div className="p-4 pt-3 space-y-3">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Header com Nome e Localização */}
-                <BuildingCardHeader building={building} />
-
                 {/* Métricas Principais */}
-                <div className="mt-3">
+                <div className="mb-3">
                   <BuildingCardMetrics building={building} />
                 </div>
 
                 {/* Amenities */}
-                <div className="mt-3">
+                <div className="mb-3">
                   <BuildingCardAmenities building={building} />
                 </div>
 
@@ -98,7 +100,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
     );
   }
 
-  // Layout desktop: Card horizontal
+  // Layout desktop: Card horizontal com título no topo
   return (
     <Card className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative">
       <CardContent className="p-0 relative">
@@ -134,35 +136,38 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
             )}
           </div>
 
-          {/* Informações - Desktop: Lado direito */}
-          <div className="lg:w-3/5 p-4 lg:p-6 relative flex flex-col justify-between">
+          {/* Informações - Desktop: Lado direito com título no topo */}
+          <div className="lg:w-3/5 p-4 lg:p-6 relative flex flex-col">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex-1 flex flex-col justify-between"
+              className="flex flex-col h-full"
             >
-              {/* Header com Nome e Localização */}
+              {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
               <div className="mb-4">
                 <BuildingCardHeader building={building} />
               </div>
 
-              {/* Métricas Principais */}
-              <div className="mb-4">
-                <BuildingCardMetrics building={building} />
-              </div>
+              {/* Conteúdo flexível */}
+              <div className="flex-1 flex flex-col justify-between">
+                {/* Métricas Principais */}
+                <div className="mb-4">
+                  <BuildingCardMetrics building={building} />
+                </div>
 
-              {/* Amenities */}
-              <div className="mb-4">
-                <BuildingCardAmenities building={building} />
-              </div>
+                {/* Amenities */}
+                <div className="mb-4">
+                  <BuildingCardAmenities building={building} />
+                </div>
 
-              {/* Preço e Ações */}
-              <div className="mt-auto">
-                <BuildingCardActions 
-                  building={building}
-                  onAddToCart={onAddToCart}
-                />
+                {/* Preço e Ações - No final */}
+                <div className="mt-auto">
+                  <BuildingCardActions 
+                    building={building}
+                    onAddToCart={onAddToCart}
+                  />
+                </div>
               </div>
             </motion.div>
           </div>

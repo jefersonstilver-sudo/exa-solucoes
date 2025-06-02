@@ -37,18 +37,18 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
   };
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section">
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="w-full"
       >
-        {/* Container principal sem limitações de largura */}
-        <div className={`w-full ${isMobile ? 'px-4 py-6' : 'px-6 py-8'}`}>
+        {/* Container principal com espaçamento adequado */}
+        <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-6 mt-4' : 'px-6 py-8 mt-6'}`}>
           <div className="w-full max-w-6xl mx-auto">
-            {/* Card principal simplificado */}
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            {/* Card principal com proteções contra sobreposição */}
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative z-10">
               {/* Container interno com padding adequado */}
               <div className={`relative ${isMobile ? 'p-4' : 'p-8'}`}>
                 {/* Elementos decorativos apenas em desktop */}
@@ -59,9 +59,9 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                   </>
                 )}
                 
-                {/* Header com título principal */}
+                {/* Header com título principal - SEMPRE VISÍVEL */}
                 <motion.div 
-                  className={`text-center relative z-10 ${isMobile ? 'mb-6' : 'mb-8'}`}
+                  className={`text-center relative z-30 ${isMobile ? 'mb-6' : 'mb-8'}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -74,10 +74,10 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                   </p>
                 </motion.div>
 
-                {/* Barra de busca */}
+                {/* Barra de busca com z-index alto */}
                 <motion.form 
                   onSubmit={handleSubmit}
-                  className="relative z-10"
+                  className="relative z-30"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}

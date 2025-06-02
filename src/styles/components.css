@@ -61,6 +61,34 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
   display: none !important;
 }
 
+/* PROTEÇÕES CONTRA SOBREPOSIÇÃO DO HEADER */
+
+/* Garantir que o conteúdo principal nunca fique embaixo do header */
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Header fixo - garantir z-index apropriado */
+header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 50 !important;
+  background: white !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+/* Proteção universal para páginas - evitar sobreposição */
+.page-content,
+.building-store-page,
+[class*="store"],
+[class*="loja"] {
+  padding-top: 80px !important;
+  min-height: calc(100vh - 80px) !important;
+}
+
 /* OTIMIZAÇÕES PARA LOJA - GARANTIR VISIBILIDADE COMPLETA */
 
 /* Container principal da loja - NUNCA CORTAR */
@@ -70,6 +98,8 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
   margin: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
+  position: relative !important;
+  z-index: 10 !important;
 }
 
 /* Seção de busca - VISIBILIDADE TOTAL */
@@ -81,6 +111,24 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
   overflow: visible !important;
   position: relative !important;
   z-index: 10 !important;
+  margin-top: 20px !important;
+}
+
+/* PROTEÇÃO ESPECÍFICA PARA TÍTULOS DE CARDS */
+.building-card-header,
+[class*="card-header"],
+.card-title {
+  position: relative !important;
+  z-index: 5 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* Garantir que títulos dos cards estejam no topo */
+.building-card-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
 }
 
 /* CORREÇÕES ESPECÍFICAS PARA MOBILE */
@@ -88,6 +136,14 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
   /* Garantir que nada seja cortado */
   body {
     overflow-x: hidden !important;
+  }
+  
+  /* Proteção mobile para header */
+  .page-content,
+  .building-store-page,
+  [class*="store"],
+  [class*="loja"] {
+    padding-top: 70px !important;
   }
   
   /* Container da loja mobile */
@@ -107,6 +163,7 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
     padding: 1rem !important;
     overflow: visible !important;
     box-sizing: border-box !important;
+    margin-top: 10px !important;
   }
   
   /* Cards mobile */
@@ -157,6 +214,7 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
   /* Garantir que a busca tenha espaço adequado */
   .building-search-section {
     padding: 2rem 1.5rem !important;
+    margin-top: 20px !important;
   }
   
   /* Container desktop com limites apropriados */

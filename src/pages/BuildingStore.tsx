@@ -33,7 +33,7 @@ const BuildingStore = () => {
   if (error) {
     return (
       <Layout>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col pt-20">
           <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
             <h2 className="text-2xl font-semibold text-red-500 mb-4">
               Erro ao carregar prédios
@@ -55,8 +55,8 @@ const BuildingStore = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen w-full">
-        {/* Container sem limitações de largura que podem causar corte */}
+      {/* Container principal com padding para evitar sobreposição do header */}
+      <div className="min-h-screen w-full pt-20">
         <div className="w-full">
           <BuildingStoreLayout 
             buildings={buildings}
