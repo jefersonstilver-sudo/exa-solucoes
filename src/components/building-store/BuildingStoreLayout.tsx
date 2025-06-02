@@ -106,8 +106,6 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
                   buildings={buildings}
                   isLoading={isLoading}
                   onAddToCart={onAddToCart}
-                  filters={filters}
-                  onFilterChange={handleFilterChange}
                 />
               </motion.div>
             </div>
