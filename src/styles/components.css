@@ -61,206 +61,111 @@ div:not(#unique-indexa-footer) *:contains("Indexa Mídia") {
   display: none !important;
 }
 
-/* Regra específica para mobile */
-@media (max-width: 768px) {
-  footer:not(#unique-indexa-footer) {
-    display: none !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  /* Esconder copyrights duplicados em mobile */
-  section div:contains("© 2025"),
-  .absolute.bottom-8:contains("©"),
-  .absolute.bottom-4:contains("©"),
-  .fixed.bottom-8:contains("©"),
-  .fixed.bottom-4:contains("©") {
-    display: none !important;
-  }
-}
+/* OTIMIZAÇÕES PARA LOJA - GARANTIR VISIBILIDADE COMPLETA */
 
-/* Garantir que apenas um footer apareça por página */
-body footer:nth-of-type(n+2) {
-  display: none !important;
-}
-
-/* Proteção adicional - esconder footers em containers específicos */
-main footer,
-article footer,
-.container footer:not(#unique-indexa-footer) {
-  display: none !important;
-}
-
-/* Regra específica para elementos com copyright em posição absoluta */
-.absolute.bottom-8,
-.absolute.bottom-4,
-.fixed.bottom-8,
-.fixed.bottom-4 {
-  display: none !important;
-}
-
-/* PROTEÇÃO MÁXIMA - Esconder qualquer texto de copyright fora do footer oficial */
-*:not(#unique-indexa-footer) {
-  & > *:contains("© 2025 Indexa Mídia") {
-    display: none !important;
-  }
-  & > *:contains("Todos os direitos reservados") {
-    display: none !important;
-  }
-  & > *:contains("© 2025") {
-    display: none !important;
-  }
-}
-
-/* NOVA PROTEÇÃO: Esconder elementos com ID ou classe específicos que possam conter copyright */
-#copyright,
-.copyright,
-[class*="copyright"],
-[id*="copyright"] {
-  display: none !important;
-}
-
-/* PROTEÇÃO CONTRA DIVS COM COPYRIGHT EM QUALQUER POSIÇÃO */
-div:contains("© 2025 Indexa"):not(#unique-indexa-footer *),
-div:contains("Todos os direitos"):not(#unique-indexa-footer *),
-span:contains("© 2025"):not(#unique-indexa-footer *),
-p:contains("© 2025"):not(#unique-indexa-footer *) {
-  display: none !important;
-}
-
-/* OTIMIZAÇÕES ESPECÍFICAS PARA MOBILE - LOJA ONLINE */
-
-/* Container mobile scroll otimizado */
-.mobile-scroll-container {
-  overflow-x: hidden;
-  overflow-y: auto;
-  width: 100%;
-  min-height: 100vh;
-}
-
-/* GARANTIR QUE CONTEÚDO PRINCIPAL SEJA SEMPRE VISÍVEL */
+/* Container principal da loja - NUNCA CORTAR */
 .building-store-main-content {
-  position: relative !important;
-  z-index: 1 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
 }
 
-/* CORRIGIR LAYOUT CORTADO - GARANTIR VISIBILIDADE COMPLETA */
+/* Seção de busca - VISIBILIDADE TOTAL */
 .building-search-section {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
   position: relative !important;
   z-index: 10 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  width: 100% !important;
-  margin: 0 auto !important;
 }
 
-/* Fix para layout mobile da loja */
+/* CORREÇÕES ESPECÍFICAS PARA MOBILE */
 @media (max-width: 768px) {
-  /* Container principal da loja - CORRIGIDO */
+  /* Garantir que nada seja cortado */
+  body {
+    overflow-x: hidden !important;
+  }
+  
+  /* Container da loja mobile */
   .building-store-container {
-    padding: 0 !important;
-    margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: visible !important;
   }
   
-  /* Search section mobile - VISIBILIDADE GARANTIDA */
+  /* Busca mobile - sem cortes */
   .building-search-mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
     padding: 1rem !important;
-    margin: 0.5rem !important;
-    border-radius: 1rem !important;
-    position: relative !important;
-    z-index: 100 !important;
-    display: block !important;
-    visibility: visible !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
   }
   
-  /* Cards mobile otimizados */
+  /* Cards mobile */
   .building-card-mobile {
     margin: 0 1rem 1rem 1rem !important;
-    border-radius: 1rem !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    width: calc(100% - 2rem) !important;
+    max-width: calc(100% - 2rem) !important;
+    box-sizing: border-box !important;
   }
   
-  /* Imagens mobile otimizadas */
-  .building-image-mobile {
-    height: 12rem !important;
+  /* Inputs mobile - tamanho adequado */
+  .mobile-input {
     width: 100% !important;
-    object-fit: cover !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important; /* Previne zoom no iOS */
   }
   
   /* Botões mobile touch-friendly */
   .mobile-button {
-    min-height: 3rem !important;
-    padding: 0.75rem 1.5rem !important;
-    font-size: 1rem !important;
-    border-radius: 0.75rem !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
     touch-action: manipulation !important;
   }
   
-  /* Sheet/Drawer mobile para filtros */
-  .mobile-filters-sheet {
-    width: 85vw !important;
-    max-width: 320px !important;
+  /* Remover margens/padding que possam causar corte */
+  .max-w-7xl,
+  .max-w-6xl,
+  .max-w-5xl,
+  .max-w-4xl {
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
   
-  /* Grid responsivo mobile */
-  .mobile-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1rem !important;
-    padding: 0 1rem !important;
+  /* Container responsivo sem limitações */
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
+/* CORREÇÕES PARA DESKTOP */
+@media (min-width: 769px) {
+  /* Garantir que a busca tenha espaço adequado */
+  .building-search-section {
+    padding: 2rem 1.5rem !important;
   }
   
-  /* Typography mobile otimizada */
-  .mobile-heading {
-    font-size: 1.25rem !important;
-    line-height: 1.6 !important;
-    margin-bottom: 0.5rem !important;
+  /* Container desktop com limites apropriados */
+  .max-w-7xl {
+    max-width: 80rem !important;
   }
   
-  .mobile-text {
-    font-size: 0.875rem !important;
-    line-height: 1.5 !important;
-  }
-  
-  /* Spacing mobile otimizado */
-  .mobile-spacing {
-    padding: 0.75rem !important;
-    margin: 0.5rem !important;
-  }
-  
-  /* Form inputs mobile */
-  .mobile-input {
-    height: 3rem !important;
-    font-size: 1rem !important;
-    padding: 0 0.75rem !important;
-    border-radius: 0.75rem !important;
-  }
-  
-  /* GARANTIR QUE NADA SEJA CORTADO EM MOBILE */
-  body {
-    overflow-x: hidden !important;
-    position: relative !important;
-  }
-  
-  /* Container principal sem cortes */
-  .min-h-screen {
-    min-height: 100vh !important;
-    position: relative !important;
-  }
-  
-  /* Garantir que header não sobreponha conteúdo */
-  main {
-    position: relative !important;
-    z-index: 1 !important;
-    padding-top: 0 !important;
+  .max-w-6xl {
+    max-width: 72rem !important;
   }
 }
 
@@ -278,30 +183,7 @@ p:contains("© 2025"):not(#unique-indexa-footer *) {
   animation: shimmer 2s infinite;
 }
 
-/* Otimizações para performance mobile */
-@media (max-width: 768px) {
-  /* Reduzir animações em mobile */
-  * {
-    animation-duration: 0.2s !important;
-    transition-duration: 0.2s !important;
-  }
-  
-  /* Otimizar scroll em mobile */
-  body {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: hidden;
-  }
-  
-  /* Touch targets otimizados */
-  button,
-  [role="button"],
-  .touchable {
-    min-height: 44px !important;
-    min-width: 44px !important;
-  }
-}
-
-/* REGRAS ESPECÍFICAS PARA GARANTIR VISIBILIDADE DO TÍTULO */
+/* REGRAS FINAIS - GARANTIR VISIBILIDADE DO TÍTULO */
 h1:contains("Encontre prédios"),
 h2:contains("Encontre prédios"),
 [class*="heading"]:contains("Encontre prédios") {
@@ -310,4 +192,21 @@ h2:contains("Encontre prédios"),
   opacity: 1 !important;
   position: relative !important;
   z-index: 100 !important;
+}
+
+/* Proteção contra elementos que possam esconder conteúdo */
+* {
+  box-sizing: border-box;
+}
+
+/* Scrolling suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Touch optimization */
+button,
+[role="button"],
+.touchable {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 }

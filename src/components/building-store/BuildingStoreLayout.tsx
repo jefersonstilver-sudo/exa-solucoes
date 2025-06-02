@@ -34,9 +34,9 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   onAddToCart
 }) => {
   return (
-    <div className="w-full space-y-6 building-store-main-content">
-      {/* Search section - SEMPRE VISÍVEL */}
-      <div className="w-full building-search-section">
+    <div className="w-full">
+      {/* Search section - Container sem limitações */}
+      <div className="w-full">
         <BuildingStoreSearchSection 
           searchLocation={searchLocation}
           setSearchLocation={setSearchLocation}
@@ -50,8 +50,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
         />
       </div>
       
-      {/* Layout with sidebar and building grid */}
-      <div className="w-full">
+      {/* Layout with sidebar and building grid - Com container limitado */}
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6">
         <BuildingStoreGridLayout 
           buildings={buildings}
           isLoading={isLoading}

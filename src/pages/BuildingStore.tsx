@@ -55,9 +55,9 @@ const BuildingStore = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen flex flex-col">
-        {/* Main content container with proper spacing */}
-        <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-6">
+      <div className="min-h-screen w-full">
+        {/* Container sem limitações de largura que podem causar corte */}
+        <div className="w-full">
           <BuildingStoreLayout 
             buildings={buildings}
             isLoading={isLoading}
