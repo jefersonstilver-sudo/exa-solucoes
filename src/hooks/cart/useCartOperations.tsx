@@ -45,7 +45,7 @@ export const useCartOperations = ({
       if (existingIndex >= 0) {
         console.log('🛒 [useCartOperations] Atualizando item existente no carrinho');
         // Update the existing item
-        return prev.map((item, index) => 
+        const updated = prev.map((item, index) => 
           index === existingIndex 
             ? {
                 ...item,
@@ -55,11 +55,19 @@ export const useCartOperations = ({
               }
             : item
         );
+        
+        // Save to localStorage immediately
+        localStorage.setItem('panelCart', JSON.stringify(updated));
+        return updated;
       } else {
         console.log('🛒 [useCartOperations] Adicionando novo item ao carrinho');
         // Add new panel to cart
         const newItem = createCartItem(panel, duration);
-        return [...prev, newItem];
+        const newCart = [...prev, newItem];
+        
+        // Save to localStorage immediately
+        localStorage.setItem('panelCart', JSON.stringify(newCart));
+        return newCart;
       }
     });
     
@@ -67,9 +75,11 @@ export const useCartOperations = ({
     setCartAnimation(true);
     setTimeout(() => setCartAnimation(false), 800);
     
-    // IMPORTANTE: Abrir o carrinho automaticamente quando um item é adicionado
-    console.log('🛒 [useCartOperations] Abrindo carrinho automaticamente');
-    setCartOpen(true);
+    // CRÍTICO: Forçar abertura do carrinho com delay para garantir sincronização
+    setTimeout(() => {
+      console.log('🛒 [useCartOperations] Forçando abertura do carrinho');
+      setCartOpen(true);
+    }, 100);
     
     // Log event
     logCheckoutEvent(
@@ -97,7 +107,12 @@ export const useCartOperations = ({
     const panelToRemove = cartItems.find(item => item.panel.id === panelId);
     const panelName = panelToRemove?.panel.buildings?.nome || 'Painel';
     
-    setCartItems(prev => prev.filter(item => item.panel.id !== panelId));
+    setCartItems(prev => {
+      const filtered = prev.filter(item => item.panel.id !== panelId);
+      // Save to localStorage immediately
+      localStorage.setItem('panelCart', JSON.stringify(filtered));
+      return filtered;
+    });
     
     // Log event
     logCheckoutEvent(
@@ -163,6 +178,9 @@ export const useCartOperations = ({
             }
           : item
       );
+      
+      // Save to localStorage immediately
+      localStorage.setItem('panelCart', JSON.stringify(updated));
       
       // Show toast notification about duration change
       const panel = prev.find(item => item.panel.id === panelId);
