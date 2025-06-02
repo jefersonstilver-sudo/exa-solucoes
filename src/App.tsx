@@ -21,6 +21,7 @@ const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
+const AdvertiserOrdersPage = lazy(() => import('./pages/advertiser/AdvertiserOrdersPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,6 +99,13 @@ function App() {
                 <Route path="/painel-store" element={
                   <LazyPageWrapper>
                     <PainelStore />
+                  </LazyPageWrapper>
+                } />
+
+                {/* ROTA PROTEGIDA: Meus Pedidos para clientes/anunciantes logados */}
+                <Route path="/meus-pedidos" element={
+                  <LazyPageWrapper>
+                    <AdvertiserOrdersPage />
                   </LazyPageWrapper>
                 } />
 
