@@ -1,4 +1,3 @@
-
 import React, { useState, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,7 +62,7 @@ const OrderDetails = () => {
   const { userProfile } = useAuth();
   
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [videoName, setVideoName] = useState('');
 
@@ -123,12 +122,15 @@ const OrderDetails = () => {
     }
     
     setUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
     
     try {
       // Simular progress para melhor UX
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
+        setUploadProgress(prev => ({
+          ...prev,
+          [slotPosition]: Math.min((prev[slotPosition] || 0) + 10, 90)
+        }));
       }, 200);
 
       // TODO: Implementar upload real
@@ -138,7 +140,7 @@ const OrderDetails = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       clearInterval(progressInterval);
-      setUploadProgress(100);
+      setUploadProgress(prev => ({ ...prev, [slotPosition]: 100 }));
       
       setVideoName(file.name);
       setIsSuccessOpen(true);
@@ -146,12 +148,26 @@ const OrderDetails = () => {
       // Refresh data após upload
       await refetch();
       
+      // Limpar progress após sucesso
+      setTimeout(() => {
+        setUploadProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[slotPosition];
+          return newProgress;
+        });
+      }, 1000);
+      
     } catch (error) {
       console.error('Erro no upload:', error);
       toast.error('Erro ao fazer upload do vídeo');
+      // Limpar progress em caso de erro
+      setUploadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[slotPosition];
+        return newProgress;
+      });
     } finally {
       setUploading(false);
-      setUploadProgress(0);
     }
   };
 
