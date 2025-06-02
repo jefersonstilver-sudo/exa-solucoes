@@ -37,7 +37,7 @@ const ResponsiveAdvertiserHeader = ({
     );
   }
 
-  return <ModernAdvertiserHeader />;
+  return <ModernAdvertiserHeader onMenuClick={onMenuClick} isMobile={isMobile} />;
 };
 
 export default ResponsiveAdvertiserHeader;
