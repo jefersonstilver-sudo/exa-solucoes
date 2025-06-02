@@ -9,5 +9,7 @@ export const defaultFilters: BuildingFilters = {
   priceRange: [0, 10000], // Range amplo
   audienceMin: 0, // Zero = sem restrição de público
   standardProfile: [], // Vazio = todos os padrões
-  amenities: [] // Vazio = todas as amenities
+  amenities: [], // Vazio = todas as amenities
+  sortBy: 'relevance' // Adicionar sortBy padrão
 };
+

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
-import { BuildingFilters } from '@/hooks/useBuildingStore';
+import { BuildingFilters } from './types';
 import { filterBuildings, sortBuildings } from '@/services/buildingFilterService';
 
 interface UseBuildingStoreFiltersProps {
@@ -14,6 +14,7 @@ export const useBuildingStoreFilters = ({
   selectedLocation
 }: UseBuildingStoreFiltersProps) => {
   const [filters, setFilters] = useState<BuildingFilters>({
+    radius: 50000,
     neighborhood: '',
     venueType: [],
     priceRange: [0, 10000],
@@ -64,7 +65,8 @@ export const useBuildingStoreFilters = ({
       debouncedFilters.priceRange[1] < 10000 ||
       debouncedFilters.audienceMin > 0 ||
       debouncedFilters.standardProfile.length > 0 ||
-      debouncedFilters.amenities.length > 0
+      debouncedFilters.amenities.length > 0 ||
+      debouncedFilters.radius < 50000
     );
 
     if (!hasActiveFilters) {
@@ -98,6 +100,10 @@ export const useBuildingStoreFilters = ({
       if (updated.audienceMin < 0) {
         updated.audienceMin = 0;
       }
+
+      if (updated.radius < 1000) {
+        updated.radius = 1000;
+      }
       
       return updated;
     });
@@ -107,6 +113,7 @@ export const useBuildingStoreFilters = ({
   const resetFilters = useCallback(() => {
     console.log('🔍 [FILTERS] Resetando filtros');
     const defaultFilters: BuildingFilters = {
+      radius: 50000,
       neighborhood: '',
       venueType: [],
       priceRange: [0, 10000],
@@ -131,7 +138,8 @@ export const useBuildingStoreFilters = ({
         debouncedFilters.priceRange[1] < 10000 ||
         debouncedFilters.audienceMin > 0 ||
         debouncedFilters.standardProfile.length > 0 ||
-        debouncedFilters.amenities.length > 0
+        debouncedFilters.amenities.length > 0 ||
+        debouncedFilters.radius < 50000
       )
     };
   }, [allBuildings, filteredBuildings, debouncedFilters]);
@@ -145,3 +153,4 @@ export const useBuildingStoreFilters = ({
     isDebouncing: JSON.stringify(filters) !== JSON.stringify(debouncedFilters)
   };
 };
+
