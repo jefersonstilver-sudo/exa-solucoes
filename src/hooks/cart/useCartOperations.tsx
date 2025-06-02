@@ -36,9 +36,15 @@ export const useCartOperations = ({
   };
 
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
-    console.log('🛒 [useCartOperations] Adicionando ao carrinho:', { panelId: panel.id, duration });
+    console.log('🛒 [useCartOperations] === INICIANDO ADIÇÃO AO CARRINHO ===');
+    console.log('🛒 [useCartOperations] Panel ID:', panel.id);
+    console.log('🛒 [useCartOperations] Panel Name:', panel.buildings?.nome);
+    console.log('🛒 [useCartOperations] Duration:', duration);
+    console.log('🛒 [useCartOperations] Current cart items:', cartItems.length);
     
     setCartItems(prev => {
+      console.log('🛒 [useCartOperations] Cart anterior:', prev.length, 'itens');
+      
       // Check if panel is already in cart
       const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
       
@@ -65,6 +71,12 @@ export const useCartOperations = ({
         const newCart = [...prev, newItem];
         
         console.log('🛒 [useCartOperations] Novo cart:', newCart.length, 'itens');
+        console.log('🛒 [useCartOperations] Item adicionado:', {
+          id: newItem.id,
+          panelId: newItem.panel.id,
+          name: newItem.panel.buildings?.nome,
+          price: newItem.price
+        });
         return newCart;
       }
     });
@@ -77,7 +89,7 @@ export const useCartOperations = ({
     setTimeout(() => {
       console.log('🛒 [useCartOperations] Forçando abertura do carrinho');
       setCartOpen(true);
-    }, 100);
+    }, 200);
     
     // Log event
     logCheckoutEvent(
@@ -197,35 +209,6 @@ export const useCartOperations = ({
     });
   };
 
-  // Restore cart if needed (if it was cleared by mistake)
-  const handleRestoreCart = () => {
-    try {
-      const lastCart = sessionStorage.getItem('lastCart');
-      if (lastCart) {
-        const parsedCart = JSON.parse(lastCart);
-        setCartItems(parsedCart);
-        sessionStorage.removeItem('lastCart');
-        
-        logCheckoutEvent(
-          CheckoutEvent.RESTORE_CART,
-          LogLevel.INFO,
-          "Carrinho restaurado do backup",
-          { itemCount: parsedCart.length }
-        );
-        
-        toast({
-          title: "Carrinho restaurado",
-          description: "Os itens foram restaurados com sucesso",
-        });
-        
-        return true;
-      }
-    } catch (e) {
-      console.error('Falha ao restaurar o carrinho', e);
-    }
-    return false;
-  };
-
   // Toggle cart open/close - allow manual toggle
   const toggleCart = () => {
     console.log('🛒 [useCartOperations] Alternando estado do carrinho');
@@ -241,7 +224,6 @@ export const useCartOperations = ({
     handleRemoveFromCart,
     handleClearCart,
     handleChangeDuration,
-    handleRestoreCart,
     toggleCart
   };
 };

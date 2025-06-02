@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
@@ -21,16 +22,8 @@ export const useCartState = () => {
   const [cartAnimation, setCartAnimation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-  
-  // Clean up localStorage on mount to remove conflicting keys
-  useEffect(() => {
-    // Remove conflicting modern cart keys
-    localStorage.removeItem('indexa_modern_cart');
-    localStorage.removeItem('indexa_cart_version');
-    console.log('🧹 [useCartState] Removed conflicting cart storage keys');
-  }, []);
 
-  // Carregamento inicial
+  // Carregamento inicial - SEM remover outras chaves do localStorage
   useEffect(() => {
     if (initialLoadDone) return;
     
