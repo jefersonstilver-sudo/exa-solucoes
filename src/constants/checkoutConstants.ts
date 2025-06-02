@@ -1,77 +1,85 @@
 
-// Etapas do checkout (reordered to show PLAN first)
+import { Plan } from '@/types/checkout';
+
 export const CHECKOUT_STEPS = {
-  PLAN: 0,
-  COUPON: 1,
-  REVIEW: 2,
-  PAYMENT: 3,
-  UPLOAD: 4
+  PLAN: 0,      // Seleção de plano/período
+  COUPON: 1,    // Código de cupom
+  REVIEW: 2,    // Revisão do pedido
+  PAYMENT: 3,   // Pagamento
+  UPLOAD: 4     // Upload de material
 };
 
-// Planos disponíveis with updated structure - preços são calculados dinamicamente
-export const PLANS = {
+export const PLANS: Record<number, Plan> = {
   1: {
     id: 1,
-    name: 'Plano Básico',
-    description: '1 mês',
+    name: '1 Mês',
+    description: 'Ideal para campanhas pontuais',
     months: 1,
     discount: 0,
     mostPopular: false,
-    extras: ['Flexibilidade total', 'Ideal para testes', 'Sem compromisso'],
-    productionIncluded: false,
+    extras: ['Suporte básico', 'Relatórios mensais'],
+    color: 'bg-gray-100',
+    tag: '',
+    videosPerMonth: 4,
+    productionIncluded: true,
+    studioUse: false,
     additionalProduction: {
       available: true,
-      price: 79.90
-    },
-    color: 'gray'
+      price: 150
+    }
   },
   3: {
     id: 3,
-    name: 'Plano Popular',
-    description: '3 meses',
+    name: '3 Meses',
+    description: 'Perfeito para campanhas trimestrais',
     months: 3,
-    discount: 5,
+    discount: 10,
     mostPopular: true,
-    extras: ['Economize 5%', 'Maior visibilidade', 'Melhor custo-benefício'],
+    extras: ['Suporte prioritário', 'Relatórios semanais', '10% de desconto'],
+    color: 'bg-blue-100',
+    tag: 'MAIS POPULAR',
+    videosPerMonth: 4,
     productionIncluded: true,
-    videosPerMonth: 1,
-    color: 'green',
-    tag: '🔥 Mais vendido'
+    studioUse: true,
+    additionalProduction: {
+      available: true,
+      price: 130
+    }
   },
   6: {
     id: 6,
-    name: 'Plano Profissional',
-    description: '6 meses',
+    name: '6 Meses',
+    description: 'Ideal para campanhas semestrais',
     months: 6,
     discount: 15,
     mostPopular: false,
-    extras: ['Economize 15%', 'Presença contínua', 'Máximo alcance'],
+    extras: ['Suporte dedicado', 'Relatórios personalizados', '15% de desconto'],
+    color: 'bg-green-100',
+    tag: 'ECONOMIA',
+    videosPerMonth: 6,
     productionIncluded: true,
-    videosPerMonth: 1,
     studioUse: true,
-    color: 'purple',
-    tag: '✨ Plano Recomendado'
+    additionalProduction: {
+      available: true,
+      price: 100
+    }
   },
   12: {
     id: 12,
-    name: 'Plano Empresarial',
-    description: '12 meses',
+    name: '12 Meses',
+    description: 'Máximo valor para campanhas anuais',
     months: 12,
-    discount: 35,
+    discount: 25,
     mostPopular: false,
-    extras: ['Economize 35%', 'Máxima economia', 'Presença anual garantida'],
+    extras: ['Suporte VIP', 'Consultoria estratégica', '25% de desconto', 'Gestor dedicado'],
+    color: 'bg-purple-100',
+    tag: 'MÁXIMO VALOR',
+    videosPerMonth: 8,
     productionIncluded: true,
-    videosPerMonth: 1,
-    extendedDisplay: true,
-    corporateBonus: true,
-    color: 'blue',
-    tag: '💎 Máxima Economia'
+    studioUse: true,
+    additionalProduction: {
+      available: true,
+      price: 80
+    }
   }
 };
-
-// Configuração MercadoPago
-export const MP_PUBLIC_KEY = 'TEST-c7666b6a-b135-4b17-9e3e-e9e0939353be';
-export const MP_ACCESS_TOKEN = 'TEST-1284714739337536-091623-...'; // Truncado por segurança
-
-// Constantes de duração
-export const DAYS_IN_MONTH = 30;

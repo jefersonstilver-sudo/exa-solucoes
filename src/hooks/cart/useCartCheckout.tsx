@@ -38,8 +38,8 @@ export const useCartCheckout = ({
     setIsNavigating(true);
     setCartOpen(false);
     
-    // Navigate to checkout
-    navigate('/anunciante/checkout');
+    // CORREÇÃO: Navegar para a primeira etapa do checkout (seleção de plano)
+    navigate('/checkout/plano');
     
     // Reset navigation state after a delay
     setTimeout(() => {

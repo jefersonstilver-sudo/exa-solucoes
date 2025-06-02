@@ -22,10 +22,11 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 
-// Lazy load das páginas de checkout
-const Checkout = lazy(() => import('./pages/Checkout'));
-const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
+// Lazy load das páginas de checkout - ORDEM CORRETA
+const PlanSelection = lazy(() => import('./pages/PlanSelection'));
 const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
+const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
+const Checkout = lazy(() => import('./pages/Checkout'));
 const CheckoutFinish = lazy(() => import('./pages/CheckoutFinish'));
 
 // Lazy load das páginas do anunciante
@@ -120,10 +121,10 @@ function App() {
                   </LazyPageWrapper>
                 } />
 
-                {/* Rotas de checkout */}
-                <Route path="/checkout" element={
+                {/* Rotas de checkout - FLUXO CORRETO */}
+                <Route path="/checkout/plano" element={
                   <LazyPageWrapper>
-                    <Checkout />
+                    <PlanSelection />
                   </LazyPageWrapper>
                 } />
                 <Route path="/checkout/cupom" element={
@@ -134,6 +135,11 @@ function App() {
                 <Route path="/checkout/resumo" element={
                   <LazyPageWrapper>
                     <CheckoutSummary />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/checkout" element={
+                  <LazyPageWrapper>
+                    <Checkout />
                   </LazyPageWrapper>
                 } />
                 <Route path="/checkout/finalizar" element={
