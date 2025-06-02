@@ -11,7 +11,9 @@ import {
   Video,
   FileText,
   Key,
-  ChevronDown
+  ChevronDown,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 
 const UserMenu: React.FC = () => {
   const { isLoggedIn, user, hasRole, logout } = useUserSession();
@@ -95,24 +98,59 @@ const UserMenu: React.FC = () => {
 
   if (!isLoggedIn) {
     return (
-      <div className="flex items-center space-x-2">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => navigate('/login')}
-          className="text-white hover:text-[#00FFAB] hover:bg-white/10"
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button
+              variant="ghost"
+              className="relative h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20"
+            >
+              <User className="h-5 w-5" />
+            </Button>
+          </motion.div>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent 
+          className="w-48 bg-white border-gray-200 shadow-lg rounded-lg" 
+          align="end"
+          sideOffset={8}
         >
-          Entrar
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => navigate('/cadastro')}
-          className="bg-white text-[#3C1361] border-white hover:bg-white/90"
-        >
-          Cadastrar
-        </Button>
-      </div>
+          <DropdownMenuLabel className="font-normal text-center py-3">
+            <div className="flex flex-col items-center space-y-1">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#3C1361] to-[#2A0D47] flex items-center justify-center">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <p className="text-sm font-medium text-gray-900">
+                Bem-vindo!
+              </p>
+              <p className="text-xs text-gray-600">
+                Faça login ou crie sua conta
+              </p>
+            </div>
+          </DropdownMenuLabel>
+
+          <DropdownMenuSeparator className="bg-gray-200" />
+
+          <DropdownMenuItem 
+            onClick={() => navigate('/login')}
+            className="cursor-pointer text-gray-900 hover:bg-gray-100 flex items-center justify-center py-3"
+          >
+            <LogIn className="mr-2 h-4 w-4" />
+            <span className="font-medium">Fazer Login</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem 
+            onClick={() => navigate('/cadastro')}
+            className="cursor-pointer text-gray-900 hover:bg-gray-100 flex items-center justify-center py-3"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            <span className="font-medium">Criar Conta</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
