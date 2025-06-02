@@ -5,6 +5,7 @@ import { BuildingStore } from '@/services/buildingStoreService';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCartManager } from '@/hooks/useCartManager';
 import BuildingStoreGridLoading from './grid/BuildingStoreGridLoading';
 import BuildingStoreGridEmpty from './grid/BuildingStoreGridEmpty';
 import BuildingStoreGridStatus from './grid/BuildingStoreGridStatus';
@@ -28,6 +29,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   cartItems
 }) => {
   const isMobile = useIsMobile();
+  const { isPanelInCart } = useCartManager();
 
   console.log('🏢 [BUILDING STORE GRID] === RENDERIZANDO GRID ===');
   console.log('🏢 [BUILDING STORE GRID] buildings?.length:', buildings?.length);
@@ -66,6 +68,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
         buildings={buildings}
         onAddToCart={onAddToCart}
         cartItems={cartItems}
+        isPanelInCart={isPanelInCart}
       />
     </motion.div>
   );

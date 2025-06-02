@@ -36,14 +36,17 @@ export const useCartOperations = ({
   };
 
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
-    console.log('🛒 [useCartOperations] Adicionando ao carrinho:', { panelId: panel.id, duration });
+    console.log('🛒 [useCartOperations] === ADICIONANDO AO CARRINHO ===');
+    console.log('🛒 [useCartOperations] Panel:', { id: panel.id, name: panel.buildings?.nome });
+    console.log('🛒 [useCartOperations] Duration:', duration);
+    console.log('🛒 [useCartOperations] Estado atual do carrinho:', cartItems.length, 'itens');
     
     setCartItems(prev => {
       // Check if panel is already in cart
       const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
       
       if (existingIndex >= 0) {
-        console.log('🛒 [useCartOperations] Atualizando item existente no carrinho');
+        console.log('🛒 [useCartOperations] ATUALIZANDO item existente');
         // Update the existing item
         const updated = prev.map((item, index) => 
           index === existingIndex 
@@ -56,15 +59,40 @@ export const useCartOperations = ({
             : item
         );
         
-        console.log('🛒 [useCartOperations] Cart atualizado:', updated.length, 'itens');
+        console.log('🛒 [useCartOperations] Carrinho atualizado:', updated.length, 'itens');
+        
+        // Force immediate state verification
+        setTimeout(() => {
+          console.log('🔍 [useCartOperations] Verificação pós-atualização:', {
+            reactItems: updated.length,
+            targetPanel: panel.id,
+            exists: updated.some(item => item.panel.id === panel.id)
+          });
+        }, 100);
+        
         return updated;
       } else {
-        console.log('🛒 [useCartOperations] Adicionando novo item ao carrinho');
+        console.log('🛒 [useCartOperations] ADICIONANDO novo item');
         // Add new panel to cart
         const newItem = createCartItem(panel, duration);
         const newCart = [...prev, newItem];
         
-        console.log('🛒 [useCartOperations] Novo cart:', newCart.length, 'itens');
+        console.log('🛒 [useCartOperations] Novo item criado:', {
+          id: newItem.id,
+          panelId: newItem.panel.id,
+          price: newItem.price
+        });
+        console.log('🛒 [useCartOperations] Novo carrinho:', newCart.length, 'itens');
+        
+        // Force immediate state verification
+        setTimeout(() => {
+          console.log('🔍 [useCartOperations] Verificação pós-adição:', {
+            reactItems: newCart.length,
+            newPanel: panel.id,
+            exists: newCart.some(item => item.panel.id === panel.id)
+          });
+        }, 100);
+        
         return newCart;
       }
     });
@@ -77,7 +105,7 @@ export const useCartOperations = ({
     setTimeout(() => {
       console.log('🛒 [useCartOperations] Forçando abertura do carrinho');
       setCartOpen(true);
-    }, 100);
+    }, 200);
     
     // Log event
     logCheckoutEvent(
@@ -99,7 +127,9 @@ export const useCartOperations = ({
   };
 
   const handleRemoveFromCart = (panelId: string) => {
-    console.log('🛒 [useCartOperations] Removendo do carrinho:', panelId);
+    console.log('🛒 [useCartOperations] === REMOVENDO DO CARRINHO ===');
+    console.log('🛒 [useCartOperations] Panel ID:', panelId);
+    console.log('🛒 [useCartOperations] Estado atual:', cartItems.length, 'itens');
     
     // Get panel name before removing
     const panelToRemove = cartItems.find(item => item.panel.id === panelId);
@@ -107,7 +137,17 @@ export const useCartOperations = ({
     
     setCartItems(prev => {
       const filtered = prev.filter(item => item.panel.id !== panelId);
-      console.log('🛒 [useCartOperations] Cart após remoção:', filtered.length, 'itens');
+      console.log('🛒 [useCartOperations] Carrinho após remoção:', filtered.length, 'itens');
+      
+      // Force immediate state verification
+      setTimeout(() => {
+        console.log('🔍 [useCartOperations] Verificação pós-remoção:', {
+          reactItems: filtered.length,
+          removedPanel: panelId,
+          stillExists: filtered.some(item => item.panel.id === panelId)
+        });
+      }, 100);
+      
       return filtered;
     });
     
@@ -130,7 +170,8 @@ export const useCartOperations = ({
   };
 
   const handleClearCart = () => {
-    console.log('🛒 [useCartOperations] Limpando carrinho');
+    console.log('🛒 [useCartOperations] === LIMPANDO CARRINHO ===');
+    console.log('🛒 [useCartOperations] Itens antes da limpeza:', cartItems.length);
     
     // Save the cart temporarily before clearing (in case the user wants to undo)
     try {
@@ -160,7 +201,8 @@ export const useCartOperations = ({
   };
 
   const handleChangeDuration = (panelId: string, duration: number) => {
-    console.log('🛒 [useCartOperations] Alterando duração:', { panelId, duration });
+    console.log('🛒 [useCartOperations] === ALTERANDO DURAÇÃO ===');
+    console.log('🛒 [useCartOperations] Panel ID:', panelId, 'Nova duração:', duration);
     
     setCartItems(prev => {
       const updated = prev.map(item => 
@@ -192,7 +234,7 @@ export const useCartOperations = ({
         });
       }
       
-      console.log('🛒 [useCartOperations] Cart após mudança de duração:', updated.length, 'itens');
+      console.log('🛒 [useCartOperations] Duração atualizada para:', panelId);
       return updated;
     });
   };
@@ -228,7 +270,7 @@ export const useCartOperations = ({
 
   // Toggle cart open/close - allow manual toggle
   const toggleCart = () => {
-    console.log('🛒 [useCartOperations] Alternando estado do carrinho');
+    console.log('🛒 [useCartOperations] === ALTERNANDO CARRINHO ===');
     setCartOpen(prev => {
       const newState = !prev;
       console.log('🛒 [useCartOperations] Novo estado do carrinho:', newState);
