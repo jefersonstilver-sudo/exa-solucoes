@@ -10,7 +10,6 @@ import {
   BarChart3,
   Video,
   FileText,
-  Key,
   ChevronDown,
   LogIn,
   UserPlus
@@ -34,14 +33,24 @@ const UserMenu: React.FC = () => {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // Log detalhado do estado do usuário
+  console.log('🔍 [USER MENU DEBUG] Estado atual:', {
+    isLoggedIn,
+    hasUser: !!user,
+    userEmail: user?.email,
+    userRole: user?.role,
+    isLoading: false // useUserSession não expõe isLoading
+  });
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
+      console.log('🚪 [USER MENU] Iniciando logout...');
       await logout();
       toast.success('Logout realizado com sucesso!');
       navigate('/');
     } catch (error) {
-      console.error('Erro no logout:', error);
+      console.error('❌ [USER MENU] Erro no logout:', error);
       toast.error('Erro ao fazer logout');
     } finally {
       setIsLoggingOut(false);
@@ -49,6 +58,7 @@ const UserMenu: React.FC = () => {
   };
 
   const handleNavigate = (path: string) => {
+    console.log('🔗 [USER MENU] Navegando para:', path);
     navigate(path);
   };
 
@@ -96,7 +106,10 @@ const UserMenu: React.FC = () => {
     return displayName;
   };
 
+  // CORRIGIDO: Condição mais robusta para usuários não logados
   if (!isLoggedIn) {
+    console.log('👤 [USER MENU] Usuário NÃO logado - mostrando dropdown de login');
+    
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -154,6 +167,9 @@ const UserMenu: React.FC = () => {
     );
   }
 
+  // USUÁRIO LOGADO - Interface completa
+  console.log('✅ [USER MENU] Usuário LOGADO - mostrando menu completo');
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
