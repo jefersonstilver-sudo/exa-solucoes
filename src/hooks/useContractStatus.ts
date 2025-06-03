@@ -1,107 +1,89 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
-interface ContractStatus {
+interface ContractStatusReturn {
   isActive: boolean;
-  isExpired: boolean;
-  isNearExpiration: boolean;
   daysRemaining: number;
-  expiryDate: string | null;
+  hoursRemaining: number | null;
+  totalDays: number | null;
+  progressPercentage: number;
+  isExpiringSoon: boolean;
+  isExpired: boolean;
 }
 
-export const useContractStatus = (orderId: string) => {
-  const [contractStatus, setContractStatus] = useState<ContractStatus>({
+export const useContractStatus = (orderDetails: {
+  data_inicio?: string;
+  data_fim?: string;
+  status: string;
+  plano_meses: number;
+}) => {
+  const [contractData, setContractData] = useState<ContractStatusReturn>({
     isActive: false,
-    isExpired: false,
-    isNearExpiration: false,
     daysRemaining: 0,
-    expiryDate: null
+    hoursRemaining: null,
+    totalDays: null,
+    progressPercentage: 0,
+    isExpiringSoon: false,
+    isExpired: false
   });
-  const [loading, setLoading] = useState(true);
-
-  const checkContractStatus = async () => {
-    if (!orderId) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      console.log('🔍 [CONTRACT] Verificando status do contrato:', orderId);
-      
-      const { data: orderData, error } = await supabase
-        .from('pedidos')
-        .select('data_fim, status')
-        .eq('id', orderId)
-        .single();
-
-      if (error) {
-        console.error('❌ [CONTRACT] Erro ao buscar dados do pedido:', error);
-        setLoading(false);
-        return;
-      }
-
-      if (!orderData) {
-        console.log('⚠️ [CONTRACT] Pedido não encontrado');
-        setLoading(false);
-        return;
-      }
-
-      const { data_fim, status } = orderData;
-      const today = new Date();
-      const expiryDate = data_fim ? new Date(data_fim) : null;
-
-      let contractStatus: ContractStatus = {
-        isActive: false,
-        isExpired: false,
-        isNearExpiration: false,
-        daysRemaining: 0,
-        expiryDate: data_fim
-      };
-
-      if (expiryDate) {
-        const timeDiff = expiryDate.getTime() - today.getTime();
-        const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-        contractStatus.daysRemaining = daysRemaining;
-
-        // Verificar se expirou
-        if (daysRemaining < 0 || status === 'expirado') {
-          contractStatus.isExpired = true;
-          contractStatus.isActive = false;
-          console.log('⏰ [CONTRACT] Contrato EXPIRADO');
-        } else {
-          contractStatus.isActive = true;
-          contractStatus.isExpired = false;
-
-          // Verificar se está próximo da expiração (7 dias)
-          if (daysRemaining <= 7) {
-            contractStatus.isNearExpiration = true;
-            console.log(`⚠️ [CONTRACT] Contrato próximo da expiração: ${daysRemaining} dias`);
-          }
-        }
-      } else {
-        // Sem data de fim definida, considerar ativo
-        contractStatus.isActive = true;
-      }
-
-      console.log('📊 [CONTRACT] Status calculado:', contractStatus);
-      setContractStatus(contractStatus);
-
-    } catch (error) {
-      console.error('💥 [CONTRACT] Erro crítico ao verificar status:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    checkContractStatus();
-  }, [orderId]);
+    if (!orderDetails) return;
 
-  return {
-    contractStatus,
-    loading,
-    refreshStatus: checkContractStatus
-  };
+    const { data_inicio, data_fim, status } = orderDetails;
+    const today = new Date();
+    
+    let newContractData: ContractStatusReturn = {
+      isActive: false,
+      daysRemaining: 0,
+      hoursRemaining: null,
+      totalDays: null,
+      progressPercentage: 0,
+      isExpiringSoon: false,
+      isExpired: false
+    };
+
+    if (data_fim) {
+      const endDate = new Date(data_fim);
+      const startDate = data_inicio ? new Date(data_inicio) : null;
+      
+      const timeDiff = endDate.getTime() - today.getTime();
+      const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      
+      newContractData.daysRemaining = Math.max(0, daysRemaining);
+      
+      // Calcular horas restantes se < 24 horas
+      if (daysRemaining === 0 && timeDiff > 0) {
+        newContractData.hoursRemaining = Math.ceil(timeDiff / (1000 * 3600));
+      }
+      
+      // Verificar se expirou
+      if (daysRemaining < 0 || status === 'expirado') {
+        newContractData.isExpired = true;
+        newContractData.isActive = false;
+      } else {
+        newContractData.isActive = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(status);
+        
+        // Verificar se está próximo da expiração (7 dias)
+        if (daysRemaining <= 7 && daysRemaining > 0) {
+          newContractData.isExpiringSoon = true;
+        }
+      }
+      
+      // Calcular progresso e total de dias
+      if (startDate && newContractData.isActive) {
+        const totalTime = endDate.getTime() - startDate.getTime();
+        const elapsedTime = today.getTime() - startDate.getTime();
+        newContractData.totalDays = Math.ceil(totalTime / (1000 * 3600 * 24));
+        newContractData.progressPercentage = Math.min(100, Math.max(0, (elapsedTime / totalTime) * 100));
+      }
+    } else {
+      // Sem data de fim definida
+      newContractData.isActive = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(status);
+    }
+
+    setContractData(newContractData);
+  }, [orderDetails]);
+
+  return contractData;
 };

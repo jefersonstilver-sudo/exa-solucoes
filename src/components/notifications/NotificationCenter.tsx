@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuHeader,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,7 +38,7 @@ const NotificationCenter = () => {
       </DropdownMenuTrigger>
       
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuHeader className="pb-3">
+        <div className="pb-3 px-4 pt-4">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold">Notificações</h4>
             {unreadCount > 0 && (
@@ -54,7 +53,7 @@ const NotificationCenter = () => {
               </Button>
             )}
           </div>
-        </DropdownMenuHeader>
+        </div>
         
         <Separator />
         

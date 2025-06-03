@@ -193,12 +193,6 @@ const NotificationsPage = () => {
                             <Calendar className="h-3 w-3 mr-1" />
                             {formatDate(notification.created_at)}
                           </span>
-                          {notification.read_at && (
-                            <span className="flex items-center">
-                              <Eye className="h-3 w-3 mr-1" />
-                              Lida em {formatDate(notification.read_at)}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
