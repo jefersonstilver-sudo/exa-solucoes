@@ -40,17 +40,17 @@ const CompleteResponsiveLayout = () => {
       }`}>
         <div className="h-full overflow-y-auto">
           {/* Header com botão hambúrguer */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] border-b border-white/20 px-6 py-4 flex items-center justify-between shadow-lg">
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleToggle}
-                className="p-2 hover:bg-gray-100"
+                className="p-2 hover:bg-white/20 text-white border border-white/30 rounded-lg"
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900">Portal do Anunciante</h1>
+              <h1 className="text-2xl font-bold text-white">Portal do Anunciante</h1>
             </div>
           </div>
 

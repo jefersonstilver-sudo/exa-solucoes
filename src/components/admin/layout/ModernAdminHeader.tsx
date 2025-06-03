@@ -34,13 +34,13 @@ const ModernAdminHeader = ({ onToggleSidebar }: ModernAdminHeaderProps) => {
   return (
     <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] border-b border-white/20 px-6 py-3 shadow-lg">
       <div className="flex items-center justify-between">
-        {/* Botão Hambúrguer e Logo */}
+        {/* Botão Hambúrguer */}
         <div className="flex items-center space-x-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleSidebar}
-            className="p-2 hover:bg-white/20 text-white"
+            className="p-2 hover:bg-white/20 text-white border border-white/30 rounded-lg"
           >
             <Menu className="h-5 w-5" />
           </Button>
