@@ -52,15 +52,10 @@ export const useOrdersWithAttempts = () => {
         throw pedidosError;
       }
       
-      // Buscar tentativas de compra
+      // Buscar tentativas de compra (sem join problemático)
       const { data: tentativas, error: tentativasError } = await supabase
         .from('tentativas_compra')
-        .select(`
-          *,
-          users:id_user (
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (tentativasError) {
@@ -68,8 +63,34 @@ export const useOrdersWithAttempts = () => {
         // Não falhar se tentativas der erro, apenas logar
       }
       
+      // Buscar emails dos usuários das tentativas separadamente
+      let tentativasComEmails: any[] = [];
+      if (tentativas && tentativas.length > 0) {
+        const userIds = [...new Set(tentativas.map(t => t.id_user))];
+        
+        const { data: usuarios, error: usuariosError } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('id', userIds);
+          
+        if (!usuariosError && usuarios) {
+          // Criar mapa de user_id -> email
+          const emailMap = new Map(usuarios.map(u => [u.id, u.email]));
+          
+          tentativasComEmails = tentativas.map(tentativa => ({
+            ...tentativa,
+            user_email: emailMap.get(tentativa.id_user) || 'Email não encontrado'
+          }));
+        } else {
+          tentativasComEmails = tentativas.map(tentativa => ({
+            ...tentativa,
+            user_email: 'Email não encontrado'
+          }));
+        }
+      }
+      
       console.log('✅ Pedidos carregados:', pedidos?.length || 0);
-      console.log('✅ Tentativas carregadas:', tentativas?.length || 0);
+      console.log('✅ Tentativas carregadas:', tentativasComEmails.length);
       
       // Converter pedidos para formato unificado
       const pedidosFormatados: OrderOrAttempt[] = (pedidos || []).map(pedido => ({
@@ -89,14 +110,14 @@ export const useOrdersWithAttempts = () => {
       }));
       
       // Converter tentativas para formato unificado
-      const tentativasFormatadas: OrderOrAttempt[] = (tentativas || []).map(tentativa => ({
+      const tentativasFormatadas: OrderOrAttempt[] = tentativasComEmails.map(tentativa => ({
         id: tentativa.id,
         type: 'attempt' as const,
         created_at: tentativa.created_at,
         status: 'tentativa',
         valor_total: tentativa.valor_total || 0,
         predios_selecionados: tentativa.predios_selecionados || [],
-        client_email: tentativa.users?.email || 'Email não encontrado',
+        client_email: tentativa.user_email,
         client_id: tentativa.id_user
       }));
       
