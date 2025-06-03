@@ -8,12 +8,14 @@ interface ResponsiveAdvertiserSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
+  isCollapsed?: boolean;
 }
 
 const ResponsiveAdvertiserSidebar = ({ 
   isOpen, 
   onClose, 
-  isMobile 
+  isMobile,
+  isCollapsed = false
 }: ResponsiveAdvertiserSidebarProps) => {
   if (isMobile) {
     // Mobile: Drawer overlay
@@ -54,11 +56,15 @@ const ResponsiveAdvertiserSidebar = ({
     );
   }
 
-  // Desktop: Fixed sidebar
+  // Desktop: Fixed sidebar with collapse support
   return (
-    <div className="hidden lg:flex fixed inset-y-0 z-30 w-80">
-      <AdvertiserSidebarContent />
-    </div>
+    <motion.div
+      animate={{ width: isCollapsed ? 64 : 320 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      className="hidden lg:flex fixed inset-y-0 z-30"
+    >
+      <AdvertiserSidebarContent isCollapsed={isCollapsed} />
+    </motion.div>
   );
 };
 
