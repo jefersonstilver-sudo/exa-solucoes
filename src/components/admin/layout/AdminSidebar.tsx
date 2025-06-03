@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { 
@@ -230,122 +229,120 @@ const AdminSidebar = () => {
   const getAdminTitle = () => {
     switch (userInfo.role) {
       case 'super_admin':
-        return 'Super Admin Access';
+        return 'Super Admin';
       case 'admin':
-        return 'Admin Geral Access';
+        return 'Admin Geral';
       case 'admin_marketing':
-        return 'Admin Marketing Access';
+        return 'Admin Marketing';
       default:
-        return 'Admin Access';
+        return 'Admin';
     }
   };
   
   return (
-    <aside className="w-80 min-h-screen bg-gradient-to-b from-[#3C1361] via-[#9333EA] to-[#A855F7] shadow-xl">
-      <div className="flex flex-col h-full">
-        {/* Logo da INDEXA - Unificada e Maior */}
-        <div className="p-6 border-b border-white/20">
-          <div className="flex items-center justify-center mb-6">
-            <UnifiedLogo 
-              size="xl" 
-              linkTo="/" 
-              variant="light"
-              className="drop-shadow-lg w-20 h-20"
-            />
-          </div>
-          
-          {/* Informações do Usuário Integradas */}
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="text-white font-semibold text-sm truncate">
-                {userProfile?.email?.split('@')[0] || 'Admin'}
-              </div>
-              <div className="flex items-center space-x-2 mt-1">
-                <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
-                <span className={`text-xs font-medium ${getAdminBadgeColor()}`}>
-                  {getAdminTitle()}
-                </span>
-              </div>
-            </div>
-            
-            {/* Menu do Usuário */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
-                      {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
-                <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium leading-none text-gray-900">
-                    {userProfile?.email || 'Admin'}
-                  </p>
-                  <p className="text-xs leading-none text-gray-600">
-                    {isSuperAdmin ? 'Super Administrador' : 'Administrador'}
-                  </p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => navigate('/super_admin/configuracoes')}
-                  className="text-gray-700 hover:bg-gray-100"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configurações</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleSignOut}
-                  className="text-gray-700 hover:bg-gray-100"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+    <aside className="w-80 h-screen bg-gradient-to-b from-[#3C1361] via-[#9333EA] to-[#A855F7] shadow-xl flex flex-col">
+      {/* Logo da INDEXA no topo */}
+      <div className="p-6 border-b border-white/20">
+        <div className="flex items-center justify-center mb-6">
+          <UnifiedLogo 
+            size="custom" 
+            linkTo="/" 
+            variant="light"
+            className="w-20 h-20 drop-shadow-lg"
+          />
         </div>
         
-        {/* Navegação organizada por seções */}
-        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-          {Object.entries(groupedItems).map(([sectionKey, items]) => (
-            <div key={sectionKey}>
-              <h3 className="text-xs font-semibold text-emerald-300 uppercase tracking-wider mb-3 px-2">
-                {sections[sectionKey as keyof typeof sections]}
-              </h3>
-              <div className="space-y-1">
-                {items.map((item) => (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    className={({ isActive }) => cn(
-                      "flex items-center px-3 py-3 text-white rounded-xl hover:bg-white/20 hover:text-white transition-all duration-200 font-medium text-sm group",
-                      isActive ? "bg-white text-[#3C1361] font-bold shadow-lg" : ""
-                    )}
-                  >
-                    <div className="mr-3 transition-transform duration-200 group-hover:scale-110">
-                      {item.icon}
-                    </div>
-                    <span>{item.label}</span>
-                  </NavLink>
-                ))}
-              </div>
+        {/* Informações do Usuário */}
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="text-white font-semibold text-sm truncate">
+              {userProfile?.email?.split('@')[0] || 'Admin'}
             </div>
-          ))}
-        </nav>
-        
-        {/* Footer da sidebar */}
-        <div className="p-4 border-t border-white/20">
-          <div className="flex items-center space-x-2 text-white text-sm">
-            <Shield className="h-4 w-4" />
-            <span>Sistema Seguro</span>
+            <div className="flex items-center space-x-2 mt-1">
+              <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
+              <span className={`text-xs font-medium ${getAdminBadgeColor()}`}>
+                {getAdminTitle()}
+              </span>
+            </div>
           </div>
-          <div className="text-xs text-white/60 mt-1">
-            INDEXA Admin v3.0
+          
+          {/* Menu do Usuário */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
+                    {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
+              <div className="flex flex-col space-y-1 p-2">
+                <p className="text-sm font-medium leading-none text-gray-900">
+                  {userProfile?.email || 'Admin'}
+                </p>
+                <p className="text-xs leading-none text-gray-600">
+                  {getAdminTitle()}
+                </p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => navigate('/super_admin/configuracoes')}
+                className="text-gray-700 hover:bg-gray-100"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configurações</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleSignOut}
+                className="text-gray-700 hover:bg-gray-100"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      
+      {/* Navegação organizada por seções */}
+      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+        {Object.entries(groupedItems).map(([sectionKey, items]) => (
+          <div key={sectionKey}>
+            <h3 className="text-xs font-semibold text-emerald-300 uppercase tracking-wider mb-3 px-2">
+              {sections[sectionKey as keyof typeof sections]}
+            </h3>
+            <div className="space-y-1">
+              {items.map((item) => (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  className={({ isActive }) => cn(
+                    "flex items-center px-3 py-3 text-white rounded-xl hover:bg-white/20 hover:text-white transition-all duration-200 font-medium text-sm group",
+                    isActive ? "bg-white text-[#3C1361] font-bold shadow-lg" : ""
+                  )}
+                >
+                  <div className="mr-3 transition-transform duration-200 group-hover:scale-110">
+                    {item.icon}
+                  </div>
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           </div>
+        ))}
+      </nav>
+      
+      {/* Footer da sidebar */}
+      <div className="p-4 border-t border-white/20">
+        <div className="flex items-center space-x-2 text-white text-sm">
+          <Shield className="h-4 w-4" />
+          <span>Sistema Seguro</span>
+        </div>
+        <div className="text-xs text-white/60 mt-1">
+          INDEXA Admin v3.0
         </div>
       </div>
     </aside>

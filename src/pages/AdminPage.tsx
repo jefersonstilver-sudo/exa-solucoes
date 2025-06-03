@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
 import AdminLayout from '@/components/admin/layout/AdminLayout';
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 

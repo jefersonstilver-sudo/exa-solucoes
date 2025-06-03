@@ -13,6 +13,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <main className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto">
           <div className="p-6">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            </div>
             {children}
           </div>
         </div>
