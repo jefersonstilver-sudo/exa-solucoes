@@ -9,56 +9,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Template HTML otimizado e simples
-function createEmailHTML(userName: string, confirmationUrl: string, userEmail: string): string {
+// Template HTML ultra-simples e rápido
+function createSimpleEmailHTML(userName: string, confirmationUrl: string): string {
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Bem-vindo à Indexa</title>
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f6f9fc; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .email-card { background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
-        .header { padding: 40px; text-align: center; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); }
-        .logo { color: white; font-size: 24px; font-weight: bold; margin: 0; }
-        .content { padding: 40px; text-align: center; }
-        .title { font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0 0 16px; }
-        .text { font-size: 16px; line-height: 1.6; color: #374151; margin: 0 0 24px; }
-        .button { display: inline-block; background-color: #7c3aed; color: white; font-weight: 600; text-decoration: none; padding: 16px 32px; border-radius: 8px; margin: 24px 0; }
-        .button:hover { background-color: #6d28d9; }
-        .footer { padding: 24px 40px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb; }
-        .footer-text { font-size: 12px; color: #6b7280; margin: 0; }
-        .benefits { text-align: left; margin: 24px 0; }
-        .benefit { margin: 12px 0; font-size: 14px; color: #374151; }
-        @media screen and (max-width: 480px) { .container { padding: 10px; } .content, .header, .footer { padding: 20px; } .title { font-size: 24px; } }
-      </style>
+      <title>Confirmação de Email - Indexa</title>
     </head>
-    <body>
-      <div class="container">
-        <div class="email-card">
-          <div class="header">
-            <h1 class="logo">INDEXA</h1>
-          </div>
-          <div class="content">
-            <h1 class="title">🎉 Bem-vindo(a), ${userName}!</h1>
-            <p class="text">Estamos muito felizes em ter você conosco! Para ativar sua conta e começar a anunciar nos melhores painéis digitais do Brasil, confirme seu email:</p>
-            <a href="${confirmationUrl}" class="button">✅ Confirmar Email e Ativar Conta</a>
-            <div class="benefits">
-              <div class="benefit">🏢 <strong>Painéis em prédios premium</strong> - Alcance milhares de pessoas</div>
-              <div class="benefit">📱 <strong>Campanhas inteligentes</strong> - Tecnologia de ponta</div>
-              <div class="benefit">📊 <strong>Relatórios em tempo real</strong> - Acompanhe sua performance</div>
-              <div class="benefit">💰 <strong>Melhor custo-benefício</strong> - Publicidade acessível</div>
-            </div>
-            <p class="text" style="font-size: 14px; color: #6b7280;">Se você não criou uma conta na Indexa, ignore este email.</p>
-          </div>
-          <div class="footer">
-            <p class="footer-text">Este email foi enviado para ${userEmail}</p>
-            <p class="footer-text">© 2024 Indexa - Transformando a publicidade exterior</p>
-          </div>
+    <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+      <div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px;">
+        <h1 style="color: #7c3aed; text-align: center;">INDEXA</h1>
+        <h2 style="color: #333;">Bem-vindo(a), ${userName}!</h2>
+        <p style="color: #666; line-height: 1.6;">
+          Para ativar sua conta na Indexa, clique no botão abaixo:
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${confirmationUrl}" 
+             style="background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Confirmar Email
+          </a>
         </div>
+        <p style="color: #999; font-size: 12px;">
+          Se você não criou esta conta, ignore este email.
+        </p>
       </div>
     </body>
     </html>
@@ -67,90 +42,163 @@ function createEmailHTML(userName: string, confirmationUrl: string, userEmail: s
 
 serve(async (req: Request) => {
   const startTime = Date.now();
-  console.log('🔐 EMAIL CONFIRMATION HOOK - Starting...');
+  console.log('🚀 [EMAIL-HOOK] Iniciando processamento...');
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('✅ [EMAIL-HOOK] CORS preflight handled');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
+    console.log('❌ [EMAIL-HOOK] Método não permitido:', req.method);
     return new Response('Method not allowed', { status: 405 });
   }
 
   try {
-    const payload = await req.text();
-    console.log('📦 Processing webhook payload... (', Date.now() - startTime, 'ms)');
+    // Validar se temos a chave do Resend
+    const resendKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendKey) {
+      console.error('❌ [EMAIL-HOOK] RESEND_API_KEY não configurada');
+      return new Response(JSON.stringify({ 
+        error: 'RESEND_API_KEY não configurada',
+        success: false 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
     
-    const data = JSON.parse(payload);
-    
-    const {
-      user,
-      email_data: { token, token_hash, redirect_to, email_action_type, site_url }
-    } = data;
+    console.log('✅ [EMAIL-HOOK] RESEND_API_KEY encontrada');
 
-    console.log('✅ Webhook data parsed:', {
-      email: user?.email,
-      action_type: email_action_type,
-      has_token: !!token,
+    // Parse do payload
+    const payload = await req.text();
+    console.log('📦 [EMAIL-HOOK] Payload recebido, tamanho:', payload.length);
+    
+    let data;
+    try {
+      data = JSON.parse(payload);
+      console.log('✅ [EMAIL-HOOK] JSON parsed com sucesso');
+    } catch (parseError) {
+      console.error('❌ [EMAIL-HOOK] Erro ao fazer parse do JSON:', parseError);
+      throw new Error('Invalid JSON payload');
+    }
+    
+    // Extrair dados necessários
+    const user = data?.user;
+    const emailData = data?.email_data;
+    
+    if (!user?.email) {
+      console.error('❌ [EMAIL-HOOK] Email do usuário não encontrado');
+      throw new Error('User email not found');
+    }
+    
+    if (!emailData?.token_hash) {
+      console.error('❌ [EMAIL-HOOK] Token hash não encontrado');
+      throw new Error('Token hash not found');
+    }
+    
+    console.log('✅ [EMAIL-HOOK] Dados extraídos:', {
+      email: user.email,
+      action: emailData.email_action_type,
+      hasToken: !!emailData.token_hash,
       elapsed: Date.now() - startTime + 'ms'
     });
 
     // Only process email confirmation events
-    if (email_action_type !== 'signup') {
-      console.log('⚠️ Skipping non-signup event:', email_action_type);
-      return new Response(JSON.stringify({ message: 'Event ignored' }), {
+    if (emailData.email_action_type !== 'signup') {
+      console.log('⚠️ [EMAIL-HOOK] Ignorando evento não-signup:', emailData.email_action_type);
+      return new Response(JSON.stringify({ 
+        message: 'Event ignored - not a signup',
+        success: true 
+      }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     }
 
-    // Generate the confirmation URL
-    const confirmationUrl = `${site_url || Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to || site_url + '/confirmacao'}`;
+    // Gerar URL de confirmação
+    const baseUrl = emailData.site_url || Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
+    const redirectTo = emailData.redirect_to || `${baseUrl}/confirmacao`;
+    
+    const confirmationUrl = `${baseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=${emailData.email_action_type}&redirect_to=${encodeURIComponent(redirectTo)}`;
+    
+    console.log('🔗 [EMAIL-HOOK] URL de confirmação gerada em', Date.now() - startTime, 'ms');
 
-    console.log('🔗 Generated confirmation URL (', Date.now() - startTime, 'ms)');
-
-    // Create optimized HTML email (much faster than React rendering)
+    // Preparar dados do email
     const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
-    const html = createEmailHTML(userName, confirmationUrl, user?.email);
+    const html = createSimpleEmailHTML(userName, confirmationUrl);
+    
+    console.log('📧 [EMAIL-HOOK] Template HTML criado em', Date.now() - startTime, 'ms');
 
-    console.log('📧 Email template created (', Date.now() - startTime, 'ms)');
+    // Tentar enviar email com timeout
+    const emailStartTime = Date.now();
+    
+    try {
+      const { data: emailData, error } = await resend.emails.send({
+        from: 'Indexa <noreply@indexamidia.com>',
+        to: [user.email],
+        subject: '🎯 Confirme seu email na Indexa',
+        html,
+      });
 
-    // Send the email with optimized performance
-    const { data: emailData, error } = await resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com>',
-      to: [user.email],
-      subject: '🎯 Confirme seu email na Indexa - Bem-vindo(a)!',
-      html,
-    });
+      if (error) {
+        console.error('❌ [EMAIL-HOOK] Erro do Resend:', error);
+        throw error;
+      }
 
-    if (error) {
-      console.error('❌ Error sending email:', error);
-      throw error;
+      const emailTime = Date.now() - emailStartTime;
+      const totalTime = Date.now() - startTime;
+      
+      console.log('✅ [EMAIL-HOOK] Email enviado com sucesso!', {
+        emailId: emailData?.id,
+        emailTime: emailTime + 'ms',
+        totalTime: totalTime + 'ms'
+      });
+
+      return new Response(JSON.stringify({ 
+        message: 'Email sent successfully',
+        email_id: emailData?.id,
+        processing_time_ms: totalTime,
+        success: true
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+
+    } catch (emailError: any) {
+      const emailTime = Date.now() - emailStartTime;
+      console.error('❌ [EMAIL-HOOK] Falha no envio de email após', emailTime, 'ms:', emailError);
+      
+      // FALLBACK: Retornar sucesso mesmo com falha no email
+      // O usuário ainda pode se cadastrar, só não receberá o email
+      return new Response(JSON.stringify({ 
+        message: 'User registered but email failed to send',
+        email_error: emailError.message,
+        processing_time_ms: Date.now() - startTime,
+        success: true // Importante: retornar sucesso para não bloquear cadastro
+      }), {
+        status: 200, // Status 200 para não quebrar o hook
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
     }
-
-    const totalTime = Date.now() - startTime;
-    console.log('✅ Email sent successfully in', totalTime, 'ms - ID:', emailData?.id);
-
-    return new Response(JSON.stringify({ 
-      message: 'Email sent successfully',
-      email_id: emailData?.id,
-      processing_time_ms: totalTime
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
 
   } catch (error: any) {
     const totalTime = Date.now() - startTime;
-    console.error('💥 Error in send-confirmation-email function after', totalTime, 'ms:', error);
+    console.error('💥 [EMAIL-HOOK] Erro crítico após', totalTime, 'ms:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
     
+    // FALLBACK CRÍTICO: Sempre retornar 200 para não quebrar o cadastro
     return new Response(JSON.stringify({ 
+      message: 'Hook completed with errors but user registration allowed',
       error: error.message,
       processing_time_ms: totalTime,
-      timestamp: new Date().toISOString()
+      success: true // Permitir que o cadastro continue
     }), {
-      status: 500,
+      status: 200, // Status 200 para não quebrar o webhook
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
   }
