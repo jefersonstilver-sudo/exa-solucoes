@@ -1,173 +1,238 @@
 
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Video, 
-  BarChart3, 
-  Settings, 
-  LogOut,
-  Monitor
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Video,
+  User,
+  Settings,
+  HelpCircle,
+  LogOut,
+  BarChart3,
+  Crown
+} from 'lucide-react';
+import UnifiedLogo from '@/components/layout/UnifiedLogo';
+import { useUserSession } from '@/hooks/useUserSession';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 interface AdvertiserSidebarContentProps {
   onItemClick?: () => void;
-  isCollapsed?: boolean;
 }
 
-const AdvertiserSidebarContent = ({ 
-  onItemClick, 
-  isCollapsed = false 
-}: AdvertiserSidebarContentProps) => {
+const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user } = useUserSession();
 
-  const navigationItems = [
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('Logout realizado com sucesso');
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast.error('Erro ao realizar logout');
+    }
+  };
+
+  const sidebarItems = [
+    // GESTÃO PRINCIPAL
     {
       title: 'Dashboard',
       href: '/anunciante',
       icon: LayoutDashboard,
-      description: 'Visão geral'
+      exact: true,
+      section: 'main'
     },
     {
       title: 'Meus Pedidos',
       href: '/anunciante/pedidos',
-      icon: ShoppingCart,
-      description: 'Gerenciar pedidos'
+      icon: ShoppingBag,
+      section: 'main'
     },
+    {
+      title: 'Campanhas',
+      href: '/anunciante/campanhas',
+      icon: BarChart3,
+      section: 'main'
+    },
+    
+    // CONTEÚDO
     {
       title: 'Meus Vídeos',
       href: '/anunciante/videos',
       icon: Video,
-      description: 'Biblioteca de vídeos'
+      section: 'content'
+    },
+    
+    // CONFIGURAÇÕES
+    {
+      title: 'Perfil',
+      href: '/anunciante/perfil',
+      icon: User,
+      section: 'settings'
     },
     {
-      title: 'Relatórios',
-      href: '/anunciante/relatorios',
-      icon: BarChart3,
-      description: 'Métricas e dados'
+      title: 'Configurações',
+      href: '/anunciante/configuracoes',
+      icon: Settings,
+      section: 'settings'
     },
     {
-      title: 'Painéis Digitais',
-      href: '/paineis-digitais/loja',
-      icon: Monitor,
-      description: 'Comprar painéis'
+      title: 'Suporte',
+      href: '/anunciante/suporte',
+      icon: HelpCircle,
+      section: 'settings'
     }
   ];
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-      onItemClick?.();
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+  const sections = {
+    main: 'Gestão Principal',
+    content: 'Conteúdo',
+    settings: 'Configurações'
+  };
+
+  const groupedItems = sidebarItems.reduce((acc, item) => {
+    if (!acc[item.section]) acc[item.section] = [];
+    acc[item.section].push(item);
+    return acc;
+  }, {} as Record<string, typeof sidebarItems>);
+
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact) {
+      return location.pathname === href;
     }
+    return location.pathname.startsWith(href);
   };
 
   return (
-    <div className="h-full bg-gradient-to-b from-indexa-purple to-indexa-purple-dark text-white flex flex-col shadow-xl">
-      {/* Logo */}
-      <div className={cn(
-        "p-6 border-b border-white/20",
-        isCollapsed && "p-4"
-      )}>
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-            <span className="text-indexa-purple font-bold text-sm">I</span>
-          </div>
-          {!isCollapsed && (
-            <div>
-              <h2 className="text-lg font-semibold">INDEXA</h2>
-              <p className="text-xs text-white/70">Portal do Anunciante</p>
+    <aside className="w-80 h-screen bg-gradient-to-b from-[#1e40af] via-[#3b82f6] to-[#60a5fa] shadow-xl flex flex-col">
+      {/* Logo da INDEXA no topo */}
+      <div className="p-6 border-b border-white/20">
+        <div className="flex items-center justify-center mb-6">
+          <UnifiedLogo 
+            size="custom" 
+            linkTo="/" 
+            variant="light"
+            className="w-20 h-20 drop-shadow-lg"
+          />
+        </div>
+        
+        {/* Informações do Usuário */}
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="text-white font-semibold text-sm truncate">
+              {user?.email?.split('@')[0] || 'Anunciante'}
             </div>
-          )}
+            <div className="flex items-center space-x-2 mt-1">
+              <Crown className="h-3 w-3 text-yellow-300" />
+              <span className="text-xs font-medium text-yellow-300">
+                Portal do Anunciante
+              </span>
+            </div>
+          </div>
+          
+          {/* Notificações e Menu do Usuário */}
+          <div className="flex items-center space-x-2">
+            <NotificationCenter />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-white text-[#1e40af] font-semibold text-xs">
+                      {user?.email?.charAt(0).toUpperCase() || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
+                <div className="flex flex-col space-y-1 p-2">
+                  <p className="text-sm font-medium leading-none text-gray-900">
+                    {user?.email || 'Anunciante'}
+                  </p>
+                  <p className="text-xs leading-none text-gray-600">
+                    Portal do Anunciante
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => navigate('/anunciante/configuracoes')}
+                  className="text-gray-700 hover:bg-gray-100"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleSignOut}
+                  className="text-gray-700 hover:bg-gray-100"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navigationItems.map((item) => {
-          const isActive = location.pathname === item.href;
-          const Icon = item.icon;
-          
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              onClick={onItemClick}
-              className={cn(
-                "flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 group relative",
-                isActive
-                  ? "bg-white/20 text-white shadow-lg"
-                  : "text-white/80 hover:bg-white/10 hover:text-white"
-              )}
-              title={isCollapsed ? item.title : undefined}
-            >
-              <Icon className={cn(
-                "flex-shrink-0 transition-colors duration-200",
-                isActive ? "text-white" : "text-white/70 group-hover:text-white",
-                isCollapsed ? "h-5 w-5" : "h-4 w-4 mr-3"
-              )} />
-              
-              {!isCollapsed && (
-                <div className="flex flex-col min-w-0">
-                  <span className="truncate">{item.title}</span>
-                  <span className={cn(
-                    "text-xs transition-colors duration-200 truncate",
-                    isActive ? "text-white/80" : "text-white/60"
-                  )}>
-                    {item.description}
-                  </span>
-                </div>
-              )}
-
-              {/* Tooltip para modo collapsed */}
-              {isCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                  {item.title}
-                </div>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-white/20">
-        <button
-          onClick={handleLogout}
-          className={cn(
-            "flex items-center px-3 py-3 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 w-full group relative",
-            isCollapsed && "justify-center"
-          )}
-          title={isCollapsed ? "Sair" : undefined}
-        >
-          <LogOut className={cn(
-            "h-4 w-4 text-white/70 group-hover:text-white transition-colors duration-200",
-            !isCollapsed && "mr-3"
-          )} />
-          {!isCollapsed && <span>Sair</span>}
-
-          {/* Tooltip para modo collapsed */}
-          {isCollapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-              Sair
+      
+      {/* Navegação organizada por seções */}
+      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+        {Object.entries(groupedItems).map(([sectionKey, items]) => (
+          <div key={sectionKey}>
+            <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-3 px-2">
+              {sections[sectionKey as keyof typeof sections]}
+            </h3>
+            <div className="space-y-1">
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={onItemClick}
+                  className={cn(
+                    'flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group',
+                    isActive(item.href, item.exact)
+                      ? 'bg-white text-[#1e40af] shadow-lg font-semibold'
+                      : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
+                  )}
+                >
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-transform duration-200 group-hover:scale-110",
+                    isActive(item.href, item.exact) ? "text-[#1e40af]" : "text-white"
+                  )} />
+                  <span>{item.title}</span>
+                </Link>
+              ))}
             </div>
-          )}
-        </button>
-
-        {!isCollapsed && (
-          <div className="mt-4 text-xs text-white/60 text-center">
-            INDEXA Portal v2.0
           </div>
-        )}
+        ))}
+      </nav>
+      
+      {/* Footer da sidebar */}
+      <div className="p-4 border-t border-white/20">
+        <div className="flex items-center space-x-2 text-white text-sm">
+          <Crown className="h-4 w-4" />
+          <span>Portal Seguro</span>
+        </div>
+        <div className="text-xs text-white/60 mt-1">
+          INDEXA Anunciante v3.0
+        </div>
       </div>
-    </div>
+    </aside>
   );
 };
 
