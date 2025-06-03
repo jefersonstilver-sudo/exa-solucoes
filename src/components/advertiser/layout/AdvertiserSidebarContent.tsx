@@ -9,7 +9,9 @@ import {
   User,
   Settings,
   HelpCircle,
-  LogOut
+  LogOut,
+  BarChart3,
+  Crown
 } from 'lucide-react';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -46,38 +48,67 @@ const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps
   };
 
   const sidebarItems = [
+    // GESTÃO PRINCIPAL
     {
       title: 'Dashboard',
       href: '/anunciante',
       icon: LayoutDashboard,
-      exact: true
+      exact: true,
+      section: 'main'
     },
     {
       title: 'Meus Pedidos',
       href: '/anunciante/pedidos',
-      icon: ShoppingBag
+      icon: ShoppingBag,
+      section: 'main'
     },
+    {
+      title: 'Campanhas',
+      href: '/anunciante/campanhas',
+      icon: BarChart3,
+      section: 'main'
+    },
+    
+    // CONTEÚDO
     {
       title: 'Meus Vídeos',
       href: '/anunciante/videos',
-      icon: Video
+      icon: Video,
+      section: 'content'
     },
+    
+    // CONFIGURAÇÕES
     {
       title: 'Perfil',
       href: '/anunciante/perfil',
-      icon: User
+      icon: User,
+      section: 'settings'
     },
     {
       title: 'Configurações',
       href: '/anunciante/configuracoes',
-      icon: Settings
+      icon: Settings,
+      section: 'settings'
     },
     {
       title: 'Suporte',
       href: '/anunciante/suporte',
-      icon: HelpCircle
+      icon: HelpCircle,
+      section: 'settings'
     }
   ];
+
+  const sections = {
+    main: 'Gestão Principal',
+    content: 'Conteúdo',
+    settings: 'Configurações'
+  };
+
+  const groupedItems = sidebarItems.reduce((acc, item) => {
+    if (!acc[item.section]) acc[item.section] = [];
+    acc[item.section].push(item);
+    return acc;
+  }, {} as Record<string, typeof sidebarItems>);
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) {
@@ -87,26 +118,29 @@ const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps
   };
 
   return (
-    <div className="bg-gradient-to-b from-[#3C1361] via-[#9333EA] to-[#A855F7] border-r border-white/20 w-full h-full shadow-xl">
-      <div className="p-6">
-        {/* Logo da Indexa - Unificada e Maior */}
+    <aside className="w-80 h-screen bg-gradient-to-b from-[#1e40af] via-[#3b82f6] to-[#60a5fa] shadow-xl flex flex-col">
+      {/* Logo da INDEXA no topo */}
+      <div className="p-6 border-b border-white/20">
         <div className="flex items-center justify-center mb-6">
           <UnifiedLogo 
-            size="xl" 
+            size="custom" 
             linkTo="/" 
             variant="light"
-            className="drop-shadow-lg w-20 h-20"
+            className="w-20 h-20 drop-shadow-lg"
           />
         </div>
-
-        {/* Informações do Usuário Integradas */}
-        <div className="flex items-center justify-between mb-8 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+        
+        {/* Informações do Usuário */}
+        <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="text-white font-semibold text-sm truncate">
               {user?.email?.split('@')[0] || 'Anunciante'}
             </div>
-            <div className="text-emerald-300 text-xs mt-1">
-              Portal do Anunciante
+            <div className="flex items-center space-x-2 mt-1">
+              <Crown className="h-3 w-3 text-yellow-300" />
+              <span className="text-xs font-medium text-yellow-300">
+                Portal do Anunciante
+              </span>
             </div>
           </div>
           
@@ -115,7 +149,7 @@ const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
+                  <AvatarFallback className="bg-white text-[#1e40af] font-semibold text-xs">
                     {user?.email?.charAt(0).toUpperCase() || 'A'}
                   </AvatarFallback>
                 </Avatar>
@@ -149,30 +183,51 @@ const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        
-        <nav className="space-y-2">
-          {sidebarItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              onClick={onItemClick}
-              className={cn(
-                'flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group',
-                isActive(item.href, item.exact)
-                  ? 'bg-white text-[#3C1361] shadow-lg font-semibold'
-                  : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
-              )}
-            >
-              <item.icon className={cn(
-                "h-5 w-5 transition-transform duration-200 group-hover:scale-110",
-                isActive(item.href, item.exact) ? "text-[#3C1361]" : "text-white"
-              )} />
-              <span>{item.title}</span>
-            </Link>
-          ))}
-        </nav>
       </div>
-    </div>
+      
+      {/* Navegação organizada por seções */}
+      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+        {Object.entries(groupedItems).map(([sectionKey, items]) => (
+          <div key={sectionKey}>
+            <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-3 px-2">
+              {sections[sectionKey as keyof typeof sections]}
+            </h3>
+            <div className="space-y-1">
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={onItemClick}
+                  className={cn(
+                    'flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group',
+                    isActive(item.href, item.exact)
+                      ? 'bg-white text-[#1e40af] shadow-lg font-semibold'
+                      : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
+                  )}
+                >
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-transform duration-200 group-hover:scale-110",
+                    isActive(item.href, item.exact) ? "text-[#1e40af]" : "text-white"
+                  )} />
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+      
+      {/* Footer da sidebar */}
+      <div className="p-4 border-t border-white/20">
+        <div className="flex items-center space-x-2 text-white text-sm">
+          <Crown className="h-4 w-4" />
+          <span>Portal Seguro</span>
+        </div>
+        <div className="text-xs text-white/60 mt-1">
+          INDEXA Anunciante v3.0
+        </div>
+      </div>
+    </aside>
   );
 };
 

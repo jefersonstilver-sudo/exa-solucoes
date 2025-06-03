@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { 
@@ -240,7 +241,7 @@ const AdminSidebar = () => {
   };
   
   return (
-    <aside className="w-80 h-screen bg-gradient-to-b from-[#3C1361] via-[#9333EA] to-[#A855F7] shadow-xl flex flex-col">
+    <aside className="w-80 h-screen bg-gradient-to-b from-[#1e1b4b] via-[#4c1d95] to-[#7c3aed] shadow-xl flex flex-col">
       {/* Logo da INDEXA no topo */}
       <div className="p-6 border-b border-white/20">
         <div className="flex items-center justify-center mb-6">
@@ -271,7 +272,7 @@ const AdminSidebar = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
+                  <AvatarFallback className="bg-white text-[#1e1b4b] font-semibold text-xs">
                     {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                   </AvatarFallback>
                 </Avatar>
@@ -311,7 +312,7 @@ const AdminSidebar = () => {
       <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
         {Object.entries(groupedItems).map(([sectionKey, items]) => (
           <div key={sectionKey}>
-            <h3 className="text-xs font-semibold text-emerald-300 uppercase tracking-wider mb-3 px-2">
+            <h3 className="text-xs font-semibold text-violet-200 uppercase tracking-wider mb-3 px-2">
               {sections[sectionKey as keyof typeof sections]}
             </h3>
             <div className="space-y-1">
@@ -321,7 +322,7 @@ const AdminSidebar = () => {
                   to={item.href}
                   className={({ isActive }) => cn(
                     "flex items-center px-3 py-3 text-white rounded-xl hover:bg-white/20 hover:text-white transition-all duration-200 font-medium text-sm group",
-                    isActive ? "bg-white text-[#3C1361] font-bold shadow-lg" : ""
+                    isActive ? "bg-white text-[#1e1b4b] font-bold shadow-lg" : ""
                   )}
                 >
                   <div className="mr-3 transition-transform duration-200 group-hover:scale-110">
