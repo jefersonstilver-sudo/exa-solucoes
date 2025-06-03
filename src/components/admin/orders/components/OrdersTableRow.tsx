@@ -24,7 +24,7 @@ interface OrdersTableRowProps {
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item }) => {
   const handleViewDetails = () => {
     if (item.type === 'order') {
-      window.open(`/admin/pedidos/${item.id}`, '_blank');
+      window.open(`/super_admin/pedidos/${item.id}`, '_blank');
     }
   };
 
