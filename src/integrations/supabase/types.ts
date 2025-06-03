@@ -1305,6 +1305,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      notify_contracts_expiring_soon: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       process_mercadopago_webhook_enhanced: {
         Args: { p_payment_data: Json }
         Returns: Json
@@ -1330,6 +1334,10 @@ export type Database = {
         Returns: boolean
       }
       update_expired_contracts: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      update_expired_contracts_daily: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }

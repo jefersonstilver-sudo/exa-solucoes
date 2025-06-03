@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
+import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 const AdvertiserOrders = () => {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -71,56 +72,6 @@ const AdvertiserOrders = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const getStatusConfig = (item: any) => {
-    if (item.type === 'attempt') {
-      return {
-        label: 'Tentativa Abandonada',
-        color: 'bg-orange-100 text-orange-800 border-orange-200',
-        icon: AlertTriangle
-      };
-    }
-
-    switch (item.status) {
-      case 'pendente':
-        return {
-          label: 'Pendente',
-          color: 'bg-orange-100 text-orange-800 border-orange-200',
-          icon: Clock
-        };
-      case 'pago':
-      case 'pago_pendente_video':
-        return {
-          label: 'Pago',
-          color: 'bg-green-100 text-green-800 border-green-200',
-          icon: CheckCircle
-        };
-      case 'video_aprovado':
-        return {
-          label: 'Aprovado',
-          color: 'bg-blue-100 text-blue-800 border-blue-200',
-          icon: CheckCircle
-        };
-      case 'ativo':
-        return {
-          label: 'Ativo',
-          color: 'bg-green-100 text-green-800 border-green-200',
-          icon: CheckCircle
-        };
-      case 'cancelado':
-        return {
-          label: 'Cancelado',
-          color: 'bg-red-100 text-red-800 border-red-200',
-          icon: XCircle
-        };
-      default:
-        return {
-          label: item.status,
-          color: 'bg-gray-100 text-gray-800 border-gray-200',
-          icon: AlertTriangle
-        };
-    }
-  };
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -130,6 +81,118 @@ const AdvertiserOrders = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const OrderCard = ({ item }: { item: any }) => {
+    const statusInfo = useOrderStatus(item);
+    const StatusIcon = statusInfo.icon;
+    const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
+
+    return (
+      <Card className={cn(
+        'hover:shadow-lg transition-all duration-200 border-l-4',
+        item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-indexa-purple'
+      )}>
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className={cn(
+                  'w-10 h-10 rounded-lg flex items-center justify-center',
+                  item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-indexa-purple/10'
+                )}>
+                  <StatusIcon className={cn(
+                    'h-5 w-5',
+                    item.type === 'attempt' ? 'text-orange-500' : statusInfo.color.replace('text-', '')
+                  )} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #{item.id.substring(0, 8)}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Criado em {formatDate(item.created_at)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Valor Total</p>
+                  <p className={cn(
+                    'font-semibold text-lg',
+                    item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'
+                  )}>
+                    {formatCurrency(item.valor_total || 0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Duração</p>
+                  <p className="font-medium">
+                    {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Painéis</p>
+                  <p className="font-medium">{painelsList.length} selecionados</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Período</p>
+                  <p className="font-medium flex items-center">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {item.type === 'order' && item.data_inicio ? formatDate(item.data_inicio) : 'A definir'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col lg:items-end space-y-3">
+              <Badge className={cn('border flex items-center space-x-1', statusInfo.bgColor)}>
+                <StatusIcon className="h-3 w-3" />
+                <span>{statusInfo.label}</span>
+              </Badge>
+
+              <div className="flex space-x-2">
+                {statusInfo.action && (
+                  <Button
+                    variant={statusInfo.action.variant}
+                    size="sm"
+                    onClick={statusInfo.action.onClick}
+                    className="mr-2"
+                  >
+                    {statusInfo.action.label}
+                  </Button>
+                )}
+                
+                {item.type === 'order' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/anunciante/pedido/${item.id}`)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Detalhes
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      toast.info('Esta foi uma tentativa não finalizada. Experimente fazer um novo pedido!');
+                      navigate('/paineis-digitais/loja');
+                    }}
+                    className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    Finalizar Compra
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   if (loading) {
@@ -295,98 +358,9 @@ const AdvertiserOrders = () => {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {filteredItems.map((item) => {
-            const statusConfig = getStatusConfig(item);
-            const StatusIcon = statusConfig.icon;
-            const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
-
-            return (
-              <Card key={`${item.type}-${item.id}`} className={`hover:shadow-lg transition-all duration-200 border-l-4 ${item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-indexa-purple'}`}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-indexa-purple/10'}`}>
-                          {item.type === 'attempt' ? (
-                            <AlertTriangle className="h-5 w-5 text-orange-500" />
-                          ) : (
-                            <ShoppingBag className="h-5 w-5 text-indexa-purple" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">
-                            {item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #{item.id.substring(0, 8)}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            Criado em {formatDate(item.created_at)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-500">Valor Total</p>
-                          <p className={`font-semibold text-lg ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
-                            {formatCurrency(item.valor_total || 0)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Duração</p>
-                          <p className="font-medium">
-                            {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Painéis</p>
-                          <p className="font-medium">{painelsList.length} selecionados</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Período</p>
-                          <p className="font-medium flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {item.type === 'order' && item.data_inicio ? formatDate(item.data_inicio) : 'A definir'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col lg:items-end space-y-3">
-                      <Badge className={`${statusConfig.color} border flex items-center space-x-1`}>
-                        <StatusIcon className="h-3 w-3" />
-                        <span>{statusConfig.label}</span>
-                      </Badge>
-
-                      <div className="flex space-x-2">
-                        {item.type === 'order' ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/anunciante/pedido/${item.id}`)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Detalhes
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              toast.info('Esta foi uma tentativa não finalizada. Experimente fazer um novo pedido!');
-                              navigate('/paineis-digitais/loja');
-                            }}
-                            className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white"
-                          >
-                            <AlertTriangle className="h-4 w-4 mr-1" />
-                            Finalizar Compra
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {filteredItems.map((item) => (
+            <OrderCard key={`${item.type}-${item.id}`} item={item} />
+          ))}
         </div>
       )}
     </div>

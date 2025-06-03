@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 interface AdvertiserSidebarContentProps {
   onItemClick?: () => void;
@@ -144,44 +145,48 @@ const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps
             </div>
           </div>
           
-          {/* Menu do Usuário */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-white text-[#1e40af] font-semibold text-xs">
-                    {user?.email?.charAt(0).toUpperCase() || 'A'}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
-              <div className="flex flex-col space-y-1 p-2">
-                <p className="text-sm font-medium leading-none text-gray-900">
-                  {user?.email || 'Anunciante'}
-                </p>
-                <p className="text-xs leading-none text-gray-600">
-                  Portal do Anunciante
-                </p>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => navigate('/anunciante/configuracoes')}
-                className="text-gray-700 hover:bg-gray-100"
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configurações</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleSignOut}
-                className="text-gray-700 hover:bg-gray-100"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Notificações e Menu do Usuário */}
+          <div className="flex items-center space-x-2">
+            <NotificationCenter />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-white text-[#1e40af] font-semibold text-xs">
+                      {user?.email?.charAt(0).toUpperCase() || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
+                <div className="flex flex-col space-y-1 p-2">
+                  <p className="text-sm font-medium leading-none text-gray-900">
+                    {user?.email || 'Anunciante'}
+                  </p>
+                  <p className="text-xs leading-none text-gray-600">
+                    Portal do Anunciante
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => navigate('/anunciante/configuracoes')}
+                  className="text-gray-700 hover:bg-gray-100"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleSignOut}
+                  className="text-gray-700 hover:bg-gray-100"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
       
