@@ -8,7 +8,11 @@ import OrdersAndAttemptsTable from './OrdersAndAttemptsTable';
 import AttemptsTable from './AttemptsTable';
 import { CheckCircle, AlertTriangle, Clock, DollarSign, Calendar } from 'lucide-react';
 
-const OrdersTabs: React.FC = () => {
+interface OrdersTabsProps {
+  onViewOrderDetails: (orderId: string) => void;
+}
+
+const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const { ordersAndAttempts, stats, loading } = useOrdersWithAttempts();
   
   // Função para calcular dias restantes
@@ -37,20 +41,17 @@ const OrdersTabs: React.FC = () => {
     isWithinActivePeriod(item)
   );
 
-  // 2. Pedidos Concluídos - pagos, que já passaram do período (venceram/finalizaram)
   const concludedPedidos = ordersAndAttempts.filter(item => 
     item.type === 'order' && 
     (item.status === 'expirado' || 
      (['ativo', 'video_aprovado'].includes(item.status) && !isWithinActivePeriod(item)))
   );
 
-  // 3. Pedidos Pagos Aguardando Vídeo - pagos mas sem vídeo enviado/aprovado
   const waitingVideoPedidos = ordersAndAttempts.filter(item => 
     item.type === 'order' && 
     ['pago', 'pago_pendente_video', 'video_enviado', 'video_rejeitado'].includes(item.status)
   );
 
-  // 4. Pedidos Cancelados/Abandonados - tentativas + cancelados
   const canceledAbandoned = ordersAndAttempts.filter(item => 
     item.type === 'attempt' || 
     (item.type === 'order' && ['cancelado', 'pendente'].includes(item.status))
@@ -118,7 +119,8 @@ const OrdersTabs: React.FC = () => {
               ordersAndAttempts={activePedidos.map(order => ({
                 ...order,
                 daysRemaining: calculateDaysRemaining(order)
-              }))} 
+              }))}
+              onViewOrderDetails={onViewOrderDetails}
             />
           </CardContent>
         </Card>
@@ -136,7 +138,10 @@ const OrdersTabs: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <OrdersAndAttemptsTable ordersAndAttempts={concludedPedidos} />
+            <OrdersAndAttemptsTable 
+              ordersAndAttempts={concludedPedidos} 
+              onViewOrderDetails={onViewOrderDetails}
+            />
           </CardContent>
         </Card>
       </TabsContent>
@@ -153,7 +158,10 @@ const OrdersTabs: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <OrdersAndAttemptsTable ordersAndAttempts={waitingVideoPedidos} />
+            <OrdersAndAttemptsTable 
+              ordersAndAttempts={waitingVideoPedidos} 
+              onViewOrderDetails={onViewOrderDetails}
+            />
           </CardContent>
         </Card>
       </TabsContent>

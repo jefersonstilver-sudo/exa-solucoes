@@ -1,27 +1,39 @@
 
 import React from 'react';
-import { Table, TableBody } from '@/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { OrderOrAttempt } from '@/hooks/useOrdersWithAttempts';
-import OrdersTableHeader from './components/OrdersTableHeader';
 import OrdersTableRow from './components/OrdersTableRow';
+import OrdersTableHeader from './components/OrdersTableHeader';
 import OrdersEmptyState from './components/OrdersEmptyState';
 
 interface OrdersAndAttemptsTableProps {
-  ordersAndAttempts: OrderOrAttempt[];
+  ordersAndAttempts: (OrderOrAttempt & { daysRemaining?: number | null })[];
+  onViewOrderDetails?: (orderId: string) => void;
 }
 
-const OrdersAndAttemptsTable: React.FC<OrdersAndAttemptsTableProps> = ({ ordersAndAttempts }) => {
+const OrdersAndAttemptsTable: React.FC<OrdersAndAttemptsTableProps> = ({ 
+  ordersAndAttempts, 
+  onViewOrderDetails 
+}) => {
   if (ordersAndAttempts.length === 0) {
     return <OrdersEmptyState />;
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="rounded-md border">
       <Table>
-        <OrdersTableHeader />
+        <TableHeader>
+          <TableRow>
+            <OrdersTableHeader />
+          </TableRow>
+        </TableHeader>
         <TableBody>
           {ordersAndAttempts.map((item) => (
-            <OrdersTableRow key={`${item.type}-${item.id}`} item={item} />
+            <OrdersTableRow 
+              key={item.id} 
+              item={item} 
+              onViewDetails={onViewOrderDetails}
+            />
           ))}
         </TableBody>
       </Table>

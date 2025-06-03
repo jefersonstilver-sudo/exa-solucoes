@@ -19,12 +19,13 @@ import {
 
 interface OrdersTableRowProps {
   item: OrderOrAttempt & { daysRemaining?: number | null };
+  onViewDetails?: (orderId: string) => void;
 }
 
-const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item }) => {
+const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item, onViewDetails }) => {
   const handleViewDetails = () => {
-    if (item.type === 'order') {
-      window.open(`/super_admin/pedidos/${item.id}`, '_blank');
+    if (item.type === 'order' && onViewDetails) {
+      onViewDetails(item.id);
     }
   };
 
