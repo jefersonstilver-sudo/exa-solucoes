@@ -131,12 +131,12 @@ serve(async (req: Request) => {
     
     console.log('📧 [EMAIL-HOOK] Template HTML criado em', Date.now() - startTime, 'ms');
 
-    // Tentar enviar email com timeout
+    // Tentar enviar email com remetente temporário do Resend
     const emailStartTime = Date.now();
     
     try {
       const { data: emailData, error } = await resend.emails.send({
-        from: 'Indexa <noreply@indexamidia.com>',
+        from: 'Indexa <onboarding@resend.dev>',
         to: [user.email],
         subject: '🎯 Confirme seu email na Indexa',
         html,

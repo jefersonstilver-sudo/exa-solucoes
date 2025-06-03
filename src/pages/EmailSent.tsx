@@ -1,20 +1,68 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, Clock, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Mail, Clock, RefreshCw, ArrowLeft, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function EmailSent() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const email = new URLSearchParams(location.search).get('email') || '';
+  
+  const [isResending, setIsResending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
-  const handleResendEmail = () => {
-    // TODO: Implementar reenvio de email
-    console.log('Reenviando email para:', email);
+  const handleResendEmail = async () => {
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Email não informado para reenvio."
+      });
+      return;
+    }
+
+    setIsResending(true);
+    
+    try {
+      console.log('🔄 Reenviando email para:', email);
+      
+      const { data, error } = await supabase.functions.invoke('resend-confirmation-email', {
+        body: { email }
+      });
+
+      if (error) {
+        console.error('❌ Erro ao reenviar:', error);
+        throw error;
+      }
+
+      console.log('✅ Email reenviado:', data);
+      
+      setEmailSent(true);
+      toast({
+        title: "Email reenviado!",
+        description: "Verifique sua caixa de entrada."
+      });
+
+      // Reset after 3 seconds
+      setTimeout(() => setEmailSent(false), 3000);
+      
+    } catch (error: any) {
+      console.error('💥 Erro ao reenviar email:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao reenviar",
+        description: "Tente novamente em alguns momentos."
+      });
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
@@ -72,10 +120,25 @@ export default function EmailSent() {
               <Button
                 variant="outline"
                 onClick={handleResendEmail}
+                disabled={isResending || emailSent}
                 className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reenviar email
+                {isResending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Reenviando...
+                  </>
+                ) : emailSent ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Email enviado!
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reenviar email
+                  </>
+                )}
               </Button>
             </div>
 
