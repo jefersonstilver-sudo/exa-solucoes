@@ -1,3 +1,4 @@
+
 /* FOOTER ÚNICO - Regras definitivas para prevenir duplicação */
 
 /* Garantir que apenas UM footer seja exibido em toda a aplicação */
@@ -77,6 +78,7 @@ header {
   z-index: 50 !important;
   background: linear-gradient(to right, #3C1361, #2A0D47) !important;
   border-bottom: 1px solid #e5e7eb !important;
+  height: 80px !important;
 }
 
 /* FORÇAR cor roxa do header - proteção contra override */
@@ -85,6 +87,7 @@ header[class*="header"],
 [role="banner"] {
   background: linear-gradient(to right, #3C1361, #2A0D47) !important;
   color: white !important;
+  height: 80px !important;
 }
 
 /* Proteção universal para páginas - evitar sobreposição */
@@ -94,6 +97,35 @@ header[class*="header"],
 [class*="loja"] {
   padding-top: 100px !important;
   min-height: calc(100vh - 100px) !important;
+}
+
+/* CORREÇÕES ESPECÍFICAS PARA PÁGINAS DE AUTH */
+.auth-page-container {
+  padding-top: 100px !important;
+  min-height: calc(100vh - 100px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Garantir que formulários de auth sejam totalmente visíveis */
+.auth-form-container {
+  width: 100% !important;
+  max-width: 28rem !important; /* max-w-md */
+  margin: 0 auto !important;
+  padding: 1rem !important;
+  box-sizing: border-box !important;
+}
+
+/* Card de auth responsivo */
+.auth-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: none !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(4px) !important;
 }
 
 /* OTIMIZAÇÕES PARA LOJA - GARANTIR VISIBILIDADE COMPLETA */
@@ -149,13 +181,33 @@ header[class*="header"],
   /* Proteção mobile para header COM COR ROXA */
   header {
     background: linear-gradient(to right, #3C1361, #2A0D47) !important;
+    height: 80px !important;
   }
   
   .page-content,
   .building-store-page,
   [class*="store"],
   [class*="loja"] {
-    padding-top: 90px !important;
+    padding-top: 100px !important;
+  }
+  
+  /* Auth mobile - correções específicas */
+  .auth-page-container {
+    padding-top: 100px !important;
+    padding-bottom: 2rem !important;
+    min-height: calc(100vh - 100px) !important;
+  }
+  
+  .auth-form-container {
+    padding: 1rem !important;
+    width: 100% !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  .auth-card {
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
   
   /* Container da loja mobile */
@@ -241,6 +293,13 @@ header[class*="header"],
   /* Header desktop - cor roxa garantida */
   header {
     background: linear-gradient(to right, #3C1361, #2A0D47) !important;
+    height: 80px !important;
+  }
+  
+  /* Auth desktop - espaçamento adequado */
+  .auth-page-container {
+    padding-top: 120px !important;
+    padding-bottom: 2rem !important;
   }
 }
 
@@ -284,4 +343,24 @@ button,
 [role="button"],
 .touchable {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* CORREÇÕES ESPECÍFICAS PARA FORMULÁRIOS */
+.form-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
+/* Garantir que inputs sejam acessíveis */
+input, textarea, select {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Botões de formulário */
+.form-button {
+  width: 100% !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
 }

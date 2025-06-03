@@ -115,8 +115,9 @@ export default function Cadastro() {
   
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
+      {/* Container principal com padding adequado para evitar sobreposição do header */}
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -125,7 +126,7 @@ export default function Cadastro() {
             <Card className="w-full shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
               <RegistrationHeader />
               
-              <CardContent className="p-4 sm:p-6 md:p-8 lg:p-10">
+              <CardContent className="p-6">
                 {error && <ErrorDisplay error={error} />}
                 
                 <ImprovedRegistrationForm
@@ -146,7 +147,7 @@ export default function Cadastro() {
                 />
               </CardContent>
               
-              <CardFooter className="flex flex-col space-y-4 p-4 sm:p-6 md:p-8 lg:p-10 pt-0">
+              <CardFooter className="flex flex-col space-y-4 p-6 pt-0">
                 <div className="text-center text-sm">
                   <span className="text-gray-600">Já tem uma conta?</span>{' '}
                   <Link 
