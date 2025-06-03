@@ -71,9 +71,9 @@ serve(async (req: Request) => {
 
     console.log('📧 Email template rendered');
 
-    // Send the email
+    // Send the email with the correct domain
     const { data: emailData, error } = await resend.emails.send({
-      from: 'Indexa <noreply@indexa.app>',
+      from: 'Indexa <noreply@indexamidia.com>',
       to: [user.email],
       subject: '🎯 Confirme seu email na Indexa - Bem-vindo(a)!',
       html,
