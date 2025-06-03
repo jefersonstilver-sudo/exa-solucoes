@@ -22,6 +22,7 @@ const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
+const EmailSent = lazy(() => import('./pages/EmailSent'));
 
 // Lazy load das páginas da área do anunciante
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
@@ -158,6 +159,11 @@ function App() {
                   <ErrorBoundary>
                     <Cadastro />
                   </ErrorBoundary>
+                } />
+                <Route path="/email-enviado" element={
+                  <LazyPageWrapper>
+                    <EmailSent />
+                  </LazyPageWrapper>
                 } />
 
                 {/* Rotas administrativas */}
