@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, Settings, LogOut, User } from 'lucide-react';
+import { Bell, Settings, LogOut, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,7 +14,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import NotificationCenter from './NotificationCenter';
 
-const ModernAdminHeader = () => {
+interface ModernAdminHeaderProps {
+  onToggleSidebar?: () => void;
+  sidebarCollapsed?: boolean;
+}
+
+const ModernAdminHeader = ({ onToggleSidebar, sidebarCollapsed }: ModernAdminHeaderProps) => {
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -29,7 +34,19 @@ const ModernAdminHeader = () => {
 
   return (
     <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] border-b border-white/20 px-6 py-3 shadow-lg">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        {/* Botão Hambúrguer */}
+        {onToggleSidebar && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSidebar}
+            className="bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+
         <div className="flex items-center space-x-4">
           {/* Sistema de Notificações */}
           <NotificationCenter />
