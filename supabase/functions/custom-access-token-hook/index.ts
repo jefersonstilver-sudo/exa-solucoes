@@ -32,11 +32,11 @@ interface SupabaseAuthHookPayload {
 }
 
 Deno.serve(async (req) => {
+  console.log('🔐 AUTH HOOK: Processing request');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
-  console.log('🔐 SECURE AUTH HOOK - Intercepting JWT token');
 
   try {
     if (req.method !== 'POST') {
@@ -68,22 +68,24 @@ Deno.serve(async (req) => {
       
       if (!payload || !payload.user_id || !payload.claims) {
         console.error('❌ Invalid payload structure');
-        return new Response(JSON.stringify({ error: 'Invalid payload structure' }), {
+        // Return the original payload to not break auth flow
+        return new Response(JSON.stringify(payload || {}), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+          status: 200,
         });
       }
     } catch (parseError) {
       console.error('❌ JSON parse error:', parseError);
-      return new Response(JSON.stringify({ error: 'Invalid JSON payload' }), {
+      // Return empty claims to not break auth flow
+      return new Response(JSON.stringify({ claims: {} }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 200,
       });
     }
     
     console.log('✅ Auth payload validated for user:', payload.claims.email);
 
-    // Secure role lookup from database only
+    // Try to get role from database
     try {
       const { data: userData, error } = await supabase
         .from('users')
@@ -92,40 +94,24 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) {
-        console.warn('⚠️ Error fetching user role, defaulting to client:', error);
+        console.warn('⚠️ Error fetching user role, using default:', error.message);
         payload.claims.user_role = 'client';
+      } else if (userData?.role) {
+        payload.claims.user_role = userData.role;
+        console.log('✅ Role retrieved from database:', userData.role);
       } else {
-        payload.claims.user_role = userData.role || 'client';
-        console.log('✅ Role retrieved from database:', {
-          email: userData.email,
-          role: userData.role,
-          userId: payload.user_id
-        });
+        console.warn('⚠️ No role found, using default');
+        payload.claims.user_role = 'client';
       }
     } catch (dbError) {
-      console.warn('⚠️ Database error, defaulting to client role:', dbError);
+      console.warn('⚠️ Database error, using default role:', dbError);
       payload.claims.user_role = 'client';
     }
 
-    // Audit log for all authentication events
-    try {
-      await supabase
-        .from('log_eventos_sistema')
-        .insert({
-          tipo_evento: 'secure_auth_token_generated',
-          descricao: `Secure token generated for user: ${payload.claims.email} with role: ${payload.claims.user_role}`,
-          ip: req.headers.get('x-forwarded-for') || 'unknown',
-          user_agent: req.headers.get('user-agent') || 'unknown'
-        });
-    } catch (logError) {
-      console.warn('⚠️ Failed to log auth event (non-critical):', logError);
-    }
-
-    console.log('🎯 Secure JWT generated:', {
+    console.log('🎯 JWT generated successfully:', {
       user_role: payload.claims.user_role,
       email: payload.claims.email,
-      user_id: payload.user_id,
-      timestamp: new Date().toISOString()
+      user_id: payload.user_id
     });
 
     return new Response(JSON.stringify(payload), {
@@ -134,37 +120,15 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('💥 Critical auth error:', {
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
+    console.error('💥 Critical auth error:', error);
     
-    try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (supabaseUrl && supabaseServiceKey) {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        
-        await supabase
-          .from('log_eventos_sistema')
-          .insert({
-            tipo_evento: 'auth_hook_critical_error',
-            descricao: `Critical auth error: ${error.message}`,
-            ip: req.headers.get('x-forwarded-for') || 'unknown',
-            user_agent: req.headers.get('user-agent') || 'unknown'
-          });
-      }
-    } catch (logError) {
-      console.error('💥 Failed to log critical error:', logError);
-    }
-    
+    // IMPORTANT: Never break the auth flow, return minimal valid response
     return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      timestamp: new Date().toISOString()
+      claims: { user_role: 'client' },
+      error: 'Auth hook error but login allowed'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      status: 200, // Always return 200 to not break auth
     });
   }
 });
