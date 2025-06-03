@@ -7,7 +7,7 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import RegistrationHeader from '@/components/auth/RegistrationHeader';
-import RegistrationForm from '@/components/auth/RegistrationForm';
+import ImprovedRegistrationForm from '@/components/auth/ImprovedRegistrationForm';
 import ErrorDisplay from '@/components/auth/ErrorDisplay';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 
@@ -15,6 +15,7 @@ export default function Cadastro() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [document, setDocument] = useState('');
   const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>('cpf');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +43,11 @@ export default function Cadastro() {
         setError("A senha deve ter pelo menos 6 caracteres.");
         return;
       }
+
+      if (password !== confirmPassword) {
+        setError("As senhas não coincidem.");
+        return;
+      }
       
       if (!validateDocument(document, documentType)) {
         setError(`${documentType.toUpperCase()} inválido. Verifique se digitou corretamente.`);
@@ -62,7 +68,8 @@ export default function Cadastro() {
             name,
             document_type: documentType,
             document: document.replace(/\D/g, '')
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/confirmacao?redirect=${encodeURIComponent(redirectPath)}`
         }
       });
       
@@ -72,31 +79,28 @@ export default function Cadastro() {
       }
       
       if (data.user) {
-        console.log('✅ [CADASTRO] Usuário criado com sucesso');
+        console.log('✅ [CADASTRO] Usuário criado - aguardando confirmação de email');
         
         toast({
-          title: "Conta criada com sucesso",
-          description: "Bem-vindo(a) à Indexa!"
+          title: "Conta criada com sucesso!",
+          description: "Verifique seu email para confirmar sua conta."
         });
         
-        // Auto-login for better UX
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (signInError) {
-          console.error("❌ [CADASTRO] Erro no auto-login:", signInError);
-          navigate(`/login?redirect=${encodeURIComponent(redirectPath)}`);
-          return;
-        }
-        
-        console.log('🎯 [CADASTRO] Redirecionando para:', redirectPath);
-        navigate(redirectPath);
+        // Redirect to email sent page
+        navigate(`/email-enviado?email=${encodeURIComponent(email)}`);
       }
     } catch (error: any) {
       console.error("💥 [CADASTRO] Erro crítico:", error);
-      const errorMessage = error.message || "Erro ao criar conta. Tente novamente.";
+      let errorMessage = "Erro ao criar conta. Tente novamente.";
+      
+      if (error.message?.includes('already registered')) {
+        errorMessage = "Este email já está cadastrado. Tente fazer login.";
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = "Email inválido. Verifique se digitou corretamente.";
+      } else if (error.message?.includes('Password')) {
+        errorMessage = "Senha muito simples. Use uma senha mais forte.";
+      }
+      
       setError(errorMessage);
       
       toast({
@@ -124,16 +128,18 @@ export default function Cadastro() {
               <CardContent className="p-4 sm:p-6 md:p-8 lg:p-10">
                 {error && <ErrorDisplay error={error} />}
                 
-                <RegistrationForm
+                <ImprovedRegistrationForm
                   name={name}
                   email={email}
                   password={password}
+                  confirmPassword={confirmPassword}
                   document={document}
                   documentType={documentType}
                   isLoading={isLoading}
                   onNameChange={setName}
                   onEmailChange={setEmail}
                   onPasswordChange={setPassword}
+                  onConfirmPasswordChange={setConfirmPassword}
                   onDocumentTypeChange={setDocumentType}
                   onDocumentChange={handleChangeDocument}
                   onSubmit={handleSignUp}

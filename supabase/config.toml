@@ -4,9 +4,6 @@ project_id = "aakenoljsycyrcrchgxj"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "graphql_public"]
-extra_search_path = ["public", "extensions"]
-max_rows = 1000
 
 [db]
 port = 54322
@@ -21,27 +18,13 @@ port = 54324
 
 [storage]
 enabled = true
-port = 54325
 
 [auth]
 enabled = true
-port = 54326
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
-jwt_expiry = 3600
-refresh_token_rotation_enabled = true
-security_update_password_require_reauthentication = true
+external_email_enabled = true
 
-[auth.hooks.custom_access_token]
-enabled = true
-uri = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/custom-access-token-hook"
-
-[functions.custom-access-token-hook]
-verify_jwt = false
-
-[edge-runtime]
-enabled = true
-port = 54327
-
-[analytics]
+[auth.external.google]
 enabled = false
+
+[functions.send-confirmation-email]
+verify_jwt = false

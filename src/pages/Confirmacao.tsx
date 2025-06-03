@@ -27,7 +27,7 @@ export default function Confirmacao() {
           const queryParams = new URLSearchParams(window.location.search);
           if (queryParams.get('type') === 'recovery') {
             setStatus('success');
-            setMessage('Redefinição de senha solicitada com sucesso.');
+            setMessage('Link de redefinição de senha válido.');
             setTimeout(() => navigate('/login'), 3000);
             return;
           }
@@ -40,6 +40,7 @@ export default function Confirmacao() {
         const query = new URLSearchParams(hash.replace('#', ''));
         const access_token = query.get('access_token');
         const refresh_token = query.get('refresh_token');
+        const type = query.get('type');
         
         if (!access_token || !refresh_token) {
           throw new Error('Tokens de autenticação não encontrados na URL');
@@ -57,20 +58,37 @@ export default function Confirmacao() {
         
         // Success!
         setStatus('success');
-        setMessage('Email confirmado com sucesso!');
-        toast.success('Email confirmado com sucesso!');
         
-        // Check if there's a redirect parameter in the URL
-        const redirectParam = new URLSearchParams(location.search).get('redirect');
-        const redirectTo = redirectParam || '/login';
+        if (type === 'signup') {
+          setMessage('Email confirmado com sucesso! Bem-vindo(a) à Indexa!');
+          toast.success('Email confirmado! Sua conta está ativa.');
+          
+          // Check if there's a redirect parameter in the URL
+          const redirectParam = new URLSearchParams(location.search).get('redirect');
+          const redirectTo = redirectParam || '/paineis-digitais/loja';
+          
+          // Auto-login successful, redirect to the intended page
+          setTimeout(() => navigate(redirectTo), 2000);
+        } else {
+          setMessage('Email confirmado com sucesso!');
+          setTimeout(() => navigate('/login'), 3000);
+        }
         
-        // Redirect after a short delay
-        setTimeout(() => navigate(redirectTo), 3000);
       } catch (error: any) {
         console.error('Email confirmation failed:', error);
         setStatus('error');
-        setMessage(error.message || 'Falha ao confirmar o email');
-        toast.error('Erro ao confirmar email. Por favor, tente novamente.');
+        
+        let errorMessage = 'Falha ao confirmar o email';
+        if (error.message?.includes('expired')) {
+          errorMessage = 'Link de confirmação expirado. Solicite um novo email de confirmação.';
+        } else if (error.message?.includes('invalid')) {
+          errorMessage = 'Link de confirmação inválido. Verifique se copiou o link completo.';
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+        
+        setMessage(errorMessage);
+        toast.error('Erro na confirmação. Tente novamente.');
       }
     };
 
@@ -91,7 +109,9 @@ export default function Confirmacao() {
               Confirmação de Email
             </CardTitle>
             <CardDescription>
-              Estamos processando sua confirmação
+              {status === 'loading' ? 'Processando confirmação...' : 
+               status === 'success' ? 'Confirmação realizada!' : 
+               'Erro na confirmação'}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center py-8">
@@ -120,14 +140,23 @@ export default function Confirmacao() {
                 </div>
                 <p className="text-lg text-gray-700 font-medium">{message}</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Você será redirecionado para a página de login em alguns segundos...
+                  Você será redirecionado automaticamente...
                 </p>
-                <Button
-                  onClick={() => navigate('/login')}
-                  className="mt-6 bg-indexa-purple hover:bg-indexa-purple-dark"
-                >
-                  Ir para o Login
-                </Button>
+                <div className="flex flex-col gap-3 mt-6">
+                  <Button
+                    onClick={() => navigate('/paineis-digitais/loja')}
+                    className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                  >
+                    Ir para a Loja
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/login')}
+                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+                  >
+                    Fazer Login
+                  </Button>
+                </div>
               </motion.div>
             )}
             
@@ -141,20 +170,27 @@ export default function Confirmacao() {
                   <XCircle className="h-16 w-16 text-red-500" />
                 </div>
                 <p className="text-lg text-gray-700 font-medium">Ops! Algo deu errado</p>
-                <p className="text-sm text-red-600 mt-2">
+                <p className="text-sm text-red-600 mt-2 max-w-sm">
                   {message}
                 </p>
                 <div className="flex flex-col gap-2 mt-6">
                   <Button
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate('/cadastro')}
                     className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                  >
+                    Criar Nova Conta
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/login')}
+                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
                   >
                     Voltar para Login
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => navigate('/')}
-                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+                    className="border-gray-300 text-gray-600 hover:bg-gray-50"
                   >
                     Voltar para Início
                   </Button>
