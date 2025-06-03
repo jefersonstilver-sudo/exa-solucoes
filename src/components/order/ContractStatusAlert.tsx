@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertTriangle, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, Clock, CheckCircle, XCircle, PlayCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ interface ContractStatusAlertProps {
   isNearExpiration: boolean;
   daysRemaining: number;
   expiryDate: string | null;
+  hasStarted?: boolean;
 }
 
 export const ContractStatusAlert: React.FC<ContractStatusAlertProps> = ({
@@ -18,7 +19,8 @@ export const ContractStatusAlert: React.FC<ContractStatusAlertProps> = ({
   isExpired,
   isNearExpiration,
   daysRemaining,
-  expiryDate
+  expiryDate,
+  hasStarted = true
 }) => {
   if (isExpired) {
     return (
@@ -41,6 +43,29 @@ export const ContractStatusAlert: React.FC<ContractStatusAlertProps> = ({
                 Renovar Contrato
               </Button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasStarted) {
+    return (
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Clock className="h-6 w-6 text-blue-600" />
+              <div>
+                <h3 className="font-medium text-blue-800">Contrato Aguardando Ativação</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  O contrato será iniciado automaticamente quando seu vídeo for aprovado pela nossa equipe.
+                </p>
+              </div>
+            </div>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              AGUARDANDO
+            </Badge>
           </div>
         </CardContent>
       </Card>

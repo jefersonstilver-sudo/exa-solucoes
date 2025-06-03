@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -94,6 +95,11 @@ const OrderDetails = () => {
       console.log('📊 [ORDER_DETAILS] Pedido carregado:', userOrder);
       console.log('📍 [ORDER_DETAILS] Lista de painéis:', userOrder?.lista_paineis);
       console.log('💳 [ORDER_DETAILS] Log de pagamento:', userOrder?.log_pagamento);
+      console.log('📅 [ORDER_DETAILS] Datas do contrato:', {
+        data_inicio: userOrder?.data_inicio,
+        data_fim: userOrder?.data_fim,
+        status: userOrder?.status
+      });
       
       setOrderDetails(userOrder);
     } catch (error) {
@@ -162,7 +168,8 @@ const OrderDetails = () => {
     recoveredPanels: enhancedData?.recoveredPanels,
     displayPanels,
     isRecovered: enhancedData?.isRecovered,
-    contractStatus
+    contractStatus,
+    hasStarted: contractStatus.hasStarted
   });
 
   return (
@@ -184,6 +191,7 @@ const OrderDetails = () => {
           isNearExpiration={contractStatus.isExpiringSoon}
           daysRemaining={contractStatus.daysRemaining}
           expiryDate={orderDetails.data_fim}
+          hasStarted={contractStatus.hasStarted}
         />
 
         {/* Status de Exibição */}

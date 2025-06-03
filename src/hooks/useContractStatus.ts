@@ -9,6 +9,7 @@ interface ContractStatusReturn {
   progressPercentage: number;
   isExpiringSoon: boolean;
   isExpired: boolean;
+  hasStarted: boolean;
 }
 
 export const useContractStatus = (orderDetails: {
@@ -24,7 +25,8 @@ export const useContractStatus = (orderDetails: {
     totalDays: null,
     progressPercentage: 0,
     isExpiringSoon: false,
-    isExpired: false
+    isExpired: false,
+    hasStarted: false
   });
 
   useEffect(() => {
@@ -40,12 +42,17 @@ export const useContractStatus = (orderDetails: {
       totalDays: null,
       progressPercentage: 0,
       isExpiringSoon: false,
-      isExpired: false
+      isExpired: false,
+      hasStarted: false
     };
 
-    if (data_fim) {
+    // Verificar se o contrato já iniciou (tem datas definidas)
+    const hasStarted = !!(data_inicio && data_fim);
+    newContractData.hasStarted = hasStarted;
+
+    if (hasStarted) {
       const endDate = new Date(data_fim);
-      const startDate = data_inicio ? new Date(data_inicio) : null;
+      const startDate = new Date(data_inicio);
       
       const timeDiff = endDate.getTime() - today.getTime();
       const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
@@ -62,7 +69,7 @@ export const useContractStatus = (orderDetails: {
         newContractData.isExpired = true;
         newContractData.isActive = false;
       } else {
-        newContractData.isActive = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(status);
+        newContractData.isActive = ['video_aprovado', 'ativo'].includes(status);
         
         // Verificar se está próximo da expiração (7 dias)
         if (daysRemaining <= 7 && daysRemaining > 0) {
@@ -71,15 +78,15 @@ export const useContractStatus = (orderDetails: {
       }
       
       // Calcular progresso e total de dias
-      if (startDate && newContractData.isActive) {
-        const totalTime = endDate.getTime() - startDate.getTime();
-        const elapsedTime = today.getTime() - startDate.getTime();
-        newContractData.totalDays = Math.ceil(totalTime / (1000 * 3600 * 24));
-        newContractData.progressPercentage = Math.min(100, Math.max(0, (elapsedTime / totalTime) * 100));
-      }
+      const totalTime = endDate.getTime() - startDate.getTime();
+      const elapsedTime = today.getTime() - startDate.getTime();
+      newContractData.totalDays = Math.ceil(totalTime / (1000 * 3600 * 24));
+      newContractData.progressPercentage = Math.min(100, Math.max(0, (elapsedTime / totalTime) * 100));
     } else {
-      // Sem data de fim definida
-      newContractData.isActive = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(status);
+      // Contrato ainda não iniciou - aguardando aprovação de vídeo
+      newContractData.isActive = false;
+      newContractData.daysRemaining = 0;
+      newContractData.totalDays = orderDetails.plano_meses * 30; // Estimativa
     }
 
     setContractData(newContractData);

@@ -8,7 +8,8 @@ import {
   CheckCircle, 
   XCircle,
   AlertTriangle,
-  CreditCard
+  CreditCard,
+  Eye
 } from 'lucide-react';
 
 export interface OrderStatusInfo {
@@ -31,6 +32,7 @@ export const useOrderStatus = (order: any) => {
     const hasVideos = order?.videos && order.videos.length > 0;
     const hasApprovedVideo = order?.videos?.some((v: any) => v.approval_status === 'approved');
     const hasActiveVideo = order?.videos?.some((v: any) => v.is_active || v.selected_for_display);
+    const hasVideoInDisplay = order?.videos?.some((v: any) => v.selected_for_display && v.approval_status === 'approved');
 
     switch (status) {
       case 'pendente':
@@ -44,7 +46,6 @@ export const useOrderStatus = (order: any) => {
             label: 'Pagar com PIX',
             variant: 'default',
             onClick: () => {
-              // Implementar abertura do PIX
               console.log('Abrir PIX para pedido:', order.id);
             }
           }
@@ -74,11 +75,16 @@ export const useOrderStatus = (order: any) => {
             icon: Clock
           };
         }
-        // Fall through para próximo status
+        return {
+          label: 'Vídeo Aprovado',
+          description: 'Vídeo aprovado! Contrato iniciado automaticamente.',
+          color: 'text-green-700',
+          bgColor: 'bg-green-100 border-green-200',
+          icon: CheckCircle
+        };
 
       case 'video_aprovado':
-      case 'ativo':
-        if (hasApprovedVideo && hasActiveVideo) {
+        if (hasVideoInDisplay) {
           return {
             label: 'Ativo e em Exibição',
             description: 'Sua campanha está ativa e sendo exibida nos painéis',
@@ -91,15 +97,28 @@ export const useOrderStatus = (order: any) => {
               href: `/anunciante/pedido/${order.id}#relatorio`
             }
           };
-        } else {
-          return {
-            label: 'Vídeo Aprovado',
-            description: 'Vídeo aprovado, será ativado em breve',
-            color: 'text-green-700',
-            bgColor: 'bg-green-100 border-green-200',
-            icon: CheckCircle
-          };
         }
+        return {
+          label: 'Contrato Iniciado',
+          description: 'Vídeo aprovado, contrato iniciado. Selecione para exibição.',
+          color: 'text-green-700',
+          bgColor: 'bg-green-100 border-green-200',
+          icon: CheckCircle
+        };
+
+      case 'ativo':
+        return {
+          label: 'Ativo e em Exibição',
+          description: 'Sua campanha está ativa e sendo exibida nos painéis',
+          color: 'text-green-700',
+          bgColor: 'bg-green-100 border-green-200',
+          icon: Play,
+          action: {
+            label: 'Ver Relatório',
+            variant: 'outline',
+            href: `/anunciante/pedido/${order.id}#relatorio`
+          }
+        };
 
       case 'video_rejeitado':
         return {

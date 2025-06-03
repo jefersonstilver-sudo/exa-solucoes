@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, AlertTriangle, PlayCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -29,7 +29,8 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
     totalDays, 
     progressPercentage,
     isExpiringSoon,
-    isExpired 
+    isExpired,
+    hasStarted
   } = useContractStatus(orderDetails);
 
   const getStatusConfig = () => {
@@ -41,6 +42,17 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
         progressColor: 'bg-red-500',
         icon: AlertTriangle,
         iconColor: 'text-red-500'
+      };
+    }
+    
+    if (!hasStarted) {
+      return {
+        badge: 'Aguardando Ativação',
+        badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+        cardBorder: 'border-blue-200',
+        progressColor: 'bg-blue-500',
+        icon: Clock,
+        iconColor: 'text-blue-500'
       };
     }
     
@@ -67,12 +79,12 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
     }
     
     return {
-      badge: 'Aguardando Ativação',
-      badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
-      cardBorder: 'border-blue-200',
-      progressColor: 'bg-blue-500',
-      icon: Clock,
-      iconColor: 'text-blue-500'
+      badge: 'Contrato Iniciado',
+      badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      cardBorder: 'border-emerald-200',
+      progressColor: 'bg-emerald-500',
+      icon: PlayCircle,
+      iconColor: 'text-emerald-500'
     };
   };
 
@@ -86,13 +98,24 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
 
   const getTimeDisplayText = () => {
     if (isExpired) return 'Contrato encerrado';
-    if (!isActive) return 'Ainda não iniciado';
+    if (!hasStarted) return 'Contrato não iniciado';
     
     if (daysRemaining === 0 && hoursRemaining !== null) {
       return `${hoursRemaining}h restantes`;
     }
     
     return `${daysRemaining} dias restantes`;
+  };
+
+  const getMainDisplayValue = () => {
+    if (isExpired) return 'ENCERRADO';
+    if (!hasStarted) return 'AGUARDANDO';
+    
+    if (daysRemaining === 0 && hoursRemaining !== null) {
+      return `${hoursRemaining}h`;
+    }
+    
+    return daysRemaining.toString();
   };
 
   return (
@@ -113,22 +136,13 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
         {/* Contador Principal */}
         <div className="text-center">
           <div className="text-4xl font-bold mb-1">
-            {isExpired ? (
-              <span className="text-red-600">ENCERRADO</span>
-            ) : daysRemaining === 0 && hoursRemaining !== null ? (
-              <span className={cn(
-                'text-2xl',
-                isExpiringSoon ? 'text-orange-600' : 'text-green-600'
-              )}>
-                {hoursRemaining}h
-              </span>
-            ) : (
-              <span className={cn(
-                isExpiringSoon ? 'text-orange-600' : 'text-green-600'
-              )}>
-                {daysRemaining}
-              </span>
-            )}
+            <span className={cn(
+              isExpired ? 'text-red-600' : 
+              !hasStarted ? 'text-blue-600' :
+              isExpiringSoon ? 'text-orange-600' : 'text-green-600'
+            )}>
+              {getMainDisplayValue()}
+            </span>
           </div>
           <p className="text-sm text-gray-600">
             {getTimeDisplayText()}
@@ -136,7 +150,7 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
         </div>
 
         {/* Barra de Progresso */}
-        {isActive && !isExpired && (
+        {hasStarted && isActive && !isExpired && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Progresso do contrato</span>
@@ -173,7 +187,7 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
             <span className="text-gray-600">Duração do Plano:</span>
             <span className="font-medium">{orderDetails.plano_meses} meses</span>
           </div>
-          {isActive && totalDays && (
+          {hasStarted && totalDays && (
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Total de Dias:</span>
               <span className="font-medium">{totalDays} dias</span>
@@ -181,7 +195,20 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
           )}
         </div>
 
-        {/* Ações */}
+        {/* Status específicos */}
+        {!hasStarted && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Clock className="h-4 w-4 text-blue-600" />
+              <span className="font-medium text-blue-800">Aguardando Ativação</span>
+            </div>
+            <p className="text-sm text-blue-700 mb-3">
+              O contrato será iniciado automaticamente quando seu vídeo for aprovado.
+            </p>
+          </div>
+        )}
+
+        {/* Ações para expiração próxima */}
         {isExpiringSoon && !isExpired && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
@@ -197,6 +224,7 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
           </div>
         )}
 
+        {/* Ações para contrato expirado */}
         {isExpired && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
