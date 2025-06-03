@@ -17,6 +17,7 @@ import { VideoManagementCard } from '@/components/order/VideoManagementCard';
 import { ContractStatusAlert } from '@/components/order/ContractStatusAlert';
 import { VideoDisplayStatus } from '@/components/order/VideoDisplayStatus';
 import { useContractStatus } from '@/hooks/useContractStatus';
+import { EnhancedContractStatusCard } from '@/components/order/EnhancedContractStatusCard';
 
 interface OrderDetails {
   id: string;
@@ -38,8 +39,13 @@ const OrderDetails = () => {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Hook para verificar status do contrato
-  const { contractStatus, loading: contractLoading } = useContractStatus(id || '');
+  // Hook para verificar status do contrato - usando orderDetails como parâmetro
+  const contractStatus = useContractStatus(orderDetails || {
+    data_inicio: undefined,
+    data_fim: undefined,
+    status: 'pendente',
+    plano_meses: 1
+  });
 
   // Hook para dados aprimorados (recuperação de painéis)
   const { 
@@ -125,7 +131,7 @@ const OrderDetails = () => {
     window.open(videoUrl, '_blank');
   };
 
-  if (loading || videosLoading || enhancedLoading || contractLoading) {
+  if (loading || videosLoading || enhancedLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
@@ -166,13 +172,19 @@ const OrderDetails = () => {
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
 
+        {/* Enhanced Contract Status Card */}
+        <EnhancedContractStatusCard
+          orderId={orderDetails.id}
+          orderDetails={orderDetails}
+        />
+
         {/* Status do Contrato */}
         <ContractStatusAlert
           isActive={contractStatus.isActive}
           isExpired={contractStatus.isExpired}
-          isNearExpiration={contractStatus.isNearExpiration}
+          isNearExpiration={contractStatus.isExpiringSoon}
           daysRemaining={contractStatus.daysRemaining}
-          expiryDate={contractStatus.expiryDate}
+          expiryDate={orderDetails.data_fim}
         />
 
         {/* Status de Exibição */}
