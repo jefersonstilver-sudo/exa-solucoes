@@ -144,14 +144,16 @@ export const useOrdersWithAttempts = () => {
       
       setOrdersAndAttempts(todosDados);
       
-      // 7. Calcular estatísticas
+      // Calcular estatísticas com fórmula correta de conversão
       const totalOrders = pedidosFormatados.length;
       const totalAttempts = tentativasFormatadas.length;
       const totalRevenue = pedidosFormatados
         .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(p.status))
         .reduce((sum, p) => sum + p.valor_total, 0);
       const abandonedValue = tentativasFormatadas.reduce((sum, t) => sum + t.valor_total, 0);
-      const conversionRate = totalAttempts > 0 ? (totalOrders / (totalOrders + totalAttempts)) * 100 : 0;
+      
+      // Corrigir fórmula da taxa de conversão: pedidos / tentativas * 100
+      const conversionRate = totalAttempts > 0 ? (totalOrders / totalAttempts) * 100 : 0;
       
       const statsCalculadas = {
         total_orders: totalOrders,
