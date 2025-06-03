@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useOrdersWithAttempts } from '@/hooks/useOrdersWithAttempts';
+import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import OrdersAndAttemptsTable from './OrdersAndAttemptsTable';
 import AttemptsTable from './AttemptsTable';
 import { CheckCircle, AlertTriangle, Clock, DollarSign, Calendar } from 'lucide-react';
@@ -13,7 +13,7 @@ interface OrdersTabsProps {
 }
 
 const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
-  const { ordersAndAttempts, stats, loading } = useOrdersWithAttempts();
+  const { ordersAndAttempts, stats, loading } = useOrdersWithAttemptsRefactored();
   
   // Função para calcular dias restantes
   const calculateDaysRemaining = (order: any) => {

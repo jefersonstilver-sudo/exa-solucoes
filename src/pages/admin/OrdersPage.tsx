@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { RefreshCw, ArrowLeft } from 'lucide-react';
-import { useOrdersWithAttempts } from '@/hooks/useOrdersWithAttempts';
+import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
 import OrdersStatsCards from '@/components/admin/orders/OrdersStatsCards';
 import OrdersTabs from '@/components/admin/orders/OrdersTabs';
@@ -17,7 +16,7 @@ import { RealOrderVideosCard } from '@/components/admin/orders/RealOrderVideosCa
 import { Button } from '@/components/ui/button';
 
 const OrdersPage = () => {
-  const { ordersAndAttempts, stats, loading, refetch } = useOrdersWithAttempts();
+  const { ordersAndAttempts, stats, loading, refetch } = useOrdersWithAttemptsRefactored();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
