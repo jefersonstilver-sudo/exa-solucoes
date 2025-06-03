@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Calendar } from 'lucide-react';
-import { OrderOrAttempt } from '@/hooks/useOrdersWithAttempts';
+import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { 
   getStatusBadge, 
   formatDate, 

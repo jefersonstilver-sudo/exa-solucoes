@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
-import { OrderOrAttempt } from '@/hooks/useOrdersWithAttempts';
+import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 
 interface OrdersPageAlertsProps {
   ordersAndAttempts: OrderOrAttempt[];

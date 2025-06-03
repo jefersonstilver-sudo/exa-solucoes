@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { OrderOrAttempt } from '@/hooks/useOrdersWithAttempts';
+import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import OrdersTableRow from './components/OrdersTableRow';
 import OrdersTableHeader from './components/OrdersTableHeader';
 import OrdersEmptyState from './components/OrdersEmptyState';

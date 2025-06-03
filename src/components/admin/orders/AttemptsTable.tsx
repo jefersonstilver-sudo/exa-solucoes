@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, Mail, Clock, MapPin, AlertTriangle, DollarSign } from 'lucide-react';
-import { OrderOrAttempt } from '@/hooks/useOrdersWithAttempts';
+import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 
 interface AttemptsTableProps {
   attempts: OrderOrAttempt[];
