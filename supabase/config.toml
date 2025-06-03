@@ -28,3 +28,6 @@ enabled = false
 
 [functions.send-confirmation-email]
 verify_jwt = false
+
+[functions.custom-access-token-hook]
+verify_jwt = false
