@@ -3,39 +3,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export interface OrderAttempt {
+export interface OrderOrAttempt {
   id: string;
-  created_at: string;
-  id_user: string;
-  valor_total: number;
-  predios_selecionados: number[];
-  credencial?: string;
-  predio?: string;
-  type: 'attempt';
-  status: 'tentativa';
-  client_email?: string;
-  client_name?: string;
-}
-
-export interface CompleteOrder {
-  id: string;
+  type: 'order' | 'attempt';
   created_at: string;
   status: string;
   valor_total: number;
-  lista_paineis: string[];
-  plano_meses: number;
-  data_inicio: string;
-  data_fim: string;
-  client_id: string;
-  client_email: string;
-  client_name: string;
-  video_status: string;
-  type: 'order';
+  lista_paineis?: string[];
+  plano_meses?: number;
+  data_inicio?: string;
+  data_fim?: string;
+  client_id?: string;
+  client_email?: string;
+  client_name?: string;
+  video_status?: string;
+  predios_selecionados?: number[];
 }
 
-export type OrderOrAttempt = OrderAttempt | CompleteOrder;
-
-interface OrdersWithAttemptsStats {
+interface OrdersStats {
   total_orders: number;
   total_attempts: number;
   total_revenue: number;
@@ -45,7 +30,7 @@ interface OrdersWithAttemptsStats {
 
 export const useOrdersWithAttempts = () => {
   const [ordersAndAttempts, setOrdersAndAttempts] = useState<OrderOrAttempt[]>([]);
-  const [stats, setStats] = useState<OrdersWithAttemptsStats>({
+  const [stats, setStats] = useState<OrdersStats>({
     total_orders: 0,
     total_attempts: 0,
     total_revenue: 0,
@@ -54,122 +39,107 @@ export const useOrdersWithAttempts = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const fetchOrdersAndAttempts = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Buscando pedidos e tentativas...');
-
-      // Buscar pedidos completos primeiro (prioridade para fazer aparecer)
-      const { data: orders, error: ordersError } = await supabase.rpc('get_pedidos_com_clientes');
-      if (ordersError) {
-        console.error('Erro ao buscar pedidos:', ordersError);
-        throw ordersError;
+      console.log('🔄 Buscando pedidos e tentativas...');
+      
+      // Buscar pedidos usando a função RPC corrigida
+      const { data: pedidos, error: pedidosError } = await supabase.rpc('get_pedidos_com_clientes');
+      
+      if (pedidosError) {
+        console.error('❌ Erro ao buscar pedidos:', pedidosError);
+        throw pedidosError;
       }
-
-      console.log('✅ Pedidos encontrados:', orders?.length || 0);
-
-      // Processar pedidos completos
-      const processedOrders: CompleteOrder[] = (orders || []).map(order => ({
-        ...order,
-        type: 'order' as const
+      
+      // Buscar tentativas de compra
+      const { data: tentativas, error: tentativasError } = await supabase
+        .from('tentativas_compra')
+        .select(`
+          *,
+          users:id_user (
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (tentativasError) {
+        console.error('❌ Erro ao buscar tentativas:', tentativasError);
+        // Não falhar se tentativas der erro, apenas logar
+      }
+      
+      console.log('✅ Pedidos carregados:', pedidos?.length || 0);
+      console.log('✅ Tentativas carregadas:', tentativas?.length || 0);
+      
+      // Converter pedidos para formato unificado
+      const pedidosFormatados: OrderOrAttempt[] = (pedidos || []).map(pedido => ({
+        id: pedido.id,
+        type: 'order' as const,
+        created_at: pedido.created_at,
+        status: pedido.status,
+        valor_total: pedido.valor_total || 0,
+        lista_paineis: pedido.lista_paineis || [],
+        plano_meses: pedido.plano_meses,
+        data_inicio: pedido.data_inicio,
+        data_fim: pedido.data_fim,
+        client_id: pedido.client_id,
+        client_email: pedido.client_email,
+        client_name: pedido.client_name,
+        video_status: pedido.video_status
       }));
-
-      // Buscar tentativas de compra (sem foreign key problemática)
-      let processedAttempts: OrderAttempt[] = [];
-      try {
-        const { data: attempts, error: attemptsError } = await supabase
-          .from('tentativas_compra')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (attemptsError) {
-          console.error('Erro ao buscar tentativas (não crítico):', attemptsError);
-        } else {
-          console.log('✅ Tentativas encontradas:', attempts?.length || 0);
-          
-          // Para cada tentativa, buscar o email do usuário separadamente
-          if (attempts && attempts.length > 0) {
-            for (const attempt of attempts) {
-              try {
-                const { data: userData, error: userError } = await supabase
-                  .from('users')
-                  .select('email')
-                  .eq('id', attempt.id_user)
-                  .single();
-
-                processedAttempts.push({
-                  id: attempt.id,
-                  created_at: attempt.created_at,
-                  id_user: attempt.id_user,
-                  valor_total: attempt.valor_total || 0,
-                  predios_selecionados: attempt.predios_selecionados || [],
-                  credencial: attempt.credencial,
-                  predio: attempt.predio,
-                  type: 'attempt' as const,
-                  status: 'tentativa' as const,
-                  client_email: userData?.email || 'Email não encontrado',
-                  client_name: userData?.email || 'Nome não disponível'
-                });
-              } catch (error) {
-                console.warn('Erro ao buscar dados do usuário para tentativa:', attempt.id);
-                // Ainda assim adicionar a tentativa mesmo sem email
-                processedAttempts.push({
-                  id: attempt.id,
-                  created_at: attempt.created_at,
-                  id_user: attempt.id_user,
-                  valor_total: attempt.valor_total || 0,
-                  predios_selecionados: attempt.predios_selecionados || [],
-                  credencial: attempt.credencial,
-                  predio: attempt.predio,
-                  type: 'attempt' as const,
-                  status: 'tentativa' as const,
-                  client_email: 'Email não encontrado',
-                  client_name: 'Nome não disponível'
-                });
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('Erro não crítico ao buscar tentativas:', error);
-        // Continuar sem tentativas se houver erro
-      }
-
+      
+      // Converter tentativas para formato unificado
+      const tentativasFormatadas: OrderOrAttempt[] = (tentativas || []).map(tentativa => ({
+        id: tentativa.id,
+        type: 'attempt' as const,
+        created_at: tentativa.created_at,
+        status: 'tentativa',
+        valor_total: tentativa.valor_total || 0,
+        predios_selecionados: tentativa.predios_selecionados || [],
+        client_email: tentativa.users?.email || 'Email não encontrado',
+        client_id: tentativa.id_user
+      }));
+      
       // Combinar e ordenar por data
-      const combined = [...processedOrders, ...processedAttempts]
+      const todosDados = [...pedidosFormatados, ...tentativasFormatadas]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      setOrdersAndAttempts(combined);
-
+      
+      setOrdersAndAttempts(todosDados);
+      
       // Calcular estatísticas
-      const totalOrders = processedOrders.length;
-      const totalAttempts = processedAttempts.length;
-      const totalRevenue = processedOrders
-        .filter(order => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(order.status))
-        .reduce((sum, order) => sum + (order.valor_total || 0), 0);
-      const abandonedValue = processedAttempts.reduce((sum, attempt) => sum + (attempt.valor_total || 0), 0);
+      const totalOrders = pedidosFormatados.length;
+      const totalAttempts = tentativasFormatadas.length;
+      const totalRevenue = pedidosFormatados
+        .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(p.status))
+        .reduce((sum, p) => sum + p.valor_total, 0);
+      const abandonedValue = tentativasFormatadas.reduce((sum, t) => sum + t.valor_total, 0);
       const conversionRate = totalAttempts > 0 ? (totalOrders / (totalOrders + totalAttempts)) * 100 : 0;
-
-      setStats({
+      
+      const statsCalculadas = {
         total_orders: totalOrders,
         total_attempts: totalAttempts,
         total_revenue: totalRevenue,
         conversion_rate: conversionRate,
         abandoned_value: abandonedValue
-      });
-
+      };
+      
+      console.log('📊 Estatísticas calculadas:', statsCalculadas);
+      setStats(statsCalculadas);
+      
+      toast.success(`${totalOrders} pedidos e ${totalAttempts} tentativas carregados`);
+      
     } catch (error: any) {
-      console.error('💥 Erro ao carregar pedidos e tentativas:', error);
-      toast.error('Erro ao carregar dados');
+      console.error('💥 Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar pedidos e tentativas');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrdersAndAttempts();
+    fetchData();
 
-    // Configurar escuta em tempo real apenas para pedidos (que funcionam)
+    // Configurar escuta em tempo real
     const channel = supabase
       .channel('orders-and-attempts-changes')
       .on('postgres_changes', 
@@ -180,13 +150,23 @@ export const useOrdersWithAttempts = () => {
         }, 
         (payload) => {
           console.log('🔄 Mudança detectada em pedidos:', payload);
-          fetchOrdersAndAttempts();
+          fetchData();
+        }
+      )
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tentativas_compra' 
+        }, 
+        (payload) => {
+          console.log('🔄 Mudança detectada em tentativas:', payload);
+          fetchData();
         }
       )
       .subscribe();
 
     return () => {
-      console.log('🧹 Limpando inscrições de tempo real');
       supabase.removeChannel(channel);
     };
   }, []);
@@ -195,6 +175,6 @@ export const useOrdersWithAttempts = () => {
     ordersAndAttempts,
     stats,
     loading,
-    refetch: fetchOrdersAndAttempts
+    refetch: fetchData
   };
 };

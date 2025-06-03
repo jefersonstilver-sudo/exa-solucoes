@@ -14,11 +14,23 @@ const OrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
+  // Calcular pedidos ativos para os stats
+  const activeOrdersCount = ordersAndAttempts.filter(item => {
+    if (item.type !== 'order') return false;
+    if (!['ativo', 'video_aprovado'].includes(item.status)) return false;
+    if (!item.data_inicio || !item.data_fim) return false;
+    
+    const today = new Date();
+    const startDate = new Date(item.data_inicio);
+    const endDate = new Date(item.data_fim);
+    return today >= startDate && today <= endDate;
+  }).length;
+
   const filteredItems = ordersAndAttempts.filter(item => {
     const matchesSearch = 
       item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.type === 'order' ? item.client_name.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
-      (item.type === 'order' ? item.client_email.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+      (item.type === 'order' ? item.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+      (item.type === 'order' ? item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
       (item.type === 'attempt' && item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === 'all' || 
@@ -52,7 +64,7 @@ const OrdersPage = () => {
       </div>
 
       {/* Enhanced Stats Cards */}
-      <OrdersStatsCards stats={stats} />
+      <OrdersStatsCards stats={stats} activeOrdersCount={activeOrdersCount} />
 
       {/* Filters and Search */}
       <OrdersPageFilters 

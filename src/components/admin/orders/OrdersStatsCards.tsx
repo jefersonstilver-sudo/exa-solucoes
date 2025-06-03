@@ -11,9 +11,10 @@ interface OrdersStatsCardsProps {
     conversion_rate: number;
     abandoned_value: number;
   };
+  activeOrdersCount?: number;
 }
 
-const OrdersStatsCards: React.FC<OrdersStatsCardsProps> = ({ stats }) => {
+const OrdersStatsCards: React.FC<OrdersStatsCardsProps> = ({ stats, activeOrdersCount = 0 }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -119,8 +120,7 @@ const OrdersStatsCards: React.FC<OrdersStatsCardsProps> = ({ stats }) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
-            {/* Esta métrica será calculada dinamicamente pelas abas */}
-            --
+            {activeOrdersCount}
           </div>
           <p className="text-xs text-gray-600 mt-1">
             Em exibição
