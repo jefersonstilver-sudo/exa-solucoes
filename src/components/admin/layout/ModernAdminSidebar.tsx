@@ -29,79 +29,79 @@ const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
   const navigationItems = [
     {
       title: 'Dashboard',
-      href: '/admin',
+      href: '/super_admin',
       icon: LayoutDashboard,
       description: 'Visão geral do sistema'
     },
     {
       title: 'Prédios',
-      href: '/admin/predios',
+      href: '/super_admin/predios',
       icon: Building2,
       description: 'Gestão de edifícios'
     },
     {
       title: 'Painéis',
-      href: '/admin/paineis',
+      href: '/super_admin/paineis',
       icon: Monitor,
       description: 'Dispositivos de exibição'
     },
     {
       title: 'Pedidos',
-      href: '/admin/pedidos',
+      href: '/super_admin/pedidos',
       icon: ShoppingCart,
       description: 'Vendas e transações'
     },
     {
       title: 'Aprovações',
-      href: '/admin/aprovacoes',
+      href: '/super_admin/aprovacoes',
       icon: CheckSquare,
       description: 'Aprovação de vídeos'
     },
     {
       title: 'Usuários',
-      href: '/admin/usuarios',
+      href: '/super_admin/usuarios',
       icon: Users,
       description: 'Gestão de usuários'
     },
     {
       title: 'Síndicos Interessados',
-      href: '/admin/sindicos-interessados',
+      href: '/super_admin/sindicos-interessados',
       icon: UserCheck,
       description: 'Leads de síndicos'
     },
     {
       title: 'Leads Produtora',
-      href: '/admin/leads-produtora',
+      href: '/super_admin/leads-produtora',
       icon: Coffee,
       description: 'Leads da produtora'
     },
     {
       title: 'Cupons',
-      href: '/admin/cupons',
+      href: '/super_admin/cupons',
       icon: Ticket,
       description: 'Códigos de desconto'
     },
     {
       title: 'Config Homepage',
-      href: '/admin/homepage-config',
+      href: '/super_admin/homepage-config',
       icon: ImageIcon,
       description: 'Imagens da página inicial'
     },
     {
       title: 'Notificações',
-      href: '/admin/notificacoes',
+      href: '/super_admin/notificacoes',
       icon: Bell,
       description: 'Central de notificações'
     },
     {
       title: 'Vídeos',
-      href: '/admin/videos',
+      href: '/super_admin/videos',
       icon: Play,
       description: 'Gestão de vídeos'
     },
     {
       title: 'Configurações',
-      href: '/admin/configuracoes',
+      href: '/super_admin/configuracoes',
       icon: Settings,
       description: 'Configurações do sistema'
     }
@@ -110,7 +110,10 @@ const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
   return (
     <div className="h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
+      <div className={cn(
+        "p-6 border-b border-gray-200",
+        isCollapsed && "p-4"
+      )}>
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">I</span>
@@ -135,7 +138,7 @@ const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
               key={item.href}
               to={item.href}
               className={cn(
-                "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group",
+                "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative",
                 isActive
                   ? "bg-indexa-purple text-white shadow-lg"
                   : "text-gray-700 hover:bg-gray-100 hover:text-indexa-purple"
@@ -149,14 +152,21 @@ const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
               )} />
               
               {!isCollapsed && (
-                <div className="flex flex-col">
-                  <span>{item.title}</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate">{item.title}</span>
                   <span className={cn(
-                    "text-xs transition-colors duration-200",
+                    "text-xs transition-colors duration-200 truncate",
                     isActive ? "text-white/80" : "text-gray-500"
                   )}>
                     {item.description}
                   </span>
+                </div>
+              )}
+
+              {/* Tooltip para modo collapsed */}
+              {isCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  {item.title}
                 </div>
               )}
             </Link>
@@ -165,7 +175,10 @@ const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      <div className={cn(
+        "p-4 border-t border-gray-200",
+        isCollapsed && "p-2"
+      )}>
         <div className={cn(
           "text-xs text-gray-500",
           isCollapsed ? "text-center" : ""

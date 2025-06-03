@@ -39,8 +39,8 @@ export const useOrderStatus = (order: any) => {
         return {
           label: 'Aguardando Pagamento',
           description: 'Efetue o pagamento para ativar sua campanha',
-          color: 'text-orange-700',
-          bgColor: 'bg-orange-100 border-orange-200',
+          color: 'text-white',
+          bgColor: 'bg-orange-600 border-orange-700',
           icon: CreditCard,
           action: {
             label: 'Pagar com PIX',
@@ -57,8 +57,8 @@ export const useOrderStatus = (order: any) => {
           return {
             label: 'Aguardando Vídeo',
             description: 'Faça upload do seu vídeo para análise e aprovação',
-            color: 'text-blue-700',
-            bgColor: 'bg-blue-100 border-blue-200',
+            color: 'text-white',
+            bgColor: 'bg-blue-600 border-blue-700',
             icon: Upload,
             action: {
               label: 'Enviar Vídeo',
@@ -70,16 +70,16 @@ export const useOrderStatus = (order: any) => {
           return {
             label: 'Vídeo em Análise',
             description: 'Seu vídeo está sendo analisado pela nossa equipe',
-            color: 'text-purple-700',
-            bgColor: 'bg-purple-100 border-purple-200',
+            color: 'text-white',
+            bgColor: 'bg-purple-600 border-purple-700',
             icon: Clock
           };
         }
         return {
           label: 'Vídeo Aprovado',
           description: 'Vídeo aprovado! Contrato iniciado automaticamente.',
-          color: 'text-green-700',
-          bgColor: 'bg-green-100 border-green-200',
+          color: 'text-white',
+          bgColor: 'bg-green-600 border-green-700',
           icon: CheckCircle
         };
 
@@ -88,8 +88,8 @@ export const useOrderStatus = (order: any) => {
           return {
             label: 'Ativo e em Exibição',
             description: 'Sua campanha está ativa e sendo exibida nos painéis',
-            color: 'text-green-700',
-            bgColor: 'bg-green-100 border-green-200',
+            color: 'text-white',
+            bgColor: 'bg-emerald-600 border-emerald-700',
             icon: Play,
             action: {
               label: 'Ver Relatório',
@@ -101,8 +101,8 @@ export const useOrderStatus = (order: any) => {
         return {
           label: 'Contrato Iniciado',
           description: 'Vídeo aprovado, contrato iniciado. Selecione para exibição.',
-          color: 'text-green-700',
-          bgColor: 'bg-green-100 border-green-200',
+          color: 'text-white',
+          bgColor: 'bg-green-600 border-green-700',
           icon: CheckCircle
         };
 
@@ -110,8 +110,8 @@ export const useOrderStatus = (order: any) => {
         return {
           label: 'Ativo e em Exibição',
           description: 'Sua campanha está ativa e sendo exibida nos painéis',
-          color: 'text-green-700',
-          bgColor: 'bg-green-100 border-green-200',
+          color: 'text-white',
+          bgColor: 'bg-emerald-600 border-emerald-700',
           icon: Play,
           action: {
             label: 'Ver Relatório',
@@ -124,8 +124,8 @@ export const useOrderStatus = (order: any) => {
         return {
           label: 'Vídeo Rejeitado',
           description: 'Seu vídeo foi rejeitado. Envie um novo vídeo',
-          color: 'text-red-700',
-          bgColor: 'bg-red-100 border-red-200',
+          color: 'text-white',
+          bgColor: 'bg-red-600 border-red-700',
           icon: XCircle,
           action: {
             label: 'Enviar Novo Vídeo',
@@ -138,8 +138,8 @@ export const useOrderStatus = (order: any) => {
         return {
           label: 'Contrato Encerrado',
           description: 'Seu contrato expirou. Renove para continuar',
-          color: 'text-red-700',
-          bgColor: 'bg-red-100 border-red-200',
+          color: 'text-white',
+          bgColor: 'bg-red-600 border-red-700',
           icon: XCircle,
           action: {
             label: 'Renovar Contrato',
@@ -152,8 +152,8 @@ export const useOrderStatus = (order: any) => {
         return {
           label: 'Cancelado',
           description: 'Este pedido foi cancelado',
-          color: 'text-gray-700',
-          bgColor: 'bg-gray-100 border-gray-200',
+          color: 'text-white',
+          bgColor: 'bg-gray-600 border-gray-700',
           icon: XCircle
         };
 
@@ -161,8 +161,8 @@ export const useOrderStatus = (order: any) => {
         return {
           label: 'Status Desconhecido',
           description: 'Entre em contato com o suporte',
-          color: 'text-gray-700',
-          bgColor: 'bg-gray-100 border-gray-200',
+          color: 'text-white',
+          bgColor: 'bg-gray-600 border-gray-700',
           icon: AlertTriangle
         };
     }
