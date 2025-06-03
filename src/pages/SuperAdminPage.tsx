@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLayout';
+import AdminLayout from '@/components/admin/layout/AdminLayout';
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -139,9 +139,9 @@ const SuperAdminPage = () => {
 
   console.log('🎉 RENDERIZANDO: Painel administrativo autorizado');
   return (
-    <ModernSuperAdminLayout>
+    <AdminLayout>
       <SuperAdminRoutes />
-    </ModernSuperAdminLayout>
+    </AdminLayout>
   );
 };
 
