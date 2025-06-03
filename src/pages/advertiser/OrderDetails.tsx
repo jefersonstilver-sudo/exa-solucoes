@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +16,7 @@ import { VideoManagementCard } from '@/components/order/VideoManagementCard';
 import { ContractStatusAlert } from '@/components/order/ContractStatusAlert';
 import { VideoDisplayStatus } from '@/components/order/VideoDisplayStatus';
 import { useContractStatus } from '@/hooks/useContractStatus';
-import { EnhancedContractStatusCard } from '@/components/order/EnhancedContractStatusCard';
+import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 
 interface OrderDetails {
   id: string;
