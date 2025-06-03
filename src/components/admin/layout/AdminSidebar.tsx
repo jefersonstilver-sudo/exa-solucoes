@@ -22,6 +22,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import UnifiedLogo from '@/components/layout/UnifiedLogo';
 
 const AdminSidebar = () => {
   const { userProfile, session, isSuperAdmin } = useAuth();
@@ -216,27 +217,23 @@ const AdminSidebar = () => {
   };
   
   return (
-    <aside className="w-64 min-h-screen bg-indexa-purple shadow-lg">
+    <aside className="w-64 min-h-screen bg-gradient-to-b from-[#3C1361] via-[#9333EA] to-[#A855F7] shadow-xl">
       <div className="flex flex-col h-full">
-        {/* Logo da INDEXA */}
-        <div className="p-6 border-b border-indexa-purple-light">
+        {/* Logo da INDEXA - Unificada */}
+        <div className="p-6 border-b border-white/20">
           <div className="flex items-center justify-center">
-            <Link 
-              to="/" 
-              className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity duration-200 cursor-pointer"
-            >
-              <img 
-                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
-                alt="INDEXA Logo" 
-                className="w-full h-full object-contain filter brightness-0 invert"
-              />
-            </Link>
+            <UnifiedLogo 
+              size="xl" 
+              linkTo="/" 
+              variant="light"
+              className="drop-shadow-lg"
+            />
           </div>
         </div>
 
         {/* Status do usuário */}
         {(isSuperAdmin || userInfo.isAdmin || userInfo.isMarketingAdmin) && (
-          <div className="p-4 border-b border-indexa-purple-light">
+          <div className="p-4 border-b border-white/20">
             <div className="flex items-center space-x-2">
               <Crown className={`h-4 w-4 ${getAdminBadgeColor()}`} />
               <span className={`text-xs font-bold ${getAdminBadgeColor()}`}>
@@ -253,7 +250,7 @@ const AdminSidebar = () => {
         <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
           {Object.entries(groupedItems).map(([sectionKey, items]) => (
             <div key={sectionKey}>
-              <h3 className="text-xs font-semibold text-indexa-mint/80 uppercase tracking-wider mb-3 px-2">
+              <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wider mb-3 px-2">
                 {sections[sectionKey as keyof typeof sections]}
               </h3>
               <div className="space-y-1">
@@ -262,11 +259,11 @@ const AdminSidebar = () => {
                     key={item.href}
                     to={item.href}
                     className={({ isActive }) => cn(
-                      "flex items-center px-3 py-2 text-white rounded-lg hover:bg-indexa-purple-light hover:text-white transition-all duration-200 font-medium text-sm",
-                      isActive ? "bg-white text-indexa-purple font-bold shadow-sm" : ""
+                      "flex items-center px-3 py-3 text-white rounded-xl hover:bg-white/20 hover:text-white transition-all duration-200 font-medium text-sm group",
+                      isActive ? "bg-white text-[#3C1361] font-bold shadow-lg" : ""
                     )}
                   >
-                    <div className="mr-3">
+                    <div className="mr-3 transition-transform duration-200 group-hover:scale-110">
                       {item.icon}
                     </div>
                     <span>{item.label}</span>
@@ -278,7 +275,7 @@ const AdminSidebar = () => {
         </nav>
         
         {/* Footer da sidebar */}
-        <div className="p-4 border-t border-indexa-purple-light">
+        <div className="p-4 border-t border-white/20">
           <div className="flex items-center space-x-2 text-white text-sm">
             <Shield className="h-4 w-4" />
             <span>Sistema Seguro</span>

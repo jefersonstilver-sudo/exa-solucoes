@@ -28,7 +28,7 @@ const ModernAdminHeader = () => {
   };
 
   return (
-    <header className="bg-indexa-purple border-b border-purple-800/30 px-6 py-3 shadow-sm">
+    <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] border-b border-white/20 px-6 py-3 shadow-lg">
       <div className="flex items-center justify-end">
         <div className="flex items-center space-x-4">
           {/* Sistema de Notificações */}
@@ -37,15 +37,15 @@ const ModernAdminHeader = () => {
           {/* Menu do Usuário */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10">
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-white text-indexa-purple font-semibold">
+                  <AvatarFallback className="bg-white text-[#3C1361] font-semibold">
                     {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-lg" align="end" forceMount>
+            <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
               <div className="flex flex-col space-y-1 p-2">
                 <p className="text-sm font-medium leading-none text-gray-900">
                   {userProfile?.email || 'Admin'}

@@ -10,6 +10,7 @@ import {
   Settings,
   HelpCircle
 } from 'lucide-react';
+import UnifiedLogo from '@/components/layout/UnifiedLogo';
 
 interface AdvertiserSidebarContentProps {
   onItemClick?: () => void;
@@ -60,17 +61,16 @@ const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps
   };
 
   return (
-    <div className="bg-gradient-to-b from-[#3C1361] to-[#2A0D47] border-r border-purple-800/30 w-full h-full">
+    <div className="bg-gradient-to-b from-[#3C1361] via-[#9333EA] to-[#A855F7] border-r border-white/20 w-full h-full shadow-xl">
       <div className="p-6">
-        {/* Logo da Indexa */}
+        {/* Logo da Indexa - Unificada */}
         <div className="flex items-center justify-center mb-8">
-          <div className="w-20 h-20 flex items-center justify-center">
-            <img 
-              src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
-              alt="Indexa Logo" 
-              className="w-full h-full object-contain filter brightness-0 invert"
-            />
-          </div>
+          <UnifiedLogo 
+            size="xl" 
+            linkTo="/" 
+            variant="light"
+            className="drop-shadow-lg"
+          />
         </div>
         
         <nav className="space-y-2">
@@ -80,13 +80,16 @@ const AdvertiserSidebarContent = ({ onItemClick }: AdvertiserSidebarContentProps
               to={item.href}
               onClick={onItemClick}
               className={cn(
-                'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
+                'flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group',
                 isActive(item.href, item.exact)
-                  ? 'bg-[#00FFAB] text-[#3C1361] shadow-lg font-semibold'
-                  : 'text-purple-100 hover:text-white hover:bg-white/10 hover:translate-x-1'
+                  ? 'bg-white text-[#3C1361] shadow-lg font-semibold'
+                  : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className={cn(
+                "h-5 w-5 transition-transform duration-200 group-hover:scale-110",
+                isActive(item.href, item.exact) ? "text-[#3C1361]" : "text-white"
+              )} />
               <span>{item.title}</span>
             </Link>
           ))}

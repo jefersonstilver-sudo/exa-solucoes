@@ -48,13 +48,13 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] shadow-lg border-b border-white/20">
       <div className="flex items-center justify-between px-6 py-4">
-        {/* Título da página apenas */}
+        {/* Título da página */}
         <div className="flex items-center space-x-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-xl font-semibold text-white">{title}</h2>
+            <p className="text-sm text-white/80">
               {isSuperAdmin ? 'Painel Super Administrativo' : 'Painel Administrativo'}
             </p>
           </div>
@@ -63,37 +63,37 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
         {/* Navegação direita */}
         <div className="flex items-center space-x-4">
           {/* Busca */}
-          <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-3 py-2">
-            <Search className="h-4 w-4 text-gray-500 mr-2" />
+          <div className="hidden md:flex items-center bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
+            <Search className="h-4 w-4 text-white/70 mr-2" />
             <input 
               type="search" 
               placeholder="Buscar..." 
-              className="bg-transparent border-none focus:outline-none text-sm w-48 text-gray-900 placeholder-gray-500"
+              className="bg-transparent border-none focus:outline-none text-sm w-48 text-white placeholder-white/60"
             />
           </div>
           
           {/* Notificações */}
-          <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white">
             <Bell className="h-5 w-5" />
           </Button>
           
           {/* Menu do usuário */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2">
-                <div className="w-8 h-8 bg-indexa-purple rounded-lg flex items-center justify-center">
+              <Button variant="ghost" className="flex items-center space-x-3 text-white hover:bg-white/20 hover:text-white px-3 py-2">
+                <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{userName}</p>
-                  <p className="text-xs text-gray-500 flex items-center">
+                  <p className="text-sm font-medium text-white">{userName}</p>
+                  <p className="text-xs text-white/70 flex items-center">
                     {isSuperAdmin && <Crown className="h-3 w-3 mr-1" />}
                     {isSuperAdmin ? 'Super Admin' : 'Admin'}
                   </p>
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
+            <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-xl rounded-xl">
               <DropdownMenuLabel className="text-gray-900">
                 <div className="flex flex-col">
                   <span className="font-medium">{userName}</span>

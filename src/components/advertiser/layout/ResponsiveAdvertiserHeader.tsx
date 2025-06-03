@@ -16,13 +16,13 @@ const ResponsiveAdvertiserHeader = ({
 }: ResponsiveAdvertiserHeaderProps) => {
   if (isMobile) {
     return (
-      <header className="bg-indexa-purple border-b border-purple-800/30 px-4 py-3 shadow-sm lg:hidden">
+      <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] border-b border-white/20 px-4 py-3 shadow-lg lg:hidden">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="text-white hover:bg-white/10"
+            className="text-white hover:bg-white/20"
           >
             <Menu className="h-5 w-5" />
           </Button>
