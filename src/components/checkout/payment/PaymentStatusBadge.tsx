@@ -14,29 +14,29 @@ const PaymentStatusBadge = ({ status }: PaymentStatusBadgeProps) => {
         return {
           title: 'Aguardando pagamento',
           description: 'Escaneie o QR code com o app do seu banco ou copie o código PIX',
-          color: 'text-yellow-500',
-          bgColor: 'bg-yellow-100'
+          color: 'text-white',
+          bgColor: 'bg-yellow-600'
         };
       case 'approved':
         return {
           title: 'Pagamento aprovado!',
           description: 'Seu pagamento foi confirmado com sucesso',
-          color: 'text-green-500',
-          bgColor: 'bg-green-100'
+          color: 'text-white',
+          bgColor: 'bg-green-600'
         };
       case 'rejected':
         return {
           title: 'Pagamento recusado',
           description: 'Houve um problema com seu pagamento. Tente novamente ou use outro método',
-          color: 'text-red-500',
-          bgColor: 'bg-red-100'
+          color: 'text-white',
+          bgColor: 'bg-red-600'
         };
       default:
         return {
           title: 'Processando pagamento',
           description: 'Estamos verificando seu pagamento',
-          color: 'text-blue-500',
-          bgColor: 'bg-blue-100'
+          color: 'text-white',
+          bgColor: 'bg-blue-600'
         };
     }
   };
@@ -54,7 +54,7 @@ const PaymentStatusBadge = ({ status }: PaymentStatusBadgeProps) => {
       )}
       <div>
         <h3 className={`font-medium ${statusInfo.color}`}>{statusInfo.title}</h3>
-        <p className="text-sm text-gray-600">{statusInfo.description}</p>
+        <p className="text-sm text-white/80">{statusInfo.description}</p>
       </div>
     </div>
   );
