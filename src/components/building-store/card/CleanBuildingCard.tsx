@@ -21,7 +21,7 @@ const CleanBuildingCard: React.FC<CleanBuildingCardProps> = ({
   
   // Calculate estimated data
   const estimatedResidents = Math.floor(Math.random() * 800) + 200;
-  const isCommercial = building.padrao_publico === 'comercial';
+  const isCommercial = building.padrao_publico === 'alto'; // Usando 'alto' ao invés de 'comercial'
   
   const containerVariants = {
     hover: { 
@@ -30,6 +30,10 @@ const CleanBuildingCard: React.FC<CleanBuildingCardProps> = ({
       transition: { duration: 0.3 }
     }
   };
+
+  // URL da imagem padrão se não houver imagem
+  const defaultImageUrl = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab';
+  const buildingImage = defaultImageUrl; // Usando imagem padrão por enquanto
 
   return (
     <motion.div 
@@ -42,7 +46,7 @@ const CleanBuildingCard: React.FC<CleanBuildingCardProps> = ({
           {/* Image Section */}
           <div className="relative h-48 overflow-hidden">
             <img 
-              src={building.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'}
+              src={buildingImage}
               alt={building.nome} 
               className="w-full h-full object-cover"
             />

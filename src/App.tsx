@@ -5,36 +5,19 @@ import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SessionProvider } from "@/contexts/SessionContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "react-error-boundary";
 
-// Lazy load pages for better performance
+// Lazy load pages for better performance - apenas páginas que existem
 const Index = lazy(() => import("./pages/Index"));
-const MarketingPage = lazy(() => import("./pages/MarketingPage"));
+const Marketing = lazy(() => import("./pages/Marketing"));
 const PainelStore = lazy(() => import("./pages/PainelStore"));
 const BuildingStore = lazy(() => import("./pages/BuildingStore"));
 const PanelStore = lazy(() => import("./pages/PanelStore"));
-const Plano = lazy(() => import("./pages/Plano"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
-const OrderDetails = lazy(() => import("./pages/OrderDetails"));
-const AdvertiserDashboard = lazy(() => import("./pages/AdvertiserDashboard"));
-const AdvertiserOrders = lazy(() => import("./pages/AdvertiserOrders"));
-const AdvertiserProfile = lazy(() => import("./pages/AdvertiserProfile"));
-const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
-const SuperAdminOrders = lazy(() => import("./pages/SuperAdminOrders"));
-const SuperAdminBuildings = lazy(() => import("./pages/SuperAdminBuildings"));
-const SuperAdminPanels = lazy(() => import("./pages/SuperAdminPanels"));
-const SuperAdminUsers = lazy(() => import("./pages/SuperAdminUsers"));
-const SuperAdminCoupons = lazy(() => import("./pages/SuperAdminCoupons"));
-const SuperAdminSindicos = lazy(() => import("./pages/SuperAdminSindicos"));
-const SuperAdminSetup = lazy(() => import("./pages/SuperAdminSetup"));
-const PaineisLanding = lazy(() => import("./pages/PaineisLanding"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,46 +59,28 @@ const App = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryClientProvider client={queryClient}>
-        <SessionProvider>
-          <AuthProvider>
-            <CartProvider>
-              <TooltipProvider>
-                <Toaster />
-                <ShadcnToaster />
-                <BrowserRouter>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/marketing" element={<MarketingPage />} />
-                      <Route path="/predio" element={<PainelStore />} />
-                      <Route path="/building-store" element={<BuildingStore />} />
-                      <Route path="/loja" element={<PanelStore />} />
-                      <Route path="/plano" element={<Plano />} />
-                      <Route path="/checkout" element={<Checkout />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                      <Route path="/order/:id" element={<OrderDetails />} />
-                      <Route path="/anunciante" element={<AdvertiserDashboard />} />
-                      <Route path="/anunciante/pedidos" element={<AdvertiserOrders />} />
-                      <Route path="/anunciante/perfil" element={<AdvertiserProfile />} />
-                      <Route path="/super-admin" element={<SuperAdminDashboard />} />
-                      <Route path="/super-admin/orders" element={<SuperAdminOrders />} />
-                      <Route path="/super-admin/buildings" element={<SuperAdminBuildings />} />
-                      <Route path="/super-admin/panels" element={<SuperAdminPanels />} />
-                      <Route path="/super-admin/users" element={<SuperAdminUsers />} />
-                      <Route path="/super-admin/coupons" element={<SuperAdminCoupons />} />
-                      <Route path="/super-admin/sindicos" element={<SuperAdminSindicos />} />
-                      <Route path="/super-admin/setup" element={<SuperAdminSetup />} />
-                      <Route path="/paineis" element={<PaineisLanding />} />
-                    </Routes>
-                  </Suspense>
-                </BrowserRouter>
-              </TooltipProvider>
-            </CartProvider>
-          </AuthProvider>
-        </SessionProvider>
+        <AuthProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <ShadcnToaster />
+              <BrowserRouter>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/marketing" element={<Marketing />} />
+                    <Route path="/predio" element={<PainelStore />} />
+                    <Route path="/building-store" element={<BuildingStore />} />
+                    <Route path="/loja" element={<PanelStore />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                  </Routes>
+                </Suspense>
+              </BrowserRouter>
+            </TooltipProvider>
+          </CartProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

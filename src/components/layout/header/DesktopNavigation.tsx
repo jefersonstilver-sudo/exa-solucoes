@@ -1,10 +1,9 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
-import { OnlineStoreButton } from './OnlineStoreButton';
-import { AdvertiserAccessButton } from './AdvertiserAccessButton';
-import { AdminAccessButton } from './AdminAccessButton';
+import OnlineStoreButton from './OnlineStoreButton';
 import CartButton from './CartButton';
 
 const DesktopNavigation = () => {
@@ -17,7 +16,15 @@ const DesktopNavigation = () => {
       <CartButton />
       
       {user ? (
-        <UserAccessButton user={user} />
+        <div className="flex items-center space-x-2">
+          <Button 
+            asChild 
+            variant="ghost" 
+            className="text-white hover:text-[#00FFAB] hover:bg-white/10 transition-colors duration-300"
+          >
+            <Link to="/anunciante">Dashboard</Link>
+          </Button>
+        </div>
       ) : (
         <div className="flex items-center space-x-2">
           <Button 
@@ -35,9 +42,6 @@ const DesktopNavigation = () => {
           </Button>
         </div>
       )}
-      
-      <AdvertiserAccessButton />
-      <AdminAccessButton />
     </nav>
   );
 };
