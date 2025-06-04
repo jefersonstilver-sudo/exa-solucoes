@@ -60,8 +60,8 @@ const SystemHealthDashboard: React.FC = () => {
       }
 
       console.log('✅ [SYSTEM HEALTH] Diagnóstico concluído:', data);
-      // Type assertion with proper validation
-      const healthData = data as SystemHealth;
+      // Safe type conversion with proper validation
+      const healthData = data as unknown as SystemHealth;
       setSystemHealth(healthData);
       
       const status = healthData.status;
@@ -97,8 +97,8 @@ const SystemHealthDashboard: React.FC = () => {
 
       console.log('✅ [AUTO RECOVERY] Recuperação concluída:', data);
       
-      // Type assertion for auto recovery result
-      const recoveryResult = data as AutoRecoveryResult;
+      // Safe type conversion for auto recovery result
+      const recoveryResult = data as unknown as AutoRecoveryResult;
       
       if (recoveryResult.system_ready) {
         toast.success('Sistema recuperado com sucesso!');
@@ -368,6 +368,36 @@ const SystemHealthDashboard: React.FC = () => {
       )}
     </div>
   );
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'HEALTHY':
+      return <CheckCircle className="h-6 w-6 text-green-600" />;
+    case 'WARNING':
+      return <AlertTriangle className="h-6 w-6 text-yellow-600" />;
+    case 'CRITICAL':
+      return <AlertCircle className="h-6 w-6 text-red-600" />;
+    case 'EMERGENCY':
+      return <AlertTriangle className="h-6 w-6 text-red-700" />;
+    default:
+      return <Activity className="h-6 w-6 text-gray-500" />;
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'HEALTHY':
+      return 'bg-green-100 text-green-800 border-green-300';
+    case 'WARNING':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    case 'CRITICAL':
+      return 'bg-red-100 text-red-800 border-red-300';
+    case 'EMERGENCY':
+      return 'bg-red-200 text-red-900 border-red-400';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-300';
+  }
 };
 
 export default SystemHealthDashboard;
