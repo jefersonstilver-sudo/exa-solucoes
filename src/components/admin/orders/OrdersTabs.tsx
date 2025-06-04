@@ -52,7 +52,8 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
     ['pago', 'pago_pendente_video', 'video_enviado', 'video_rejeitado'].includes(item.status)
   );
 
-  const canceledAbandoned = ordersAndAttempts.filter(item => 
+  // CORREÇÃO: Filtrar corretamente tentativas abandonadas E pedidos cancelados/pendentes
+  const abandonedAttempts = ordersAndAttempts.filter(item => 
     item.type === 'attempt' || 
     (item.type === 'order' && ['cancelado', 'pendente'].includes(item.status))
   );
@@ -94,11 +95,11 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             {waitingVideoPedidos.length}
           </Badge>
         </TabsTrigger>
-        <TabsTrigger value="canceled" className="flex items-center gap-2">
+        <TabsTrigger value="abandoned" className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" />
-          Cancelados
+          Abandonados
           <Badge variant="destructive" className="ml-2">
-            {canceledAbandoned.length}
+            {abandonedAttempts.length}
           </Badge>
         </TabsTrigger>
       </TabsList>
@@ -166,19 +167,19 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
         </Card>
       </TabsContent>
 
-      <TabsContent value="canceled">
+      <TabsContent value="abandoned">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-900">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              Pedidos Cancelados e Tentativas Abandonadas ({canceledAbandoned.length})
+              Pedidos Abandonados e Cancelados ({abandonedAttempts.length})
             </CardTitle>
             <CardDescription className="text-gray-700">
-              Tentativas de compra não finalizadas e pedidos cancelados - Oportunidades de CRM
+              Tentativas de compra não finalizadas e pedidos cancelados - Oportunidades de recuperação
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <AttemptsTable attempts={canceledAbandoned} />
+            <AttemptsTable attempts={abandonedAttempts} />
           </CardContent>
         </Card>
       </TabsContent>
