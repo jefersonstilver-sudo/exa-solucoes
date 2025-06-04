@@ -59,12 +59,12 @@ const App = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CartProvider>
-            <TooltipProvider>
-              <Toaster />
-              <ShadcnToaster />
-              <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <CartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <ShadcnToaster />
                 <Suspense fallback={<LoadingFallback />}>
                   <Routes>
                     <Route path="/" element={<Index />} />
@@ -77,10 +77,10 @@ const App = () => {
                     <Route path="/order-confirmation" element={<OrderConfirmation />} />
                   </Routes>
                 </Suspense>
-              </BrowserRouter>
-            </TooltipProvider>
-          </CartProvider>
-        </AuthProvider>
+              </TooltipProvider>
+            </CartProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   );

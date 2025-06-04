@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { getPanelPrice } from '@/utils/checkoutUtils';
 import { 
   saveCartToStorage, 
@@ -16,7 +15,6 @@ interface CartContextType {
   cartItems: CartItem[];
   cartOpen: boolean;
   cartAnimation: boolean;
-  isNavigating: boolean;
   initialLoadDone: boolean;
   
   // Verificações
@@ -28,7 +26,6 @@ interface CartContextType {
   removeFromCart: (panelId: string) => void;
   clearCart: () => void;
   changeDuration: (panelId: string, duration: number) => void;
-  proceedToCheckout: () => void;
   
   // Controle da UI
   setCartOpen: (open: boolean) => void;
@@ -61,9 +58,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartAnimation, setCartAnimation] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-  const navigate = useNavigate();
 
   // Carregar carrinho na inicialização
   useEffect(() => {
@@ -141,7 +136,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCartOpen(true);
     
     // Reset da animação
-    setTimeout(() => setCartAnimation(false), 800);
+    setTimeout(() => setCartAnimation(false), 300);
     
     // Toast de sucesso
     toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
@@ -191,21 +186,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ));
   }, []);
 
-  // Prosseguir para checkout
-  const proceedToCheckout = useCallback(() => {
-    console.log('🛒 [CartContext] Prosseguindo para checkout');
-    if (cartItems.length === 0) {
-      toast.error('Carrinho vazio', {
-        description: 'Adicione itens ao carrinho antes de prosseguir',
-      });
-      return;
-    }
-    
-    setIsNavigating(true);
-    setCartOpen(false);
-    navigate('/plano');
-  }, [cartItems.length, navigate]);
-
   // Toggle do carrinho
   const toggleCart = useCallback(() => {
     console.log('🛒 [CartContext] Alternando estado do carrinho');
@@ -217,7 +197,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     cartItems,
     cartOpen,
     cartAnimation,
-    isNavigating,
     initialLoadDone,
     
     // Verificações
@@ -229,7 +208,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeFromCart,
     clearCart,
     changeDuration,
-    proceedToCheckout,
     
     // UI
     setCartOpen,
