@@ -2,13 +2,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from 'lucide-react';
+import { Calendar, RefreshCw } from 'lucide-react';
 
 interface BuildingLogsTabProps {
   actionLogs: any[];
+  loading?: boolean;
 }
 
-const BuildingLogsTab: React.FC<BuildingLogsTabProps> = ({ actionLogs }) => {
+const BuildingLogsTab: React.FC<BuildingLogsTabProps> = ({ actionLogs, loading = false }) => {
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
@@ -28,7 +29,12 @@ const BuildingLogsTab: React.FC<BuildingLogsTabProps> = ({ actionLogs }) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {actionLogs.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin text-indexa-purple mr-2" />
+            <span className="text-gray-600">Carregando histórico...</span>
+          </div>
+        ) : actionLogs.length > 0 ? (
           <div className="space-y-4">
             {actionLogs.map((log: any) => (
               <div key={log.id} className="border-l-4 border-indexa-purple pl-4 py-2">

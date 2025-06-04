@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { RefreshCw } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -13,9 +14,10 @@ import {
 
 interface BuildingSalesTabProps {
   sales: any[];
+  loading?: boolean;
 }
 
-const BuildingSalesTab: React.FC<BuildingSalesTabProps> = ({ sales }) => {
+const BuildingSalesTab: React.FC<BuildingSalesTabProps> = ({ sales, loading = false }) => {
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
@@ -39,7 +41,12 @@ const BuildingSalesTab: React.FC<BuildingSalesTabProps> = ({ sales }) => {
         <CardTitle>Vendas Realizadas ({sales.length})</CardTitle>
       </CardHeader>
       <CardContent>
-        {sales.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin text-indexa-purple mr-2" />
+            <span className="text-gray-600">Carregando vendas...</span>
+          </div>
+        ) : sales.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
