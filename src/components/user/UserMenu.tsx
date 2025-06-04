@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -224,42 +225,42 @@ const UserMenu = () => {
                               <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
-                                <Link to="/super_admin/dashboard" className="flex items-center">
+                                <Link to="/super_admin" className="flex items-center">
                                   <LayoutDashboard className="mr-3 h-5 w-5 text-amber-600" />
                                   <span className="font-medium">Dashboard Administrativo</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
-                                <Link to="/super_admin/users" className="flex items-center">
+                                <Link to="/super_admin/usuarios" className="flex items-center">
                                   <Users className="mr-3 h-5 w-5 text-amber-600" />
                                   <span className="font-medium">Gerenciar Usuários</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
-                                <Link to="/super_admin/orders" className="flex items-center">
+                                <Link to="/super_admin/pedidos" className="flex items-center">
                                   <Package className="mr-3 h-5 w-5 text-amber-600" />
                                   <span className="font-medium">Gerenciar Pedidos</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
-                                <Link to="/super_admin/buildings" className="flex items-center">
+                                <Link to="/super_admin/predios" className="flex items-center">
                                   <Building className="mr-3 h-5 w-5 text-amber-600" />
                                   <span className="font-medium">Gerenciar Prédios</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
-                                <Link to="/super_admin/panels" className="flex items-center">
+                                <Link to="/super_admin/paineis" className="flex items-center">
                                   <Monitor className="mr-3 h-5 w-5 text-amber-600" />
                                   <span className="font-medium">Gerenciar Painéis</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
-                                <Link to="/super_admin/approvals" className="flex items-center">
+                                <Link to="/super_admin/aprovacoes" className="flex items-center">
                                   <CheckCircle className="mr-3 h-5 w-5 text-amber-600" />
                                   <span className="font-medium">Aprovações</span>
                                 </Link>
@@ -297,35 +298,35 @@ const UserMenu = () => {
                           {isAdmin && !isSuperAdmin && (
                             <>
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/dashboard" className="flex items-center">
+                                <Link to="/super_admin" className="flex items-center">
                                   <LayoutDashboard className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Dashboard Administrativo</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/orders" className="flex items-center">
+                                <Link to="/super_admin/pedidos" className="flex items-center">
                                   <Package className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Gerenciar Pedidos</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/buildings" className="flex items-center">
+                                <Link to="/super_admin/predios" className="flex items-center">
                                   <Building className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Gerenciar Prédios</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/panels" className="flex items-center">
+                                <Link to="/super_admin/paineis" className="flex items-center">
                                   <Monitor className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Gerenciar Painéis</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/approvals" className="flex items-center">
+                                <Link to="/super_admin/aprovacoes" className="flex items-center">
                                   <CheckCircle className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Aprovações</span>
                                 </Link>
