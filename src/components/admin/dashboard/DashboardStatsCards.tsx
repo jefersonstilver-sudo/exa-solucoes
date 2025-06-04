@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, MonitorPlay, DollarSign } from 'lucide-react';
+import { Users, ShoppingCart, MonitorPlay, DollarSign } from 'lucide-react';
 import GrowthIndicator from './GrowthIndicator';
 import { MonthlyDashboardStats } from '@/hooks/useMonthlyDashboardData';
 
@@ -34,13 +34,13 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
       iconColor: 'text-blue-600'
     },
     {
-      title: 'Prédios do Mês',
+      title: 'Vendas Realizadas',
       value: stats.total_buildings.toString(),
       accumulated: stats.total_buildings_accumulated,
       growth: growthData?.buildings || 0,
-      icon: Building2,
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600'
+      icon: ShoppingCart,
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600'
     },
     {
       title: 'Painéis Online',

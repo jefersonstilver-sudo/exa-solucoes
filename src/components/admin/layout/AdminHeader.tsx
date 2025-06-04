@@ -72,9 +72,17 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
             />
           </div>
           
-          {/* Notificações */}
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 hover:text-white">
+          {/* Notificações - Melhor visibilidade */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative text-white hover:bg-white/20 hover:text-white bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-200"
+          >
             <Bell className="h-5 w-5" />
+            {/* Badge de notificação - exemplo */}
+            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">
+              3
+            </span>
           </Button>
           
           {/* Menu do usuário */}
