@@ -1,36 +1,23 @@
 
 import React from 'react';
 import ModernCartIcon from '@/components/cart/ModernCartIcon';
+import { useCart } from '@/contexts/CartContext';
 
-interface CartButtonProps {
-  cartItemsCount: number;
-  isAnimating?: boolean;
-  onToggleCart?: () => void;
-}
-
-const CartButton: React.FC<CartButtonProps> = ({ 
-  cartItemsCount, 
-  isAnimating = false,
-  onToggleCart
-}) => {
+const CartButton: React.FC = () => {
+  const { cartItems, cartAnimation, toggleCart } = useCart();
+  
   const handleCartClick = () => {
     console.log('🛒 [CartButton] Clique no carrinho detectado');
-    console.log('🛒 [CartButton] cartItemsCount:', cartItemsCount);
-    console.log('🛒 [CartButton] onToggleCart function:', !!onToggleCart);
+    console.log('🛒 [CartButton] cartItems.length:', cartItems.length);
     
-    if (onToggleCart) {
-      console.log('🛒 [CartButton] Chamando função toggleCart');
-      onToggleCart();
-    } else {
-      console.error('🛒 [CartButton] ERRO - onToggleCart não foi fornecida!');
-    }
+    toggleCart();
   };
 
   return (
     <div className="relative">
       <ModernCartIcon
-        itemCount={cartItemsCount}
-        isAnimating={isAnimating}
+        itemCount={cartItems.length}
+        isAnimating={cartAnimation}
         onClick={handleCartClick}
         variant="header"
       />
