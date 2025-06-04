@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
 
 export const useLoginForm = (redirectPath: string = '/') => {
   const [email, setEmail] = useState('');
@@ -11,7 +10,6 @@ export const useLoginForm = (redirectPath: string = '/') => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { userProfile, isLoading: authLoading } = useAuth();
 
   // Função para determinar rota baseada no papel do usuário
   const getRedirectPath = (userRole: string | undefined, fallbackPath: string): string => {
@@ -56,41 +54,28 @@ export const useLoginForm = (redirectPath: string = '/') => {
         throw authError;
       }
 
-      if (data.user) {
-        console.log('🔐 LoginForm: Login bem-sucedido, aguardando perfil do usuário...');
+      if (data.user && data.session) {
+        console.log('🔐 LoginForm: Login bem-sucedido, redirecionando imediatamente...');
         
         toast.success('Login realizado com sucesso!');
         
-        // Aguardar um momento para o hook useAuth processar as informações
-        setTimeout(() => {
-          console.log('🔍 Verificando perfil para redirecionamento...');
-          
-          // Verificar múltiplas vezes até obter o perfil ou timeout
-          let attempts = 0;
-          const maxAttempts = 10;
-          
-          const checkProfileAndRedirect = () => {
-            attempts++;
-            console.log(`🔄 Tentativa ${attempts}/${maxAttempts} - Perfil:`, userProfile);
-            
-            if (userProfile?.role || attempts >= maxAttempts) {
-              const targetPath = getRedirectPath(userProfile?.role, redirectPath);
-              console.log('🎯 Redirecionando para:', targetPath);
-              
-              navigate(targetPath, { replace: true });
-            } else if (attempts < maxAttempts) {
-              // Tentar novamente em 200ms
-              setTimeout(checkProfileAndRedirect, 200);
-            } else {
-              // Fallback após timeout
-              console.warn('⚠️ Timeout aguardando perfil, usando fallback');
-              const fallbackPath = redirectPath === '/paineis-digitais/loja' ? '/loja' : redirectPath;
-              navigate(fallbackPath, { replace: true });
+        // Extrair role diretamente da sessão para redirecionamento imediato
+        const userRole = data.session.access_token ? 
+          (() => {
+            try {
+              const payload = JSON.parse(atob(data.session.access_token.split('.')[1]));
+              return payload.user_role;
+            } catch (error) {
+              console.warn('🔐 Não foi possível extrair role do JWT, usando fallback');
+              return null;
             }
-          };
-          
-          checkProfileAndRedirect();
-        }, 100);
+          })() : null;
+
+        // Redirecionamento IMEDIATO baseado na role
+        const targetPath = getRedirectPath(userRole, redirectPath);
+        console.log('🎯 Redirecionando IMEDIATAMENTE para:', targetPath);
+        
+        navigate(targetPath, { replace: true });
       }
     } catch (error: any) {
       console.error('🔐 LoginForm: Erro no login:', error);
