@@ -34,6 +34,13 @@ interface SystemHealth {
   recommendations: string[];
 }
 
+interface AutoRecoveryResult {
+  success: boolean;
+  system_ready: boolean;
+  message?: string;
+  [key: string]: any;
+}
+
 const SystemHealthDashboard: React.FC = () => {
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,9 +60,11 @@ const SystemHealthDashboard: React.FC = () => {
       }
 
       console.log('✅ [SYSTEM HEALTH] Diagnóstico concluído:', data);
-      setSystemHealth(data as SystemHealth);
+      // Type assertion with proper validation
+      const healthData = data as SystemHealth;
+      setSystemHealth(healthData);
       
-      const status = data.status;
+      const status = healthData.status;
       if (status === 'HEALTHY') {
         toast.success('Sistema saudável!');
       } else if (status === 'WARNING') {
@@ -88,7 +97,10 @@ const SystemHealthDashboard: React.FC = () => {
 
       console.log('✅ [AUTO RECOVERY] Recuperação concluída:', data);
       
-      if (data.system_ready) {
+      // Type assertion for auto recovery result
+      const recoveryResult = data as AutoRecoveryResult;
+      
+      if (recoveryResult.system_ready) {
         toast.success('Sistema recuperado com sucesso!');
       } else {
         toast.warning('Recuperação parcial - pode necessitar intervenção manual');
