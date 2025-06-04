@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import BuildingStoreRefreshButton from './BuildingStoreRefreshButton';
@@ -9,10 +8,7 @@ interface BuildingStoreHeaderProps {
   subtitle?: string;
 }
 
-const BuildingStoreHeader: React.FC<BuildingStoreHeaderProps> = ({
-  title = "Escolha seu Espaço",
-  subtitle
-}) => {
+const BuildingStoreHeader: React.FC<BuildingStoreHeaderProps> = () => {
   const { buildings, isLoading } = useBuildingStore();
 
   return (
@@ -23,17 +19,7 @@ const BuildingStoreHeader: React.FC<BuildingStoreHeaderProps> = ({
       className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
     >
       <div className="text-center sm:text-left">
-        <h1 className="text-3xl md:text-4xl font-bold text-[#3C1361] mb-2">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="text-lg text-gray-600">
-            {subtitle}
-          </p>
-        )}
-        <p className="text-sm text-gray-500 mt-1">
-          {isLoading ? 'Carregando...' : `${buildings.length} prédio${buildings.length !== 1 ? 's' : ''} disponível${buildings.length !== 1 ? 'eis' : ''}`}
-        </p>
+        
       </div>
       
       <div className="flex items-center gap-2">

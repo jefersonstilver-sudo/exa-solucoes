@@ -69,11 +69,8 @@ const BuildingStore = () => {
       {/* Container principal com padding para evitar sobreposição do header */}
       <div className="min-h-screen w-full pt-20">
         <div className="w-full container mx-auto px-4 md:px-6 py-6">
-          {/* Header com botão de refresh */}
-          <BuildingStoreHeader 
-            title="Loja de Prédios"
-            subtitle="Encontre o local perfeito para sua campanha"
-          />
+          {/* Header sem título e subtítulo */}
+          <BuildingStoreHeader />
           
           <BuildingStoreLayout 
             buildings={buildings}

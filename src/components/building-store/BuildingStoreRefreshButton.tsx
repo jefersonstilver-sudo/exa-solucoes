@@ -14,7 +14,7 @@ interface BuildingStoreRefreshButtonProps {
 const BuildingStoreRefreshButton: React.FC<BuildingStoreRefreshButtonProps> = ({
   variant = 'outline',
   size = 'sm',
-  showText = true
+  showText = false // Alterado para false para ocultar o texto por padrão
 }) => {
   const { refreshBuildings, isLoading } = useBuildingStore();
 
