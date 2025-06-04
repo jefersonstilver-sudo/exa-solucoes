@@ -59,6 +59,18 @@ export const useCartManager = () => {
     setCartOpen
   });
 
+  // NEW: Function to check if a building/panel is in cart
+  const isItemInCart = useCallback((buildingId: string): boolean => {
+    if (!buildingId || !initialLoadDone) return false;
+    return cartItems.some(item => item.panel.id === buildingId);
+  }, [cartItems, buildingId, initialLoadDone]);
+
+  // NEW: Function to get cart item by building ID
+  const getCartItemByBuildingId = useCallback((buildingId: string): CartItem | null => {
+    if (!buildingId || !initialLoadDone) return null;
+    return cartItems.find(item => item.panel.id === buildingId) || null;
+  }, [cartItems, buildingId, initialLoadDone]);
+
   // Memoized functions to prevent unnecessary re-renders
   const reloadCartFromStorage = useCallback(() => {
     try {
@@ -92,6 +104,10 @@ export const useCartManager = () => {
     // Checkout
     handleProceedToCheckout,
     isNavigating,
+    
+    // NEW: Cart verification functions
+    isItemInCart,
+    getCartItemByBuildingId,
     
     // Debugging and testing - memoized
     reloadCartFromStorage

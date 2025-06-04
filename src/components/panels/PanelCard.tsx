@@ -4,16 +4,23 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Panel } from '@/types/panel';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Users, Eye, Monitor, Building } from 'lucide-react';
+import { ShoppingCart, Users, Eye, Monitor, Building, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useCartManager } from '@/hooks/useCartManager';
 
 interface PanelCardProps {
   panel: Panel;
-  inCart: boolean;
+  inCart: boolean; // Keep for backward compatibility, but we'll override with real cart state
   onAddToCart: (panel: Panel, duration: number) => void;
 }
 
-export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart }) => {
+export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
+  // Connect to cart manager to get real cart state
+  const { isItemInCart } = useCartManager();
+  
+  // Use real cart state instead of passed prop
+  const inCart = isItemInCart(panel.id);
+
   // Calculate price for 30 days (base price)
   const calculatePrice = () => {
     // Check if condominiumProfile is string or object and extract profile type
@@ -113,7 +120,6 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               {panel.buildings?.endereco || ''}, {panel.buildings?.bairro || ''}
             </p>
             
-            {/* Building details - number of towers and apartments */}
             <div className="flex items-center gap-3 mb-4 text-sm text-gray-600">
               <div className="flex items-center">
                 <Building className="h-4 w-4 mr-1 text-[#3C1361]" />
@@ -125,7 +131,6 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               </div>
             </div>
             
-            {/* Metrics section - 3 columns */}
             <div className="grid grid-cols-3 gap-3 mb-5">
               <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl py-3 px-2">
                 <div className="flex items-center justify-center text-[#3C1361] mb-1">
@@ -156,7 +161,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
               </div>
             </div>
             
-            {/* Price and CTA section */}
+            {/* Price and CTA section - Updated with correct cart state */}
             <div className="flex justify-between items-center pt-3 border-t border-gray-200">
               <div>
                 <p className="text-sm text-gray-500">Preço para 30 dias</p>
@@ -181,7 +186,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, inCart, onAddToCart
                 >
                   {inCart ? (
                     <>
-                      <ShoppingCart className="h-5 w-5" />
+                      <Check className="h-5 w-5" />
                       Adicionado
                     </>
                   ) : (
