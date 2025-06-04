@@ -58,10 +58,9 @@ const BenefitsSection = () => {
       id="benefits-section"
     >
       <div className="max-w-7xl mx-auto">
-        <div className={`transform transition-all duration-1000 ${
+        <div className={`transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
-          {/* Título da seção */}
           <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-16">
             Por que escolher a
             <span className="block bg-gradient-to-r from-indexa-mint to-indexa-purple bg-clip-text text-transparent">
@@ -69,7 +68,6 @@ const BenefitsSection = () => {
             </span>
           </h2>
 
-          {/* Grid de benefícios */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => {
               const IconComponent = benefit.icon;
@@ -77,25 +75,21 @@ const BenefitsSection = () => {
               return (
                 <div
                   key={index}
-                  className={`group relative bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-indexa-mint/50 transform transition-all duration-700 hover:-translate-y-4 hover:shadow-2xl hover:shadow-indexa-mint/20 ${
+                  className={`group relative bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-indexa-mint/50 transition-all duration-700 hover:-translate-y-4 hover:shadow-2xl hover:shadow-indexa-mint/20 ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                   }`}
                   style={{ transitionDelay: `${index * 150}ms` }}
                 >
-                  {/* Efeito de iluminação de fundo */}
                   <div className="absolute inset-0 bg-gradient-to-br from-indexa-mint/5 to-indexa-purple/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
-                  {/* Ícone com animação */}
                   <div className="relative mb-6">
                     <div className="w-16 h-16 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                       <IconComponent className="w-8 h-8 text-white" />
                     </div>
                     
-                    {/* Efeito de brilho no ícone */}
                     <div className="absolute inset-0 bg-gradient-to-r from-indexa-mint/30 to-indexa-purple/30 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   </div>
 
-                  {/* Conteúdo */}
                   <h3 className="text-xl font-bold text-white mb-4 group-hover:text-indexa-mint transition-colors duration-300">
                     {benefit.title}
                   </h3>
@@ -104,10 +98,8 @@ const BenefitsSection = () => {
                     {benefit.description}
                   </p>
 
-                  {/* Indicador visual de movimento */}
                   <div className="mt-6 w-12 h-1 bg-gradient-to-r from-indexa-purple to-indexa-mint rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
                   
-                  {/* Efeito de brilho no card inteiro */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 rounded-2xl" />
                 </div>
               );

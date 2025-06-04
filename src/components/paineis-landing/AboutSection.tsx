@@ -53,20 +53,18 @@ const AboutSection = () => {
       id="about-section"
     >
       <div className="max-w-6xl mx-auto text-center">
-        <div className={`transform transition-all duration-1000 ${
+        <div className={`transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
-          {/* Título da seção com glow */}
           <h2 className="text-4xl md:text-6xl font-bold text-white mb-12 leading-tight">
             <span className="bg-gradient-to-r from-white to-indexa-mint bg-clip-text text-transparent drop-shadow-lg">
               O que são os
             </span>
-            <span className="block text-white drop-shadow-lg glow-text">
+            <span className="block text-white drop-shadow-lg">
               Painéis Indexa?
             </span>
           </h2>
 
-          {/* Conteúdo principal */}
           <div className="space-y-8 mb-16">
             <p className="text-xl md:text-2xl text-white/90 leading-relaxed font-light max-w-4xl mx-auto">
               Transformamos elevadores em canais de mídia digital altamente visíveis.
@@ -78,7 +76,6 @@ const AboutSection = () => {
             </p>
           </div>
 
-          {/* Grid de features */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {features.map((feature, index) => {
               const IconComponent = feature.icon;
@@ -86,7 +83,7 @@ const AboutSection = () => {
               return (
                 <div
                   key={index}
-                  className={`group bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:border-indexa-mint/50 transform transition-all duration-500 hover:-translate-y-2 ${
+                  className={`group bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:border-indexa-mint/50 transition-all duration-500 hover:-translate-y-2 ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                   }`}
                   style={{ transitionDelay: `${index * 150}ms` }}
@@ -107,7 +104,6 @@ const AboutSection = () => {
             })}
           </div>
 
-          {/* Destaque da Fase 1 */}
           <div className="relative inline-block">
             <div className="bg-gradient-to-r from-indexa-purple to-indexa-mint p-1 rounded-2xl">
               <div className="bg-gray-800 px-8 py-6 rounded-2xl">
@@ -121,7 +117,6 @@ const AboutSection = () => {
               </div>
             </div>
             
-            {/* Efeito de brilho */}
             <div className="absolute inset-0 bg-gradient-to-r from-indexa-mint/20 to-indexa-purple/20 rounded-2xl blur-xl opacity-50" />
           </div>
         </div>

@@ -7,13 +7,13 @@ interface LazyLoadingFallbackProps {
 }
 
 const LazyLoadingFallback: React.FC<LazyLoadingFallbackProps> = ({ 
-  message = "Carregando página..." 
+  message = "Carregando..." 
 }) => {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00FFAB] mx-auto mb-4" />
-        <p className="text-white text-lg">{message}</p>
+        <Loader2 className="h-6 w-6 animate-spin text-[#3C1361] mx-auto mb-2" />
+        <p className="text-gray-600 text-sm">{message}</p>
       </div>
     </div>
   );

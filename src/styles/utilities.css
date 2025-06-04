@@ -1,99 +1,44 @@
 
-/* Status Indicators */
-.status-online {
-  color: #10b981;
-  background-color: #d1fae5;
+/* Utility classes - Essential only */
+.text-indexa-purple {
+  color: rgb(88 28 135);
 }
 
-.status-offline {
-  color: #ef4444;
-  background-color: #fee2e2;
+.text-indexa-mint {
+  color: rgb(88 227 171);
 }
 
-.status-maintenance {
-  color: #f59e0b;
-  background-color: #fef3c7;
+.bg-indexa-purple {
+  background-color: rgb(88 28 135);
 }
 
-/* Mobile Scroll Container - Fix for scroll drift */
-.mobile-scroll-container {
-  width: 100%;
-  overflow-x: hidden;
+.bg-indexa-mint {
+  background-color: rgb(88 227 171);
 }
 
+.border-indexa-purple {
+  border-color: rgb(88 28 135);
+}
+
+/* Performance utilities */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.no-scroll {
+  overflow: hidden;
+}
+
+/* Responsive utilities - Essential breakpoints only */
 @media (max-width: 768px) {
-  .mobile-scroll-container {
-    /* Prevent horizontal scroll and ensure smooth vertical scroll */
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    /* Disable any momentum that might cause drift */
-    scroll-behavior: auto;
+  .mobile-hidden {
+    display: none;
   }
 }
 
-/* Responsive Grid Adjustments */
-@media (max-width: 768px) {
-  .admin-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-/* Touch-friendly targets */
-@media (max-width: 768px) {
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* Mobile-optimized scrollbars */
-@media (max-width: 768px) {
-  ::-webkit-scrollbar {
-    width: 2px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: rgba(60, 19, 97, 0.3);
-    border-radius: 1px;
-  }
-  
-  /* Disable scrollbar thumb interaction to prevent scroll interference */
-  ::-webkit-scrollbar-thumb:active {
-    background: rgba(60, 19, 97, 0.3);
-  }
-}
-
-/* Safe area handling for mobile devices */
-@supports (padding: max(0px)) {
-  .mobile-safe-area-top {
-    padding-top: max(16px, env(safe-area-inset-top));
-  }
-  
-  .mobile-safe-area-bottom {
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-  }
-}
-
-/* Prevent text selection and touch interference on mobile */
-@media (max-width: 768px) {
-  .no-select {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-  
-  /* Fix for momentum scroll issues */
-  .scroll-fix {
-    -webkit-overflow-scrolling: auto;
-    overscroll-behavior: contain;
-    scroll-behavior: auto;
+@media (min-width: 769px) {
+  .desktop-hidden {
+    display: none;
   }
 }

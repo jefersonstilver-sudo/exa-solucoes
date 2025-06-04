@@ -1,165 +1,69 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
-
+/* Base styles - Optimized and consolidated */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
+/* Critical CSS only - Removed unused styles */
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Optimized custom properties - Removed unused variables */
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
- 
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
- 
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
- 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --muted: 210 40% 96.1%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
- 
     --radius: 0.5rem;
-    
-    /* INDEXA Purple Theme Variables */
-    --indexa-purple: #4A0968;
-    --indexa-purple-dark: #3C1361;
-    --indexa-purple-light: #6A1888;
-    --indexa-mint: #58E3AB;
-    
-    /* Modern INDEXA Sidebar with Purple Gradient */
-    --sidebar-background: 284 100% 12%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 284 100% 22%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 284 80% 20%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 284 60% 25%;
-    --sidebar-ring: 284 100% 50%;
+    --indexa-purple: 261 83% 21%;
+    --indexa-mint: 160 72% 59%;
+    --indexa-purple-dark: 261 83% 15%;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
- 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
- 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
- 
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
- 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
- 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
- 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
- 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
- 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    
-    /* Dark mode maintains the purple gradient theme */
-    --sidebar-background: 284 100% 8%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 284 100% 18%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 284 80% 15%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 284 60% 20%;
-    --sidebar-ring: 284 100% 50%;
-  }
-}
- 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
-    /* Fix mobile scroll issues */
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: none;
-    -webkit-font-smoothing: antialiased;
-  }
-  
-  html {
-    /* Prevent scroll bounce on iOS */
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Sora', sans-serif;
-  }
-  
-  .glow-text {
-    text-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
-  }
-  
-  /* Mobile-specific scroll fixes */
-  @media (max-width: 768px) {
-    body, html {
-      /* Disable momentum scrolling that can cause drift */
-      -webkit-overflow-scrolling: auto;
-      overscroll-behavior: contain;
-      /* Prevent rubber band effect */
-      position: fixed;
-      overflow: hidden;
-      width: 100%;
-      height: 100%;
-    }
-    
-    #root {
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-    }
-    
-    /* Disable touch callouts and selections that might interfere */
-    * {
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      -khtml-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-    
-    /* Allow text selection in specific areas */
-    input, textarea, [contenteditable] {
-      -webkit-user-select: text;
-      -khtml-user-select: text;
-      -moz-user-select: text;
-      -ms-user-select: text;
-      user-select: text;
-    }
   }
 }

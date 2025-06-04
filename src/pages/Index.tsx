@@ -15,8 +15,6 @@ interface HomepageConfig {
 }
 
 const Index = () => {
-  console.log('🏠 Index: Renderizando página inicial');
-  
   const [configs, setConfigs] = useState<HomepageConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,8 +27,6 @@ const Index = () => {
           .order('service_type');
 
         if (error) {
-          console.error('Erro ao buscar configurações:', error);
-          // Fallback para configurações padrão
           setConfigs([
             {
               id: '1',
@@ -61,7 +57,7 @@ const Index = () => {
           setConfigs(data || []);
         }
       } catch (error) {
-        console.error('Erro ao carregar configurações:', error);
+        // Silent error handling for performance
       } finally {
         setIsLoading(false);
       }
@@ -74,7 +70,7 @@ const Index = () => {
     return (
       <Layout>
         <section className="py-16 px-4 min-h-screen flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-indexa-purple" />
+          <Loader2 className="h-6 w-6 animate-spin text-indexa-purple" />
         </section>
       </Layout>
     );
@@ -82,7 +78,6 @@ const Index = () => {
 
   return (
     <Layout>
-      {/* Cards de Serviço com background image - Layout otimizado para mobile */}
       <section 
         className="py-4 md:py-16 px-4 relative min-h-screen flex items-center" 
         style={{
@@ -92,7 +87,6 @@ const Index = () => {
           backgroundAttachment: 'fixed'
         }}
       >
-        {/* Add a semi-transparent overlay for better card visibility */}
         <div className="absolute inset-0 bg-black/20"></div>
         
         <div className="max-w-7xl mx-auto relative z-10 w-full">

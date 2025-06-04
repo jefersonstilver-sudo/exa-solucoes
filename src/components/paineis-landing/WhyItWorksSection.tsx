@@ -15,7 +15,7 @@ const WhyItWorksSection = () => {
       className="py-16 sm:py-20 px-4 bg-gradient-to-br from-black to-gray-900"
     >
       <div className="max-w-7xl mx-auto">
-        <div className={`transform transition-all duration-700 ${
+        <div className={`transition-all duration-700 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
         }`}>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white mb-4 sm:mb-6">
