@@ -2,6 +2,7 @@
 import { BuildingStore } from '@/services/buildingStoreService';
 
 export interface BuildingFilters {
+  radius: number;
   neighborhood: string;
   venueType: string[];
   priceRange: [number, number];
