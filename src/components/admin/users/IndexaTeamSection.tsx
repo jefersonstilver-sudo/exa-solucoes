@@ -19,11 +19,13 @@ import {
   Eye,
   RefreshCw,
   UserCog,
-  UserPlus
+  UserPlus,
+  Info
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import CreateAdminDialog from './CreateAdminDialog';
+import UserDetailsDialog from './UserDetailsDialog';
 
 interface User {
   id: string;
@@ -44,6 +46,8 @@ interface IndexaTeamSectionProps {
 const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const indexaTeam = users.filter(user => 
     user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing'
@@ -71,6 +75,11 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
       console.error('Erro ao alterar role:', error);
       toast.error('Erro ao alterar role do usuário');
     }
+  };
+
+  const handleViewDetails = (user: User) => {
+    setSelectedUser(user);
+    setDetailsDialogOpen(true);
   };
 
   const getRoleIcon = (role: string) => {
@@ -326,6 +335,14 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleViewDetails(user)}
+                          >
+                            <Info className="h-3 w-3 mr-1" />
+                            Ver Detalhes
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleRoleChange(user.id, user.role)}
                             disabled={user.role === 'super_admin' && user.email === 'jefersonstilver@gmail.com'}
                           >
@@ -348,6 +365,14 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onAccountCreated={handleAccountCreated}
+      />
+
+      {/* Dialog de Detalhes do Usuário */}
+      <UserDetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        user={selectedUser}
+        onUserUpdated={onRefresh}
       />
     </div>
   );
