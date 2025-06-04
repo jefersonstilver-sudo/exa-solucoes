@@ -5,6 +5,7 @@ import Layout from '@/components/layout/Layout';
 import useBuildingStore from '@/hooks/useBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
+import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PainelStore() {
@@ -102,17 +103,8 @@ export default function PainelStore() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 md:px-6 py-6 mobile-scroll-fix"
       >
-        {/* Header da Loja - ALTERADO conforme solicitado */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-6"
-        >
-          <h1 className="text-3xl md:text-4xl font-bold text-[#3C1361] mb-2">
-            Escolha seu Espaço
-          </h1>
-        </motion.div>
+        {/* Header da Loja com botão de refresh */}
+        <BuildingStoreHeader />
         
         {/* Layout Profissional Completo */}
         <BuildingStoreLayout 

@@ -2,20 +2,60 @@
 import { BuildingStore, fetchBuildingsForStore } from '@/services/buildingStoreService';
 import { getLocationCoordinates } from '@/services/geocoding';
 import { BuildingFilters } from './types';
+import { toast } from 'sonner';
 
 export const createBuildingStoreActions = (set: any, get: any) => ({
   initializeStore: async () => {
     const state = get();
-    if (state.initialized) {
+    if (state.initialized && !state.forceRefresh) {
       console.log('🔄 [BUILDING STORE] Store já inicializado, pulando...');
       return;
     }
     
     console.log('🚀 [BUILDING STORE] === INICIALIZANDO STORE ===');
-    set({ initialized: true });
+    set({ initialized: true, forceRefresh: false });
     
     // CORREÇÃO CRÍTICA: Sempre carregar todos os prédios ativos na inicialização
     await get().fetchBuildings();
+  },
+
+  // NOVO: Método público para forçar refresh dos dados
+  refreshBuildings: async () => {
+    console.log('🔄 [BUILDING STORE] === REFRESH FORÇADO DOS PRÉDIOS ===');
+    set({ isLoading: true, error: null });
+    
+    try {
+      const buildings = await fetchBuildingsForStore();
+      console.log('📊 [BUILDING STORE] Prédios atualizados:', buildings.length);
+      
+      const activeBuildings = buildings.filter(building => building.status === 'ativo');
+      console.log('🔄 [BUILDING STORE] Prédios ativos após refresh:', activeBuildings.length);
+      
+      set({ 
+        allBuildings: buildings as BuildingStore[],
+        buildings: activeBuildings as BuildingStore[],
+        isLoading: false
+      });
+      
+      toast.success(`${activeBuildings.length} prédio${activeBuildings.length !== 1 ? 's' : ''} carregado${activeBuildings.length !== 1 ? 's' : ''}`, {
+        description: "Dados atualizados com sucesso!"
+      });
+      
+    } catch (error: any) {
+      console.error('❌ [BUILDING STORE] Erro no refresh:', error);
+      set({ 
+        error: error.message || 'Erro ao atualizar prédios', 
+        isLoading: false
+      });
+      toast.error('Erro ao atualizar prédios');
+    }
+  },
+
+  // NOVO: Forçar re-inicialização completa
+  forceReload: async () => {
+    console.log('🔄 [BUILDING STORE] === FORÇANDO RELOAD COMPLETO ===');
+    set({ initialized: false, forceRefresh: true });
+    await get().initializeStore();
   },
   
   setSearchLocation: (location: string) => {
