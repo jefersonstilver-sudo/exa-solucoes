@@ -63,10 +63,9 @@ const AdvertiserOrders = () => {
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
     
-    // Aguardando Vídeo: pedidos pagos mas sem vídeo enviado/aprovado
+    // Aguardando Vídeo: pedidos pagos mas aguardando envio de vídeo
     aguardandoVideo: orders.filter(order => 
-      ['pago', 'pago_pendente_video'].includes(order.status) &&
-      (!order.videos || order.videos.length === 0 || !order.videos.some((v: any) => v.approval_status === 'approved'))
+      ['pago', 'pago_pendente_video'].includes(order.status)
     ).length,
     
     // Pedidos finalizados: expirados ou fora do período
