@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
-import BuildingStoreRefreshButton from './BuildingStoreRefreshButton';
 import useBuildingStore from '@/hooks/useBuildingStore';
 
 interface BuildingStoreHeaderProps {
@@ -20,10 +20,6 @@ const BuildingStoreHeader: React.FC<BuildingStoreHeaderProps> = () => {
     >
       <div className="text-center sm:text-left">
         
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <BuildingStoreRefreshButton />
       </div>
     </motion.div>
   );
