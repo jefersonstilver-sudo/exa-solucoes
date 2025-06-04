@@ -34,13 +34,6 @@ const CartButton: React.FC<CartButtonProps> = ({
         onClick={handleCartClick}
         variant="header"
       />
-      
-      {/* Debug: Mostrar estado do carrinho */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="absolute -bottom-8 -right-2 text-xs bg-black text-white px-1 rounded opacity-50">
-          {cartItemsCount}
-        </div>
-      )}
     </div>
   );
 };
