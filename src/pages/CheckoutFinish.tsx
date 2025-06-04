@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Upload, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { Upload, CheckCircle, Clock, ArrowRight, ChevronLeft } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 
@@ -26,26 +25,31 @@ const CheckoutFinish = () => {
     navigate('/anunciante');
   };
 
+  const handleBack = () => {
+    navigate('/checkout');
+  };
+
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
           {/* Unified Progress Header - SEMPRE na mesma posição */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8"
-          >
+          <div className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8">
             <UnifiedCheckoutProgress currentStep={4} />
-          </motion.div>
+          </div>
+
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            className="flex items-center text-gray-600 hover:text-gray-800 mb-4 -ml-2"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Voltar para Pagamento
+          </Button>
 
           {/* Success Message */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-center mb-6 sm:mb-8"
-          >
+          <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full mb-4">
               <CheckCircle className="h-8 w-8 sm:h-10 sm:w-10 text-green-600" />
             </div>
@@ -55,16 +59,12 @@ const CheckoutFinish = () => {
             <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
               Sua campanha foi criada com sucesso. Agora você pode fazer o upload do seu material.
             </p>
-          </motion.div>
+          </div>
 
           {/* Upload Options */}
           <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Upload Now */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
+            <div>
               <Card className="border-2 border-[#3C1361] bg-gradient-to-br from-[#3C1361]/5 to-[#00FFAB]/5 hover:shadow-lg transition-shadow h-full">
                 <CardContent className="p-4 sm:p-6 text-center h-full flex flex-col">
                   <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-[#3C1361] rounded-full mb-4">
@@ -95,14 +95,10 @@ const CheckoutFinish = () => {
                   </Button>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Finish Later */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
+            <div>
               <Card className="border-2 border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all h-full">
                 <CardContent className="p-4 sm:p-6 text-center h-full flex flex-col">
                   <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
@@ -124,16 +120,11 @@ const CheckoutFinish = () => {
                   </Button>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           </div>
 
           {/* Information Box */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mt-6 sm:mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6"
-          >
+          <div className="mt-6 sm:mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6">
             <h4 className="font-semibold text-blue-900 mb-2">
               💡 Informações Importantes
             </h4>
@@ -143,7 +134,7 @@ const CheckoutFinish = () => {
               <li>• Sua campanha iniciará após aprovação do material</li>
               <li>• Você receberá notificações sobre o status da sua campanha</li>
             </ul>
-          </motion.div>
+          </div>
         </div>
       </div>
     </Layout>

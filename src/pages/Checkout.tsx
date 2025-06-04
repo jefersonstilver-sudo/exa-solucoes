@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -209,27 +208,21 @@ const Checkout = () => {
             <UnifiedCheckoutProgress currentStep={3} />
           </motion.div>
 
-          {/* Mobile Back Button */}
-          {isMobile && (
-            <Button
-              variant="ghost"
-              onClick={handleBack}
-              className="flex items-center text-gray-600 hover:text-gray-800 mb-4 -ml-2"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Voltar
-            </Button>
-          )}
+          {/* Back Button - Desktop and Mobile */}
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            className="flex items-center text-gray-600 hover:text-gray-800 mb-4 -ml-2"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Voltar
+          </Button>
 
           {/* Main content - Layout minimalista */}
           <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-8'}`}>
             {/* Payment methods */}
             <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
+              <div>
                 {isMobile ? (
                   // Mobile payment methods
                   <div className="space-y-6">
@@ -280,12 +273,7 @@ const Checkout = () => {
                 )}
                 
                 {/* Terms acceptance - Layout minimalista */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className={`${isMobile ? 'mt-6' : 'mt-8'}`}
-                >
+                <div className={`${isMobile ? 'mt-6' : 'mt-8'}`}>
                   <Card className={`${isMobile ? '' : 'shadow-lg border-0'}`}>
                     <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
                       <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
@@ -312,11 +300,7 @@ const Checkout = () => {
                       </div>
 
                       {/* Payment button - Only PIX available */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`space-y-3 ${isMobile ? 'mt-4' : 'mt-6'}`}
-                      >
+                      <div className={`space-y-3 ${isMobile ? 'mt-4' : 'mt-6'}`}>
                         <Button
                           onClick={handlePixPayment}
                           disabled={!acceptTerms || isProcessingPayment}
@@ -338,11 +322,11 @@ const Checkout = () => {
                             ⚠️ Aceite os termos para continuar
                           </p>
                         )}
-                      </motion.div>
+                      </div>
                     </CardContent>
                   </Card>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             </div>
 
             {/* Summary sidebar - Desktop only - Layout minimalista */}
