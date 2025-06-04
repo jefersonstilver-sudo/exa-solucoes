@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart,
@@ -24,52 +24,21 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const isMobile = useIsMobile();
   
-  // Connect to cart manager to check if item is in cart
+  // Connect to cart manager
   const { isItemInCart, cartItems, initialLoadDone } = useCartManager();
   
-  // SIMPLIFIED: Direct state check - no complex useMemo
-  const [isInCart, setIsInCart] = useState(false);
-  
-  // Update isInCart state when cart changes
-  useEffect(() => {
-    console.log('🏢 [BuildingCardActions] useEffect executado:', {
-      buildingId: building.id,
-      initialLoadDone,
-      cartItemsLength: cartItems.length
-    });
-    
-    if (initialLoadDone) {
-      const inCartNow = isItemInCart(building.id);
-      console.log('🏢 [BuildingCardActions] Verificação do carrinho:', {
-        buildingId: building.id,
-        inCartNow,
-        previousState: isInCart
-      });
-      setIsInCart(inCartNow);
-    }
+  // Check if item is in cart - using memoization for performance
+  const inCart = useMemo(() => {
+    if (!initialLoadDone) return false;
+    return isItemInCart(building.id);
   }, [building.id, cartItems, initialLoadDone, isItemInCart]);
 
   const handleAddToCart = async () => {
-    console.log('🛒 [BuildingCardActions] handleAddToCart chamado:', {
-      buildingId: building.id,
-      buildingName: building.nome,
-      isInCart
-    });
-    
-    if (isInCart) {
-      console.log('🛒 [BuildingCardActions] Item já está no carrinho, ignorando');
-      return;
-    }
+    if (inCart) return;
     
     try {
       // Convert Building to Panel before adding to cart
       const panel = buildingToPanel(building);
-      
-      console.log('🛒 [BuildingCardActions] Adicionando ao carrinho:', {
-        building: building.nome,
-        panel: panel.id,
-        panelCode: panel.code
-      });
       
       setIsAnimating(true);
       
@@ -88,7 +57,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       }, 600);
       
     } catch (error) {
-      console.error('❌ [BuildingCardActions] Erro ao adicionar ao carrinho:', error);
+      console.error('Erro ao adicionar ao carrinho:', error);
       setIsAnimating(false);
       
       toast.error('Erro ao adicionar ao carrinho', {
@@ -97,13 +66,6 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       });
     }
   };
-
-  console.log('🏢 [BuildingCardActions] Renderizando:', {
-    buildingId: building.id,
-    buildingName: building.nome,
-    isInCart,
-    initialLoadDone
-  });
 
   return (
     <div className={`flex items-start justify-between pt-4 border-t border-gray-100 ${
@@ -121,7 +83,6 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       </div>
       
       <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>
-        {/* Add to Cart Button - now with simplified cart state sync */}
         <motion.div
           animate={isAnimating ? { scale: [1, 1.1, 1] } : {}}
           transition={{ duration: 0.6 }}
@@ -130,16 +91,16 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
           <Button
             onClick={handleAddToCart}
             size={isMobile ? "default" : "sm"}
-            disabled={isInCart}
+            disabled={inCart}
             className={`font-semibold transition-all duration-300 ${
               isMobile ? 'w-full py-3 text-base' : 'px-6 py-2 text-sm'
             } ${
-              isInCart 
+              inCart 
                 ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
                 : 'bg-indexa-purple hover:bg-indexa-purple-dark text-white hover:scale-105'
             }`}
           >
-            {isInCart ? (
+            {inCart ? (
               <>
                 <Check className="h-4 w-4 mr-1" />
                 Adicionado

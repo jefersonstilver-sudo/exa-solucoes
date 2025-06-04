@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Panel } from '@/types/panel';
@@ -10,34 +10,18 @@ import { useCartManager } from '@/hooks/useCartManager';
 
 interface PanelCardProps {
   panel: Panel;
-  inCart: boolean; // Keep for backward compatibility, but we'll override with real cart state
+  inCart: boolean; // Keep for backward compatibility
   onAddToCart: (panel: Panel, duration: number) => void;
 }
 
 export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
-  // Connect to cart manager to get real cart state
+  // Connect to cart manager
   const { isItemInCart, cartItems, initialLoadDone } = useCartManager();
   
-  // SIMPLIFIED: Direct state management
-  const [inCart, setInCart] = useState(false);
-  
-  // Update cart state when cart changes
-  useEffect(() => {
-    console.log('🎯 [PanelCard] useEffect executado:', {
-      panelId: panel.id,
-      initialLoadDone,
-      cartItemsLength: cartItems.length
-    });
-    
-    if (initialLoadDone) {
-      const inCartNow = isItemInCart(panel.id);
-      console.log('🎯 [PanelCard] Verificação do carrinho:', {
-        panelId: panel.id,
-        inCartNow,
-        previousState: inCart
-      });
-      setInCart(inCartNow);
-    }
+  // Check if item is in cart - using memoization for performance
+  const inCart = useMemo(() => {
+    if (!initialLoadDone) return false;
+    return isItemInCart(panel.id);
   }, [panel.id, cartItems, initialLoadDone, isItemInCart]);
 
   // Calculate price for 30 days (base price)
@@ -86,24 +70,12 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
     tap: { scale: 0.97, transition: { duration: 0.1 } }
   };
 
-  // Handle add to cart with animation
+  // Handle add to cart
   const handleAddToCart = () => {
-    console.log('🛒 [PanelCard] handleAddToCart chamado:', {
-      panelId: panel.id,
-      inCart
-    });
-    
     if (!inCart) {
       onAddToCart(panel, 30); // Default to 30 days
     }
   };
-
-  console.log('🎯 [PanelCard] Renderizando:', {
-    panelId: panel.id,
-    buildingName: panel.buildings?.nome,
-    inCart,
-    initialLoadDone
-  });
 
   return (
     <motion.div 
@@ -192,7 +164,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
               </div>
             </div>
             
-            {/* Price and CTA section - Updated with simplified cart state */}
+            {/* Price and CTA section */}
             <div className="flex justify-between items-center pt-3 border-t border-gray-200">
               <div>
                 <p className="text-sm text-gray-500">Preço para 30 dias</p>

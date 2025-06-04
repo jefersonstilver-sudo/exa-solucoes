@@ -59,52 +59,24 @@ export const useCartManager = () => {
     setCartOpen
   });
 
-  // SIMPLIFICADO: Função direta para verificar se um building/panel está no carrinho
-  const isItemInCart = (buildingId: string): boolean => {
-    console.log('🔍 [useCartManager] isItemInCart chamado:', { buildingId, initialLoadDone, cartItemsLength: cartItems.length });
-    
-    if (!buildingId) {
-      console.log('🔍 [useCartManager] buildingId vazio, retornando false');
-      return false;
-    }
-    
-    if (!initialLoadDone) {
-      console.log('🔍 [useCartManager] initialLoadDone false, retornando false');
-      return false;
-    }
-    
-    const found = cartItems.some(item => {
-      const match = item.panel.id === buildingId;
-      console.log('🔍 [useCartManager] Verificando item:', { itemId: item.panel.id, buildingId, match });
-      return match;
-    });
-    
-    console.log('🔍 [useCartManager] Resultado final:', found);
-    return found;
-  };
+  // FUNÇÃO SIMPLES: Verificar se item está no carrinho
+  const isItemInCart = useCallback((buildingId: string): boolean => {
+    if (!buildingId || !initialLoadDone) return false;
+    return cartItems.some(item => item.panel.id === buildingId);
+  }, [cartItems, initialLoadDone]);
 
-  // SIMPLIFICADO: Função direta para obter item do carrinho por building ID
-  const getCartItemByBuildingId = (buildingId: string): CartItem | null => {
-    console.log('🔍 [useCartManager] getCartItemByBuildingId chamado:', { buildingId, initialLoadDone });
-    
-    if (!buildingId || !initialLoadDone) {
-      console.log('🔍 [useCartManager] Condições não atendidas, retornando null');
-      return null;
-    }
-    
-    const item = cartItems.find(item => item.panel.id === buildingId) || null;
-    console.log('🔍 [useCartManager] Item encontrado:', item ? item.panel.id : 'null');
-    return item;
-  };
+  // FUNÇÃO SIMPLES: Obter item do carrinho
+  const getCartItemByBuildingId = useCallback((buildingId: string): CartItem | null => {
+    if (!buildingId || !initialLoadDone) return null;
+    return cartItems.find(item => item.panel.id === buildingId) || null;
+  }, [cartItems, initialLoadDone]);
 
-  // Memoized functions to prevent unnecessary re-renders
+  // Função para recarregar carrinho do storage
   const reloadCartFromStorage = useCallback(() => {
     try {
-      console.log('🔄 [useCartManager] Recarregando carrinho do storage');
       const loadedLegacyCart = loadCartFromStorage();
       const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
       setCartItems(fullCartItems);
-      console.log('🔄 [useCartManager] Carrinho recarregado com sucesso:', fullCartItems.length);
       return fullCartItems;
     } catch (error) {
       console.error('[useCartManager] Error reloading cart:', error);
@@ -112,18 +84,12 @@ export const useCartManager = () => {
     }
   }, [setCartItems]);
 
-  console.log('🛒 [useCartManager] Hook renderizado:', {
-    cartItemsLength: cartItems.length,
-    initialLoadDone,
-    cartOpen
-  });
-
   return {
     // Cart state
     cartItems,
     cartOpen,
     cartAnimation,
-    initialLoadDone, // CORREÇÃO: Exportando initialLoadDone
+    initialLoadDone,
     
     // Cart state mutators
     setCartOpen,
@@ -140,11 +106,11 @@ export const useCartManager = () => {
     handleProceedToCheckout,
     isNavigating,
     
-    // SIMPLIFICADO: Funções de verificação do carrinho (agora funções diretas)
+    // Cart verification functions
     isItemInCart,
     getCartItemByBuildingId,
     
-    // Debugging and testing - memoized
+    // Debugging and testing
     reloadCartFromStorage
   };
 };
