@@ -40,6 +40,51 @@ export interface MonthlyChartData {
   last12Months: MonthlyDashboardStats[];
 }
 
+// Helper function to safely convert JSON to MonthlyDashboardStats
+const convertToMonthlyStats = (data: any): MonthlyDashboardStats => {
+  return {
+    total_users: Number(data?.total_users) || 0,
+    total_users_accumulated: Number(data?.total_users_accumulated) || 0,
+    total_buildings: Number(data?.total_buildings) || 0,
+    total_buildings_accumulated: Number(data?.total_buildings_accumulated) || 0,
+    total_orders: Number(data?.total_orders) || 0,
+    total_panels: Number(data?.total_panels) || 0,
+    total_panels_accumulated: Number(data?.total_panels_accumulated) || 0,
+    monthly_revenue: Number(data?.monthly_revenue) || 0,
+    active_orders: Number(data?.active_orders) || 0,
+    pending_orders: Number(data?.pending_orders) || 0,
+    online_panels: Number(data?.online_panels) || 0,
+    month_year: String(data?.month_year) || ''
+  };
+};
+
+// Helper function to safely convert JSON to MonthlyComparison
+const convertToMonthlyComparison = (data: any): MonthlyComparison => {
+  return {
+    current: {
+      monthly_revenue: Number(data?.current?.monthly_revenue) || 0,
+      total_orders: Number(data?.current?.total_orders) || 0,
+      total_users: Number(data?.current?.total_users) || 0,
+      total_buildings: Number(data?.current?.total_buildings) || 0,
+    },
+    previous: {
+      monthly_revenue: Number(data?.previous?.monthly_revenue) || 0,
+      total_orders: Number(data?.previous?.total_orders) || 0,
+      total_users: Number(data?.previous?.total_users) || 0,
+      total_buildings: Number(data?.previous?.total_buildings) || 0,
+    }
+  };
+};
+
+// Helper function to safely convert JSON array to MonthlyDashboardStats array
+const convertToMonthlyStatsArray = (data: any): MonthlyDashboardStats[] => {
+  if (!data?.months || !Array.isArray(data.months)) {
+    return [];
+  }
+  
+  return data.months.map((month: any) => convertToMonthlyStats(month));
+};
+
 export const useMonthlyDashboardData = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -105,22 +150,20 @@ export const useMonthlyDashboardData = () => {
       
       console.log('📅 Histórico de 12 meses recebido:', historyData);
       
-      // Type casting com validação adequada
-      const typedMonthlyData = monthlyData as MonthlyDashboardStats;
-      const typedComparisonData = comparisonData as MonthlyComparison;
-      const typedHistoryData = historyData as { months: MonthlyDashboardStats[] };
+      // Conversão segura dos dados com validação
+      const typedMonthlyData = convertToMonthlyStats(monthlyData);
+      const typedComparisonData = convertToMonthlyComparison(comparisonData);
+      const typedHistoryData = convertToMonthlyStatsArray(historyData);
       
       setStats(typedMonthlyData);
       setComparison(typedComparisonData);
       
       // Processar dados para gráficos usando os últimos 12 meses
-      if (typedHistoryData?.months && Array.isArray(typedHistoryData.months)) {
-        const months = typedHistoryData.months;
-        
-        console.log('📊 Processando dados para gráficos:', months);
+      if (typedHistoryData && typedHistoryData.length > 0) {
+        console.log('📊 Processando dados para gráficos:', typedHistoryData);
         
         setChartData({
-          revenueData: months.map((month: MonthlyDashboardStats) => ({
+          revenueData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
             month: month.month_year,
             revenue: Number(month.monthly_revenue) || 0
           })).reverse(), // Ordenar cronologicamente
@@ -131,7 +174,7 @@ export const useMonthlyDashboardData = () => {
             { name: 'Total', value: typedMonthlyData.total_orders, color: '#6366f1' }
           ].filter(item => item.value > 0),
           
-          userGrowthData: months.map((month: MonthlyDashboardStats) => ({
+          userGrowthData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
             month: month.month_year,
             users: month.total_users_accumulated || 0
           })).reverse(),
@@ -141,7 +184,7 @@ export const useMonthlyDashboardData = () => {
             { status: 'Offline', count: Math.max(0, typedMonthlyData.total_panels_accumulated - typedMonthlyData.online_panels) }
           ].filter(item => item.count > 0),
           
-          last12Months: months
+          last12Months: typedHistoryData
         });
       } else {
         console.warn('⚠️ Dados de histórico não encontrados ou formato inválido');
