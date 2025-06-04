@@ -63,13 +63,13 @@ export const useCartManager = () => {
   const isItemInCart = useCallback((buildingId: string): boolean => {
     if (!buildingId || !initialLoadDone) return false;
     return cartItems.some(item => item.panel.id === buildingId);
-  }, [cartItems, buildingId, initialLoadDone]);
+  }, [cartItems, initialLoadDone]);
 
   // NEW: Function to get cart item by building ID
   const getCartItemByBuildingId = useCallback((buildingId: string): CartItem | null => {
     if (!buildingId || !initialLoadDone) return null;
     return cartItems.find(item => item.panel.id === buildingId) || null;
-  }, [cartItems, buildingId, initialLoadDone]);
+  }, [cartItems, initialLoadDone]);
 
   // Memoized functions to prevent unnecessary re-renders
   const reloadCartFromStorage = useCallback(() => {
