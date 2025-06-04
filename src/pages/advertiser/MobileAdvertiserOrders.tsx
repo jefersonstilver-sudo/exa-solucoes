@@ -12,7 +12,9 @@ import {
   CheckCircle,
   AlertTriangle,
   Calendar,
-  Upload
+  Upload,
+  Menu,
+  Home
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import MobileDrawerNavigation from '@/components/mobile/MobileDrawerNavigation';
 
 interface Order {
   id: string;
@@ -41,7 +44,7 @@ interface OrderStats {
 }
 
 const MobileAdvertiserOrders = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -54,6 +57,7 @@ const MobileAdvertiserOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { 
@@ -82,6 +86,15 @@ const MobileAdvertiserOrders = () => {
   useEffect(() => {
     filterOrders();
   }, [searchTerm, orders]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
+  };
 
   const loadOrders = async () => {
     if (!userProfile?.id) return;
@@ -188,7 +201,7 @@ const MobileAdvertiserOrders = () => {
   const getStatsCards = () => {
     const statsData = [
       { 
-        label: 'Ativos', 
+        label: 'Pedidos Ativos', 
         value: stats.pedidosAtivos, 
         color: 'bg-green-500',
         icon: CheckCircle,
@@ -202,7 +215,7 @@ const MobileAdvertiserOrders = () => {
         detail: 'pagos sem vídeo'
       },
       { 
-        label: 'Finalizados', 
+        label: 'Pedidos Finalizados', 
         value: stats.pedidosFinalizados, 
         color: 'bg-gray-500',
         icon: Calendar,
@@ -211,7 +224,7 @@ const MobileAdvertiserOrders = () => {
     ];
 
     return (
-      <div className="grid grid-cols-3 gap-2 px-4 mb-4">
+      <div className="px-4 mb-6 space-y-3">
         {statsData.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -220,16 +233,22 @@ const MobileAdvertiserOrders = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-lg p-3 shadow-sm border"
+              className="bg-white rounded-lg p-4 shadow-sm border"
             >
-              <div className="flex items-center justify-between mb-1">
-                <div className={`w-6 h-6 rounded-md ${stat.color} flex items-center justify-center`}>
-                  <Icon className="h-3 w-3 text-white" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-sm font-medium text-gray-700">{stat.label}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">{stat.detail}</p>
                 </div>
               </div>
-              <p className="text-lg font-bold text-gray-900">{stat.value}</p>
-              <p className="text-xs text-gray-500">{stat.label}</p>
-              <p className="text-xs text-gray-400">{stat.detail}</p>
             </motion.div>
           );
         })}
@@ -253,7 +272,47 @@ const MobileAdvertiserOrders = () => {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsDrawerOpen(true)}
+              className="h-10 w-10 rounded-full hover:bg-gray-100"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/anunciante')}
+              className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg px-2 py-1"
+            >
+              <Home className="h-5 w-5 text-indexa-purple" />
+              <span className="text-lg font-bold text-indexa-purple">Indexa</span>
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSearch(!showSearch)}
+            className="h-10 w-10 rounded-full"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer Navigation */}
+      <MobileDrawerNavigation
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        userProfile={userProfile}
+        onLogout={handleLogout}
+      />
+
       {/* Search Bar */}
       <AnimatePresence>
         {showSearch && (
@@ -261,7 +320,7 @@ const MobileAdvertiserOrders = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="px-4 py-3 bg-white border-b sticky top-0 z-10"
+            className="px-4 py-3 bg-white border-b"
           >
             <Input
               placeholder="Buscar pedidos..."
@@ -273,135 +332,127 @@ const MobileAdvertiserOrders = () => {
         )}
       </AnimatePresence>
 
-      <div className="px-4 py-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
+      <div ref={containerRef} className="pb-20">
+        <div className="px-4 py-4">
+          {/* Page Title */}
+          <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Meus Pedidos</h1>
             <p className="text-sm text-gray-500">{orders.length} pedido{orders.length !== 1 ? 's' : ''}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowSearch(!showSearch)}
-            className="h-10 w-10 rounded-full"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-        </div>
 
-        {/* Stats Cards */}
-        {orders.length > 0 && getStatsCards()}
+          {/* Stats Cards */}
+          {orders.length > 0 && getStatsCards()}
 
-        {/* Orders List */}
-        {filteredOrders.length > 0 ? (
-          <div className="space-y-3">
-            <AnimatePresence>
-              {filteredOrders.map((order, index) => {
-                const statusConfig = getStatusConfig(order.status);
-                const StatusIcon = statusConfig.icon;
+          {/* Orders List */}
+          {filteredOrders.length > 0 ? (
+            <div className="space-y-3">
+              <AnimatePresence>
+                {filteredOrders.map((order, index) => {
+                  const statusConfig = getStatusConfig(order.status);
+                  const StatusIcon = statusConfig.icon;
 
-                return (
-                  <motion.div
-                    key={order.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ 
-                      duration: 0.4, 
-                      delay: index * 0.1,
-                      ease: [0.25, 0.46, 0.45, 0.94]
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Card className="overflow-hidden border-l-4 border-l-indexa-purple hover:shadow-lg transition-all duration-300">
-                      <CardContent className="p-4">
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 text-base mb-1">
-                              Pedido #{order.id.substring(0, 8)}
-                            </h3>
-                            <Badge className={`${statusConfig.color} border flex items-center space-x-1 w-fit`}>
-                              <StatusIcon className="h-3 w-3" />
-                              <span>{statusConfig.label}</span>
-                            </Badge>
+                  return (
+                    <motion.div
+                      key={order.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ 
+                        duration: 0.4, 
+                        delay: index * 0.1,
+                        ease: [0.25, 0.46, 0.45, 0.94]
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Card className="overflow-hidden border-l-4 border-l-indexa-purple hover:shadow-lg transition-all duration-300">
+                        <CardContent className="p-4">
+                          {/* Header */}
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 text-base mb-1">
+                                Pedido #{order.id.substring(0, 8)}
+                              </h3>
+                              <Badge className={`${statusConfig.color} border flex items-center space-x-1 w-fit`}>
+                                <StatusIcon className="h-3 w-3" />
+                                <span>{statusConfig.label}</span>
+                              </Badge>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-gray-900">
+                                {formatCurrency(order.valor_total || 0)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(order.created_at)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-gray-900">
-                              {formatCurrency(order.valor_total || 0)}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(order.created_at)}
-                            </p>
-                          </div>
-                        </div>
 
-                        {/* Details */}
-                        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                          <div>
-                            <p className="text-gray-500">Duração</p>
-                            <p className="font-medium text-gray-900">
-                              {order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}
-                            </p>
+                          {/* Details */}
+                          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                            <div>
+                              <p className="text-gray-500">Duração</p>
+                              <p className="font-medium text-gray-900">
+                                {order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Painéis</p>
+                              <p className="font-medium text-gray-900">
+                                {order.lista_paineis?.length || 0} selecionados
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-gray-500">Painéis</p>
-                            <p className="font-medium text-gray-900">
-                              {order.lista_paineis?.length || 0} selecionados
-                            </p>
-                          </div>
-                        </div>
 
-                        {/* Action */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            vibrate();
-                            navigate(`/anunciante/pedido/${order.id}`);
-                          }}
-                          className="w-full h-9 border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white"
-                        >
-                          Ver Detalhes
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16 px-4"
-          >
-            <div className="mx-auto w-24 h-24 bg-indexa-purple/10 rounded-full flex items-center justify-center mb-6">
-              <ShoppingBag className="h-12 w-12 text-indexa-purple" />
+                          {/* Action */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              vibrate();
+                              navigate(`/anunciante/pedido/${order.id}`);
+                            }}
+                            className="w-full h-9 border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white"
+                          >
+                            Ver Detalhes
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Nenhum pedido encontrado</h3>
-            <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-              {searchTerm 
-                ? 'Nenhum pedido corresponde à sua busca. Tente outro termo.'
-                : 'Você ainda não fez nenhum pedido. Comece criando sua primeira campanha!'
-              }
-            </p>
-            {!searchTerm && (
-              <Button 
-                onClick={() => {
-                  vibrate();
-                  navigate('/paineis-digitais/loja');
-                }}
-                className="bg-indexa-purple hover:bg-indexa-purple/90"
-              >
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Explorar Painéis
-              </Button>
-            )}
-          </motion.div>
-        )}
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16 px-4"
+            >
+              <div className="mx-auto w-24 h-24 bg-indexa-purple/10 rounded-full flex items-center justify-center mb-6">
+                <ShoppingBag className="h-12 w-12 text-indexa-purple" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Nenhum pedido encontrado</h3>
+              <p className="text-gray-500 mb-8 max-w-sm mx-auto">
+                {searchTerm 
+                  ? 'Nenhum pedido corresponde à sua busca. Tente outro termo.'
+                  : 'Você ainda não fez nenhum pedido. Comece criando sua primeira campanha!'
+                }
+              </p>
+              {!searchTerm && (
+                <Button 
+                  onClick={() => {
+                    vibrate();
+                    navigate('/paineis-digitais/loja');
+                  }}
+                  className="bg-indexa-purple hover:bg-indexa-purple/90"
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Explorar Painéis
+                </Button>
+              )}
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );
