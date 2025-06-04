@@ -40,7 +40,8 @@ export const useOrderStatus = (order: any) => {
           label: 'Finalizar Compra',
           variant: 'default',
           onClick: () => {
-            console.log('Redirecionar para finalizar compra');
+            // Redirecionar para a página de checkout/pagamento
+            window.location.href = '/checkout';
           }
         }
       };

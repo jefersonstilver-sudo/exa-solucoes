@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
@@ -8,15 +9,12 @@ import {
   Loader2, 
   ShoppingBag, 
   Calendar, 
-  TrendingUp, 
-  DollarSign,
+  Clock,
   Filter,
   Search,
   Eye,
   AlertTriangle,
-  CheckCircle,
-  Clock,
-  XCircle
+  CheckCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,17 +41,37 @@ const AdvertiserOrders = () => {
     return <MobileAdvertiserOrders />;
   }
 
-  // Calcular estatísticas
+  // Calcular estatísticas CORRIGIDAS
   const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
   const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
   
+  // Verificar se um pedido está dentro do período ativo
+  const isWithinActivePeriod = (order: any) => {
+    if (!order.data_inicio || !order.data_fim) return false;
+    const today = new Date();
+    const startDate = new Date(order.data_inicio);
+    const endDate = new Date(order.data_fim);
+    return today >= startDate && today <= endDate;
+  };
+  
   const stats = {
-    total: orders.length,
-    valorTotal: orders.reduce((sum, order) => sum + (order.valor_total || 0), 0),
-    pendentes: orders.filter(order => order.status === 'pendente').length,
-    pagos: orders.filter(order => ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status)).length,
+    // Pedidos ativos: pagos, com vídeo aprovado/ativo e dentro do período
+    pedidosAtivos: orders.filter(order => 
+      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
+      isWithinActivePeriod(order)
+    ).length,
+    
+    // Tentativas: compras não finalizadas
     tentativas: attempts.length,
-    valorTentativas: attempts.reduce((sum, attempt) => sum + (attempt.valor_total || 0), 0)
+    
+    // Pendentes: aguardando pagamento
+    pendentes: orders.filter(order => order.status === 'pendente').length,
+    
+    // Pedidos finalizados: expirados ou fora do período
+    pedidosFinalizados: orders.filter(order => 
+      order.status === 'expirado' || 
+      (['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) && !isWithinActivePeriod(order))
+    ).length
   };
 
   // Filtrar itens
@@ -164,7 +182,7 @@ const AdvertiserOrders = () => {
                   </Button>
                 )}
                 
-                {item.type === 'order' ? (
+                {item.type === 'order' && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -172,19 +190,6 @@ const AdvertiserOrders = () => {
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     Detalhes
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      toast.info('Esta foi uma tentativa não finalizada. Experimente fazer um novo pedido!');
-                      navigate('/paineis-digitais/loja');
-                    }}
-                    className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white"
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    Finalizar Compra
                   </Button>
                 )}
               </div>
@@ -218,16 +223,16 @@ const AdvertiserOrders = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+      {/* Stats Cards - CORRIGIDOS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">Pedidos Finalizados</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-green-800">Pedidos Ativos</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
-            <p className="text-xs text-blue-600">pedidos completos</p>
+            <div className="text-2xl font-bold text-green-900">{stats.pedidosAtivos}</div>
+            <p className="text-xs text-green-600">em execução</p>
           </CardContent>
         </Card>
 
@@ -242,47 +247,25 @@ const AdvertiserOrders = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Valor Realizado</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-yellow-800">Pendentes</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">{formatCurrency(stats.valorTotal)}</div>
-            <p className="text-xs text-green-600">em pedidos</p>
+            <div className="text-2xl font-bold text-yellow-900">{stats.pendentes}</div>
+            <p className="text-xs text-yellow-600">aguardando pagamento</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-800">Valor Perdido</CardTitle>
-            <DollarSign className="h-4 w-4 text-red-600" />
+            <CardTitle className="text-sm font-medium text-blue-800">Pedidos Finalizados</CardTitle>
+            <Calendar className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-900">{formatCurrency(stats.valorTentativas)}</div>
-            <p className="text-xs text-red-600">em tentativas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-800">Campanhas Ativas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-900">{stats.pagos}</div>
-            <p className="text-xs text-purple-600">em execução</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-800">Pendentes</CardTitle>
-            <Clock className="h-4 w-4 text-gray-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.pendentes}</div>
-            <p className="text-xs text-gray-600">aguardando</p>
+            <div className="text-2xl font-bold text-blue-900">{stats.pedidosFinalizados}</div>
+            <p className="text-xs text-blue-600">expirados</p>
           </CardContent>
         </Card>
       </div>

@@ -8,10 +8,10 @@ import {
   ShoppingBag, 
   Search, 
   Filter,
-  TrendingUp,
-  DollarSign,
   Clock,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle,
+  Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -35,10 +35,10 @@ interface Order {
 }
 
 interface OrderStats {
-  total: number;
-  valorTotal: number;
+  pedidosAtivos: number;
+  tentativas: number;
   pendentes: number;
-  pagos: number;
+  pedidosFinalizados: number;
 }
 
 const MobileAdvertiserOrders = () => {
@@ -47,10 +47,10 @@ const MobileAdvertiserOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStats>({
-    total: 0,
-    valorTotal: 0,
+    pedidosAtivos: 0,
+    tentativas: 0,
     pendentes: 0,
-    pagos: 0
+    pedidosFinalizados: 0
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -108,13 +108,30 @@ const MobileAdvertiserOrders = () => {
     }
   };
 
-  const calculateStats = (ordersList: Order[]) => {
-    const total = ordersList.length;
-    const valorTotal = ordersList.reduce((sum, order) => sum + (order.valor_total || 0), 0);
-    const pendentes = ordersList.filter(order => order.status === 'pendente').length;
-    const pagos = ordersList.filter(order => ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status)).length;
+  // Verificar se um pedido está dentro do período ativo
+  const isWithinActivePeriod = (order: Order) => {
+    if (!order.data_inicio || !order.data_fim) return false;
+    const today = new Date();
+    const startDate = new Date(order.data_inicio);
+    const endDate = new Date(order.data_fim);
+    return today >= startDate && today <= endDate;
+  };
 
-    setStats({ total, valorTotal, pendentes, pagos });
+  const calculateStats = (ordersList: Order[]) => {
+    const pedidosAtivos = ordersList.filter(order => 
+      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
+      isWithinActivePeriod(order)
+    ).length;
+    
+    const tentativas = 0; // Na versão mobile não temos tentativas separadas no momento
+    const pendentes = ordersList.filter(order => order.status === 'pendente').length;
+    
+    const pedidosFinalizados = ordersList.filter(order => 
+      order.status === 'expirado' || 
+      (['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) && !isWithinActivePeriod(order))
+    ).length;
+
+    setStats({ pedidosAtivos, tentativas, pendentes, pedidosFinalizados });
   };
 
   const filterOrders = () => {
@@ -146,9 +163,10 @@ const MobileAdvertiserOrders = () => {
           icon: CheckCircle
         };
       case 'video_aprovado':
+      case 'ativo':
         return {
-          label: 'Aprovado',
-          color: 'bg-blue-100 text-blue-800 border-blue-200',
+          label: 'Ativo',
+          color: 'bg-green-100 text-green-800 border-green-200',
           icon: CheckCircle
         };
       default:
@@ -174,32 +192,32 @@ const MobileAdvertiserOrders = () => {
   const getStatsCards = () => {
     const statsData = [
       { 
-        label: 'Total', 
-        value: stats.total, 
-        color: 'bg-blue-500',
-        icon: ShoppingBag,
-        detail: 'pedidos'
+        label: 'Ativos', 
+        value: stats.pedidosAtivos, 
+        color: 'bg-green-500',
+        icon: CheckCircle,
+        detail: 'em execução'
       },
       { 
-        label: 'Investido', 
-        value: formatCurrency(stats.valorTotal), 
-        color: 'bg-green-500',
-        icon: DollarSign,
-        detail: 'total'
+        label: 'Tentativas', 
+        value: stats.tentativas, 
+        color: 'bg-orange-500',
+        icon: AlertTriangle,
+        detail: 'não finalizadas'
       },
       { 
         label: 'Pendentes', 
         value: stats.pendentes, 
-        color: 'bg-orange-500',
+        color: 'bg-yellow-500',
         icon: Clock,
         detail: 'aguardando'
       },
       { 
-        label: 'Ativos', 
-        value: stats.pagos, 
-        color: 'bg-purple-500',
-        icon: TrendingUp,
-        detail: 'campanhas'
+        label: 'Finalizados', 
+        value: stats.pedidosFinalizados, 
+        color: 'bg-blue-500',
+        icon: Calendar,
+        detail: 'expirados'
       }
     ];
 
