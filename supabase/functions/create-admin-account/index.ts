@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 [CREATE-ADMIN] Edge function iniciada (VERSÃO CORRIGIDA)');
+    console.log('🚀 [CREATE-ADMIN] Edge function iniciada com fallback inteligente');
 
     // Verificar se é uma requisição POST
     if (req.method !== 'POST') {
@@ -87,68 +87,138 @@ serve(async (req) => {
       }
     );
 
-    console.log('🔍 [CREATE-ADMIN] Testando conexão com a função SQL...');
+    console.log('🔍 [CREATE-ADMIN] Iniciando verificação inteligente...');
 
-    // 1. VERIFICAÇÃO SEGURA usando a função SQL recém-instalada
-    const { data: safeCheck, error: safeCheckError } = await supabaseServiceRole.rpc(
-      'safe_create_admin_user',
-      {
-        p_email: email,
-        p_role: adminType,
-        p_password: 'indexa2025'
+    // VERIFICAÇÃO INTELIGENTE: Tentar função SQL primeiro, fallback se falhar
+    let newUserId;
+    let usesSqlFunction = false;
+
+    try {
+      console.log('🔧 [CREATE-ADMIN] Tentando usar função SQL...');
+      
+      const { data: safeCheck, error: safeCheckError } = await supabaseServiceRole.rpc(
+        'safe_create_admin_user',
+        {
+          p_email: email,
+          p_role: adminType,
+          p_password: 'indexa2025'
+        }
+      );
+
+      if (safeCheckError) {
+        throw new Error(`Função SQL não disponível: ${safeCheckError.message}`);
       }
-    );
 
-    if (safeCheckError) {
-      console.error('❌ [CREATE-ADMIN] Erro na função safe_create_admin_user:', safeCheckError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Erro na verificação do sistema - função SQL não encontrada',
-          code: 'SQL_FUNCTION_ERROR',
-          details: safeCheckError.message,
-          suggestion: 'Verifique se as funções SQL foram aplicadas corretamente'
-        }),
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      if (!safeCheck?.success) {
+        return new Response(
+          JSON.stringify({ 
+            error: safeCheck.error,
+            code: safeCheck.code,
+            details: safeCheck.details
+          }),
+          { 
+            status: safeCheck.code === 'EMAIL_EXISTS' ? 409 : 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      newUserId = safeCheck.user_id;
+      usesSqlFunction = true;
+      console.log('✅ [CREATE-ADMIN] Função SQL funcionando! ID gerado:', newUserId);
+      
+    } catch (sqlError) {
+      console.warn('⚠️ [CREATE-ADMIN] Função SQL não disponível, usando fallback:', sqlError.message);
+      
+      // FALLBACK: Verificação manual se função SQL falhar
+      console.log('🔄 [CREATE-ADMIN] Executando verificação manual...');
+      
+      // Verificar se email já existe em auth.users
+      const { data: authUsers, error: authError } = await supabaseServiceRole.auth.admin.listUsers();
+      if (authError) {
+        console.error('❌ [CREATE-ADMIN] Erro ao verificar auth.users:', authError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Erro ao verificar usuários existentes',
+            code: 'AUTH_CHECK_ERROR',
+            details: authError.message
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      const emailExists = authUsers.users.some(user => user.email === email);
+      if (emailExists) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Este email já possui uma conta no sistema',
+            code: 'EMAIL_EXISTS'
+          }),
+          { 
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Verificar se existe na tabela public.users
+      const { data: publicUsers, error: publicError } = await supabaseServiceRole
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .limit(1);
+
+      if (publicError) {
+        console.error('❌ [CREATE-ADMIN] Erro ao verificar public.users:', publicError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Erro ao verificar usuários na base de dados',
+            code: 'DB_CHECK_ERROR',
+            details: publicError.message
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      if (publicUsers && publicUsers.length > 0) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Este email já está registrado na base de dados',
+            code: 'EMAIL_EXISTS'
+          }),
+          { 
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Gerar ID único manualmente
+      newUserId = crypto.randomUUID();
+      console.log('🔐 [CREATE-ADMIN] ID gerado via fallback:', newUserId);
     }
 
-    console.log('✅ [CREATE-ADMIN] Função SQL respondeu:', safeCheck);
+    console.log('✅ [CREATE-ADMIN] Verificação concluída, criando usuário...');
 
-    // Se a verificação segura falhou, retornar o erro específico
-    if (!safeCheck?.success) {
-      console.log('⚠️ [CREATE-ADMIN] Verificação segura falhou:', safeCheck);
-      return new Response(
-        JSON.stringify({ 
-          error: safeCheck.error,
-          code: safeCheck.code,
-          details: safeCheck.details
-        }),
-        { 
-          status: safeCheck.code === 'EMAIL_EXISTS' ? 409 : 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    console.log('✅ [CREATE-ADMIN] Verificação segura passou, criando usuário...');
-    console.log('🔐 [CREATE-ADMIN] ID seguro gerado:', safeCheck.user_id);
-
-    // 2. Criar usuário usando o ID seguro gerado pela função
+    // Criar usuário usando o ID gerado (SQL ou fallback)
     const defaultPassword = 'indexa2025';
     
     const { data: newUser, error: createError } = await supabaseServiceRole.auth.admin.createUser({
       email,
       password: defaultPassword,
       email_confirm: true,
-      user_id: safeCheck.user_id, // Usar o ID gerado pela função segura
+      user_id: newUserId,
       user_metadata: {
         role: adminType,
         created_by_admin: true,
-        created_via_safe_function: true,
-        safe_creation_timestamp: new Date().toISOString()
+        creation_method: usesSqlFunction ? 'sql_function' : 'manual_fallback',
+        creation_timestamp: new Date().toISOString()
       }
     });
 
@@ -183,7 +253,7 @@ serve(async (req) => {
 
     console.log('✅ [CREATE-ADMIN] Usuário criado no Auth:', newUser.user.id);
 
-    // 3. Inserir na tabela users
+    // Inserir na tabela users
     const { error: insertError } = await supabaseServiceRole
       .from('users')
       .insert({
@@ -218,15 +288,15 @@ serve(async (req) => {
 
     console.log('✅ [CREATE-ADMIN] Usuário inserido na tabela users');
 
-    // 4. Testar função de saúde do sistema para confirmar que tudo funciona
+    // Testar função de monitoramento (opcional)
     try {
       await supabaseServiceRole.rpc('monitor_system_health');
-      console.log('📊 [CREATE-ADMIN] Health check pós-criação executado com sucesso');
+      console.log('📊 [CREATE-ADMIN] Health check executado com sucesso');
     } catch (healthError) {
-      console.warn('⚠️ [CREATE-ADMIN] Health check falhou, mas usuário foi criado:', healthError);
+      console.warn('⚠️ [CREATE-ADMIN] Health check não disponível (normal se funções SQL não estiverem instaladas)');
     }
 
-    // 5. Resposta de sucesso
+    // Resposta de sucesso
     console.log('🎉 [CREATE-ADMIN] Conta criada com sucesso!');
     
     return new Response(
@@ -237,10 +307,10 @@ serve(async (req) => {
           email: email,
           role: adminType,
           password: defaultPassword,
-          creation_method: 'safe_function_corrected',
-          functions_working: true
+          creation_method: usesSqlFunction ? 'sql_function' : 'manual_fallback',
+          sql_functions_available: usesSqlFunction
         },
-        message: 'Conta administrativa criada com sucesso usando as funções SQL instaladas!'
+        message: `Conta administrativa criada com sucesso! Método: ${usesSqlFunction ? 'Função SQL' : 'Fallback Manual'}`
       }),
       { 
         status: 200,
