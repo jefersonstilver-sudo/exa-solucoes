@@ -2,8 +2,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@4.0.0";
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string);
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -56,12 +54,22 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Validar se temos a chave do Resend
+    // DIAGNÓSTICO CRÍTICO: Validar se temos a chave do Resend
     const resendKey = Deno.env.get('RESEND_API_KEY');
+    console.log('🔍 [EMAIL-HOOK] Verificando RESEND_API_KEY...');
+    console.log('🔍 [EMAIL-HOOK] API Key presente?', !!resendKey);
+    console.log('🔍 [EMAIL-HOOK] API Key length:', resendKey ? resendKey.length : 0);
+    
     if (!resendKey) {
-      console.error('❌ [EMAIL-HOOK] RESEND_API_KEY não configurada');
+      console.error('❌ [EMAIL-HOOK] CRÍTICO: RESEND_API_KEY não encontrada nas variáveis de ambiente');
+      console.error('❌ [EMAIL-HOOK] Variáveis disponíveis:', Object.keys(Deno.env.toObject()));
+      
       return new Response(JSON.stringify({ 
-        error: 'RESEND_API_KEY não configurada',
+        error: 'RESEND_API_KEY não configurada no ambiente',
+        debug: {
+          available_vars: Object.keys(Deno.env.toObject()),
+          timestamp: new Date().toISOString()
+        },
         success: false 
       }), {
         status: 500,
@@ -69,7 +77,9 @@ serve(async (req: Request) => {
       });
     }
     
-    console.log('✅ [EMAIL-HOOK] RESEND_API_KEY encontrada');
+    // Inicializar Resend APÓS verificar a chave
+    const resend = new Resend(resendKey);
+    console.log('✅ [EMAIL-HOOK] Resend inicializado com sucesso');
 
     // Parse do payload
     const payload = await req.text();
@@ -135,31 +145,38 @@ serve(async (req: Request) => {
     const emailStartTime = Date.now();
     
     try {
-      const { data: emailData, error } = await resend.emails.send({
+      console.log('📤 [EMAIL-HOOK] Tentando enviar email para:', user.email);
+      console.log('📤 [EMAIL-HOOK] Usando sender: noreply@indexamidia.com');
+      
+      const { data: emailResponse, error: emailError } = await resend.emails.send({
         from: 'Indexa <noreply@indexamidia.com>',
         to: [user.email],
         subject: '🎯 Confirme seu email na Indexa',
         html,
       });
 
-      if (error) {
-        console.error('❌ [EMAIL-HOOK] Erro do Resend:', error);
-        throw error;
+      if (emailError) {
+        console.error('❌ [EMAIL-HOOK] Erro do Resend:', emailError);
+        console.error('❌ [EMAIL-HOOK] Tipo do erro:', typeof emailError);
+        console.error('❌ [EMAIL-HOOK] Detalhes:', JSON.stringify(emailError, null, 2));
+        throw emailError;
       }
 
       const emailTime = Date.now() - emailStartTime;
       const totalTime = Date.now() - startTime;
       
       console.log('✅ [EMAIL-HOOK] Email enviado com sucesso!', {
-        emailId: emailData?.id,
+        emailId: emailResponse?.id,
         emailTime: emailTime + 'ms',
-        totalTime: totalTime + 'ms'
+        totalTime: totalTime + 'ms',
+        recipient: user.email
       });
 
       return new Response(JSON.stringify({ 
         message: 'Email sent successfully',
-        email_id: emailData?.id,
+        email_id: emailResponse?.id,
         processing_time_ms: totalTime,
+        recipient: user.email,
         success: true
       }), {
         status: 200,
@@ -168,13 +185,24 @@ serve(async (req: Request) => {
 
     } catch (emailError: any) {
       const emailTime = Date.now() - emailStartTime;
-      console.error('❌ [EMAIL-HOOK] Falha no envio de email após', emailTime, 'ms:', emailError);
+      console.error('❌ [EMAIL-HOOK] Falha no envio de email após', emailTime, 'ms');
+      console.error('❌ [EMAIL-HOOK] Erro detalhado:', {
+        message: emailError.message,
+        name: emailError.name,
+        statusCode: emailError.statusCode,
+        stack: emailError.stack
+      });
       
       // FALLBACK: Retornar sucesso mesmo com falha no email
       // O usuário ainda pode se cadastrar, só não receberá o email
       return new Response(JSON.stringify({ 
         message: 'User registered but email failed to send',
         email_error: emailError.message,
+        email_error_details: {
+          name: emailError.name,
+          statusCode: emailError.statusCode,
+          message: emailError.message
+        },
         processing_time_ms: Date.now() - startTime,
         success: true // Importante: retornar sucesso para não bloquear cadastro
       }), {
