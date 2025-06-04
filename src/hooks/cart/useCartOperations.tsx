@@ -38,14 +38,16 @@ export const useCartOperations = ({
   const handleAddToCart = (panel: Panel, duration: number = 30) => {
     console.log('🛒 [useCartOperations] Adicionando ao carrinho:', { panelId: panel.id, duration });
     
+    // CORREÇÃO: Operação síncrona para evitar bugs de estado
     setCartItems(prev => {
       // Check if panel is already in cart
       const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
       
+      let newItems;
       if (existingIndex >= 0) {
         console.log('🛒 [useCartOperations] Atualizando item existente no carrinho');
         // Update the existing item
-        return prev.map((item, index) => 
+        newItems = prev.map((item, index) => 
           index === existingIndex 
             ? {
                 ...item,
@@ -59,17 +61,18 @@ export const useCartOperations = ({
         console.log('🛒 [useCartOperations] Adicionando novo item ao carrinho');
         // Add new panel to cart
         const newItem = createCartItem(panel, duration);
-        return [...prev, newItem];
+        newItems = [...prev, newItem];
       }
+      
+      return newItems;
     });
     
-    // Trigger cart icon animation
+    // CORREÇÃO: Animação e abertura do carrinho de forma mais controlada
     setCartAnimation(true);
-    setTimeout(() => setCartAnimation(false), 800);
-    
-    // IMPORTANTE: Abrir o carrinho automaticamente quando um item é adicionado
-    console.log('🛒 [useCartOperations] Abrindo carrinho automaticamente');
     setCartOpen(true);
+    
+    // Reset animation after a reasonable time
+    setTimeout(() => setCartAnimation(false), 800);
     
     // Log event
     logCheckoutEvent(

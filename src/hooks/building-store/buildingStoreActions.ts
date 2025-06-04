@@ -30,7 +30,8 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       console.log(`🔄 [BUILDING STORE] Filtros ${newDisableState ? 'DESABILITADOS' : 'HABILITADOS'}`);
       return { disableFilters: newDisableState };
     });
-    setTimeout(() => get().applyFilters(), 0);
+    // CORREÇÃO: Aplicar filtros diretamente sem setTimeout
+    get().applyFilters();
   },
   
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => {
@@ -38,14 +39,15 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
     set((state: any) => ({
       filters: { ...state.filters, ...newFilters }
     }));
-    setTimeout(() => get().applyFilters(), 0);
+    // CORREÇÃO: Aplicar filtros diretamente sem setTimeout
+    get().applyFilters();
   },
   
   fetchBuildings: async (lat?: number, lng?: number) => {
     try {
       console.log('🔄 [BUILDING STORE] === INICIANDO BUSCA DE PRÉDIOS ===');
       console.log('🔄 [BUILDING STORE] Coordenadas fornecidas:', { lat, lng });
-      set({ loading: true, isLoading: true, error: null });
+      set({ isLoading: true, error: null });
       
       // CORREÇÃO: Chamar sem argumentos, pois a função não aceita parâmetros
       const buildings = await fetchBuildingsForStore();
@@ -61,29 +63,17 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       
       set({ 
         allBuildings: buildings as BuildingStore[],
-        buildings: activeBuildings as BuildingStore[], // CORREÇÃO: Definir buildings diretamente também
-        loading: false, 
-        isLoading: false 
+        buildings: activeBuildings as BuildingStore[],
+        isLoading: false
       });
       
       console.log('✅ [BUILDING STORE] Estado atualizado com sucesso');
-      
-      // Log final do estado
-      setTimeout(() => {
-        const currentState = get();
-        console.log('📊 [BUILDING STORE] === ESTADO FINAL ===');
-        console.log('📊 [BUILDING STORE] allBuildings.length:', currentState.allBuildings.length);
-        console.log('📊 [BUILDING STORE] buildings.length:', currentState.buildings.length);
-        console.log('📊 [BUILDING STORE] loading:', currentState.loading);
-        console.log('📊 [BUILDING STORE] isLoading:', currentState.isLoading);
-      }, 100);
       
     } catch (error: any) {
       console.error('❌ [BUILDING STORE] Erro ao buscar prédios:', error);
       set({ 
         error: error.message || 'Failed to fetch buildings', 
-        loading: false, 
-        isLoading: false 
+        isLoading: false
       });
     }
   },

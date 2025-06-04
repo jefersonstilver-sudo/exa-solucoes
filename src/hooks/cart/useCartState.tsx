@@ -18,12 +18,12 @@ const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number })
 
 export const useCartState = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [cartOpen, setCartOpen] = useState(false); // Cart starts closed by default
+  const [cartOpen, setCartOpen] = useState(false);
   const [cartAnimation, setCartAnimation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   
-  // Carregamento inicial - simplificado sem useCallback problemático
+  // Carregamento inicial - simplificado
   useEffect(() => {
     if (initialLoadDone) return;
     
@@ -37,11 +37,11 @@ export const useCartState = () => {
     console.log("useCartState: Carrinho carregado:", fullCartItems);
   }, [initialLoadDone]);
 
-  // Salvamento automático
+  // Salvamento automático - OTIMIZADO
   useEffect(() => {
     if (!initialLoadDone) return;
     
-    console.log("useCartState: Salvando carrinho:", cartItems);
+    console.log("useCartState: Salvando carrinho:", cartItems.length, "itens");
     
     const legacyCartItems = cartItems.map(item => ({
       panel: item.panel,
@@ -51,9 +51,8 @@ export const useCartState = () => {
     saveCartToStorage(legacyCartItems);
   }, [cartItems, initialLoadDone]);
 
-  // DO NOT auto-open cart - only open on manual user action
+  // Body class management para drawer
   useEffect(() => {
-    // Only manage body class for drawer state, no auto-opening
     if (cartOpen) {
       document.body.classList.add('drawer-open');
     } else {

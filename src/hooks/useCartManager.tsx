@@ -1,5 +1,5 @@
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { useCartState } from '@/hooks/cart/useCartState';
 import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { useCartCheckout } from '@/hooks/cart/useCartCheckout';
@@ -58,31 +58,6 @@ export const useCartManager = () => {
     setIsNavigating,
     setCartOpen
   });
-
-  // CRITICAL FIX: Drastically reduce logging frequency to prevent infinite loops
-  const cartValidationLog = useMemo(() => {
-    if (initialLoadDone && cartItems.length > 0) {
-      // Only log once per cart change, not continuously
-      const cartValid = cartItems.every(item => 
-        item && 
-        item.panel && 
-        typeof item.panel === 'object' && 
-        item.panel.id && 
-        typeof item.duration === 'number'
-      );
-      
-      if (!cartValid) {
-        // Only log critical errors
-        logCheckoutEvent(
-          CheckoutEvent.SAVE_CART,
-          LogLevel.ERROR,
-          `CRITICAL: Invalid cart structure detected`,
-          { cartItemsCount: cartItems.length }
-        );
-      }
-    }
-    return cartItems.length;
-  }, [initialLoadDone, cartItems.length]); // Only depend on length to reduce re-computations
 
   // Memoized functions to prevent unnecessary re-renders
   const reloadCartFromStorage = useCallback(() => {

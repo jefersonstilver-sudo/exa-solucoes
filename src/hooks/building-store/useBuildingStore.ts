@@ -8,7 +8,7 @@ import { createFilterActions } from './buildingStoreFilters';
 export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   allBuildings: [],
   buildings: [],
-  loading: false,
+  // CORREÇÃO: Unificar estados de loading - usar apenas isLoading
   isLoading: false,
   error: null,
   searchLocation: '',
