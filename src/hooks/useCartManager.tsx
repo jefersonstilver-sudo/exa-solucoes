@@ -59,7 +59,7 @@ export const useCartManager = () => {
     setCartOpen
   });
 
-  // SIMPLIFIED: Direct function to check if a building/panel is in cart
+  // SIMPLIFICADO: Função direta para verificar se um building/panel está no carrinho
   const isItemInCart = (buildingId: string): boolean => {
     console.log('🔍 [useCartManager] isItemInCart chamado:', { buildingId, initialLoadDone, cartItemsLength: cartItems.length });
     
@@ -83,7 +83,7 @@ export const useCartManager = () => {
     return found;
   };
 
-  // SIMPLIFIED: Direct function to get cart item by building ID
+  // SIMPLIFICADO: Função direta para obter item do carrinho por building ID
   const getCartItemByBuildingId = (buildingId: string): CartItem | null => {
     console.log('🔍 [useCartManager] getCartItemByBuildingId chamado:', { buildingId, initialLoadDone });
     
@@ -123,6 +123,7 @@ export const useCartManager = () => {
     cartItems,
     cartOpen,
     cartAnimation,
+    initialLoadDone, // CORREÇÃO: Exportando initialLoadDone
     
     // Cart state mutators
     setCartOpen,
@@ -139,7 +140,7 @@ export const useCartManager = () => {
     handleProceedToCheckout,
     isNavigating,
     
-    // SIMPLIFIED: Cart verification functions (now direct functions)
+    // SIMPLIFICADO: Funções de verificação do carrinho (agora funções diretas)
     isItemInCart,
     getCartItemByBuildingId,
     
