@@ -1,7 +1,7 @@
 
 import { Routes, Route } from 'react-router-dom';
 import Dashboard from '@/pages/admin/Dashboard';
-import BuildingsPage from '@/pages/admin/BuildingsPage';
+import BuildingsManagement from '@/pages/admin/BuildingsManagement';
 import PanelsPage from '@/pages/admin/PanelsPage';
 import OrdersPage from '@/pages/admin/OrdersPage';
 import OrderDetails from '@/pages/admin/OrderDetails';
@@ -26,7 +26,7 @@ const SuperAdminRoutes = () => {
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       
       {/* ATIVOS */}
-      <Route path="predios" element={<BuildingsPage />} />
+      <Route path="predios" element={<BuildingsManagement />} />
       <Route path="paineis" element={<PanelsPage />} />
       
       {/* LEADS & CLIENTES */}
