@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Crown, Users, Database, CheckCircle } from 'lucide-react';
+import { Crown, Users, Database, CheckCircle, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import IndexaTeamSection from '@/components/admin/users/IndexaTeamSection';
 import ClientsSection from '@/components/admin/users/ClientsSection';
+import SystemHealthDashboard from '@/components/admin/users/SystemHealthDashboard';
 
 interface User {
   id: string;
@@ -94,7 +95,7 @@ const UsersPage = () => {
   }, []);
 
   const indexaTeam = users.filter(user => 
-    user.role === 'super_admin' || user.role === 'admin'
+    user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing'
   );
   
   const clients = users.filter(user => user.role === 'client');
@@ -173,7 +174,11 @@ const UsersPage = () => {
 
       {/* Tabs para Separação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="health" className="flex items-center space-x-2">
+            <Shield className="h-4 w-4" />
+            <span>Diagnóstico do Sistema</span>
+          </TabsTrigger>
           <TabsTrigger value="indexa" className="flex items-center space-x-2">
             <Crown className="h-4 w-4" />
             <span>Equipe INDEXA ({indexaTeam.length})</span>
@@ -183,6 +188,10 @@ const UsersPage = () => {
             <span>Base de Clientes ({clients.length})</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="health" className="mt-6">
+          <SystemHealthDashboard />
+        </TabsContent>
 
         <TabsContent value="indexa" className="mt-6">
           <IndexaTeamSection 

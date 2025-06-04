@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 [CREATE-ADMIN] Edge function iniciada');
+    console.log('🚀 [CREATE-ADMIN] Edge function iniciada (VERSÃO SEGURA)');
 
     // Verificar se é uma requisição POST
     if (req.method !== 'POST') {
@@ -75,7 +75,7 @@ serve(async (req) => {
       );
     }
 
-    // Criar cliente Supabase com service role (sem rate limits)
+    // Criar cliente Supabase com service role
     const supabaseServiceRole = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -87,18 +87,25 @@ serve(async (req) => {
       }
     );
 
-    console.log('🔍 [CREATE-ADMIN] Verificando se email já existe...');
+    console.log('🔍 [CREATE-ADMIN] Executando verificação segura de usuário...');
 
-    // 1. Verificar se o email já existe
-    const { data: existingUsers, error: checkError } = await supabaseServiceRole.auth.admin.listUsers();
-    
-    if (checkError) {
-      console.error('❌ [CREATE-ADMIN] Erro ao verificar usuários existentes:', checkError);
+    // 1. VERIFICAÇÃO SEGURA usando a nova função SQL
+    const { data: safeCheck, error: safeCheckError } = await supabaseServiceRole.rpc(
+      'safe_create_admin_user',
+      {
+        p_email: email,
+        p_role: adminType,
+        p_password: 'indexa2025'
+      }
+    );
+
+    if (safeCheckError) {
+      console.error('❌ [CREATE-ADMIN] Erro na verificação segura:', safeCheckError);
       return new Response(
         JSON.stringify({ 
-          error: 'Erro interno do servidor',
-          code: 'CHECK_ERROR',
-          details: checkError.message
+          error: 'Erro na verificação do sistema',
+          code: 'SAFE_CHECK_ERROR',
+          details: safeCheckError.message
         }),
         { 
           status: 500,
@@ -107,35 +114,38 @@ serve(async (req) => {
       );
     }
 
-    // Verificar se email já existe
-    const emailExists = existingUsers?.users?.some(user => user.email === email);
-    if (emailExists) {
-      console.log('⚠️ [CREATE-ADMIN] Email já existe:', email);
+    // Se a verificação segura falhou, retornar o erro específico
+    if (!safeCheck?.success) {
+      console.log('⚠️ [CREATE-ADMIN] Verificação segura falhou:', safeCheck);
       return new Response(
         JSON.stringify({ 
-          error: 'Este email já possui uma conta no sistema',
-          code: 'EMAIL_EXISTS' 
+          error: safeCheck.error,
+          code: safeCheck.code,
+          details: safeCheck.details
         }),
         { 
-          status: 409,
+          status: safeCheck.code === 'EMAIL_EXISTS' ? 409 : 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
 
-    console.log('✅ [CREATE-ADMIN] Email disponível, criando conta...');
+    console.log('✅ [CREATE-ADMIN] Verificação segura passou, criando usuário...');
+    console.log('🔐 [CREATE-ADMIN] ID seguro gerado:', safeCheck.user_id);
 
-    // 2. Criar usuário usando service role (bypassa rate limits)
+    // 2. Criar usuário usando o ID seguro gerado pela função
     const defaultPassword = 'indexa2025';
     
     const { data: newUser, error: createError } = await supabaseServiceRole.auth.admin.createUser({
       email,
       password: defaultPassword,
-      email_confirm: true, // Confirmar email automaticamente
+      email_confirm: true,
+      user_id: safeCheck.user_id, // Usar o ID gerado pela função segura
       user_metadata: {
         role: adminType,
         created_by_admin: true,
-        created_via_edge_function: true
+        created_via_safe_function: true,
+        safe_creation_timestamp: new Date().toISOString()
       }
     });
 
@@ -170,7 +180,7 @@ serve(async (req) => {
 
     console.log('✅ [CREATE-ADMIN] Usuário criado no Auth:', newUser.user.id);
 
-    // 3. Inserir na tabela users
+    // 3. Inserir na tabela users (com verificação dupla)
     const { error: insertError } = await supabaseServiceRole
       .from('users')
       .insert({
@@ -205,8 +215,12 @@ serve(async (req) => {
 
     console.log('✅ [CREATE-ADMIN] Usuário inserido na tabela users');
 
-    // 4. Resposta de sucesso
-    console.log('🎉 [CREATE-ADMIN] Conta criada com sucesso!');
+    // 4. Log de sucesso
+    await supabaseServiceRole.rpc('monitor_system_health');
+    console.log('📊 [CREATE-ADMIN] Health check pós-criação executado');
+
+    // 5. Resposta de sucesso
+    console.log('🎉 [CREATE-ADMIN] Conta criada com sucesso (MÉTODO SEGURO)!');
     
     return new Response(
       JSON.stringify({
@@ -215,9 +229,11 @@ serve(async (req) => {
           id: newUser.user.id,
           email: email,
           role: adminType,
-          password: defaultPassword // Incluir senha na resposta para exibir ao admin
+          password: defaultPassword,
+          creation_method: 'safe_function',
+          safe_id_generated: true
         },
-        message: 'Conta administrativa criada com sucesso!'
+        message: 'Conta administrativa criada com sucesso usando método seguro!'
       }),
       { 
         status: 200,

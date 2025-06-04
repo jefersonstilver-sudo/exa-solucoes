@@ -1099,6 +1099,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      auto_recovery_system: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       check_panel_availability: {
         Args: { p_panel_id: string; p_start_date: string; p_end_date: string }
         Returns: boolean
@@ -1112,6 +1116,14 @@ export type Database = {
           metadata_role: string
           is_consistent: boolean
         }[]
+      }
+      cleanup_orphaned_users: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      diagnose_user_system: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       extract_compliance_data: {
         Args: { payment_data: Json }
@@ -1305,6 +1317,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      monitor_system_health: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       notify_contracts_expiring_soon: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1324,6 +1340,14 @@ export type Database = {
           p_rejection_reason: string
         }
         Returns: boolean
+      }
+      resolve_email_conflicts: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      safe_create_admin_user: {
+        Args: { p_email: string; p_role: string; p_password?: string }
+        Returns: Json
       }
       select_video_for_display: {
         Args: { p_pedido_video_id: string }
