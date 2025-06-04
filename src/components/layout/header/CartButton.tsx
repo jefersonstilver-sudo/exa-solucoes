@@ -34,6 +34,11 @@ const CartButton: React.FC<CartButtonProps> = ({
         onClick={handleCartClick}
         variant="header"
       />
+      
+      {/* Indicador visual adicional quando há itens */}
+      {cartItemsCount > 0 && (
+        <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#00FFAB] rounded-full animate-pulse" />
+      )}
     </div>
   );
 };

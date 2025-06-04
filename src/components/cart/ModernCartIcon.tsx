@@ -42,25 +42,25 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
     switch (variant) {
       case 'header':
         return {
-          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
+          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-all duration-300 hover:scale-105',
           icon: 'h-6 w-6',
           badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
         };
       case 'floating':
         return {
-          button: 'relative p-3 bg-indexa-purple text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300',
+          button: 'relative p-3 bg-indexa-purple text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105',
           icon: 'h-6 w-6',
           badge: 'absolute -top-2 -right-2 h-6 w-6 text-xs'
         };
       case 'mobile':
         return {
-          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
+          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-all duration-300',
           icon: 'h-5 w-5',
           badge: 'absolute -top-1 -right-1 h-4 w-4 text-xs'
         };
       default:
         return {
-          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
+          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-all duration-300',
           icon: 'h-6 w-6',
           badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
         };
@@ -71,8 +71,14 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
 
   return (
     <motion.div
-      animate={isAnimating ? { scale: [1, 1.2, 1] } : {}}
-      transition={{ duration: 0.6 }}
+      animate={isAnimating ? { 
+        scale: [1, 1.1, 1.05, 1],
+        rotate: [0, -5, 5, 0]
+      } : {}}
+      transition={{ 
+        duration: 0.8,
+        ease: "easeInOut"
+      }}
       className="relative"
     >
       <Button
@@ -82,43 +88,74 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
         className={`${styles.button} ${className}`}
         aria-label={`Carrinho de compras${itemCount > 0 ? ` - ${itemCount} ${itemCount === 1 ? 'item' : 'itens'}` : ' - vazio'}`}
       >
-        <ShoppingCart className={styles.icon} />
+        <motion.div
+          animate={isAnimating ? {
+            scale: [1, 1.2, 1],
+          } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <ShoppingCart className={styles.icon} />
+        </motion.div>
         
-        {/* Item count badge with animation */}
+        {/* Item count badge with enhanced animation */}
         <AnimatePresence>
           {itemCount > 0 && (
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
+              initial={{ scale: 0, opacity: 0, y: -10 }}
+              animate={{ 
+                scale: 1, 
+                opacity: 1, 
+                y: 0,
+                ...(isAnimating && {
+                  scale: [1, 1.3, 1],
+                  backgroundColor: ['#ef4444', '#22c55e', '#ef4444']
+                })
+              }}
+              exit={{ scale: 0, opacity: 0, y: -10 }}
               transition={{ 
                 type: "spring", 
                 stiffness: 500, 
-                damping: 30 
+                damping: 25,
+                duration: isAnimating ? 0.8 : 0.3
               }}
               className={styles.badge}
             >
               <Badge 
-                className="bg-red-500 hover:bg-red-500 text-white border-0 rounded-full flex items-center justify-center p-0 min-w-0 h-full w-full"
+                className="bg-red-500 hover:bg-red-500 text-white border-0 rounded-full flex items-center justify-center p-0 min-w-0 h-full w-full shadow-lg"
               >
-                <span className="font-medium leading-none">
+                <motion.span 
+                  className="font-bold leading-none"
+                  animate={isAnimating ? {
+                    scale: [1, 1.2, 1]
+                  } : {}}
+                  transition={{ duration: 0.6 }}
+                >
                   {itemCount > 99 ? '99+' : itemCount}
-                </span>
+                </motion.span>
               </Badge>
             </motion.div>
           )}
         </AnimatePresence>
       </Button>
       
-      {/* Pulse animation when adding items */}
+      {/* Enhanced pulse animation when adding items */}
       {isAnimating && (
-        <motion.div
-          className="absolute inset-0 rounded-full bg-[#00FFAB] opacity-30"
-          initial={{ scale: 1, opacity: 0.3 }}
-          animate={{ scale: 1.5, opacity: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{ pointerEvents: 'none' }}
-        />
+        <>
+          <motion.div
+            className="absolute inset-0 rounded-full bg-[#00FFAB] opacity-20"
+            initial={{ scale: 1, opacity: 0.2 }}
+            animate={{ scale: 2, opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            style={{ pointerEvents: 'none' }}
+          />
+          <motion.div
+            className="absolute inset-0 rounded-full bg-green-400 opacity-30"
+            initial={{ scale: 1, opacity: 0.3 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            style={{ pointerEvents: 'none' }}
+          />
+        </>
       )}
     </motion.div>
   );
