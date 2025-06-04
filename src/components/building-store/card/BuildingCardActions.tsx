@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart,
@@ -25,21 +25,47 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
   const isMobile = useIsMobile();
   
   // Connect to cart manager to check if item is in cart
-  const { isItemInCart, cartItems } = useCartManager();
+  const { isItemInCart, cartItems, initialLoadDone } = useCartManager();
   
-  // Check if this building is in cart - this will update automatically when cart changes
-  const isInCart = useMemo(() => {
-    return isItemInCart(building.id);
-  }, [isItemInCart, building.id, cartItems]); // cartItems dependency ensures updates when cart changes
+  // SIMPLIFIED: Direct state check - no complex useMemo
+  const [isInCart, setIsInCart] = useState(false);
+  
+  // Update isInCart state when cart changes
+  useEffect(() => {
+    console.log('🏢 [BuildingCardActions] useEffect executado:', {
+      buildingId: building.id,
+      initialLoadDone,
+      cartItemsLength: cartItems.length
+    });
+    
+    if (initialLoadDone) {
+      const inCartNow = isItemInCart(building.id);
+      console.log('🏢 [BuildingCardActions] Verificação do carrinho:', {
+        buildingId: building.id,
+        inCartNow,
+        previousState: isInCart
+      });
+      setIsInCart(inCartNow);
+    }
+  }, [building.id, cartItems, initialLoadDone, isItemInCart]);
 
   const handleAddToCart = async () => {
-    if (isInCart) return; // Don't add if already in cart
+    console.log('🛒 [BuildingCardActions] handleAddToCart chamado:', {
+      buildingId: building.id,
+      buildingName: building.nome,
+      isInCart
+    });
+    
+    if (isInCart) {
+      console.log('🛒 [BuildingCardActions] Item já está no carrinho, ignorando');
+      return;
+    }
     
     try {
       // Convert Building to Panel before adding to cart
       const panel = buildingToPanel(building);
       
-      console.log('🛒 [BUILDING STORE CARD] Adicionando ao carrinho:', {
+      console.log('🛒 [BuildingCardActions] Adicionando ao carrinho:', {
         building: building.nome,
         panel: panel.id,
         panelCode: panel.code
@@ -62,7 +88,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       }, 600);
       
     } catch (error) {
-      console.error('❌ [BUILDING STORE CARD] Erro ao adicionar ao carrinho:', error);
+      console.error('❌ [BuildingCardActions] Erro ao adicionar ao carrinho:', error);
       setIsAnimating(false);
       
       toast.error('Erro ao adicionar ao carrinho', {
@@ -71,6 +97,13 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       });
     }
   };
+
+  console.log('🏢 [BuildingCardActions] Renderizando:', {
+    buildingId: building.id,
+    buildingName: building.nome,
+    isInCart,
+    initialLoadDone
+  });
 
   return (
     <div className={`flex items-start justify-between pt-4 border-t border-gray-100 ${
@@ -88,7 +121,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       </div>
       
       <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>
-        {/* Add to Cart Button - now synchronized with cart state */}
+        {/* Add to Cart Button - now with simplified cart state sync */}
         <motion.div
           animate={isAnimating ? { scale: [1, 1.1, 1] } : {}}
           transition={{ duration: 0.6 }}

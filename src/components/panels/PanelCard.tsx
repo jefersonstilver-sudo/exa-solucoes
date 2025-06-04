@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Panel } from '@/types/panel';
@@ -16,10 +16,29 @@ interface PanelCardProps {
 
 export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
   // Connect to cart manager to get real cart state
-  const { isItemInCart } = useCartManager();
+  const { isItemInCart, cartItems, initialLoadDone } = useCartManager();
   
-  // Use real cart state instead of passed prop
-  const inCart = isItemInCart(panel.id);
+  // SIMPLIFIED: Direct state management
+  const [inCart, setInCart] = useState(false);
+  
+  // Update cart state when cart changes
+  useEffect(() => {
+    console.log('🎯 [PanelCard] useEffect executado:', {
+      panelId: panel.id,
+      initialLoadDone,
+      cartItemsLength: cartItems.length
+    });
+    
+    if (initialLoadDone) {
+      const inCartNow = isItemInCart(panel.id);
+      console.log('🎯 [PanelCard] Verificação do carrinho:', {
+        panelId: panel.id,
+        inCartNow,
+        previousState: inCart
+      });
+      setInCart(inCartNow);
+    }
+  }, [panel.id, cartItems, initialLoadDone, isItemInCart]);
 
   // Calculate price for 30 days (base price)
   const calculatePrice = () => {
@@ -69,10 +88,22 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
 
   // Handle add to cart with animation
   const handleAddToCart = () => {
+    console.log('🛒 [PanelCard] handleAddToCart chamado:', {
+      panelId: panel.id,
+      inCart
+    });
+    
     if (!inCart) {
       onAddToCart(panel, 30); // Default to 30 days
     }
   };
+
+  console.log('🎯 [PanelCard] Renderizando:', {
+    panelId: panel.id,
+    buildingName: panel.buildings?.nome,
+    inCart,
+    initialLoadDone
+  });
 
   return (
     <motion.div 
@@ -161,7 +192,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
               </div>
             </div>
             
-            {/* Price and CTA section - Updated with correct cart state */}
+            {/* Price and CTA section - Updated with simplified cart state */}
             <div className="flex justify-between items-center pt-3 border-t border-gray-200">
               <div>
                 <p className="text-sm text-gray-500">Preço para 30 dias</p>
