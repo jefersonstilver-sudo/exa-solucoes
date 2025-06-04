@@ -28,6 +28,24 @@ export interface OrderStatusInfo {
 
 export const useOrderStatus = (order: any) => {
   const statusInfo = useMemo((): OrderStatusInfo => {
+    // CORREÇÃO: Verificar se é uma tentativa de compra primeiro
+    if (order?.type === 'attempt') {
+      return {
+        label: 'Pagamento não realizado',
+        description: 'Esta compra foi iniciada mas não foi finalizada',
+        color: 'text-white',
+        bgColor: 'bg-red-600 border-red-700',
+        icon: XCircle,
+        action: {
+          label: 'Finalizar Compra',
+          variant: 'default',
+          onClick: () => {
+            console.log('Redirecionar para finalizar compra');
+          }
+        }
+      };
+    }
+
     const status = order?.status;
     const hasVideos = order?.videos && order.videos.length > 0;
     const hasApprovedVideo = order?.videos?.some((v: any) => v.approval_status === 'approved');
@@ -166,7 +184,7 @@ export const useOrderStatus = (order: any) => {
           icon: AlertTriangle
         };
     }
-  }, [order?.status, order?.videos, order?.id]);
+  }, [order?.status, order?.videos, order?.id, order?.type]);
 
   return statusInfo;
 };
