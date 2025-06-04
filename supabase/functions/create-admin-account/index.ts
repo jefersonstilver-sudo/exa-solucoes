@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 [CREATE-ADMIN] Edge function iniciada (VERSÃO SEGURA)');
+    console.log('🚀 [CREATE-ADMIN] Edge function iniciada (VERSÃO CORRIGIDA)');
 
     // Verificar se é uma requisição POST
     if (req.method !== 'POST') {
@@ -87,9 +87,9 @@ serve(async (req) => {
       }
     );
 
-    console.log('🔍 [CREATE-ADMIN] Executando verificação segura de usuário...');
+    console.log('🔍 [CREATE-ADMIN] Testando conexão com a função SQL...');
 
-    // 1. VERIFICAÇÃO SEGURA usando a nova função SQL
+    // 1. VERIFICAÇÃO SEGURA usando a função SQL recém-instalada
     const { data: safeCheck, error: safeCheckError } = await supabaseServiceRole.rpc(
       'safe_create_admin_user',
       {
@@ -100,12 +100,13 @@ serve(async (req) => {
     );
 
     if (safeCheckError) {
-      console.error('❌ [CREATE-ADMIN] Erro na verificação segura:', safeCheckError);
+      console.error('❌ [CREATE-ADMIN] Erro na função safe_create_admin_user:', safeCheckError);
       return new Response(
         JSON.stringify({ 
-          error: 'Erro na verificação do sistema',
-          code: 'SAFE_CHECK_ERROR',
-          details: safeCheckError.message
+          error: 'Erro na verificação do sistema - função SQL não encontrada',
+          code: 'SQL_FUNCTION_ERROR',
+          details: safeCheckError.message,
+          suggestion: 'Verifique se as funções SQL foram aplicadas corretamente'
         }),
         { 
           status: 500,
@@ -113,6 +114,8 @@ serve(async (req) => {
         }
       );
     }
+
+    console.log('✅ [CREATE-ADMIN] Função SQL respondeu:', safeCheck);
 
     // Se a verificação segura falhou, retornar o erro específico
     if (!safeCheck?.success) {
@@ -150,11 +153,11 @@ serve(async (req) => {
     });
 
     if (createError) {
-      console.error('❌ [CREATE-ADMIN] Erro ao criar usuário:', createError);
+      console.error('❌ [CREATE-ADMIN] Erro ao criar usuário no Auth:', createError);
       return new Response(
         JSON.stringify({ 
           error: 'Erro ao criar conta administrativa',
-          code: 'CREATE_ERROR',
+          code: 'AUTH_CREATE_ERROR',
           details: createError.message
         }),
         { 
@@ -180,7 +183,7 @@ serve(async (req) => {
 
     console.log('✅ [CREATE-ADMIN] Usuário criado no Auth:', newUser.user.id);
 
-    // 3. Inserir na tabela users (com verificação dupla)
+    // 3. Inserir na tabela users
     const { error: insertError } = await supabaseServiceRole
       .from('users')
       .insert({
@@ -215,12 +218,16 @@ serve(async (req) => {
 
     console.log('✅ [CREATE-ADMIN] Usuário inserido na tabela users');
 
-    // 4. Log de sucesso
-    await supabaseServiceRole.rpc('monitor_system_health');
-    console.log('📊 [CREATE-ADMIN] Health check pós-criação executado');
+    // 4. Testar função de saúde do sistema para confirmar que tudo funciona
+    try {
+      await supabaseServiceRole.rpc('monitor_system_health');
+      console.log('📊 [CREATE-ADMIN] Health check pós-criação executado com sucesso');
+    } catch (healthError) {
+      console.warn('⚠️ [CREATE-ADMIN] Health check falhou, mas usuário foi criado:', healthError);
+    }
 
     // 5. Resposta de sucesso
-    console.log('🎉 [CREATE-ADMIN] Conta criada com sucesso (MÉTODO SEGURO)!');
+    console.log('🎉 [CREATE-ADMIN] Conta criada com sucesso!');
     
     return new Response(
       JSON.stringify({
@@ -230,10 +237,10 @@ serve(async (req) => {
           email: email,
           role: adminType,
           password: defaultPassword,
-          creation_method: 'safe_function',
-          safe_id_generated: true
+          creation_method: 'safe_function_corrected',
+          functions_working: true
         },
-        message: 'Conta administrativa criada com sucesso usando método seguro!'
+        message: 'Conta administrativa criada com sucesso usando as funções SQL instaladas!'
       }),
       { 
         status: 200,
@@ -242,13 +249,14 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('💥 [CREATE-ADMIN] Erro crítico:', error);
+    console.error('💥 [CREATE-ADMIN] Erro crítico não tratado:', error);
     
     return new Response(
       JSON.stringify({ 
         error: 'Erro interno do servidor',
         code: 'INTERNAL_ERROR',
-        details: error.message
+        details: error.message,
+        stack: error.stack
       }),
       { 
         status: 500,
