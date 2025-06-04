@@ -42,7 +42,7 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
     switch (variant) {
       case 'header':
         return {
-          button: 'relative p-2 text-gray-700 hover:text-indexa-purple transition-colors duration-200',
+          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
           icon: 'h-6 w-6',
           badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
         };
@@ -54,13 +54,13 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
         };
       case 'mobile':
         return {
-          button: 'relative p-2 text-gray-600 hover:text-indexa-purple transition-colors duration-200',
+          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
           icon: 'h-5 w-5',
           badge: 'absolute -top-1 -right-1 h-4 w-4 text-xs'
         };
       default:
         return {
-          button: 'relative p-2 text-gray-700 hover:text-indexa-purple transition-colors duration-200',
+          button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
           icon: 'h-6 w-6',
           badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
         };
@@ -113,7 +113,7 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
       {/* Pulse animation when adding items */}
       {isAnimating && (
         <motion.div
-          className="absolute inset-0 rounded-full bg-indexa-purple opacity-30"
+          className="absolute inset-0 rounded-full bg-[#00FFAB] opacity-30"
           initial={{ scale: 1, opacity: 0.3 }}
           animate={{ scale: 1.5, opacity: 0 }}
           transition={{ duration: 0.6 }}

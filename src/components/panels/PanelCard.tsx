@@ -1,12 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Panel } from '@/types/panel';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Users, Eye, Monitor, Building, Check } from 'lucide-react';
+import { ShoppingCart, Users, Eye, Monitor, Building, Check, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCartManager } from '@/hooks/useCartManager';
+import { useButtonAnimation } from '@/hooks/useButtonAnimation';
 
 interface PanelCardProps {
   panel: Panel;
@@ -15,6 +16,9 @@ interface PanelCardProps {
 }
 
 export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const { isAnimating, isPressed, startAnimation } = useButtonAnimation();
+  
   // Connect to cart manager - simplified approach
   const { isItemInCart, initialLoadDone } = useCartManager();
   
@@ -25,7 +29,8 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
     panelId: panel.id,
     buildingName: panel.buildings?.nome,
     inCart,
-    initialLoadDone
+    initialLoadDone,
+    isAdding
   });
 
   // Calculate price for 30 days (base price)
@@ -75,14 +80,43 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
   };
 
   // Handle add to cart
-  const handleAddToCart = () => {
-    if (!inCart) {
-      console.log('🛒 [PanelCard] Chamando onAddToCart');
-      onAddToCart(panel, 30); // Default to 30 days
-    } else {
-      console.log('🛒 [PanelCard] Item já está no carrinho');
+  const handleAddToCart = async () => {
+    if (inCart || isAdding) {
+      console.log('🛒 [PanelCard] Item já está no carrinho ou sendo adicionado');
+      return;
+    }
+    
+    try {
+      console.log('🛒 [PanelCard] Iniciando adição ao carrinho');
+      
+      // Estado otimista
+      setIsAdding(true);
+      startAnimation();
+      
+      // Call the add to cart function
+      await onAddToCart(panel, 30); // Default to 30 days
+      
+      console.log('🛒 [PanelCard] Item adicionado com sucesso');
+      
+      // Reset loading
+      setTimeout(() => {
+        setIsAdding(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('🛒 [PanelCard] Erro ao adicionar:', error);
+      setIsAdding(false);
     }
   };
+
+  // Determinar estado do botão
+  const getButtonState = () => {
+    if (isAdding) return 'loading';
+    if (inCart) return 'added';
+    return 'normal';
+  };
+
+  const buttonState = getButtonState();
 
   return (
     <motion.div 
@@ -184,17 +218,38 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
+                animate={
+                  isAnimating 
+                    ? { 
+                        scale: [1, 1.05, 1], 
+                        backgroundColor: ['#3C1361', '#22c55e', '#3C1361']
+                      } 
+                    : isPressed 
+                      ? { scale: 1.02 }
+                      : { scale: 1 }
+                }
+                transition={{ 
+                  duration: isAnimating ? 0.8 : 0.2,
+                  ease: "easeInOut"
+                }}
               >
                 <Button 
-                  className={`px-5 py-5 rounded-xl flex gap-2 ${
-                    inCart 
-                      ? 'bg-green-100 text-green-700 hover:bg-green-100' 
-                      : 'bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#3C1361]'
+                  className={`px-5 py-5 rounded-xl flex gap-2 transition-all duration-300 ${
+                    buttonState === 'loading'
+                      ? 'bg-[#3C1361]/80 text-white cursor-wait' 
+                      : buttonState === 'added' 
+                        ? 'bg-green-500 text-white hover:bg-green-500' 
+                        : 'bg-[#00FFAB] hover:bg-[#00FFAB]/90 text-[#3C1361]'
                   }`}
                   onClick={handleAddToCart}
-                  disabled={inCart}
+                  disabled={buttonState === 'added' || buttonState === 'loading'}
                 >
-                  {inCart ? (
+                  {buttonState === 'loading' ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Adicionando...
+                    </>
+                  ) : buttonState === 'added' ? (
                     <>
                       <Check className="h-5 w-5" />
                       Adicionado

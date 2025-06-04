@@ -28,6 +28,7 @@ export const useCartManager = () => {
   const [cartAnimation, setCartAnimation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0); // Para forçar re-render
   const navigate = useNavigate();
 
   // Load cart on mount
@@ -57,13 +58,18 @@ export const useCartManager = () => {
     saveCartToStorage(legacyCartItems);
   }, [cartItems, initialLoadDone]);
 
+  // Força re-render quando forceUpdate muda
+  const triggerUpdate = useCallback(() => {
+    setForceUpdate(prev => prev + 1);
+  }, []);
+
   // Simple check if item is in cart
   const isItemInCart = useCallback((buildingId: string): boolean => {
     if (!buildingId || !initialLoadDone) return false;
     const inCart = cartItems.some(item => item.panel.id === buildingId);
     console.log('🛒 [useCartManager] Verificando se item está no carrinho:', buildingId, '→', inCart);
     return inCart;
-  }, [cartItems, initialLoadDone]);
+  }, [cartItems, initialLoadDone, forceUpdate]); // Adiciona forceUpdate como dependência
 
   // Get cart item by building ID
   const getCartItemByBuildingId = useCallback((buildingId: string): CartItem | null => {
@@ -106,6 +112,11 @@ export const useCartManager = () => {
       }
     });
     
+    // Força atualização imediata
+    setTimeout(() => {
+      triggerUpdate();
+    }, 100);
+    
     // Animation and open cart
     setCartAnimation(true);
     setCartOpen(true);
@@ -118,7 +129,7 @@ export const useCartManager = () => {
       description: "Painel adicionado com sucesso",
       duration: 3000,
     });
-  }, []);
+  }, [triggerUpdate]);
 
   // Remove from cart
   const handleRemoveFromCart = useCallback((panelId: string) => {
@@ -129,10 +140,15 @@ export const useCartManager = () => {
     
     setCartItems(prev => prev.filter(item => item.panel.id !== panelId));
     
+    // Força atualização
+    setTimeout(() => {
+      triggerUpdate();
+    }, 100);
+    
     toast.success(`${panelName} removido do carrinho`, {
       duration: 3000,
     });
-  }, [cartItems]);
+  }, [cartItems, triggerUpdate]);
 
   // Clear cart
   const handleClearCart = useCallback(() => {
@@ -140,11 +156,14 @@ export const useCartManager = () => {
     setCartItems([]);
     localStorage.removeItem(CART_STORAGE_KEY);
     
+    // Força atualização
+    triggerUpdate();
+    
     toast.success('Carrinho limpo', {
       description: "Todos os itens foram removidos",
       duration: 3000,
     });
-  }, []);
+  }, [triggerUpdate]);
 
   // Change duration
   const handleChangeDuration = useCallback((panelId: string, duration: number) => {
@@ -191,13 +210,14 @@ export const useCartManager = () => {
         setCartItems(parsedCart);
         sessionStorage.removeItem('lastCart');
         toast.success('Carrinho restaurado');
+        triggerUpdate();
         return true;
       }
     } catch (e) {
       console.error('Erro ao restaurar carrinho:', e);
     }
     return false;
-  }, []);
+  }, [triggerUpdate]);
 
   return {
     // Cart state
