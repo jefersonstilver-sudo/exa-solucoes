@@ -10,11 +10,11 @@ import {
   ShoppingBag, 
   Calendar, 
   Clock,
-  Filter,
   Search,
   Eye,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Upload
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,6 @@ const AdvertiserOrders = () => {
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
-  const [typeFilter, setTypeFilter] = useState('todos');
 
   // NOW we can do conditional rendering after all hooks are called
   if (isMobile) {
@@ -64,8 +63,11 @@ const AdvertiserOrders = () => {
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
     
-    // Pendentes: aguardando pagamento
-    pendentes: orders.filter(order => order.status === 'pendente').length,
+    // Aguardando Vídeo: pedidos pagos mas sem vídeo enviado/aprovado
+    aguardandoVideo: orders.filter(order => 
+      ['pago', 'pago_pendente_video'].includes(order.status) &&
+      (!order.videos || order.videos.length === 0 || !order.videos.some((v: any) => v.approval_status === 'approved'))
+    ).length,
     
     // Pedidos finalizados: expirados ou fora do período
     pedidosFinalizados: orders.filter(order => 
@@ -84,10 +86,8 @@ const AdvertiserOrders = () => {
       statusFilter === 'todos' || 
       (item.type === 'order' && item.status === statusFilter) ||
       (item.type === 'attempt' && statusFilter === 'tentativa');
-    
-    const matchesType = typeFilter === 'todos' || item.type === typeFilter;
 
-    return matchesSearch && matchesStatus && matchesType;
+    return matchesSearch && matchesStatus;
   });
 
   const formatCurrency = (value: number) => {
@@ -247,25 +247,25 @@ const AdvertiserOrders = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-800">Pendentes</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+            <CardTitle className="text-sm font-medium text-blue-800">Aguardando Vídeo</CardTitle>
+            <Upload className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-900">{stats.pendentes}</div>
-            <p className="text-xs text-yellow-600">aguardando pagamento</p>
+            <div className="text-2xl font-bold text-blue-900">{stats.aguardandoVideo}</div>
+            <p className="text-xs text-blue-600">pagos sem vídeo</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">Pedidos Finalizados</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-gray-800">Pedidos Finalizados</CardTitle>
+            <Calendar className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{stats.pedidosFinalizados}</div>
-            <p className="text-xs text-blue-600">expirados</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.pedidosFinalizados}</div>
+            <p className="text-xs text-gray-600">expirados</p>
           </CardContent>
         </Card>
       </div>
@@ -285,27 +285,14 @@ const AdvertiserOrders = () => {
                 />
               </div>
             </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filtrar por tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os Tipos</SelectItem>
-                <SelectItem value="order">Pedidos Completos</SelectItem>
-                <SelectItem value="attempt">Tentativas</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[200px]">
-                <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os Status</SelectItem>
                 <SelectItem value="tentativa">Tentativas</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
+                <SelectItem value="pago">Aguardando Vídeo</SelectItem>
                 <SelectItem value="video_aprovado">Aprovado</SelectItem>
                 <SelectItem value="ativo">Ativo</SelectItem>
                 <SelectItem value="cancelado">Cancelado</SelectItem>
@@ -323,13 +310,13 @@ const AdvertiserOrders = () => {
               <ShoppingBag className="h-8 w-8 text-gray-500" />
             </div>
             <h3 className="text-xl font-medium mb-2">
-              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
+              {searchTerm || statusFilter !== 'todos'
                 ? 'Nenhum pedido encontrado' 
                 : 'Você ainda não fez nenhum pedido'
               }
             </h3>
             <p className="text-gray-500 mb-6">
-              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
+              {searchTerm || statusFilter !== 'todos'
                 ? 'Tente ajustar os filtros para encontrar seus pedidos.'
                 : 'Comece criando sua primeira campanha publicitária.'
               }

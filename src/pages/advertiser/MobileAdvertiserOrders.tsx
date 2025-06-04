@@ -11,7 +11,8 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Calendar
+  Calendar,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +38,7 @@ interface Order {
 interface OrderStats {
   pedidosAtivos: number;
   tentativas: number;
-  pendentes: number;
+  aguardandoVideo: number;
   pedidosFinalizados: number;
 }
 
@@ -49,7 +50,7 @@ const MobileAdvertiserOrders = () => {
   const [stats, setStats] = useState<OrderStats>({
     pedidosAtivos: 0,
     tentativas: 0,
-    pendentes: 0,
+    aguardandoVideo: 0,
     pedidosFinalizados: 0
   });
   const [loading, setLoading] = useState(true);
@@ -124,14 +125,17 @@ const MobileAdvertiserOrders = () => {
     ).length;
     
     const tentativas = 0; // Na versão mobile não temos tentativas separadas no momento
-    const pendentes = ordersList.filter(order => order.status === 'pendente').length;
+    
+    const aguardandoVideo = ordersList.filter(order => 
+      ['pago', 'pago_pendente_video'].includes(order.status)
+    ).length;
     
     const pedidosFinalizados = ordersList.filter(order => 
       order.status === 'expirado' || 
       (['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) && !isWithinActivePeriod(order))
     ).length;
 
-    setStats({ pedidosAtivos, tentativas, pendentes, pedidosFinalizados });
+    setStats({ pedidosAtivos, tentativas, aguardandoVideo, pedidosFinalizados });
   };
 
   const filterOrders = () => {
@@ -149,18 +153,12 @@ const MobileAdvertiserOrders = () => {
 
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'pendente':
-        return {
-          label: 'Pendente',
-          color: 'bg-orange-100 text-orange-800 border-orange-200',
-          icon: Clock
-        };
       case 'pago':
       case 'pago_pendente_video':
         return {
-          label: 'Pago',
-          color: 'bg-green-100 text-green-800 border-green-200',
-          icon: CheckCircle
+          label: 'Aguardando Vídeo',
+          color: 'bg-blue-100 text-blue-800 border-blue-200',
+          icon: Upload
         };
       case 'video_aprovado':
       case 'ativo':
@@ -206,16 +204,16 @@ const MobileAdvertiserOrders = () => {
         detail: 'não finalizadas'
       },
       { 
-        label: 'Pendentes', 
-        value: stats.pendentes, 
-        color: 'bg-yellow-500',
-        icon: Clock,
-        detail: 'aguardando'
+        label: 'Aguardando Vídeo', 
+        value: stats.aguardandoVideo, 
+        color: 'bg-blue-500',
+        icon: Upload,
+        detail: 'pagos sem vídeo'
       },
       { 
         label: 'Finalizados', 
         value: stats.pedidosFinalizados, 
-        color: 'bg-blue-500',
+        color: 'bg-gray-500',
         icon: Calendar,
         detail: 'expirados'
       }
@@ -285,13 +283,6 @@ const MobileAdvertiserOrders = () => {
               className="h-10 w-10 rounded-full"
             >
               <Search className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full"
-            >
-              <Filter className="h-5 w-5" />
             </Button>
           </div>
         }
