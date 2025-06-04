@@ -24,7 +24,10 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
   onRefresh
 }) => {
   console.log('🏗️ [BUILDING DETAILS TABS] Renderizando tabs para:', building?.nome, {
-    panelsCount: panels?.length || 0
+    panelsCount: panels?.length || 0,
+    salesCount: sales?.length || 0,
+    logsCount: actionLogs?.length || 0,
+    loading
   });
 
   return (
@@ -32,29 +35,30 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="overview">Visão Geral</TabsTrigger>
         <TabsTrigger value="panels">Painéis ({panels?.length || 0})</TabsTrigger>
-        <TabsTrigger value="sales">Vendas</TabsTrigger>
-        <TabsTrigger value="logs">Histórico</TabsTrigger>
+        <TabsTrigger value="sales">Vendas ({sales?.length || 0})</TabsTrigger>
+        <TabsTrigger value="logs">Histórico ({actionLogs?.length || 0})</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-6">
         <BuildingOverviewTab building={building} panels={panels} />
       </TabsContent>
 
-      <TabsContent value="panels">
+      <TabsContent value="panels" className="space-y-6">
         <AssignedPanelsTab 
           buildingId={building?.id}
           buildingName={building?.nome}
           panels={panels}
           loading={loading}
+          onRefresh={onRefresh}
         />
       </TabsContent>
 
-      <TabsContent value="sales">
-        <BuildingSalesTab sales={sales} />
+      <TabsContent value="sales" className="space-y-6">
+        <BuildingSalesTab sales={sales} loading={loading} />
       </TabsContent>
 
-      <TabsContent value="logs">
-        <BuildingLogsTab actionLogs={actionLogs} />
+      <TabsContent value="logs" className="space-y-6">
+        <BuildingLogsTab actionLogs={actionLogs} loading={loading} />
       </TabsContent>
     </Tabs>
   );

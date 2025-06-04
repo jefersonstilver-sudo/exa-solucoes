@@ -10,18 +10,21 @@ interface AssignedPanelsTabProps {
   buildingName?: string;
   panels?: any[];
   loading?: boolean;
+  onRefresh?: () => void;
 }
 
 const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({ 
   buildingId, 
   buildingName,
   panels = [],
-  loading = false
+  loading = false,
+  onRefresh
 }) => {
   console.log('🔍 [ASSIGNED PANELS] Renderizando aba com:', {
     buildingId,
     buildingName,
-    panelsCount: panels?.length || 0
+    panelsCount: panels?.length || 0,
+    loading
   });
 
   const getStatusConfig = (status: string) => {
@@ -70,8 +73,20 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center">
               <Monitor className="h-5 w-5 mr-2" />
-              Painéis Atribuídos a {buildingName}
+              Painéis Atribuídos ao {buildingName}
             </CardTitle>
+            {onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                disabled={loading}
+                className="flex items-center space-x-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>Atualizar</span>
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -107,7 +122,6 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
                     <Card key={panel.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="space-y-3">
-                          {/* Header do painel */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <Monitor className="h-4 w-4 text-indexa-purple" />
@@ -119,7 +133,6 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
                             </Badge>
                           </div>
 
-                          {/* Informações técnicas */}
                           <div className="space-y-2 text-sm">
                             {panel.resolucao && (
                               <div className="flex justify-between">
@@ -133,10 +146,10 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
                                 <span className="font-medium">{panel.polegada}"</span>
                               </div>
                             )}
-                            {panel.orientacao && (
+                            {panel.localizacao && (
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Orientação:</span>
-                                <span className="font-medium capitalize">{panel.orientacao}</span>
+                                <span className="text-gray-500">Localização:</span>
+                                <span className="font-medium">{panel.localizacao}</span>
                               </div>
                             )}
                             {panel.sistema_operacional && (
@@ -145,21 +158,9 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
                                 <span className="font-medium capitalize">{panel.sistema_operacional}</span>
                               </div>
                             )}
-                            {panel.localizacao && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Localização:</span>
-                                <span className="font-medium">{panel.localizacao}</span>
-                              </div>
-                            )}
-                            {panel.codigo_anydesk && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">AnyDesk:</span>
-                                <span className="font-medium font-mono text-xs">{panel.codigo_anydesk}</span>
-                              </div>
-                            )}
                             {panel.ip_interno && (
                               <div className="flex justify-between">
-                                <span className="text-gray-500">IP Interno:</span>
+                                <span className="text-gray-500">IP:</span>
                                 <span className="font-medium font-mono text-xs">{panel.ip_interno}</span>
                               </div>
                             )}
@@ -173,7 +174,6 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
                             )}
                           </div>
 
-                          {/* Observações se houver */}
                           {panel.observacoes && (
                             <div className="pt-2 border-t">
                               <p className="text-xs text-gray-600">
@@ -182,7 +182,6 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
                             </div>
                           )}
 
-                          {/* Ações */}
                           <div className="pt-2">
                             <Button
                               variant="outline"

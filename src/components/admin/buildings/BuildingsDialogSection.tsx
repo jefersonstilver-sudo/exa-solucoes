@@ -1,7 +1,7 @@
 
 import React from 'react';
 import BuildingFormDialog from './BuildingFormDialog';
-import SafeBuildingDetailsDialog from './safe/SafeBuildingDetailsDialog';
+import BuildingDetailsDialog from './BuildingDetailsDialog';
 import BuildingImageManager from './BuildingImageManager';
 
 interface BuildingsDialogSectionProps {
@@ -27,6 +27,14 @@ const BuildingsDialogSection: React.FC<BuildingsDialogSectionProps> = ({
   setIsImageManagerOpen,
   refetch
 }) => {
+  console.log('🏗️ [BUILDINGS DIALOG SECTION] Renderizando dialogs:', {
+    isFormOpen,
+    isDetailsOpen,
+    isImageManagerOpen,
+    hasSelectedBuilding: !!selectedBuilding,
+    buildingName: selectedBuilding?.nome || 'null'
+  });
+
   return (
     <>
       <BuildingFormDialog
@@ -36,7 +44,7 @@ const BuildingsDialogSection: React.FC<BuildingsDialogSectionProps> = ({
         onSuccess={onSuccess}
       />
 
-      <SafeBuildingDetailsDialog
+      <BuildingDetailsDialog
         open={isDetailsOpen}
         onOpenChange={onCloseDetails}
         building={selectedBuilding}
