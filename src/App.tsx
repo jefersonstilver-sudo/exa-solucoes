@@ -32,6 +32,13 @@ const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
 const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
 
+// Lazy load das páginas de checkout
+const PlanSelection = lazy(() => import('./pages/PlanSelection'));
+const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
+const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -108,6 +115,43 @@ function App() {
                 <Route path="/painel-store" element={
                   <LazyPageWrapper>
                     <PainelStore />
+                  </LazyPageWrapper>
+                } />
+
+                {/* Rotas de checkout - NOVAS ROTAS ADICIONADAS */}
+                <Route path="/plano" element={
+                  <LazyPageWrapper>
+                    <PlanSelection />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/planos" element={
+                  <LazyPageWrapper>
+                    <PlanSelection />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/selecionar-plano" element={
+                  <LazyPageWrapper>
+                    <PlanSelection />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/checkout/cupom" element={
+                  <LazyPageWrapper>
+                    <CheckoutCoupon />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/checkout/resumo" element={
+                  <LazyPageWrapper>
+                    <CheckoutSummary />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/checkout" element={
+                  <LazyPageWrapper>
+                    <Checkout />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/confirmacao" element={
+                  <LazyPageWrapper>
+                    <OrderConfirmation />
                   </LazyPageWrapper>
                 } />
 
