@@ -4,7 +4,7 @@ import Layout from '@/components/layout/Layout';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader';
 import useBuildingStore from '@/hooks/useBuildingStore';
-import { useCart } from '@/contexts/CartContext';
+import { useCartManager } from '@/hooks/useCartManager';
 
 const BuildingStore = () => {
   console.log('🏢 [BUILDING STORE] Página da loja carregada');
@@ -24,7 +24,7 @@ const BuildingStore = () => {
     initializeStore
   } = useBuildingStore();
 
-  const { addToCart } = useCart();
+  const { handleAddToCart } = useCartManager();
 
   // Initialize store on mount
   React.useEffect(() => {
@@ -38,8 +38,8 @@ const BuildingStore = () => {
     console.log('🔄 [BUILDING STORE] buildings.length:', buildings.length);
     console.log('🔄 [BUILDING STORE] isLoading:', isLoading);
     console.log('🔄 [BUILDING STORE] error:', error);
-    console.log('🔄 [BUILDING STORE] addToCart function:', !!addToCart);
-  }, [buildings, isLoading, error, addToCart]);
+    console.log('🔄 [BUILDING STORE] handleAddToCart function:', !!handleAddToCart);
+  }, [buildings, isLoading, error, handleAddToCart]);
 
   if (error) {
     return (
@@ -66,8 +66,10 @@ const BuildingStore = () => {
 
   return (
     <Layout>
+      {/* Container principal com padding para evitar sobreposição do header */}
       <div className="min-h-screen w-full pt-20">
         <div className="w-full container mx-auto px-4 md:px-6 py-6">
+          {/* Header com botão de refresh */}
           <BuildingStoreHeader 
             title="Loja de Prédios"
             subtitle="Encontre o local perfeito para sua campanha"
@@ -84,7 +86,7 @@ const BuildingStore = () => {
             handleFilterChange={handleFilterChange}
             handleSearch={handleSearch}
             handleClearLocation={handleClearLocation}
-            onAddToCart={addToCart}
+            onAddToCart={handleAddToCart}
           />
         </div>
       </div>

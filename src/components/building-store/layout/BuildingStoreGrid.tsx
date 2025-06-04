@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
-import { BuildingFilters } from '@/hooks/building-store/types';
+import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { Panel } from '@/types/panel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingFilterSidebar from '../BuildingFilterSidebar';
@@ -47,9 +47,11 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
         {/* Grid de prédios mobile */}
         <div className="w-full">
           <BuildingStoreGrid 
-            buildings={buildings || []}
+            buildings={buildings}
             isLoading={isLoading}
+            isSearching={isSearching}
             onAddToCart={onAddToCart}
+            selectedLocation={selectedLocation}
           />
         </div>
       </div>
@@ -74,9 +76,11 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
       {/* Main content with building grid */}
       <div className="lg:col-span-8 xl:col-span-9">
         <BuildingStoreGrid 
-          buildings={buildings || []}
+          buildings={buildings}
           isLoading={isLoading}
+          isSearching={isSearching}
           onAddToCart={onAddToCart}
+          selectedLocation={selectedLocation}
         />
       </div>
     </div>

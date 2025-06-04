@@ -43,25 +43,25 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
       case 'header':
         return {
           button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
-          icon: 'h-6 w-6 text-white', // FORÇAR COR BRANCA
+          icon: 'h-6 w-6',
           badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
         };
       case 'floating':
         return {
           button: 'relative p-3 bg-indexa-purple text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300',
-          icon: 'h-6 w-6 text-white',
+          icon: 'h-6 w-6',
           badge: 'absolute -top-2 -right-2 h-6 w-6 text-xs'
         };
       case 'mobile':
         return {
           button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
-          icon: 'h-5 w-5 text-white', // FORÇAR COR BRANCA
+          icon: 'h-5 w-5',
           badge: 'absolute -top-1 -right-1 h-4 w-4 text-xs'
         };
       default:
         return {
           button: 'relative p-2 text-white hover:text-[#00FFAB] transition-colors duration-200',
-          icon: 'h-6 w-6 text-white', // FORÇAR COR BRANCA
+          icon: 'h-6 w-6',
           badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
         };
     }

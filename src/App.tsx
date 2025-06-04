@@ -1,89 +1,189 @@
 
-import { Suspense, lazy } from "react";
+import { Suspense, lazy } from 'react';
 import { Toaster } from "@/components/ui/sonner";
-import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { CartProvider } from "@/contexts/CartContext";
-import { AuthProvider } from "@/hooks/useAuth";
-import { ErrorBoundary } from "react-error-boundary";
+import SuperAdminPage from './pages/SuperAdminPage';
+import AdminPage from './pages/AdminPage';
+import LoginPage from './pages/LoginPage';
+import Cadastro from './pages/Cadastro';
+import { AuthProvider } from './hooks/useAuth';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import LazyLoadingFallback from './components/ui/LazyLoadingFallback';
+import CompleteResponsiveLayout from './components/advertiser/layout/CompleteResponsiveLayout';
 
-// Lazy load pages for better performance - apenas páginas que existem
-const Index = lazy(() => import("./pages/Index"));
-const Marketing = lazy(() => import("./pages/Marketing"));
-const PainelStore = lazy(() => import("./pages/PainelStore"));
-const BuildingStore = lazy(() => import("./pages/BuildingStore"));
-const PanelStore = lazy(() => import("./pages/PanelStore"));
-const Checkout = lazy(() => import("./pages/Checkout"));
-const Login = lazy(() => import("./pages/Login"));
-const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
+// Lazy load das páginas com error boundaries individuais
+const Marketing = lazy(() => import('./pages/Marketing'));
+const Index = lazy(() => import('./pages/Index'));
+const Produtora = lazy(() => import('./pages/Produtora'));
+const BuildingStore = lazy(() => import('./pages/BuildingStore'));
+const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
+const SouSindico = lazy(() => import('./pages/SouSindico'));
+const PanelStore = lazy(() => import('./pages/PanelStore'));
+const PainelStore = lazy(() => import('./pages/PainelStore'));
+const EmailSent = lazy(() => import('./pages/EmailSent'));
+
+// Lazy load das páginas da área do anunciante
+const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
+const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'));
+const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
+const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
+const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
+const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
+      staleTime: 60 * 1000, // 1 minute
+      retry: (failureCount, error: any) => {
+        // Não retry para erros de tabela não encontrada
+        if (error?.message?.includes('does not exist')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
     },
   },
 });
 
-// Error fallback component
-function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-      <h2 className="text-2xl font-semibold text-red-500 mb-4">Oops! Algo deu errado</h2>
-      <p className="text-muted-foreground mb-6">
-        {error.message || 'Ocorreu um erro inesperado. Nossa equipe foi notificada.'}
-      </p>
-      <button 
-        onClick={resetErrorBoundary}
-        className="px-6 py-3 bg-[#3C1361] text-white rounded-xl hover:bg-[#3C1361]/80 transition-all duration-300 font-medium"
-      >
-        Tentar novamente
-      </button>
-    </div>
-  );
-}
+// Wrapper para páginas lazy com ErrorBoundary
+const LazyPageWrapper = ({ children }: { children: React.ReactNode }) => (
+  <ErrorBoundary>
+    <Suspense fallback={<LazyLoadingFallback />}>
+      {children}
+    </Suspense>
+  </ErrorBoundary>
+);
 
-// Loading fallback
-function LoadingFallback() {
+function App() {
+  console.log('🚀 App: Inicializando aplicação SEM Layout duplo...');
+  
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3C1361]"></div>
-    </div>
-  );
-}
-
-const App = () => {
-  return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <ErrorBoundary onError={(error, errorInfo) => {
+      console.error('🚨 App: Erro global capturado:', { error, errorInfo });
+    }}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <CartProvider>
-              <TooltipProvider>
-                <Toaster />
-                <ShadcnToaster />
-                <Suspense fallback={<LoadingFallback />}>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/marketing" element={<Marketing />} />
-                    <Route path="/predio" element={<PainelStore />} />
-                    <Route path="/building-store" element={<BuildingStore />} />
-                    <Route path="/loja" element={<PanelStore />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                  </Routes>
-                </Suspense>
-              </TooltipProvider>
-            </CartProvider>
-          </AuthProvider>
-        </BrowserRouter>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
+              <Routes>
+                {/* Rotas principais - cada página tem seu próprio Layout */}
+                <Route path="/" element={
+                  <LazyPageWrapper>
+                    <Index />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/marketing" element={
+                  <LazyPageWrapper>
+                    <Marketing />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/produtora" element={
+                  <LazyPageWrapper>
+                    <Produtora />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/loja" element={
+                  <LazyPageWrapper>
+                    <BuildingStore />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/paineis-publicitarios" element={
+                  <LazyPageWrapper>
+                    <PaineisPublicitarios />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/sou-sindico" element={
+                  <LazyPageWrapper>
+                    <SouSindico />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/panel-store" element={
+                  <LazyPageWrapper>
+                    <PanelStore />
+                  </LazyPageWrapper>
+                } />
+                <Route path="/painel-store" element={
+                  <LazyPageWrapper>
+                    <PainelStore />
+                  </LazyPageWrapper>
+                } />
+
+                {/* ÁREA DO ANUNCIANTE - Rotas protegidas com layout completo */}
+                <Route path="/anunciante/*" element={
+                  <ErrorBoundary>
+                    <CompleteResponsiveLayout />
+                  </ErrorBoundary>
+                }>
+                  <Route index element={
+                    <LazyPageWrapper>
+                      <AdvertiserDashboard />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="pedidos" element={
+                    <LazyPageWrapper>
+                      <AdvertiserOrders />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="pedido/:id" element={
+                    <LazyPageWrapper>
+                      <OrderDetails />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="campanhas" element={
+                    <LazyPageWrapper>
+                      <MyCampaigns />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="videos" element={
+                    <LazyPageWrapper>
+                      <MyVideos />
+                    </LazyPageWrapper>
+                  } />
+                  <Route path="perfil" element={
+                    <LazyPageWrapper>
+                      <AdvertiserSettings />
+                    </LazyPageWrapper>
+                  } />
+                </Route>
+
+                {/* Rotas de autenticação */}
+                <Route path="/login" element={
+                  <ErrorBoundary>
+                    <LoginPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/cadastro" element={
+                  <ErrorBoundary>
+                    <Cadastro />
+                  </ErrorBoundary>
+                } />
+                <Route path="/email-enviado" element={
+                  <LazyPageWrapper>
+                    <EmailSent />
+                  </LazyPageWrapper>
+                } />
+
+                {/* Rotas administrativas */}
+                <Route path="/super_admin/*" element={
+                  <ErrorBoundary>
+                    <SuperAdminPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/admin/*" element={
+                  <ErrorBoundary>
+                    <AdminPage />
+                  </ErrorBoundary>
+                } />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
-};
+}
 
 export default App;
