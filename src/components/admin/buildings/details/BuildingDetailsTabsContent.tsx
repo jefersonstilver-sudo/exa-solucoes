@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BuildingOverviewTab from './BuildingOverviewTab';
 import BuildingSalesTab from './BuildingSalesTab';
 import BuildingLogsTab from './BuildingLogsTab';
-import AvailablePanelsTab from './AvailablePanelsTab';
+import AssignedPanelsTab from './AssignedPanelsTab';
 
 interface BuildingDetailsTabsContentProps {
   building: any;
@@ -37,10 +37,9 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
       </TabsContent>
 
       <TabsContent value="panels">
-        <AvailablePanelsTab 
+        <AssignedPanelsTab 
           buildingId={building?.id}
           buildingName={building?.nome}
-          open={true}
         />
       </TabsContent>
 
