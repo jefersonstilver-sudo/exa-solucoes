@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -18,9 +17,9 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // FIXED: Get the redirect path from query params with better fallback
+  // FIXED: Redirect path correto - será sobrescrito pela lógica baseada em papel
   const searchParams = new URLSearchParams(location.search);
-  const redirectPath = searchParams.get('redirect') || '/paineis-digitais/loja';
+  const redirectPath = searchParams.get('redirect') || '/loja';
   
   // REMOVED: Duplicate session check that was causing white screen flashing
   // The useAuth hook now handles all authentication state management
