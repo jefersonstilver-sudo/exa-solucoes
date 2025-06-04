@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +18,12 @@ import {
   Settings,
   Eye,
   RefreshCw,
-  UserCog
+  UserCog,
+  UserPlus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import CreateAdminDialog from './CreateAdminDialog';
 
 interface User {
   id: string;
@@ -42,11 +43,12 @@ interface IndexaTeamSectionProps {
 
 const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const indexaTeam = users.filter(user => 
-    user.role === 'super_admin' || user.role === 'admin'
+    user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing'
   );
-
+  
   const filteredTeam = indexaTeam.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
@@ -77,6 +79,8 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
         return <Crown className="h-4 w-4 text-indexa-purple" />;
       case 'admin':
         return <Shield className="h-4 w-4 text-blue-500" />;
+      case 'admin_marketing':
+        return <UserCog className="h-4 w-4 text-purple-500" />;
       default:
         return null;
     }
@@ -95,7 +99,14 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
         return (
           <Badge className="bg-blue-50 text-blue-600 border-blue-200">
             <Shield className="h-3 w-3 mr-1" />
-            Administrador
+            Admin Geral
+          </Badge>
+        );
+      case 'admin_marketing':
+        return (
+          <Badge className="bg-purple-50 text-purple-600 border-purple-200">
+            <UserCog className="h-3 w-3 mr-1" />
+            Admin Marketing
           </Badge>
         );
       default:
@@ -134,7 +145,14 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     total: indexaTeam.length,
     superAdmins: indexaTeam.filter(u => u.role === 'super_admin').length,
     admins: indexaTeam.filter(u => u.role === 'admin').length,
+    marketingAdmins: indexaTeam.filter(u => u.role === 'admin_marketing').length,
     verified: indexaTeam.filter(u => u.email_confirmed_at).length,
+  };
+
+  const handleAccountCreated = () => {
+    console.log('✅ [INDEXA TEAM] Nova conta criada, atualizando lista...');
+    onRefresh();
+    setCreateDialogOpen(false);
   };
 
   return (
@@ -150,19 +168,28 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
             Administradores e Super Administradores do sistema
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={onRefresh} 
-          disabled={loading}
-          className="flex items-center"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex space-x-3">
+          <Button 
+            onClick={() => setCreateDialogOpen(true)}
+            className="bg-indexa-purple hover:bg-indexa-purple/90 text-white flex items-center"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Criar Nova Conta
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={onRefresh} 
+            disabled={loading}
+            className="flex items-center"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas da Equipe */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="bg-indexa-purple/5 border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total da Equipe</CardTitle>
@@ -187,12 +214,23 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Administradores</CardTitle>
+            <CardTitle className="text-sm font-medium">Admin Geral</CardTitle>
             <Shield className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-500">{stats.admins}</div>
-            <p className="text-xs text-gray-500 mt-1">acesso limitado</p>
+            <p className="text-xs text-gray-500 mt-1">gestão completa</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Admin Marketing</CardTitle>
+            <UserCog className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-500">{stats.marketingAdmins}</div>
+            <p className="text-xs text-gray-500 mt-1">leads e campanhas</p>
           </CardContent>
         </Card>
 
@@ -292,7 +330,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
                             disabled={user.role === 'super_admin' && user.email === 'jefersonstilver@gmail.com'}
                           >
                             <Settings className="h-3 w-3 mr-1" />
-                            {user.role === 'admin' ? 'Promover' : 'Rebaixar'}
+                            {user.role === 'admin' ? 'Promover' : 'Alterar'}
                           </Button>
                         </div>
                       </TableCell>
@@ -304,6 +342,13 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de Criação de Conta */}
+      <CreateAdminDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onAccountCreated={handleAccountCreated}
+      />
     </div>
   );
 };
