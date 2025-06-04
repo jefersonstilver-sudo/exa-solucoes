@@ -36,6 +36,11 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
     panelsCount: panels?.length || 0
   });
 
+  const handleRefresh = () => {
+    console.log('🔄 [BUILDING DETAILS] Atualizando todos os dados do prédio');
+    fetchBuildingData();
+  };
+
   if (!building) {
     console.warn('⚠️ [BUILDING DETAILS] Componente renderizado sem prédio');
     return null;
@@ -60,7 +65,7 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
           actionLogs={actionLogs}
           panels={panels}
           loading={loading}
-          onRefresh={fetchBuildingData}
+          onRefresh={handleRefresh}
         />
       </DialogContent>
     </Dialog>

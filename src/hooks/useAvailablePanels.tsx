@@ -6,9 +6,10 @@ import { useToast } from '@/hooks/use-toast';
 interface UseAvailablePanelsProps {
   buildingId?: string;
   open: boolean;
+  onPanelAssigned?: () => void;
 }
 
-export const useAvailablePanels = ({ buildingId, open }: UseAvailablePanelsProps) => {
+export const useAvailablePanels = ({ buildingId, open, onPanelAssigned }: UseAvailablePanelsProps) => {
   const [availablePanels, setAvailablePanels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [assigningPanelId, setAssigningPanelId] = useState<string | null>(null);
@@ -87,8 +88,13 @@ export const useAvailablePanels = ({ buildingId, open }: UseAvailablePanelsProps
         description: `Painel ${panelCode} atribuído com sucesso!`,
       });
       
-      // Recarregar lista
+      // Recarregar lista de painéis disponíveis
       fetchAvailablePanels();
+      
+      // Notificar o componente pai para atualizar painéis atribuídos
+      if (onPanelAssigned) {
+        onPanelAssigned();
+      }
     } catch (error) {
       console.error('💥 [AVAILABLE PANELS] Erro ao atribuir painel:', error);
       toast({

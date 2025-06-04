@@ -10,12 +10,14 @@ interface AvailablePanelsTabProps {
   buildingId?: string;
   buildingName?: string;
   open: boolean;
+  onPanelAssigned?: () => void;
 }
 
 const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = ({ 
   buildingId, 
   buildingName,
-  open 
+  open,
+  onPanelAssigned 
 }) => {
   const {
     availablePanels,
@@ -23,7 +25,12 @@ const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = ({
     assigningPanelId,
     assignPanel,
     fetchAvailablePanels
-  } = useAvailablePanels({ buildingId, open });
+  } = useAvailablePanels({ buildingId, open, onPanelAssigned });
+
+  const handleAssignPanel = async (panelId: string, panelCode: string) => {
+    await assignPanel(panelId, panelCode);
+    // The onPanelAssigned callback is already called within assignPanel
+  };
 
   if (!buildingId) {
     return (
@@ -87,7 +94,7 @@ const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = ({
                   <AvailablePanelCard
                     key={panel.id}
                     panel={panel}
-                    onAssign={assignPanel}
+                    onAssign={handleAssignPanel}
                     isAssigning={assigningPanelId === panel.id}
                   />
                 ))}
