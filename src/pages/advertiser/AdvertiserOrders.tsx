@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
@@ -9,7 +8,6 @@ import {
   Loader2, 
   ShoppingBag, 
   Calendar, 
-  Clock,
   Search,
   Eye,
   AlertTriangle,
@@ -21,13 +19,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const AdvertiserOrders = () => {
-  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { userProfile } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -35,7 +31,7 @@ const AdvertiserOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
 
-  // NOW we can do conditional rendering after all hooks are called
+  // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
   if (isMobile) {
     return <MobileAdvertiserOrders />;
   }
@@ -222,7 +218,7 @@ const AdvertiserOrders = () => {
         </Button>
       </div>
 
-      {/* Stats Cards - CORRIGIDOS */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

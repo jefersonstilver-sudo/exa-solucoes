@@ -17,8 +17,6 @@ import {
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import MobilePageHeader from '@/components/mobile/MobilePageHeader';
-import PullToRefresh from '@/components/mobile/PullToRefresh';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -197,13 +195,6 @@ const MobileAdvertiserOrders = () => {
         detail: 'em execução'
       },
       { 
-        label: 'Tentativas', 
-        value: stats.tentativas, 
-        color: 'bg-orange-500',
-        icon: AlertTriangle,
-        detail: 'não finalizadas'
-      },
-      { 
         label: 'Aguardando Vídeo', 
         value: stats.aguardandoVideo, 
         color: 'bg-blue-500',
@@ -220,7 +211,7 @@ const MobileAdvertiserOrders = () => {
     ];
 
     return (
-      <div className="grid grid-cols-2 gap-3 px-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 px-4 mb-4">
         {statsData.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -229,14 +220,14 @@ const MobileAdvertiserOrders = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl p-4 shadow-sm border"
+              className="bg-white rounded-lg p-3 shadow-sm border"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`w-8 h-8 rounded-lg ${stat.color} flex items-center justify-center`}>
-                  <Icon className="h-4 w-4 text-white" />
+              <div className="flex items-center justify-between mb-1">
+                <div className={`w-6 h-6 rounded-md ${stat.color} flex items-center justify-center`}>
+                  <Icon className="h-3 w-3 text-white" />
                 </div>
               </div>
-              <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-lg font-bold text-gray-900">{stat.value}</p>
               <p className="text-xs text-gray-500">{stat.label}</p>
               <p className="text-xs text-gray-400">{stat.detail}</p>
             </motion.div>
@@ -262,58 +253,49 @@ const MobileAdvertiserOrders = () => {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50">
-      <PullToRefresh
-        isRefreshing={isRefreshing}
-        isPulling={isPulling}
-        pullDistance={pullDistance}
-      />
+    <div ref={containerRef} className="min-h-screen bg-gray-50 pb-20">
+      {/* Search Bar */}
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="px-4 py-3 bg-white border-b sticky top-0 z-10"
+          >
+            <Input
+              placeholder="Buscar pedidos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <MobilePageHeader
-        title="Meus Pedidos"
-        subtitle={`${orders.length} pedido${orders.length !== 1 ? 's' : ''}`}
-        onBack={() => navigate('/anunciante')}
-        scrollBehavior="elevate"
-        actions={
-          <div className="flex space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSearch(!showSearch)}
-              className="h-10 w-10 rounded-full"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
+      <div className="px-4 py-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Meus Pedidos</h1>
+            <p className="text-sm text-gray-500">{orders.length} pedido{orders.length !== 1 ? 's' : ''}</p>
           </div>
-        }
-      />
-
-      <div className="pb-20">
-        {/* Search Bar */}
-        <AnimatePresence>
-          {showSearch && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="px-4 py-3 bg-white border-b"
-            >
-              <Input
-                placeholder="Buscar pedidos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSearch(!showSearch)}
+            className="h-10 w-10 rounded-full"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+        </div>
 
         {/* Stats Cards */}
         {orders.length > 0 && getStatsCards()}
 
         {/* Orders List */}
         {filteredOrders.length > 0 ? (
-          <div className="px-4 space-y-4">
+          <div className="space-y-3">
             <AnimatePresence>
               {filteredOrders.map((order, index) => {
                 const statusConfig = getStatusConfig(order.status);
