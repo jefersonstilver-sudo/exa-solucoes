@@ -26,18 +26,14 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
-  const { userProfile, logout } = useAuth();
+  const { userProfile, logout, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   
   const handleSignOut = async () => {
     try {
-      const { success } = await logout();
-      if (success) {
-        toast.success('Logout realizado com sucesso');
-        navigate('/login');
-      } else {
-        toast.error('Erro ao realizar logout');
-      }
+      await logout();
+      toast.success('Logout realizado com sucesso');
+      navigate('/login');
     } catch (error) {
       console.error('Erro ao realizar logout:', error);
       toast.error('Erro ao realizar logout');
@@ -45,7 +41,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   };
 
   const userName = userProfile?.email?.split('@')[0] || 'Usuario';
-  const isSuperAdmin = userProfile?.email === 'jefersonstilver@gmail.com' && userProfile?.role === 'super_admin';
 
   return (
     <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] shadow-lg border-b border-white/20">

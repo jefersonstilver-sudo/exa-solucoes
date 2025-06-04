@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile } from '@/types/userTypes';
+import { UserProfile, UserRole } from '@/types/userTypes';
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +10,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   isLoading: boolean;
   isLoggedIn: boolean;
+  isSuperAdmin: boolean;
   logout: () => Promise<void>;
   hasRole: (role: string) => boolean;
 }
@@ -37,11 +38,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Derivar isLoggedIn do session em vez de user
   const isLoggedIn = !!session?.access_token;
 
+  // Derivar isSuperAdmin
+  const isSuperAdmin = userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com';
+
   // Função otimizada para extrair role do JWT
-  const extractRoleFromJWT = (accessToken: string): string | null => {
+  const extractRoleFromJWT = (accessToken: string): UserRole | null => {
     try {
       const payload = JSON.parse(atob(accessToken.split('.')[1]));
-      return payload.user_role || null;
+      const role = payload.user_role;
+      // Validate that the role is a valid UserRole
+      if (role && ['client', 'admin', 'admin_marketing', 'super_admin', 'painel'].includes(role)) {
+        return role as UserRole;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -110,6 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userProfile,
     isLoading,
     isLoggedIn,
+    isSuperAdmin,
     logout,
     hasRole
   };
