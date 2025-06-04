@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Shield, Briefcase, Copy, Check } from 'lucide-react';
+import { Crown, Shield, Briefcase, Copy, Check, Clock, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -43,6 +43,7 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
     role: string;
   } | null>(null);
   const [credentialsCopied, setCredentialsCopied] = useState(false);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
 
   const adminTypes = [
     {
@@ -70,6 +71,20 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
 
   const selectedAdminType = adminTypes.find(type => type.value === adminType);
 
+  // Função para iniciar countdown de rate limit
+  const startRateLimitCountdown = (seconds: number) => {
+    setRateLimitCountdown(seconds);
+    const interval = setInterval(() => {
+      setRateLimitCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const handleCreateAccount = async () => {
     if (!email || !adminType) {
       toast.error('Preencha todos os campos obrigatórios');
@@ -84,59 +99,50 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
     }
 
     setIsCreating(true);
-    const defaultPassword = 'indexa2025';
 
     try {
-      console.log('🔧 [CREATE ADMIN] Iniciando criação de conta:', { email, adminType });
+      console.log('🔧 [CREATE ADMIN] Iniciando criação via Edge Function:', { email, adminType });
 
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: defaultPassword,
-        options: {
-          data: {
-            role: adminType,
-            created_by_admin: true
-          }
+      // Chamar a edge function para criar a conta
+      const { data, error } = await supabase.functions.invoke('create-admin-account', {
+        body: {
+          email,
+          adminType
         }
       });
 
-      if (authError) {
-        console.error('❌ [CREATE ADMIN] Erro no Auth:', authError);
-        throw authError;
+      if (error) {
+        console.error('❌ [CREATE ADMIN] Erro da Edge Function:', error);
+        throw error;
       }
 
-      if (!authData.user) {
-        throw new Error('Usuário não foi criado no Auth');
+      if (!data?.success) {
+        console.error('❌ [CREATE ADMIN] Resposta de erro:', data);
+        
+        // Tratar diferentes tipos de erro
+        if (data?.code === 'EMAIL_EXISTS') {
+          toast.error('Este email já possui uma conta no sistema');
+        } else if (data?.code === 'INVALID_EMAIL') {
+          toast.error('Email inválido');
+        } else if (data?.code === 'INVALID_ROLE') {
+          toast.error('Tipo de administrador inválido');
+        } else {
+          toast.error(data?.error || 'Erro ao criar conta administrativa');
+        }
+        return;
       }
 
-      console.log('✅ [CREATE ADMIN] Usuário criado no Auth:', authData.user.id);
+      console.log('✅ [CREATE ADMIN] Conta criada com sucesso!', data);
 
-      // 2. Inserir na tabela users
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          email: email,
-          role: adminType
-        });
-
-      if (userError) {
-        console.error('❌ [CREATE ADMIN] Erro ao inserir na tabela users:', userError);
-        throw userError;
-      }
-
-      console.log('✅ [CREATE ADMIN] Usuário inserido na tabela users');
-
-      // 3. Definir credenciais criadas
+      // Definir credenciais criadas
       setCreatedCredentials({
-        email,
-        password: defaultPassword,
-        role: adminType
+        email: data.user.email,
+        password: data.user.password,
+        role: data.user.role
       });
 
-      // 4. Copiar credenciais automaticamente
-      const credentialsText = `Email: ${email}\nSenha: ${defaultPassword}\nTipo: ${selectedAdminType?.label}`;
+      // Copiar credenciais automaticamente
+      const credentialsText = `Email: ${data.user.email}\nSenha: ${data.user.password}\nTipo: ${selectedAdminType?.label}`;
       
       try {
         await navigator.clipboard.writeText(credentialsText);
@@ -146,12 +152,12 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
         console.warn('Não foi possível copiar para área de transferência:', clipboardError);
       }
 
-      // 5. Feedback de sucesso
+      // Feedback de sucesso
       toast.success(`Conta ${selectedAdminType?.label} criada com sucesso!`, {
         description: 'Credenciais copiadas para área de transferência'
       });
 
-      // 6. Atualizar lista
+      // Atualizar lista
       onAccountCreated();
 
       // Reset form
@@ -163,15 +169,24 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
       
       let errorMessage = 'Erro ao criar conta administrativa';
       
-      if (error.message?.includes('email_address_already_exists')) {
+      // Tratar erro de rate limiting especificamente
+      if (error.message?.includes('rate limit') || error.message?.includes('35 seconds')) {
+        errorMessage = 'Aguarde 35 segundos antes de tentar novamente';
+        startRateLimitCountdown(35);
+        toast.error(errorMessage, {
+          description: 'Limite de tentativas atingido por segurança'
+        });
+      } else if (error.message?.includes('email_address_already_exists')) {
         errorMessage = 'Este email já possui uma conta no sistema';
+        toast.error(errorMessage);
       } else if (error.message?.includes('User already registered')) {
         errorMessage = 'Este email já está registrado';
+        toast.error(errorMessage);
+      } else {
+        toast.error(errorMessage, {
+          description: error.message
+        });
       }
-      
-      toast.error(errorMessage, {
-        description: error.message
-      });
     } finally {
       setIsCreating(false);
     }
@@ -182,6 +197,7 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
     setCredentialsCopied(false);
     setEmail('');
     setAdminType('');
+    setRateLimitCountdown(null);
     onOpenChange(false);
   };
 
@@ -212,6 +228,21 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
             Crie uma nova conta para um membro da equipe INDEXA. A senha padrão será "indexa2025".
           </DialogDescription>
         </DialogHeader>
+
+        {/* Rate Limit Warning */}
+        {rateLimitCountdown && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center text-orange-800">
+              <Clock className="h-5 w-5 mr-2" />
+              <div>
+                <h4 className="font-semibold">Aguarde para tentar novamente</h4>
+                <p className="text-sm">
+                  Por segurança, aguarde {rateLimitCountdown} segundos antes da próxima tentativa.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {createdCredentials ? (
           // Exibir credenciais criadas
@@ -273,13 +304,17 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
                 placeholder="admin@empresa.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isCreating}
+                disabled={isCreating || !!rateLimitCountdown}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="adminType">Tipo de Administrador *</Label>
-              <Select value={adminType} onValueChange={setAdminType} disabled={isCreating}>
+              <Select 
+                value={adminType} 
+                onValueChange={setAdminType} 
+                disabled={isCreating || !!rateLimitCountdown}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo de administrador" />
                 </SelectTrigger>
@@ -337,10 +372,22 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
               </Button>
               <Button
                 onClick={handleCreateAccount}
-                disabled={isCreating || !email || !adminType}
+                disabled={isCreating || !email || !adminType || !!rateLimitCountdown}
                 className="flex-1 bg-indexa-purple hover:bg-indexa-purple/90"
               >
-                {isCreating ? 'Criando...' : 'Criar Conta'}
+                {isCreating ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Criando...
+                  </div>
+                ) : rateLimitCountdown ? (
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Aguarde {rateLimitCountdown}s
+                  </div>
+                ) : (
+                  'Criar Conta'
+                )}
               </Button>
             </div>
           )}
