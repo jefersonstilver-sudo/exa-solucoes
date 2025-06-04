@@ -59,17 +59,19 @@ export const useSupabaseData = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Buscando dados do dashboard...');
 
       const { data: dashboardStats, error: statsError } = await supabase
         .rpc('get_dashboard_stats');
 
       if (statsError) {
-        console.error('Erro na função get_dashboard_stats:', statsError);
+        console.error('❌ Erro na função get_dashboard_stats:', statsError);
         await fetchDataIndividually();
         return;
       }
 
       if (dashboardStats) {
+        console.log('📊 Dados recebidos do dashboard:', dashboardStats);
         const typedStats = dashboardStats as unknown as DashboardStatsResponse;
         
         const stats = {
@@ -83,6 +85,7 @@ export const useSupabaseData = () => {
           pendingOrders: typedStats.pending_orders || 0,
         };
 
+        console.log('💰 Receita mensal calculada:', stats.monthlyRevenue);
         setStats(stats);
         await generateRealChartData(stats);
       } else {
@@ -90,7 +93,7 @@ export const useSupabaseData = () => {
       }
 
     } catch (error) {
-      console.error('Erro crítico no dashboard:', error);
+      console.error('💥 Erro crítico no dashboard:', error);
       await fetchDataIndividually();
     } finally {
       setLoading(false);
@@ -99,6 +102,7 @@ export const useSupabaseData = () => {
 
   const fetchDataIndividually = async () => {
     try {
+      console.log('🔄 Buscando dados individualmente...');
       const [usersResult, buildingsResult, ordersResult, panelsResult] = await Promise.all([
         supabase.from('users').select('*'),
         supabase.from('buildings').select('*'),
@@ -111,10 +115,16 @@ export const useSupabaseData = () => {
       const orders = ordersResult.data || [];
       const panels = panelsResult.data || [];
 
-      const paidOrders = orders.filter(order => order.status === 'pago');
+      // Usar os mesmos status que as funções SQL corrigidas
+      const paidOrders = orders.filter(order => 
+        ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado'].includes(order.status)
+      );
+      
       const monthlyRevenue = paidOrders.reduce((sum, order) => {
         return sum + (Number(order.valor_total) || 0);
       }, 0);
+
+      console.log('💰 Receita calculada individualmente:', monthlyRevenue);
 
       const stats = {
         totalUsers: users.length,
@@ -122,8 +132,8 @@ export const useSupabaseData = () => {
         totalOrders: orders.length,
         totalPanels: panels.length,
         monthlyRevenue,
-        activeOrders: orders.filter(o => o.status === 'ativo').length,
-        pendingOrders: orders.filter(o => o.status === 'pendente').length,
+        activeOrders: orders.filter(o => ['ativo', 'video_aprovado'].includes(o.status)).length,
+        pendingOrders: orders.filter(o => ['pendente', 'pago_pendente_video'].includes(o.status)).length,
         onlinePanels: panels.filter(p => p.status === 'online').length,
       };
 
@@ -131,12 +141,13 @@ export const useSupabaseData = () => {
       await generateRealChartData(stats);
 
     } catch (error) {
-      console.error('Erro no fallback:', error);
+      console.error('❌ Erro no fallback:', error);
     }
   };
 
   const generateRealChartData = async (stats: DashboardStats) => {
     try {
+      console.log('📊 Gerando dados para gráficos...');
       // Buscar dados reais com datas
       const [ordersResult, panelsResult, usersResult] = await Promise.all([
         supabase.from('pedidos').select('*').order('created_at'),
@@ -148,8 +159,11 @@ export const useSupabaseData = () => {
       const panels = panelsResult.data || [];
       const users = usersResult.data || [];
 
-      // Receita baseada em dados reais (apenas se houver pedidos pagos)
-      const paidOrders = orders.filter(o => o.status === 'pago');
+      // Receita baseada em dados reais (incluindo status 'ativo')
+      const paidOrders = orders.filter(o => 
+        ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado'].includes(o.status)
+      );
+      
       const revenueData = paidOrders.length > 0 ? [
         { 
           month: 'Total Real', 
@@ -157,10 +171,10 @@ export const useSupabaseData = () => {
         }
       ] : [];
 
-      // Status dos pedidos baseado em dados reais
-      const pendingCount = orders.filter(o => o.status === 'pendente').length;
-      const activeCount = orders.filter(o => o.status === 'ativo').length;
-      const paidCount = paidOrders.length;
+      // Status dos pedidos baseado em dados reais com status corretos
+      const pendingCount = orders.filter(o => ['pendente', 'pago_pendente_video'].includes(o.status)).length;
+      const activeCount = orders.filter(o => ['ativo', 'video_aprovado'].includes(o.status)).length;
+      const paidCount = orders.filter(o => o.status === 'pago').length;
       const canceledCount = orders.filter(o => o.status === 'cancelado').length;
       
       const orderStatusData = [
@@ -168,7 +182,7 @@ export const useSupabaseData = () => {
         { name: 'Ativo', value: activeCount, color: '#10b981' },
         { name: 'Pago', value: paidCount, color: '#6366f1' },
         { name: 'Cancelado', value: canceledCount, color: '#ef4444' },
-      ].filter(item => item.value > 0); // Mostrar apenas status que existem
+      ].filter(item => item.value > 0);
 
       // Status dos painéis baseado em dados reais
       const onlineCount = panels.filter(p => p.status === 'online').length;
@@ -179,12 +193,19 @@ export const useSupabaseData = () => {
         { status: 'Online', count: onlineCount },
         { status: 'Offline', count: offlineCount },
         { status: 'Manutenção', count: maintenanceCount },
-      ].filter(item => item.count > 0); // Mostrar apenas status que existem
+      ].filter(item => item.count > 0);
 
       // Crescimento de usuários baseado em dados reais
       const userGrowthData = users.length > 0 ? [
         { month: 'Total Atual', users: users.length }
       ] : [];
+
+      console.log('📈 Dados de gráficos gerados:', {
+        revenueData,
+        orderStatusData,
+        panelStatusData,
+        userGrowthData
+      });
 
       setChartData({
         revenueData,
@@ -194,8 +215,7 @@ export const useSupabaseData = () => {
       });
 
     } catch (error) {
-      console.error('Erro ao gerar gráficos com dados reais:', error);
-      // Se houver erro, definir dados vazios
+      console.error('❌ Erro ao gerar gráficos com dados reais:', error);
       setChartData({
         revenueData: [],
         orderStatusData: [],
