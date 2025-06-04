@@ -6,7 +6,7 @@ import useBuildingStore from '@/hooks/useBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
 
 const BuildingStore = () => {
-  console.log('BuildingStore: Página da loja carregada');
+  console.log('🏢 [BUILDING STORE] Página da loja carregada');
 
   const {
     buildings,
@@ -27,8 +27,18 @@ const BuildingStore = () => {
 
   // Initialize store on mount
   React.useEffect(() => {
+    console.log('🚀 [BUILDING STORE] Inicializando store');
     initializeStore();
   }, [initializeStore]);
+
+  // Log do estado atual
+  React.useEffect(() => {
+    console.log('🔄 [BUILDING STORE] === ESTADO ATUAL ===');
+    console.log('🔄 [BUILDING STORE] buildings.length:', buildings.length);
+    console.log('🔄 [BUILDING STORE] isLoading:', isLoading);
+    console.log('🔄 [BUILDING STORE] error:', error);
+    console.log('🔄 [BUILDING STORE] handleAddToCart function:', !!handleAddToCart);
+  }, [buildings, isLoading, error, handleAddToCart]);
 
   if (error) {
     return (

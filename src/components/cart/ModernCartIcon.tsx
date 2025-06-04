@@ -1,69 +1,125 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { ShoppingCart } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface ModernCartIconProps {
   itemCount: number;
   isAnimating?: boolean;
   onClick?: () => void;
-  variant?: 'header' | 'floating';
+  variant?: 'header' | 'floating' | 'mobile';
   className?: string;
 }
 
 const ModernCartIcon: React.FC<ModernCartIconProps> = ({
-  itemCount,
+  itemCount = 0,
   isAnimating = false,
   onClick,
   variant = 'header',
   className = ''
 }) => {
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log('🛒 ModernCartIcon: Clique detectado');
-    console.log('🛒 ModernCartIcon: itemCount:', itemCount);
-    console.log('🛒 ModernCartIcon: onClick function:', !!onClick);
-    
+  console.log('🛒 [ModernCartIcon] Renderizando:', {
+    itemCount,
+    isAnimating,
+    variant,
+    hasOnClick: !!onClick
+  });
+
+  const handleClick = () => {
+    console.log('🛒 [ModernCartIcon] Clique detectado');
     if (onClick) {
-      console.log('🛒 ModernCartIcon: Executando onClick');
+      console.log('🛒 [ModernCartIcon] Executando onClick');
       onClick();
     } else {
-      console.warn('🛒 ModernCartIcon: onClick não fornecido');
+      console.error('🛒 [ModernCartIcon] ERRO - onClick não fornecido!');
     }
   };
 
-  const baseClasses = variant === 'header' 
-    ? "relative p-2 text-white hover:text-[#00FFAB] transition-colors" 
-    : "relative p-3 bg-white shadow-lg rounded-full text-[#3C1361] hover:bg-gray-50";
+  // Variant-specific styling
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'header':
+        return {
+          button: 'relative p-2 text-gray-700 hover:text-indexa-purple transition-colors duration-200',
+          icon: 'h-6 w-6',
+          badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
+        };
+      case 'floating':
+        return {
+          button: 'relative p-3 bg-indexa-purple text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300',
+          icon: 'h-6 w-6',
+          badge: 'absolute -top-2 -right-2 h-6 w-6 text-xs'
+        };
+      case 'mobile':
+        return {
+          button: 'relative p-2 text-gray-600 hover:text-indexa-purple transition-colors duration-200',
+          icon: 'h-5 w-5',
+          badge: 'absolute -top-1 -right-1 h-4 w-4 text-xs'
+        };
+      default:
+        return {
+          button: 'relative p-2 text-gray-700 hover:text-indexa-purple transition-colors duration-200',
+          icon: 'h-6 w-6',
+          badge: 'absolute -top-1 -right-1 h-5 w-5 text-xs'
+        };
+    }
+  };
+
+  const styles = getVariantStyles();
 
   return (
     <motion.div
       animate={isAnimating ? { scale: [1, 1.2, 1] } : {}}
-      transition={{ duration: 0.3 }}
-      className={`${baseClasses} ${className}`}
+      transition={{ duration: 0.6 }}
+      className="relative"
     >
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={handleClick}
-        className="relative p-0 h-auto w-auto bg-transparent hover:bg-transparent"
+        className={`${styles.button} ${className}`}
+        aria-label={`Carrinho de compras${itemCount > 0 ? ` - ${itemCount} ${itemCount === 1 ? 'item' : 'itens'}` : ' - vazio'}`}
       >
-        <ShoppingCart className="h-6 w-6" />
+        <ShoppingCart className={styles.icon} />
         
-        {/* Badge com contador */}
-        {itemCount > 0 && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-2 -right-2 bg-[#00FFAB] text-[#3C1361] text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center border-2 border-white"
-          >
-            {itemCount > 99 ? '99+' : itemCount}
-          </motion.div>
-        )}
+        {/* Item count badge with animation */}
+        <AnimatePresence>
+          {itemCount > 0 && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 500, 
+                damping: 30 
+              }}
+              className={styles.badge}
+            >
+              <Badge 
+                className="bg-red-500 hover:bg-red-500 text-white border-0 rounded-full flex items-center justify-center p-0 min-w-0 h-full w-full"
+              >
+                <span className="font-medium leading-none">
+                  {itemCount > 99 ? '99+' : itemCount}
+                </span>
+              </Badge>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Button>
+      
+      {/* Pulse animation when adding items */}
+      {isAnimating && (
+        <motion.div
+          className="absolute inset-0 rounded-full bg-indexa-purple opacity-30"
+          initial={{ scale: 1, opacity: 0.3 }}
+          animate={{ scale: 1.5, opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
     </motion.div>
   );
 };

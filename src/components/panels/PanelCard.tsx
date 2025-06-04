@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Panel } from '@/types/panel';
@@ -15,14 +15,18 @@ interface PanelCardProps {
 }
 
 export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
-  // Connect to cart manager
-  const { isItemInCart, cartItems, initialLoadDone } = useCartManager();
+  // Connect to cart manager - simplified approach
+  const { isItemInCart, initialLoadDone } = useCartManager();
   
-  // Check if item is in cart - using memoization for performance
-  const inCart = useMemo(() => {
-    if (!initialLoadDone) return false;
-    return isItemInCart(panel.id);
-  }, [panel.id, cartItems, initialLoadDone, isItemInCart]);
+  // Simple check if item is in cart
+  const inCart = initialLoadDone ? isItemInCart(panel.id) : false;
+
+  console.log('🛒 [PanelCard] Renderizando:', {
+    panelId: panel.id,
+    buildingName: panel.buildings?.nome,
+    inCart,
+    initialLoadDone
+  });
 
   // Calculate price for 30 days (base price)
   const calculatePrice = () => {
@@ -73,7 +77,10 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
   // Handle add to cart
   const handleAddToCart = () => {
     if (!inCart) {
+      console.log('🛒 [PanelCard] Chamando onAddToCart');
       onAddToCart(panel, 30); // Default to 30 days
+    } else {
+      console.log('🛒 [PanelCard] Item já está no carrinho');
     }
   };
 

@@ -50,7 +50,8 @@ export default function PainelStore() {
     console.log('🔄 [PAINEL STORE] cartItems.length:', cartItems.length);
     console.log('🔄 [PAINEL STORE] searchLocation:', searchLocation);
     console.log('🔄 [PAINEL STORE] selectedLocation:', selectedLocation);
-  }, [buildings, isLoading, error, cartItems.length, searchLocation, selectedLocation]);
+    console.log('🔄 [PAINEL STORE] handleAddToCart function:', !!handleAddToCart);
+  }, [buildings, isLoading, error, cartItems.length, searchLocation, selectedLocation, handleAddToCart]);
 
   const handleCheckoutStart = () => {
     logCheckoutEvent(

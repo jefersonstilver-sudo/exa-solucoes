@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart,
@@ -24,19 +24,28 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const isMobile = useIsMobile();
   
-  // Connect to cart manager
-  const { isItemInCart, cartItems, initialLoadDone } = useCartManager();
+  // Connect to cart manager - simplified approach
+  const { isItemInCart, initialLoadDone } = useCartManager();
   
-  // Check if item is in cart - using memoization for performance
-  const inCart = useMemo(() => {
-    if (!initialLoadDone) return false;
-    return isItemInCart(building.id);
-  }, [building.id, cartItems, initialLoadDone, isItemInCart]);
+  // Simple check if item is in cart
+  const inCart = initialLoadDone ? isItemInCart(building.id) : false;
+
+  console.log('🛒 [BuildingCardActions] Renderizando:', {
+    buildingId: building.id,
+    buildingName: building.nome,
+    inCart,
+    initialLoadDone
+  });
 
   const handleAddToCart = async () => {
-    if (inCart) return;
+    if (inCart) {
+      console.log('🛒 [BuildingCardActions] Item já está no carrinho');
+      return;
+    }
     
     try {
+      console.log('🛒 [BuildingCardActions] Iniciando adição ao carrinho');
+      
       // Convert Building to Panel before adding to cart
       const panel = buildingToPanel(building);
       
@@ -45,11 +54,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       // Call real add to cart function
       await onAddToCart(panel, 30); // Default duration of 30 days
       
-      // Success toast
-      toast.success(`${building.nome} adicionado ao carrinho!`, {
-        description: "Painel adicionado com duração de 30 dias",
-        duration: 3000,
-      });
+      console.log('🛒 [BuildingCardActions] Item adicionado com sucesso');
       
       // Animation feedback
       setTimeout(() => {
@@ -57,7 +62,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       }, 600);
       
     } catch (error) {
-      console.error('Erro ao adicionar ao carrinho:', error);
+      console.error('🛒 [BuildingCardActions] Erro ao adicionar ao carrinho:', error);
       setIsAnimating(false);
       
       toast.error('Erro ao adicionar ao carrinho', {
