@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@4.0.0";
 
@@ -127,13 +126,16 @@ serve(async (req: Request) => {
       });
     }
 
-    // Gerar URL de confirmação
+    // CORRIGIDO: Gerar URL de confirmação para a rota correta
     const baseUrl = emailData.site_url || Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
-    const redirectTo = emailData.redirect_to || `${baseUrl}/confirmacao`;
+    
+    // IMPORTANTE: Agora redirecionamos para /confirmacao (confirmação de EMAIL) e não /pedido-confirmado
+    const redirectTo = '/confirmacao'; // Rota específica para confirmação de email
     
     const confirmationUrl = `${baseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=${emailData.email_action_type}&redirect_to=${encodeURIComponent(redirectTo)}`;
     
-    console.log('🔗 [EMAIL-HOOK] URL de confirmação gerada em', Date.now() - startTime, 'ms');
+    console.log('🔗 [EMAIL-HOOK] URL de confirmação gerada:', confirmationUrl);
+    console.log('🔗 [EMAIL-HOOK] Redirecionamento para:', redirectTo);
 
     // Preparar dados do email
     const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';

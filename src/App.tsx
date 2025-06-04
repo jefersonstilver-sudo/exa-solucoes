@@ -20,6 +20,7 @@ import PlanSelection from './pages/PlanSelection';
 import CheckoutCoupon from './pages/CheckoutCoupon';
 import CheckoutSummary from './pages/CheckoutSummary';
 import Checkout from './pages/Checkout';
+import Confirmacao from './pages/Confirmacao'; // CONFIRMAÇÃO DE EMAIL
 
 // Lazy load apenas para páginas menos usadas
 import { lazy } from 'react';
@@ -30,7 +31,7 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const EmailSent = lazy(() => import('./pages/EmailSent'));
-const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation')); // CONFIRMAÇÃO DE PEDIDO
 
 // Lazy load das páginas da área do anunciante
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
@@ -69,6 +70,16 @@ function App() {
                 <Route path="/checkout/resumo" element={<CheckoutSummary />} />
                 <Route path="/checkout" element={<Checkout />} />
 
+                {/* ROTA CORRIGIDA: Confirmação de EMAIL (não pedido) */}
+                <Route path="/confirmacao" element={<Confirmacao />} />
+                
+                {/* ROTA SEPARADA: Confirmação de PEDIDO */}
+                <Route path="/pedido-confirmado" element={
+                  <Suspense fallback={<MinimalLoader />}>
+                    <OrderConfirmation />
+                  </Suspense>
+                } />
+
                 {/* Rotas com lazy loading */}
                 <Route path="/marketing" element={
                   <Suspense fallback={<MinimalLoader />}>
@@ -98,11 +109,6 @@ function App() {
                 <Route path="/painel-store" element={
                   <Suspense fallback={<MinimalLoader />}>
                     <PainelStore />
-                  </Suspense>
-                } />
-                <Route path="/confirmacao" element={
-                  <Suspense fallback={<MinimalLoader />}>
-                    <OrderConfirmation />
                   </Suspense>
                 } />
                 <Route path="/email-enviado" element={

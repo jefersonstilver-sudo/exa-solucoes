@@ -27,9 +27,9 @@ export const PublicRoutes = () => {
       <Route path="/pix-payment" element={<PixPayment />} />
       <Route path="/payment" element={<Payment />} />
       
-      {/* Confirmation */}
-      <Route path="/confirmacao" element={<Confirmacao />} />
-      <Route path="/pedido-confirmado" element={<Confirmacao />} />
+      {/* CONFIRMAÇÕES SEPARADAS */}
+      <Route path="/confirmacao" element={<Confirmacao />} /> {/* EMAIL CONFIRMATION */}
+      <Route path="/pedido-confirmado" element={<Confirmacao />} /> {/* ORDER CONFIRMATION - usando a mesma página por enquanto */}
     </Routes>
   );
 };

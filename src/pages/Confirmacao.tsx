@@ -18,8 +18,11 @@ export default function Confirmacao() {
   useEffect(() => {
     const confirmUser = async () => {
       try {
+        console.log('🔍 [CONFIRMACAO] Iniciando confirmação de email...');
+        
         // Get the hash fragment from the URL
         const hash = window.location.hash;
+        console.log('🔍 [CONFIRMACAO] Hash encontrado:', hash);
         
         // If there's no hash, we check if this is a password recovery flow
         if (!hash) {
@@ -42,40 +45,45 @@ export default function Confirmacao() {
         const refresh_token = query.get('refresh_token');
         const type = query.get('type');
         
+        console.log('🔍 [CONFIRMACAO] Tokens extraídos:', {
+          hasAccessToken: !!access_token,
+          hasRefreshToken: !!refresh_token,
+          type
+        });
+        
         if (!access_token || !refresh_token) {
           throw new Error('Tokens de autenticação não encontrados na URL');
         }
 
         // Set the session with the tokens
+        console.log('🔐 [CONFIRMACAO] Configurando sessão...');
         const { error } = await supabase.auth.setSession({
           access_token,
           refresh_token,
         });
 
         if (error) {
+          console.error('❌ [CONFIRMACAO] Erro ao configurar sessão:', error);
           throw error;
         }
         
         // Success!
+        console.log('✅ [CONFIRMACAO] Email confirmado com sucesso!');
         setStatus('success');
         
         if (type === 'signup') {
           setMessage('Email confirmado com sucesso! Bem-vindo(a) à Indexa!');
           toast.success('Email confirmado! Sua conta está ativa.');
           
-          // Check if there's a redirect parameter in the URL
-          const redirectParam = new URLSearchParams(location.search).get('redirect');
-          const redirectTo = redirectParam || '/paineis-digitais/loja';
-          
-          // Auto-login successful, redirect to the intended page
-          setTimeout(() => navigate(redirectTo), 2000);
+          // CORRIGIDO: Redirecionamento específico para área de painéis
+          setTimeout(() => navigate('/loja'), 2000);
         } else {
           setMessage('Email confirmado com sucesso!');
           setTimeout(() => navigate('/login'), 3000);
         }
         
       } catch (error: any) {
-        console.error('Email confirmation failed:', error);
+        console.error('❌ [CONFIRMACAO] Falha na confirmação:', error);
         setStatus('error');
         
         let errorMessage = 'Falha ao confirmar o email';
@@ -144,7 +152,7 @@ export default function Confirmacao() {
                 </p>
                 <div className="flex flex-col gap-3 mt-6">
                   <Button
-                    onClick={() => navigate('/paineis-digitais/loja')}
+                    onClick={() => navigate('/loja')}
                     className="bg-indexa-purple hover:bg-indexa-purple-dark"
                   >
                     Ir para a Loja
