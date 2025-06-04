@@ -25,13 +25,15 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
   const {
     actionLogs,
     sales,
+    panels,
     loading,
     fetchBuildingData
   } = useBuildingDetailsData({ building, open });
 
   console.log('🏗️ [BUILDING DETAILS] Dialog renderizado para:', building?.nome, {
     open,
-    loading
+    loading,
+    panelsCount: panels?.length || 0
   });
 
   if (!building) {
@@ -56,6 +58,7 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
           building={building}
           sales={sales}
           actionLogs={actionLogs}
+          panels={panels}
           loading={loading}
           onRefresh={fetchBuildingData}
         />

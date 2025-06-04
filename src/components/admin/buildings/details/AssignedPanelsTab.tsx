@@ -1,72 +1,28 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Monitor, RefreshCw, Wifi, WifiOff, Wrench, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface AssignedPanelsTabProps {
   buildingId?: string;
   buildingName?: string;
-}
-
-interface Panel {
-  id: string;
-  code: string;
-  status: string;
-  ultima_sync: string;
-  resolucao: string;
-  polegada: string;
-  orientacao: string;
-  sistema_operacional: string;
-  localizacao: string;
-  codigo_anydesk: string;
-  ip_interno: string;
-  mac_address: string;
-  observacoes: string;
+  panels?: any[];
+  loading?: boolean;
 }
 
 const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({ 
   buildingId, 
-  buildingName
+  buildingName,
+  panels = [],
+  loading = false
 }) => {
-  const [assignedPanels, setAssignedPanels] = useState<Panel[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchAssignedPanels = async () => {
-    if (!buildingId) return;
-    
-    setLoading(true);
-    try {
-      console.log('🔍 [ASSIGNED PANELS] Buscando painéis para prédio:', buildingId);
-      
-      const { data: panels, error } = await supabase
-        .from('painels')
-        .select('*')
-        .eq('building_id', buildingId)
-        .order('code');
-
-      if (error) {
-        console.error('❌ [ASSIGNED PANELS] Erro ao buscar painéis:', error);
-        toast.error('Erro ao carregar painéis do prédio');
-        return;
-      }
-
-      console.log('✅ [ASSIGNED PANELS] Painéis encontrados:', panels?.length || 0);
-      setAssignedPanels(panels || []);
-    } catch (error) {
-      console.error('💥 [ASSIGNED PANELS] Erro crítico:', error);
-      toast.error('Erro crítico ao carregar painéis');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAssignedPanels();
-  }, [buildingId]);
+  console.log('🔍 [ASSIGNED PANELS] Renderizando aba com:', {
+    buildingId,
+    buildingName,
+    panelsCount: panels?.length || 0
+  });
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -116,15 +72,6 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
               <Monitor className="h-5 w-5 mr-2" />
               Painéis Atribuídos a {buildingName}
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchAssignedPanels}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -133,7 +80,7 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
               <RefreshCw className="h-6 w-6 animate-spin text-indexa-purple mr-2" />
               <span className="text-gray-600">Carregando painéis atribuídos...</span>
             </div>
-          ) : assignedPanels.length === 0 ? (
+          ) : panels.length === 0 ? (
             <div className="text-center py-8">
               <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -147,12 +94,12 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
             <div>
               <div className="mb-4">
                 <p className="text-sm text-gray-600">
-                  Total de <span className="font-semibold">{assignedPanels.length}</span> painéis atribuídos a este prédio
+                  Total de <span className="font-semibold">{panels.length}</span> painéis atribuídos a este prédio
                 </p>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {assignedPanels.map((panel) => {
+                {panels.map((panel) => {
                   const statusConfig = getStatusConfig(panel.status);
                   const StatusIcon = statusConfig.icon;
                   
@@ -242,7 +189,6 @@ const AssignedPanelsTab: React.FC<AssignedPanelsTabProps> = ({
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                // Aqui poderia abrir um modal com mais detalhes ou navegar para detalhes do painel
                                 console.log('Ver detalhes do painel:', panel.id);
                               }}
                             >

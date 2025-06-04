@@ -10,6 +10,7 @@ interface BuildingDetailsTabsContentProps {
   building: any;
   sales: any[];
   actionLogs: any[];
+  panels: any[];
   loading: boolean;
   onRefresh: () => void;
 }
@@ -18,28 +19,33 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
   building,
   sales,
   actionLogs,
+  panels,
   loading,
   onRefresh
 }) => {
-  console.log('🏗️ [BUILDING DETAILS TABS] Renderizando tabs para:', building?.nome);
+  console.log('🏗️ [BUILDING DETAILS TABS] Renderizando tabs para:', building?.nome, {
+    panelsCount: panels?.length || 0
+  });
 
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-        <TabsTrigger value="panels">Painéis</TabsTrigger>
+        <TabsTrigger value="panels">Painéis ({panels?.length || 0})</TabsTrigger>
         <TabsTrigger value="sales">Vendas</TabsTrigger>
         <TabsTrigger value="logs">Histórico</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-6">
-        <BuildingOverviewTab building={building} panels={[]} />
+        <BuildingOverviewTab building={building} panels={panels} />
       </TabsContent>
 
       <TabsContent value="panels">
         <AssignedPanelsTab 
           buildingId={building?.id}
           buildingName={building?.nome}
+          panels={panels}
+          loading={loading}
         />
       </TabsContent>
 

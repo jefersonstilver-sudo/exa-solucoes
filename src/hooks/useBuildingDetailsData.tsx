@@ -12,6 +12,7 @@ export const useBuildingDetailsData = ({ building, open }: UseBuildingDetailsDat
   const {
     actionLogs,
     sales,
+    panels,
     loading,
     updateAllData,
     setLoadingState,
@@ -26,8 +27,14 @@ export const useBuildingDetailsData = ({ building, open }: UseBuildingDetailsDat
     
     setLoadingState(true);
     try {
+      console.log('🏢 [BUILDING DETAILS] Carregando dados completos do prédio:', building.id);
       const data = await fetchAllBuildingData(building.id);
       updateAllData(data);
+      console.log('✅ [BUILDING DETAILS] Dados carregados:', {
+        actionLogs: data.actionLogs?.length || 0,
+        sales: data.sales?.length || 0,
+        panels: data.panels?.length || 0
+      });
     } catch (error) {
       console.error('💥 [BUILDING DETAILS] Erro ao carregar dados:', error);
     } finally {
@@ -48,6 +55,7 @@ export const useBuildingDetailsData = ({ building, open }: UseBuildingDetailsDat
   return {
     actionLogs,
     sales,
+    panels,
     loading,
     fetchBuildingData
   };
