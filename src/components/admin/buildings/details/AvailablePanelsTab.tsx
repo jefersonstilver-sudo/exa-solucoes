@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Monitor, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,18 @@ interface AvailablePanelsTabProps {
   onPanelAssigned?: () => void;
 }
 
-const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = ({ 
+const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = memo(({ 
   buildingId, 
   buildingName,
   open,
   onPanelAssigned 
 }) => {
+  console.log('🔍 [AVAILABLE PANELS TAB] Renderizando aba:', {
+    buildingId,
+    buildingName,
+    open
+  });
+
   const {
     availablePanels,
     loading,
@@ -29,7 +35,11 @@ const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = ({
 
   const handleAssignPanel = async (panelId: string, panelCode: string) => {
     await assignPanel(panelId, panelCode);
-    // The onPanelAssigned callback is already called within assignPanel
+  };
+
+  const handleRefresh = () => {
+    console.log('🔄 [AVAILABLE PANELS TAB] Atualizando lista manualmente');
+    fetchAvailablePanels();
   };
 
   if (!buildingId) {
@@ -54,7 +64,7 @@ const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchAvailablePanels}
+              onClick={handleRefresh}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -105,6 +115,8 @@ const AvailablePanelsTab: React.FC<AvailablePanelsTabProps> = ({
       </Card>
     </div>
   );
-};
+});
+
+AvailablePanelsTab.displayName = 'AvailablePanelsTab';
 
 export default AvailablePanelsTab;

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,8 +15,11 @@ export const useAvailablePanels = ({ buildingId, open, onPanelAssigned }: UseAva
   const [assigningPanelId, setAssigningPanelId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchAvailablePanels = useCallback(async () => {
-    if (!open) return;
+  const fetchAvailablePanels = async () => {
+    if (!open) {
+      console.log('🔍 [AVAILABLE PANELS] Aba fechada, não carregando painéis');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -42,10 +45,11 @@ export const useAvailablePanels = ({ buildingId, open, onPanelAssigned }: UseAva
         description: "Não foi possível carregar os painéis disponíveis.",
         variant: "destructive",
       });
+      setAvailablePanels([]);
     } finally {
       setLoading(false);
     }
-  }, [open, toast]);
+  };
 
   const assignPanel = async (panelId: string, panelCode: string) => {
     if (!buildingId) {
@@ -89,7 +93,7 @@ export const useAvailablePanels = ({ buildingId, open, onPanelAssigned }: UseAva
       });
       
       // Recarregar lista de painéis disponíveis
-      fetchAvailablePanels();
+      await fetchAvailablePanels();
       
       // Notificar o componente pai para atualizar painéis atribuídos
       if (onPanelAssigned) {
@@ -107,13 +111,17 @@ export const useAvailablePanels = ({ buildingId, open, onPanelAssigned }: UseAva
     }
   };
 
+  // Simplified useEffect without circular dependencies
   useEffect(() => {
     if (open) {
+      console.log('🔄 [AVAILABLE PANELS] Aba aberta, carregando painéis...');
       fetchAvailablePanels();
     } else {
+      console.log('🔄 [AVAILABLE PANELS] Aba fechada, limpando dados...');
       setAvailablePanels([]);
+      setLoading(false);
     }
-  }, [open, fetchAvailablePanels]);
+  }, [open]); // Only depend on 'open' to prevent infinite loops
 
   return {
     availablePanels,

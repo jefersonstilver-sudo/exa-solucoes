@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Monitor, Wifi, WifiOff, Wrench } from 'lucide-react';
@@ -11,7 +11,7 @@ interface AvailablePanelCardProps {
   isAssigning: boolean;
 }
 
-const AvailablePanelCard: React.FC<AvailablePanelCardProps> = ({ 
+const AvailablePanelCard: React.FC<AvailablePanelCardProps> = memo(({ 
   panel, 
   onAssign, 
   isAssigning 
@@ -34,18 +34,16 @@ const AvailablePanelCard: React.FC<AvailablePanelCardProps> = ({
     }
   };
 
-  // Card amarelo claro para painéis disponíveis (não atribuídos)
   const cardBackground = 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
 
   const handleAssign = () => {
+    console.log('📌 [AVAILABLE PANEL CARD] Atribuindo painel:', panel.code);
     onAssign(panel.id, panel.code);
   };
 
-  // Especificações padronizadas
-  const standardSpecs = {
-    resolucao: '1080x1920',
-    sistema_operacional: 'linux'
-  };
+  // Default specs for panels
+  const displayResolucao = panel.resolucao || '1080x1920';
+  const displaySistema = panel.sistema_operacional || 'linux';
 
   return (
     <PanelTooltip panel={panel}>
@@ -62,7 +60,7 @@ const AvailablePanelCard: React.FC<AvailablePanelCardProps> = ({
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Resolução:</span>
-              <span className="font-medium">{standardSpecs.resolucao}</span>
+              <span className="font-medium">{displayResolucao}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Orientação:</span>
@@ -70,7 +68,7 @@ const AvailablePanelCard: React.FC<AvailablePanelCardProps> = ({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Sistema:</span>
-              <span className="font-medium capitalize">{standardSpecs.sistema_operacional}</span>
+              <span className="font-medium capitalize">{displaySistema}</span>
             </div>
           </div>
           
@@ -86,6 +84,8 @@ const AvailablePanelCard: React.FC<AvailablePanelCardProps> = ({
       </Card>
     </PanelTooltip>
   );
-};
+});
+
+AvailablePanelCard.displayName = 'AvailablePanelCard';
 
 export default AvailablePanelCard;

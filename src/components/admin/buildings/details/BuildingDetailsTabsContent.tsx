@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BuildingOverviewTab from './BuildingOverviewTab';
 import BuildingSalesTab from './BuildingSalesTab';
@@ -31,6 +31,12 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
     loading
   });
 
+  // Callback to handle panel assignment/unassignment synchronization
+  const handlePanelChange = useCallback(() => {
+    console.log('🔄 [BUILDING DETAILS TABS] Sincronizando dados após alteração de painéis');
+    onRefresh();
+  }, [onRefresh]);
+
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-5">
@@ -51,7 +57,7 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
           buildingName={building?.nome}
           panels={panels}
           loading={loading}
-          onRefresh={onRefresh}
+          onRefresh={handlePanelChange}
         />
       </TabsContent>
 
@@ -60,6 +66,7 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
           buildingId={building?.id}
           buildingName={building?.nome}
           open={true}
+          onPanelAssigned={handlePanelChange}
         />
       </TabsContent>
 
