@@ -1,5 +1,6 @@
 
 import { filterBuildings } from '@/services/buildingFilterService';
+import { defaultFilters } from './defaultFilters';
 
 export const createFilterActions = (set: any, get: any) => ({
   applyFilters: () => {
@@ -36,5 +37,11 @@ export const createFilterActions = (set: any, get: any) => ({
     console.log('✅ [BUILDING STORE] Prédios após aplicar filtros:', filteredBuildings.length);
     
     set({ buildings: filteredBuildings });
+  },
+
+  resetFilters: () => {
+    console.log('🔄 [BUILDING STORE] === RESETANDO FILTROS ===');
+    set({ filters: { ...defaultFilters } });
+    get().applyFilters();
   }
 });
