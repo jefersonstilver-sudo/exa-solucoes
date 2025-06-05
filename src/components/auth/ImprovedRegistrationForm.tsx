@@ -3,10 +3,10 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, Lock, FileText, Loader2 } from 'lucide-react';
-import PasswordStrengthIndicator from './PasswordStrengthIndicator';
-import { validatePasswordStrength, sanitizeInput, isValidEmail } from '@/utils/securityUtils';
+import { Mail, Key, UserCheck, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import DocumentInput from './DocumentInput';
+import { PasswordInput } from '@/components/ui/password-input';
 
 interface ImprovedRegistrationFormProps {
   name: string;
@@ -20,7 +20,7 @@ interface ImprovedRegistrationFormProps {
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
-  onDocumentTypeChange: (value: 'cpf' | 'cnpj') => void;
+  onDocumentTypeChange: (type: 'cpf' | 'cnpj') => void;
   onDocumentChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -41,200 +41,98 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
   onDocumentChange,
   onSubmit
 }) => {
-  const { isValid: isPasswordValid } = validatePasswordStrength(password);
-  const isEmailValid = isValidEmail(email);
-  
-  const handleNameChange = (value: string) => {
-    const sanitized = sanitizeInput(value, 100);
-    onNameChange(sanitized);
-  };
-  
-  const handleEmailChange = (value: string) => {
-    const sanitized = sanitizeInput(value.toLowerCase(), 254);
-    onEmailChange(sanitized);
-  };
-  
-  const handlePasswordChange = (value: string) => {
-    // Don't sanitize passwords as they might contain special characters intentionally
-    onPasswordChange(value);
-  };
-  
-  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Sanitize to only numbers
-    const sanitized = e.target.value.replace(/[^\d]/g, '');
-    const syntheticEvent = {
-      ...e,
-      target: {
-        ...e.target,
-        value: sanitized
-      }
-    };
-    onDocumentChange(syntheticEvent as React.ChangeEvent<HTMLInputElement>);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Enhanced client-side validation
-    if (!isPasswordValid) {
-      return;
-    }
-    
-    if (!isEmailValid) {
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      return;
-    }
-    
-    if (name.length < 2) {
-      return;
-    }
-    
-    onSubmit(e);
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-sm font-medium">
-          Nome completo *
+        <Label htmlFor="name" className="flex items-center text-gray-900">
+          <UserCheck className="h-4 w-4 mr-2 text-indexa-purple" /> Nome completo
         </Label>
-        <div className="relative">
-          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            required
-            disabled={isLoading}
-            className="pl-9"
-            placeholder="Seu nome completo"
-            maxLength={100}
-            minLength={2}
-          />
-        </div>
-        {name.length > 0 && name.length < 2 && (
-          <p className="text-xs text-red-600">Nome deve ter pelo menos 2 caracteres</p>
-        )}
+        <Input
+          id="name"
+          type="text"
+          placeholder="Seu nome completo"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          required
+          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+        />
       </div>
-
+      
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium">
-          Email *
+        <Label htmlFor="email" className="flex items-center text-gray-900">
+          <Mail className="h-4 w-4 mr-2 text-indexa-purple" /> Email
         </Label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => handleEmailChange(e.target.value)}
-            required
-            disabled={isLoading}
-            className={`pl-9 ${!isEmailValid && email ? 'border-red-300' : ''}`}
-            placeholder="seu@email.com"
-            maxLength={254}
-          />
-        </div>
-        {!isEmailValid && email && (
-          <p className="text-xs text-red-600">Formato de email inválido</p>
-        )}
+        <Input
+          id="email"
+          type="email"
+          placeholder="seu@email.com"
+          value={email}
+          onChange={(e) => onEmailChange(e.target.value)}
+          required
+          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+        />
       </div>
-
+      
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-sm font-medium">
-          Senha *
+        <Label htmlFor="password" className="flex items-center text-gray-900">
+          <Key className="h-4 w-4 mr-2 text-indexa-purple" /> Senha
         </Label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => handlePasswordChange(e.target.value)}
-            required
-            disabled={isLoading}
-            className="pl-9"
-            placeholder="Crie uma senha forte"
-            maxLength={128}
-          />
-        </div>
-        <PasswordStrengthIndicator password={password} />
+        <PasswordInput
+          id="password"
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => onPasswordChange(e.target.value)}
+          required
+          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+        />
+        <p className="text-xs text-gray-600">
+          A senha deve ter pelo menos 6 caracteres
+        </p>
       </div>
-
+      
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword" className="text-sm font-medium">
-          Confirmar senha *
+        <Label htmlFor="confirmPassword" className="flex items-center text-gray-900">
+          <Key className="h-4 w-4 mr-2 text-indexa-purple" /> Confirmar senha
         </Label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => onConfirmPasswordChange(e.target.value)}
-            required
-            disabled={isLoading}
-            className={`pl-9 ${password && confirmPassword && password !== confirmPassword ? 'border-red-300' : ''}`}
-            placeholder="Confirme sua senha"
-            maxLength={128}
-          />
-        </div>
-        {password && confirmPassword && password !== confirmPassword && (
-          <p className="text-xs text-red-600">As senhas não coincidem</p>
-        )}
+        <PasswordInput
+          id="confirmPassword"
+          placeholder="••••••••"
+          value={confirmPassword}
+          onChange={(e) => onConfirmPasswordChange(e.target.value)}
+          required
+          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+        />
       </div>
-
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Tipo de documento *</Label>
-        <Select value={documentType} onValueChange={onDocumentTypeChange} disabled={isLoading}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="cpf">CPF</SelectItem>
-            <SelectItem value="cnpj">CNPJ</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="document" className="text-sm font-medium">
-          {documentType === 'cpf' ? 'CPF' : 'CNPJ'} *
-        </Label>
-        <div className="relative">
-          <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            id="document"
-            type="text"
-            value={document}
-            onChange={handleDocumentChange}
-            required
-            disabled={isLoading}
-            className="pl-9"
-            placeholder={documentType === 'cpf' ? '000.000.000-00' : '00.000.000/0000-00'}
-            maxLength={documentType === 'cpf' ? 14 : 18}
-          />
-        </div>
-      </div>
-
-      <Button
-        type="submit"
-        disabled={isLoading || !isPasswordValid || !isEmailValid || password !== confirmPassword || name.length < 2}
-        className="w-full bg-indexa-purple hover:bg-indexa-purple-dark text-white py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      
+      <DocumentInput
+        documentType={documentType}
+        document={document}
+        onDocumentTypeChange={onDocumentTypeChange}
+        onDocumentChange={onDocumentChange}
+      />
+      
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="pt-2"
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Criando conta...
-          </>
-        ) : (
-          'Criar conta'
-        )}
-      </Button>
+        <Button 
+          type="submit" 
+          className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-all duration-200 h-11"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Criando conta...
+            </>
+          ) : (
+            <>
+              Criar conta <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </motion.div>
     </form>
   );
 };

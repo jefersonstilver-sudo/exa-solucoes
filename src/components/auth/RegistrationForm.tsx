@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Key, UserCheck, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DocumentInput from './DocumentInput';
+import { PasswordInput } from '@/components/ui/password-input';
 
 interface RegistrationFormProps {
   name: string;
@@ -72,9 +73,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         <Label htmlFor="password" className="flex items-center text-gray-900">
           <Key className="h-4 w-4 mr-2 text-indexa-purple" /> Senha
         </Label>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           placeholder="••••••••"
           value={password}
           onChange={(e) => onPasswordChange(e.target.value)}

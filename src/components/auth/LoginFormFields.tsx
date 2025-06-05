@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
 
 interface LoginFormFieldsProps {
   email: string;
@@ -62,9 +63,8 @@ export const LoginFormFields = ({
               Esqueceu a senha?
             </Button>
           </div>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
