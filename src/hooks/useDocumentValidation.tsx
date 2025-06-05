@@ -1,10 +1,10 @@
 
-import { sanitizeDocument } from '@/utils/securityUtils';
+import { sanitizeInput } from '@/utils/securityUtils';
 
 export const useDocumentValidation = () => {
   const formatDocument = (value: string, type: 'cpf' | 'cnpj'): string => {
-    // Sanitize input first
-    const sanitized = sanitizeDocument(value);
+    // Sanitize input first to prevent any malicious input
+    const sanitized = sanitizeInput(value.replace(/[^\d]/g, ''), 14);
     const digits = sanitized;
     
     if (type === 'cpf') {
@@ -24,12 +24,12 @@ export const useDocumentValidation = () => {
   };
 
   const validateDocument = (document: string, type: 'cpf' | 'cnpj'): boolean => {
-    const digits = sanitizeDocument(document);
+    const digits = sanitizeInput(document.replace(/[^\d]/g, ''), 14);
     
     if (type === 'cpf') {
       if (digits.length !== 11) return false;
       
-      // Check for invalid sequences
+      // Check for invalid sequences (all same digits)
       if (/^(\d)\1{10}$/.test(digits)) return false;
       
       // CPF validation algorithm
@@ -51,7 +51,7 @@ export const useDocumentValidation = () => {
     } else {
       if (digits.length !== 14) return false;
       
-      // Check for invalid sequences
+      // Check for invalid sequences (all same digits)
       if (/^(\d)\1{13}$/.test(digits)) return false;
       
       // CNPJ validation algorithm

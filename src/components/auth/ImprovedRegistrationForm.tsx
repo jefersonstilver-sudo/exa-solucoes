@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Mail, Lock, FileText, Loader2 } from 'lucide-react';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
-import { validatePasswordStrength, sanitizeDocument, isValidEmail } from '@/utils/securityUtils';
+import { validatePasswordStrength, sanitizeInput, isValidEmail } from '@/utils/securityUtils';
 
 interface ImprovedRegistrationFormProps {
   name: string;
@@ -44,9 +44,24 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
   const { isValid: isPasswordValid } = validatePasswordStrength(password);
   const isEmailValid = isValidEmail(email);
   
+  const handleNameChange = (value: string) => {
+    const sanitized = sanitizeInput(value, 100);
+    onNameChange(sanitized);
+  };
+  
+  const handleEmailChange = (value: string) => {
+    const sanitized = sanitizeInput(value.toLowerCase(), 254);
+    onEmailChange(sanitized);
+  };
+  
+  const handlePasswordChange = (value: string) => {
+    // Don't sanitize passwords as they might contain special characters intentionally
+    onPasswordChange(value);
+  };
+  
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Sanitize input to prevent XSS
-    const sanitized = sanitizeDocument(e.target.value);
+    // Sanitize to only numbers
+    const sanitized = e.target.value.replace(/[^\d]/g, '');
     const syntheticEvent = {
       ...e,
       target: {
@@ -60,9 +75,9 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Additional client-side validation
+    // Enhanced client-side validation
     if (!isPasswordValid) {
-      return; // Form validation will handle the error display
+      return;
     }
     
     if (!isEmailValid) {
@@ -70,6 +85,10 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
     }
     
     if (password !== confirmPassword) {
+      return;
+    }
+    
+    if (name.length < 2) {
       return;
     }
     
@@ -88,14 +107,18 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
             id="name"
             type="text"
             value={name}
-            onChange={(e) => onNameChange(e.target.value.trim())}
+            onChange={(e) => handleNameChange(e.target.value)}
             required
             disabled={isLoading}
             className="pl-9"
             placeholder="Seu nome completo"
             maxLength={100}
+            minLength={2}
           />
         </div>
+        {name.length > 0 && name.length < 2 && (
+          <p className="text-xs text-red-600">Nome deve ter pelo menos 2 caracteres</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -108,12 +131,12 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
             id="email"
             type="email"
             value={email}
-            onChange={(e) => onEmailChange(e.target.value.trim().toLowerCase())}
+            onChange={(e) => handleEmailChange(e.target.value)}
             required
             disabled={isLoading}
             className={`pl-9 ${!isEmailValid && email ? 'border-red-300' : ''}`}
             placeholder="seu@email.com"
-            maxLength={100}
+            maxLength={254}
           />
         </div>
         {!isEmailValid && email && (
@@ -131,7 +154,7 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
             id="password"
             type="password"
             value={password}
-            onChange={(e) => onPasswordChange(e.target.value)}
+            onChange={(e) => handlePasswordChange(e.target.value)}
             required
             disabled={isLoading}
             className="pl-9"
@@ -200,7 +223,7 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
 
       <Button
         type="submit"
-        disabled={isLoading || !isPasswordValid || !isEmailValid || password !== confirmPassword}
+        disabled={isLoading || !isPasswordValid || !isEmailValid || password !== confirmPassword || name.length < 2}
         className="w-full bg-indexa-purple hover:bg-indexa-purple-dark text-white py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (

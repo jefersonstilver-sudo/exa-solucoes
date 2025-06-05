@@ -20,8 +20,10 @@ const SecureEmergencyPasswordReset = () => {
     e.preventDefault();
     
     // Client-side rate limiting
-    if (!checkRateLimit('emergency-reset', 3, 900000)) {
-      setError('Muitas tentativas. Aguarde 15 minutos antes de tentar novamente.');
+    const rateLimitCheck = checkRateLimit('emergency-reset', 3, 900000);
+    if (!rateLimitCheck.allowed) {
+      const blockUntil = rateLimitCheck.blockUntil ? new Date(rateLimitCheck.blockUntil).toLocaleTimeString() : '';
+      setError(`Muitas tentativas. Aguarde até ${blockUntil} antes de tentar novamente.`);
       return;
     }
     

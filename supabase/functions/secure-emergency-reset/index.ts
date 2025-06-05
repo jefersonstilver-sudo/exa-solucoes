@@ -14,31 +14,67 @@ function generateSecureToken(): string {
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-// Generate secure password
-function generateSecurePassword(length: number = 12): string {
-  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+// Generate secure password with complexity requirements
+function generateSecurePassword(length: number = 16): string => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const specialChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const allChars = uppercase + lowercase + numbers + specialChars;
+  
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
   
-  return Array.from(array, byte => charset[byte % charset.length]).join('');
+  let password = '';
+  
+  // Ensure at least one character from each category
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += specialChars[Math.floor(Math.random() * specialChars.length)];
+  
+  // Fill the rest randomly
+  for (let i = 4; i < length; i++) {
+    password += allChars[array[i] % allChars.length];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
 }
 
-// Rate limiting storage
-const rateLimitAttempts = new Map<string, number[]>();
+// Rate limiting storage with IP tracking
+const rateLimitAttempts = new Map<string, { attempts: number[]; blocked: boolean; blockUntil?: number }>();
 
 function checkRateLimit(ip: string, maxAttempts: number = 3, windowMs: number = 900000): boolean {
   const now = Date.now();
-  const attempts = rateLimitAttempts.get(ip) || [];
+  const record = rateLimitAttempts.get(ip) || { attempts: [], blocked: false };
+  
+  // Check if currently blocked
+  if (record.blocked && record.blockUntil && now < record.blockUntil) {
+    return false;
+  }
+  
+  // Clear block if expired
+  if (record.blocked && record.blockUntil && now >= record.blockUntil) {
+    record.blocked = false;
+    record.blockUntil = undefined;
+    record.attempts = [];
+  }
   
   // Remove old attempts
-  const recentAttempts = attempts.filter(time => now - time < windowMs);
+  const recentAttempts = record.attempts.filter(time => now - time < windowMs);
   
   if (recentAttempts.length >= maxAttempts) {
+    // Block the IP
+    record.blocked = true;
+    record.blockUntil = now + windowMs;
+    rateLimitAttempts.set(ip, record);
     return false;
   }
   
   recentAttempts.push(now);
-  rateLimitAttempts.set(ip, recentAttempts);
+  record.attempts = recentAttempts;
+  rateLimitAttempts.set(ip, record);
   return true;
 }
 
@@ -48,10 +84,13 @@ serve(async (req) => {
   }
 
   try {
-    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    const clientIP = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
     
-    // Rate limiting
+    // Enhanced rate limiting
     if (!checkRateLimit(clientIP)) {
+      console.error(`[SECURITY] Rate limit exceeded for IP: ${clientIP}`);
       return new Response(
         JSON.stringify({
           success: false,
@@ -79,11 +118,21 @@ serve(async (req) => {
       throw new Error('Email e token de segurança são obrigatórios')
     }
 
-    // Verify secure token (this should be generated and sent via secure channel)
+    // Verify secure token (must be set in Supabase secrets)
     const expectedToken = Deno.env.get('EMERGENCY_RESET_TOKEN')
     if (!expectedToken || secureToken !== expectedToken) {
       // Log security violation
       console.error(`[SECURITY] Invalid emergency token attempt from ${clientIP} for email ${email}`)
+      
+      // Log to database
+      await supabaseAdmin
+        .from('log_eventos_sistema')
+        .insert({
+          tipo_evento: 'SECURITY_VIOLATION',
+          descricao: `Invalid emergency reset token attempt for ${email}`,
+          ip: clientIP
+        });
+      
       throw new Error('Token de segurança inválido')
     }
 
@@ -103,7 +152,9 @@ serve(async (req) => {
     const targetUser = authUsers.users.find(user => user.email === email)
     
     if (!targetUser) {
-      throw new Error(`Usuário com email ${email} não encontrado`)
+      // Don't reveal if user exists or not for security
+      console.error(`[SECURITY] Emergency reset attempt for non-existent user: ${email}`)
+      throw new Error('Operação não autorizada')
     }
 
     // Reset password with force email confirmation reset
@@ -116,6 +167,7 @@ serve(async (req) => {
           ...targetUser.user_metadata,
           password_reset_required: true,
           password_reset_at: new Date().toISOString(),
+          emergency_reset: true
         },
       }
     )
@@ -142,13 +194,14 @@ serve(async (req) => {
         })
     }
 
-    // Log security event
+    // Log successful security event
     await supabaseAdmin
       .from('log_eventos_sistema')
       .insert({
         tipo_evento: 'SECURE_EMERGENCY_RESET',
         descricao: `Reset de emergência seguro realizado para ${email} via IP ${clientIP}`,
-        ip: clientIP
+        ip: clientIP,
+        user_id: targetUser.id
       })
 
     return new Response(
