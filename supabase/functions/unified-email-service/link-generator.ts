@@ -21,20 +21,43 @@ export class LinkGenerator {
     console.log('🔗 [LINK-GENERATOR] Gerando link de confirmação válido para:', email);
     
     try {
-      // Primeiro, verificar se o usuário já existe
-      const { data: users, error: userError } = await this.supabaseAdmin.auth.admin.listUsers();
+      // Verificar se o usuário existe e seu status de confirmação
+      const { data: userData, error: userError } = await this.supabaseAdmin.auth.admin.listUsers();
       
       if (userError) {
         console.error('❌ [LINK-GENERATOR] Erro ao verificar usuários:', userError);
       }
       
-      const userExists = users?.users?.some(user => user.email === email);
-      console.log(`🔍 [LINK-GENERATOR] Usuário ${email} existe:`, userExists);
+      const existingUser = userData?.users?.find(user => user.email === email);
+      const userExists = !!existingUser;
+      const emailConfirmed = existingUser?.email_confirmed_at !== null;
       
-      // Usar tipo apropriado baseado na existência do usuário
-      const linkType = userExists ? 'email_change' : 'signup';
-      console.log(`🔧 [LINK-GENERATOR] Usando tipo de link: ${linkType}`);
+      console.log(`🔍 [LINK-GENERATOR] Status do usuário ${email}:`, {
+        exists: userExists,
+        emailConfirmed: emailConfirmed,
+        confirmedAt: existingUser?.email_confirmed_at
+      });
       
+      // Estratégia de geração de link baseada no status do usuário
+      let linkType: string;
+      let shouldTryAlternatives = true;
+      
+      if (!userExists) {
+        // Usuário novo - usar signup
+        linkType = 'signup';
+        shouldTryAlternatives = false;
+      } else if (!emailConfirmed) {
+        // Usuário existe mas email não confirmado - usar signup
+        linkType = 'signup';
+        shouldTryAlternatives = false;
+      } else {
+        // Usuário existe e email já confirmado - usar invite para reenvio
+        linkType = 'invite';
+      }
+      
+      console.log(`🔧 [LINK-GENERATOR] Usando estratégia: ${linkType}`);
+      
+      // Tentar gerar link com o tipo principal
       const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
         type: linkType,
         email: email,
@@ -43,47 +66,33 @@ export class LinkGenerator {
         }
       });
 
-      if (error) {
-        console.error(`❌ [LINK-GENERATOR] Erro na API do Supabase (${linkType}):`, error);
+      if (!error && data.properties?.action_link) {
+        console.log(`✅ [LINK-GENERATOR] Link ${linkType} gerado com sucesso`);
+        return data.properties.action_link;
+      }
+
+      console.error(`❌ [LINK-GENERATOR] Erro na API do Supabase (${linkType}):`, error);
+      
+      // Se falhou e devemos tentar alternativas
+      if (shouldTryAlternatives) {
+        console.log('🔄 [LINK-GENERATOR] Tentando estratégias alternativas...');
         
-        // Se falhou com email_change, tentar com signup
-        if (linkType === 'email_change') {
-          console.log('🔄 [LINK-GENERATOR] Tentando com tipo signup...');
-          
-          const { data: signupData, error: signupError } = await this.supabaseAdmin.auth.admin.generateLink({
-            type: 'signup',
-            email: email,
-            options: {
-              redirectTo: 'https://indexamidia.com/confirmacao'
-            }
-          });
-          
-          if (!signupError && signupData.properties?.action_link) {
-            console.log('✅ [LINK-GENERATOR] Link signup gerado com sucesso');
-            return signupData.properties.action_link;
+        // Alternativa 1: Tentar signup para usuários existentes
+        const { data: signupData, error: signupError } = await this.supabaseAdmin.auth.admin.generateLink({
+          type: 'signup',
+          email: email,
+          options: {
+            redirectTo: 'https://indexamidia.com/confirmacao'
           }
+        });
+        
+        if (!signupError && signupData.properties?.action_link) {
+          console.log('✅ [LINK-GENERATOR] Link signup alternativo gerado');
+          return signupData.properties.action_link;
         }
         
-        throw error;
-      }
-
-      if (!data.properties?.action_link) {
-        throw new Error('Link de confirmação não foi gerado pela API do Supabase');
-      }
-
-      const confirmationUrl = data.properties.action_link;
-      console.log('✅ [LINK-GENERATOR] Link válido gerado:', confirmationUrl);
-      
-      return confirmationUrl;
-    } catch (error) {
-      console.error('❌ [LINK-GENERATOR] Erro ao gerar link:', error);
-      
-      // Fallback melhorado: gerar link com token válido
-      console.log('⚠️ [LINK-GENERATOR] Usando fallback com token válido');
-      
-      try {
-        // Tentar gerar um token de recuperação que funciona para usuários existentes
-        const { data: resetData, error: resetError } = await this.supabaseAdmin.auth.admin.generateLink({
+        // Alternativa 2: Tentar recovery
+        const { data: recoveryData, error: recoveryError } = await this.supabaseAdmin.auth.admin.generateLink({
           type: 'recovery',
           email: email,
           options: {
@@ -91,21 +100,43 @@ export class LinkGenerator {
           }
         });
         
-        if (!resetError && resetData.properties?.action_link) {
-          console.log('✅ [LINK-GENERATOR] Fallback recovery link gerado');
-          return resetData.properties.action_link;
+        if (!recoveryError && recoveryData.properties?.action_link) {
+          console.log('✅ [LINK-GENERATOR] Link recovery alternativo gerado');
+          return recoveryData.properties.action_link;
         }
-      } catch (fallbackError) {
-        console.error('❌ [LINK-GENERATOR] Fallback também falhou:', fallbackError);
+        
+        console.error('❌ [LINK-GENERATOR] Todas as alternativas falharam');
       }
       
-      // Último recurso: link manual (sem tokens - pode falhar)
-      console.log('⚠️ [LINK-GENERATOR] Usando último recurso manual');
-      const baseUrl = this.supabaseUrl;
-      const redirectUrl = encodeURIComponent('https://indexamidia.com/confirmacao');
-      const fallbackUrl = `${baseUrl}/auth/v1/verify?type=signup&redirect_to=${redirectUrl}`;
+      throw new Error(`Falha ao gerar link: ${error?.message || 'Erro desconhecido'}`);
       
-      return fallbackUrl;
+    } catch (error) {
+      console.error('❌ [LINK-GENERATOR] Erro crítico ao gerar link:', error);
+      
+      // Fallback final com recovery que sempre funciona
+      console.log('🔄 [LINK-GENERATOR] Tentando fallback final com recovery...');
+      
+      try {
+        const { data: finalRecoveryData, error: finalRecoveryError } = await this.supabaseAdmin.auth.admin.generateLink({
+          type: 'recovery',
+          email: email,
+          options: {
+            redirectTo: 'https://indexamidia.com/confirmacao'
+          }
+        });
+        
+        if (!finalRecoveryError && finalRecoveryData.properties?.action_link) {
+          console.log('✅ [LINK-GENERATOR] Fallback final recovery gerado');
+          return finalRecoveryData.properties.action_link;
+        }
+        
+        console.error('❌ [LINK-GENERATOR] Fallback final também falhou:', finalRecoveryError);
+      } catch (fallbackError) {
+        console.error('❌ [LINK-GENERATOR] Erro no fallback final:', fallbackError);
+      }
+      
+      // Se chegou aqui, algo está muito errado com a configuração
+      throw new Error(`Impossível gerar link de confirmação válido para ${email}. Verifique a configuração do Supabase.`);
     }
   }
 }
