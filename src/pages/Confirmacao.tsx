@@ -16,6 +16,7 @@ export default function Confirmacao() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'already-confirmed' | 'expired'>('loading');
   const [message, setMessage] = useState('Confirmando seu email...');
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { resendConfirmationEmail, isResending } = useEmailConfirmation();
 
   useEffect(() => {
@@ -24,8 +25,21 @@ export default function Confirmacao() {
         console.log('🔍 [CONFIRMACAO] Iniciando confirmação de email...');
         console.log('🔍 [CONFIRMACAO] URL completa:', window.location.href);
         
-        // Parse da URL atual
+        // Parse da URL atual com validação robusta
         const url = new URL(window.location.href);
+        
+        // Debug: Log completo da URL
+        const debugData = {
+          href: url.href,
+          origin: url.origin,
+          pathname: url.pathname,
+          search: url.search,
+          hash: url.hash,
+          hostname: url.hostname,
+          host: url.host
+        };
+        setDebugInfo(debugData);
+        console.log('🔍 [CONFIRMACAO] Debug URL:', debugData);
         
         // Verificar se há erro nos parâmetros da URL
         const error = url.searchParams.get('error') || url.hash.match(/error=([^&]+)/)?.[1];
@@ -58,12 +72,14 @@ export default function Confirmacao() {
         console.log('🔍 [CONFIRMACAO] Tokens encontrados:', {
           hasAccessToken: !!access_token,
           hasRefreshToken: !!refresh_token,
-          type
+          type,
+          hashLength: hash.length
         });
         
         if (!access_token || !refresh_token) {
+          console.error('❌ [CONFIRMACAO] Tokens não encontrados');
           setStatus('expired');
-          setMessage('Link de confirmação inválido ou expirado.');
+          setMessage('Link de confirmação inválido ou expirado. Verifique se copiou o link completo do email.');
           return;
         }
 
@@ -76,7 +92,16 @@ export default function Confirmacao() {
 
         if (sessionError) {
           console.error('❌ [CONFIRMACAO] Erro ao configurar sessão:', sessionError);
-          throw sessionError;
+          
+          // Tratamento específico para diferentes tipos de erro
+          if (sessionError.message?.includes('invalid') || sessionError.message?.includes('expired')) {
+            setStatus('expired');
+            setMessage('Link de confirmação expirado. Solicite um novo email de confirmação.');
+          } else {
+            setStatus('error');
+            setMessage(`Erro na autenticação: ${sessionError.message}`);
+          }
+          return;
         }
         
         // Verificar se o email foi confirmado
@@ -86,12 +111,13 @@ export default function Confirmacao() {
         
         console.log('🔍 [CONFIRMACAO] Status da confirmação:', {
           emailConfirmedAt,
-          email
+          email,
+          userId: sessionData.session?.user?.id
         });
         
         if (!emailConfirmedAt) {
           setStatus('error');
-          setMessage('Erro na confirmação. Tente novamente ou solicite um novo email.');
+          setMessage('Erro na confirmação. O email não foi confirmado. Tente novamente ou solicite um novo email.');
           return;
         }
         
@@ -175,6 +201,14 @@ export default function Confirmacao() {
               >
                 <Loader2 className="h-16 w-16 text-indexa-purple animate-spin mx-auto mb-4" />
                 <p className="text-lg text-gray-700">{message}</p>
+                
+                {/* Debug info para desenvolvimento */}
+                {debugInfo && process.env.NODE_ENV === 'development' && (
+                  <details className="mt-4 p-2 bg-gray-100 rounded text-xs text-left">
+                    <summary>Debug Info</summary>
+                    <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+                  </details>
+                )}
               </motion.div>
             )}
             

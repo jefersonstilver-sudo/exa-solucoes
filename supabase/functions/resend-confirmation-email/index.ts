@@ -48,6 +48,28 @@ function createConfirmationEmailHTML(userName: string, confirmationUrl: string):
   `;
 }
 
+// Função para validar e corrigir URLs malformadas
+function validateAndCorrectUrl(url: string): string {
+  try {
+    // Remover qualquer ponto no início do hostname
+    let correctedUrl = url.replace(/https?:\/\/\.+/, 'https://');
+    
+    // Verificar se é uma URL válida
+    const urlObj = new URL(correctedUrl);
+    
+    // Se o hostname começar com ponto, corrigir
+    if (urlObj.hostname.startsWith('.')) {
+      urlObj.hostname = urlObj.hostname.substring(1);
+      correctedUrl = urlObj.toString();
+    }
+    
+    return correctedUrl;
+  } catch (error) {
+    console.error('❌ [URL-VALIDATION] URL inválida:', url, error);
+    return url; // Retorna original se não conseguir corrigir
+  }
+}
+
 serve(async (req: Request) => {
   console.log('🔄 [RESEND-EMAIL] Iniciando reenvio de email...');
   
@@ -112,22 +134,31 @@ serve(async (req: Request) => {
       throw new Error('Link de confirmação não foi gerado');
     }
 
-    // CORREÇÃO: Detectar automaticamente o domínio atual
+    // CORREÇÃO ROBUSTA: Detectar e validar o domínio atual
     const currentUrl = new URL(req.url);
-    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+    let baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
     
-    // Modificar URL para usar domínio atual
+    // Validar e corrigir URL se necessário
+    baseUrl = validateAndCorrectUrl(baseUrl);
+    
+    // Modificar URL para usar domínio atual com validação extra
     const correctedUrl = confirmationUrl.replace(
       /redirect_to=[^&]+/,
       `redirect_to=${encodeURIComponent(baseUrl + '/confirmacao')}`
     );
 
-    console.log('✅ [RESEND-EMAIL] Link gerado e corrigido para domínio atual');
-    console.log('🔗 [RESEND-EMAIL] Base URL detectada:', baseUrl);
+    // Validação final da URL corrigida
+    const finalUrl = validateAndCorrectUrl(correctedUrl);
+
+    console.log('✅ [RESEND-EMAIL] Configuração de URLs:');
+    console.log('   - Request URL:', req.url);
+    console.log('   - Base URL detectada:', baseUrl);
+    console.log('   - URL original do Supabase:', confirmationUrl);
+    console.log('   - URL corrigida final:', finalUrl);
 
     // Enviar email
     const userName = email.split('@')[0];
-    const html = createConfirmationEmailHTML(userName, correctedUrl);
+    const html = createConfirmationEmailHTML(userName, finalUrl);
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'Indexa <noreply@indexamidia.com>',
@@ -146,6 +177,8 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify({ 
       message: 'Email reenviado com sucesso!',
       email_id: emailData?.id,
+      confirmation_url: finalUrl,
+      base_url: baseUrl,
       success: true
     }), {
       status: 200,

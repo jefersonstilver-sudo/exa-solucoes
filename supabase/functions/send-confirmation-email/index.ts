@@ -47,6 +47,28 @@ function createConfirmationEmailHTML(userName: string, confirmationUrl: string):
   `;
 }
 
+// Função para validar e corrigir URLs malformadas
+function validateAndCorrectUrl(url: string): string {
+  try {
+    // Remover qualquer ponto no início do hostname
+    let correctedUrl = url.replace(/https?:\/\/\.+/, 'https://');
+    
+    // Verificar se é uma URL válida
+    const urlObj = new URL(correctedUrl);
+    
+    // Se o hostname começar com ponto, corrigir
+    if (urlObj.hostname.startsWith('.')) {
+      urlObj.hostname = urlObj.hostname.substring(1);
+      correctedUrl = urlObj.toString();
+    }
+    
+    return correctedUrl;
+  } catch (error) {
+    console.error('❌ [URL-VALIDATION] URL inválida:', url, error);
+    return url; // Retorna original se não conseguir corrigir
+  }
+}
+
 serve(async (req: Request) => {
   console.log('🚀 [EMAIL-CONFIRMATION] Função iniciada');
 
@@ -110,20 +132,33 @@ serve(async (req: Request) => {
       });
     }
 
-    // URLs CORRIGIDAS - usar o domínio atual do Lovable para desenvolvimento
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
+    // CORREÇÃO ROBUSTA: Detectar e validar o domínio atual
     const currentUrl = new URL(req.url);
-    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+    let baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
     
-    // URL de confirmação correta que vai redirecionar para /confirmacao
-    const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=signup&redirect_to=${encodeURIComponent(baseUrl + '/confirmacao')}`;
+    // Validar e corrigir URL se necessário
+    baseUrl = validateAndCorrectUrl(baseUrl);
     
-    console.log('🔗 [EMAIL-CONFIRMATION] URL de confirmação gerada:', confirmationUrl);
-    console.log('🔗 [EMAIL-CONFIRMATION] Base URL detectada:', baseUrl);
-
+    // URLs de fallback para garantir funcionamento
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
+    
+    // Construir URL de confirmação com validação extra
+    const redirectUrl = encodeURIComponent(`${baseUrl}/confirmacao`);
+    const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=signup&redirect_to=${redirectUrl}`;
+    
+    // Log detalhado para debug
+    console.log('🔗 [EMAIL-CONFIRMATION] Configuração de URLs:');
+    console.log('   - Request URL:', req.url);
+    console.log('   - Base URL detectada:', baseUrl);
+    console.log('   - Redirect URL:', `${baseUrl}/confirmacao`);
+    console.log('   - URL de confirmação final:', confirmationUrl);
+    
+    // Validação final da URL de confirmação
+    const validatedConfirmationUrl = validateAndCorrectUrl(confirmationUrl);
+    
     // Preparar dados do email
     const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
-    const html = createConfirmationEmailHTML(userName, confirmationUrl);
+    const html = createConfirmationEmailHTML(userName, validatedConfirmationUrl);
 
     // Enviar email usando domínio verificado
     const { data: emailResponse, error: emailError } = await resend.emails.send({
@@ -145,7 +180,8 @@ serve(async (req: Request) => {
       message: 'Email de confirmação enviado com sucesso',
       email_id: emailResponse?.id,
       recipient: user.email,
-      confirmation_url: confirmationUrl,
+      confirmation_url: validatedConfirmationUrl,
+      base_url: baseUrl,
       success: true
     }), {
       status: 200,
