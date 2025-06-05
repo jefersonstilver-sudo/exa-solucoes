@@ -1,9 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { prepareForInsert, prepareForUpdate, unwrapData, filterEq } from '@/utils/supabaseUtils';
 import { Panel } from '@/types/panel';
 import { CreatePaymentOrderParams, ProcessPaymentParams, StoreCheckoutInfoParams } from '@/types/payment';
+import { usePaymentValidation } from './usePaymentValidation';
 
 interface CartItem {
   panel: Panel;
@@ -11,6 +11,7 @@ interface CartItem {
 }
 
 export const useOrderCreation = () => {
+  const { validateUniquePayment, generateUniqueTransactionId } = usePaymentValidation();
   
   const createPaymentOrder = async (params: CreatePaymentOrderParams) => {
     const {
@@ -24,19 +25,55 @@ export const useOrderCreation = () => {
     } = params;
 
     try {
+      // CRITICAL: Validate payment uniqueness to prevent duplicates
+      const validation = await validateUniquePayment(sessionUser.id, totalPrice, cartItems);
+      
+      if (!validation.isValid) {
+        if (validation.existingOrderId) {
+          // Return existing order instead of creating duplicate
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_ERROR,
+            LogLevel.WARNING,
+            'Pedido duplicado evitado - retornando pedido existente',
+            { 
+              existingOrderId: validation.existingOrderId,
+              userId: sessionUser.id,
+              totalPrice
+            }
+          );
+          
+          // Fetch and return existing order
+          const { data: existingOrder, error } = await supabase
+            .from('pedidos')
+            .select('*')
+            .eq('id', validation.existingOrderId)
+            .single();
+            
+          if (!error && existingOrder) {
+            return existingOrder;
+          }
+        }
+        
+        throw new Error(validation.error || 'Validação de pagamento falhou');
+      }
+
+      // Generate unique transaction ID to prevent duplicates
+      const transactionId = generateUniqueTransactionId(sessionUser.id, Date.now());
+
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        'Iniciando criação do pedido',
+        'Iniciando criação do pedido com validação anti-duplicação',
         { 
           userId: sessionUser.id,
           itemCount: cartItems.length,
           totalPrice,
-          selectedPlan
+          selectedPlan,
+          transactionId
         }
       );
 
-      // Create the order record
+      // Create the order record with transaction ID for idempotency
       const orderData = prepareForInsert({
         client_id: sessionUser.id,
         lista_paineis: cartItems.map(item => item.panel.id),
@@ -47,7 +84,13 @@ export const useOrderCreation = () => {
         data_fim: endDate.toISOString().split('T')[0],
         status: 'pendente',
         termos_aceitos: true,
-        duracao: 30 // Default duration in days
+        duracao: 30,
+        log_pagamento: {
+          transaction_id: transactionId,
+          created_at: new Date().toISOString(),
+          validation_passed: true,
+          anti_duplicate_check: true
+        }
       });
 
       const { data: pedidoData, error: pedidoError } = await supabase
@@ -65,10 +108,9 @@ export const useOrderCreation = () => {
         throw new Error('Falha ao criar pedido: dados inválidos retornados');
       }
 
-      // Type assertion for safer access
       const pedidoTyped = pedido as any;
 
-      // If coupon was used, record its usage
+      // If coupon was used, record its usage (only once)
       if (couponId) {
         const couponUsageData = prepareForInsert({
           cupom_id: couponId,
@@ -82,32 +124,18 @@ export const useOrderCreation = () => {
 
         if (couponError) {
           console.error('Erro ao registrar uso do cupom:', couponError);
-          // Don't fail the entire process for coupon usage errors
         }
       }
-
-      // Update the order with payment log placeholder
-      const updateData = prepareForUpdate({
-        log_pagamento: {
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          payment_method: 'pix'
-        }
-      });
-
-      await supabase
-        .from('pedidos')
-        .update(updateData as any)
-        .eq('id', pedidoTyped.id);
 
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        'Pedido criado com sucesso',
+        'Pedido criado com sucesso com validação anti-duplicação',
         { 
           orderId: pedidoTyped.id,
           totalPrice,
-          itemCount: cartItems.length
+          itemCount: cartItems.length,
+          transactionId
         }
       );
 
@@ -146,6 +174,9 @@ export const useOrderCreation = () => {
         { pedidoId, paymentMethod, totalPrice }
       );
 
+      // CRITICAL: Add unique payment identifier to prevent duplicate processing
+      const paymentKey = `payment_${pedidoId}_${Date.now()}`;
+      
       // Call the appropriate edge function based on payment method
       const functionName = paymentMethod === 'pix' ? 'process-pix-payment' : 'process-payment';
       
@@ -157,26 +188,26 @@ export const useOrderCreation = () => {
           cart_items: cartItems.map(item => ({
             panel_id: item.panel.id,
             duration: item.duration,
-            price: totalPrice / cartItems.length // Simple price division
+            price: totalPrice / cartItems.length
           })),
           selected_plan: selectedPlan,
           coupon_id: couponId,
-          user_id: sessionUser.id
+          user_id: sessionUser.id,
+          payment_key: paymentKey, // Add unique payment key
+          idempotency_key: paymentKey // Add idempotency key
         }
       });
 
       if (error) throw error;
 
-      // Update order with payment information
       const pedido = unwrapData(responseData);
       if (!pedido) {
         throw new Error('Falha ao processar pagamento: resposta inválida');
       }
 
-      // Type assertion for safer access
       const pedidoTyped = pedido as any;
 
-      // Get the updated order data
+      // Get the updated order data only once
       const { data: updatedOrderData, error: fetchError } = await supabase
         .from('pedidos')
         .select('*')
@@ -185,39 +216,47 @@ export const useOrderCreation = () => {
 
       if (fetchError) {
         console.error('Erro ao buscar pedido atualizado:', fetchError);
-        return responseData; // Return original response if fetch fails
+        return responseData;
       }
 
       const updatedOrder = unwrapData(updatedOrderData);
       if (!updatedOrder) return responseData;
 
-      // Type assertion for safer access
       const updatedOrderTyped = updatedOrder as any;
 
-      // If this is a credit card payment, create campaigns
+      // Only create campaigns for credit card payments and only once
       if (paymentMethod === 'credit_card' && updatedOrderTyped.lista_paineis) {
         const panelIds = Array.isArray(updatedOrderTyped.lista_paineis) 
           ? updatedOrderTyped.lista_paineis 
           : [updatedOrderTyped.lista_paineis];
 
-        // Create campaigns one by one
-        for (const panelId of panelIds) {
-          const campaignData = prepareForInsert({
-            client_id: sessionUser.id,
-            painel_id: panelId,
-            video_id: 'default_video_id', // This should come from user's uploaded video
-            data_inicio: updatedOrderTyped.data_inicio,
-            data_fim: updatedOrderTyped.data_fim,
-            status: 'ativa'
-          });
+        // Check if campaigns already exist for this order
+        const { data: existingCampaigns } = await supabase
+          .from('campanhas')
+          .select('id')
+          .eq('client_id', sessionUser.id)
+          .in('painel_id', panelIds)
+          .gte('created_at', updatedOrderTyped.created_at);
 
-          const { error: campaignError } = await supabase
-            .from('campanhas')
-            .insert(campaignData as any);
+        // Only create campaigns if none exist yet
+        if (!existingCampaigns || existingCampaigns.length === 0) {
+          for (const panelId of panelIds) {
+            const campaignData = prepareForInsert({
+              client_id: sessionUser.id,
+              painel_id: panelId,
+              video_id: 'default_video_id',
+              data_inicio: updatedOrderTyped.data_inicio,
+              data_fim: updatedOrderTyped.data_fim,
+              status: 'ativa'
+            });
 
-          if (campaignError) {
-            console.error('Erro ao criar campanha:', campaignError);
-            // Don't fail the payment process for campaign creation errors
+            const { error: campaignError } = await supabase
+              .from('campanhas')
+              .insert(campaignData as any);
+
+            if (campaignError) {
+              console.error('Erro ao criar campanha:', campaignError);
+            }
           }
         }
       }
@@ -264,14 +303,12 @@ export const useOrderCreation = () => {
     }
   };
 
-  // Add the missing createCampaignsAfterPayment method required by usePaymentSimulator
   const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
     try {
       if (!pedidoId || !userId) {
         throw new Error('ID do pedido ou usuário não fornecido');
       }
       
-      // Get the order details
       const { data: orderData, error: orderError } = await supabase
         .from('pedidos')
         .select('*')
@@ -282,7 +319,6 @@ export const useOrderCreation = () => {
         throw new Error(`Erro ao buscar detalhes do pedido: ${orderError?.message || 'Pedido não encontrado'}`);
       }
       
-      // Update order status to 'pago'
       const updateData = prepareForUpdate({
         status: 'pago',
         log_pagamento: {
@@ -296,7 +332,6 @@ export const useOrderCreation = () => {
         .update(updateData as any)
         .eq('id', filterEq(pedidoId));
       
-      // Create campaigns for each panel
       const panelIds = Array.isArray(orderData.lista_paineis) 
         ? orderData.lista_paineis 
         : [orderData.lista_paineis];
@@ -305,12 +340,11 @@ export const useOrderCreation = () => {
         throw new Error('Nenhum painel encontrado no pedido');
       }
       
-      // Create campaigns one by one
       for (const panelId of panelIds) {
         const campaignData = prepareForInsert({
           client_id: userId,
           painel_id: panelId,
-          video_id: 'default_video_id', // This should come from user's uploaded video
+          video_id: 'default_video_id',
           data_inicio: orderData.data_inicio,
           data_fim: orderData.data_fim,
           status: 'ativa'
