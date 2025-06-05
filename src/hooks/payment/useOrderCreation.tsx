@@ -247,7 +247,7 @@ export const useOrderCreation = () => {
       const { data: updatedOrderData, error: fetchError } = await supabase
         .from('pedidos')
         .select('*')
-        .eq('id', pedidoTyped.id)
+        .eq('id', pedidoId)
         .single();
 
       if (fetchError) {
