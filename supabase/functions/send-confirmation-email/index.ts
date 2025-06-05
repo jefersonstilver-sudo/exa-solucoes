@@ -110,14 +110,16 @@ serve(async (req: Request) => {
       });
     }
 
-    // URLs CORRIGIDAS - usar o domínio oficial www.indexamidia.com
+    // URLs CORRIGIDAS - usar o domínio atual do Lovable para desenvolvimento
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
-    const siteUrl = 'https://www.indexamidia.com';
+    const currentUrl = new URL(req.url);
+    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
     
     // URL de confirmação correta que vai redirecionar para /confirmacao
-    const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=signup&redirect_to=${encodeURIComponent(siteUrl + '/confirmacao')}`;
+    const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=signup&redirect_to=${encodeURIComponent(baseUrl + '/confirmacao')}`;
     
     console.log('🔗 [EMAIL-CONFIRMATION] URL de confirmação gerada:', confirmationUrl);
+    console.log('🔗 [EMAIL-CONFIRMATION] Base URL detectada:', baseUrl);
 
     // Preparar dados do email
     const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';

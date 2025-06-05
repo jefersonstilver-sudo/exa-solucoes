@@ -112,17 +112,22 @@ serve(async (req: Request) => {
       throw new Error('Link de confirmação não foi gerado');
     }
 
-    // MODIFICAR URL para usar domínio oficial
-    const officialUrl = confirmationUrl.replace(
-      'redirect_to=https%3A%2F%2Floving-bough-1xb6c3h.lovableproject.com',
-      'redirect_to=https%3A%2F%2Fwww.indexamidia.com'
+    // CORREÇÃO: Detectar automaticamente o domínio atual
+    const currentUrl = new URL(req.url);
+    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+    
+    // Modificar URL para usar domínio atual
+    const correctedUrl = confirmationUrl.replace(
+      /redirect_to=[^&]+/,
+      `redirect_to=${encodeURIComponent(baseUrl + '/confirmacao')}`
     );
 
-    console.log('✅ [RESEND-EMAIL] Link gerado e modificado para domínio oficial');
+    console.log('✅ [RESEND-EMAIL] Link gerado e corrigido para domínio atual');
+    console.log('🔗 [RESEND-EMAIL] Base URL detectada:', baseUrl);
 
     // Enviar email
     const userName = email.split('@')[0];
-    const html = createConfirmationEmailHTML(userName, officialUrl);
+    const html = createConfirmationEmailHTML(userName, correctedUrl);
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'Indexa <noreply@indexamidia.com>',
