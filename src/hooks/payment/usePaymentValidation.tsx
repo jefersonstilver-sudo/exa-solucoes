@@ -1,115 +1,157 @@
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface PaymentValidationResult {
-  isValid: boolean;
-  existingOrderId?: string;
-  error?: string;
-}
-
-interface PaymentRequirementsParams {
-  acceptTerms: boolean;
-  unavailablePanels: string[];
-  sessionUser: any;
-  isSDKLoaded: boolean;
-  cartItems: any[];
-}
+import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export const usePaymentValidation = () => {
-  const [isValidating, setIsValidating] = useState(false);
-
-  const validateUniquePayment = useCallback(async (
-    userId: string,
-    totalAmount: number,
-    cartItems: any[]
-  ): Promise<PaymentValidationResult> => {
-    setIsValidating(true);
-    
+  
+  const validateUniquePayment = useCallback(async (userId: string, amount: number, cartItems: any[]) => {
     try {
-      // Check for recent orders with same user and amount (within 5 minutes)
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      console.log('[PAYMENT-VALIDATION] Iniciando validação anti-duplicação REFORÇADA:', {
+        userId: userId.substring(0, 8),
+        amount,
+        cartItemsCount: cartItems.length
+      });
+
+      // CRÍTICO: Verificar se já existe um pedido com valor exato nos últimos 10 minutos
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       
       const { data: recentOrders, error } = await supabase
         .from('pedidos')
-        .select('id, valor_total, created_at, status')
+        .select('id, created_at, valor_total, status')
         .eq('client_id', userId)
-        .eq('valor_total', totalAmount)
-        .gte('created_at', fiveMinutesAgo)
+        .eq('valor_total', amount)
+        .gte('created_at', tenMinutesAgo)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error checking recent orders:', error);
-        return { isValid: false, error: 'Erro ao validar pagamento' };
+        console.error('[PAYMENT-VALIDATION] Erro na validação:', error);
+        return {
+          isValid: false,
+          error: 'Erro na validação de pagamento',
+          existingOrderId: null
+        };
       }
 
-      // If there's a recent order with same amount, it's likely a duplicate
+      // Se encontrou pedidos recentes com mesmo valor
       if (recentOrders && recentOrders.length > 0) {
         const existingOrder = recentOrders[0];
         
-        // If order is still pending or processing, block duplicate
-        if (['pendente', 'pago', 'pago_pendente_video'].includes(existingOrder.status)) {
-          return {
-            isValid: false,
+        console.log('[PAYMENT-VALIDATION] DUPLICAÇÃO DETECTADA:', {
+          existingOrderId: existingOrder.id,
+          existingAmount: existingOrder.valor_total,
+          newAmount: amount,
+          timeDifferenceMinutes: (Date.now() - new Date(existingOrder.created_at).getTime()) / (1000 * 60)
+        });
+
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.ERROR,
+          'Tentativa de pagamento duplicado bloqueada',
+          {
+            userId,
+            amount,
             existingOrderId: existingOrder.id,
-            error: 'Pedido já foi processado recentemente. Evitando duplicação.'
-          };
-        }
+            existingAmount: existingOrder.valor_total
+          }
+        );
+
+        return {
+          isValid: false,
+          error: 'Já existe um pedido recente com este valor. Aguarde alguns minutos antes de tentar novamente.',
+          existingOrderId: existingOrder.id
+        };
       }
 
-      return { isValid: true };
-    } catch (error) {
-      console.error('Payment validation error:', error);
-      return { isValid: false, error: 'Erro na validação de pagamento' };
-    } finally {
-      setIsValidating(false);
-    }
-  }, []);
+      // CRÍTICO: Verificar valor mínimo válido
+      if (amount <= 0 || amount < 0.01) {
+        console.log('[PAYMENT-VALIDATION] Valor inválido detectado:', amount);
+        
+        return {
+          isValid: false,
+          error: 'Valor de pagamento inválido',
+          existingOrderId: null
+        };
+      }
 
-  const validatePaymentRequirements = useCallback(({
-    acceptTerms,
-    unavailablePanels,
-    sessionUser,
-    isSDKLoaded,
-    cartItems
-  }: PaymentRequirementsParams): boolean => {
-    // Check if terms are accepted
-    if (!acceptTerms) {
-      console.log('Terms not accepted');
-      return false;
-    }
+      // CRÍTICO: Verificar se o valor não foi dividido incorretamente
+      const expectedMinimumValue = cartItems.length * 0.10; // Valor mínimo esperado baseado nos itens
+      if (amount < expectedMinimumValue) {
+        console.log('[PAYMENT-VALIDATION] Valor suspeito (possivelmente dividido):', {
+          amount,
+          expectedMinimum: expectedMinimumValue,
+          cartItemsCount: cartItems.length
+        });
 
-    // Check if user is logged in
-    if (!sessionUser) {
-      console.log('User not logged in');
-      return false;
-    }
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.WARNING,
+          'Valor de pagamento suspeito detectado',
+          {
+            amount,
+            expectedMinimum: expectedMinimumValue,
+            cartItemsCount: cartItems.length
+          }
+        );
+      }
 
-    // Check if cart has items
-    if (!cartItems || cartItems.length === 0) {
-      console.log('Cart is empty');
-      return false;
-    }
+      console.log('[PAYMENT-VALIDATION] ✅ Validação aprovada');
+      
+      return {
+        isValid: true,
+        error: null,
+        existingOrderId: null
+      };
 
-    // Check if SDK is loaded (for credit card payments)
-    if (!isSDKLoaded) {
-      console.log('Payment SDK not loaded');
-      return false;
+    } catch (error: any) {
+      console.error('[PAYMENT-VALIDATION] Erro na validação:', error);
+      
+      return {
+        isValid: false,
+        error: 'Erro interno na validação de pagamento',
+        existingOrderId: null
+      };
     }
-
-    // All validations passed
-    return true;
   }, []);
 
   const generateUniqueTransactionId = useCallback((userId: string, timestamp: number) => {
-    return `TXN_${userId.substring(0, 8)}_${timestamp}_${Math.random().toString(36).substring(2, 8)}`;
+    // Gerar ID único com timestamp e user ID
+    const uniquePart = Math.random().toString(36).substring(2, 8);
+    return `TXN_${userId.substring(0, 8)}_${timestamp}_${uniquePart}`;
+  }, []);
+
+  const validatePaymentAmount = useCallback((amount: number, cartItems: any[]) => {
+    // Validar se o valor não foi dividido incorretamente
+    const minExpectedValue = cartItems.length * 0.05; // Valor mínimo por item
+    const maxExpectedValue = cartItems.length * 1000; // Valor máximo por item
+    
+    if (amount < minExpectedValue) {
+      return {
+        isValid: false,
+        error: 'Valor muito baixo para os itens selecionados',
+        suggestedValue: minExpectedValue
+      };
+    }
+    
+    if (amount > maxExpectedValue) {
+      return {
+        isValid: false,
+        error: 'Valor muito alto para os itens selecionados',
+        suggestedValue: maxExpectedValue
+      };
+    }
+    
+    return {
+      isValid: true,
+      error: null,
+      suggestedValue: amount
+    };
   }, []);
 
   return {
     validateUniquePayment,
-    validatePaymentRequirements,
     generateUniqueTransactionId,
-    isValidating
+    validatePaymentAmount
   };
 };

@@ -1121,7 +1121,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      daily_financial_reconciliation: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      detect_financial_anomalies: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       diagnose_user_system: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      emergency_financial_audit_and_fix: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }

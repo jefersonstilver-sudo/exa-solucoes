@@ -74,7 +74,7 @@ export const usePaymentDeduplication = () => {
     
     if (lastSubmission) {
       const timeDiff = now - parseInt(lastSubmission);
-      if (timeDiff < 10000) { // INCREASED: Prevent submissions within 10 seconds
+      if (timeDiff < 15000) { // INCREASED: Prevent submissions within 15 seconds
         toast.error('Aguarde alguns segundos antes de tentar novamente');
         return false;
       }
@@ -87,12 +87,76 @@ export const usePaymentDeduplication = () => {
   const createUniquePaymentKey = useCallback((userId: string, amount: number) => {
     // Create a unique key based on user, amount, and current minute
     const currentMinute = Math.floor(Date.now() / (60 * 1000));
-    return `PAYMENT_${userId}_${amount}_${currentMinute}`;
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    return `PAYMENT_${userId}_${amount}_${currentMinute}_${randomSuffix}`;
+  }, []);
+
+  const validatePaymentIntegrity = useCallback(async (userId: string, amount: number) => {
+    try {
+      // CRÍTICO: Verificar se há pagamentos recentes suspeitos
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      
+      const { data: recentPayments, error } = await supabase
+        .from('pedidos')
+        .select('id, valor_total, created_at')
+        .eq('client_id', userId)
+        .gte('created_at', fiveMinutesAgo)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro na validação de integridade:', error);
+        return { isValid: false, reason: 'Erro na validação' };
+      }
+
+      // Verificar duplicações por valor
+      const duplicatesByValue = recentPayments?.filter(p => p.valor_total === amount) || [];
+      if (duplicatesByValue.length > 0) {
+        console.log('🚨 DUPLICAÇÃO POR VALOR DETECTADA:', {
+          userId: userId.substring(0, 8),
+          amount,
+          existingPayments: duplicatesByValue.length
+        });
+        
+        return { 
+          isValid: false, 
+          reason: 'Pagamento duplicado por valor detectado',
+          existingPayments: duplicatesByValue
+        };
+      }
+
+      // Verificar múltiplos pagamentos no mesmo minuto
+      const currentMinute = Math.floor(Date.now() / (60 * 1000));
+      const sameMinutePayments = recentPayments?.filter(p => {
+        const paymentMinute = Math.floor(new Date(p.created_at).getTime() / (60 * 1000));
+        return paymentMinute === currentMinute;
+      }) || [];
+
+      if (sameMinutePayments.length > 0) {
+        console.log('🚨 MÚLTIPLOS PAGAMENTOS NO MESMO MINUTO:', {
+          userId: userId.substring(0, 8),
+          currentMinute,
+          existingPayments: sameMinutePayments.length
+        });
+        
+        return { 
+          isValid: false, 
+          reason: 'Múltiplos pagamentos no mesmo minuto detectados',
+          existingPayments: sameMinutePayments
+        };
+      }
+
+      return { isValid: true, reason: 'Validação aprovada' };
+
+    } catch (error) {
+      console.error('Erro na validação de integridade:', error);
+      return { isValid: false, reason: 'Erro interno na validação' };
+    }
   }, []);
 
   return {
     cleanupDuplicateOrders,
     preventDuplicateSubmission,
-    createUniquePaymentKey
+    createUniquePaymentKey,
+    validatePaymentIntegrity
   };
 };
