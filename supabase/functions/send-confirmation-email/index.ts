@@ -1,73 +1,12 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@4.0.0";
+import { EmailService } from "./_utils/emailService.ts";
+import { validateAndCorrectUrl } from "./_utils/urlValidator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// Template HTML otimizado
-function createConfirmationEmailHTML(userName: string, confirmationUrl: string): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Confirme seu Email - Indexa</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { text-align: center; color: #7c3aed; font-size: 32px; font-weight: bold; margin-bottom: 30px; }
-        .button { background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; margin: 20px 0; }
-        .footer { color: #999; font-size: 12px; margin-top: 30px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="logo">INDEXA</div>
-        <h2>Bem-vindo(a), ${userName}!</h2>
-        <p>Obrigado por se cadastrar na Indexa! Para ativar sua conta e começar a anunciar, confirme seu email clicando no botão abaixo:</p>
-        <div style="text-align: center;">
-          <a href="${confirmationUrl}" class="button">
-            ✅ Confirmar Email
-          </a>
-        </div>
-        <p>Ou copie e cole este link no seu navegador:</p>
-        <p style="word-break: break-all; background: #f8f8f8; padding: 10px; border-radius: 5px; font-size: 12px;">
-          ${confirmationUrl}
-        </p>
-        <div class="footer">
-          <p>Se você não criou esta conta, pode ignorar este email.</p>
-          <p>Este link expira em 24 horas por segurança.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-// Função para validar e corrigir URLs malformadas
-function validateAndCorrectUrl(url: string): string {
-  try {
-    // Remover qualquer ponto no início do hostname
-    let correctedUrl = url.replace(/https?:\/\/\.+/, 'https://');
-    
-    // Verificar se é uma URL válida
-    const urlObj = new URL(correctedUrl);
-    
-    // Se o hostname começar com ponto, corrigir
-    if (urlObj.hostname.startsWith('.')) {
-      urlObj.hostname = urlObj.hostname.substring(1);
-      correctedUrl = urlObj.toString();
-    }
-    
-    return correctedUrl;
-  } catch (error) {
-    console.error('❌ [URL-VALIDATION] URL inválida:', url, error);
-    return url; // Retorna original se não conseguir corrigir
-  }
-}
 
 serve(async (req: Request) => {
   console.log('🚀 [EMAIL-CONFIRMATION] Função iniciada');
@@ -98,7 +37,7 @@ serve(async (req: Request) => {
       });
     }
     
-    const resend = new Resend(resendKey);
+    const emailService = new EmailService(resendKey);
 
     // Parse do payload
     const data = await req.json();
@@ -158,15 +97,13 @@ serve(async (req: Request) => {
     
     // Preparar dados do email
     const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
-    const html = createConfirmationEmailHTML(userName, validatedConfirmationUrl);
 
-    // Enviar email usando domínio verificado
-    const { data: emailResponse, error: emailError } = await resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com>',
-      to: [user.email],
-      subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
-      html,
-    });
+    // Enviar email
+    const { data: emailResponse, error: emailError } = await emailService.sendConfirmationEmail(
+      user.email, 
+      userName, 
+      validatedConfirmationUrl
+    );
 
     if (emailError) {
       console.error('❌ [EMAIL-CONFIRMATION] Erro do Resend:', emailError);
