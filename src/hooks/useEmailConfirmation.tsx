@@ -14,19 +14,22 @@ export const useEmailConfirmation = () => {
 
     try {
       setIsResending(true);
-      console.log('🔄 [HOOK] Reenviando email de confirmação para:', email);
+      console.log('🔄 [HOOK] Reenviando email via função unificada para:', email);
       
-      const { data, error } = await supabase.functions.invoke('resend-confirmation-email', {
-        body: { email }
+      const { data, error } = await supabase.functions.invoke('unified-email-service', {
+        body: { 
+          action: 'resend',
+          email 
+        }
       });
       
       if (error) {
-        console.error('❌ [HOOK] Erro na function:', error);
+        console.error('❌ [HOOK] Erro na função unificada:', error);
         throw error;
       }
       
       if (data?.success) {
-        console.log('✅ [HOOK] Email reenviado com sucesso');
+        console.log('✅ [HOOK] Email reenviado com sucesso via função unificada');
         toast.success(`Email de confirmação enviado para ${email}`);
         return { success: true, data };
       } else {
@@ -40,7 +43,7 @@ export const useEmailConfirmation = () => {
       
       if (error.message?.includes('RESEND_API_KEY')) {
         errorMessage = 'Serviço de email não configurado';
-      } else if (error.message?.includes('rate limit')) {
+      } else if (error.message?.includes('rate limit') || error.message?.includes('Muitas tentativas')) {
         errorMessage = 'Muitas tentativas. Aguarde alguns minutos.';
       } else if (error.message) {
         errorMessage = error.message;

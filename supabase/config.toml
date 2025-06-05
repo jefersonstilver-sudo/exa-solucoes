@@ -26,10 +26,7 @@ external_email_enabled = true
 [auth.external.google]
 enabled = false
 
-[functions.send-confirmation-email]
-verify_jwt = false
-
-[functions.resend-confirmation-email]
+[functions.unified-email-service]
 verify_jwt = false
 
 [functions.custom-access-token-hook]
