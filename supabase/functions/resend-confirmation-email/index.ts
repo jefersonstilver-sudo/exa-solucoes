@@ -109,9 +109,11 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // CORREÇÃO: Usar 'email_change' ao invés de 'signup' para usuários existentes
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'signup',
+      type: 'email_change',
       email: email,
+      newEmail: email, // Para email_change, precisamos especificar o newEmail
     });
 
     if (linkError) {
