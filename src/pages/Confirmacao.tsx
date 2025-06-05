@@ -22,78 +22,44 @@ export default function Confirmacao() {
     const confirmUser = async () => {
       try {
         console.log('🔍 [CONFIRMACAO] Iniciando confirmação de email...');
-        console.log('🔍 [CONFIRMACAO] URL atual:', window.location.href);
-        console.log('🔍 [CONFIRMACAO] Hash:', window.location.hash);
-        console.log('🔍 [CONFIRMACAO] Search:', window.location.search);
+        console.log('🔍 [CONFIRMACAO] URL completa:', window.location.href);
         
-        // Get the hash fragment from the URL
-        const hash = window.location.hash;
+        // Parse da URL atual
+        const url = new URL(window.location.href);
         
-        // Se não há hash, verificar se é recuperação de senha
-        if (!hash) {
-          const queryParams = new URLSearchParams(window.location.search);
-          const type = queryParams.get('type');
-          const error = queryParams.get('error');
-          const errorDescription = queryParams.get('error_description');
+        // Verificar se há erro nos parâmetros da URL
+        const error = url.searchParams.get('error') || url.hash.match(/error=([^&]+)/)?.[1];
+        const errorDescription = url.searchParams.get('error_description') || 
+                                url.hash.match(/error_description=([^&]+)/)?.[1];
+        
+        if (error) {
+          console.error('❌ [CONFIRMACAO] Erro na URL:', error, errorDescription);
           
-          console.log('🔍 [CONFIRMACAO] Query params:', { type, error, errorDescription });
+          const decodedError = decodeURIComponent(errorDescription || '');
           
-          if (error) {
-            console.error('❌ [CONFIRMACAO] Erro na URL:', error, errorDescription);
-            
-            if (error === 'email_confirm_expired') {
-              setStatus('expired');
-              setMessage('Link de confirmação expirado. Você pode solicitar um novo email de confirmação.');
-            } else {
-              throw new Error(errorDescription || 'Erro na confirmação');
-            }
-            return;
+          if (error === 'access_denied' || decodedError.includes('expired')) {
+            setStatus('expired');
+            setMessage('Link de confirmação expirado. Você pode solicitar um novo email de confirmação.');
+          } else {
+            setStatus('error');
+            setMessage(decodedError || 'Erro na confirmação do email');
           }
-          
-          if (type === 'recovery') {
-            setStatus('success');
-            setMessage('Link de redefinição de senha válido.');
-            setTimeout(() => navigate('/login'), 3000);
-            return;
-          }
-          
-          setStatus('expired');
-          setMessage('Link de confirmação não encontrado ou expirado.');
           return;
         }
 
-        // Parse the hash to get the tokens
-        const query = new URLSearchParams(hash.replace('#', ''));
-        const access_token = query.get('access_token');
-        const refresh_token = query.get('refresh_token');
-        const type = query.get('type');
-        const error = query.get('error');
-        const errorDescription = query.get('error_description');
+        // Extrair tokens do hash
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
         
-        console.log('🔍 [CONFIRMACAO] Tokens extraídos:', {
+        const access_token = hashParams.get('access_token');
+        const refresh_token = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
+        
+        console.log('🔍 [CONFIRMACAO] Tokens encontrados:', {
           hasAccessToken: !!access_token,
           hasRefreshToken: !!refresh_token,
-          type,
-          error,
-          errorDescription
+          type
         });
-        
-        // Verificar se há erro no hash
-        if (error) {
-          console.error('❌ [CONFIRMACAO] Erro no hash:', error, errorDescription);
-          
-          if (error === 'email_confirm_expired') {
-            setStatus('expired');
-            setMessage('Link de confirmação expirado. Você pode solicitar um novo email de confirmação.');
-          } else if (error === 'email_confirm_invalid') {
-            setStatus('error');
-            setMessage('Link de confirmação inválido ou já utilizado.');
-          } else {
-            setStatus('error');
-            setMessage(errorDescription || 'Erro na confirmação do email');
-          }
-          return;
-        }
         
         if (!access_token || !refresh_token) {
           setStatus('expired');
@@ -101,16 +67,8 @@ export default function Confirmacao() {
           return;
         }
 
-        // Verificar sessão atual antes de definir nova
-        const { data: currentSession } = await supabase.auth.getSession();
-        console.log('🔍 [CONFIRMACAO] Sessão atual:', {
-          hasSession: !!currentSession.session,
-          userEmail: currentSession.session?.user?.email,
-          emailConfirmed: currentSession.session?.user?.email_confirmed_at
-        });
-
-        // Set the session with the tokens
-        console.log('🔐 [CONFIRMACAO] Configurando nova sessão...');
+        // Configurar sessão com os tokens
+        console.log('🔐 [CONFIRMACAO] Configurando sessão...');
         const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
           access_token,
           refresh_token,
@@ -126,19 +84,19 @@ export default function Confirmacao() {
         const email = sessionData.session?.user?.email;
         setUserEmail(email || null);
         
-        console.log('🔍 [CONFIRMACAO] Email confirmado em:', emailConfirmedAt);
+        console.log('🔍 [CONFIRMACAO] Status da confirmação:', {
+          emailConfirmedAt,
+          email
+        });
         
         if (!emailConfirmedAt) {
-          console.warn('⚠️ [CONFIRMACAO] Email ainda não confirmado após setSession');
           setStatus('error');
           setMessage('Erro na confirmação. Tente novamente ou solicite um novo email.');
           return;
         }
         
-        // Success!
+        // Sucesso!
         console.log('✅ [CONFIRMACAO] Email confirmado com sucesso!');
-        console.log('✅ [CONFIRMACAO] Usuário:', email);
-        
         setStatus('success');
         
         if (type === 'signup') {
@@ -217,9 +175,6 @@ export default function Confirmacao() {
               >
                 <Loader2 className="h-16 w-16 text-indexa-purple animate-spin mx-auto mb-4" />
                 <p className="text-lg text-gray-700">{message}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Aguarde enquanto processamos sua confirmação...
-                </p>
               </motion.div>
             )}
             
@@ -233,9 +188,6 @@ export default function Confirmacao() {
                   <CheckCircle className="h-16 w-16 text-green-600" />
                 </div>
                 <p className="text-lg text-gray-700 font-medium">{message}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Redirecionando para a loja...
-                </p>
                 <div className="flex flex-col gap-3 mt-6">
                   <Button
                     onClick={() => navigate('/loja')}
@@ -249,37 +201,6 @@ export default function Confirmacao() {
                     className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
                   >
                     Fazer Login
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            {status === 'already-confirmed' && (
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-center"
-              >
-                <div className="bg-blue-100 p-4 rounded-full inline-flex mb-4">
-                  <AlertCircle className="h-16 w-16 text-blue-600" />
-                </div>
-                <p className="text-lg text-gray-700 font-medium">Email já confirmado!</p>
-                <p className="text-sm text-blue-600 mt-2 max-w-sm">
-                  {message}
-                </p>
-                <div className="flex flex-col gap-2 mt-6">
-                  <Button
-                    onClick={() => navigate('/login')}
-                    className="bg-indexa-purple hover:bg-indexa-purple-dark"
-                  >
-                    Fazer Login
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate('/loja')}
-                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
-                  >
-                    Ir para a Loja
                   </Button>
                 </div>
               </motion.div>
@@ -319,13 +240,6 @@ export default function Confirmacao() {
                     className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
                   >
                     Criar Nova Conta
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate('/login')}
-                    className="border-gray-300 text-gray-600 hover:bg-gray-50"
-                  >
-                    Voltar para Login
                   </Button>
                 </div>
               </motion.div>
@@ -372,12 +286,36 @@ export default function Confirmacao() {
                   >
                     Voltar para Login
                   </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {status === 'already-confirmed' && (
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-center"
+              >
+                <div className="bg-blue-100 p-4 rounded-full inline-flex mb-4">
+                  <AlertCircle className="h-16 w-16 text-blue-600" />
+                </div>
+                <p className="text-lg text-gray-700 font-medium">Email já confirmado!</p>
+                <p className="text-sm text-blue-600 mt-2 max-w-sm">
+                  {message}
+                </p>
+                <div className="flex flex-col gap-2 mt-6">
+                  <Button
+                    onClick={() => navigate('/login')}
+                    className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                  >
+                    Fazer Login
+                  </Button>
                   <Button
                     variant="outline"
-                    onClick={() => navigate('/')}
-                    className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                    onClick={() => navigate('/loja')}
+                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
                   >
-                    Voltar para Início
+                    Ir para a Loja
                   </Button>
                 </div>
               </motion.div>

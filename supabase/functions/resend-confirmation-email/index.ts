@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Template HTML melhorado
+// Template HTML idêntico ao da função principal
 function createConfirmationEmailHTML(userName: string, confirmationUrl: string): string {
   return `
     <!DOCTYPE html>

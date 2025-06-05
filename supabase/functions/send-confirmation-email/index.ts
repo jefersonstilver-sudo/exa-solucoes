@@ -48,19 +48,14 @@ function createConfirmationEmailHTML(userName: string, confirmationUrl: string):
 }
 
 serve(async (req: Request) => {
-  const startTime = Date.now();
   console.log('🚀 [EMAIL-CONFIRMATION] Função iniciada');
-  console.log('🚀 [EMAIL-CONFIRMATION] Método:', req.method);
-  console.log('🚀 [EMAIL-CONFIRMATION] Headers:', Object.fromEntries(req.headers.entries()));
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('✅ [EMAIL-CONFIRMATION] CORS preflight respondido');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    console.log('❌ [EMAIL-CONFIRMATION] Método não permitido:', req.method);
     return new Response('Method not allowed', { 
       status: 405,
       headers: corsHeaders 
@@ -68,13 +63,10 @@ serve(async (req: Request) => {
   }
 
   try {
-    // VERIFICAÇÃO CRÍTICA: Validar se temos a chave do Resend
+    // Verificar se temos a chave do Resend
     const resendKey = Deno.env.get('RESEND_API_KEY');
-    console.log('🔍 [EMAIL-CONFIRMATION] Verificando RESEND_API_KEY...');
-    console.log('🔍 [EMAIL-CONFIRMATION] API Key presente?', !!resendKey);
-    
     if (!resendKey) {
-      console.error('❌ [EMAIL-CONFIRMATION] CRÍTICO: RESEND_API_KEY não encontrada');
+      console.error('❌ [EMAIL-CONFIRMATION] RESEND_API_KEY não encontrada');
       return new Response(JSON.stringify({ 
         error: 'RESEND_API_KEY não configurada',
         success: false 
@@ -84,52 +76,29 @@ serve(async (req: Request) => {
       });
     }
     
-    // Inicializar Resend
     const resend = new Resend(resendKey);
-    console.log('✅ [EMAIL-CONFIRMATION] Resend inicializado');
 
     // Parse do payload
-    const payload = await req.text();
-    console.log('📦 [EMAIL-CONFIRMATION] Payload recebido, tamanho:', payload.length);
+    const data = await req.json();
+    console.log('📦 [EMAIL-CONFIRMATION] Dados recebidos:', {
+      hasUser: !!data?.user,
+      hasEmailData: !!data?.email_data,
+      userEmail: data?.user?.email,
+      actionType: data?.email_data?.email_action_type
+    });
     
-    let data;
-    try {
-      data = JSON.parse(payload);
-      console.log('✅ [EMAIL-CONFIRMATION] JSON parsed');
-      console.log('📋 [EMAIL-CONFIRMATION] Dados recebidos:', {
-        hasUser: !!data?.user,
-        hasEmailData: !!data?.email_data,
-        userEmail: data?.user?.email,
-        actionType: data?.email_data?.email_action_type
-      });
-    } catch (parseError) {
-      console.error('❌ [EMAIL-CONFIRMATION] Erro ao fazer parse do JSON:', parseError);
-      throw new Error('Invalid JSON payload');
-    }
-    
-    // Extrair dados necessários
     const user = data?.user;
     const emailData = data?.email_data;
     
     if (!user?.email) {
-      console.error('❌ [EMAIL-CONFIRMATION] Email do usuário não encontrado');
-      console.error('❌ [EMAIL-CONFIRMATION] Dados do usuário:', user);
       throw new Error('User email not found');
     }
     
     if (!emailData?.token_hash) {
-      console.error('❌ [EMAIL-CONFIRMATION] Token hash não encontrado');
-      console.error('❌ [EMAIL-CONFIRMATION] Email data:', emailData);
       throw new Error('Token hash not found');
     }
-    
-    console.log('✅ [EMAIL-CONFIRMATION] Dados extraídos com sucesso:', {
-      email: user.email,
-      actionType: emailData.email_action_type,
-      hasToken: !!emailData.token_hash
-    });
 
-    // IMPORTANTE: Processar apenas eventos de signup (confirmação de email)
+    // IMPORTANTE: Processar apenas eventos de signup
     if (emailData.email_action_type !== 'signup') {
       console.log('⚠️ [EMAIL-CONFIRMATION] Ignorando evento:', emailData.email_action_type);
       return new Response(JSON.stringify({ 
@@ -141,106 +110,52 @@ serve(async (req: Request) => {
       });
     }
 
-    // Gerar URL de confirmação CORRETA
+    // URLs CORRIGIDAS - usar a URL correta do Lovable
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
-    const siteUrl = 'https://loving-bough-1xb6c3h.lovableproject.com'; // URL do site atual
+    const siteUrl = 'https://loving-bough-1xb6c3h.lovableproject.com';
     
-    // CRUCIAL: URL que vai confirmar o email e redirecionar para /confirmacao
+    // URL de confirmação correta que vai redirecionar para /confirmacao
     const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=signup&redirect_to=${encodeURIComponent(siteUrl + '/confirmacao')}`;
     
-    console.log('🔗 [EMAIL-CONFIRMATION] URLs configuradas:');
-    console.log('🔗 [EMAIL-CONFIRMATION] Supabase URL:', supabaseUrl);
-    console.log('🔗 [EMAIL-CONFIRMATION] Site URL:', siteUrl);
-    console.log('🔗 [EMAIL-CONFIRMATION] Confirmation URL:', confirmationUrl);
+    console.log('🔗 [EMAIL-CONFIRMATION] URL de confirmação gerada:', confirmationUrl);
 
     // Preparar dados do email
     const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
     const html = createConfirmationEmailHTML(userName, confirmationUrl);
-    
-    console.log('📧 [EMAIL-CONFIRMATION] Preparando envio para:', user.email);
-    console.log('📧 [EMAIL-CONFIRMATION] Nome do usuário:', userName);
 
     // Enviar email usando domínio verificado
-    const emailStartTime = Date.now();
-    
-    try {
-      console.log('📤 [EMAIL-CONFIRMATION] Iniciando envio via Resend...');
-      
-      const { data: emailResponse, error: emailError } = await resend.emails.send({
-        from: 'Indexa <noreply@indexamidia.com>',
-        to: [user.email],
-        subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
-        html,
-      });
+    const { data: emailResponse, error: emailError } = await resend.emails.send({
+      from: 'Indexa <noreply@indexamidia.com>',
+      to: [user.email],
+      subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
+      html,
+    });
 
-      if (emailError) {
-        console.error('❌ [EMAIL-CONFIRMATION] Erro do Resend:', emailError);
-        console.error('❌ [EMAIL-CONFIRMATION] Detalhes completos:', JSON.stringify(emailError, null, 2));
-        throw emailError;
-      }
-
-      const emailTime = Date.now() - emailStartTime;
-      const totalTime = Date.now() - startTime;
-      
-      console.log('✅ [EMAIL-CONFIRMATION] Email enviado com SUCESSO!');
-      console.log('✅ [EMAIL-CONFIRMATION] ID do email:', emailResponse?.id);
-      console.log('✅ [EMAIL-CONFIRMATION] Tempo de envio:', emailTime + 'ms');
-      console.log('✅ [EMAIL-CONFIRMATION] Tempo total:', totalTime + 'ms');
-      console.log('✅ [EMAIL-CONFIRMATION] Destinatário:', user.email);
-
-      return new Response(JSON.stringify({ 
-        message: 'Email de confirmação enviado com sucesso',
-        email_id: emailResponse?.id,
-        processing_time_ms: totalTime,
-        recipient: user.email,
-        confirmation_url: confirmationUrl,
-        success: true
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-
-    } catch (emailError: any) {
-      const emailTime = Date.now() - emailStartTime;
-      console.error('❌ [EMAIL-CONFIRMATION] FALHA no envio após', emailTime, 'ms');
-      console.error('❌ [EMAIL-CONFIRMATION] Erro detalhado:', {
-        message: emailError.message,
-        name: emailError.name,
-        statusCode: emailError.statusCode,
-        stack: emailError.stack
-      });
-      
-      // Retornar erro detalhado para debug
-      return new Response(JSON.stringify({ 
-        message: 'Falha ao enviar email de confirmação',
-        email_error: emailError.message,
-        email_error_details: {
-          name: emailError.name,
-          statusCode: emailError.statusCode,
-          message: emailError.message
-        },
-        processing_time_ms: Date.now() - startTime,
-        success: false
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
+    if (emailError) {
+      console.error('❌ [EMAIL-CONFIRMATION] Erro do Resend:', emailError);
+      throw emailError;
     }
 
-  } catch (error: any) {
-    const totalTime = Date.now() - startTime;
-    console.error('💥 [EMAIL-CONFIRMATION] Erro crítico após', totalTime, 'ms');
-    console.error('💥 [EMAIL-CONFIRMATION] Stack trace:', error.stack);
-    console.error('💥 [EMAIL-CONFIRMATION] Erro completo:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack
+    console.log('✅ [EMAIL-CONFIRMATION] Email enviado com SUCESSO!');
+    console.log('✅ [EMAIL-CONFIRMATION] ID do email:', emailResponse?.id);
+
+    return new Response(JSON.stringify({ 
+      message: 'Email de confirmação enviado com sucesso',
+      email_id: emailResponse?.id,
+      recipient: user.email,
+      confirmation_url: confirmationUrl,
+      success: true
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
+
+  } catch (error: any) {
+    console.error('💥 [EMAIL-CONFIRMATION] Erro:', error);
     
     return new Response(JSON.stringify({ 
-      message: 'Erro interno no processamento de confirmação',
+      message: 'Erro ao enviar email de confirmação',
       error: error.message,
-      processing_time_ms: totalTime,
       success: false
     }), {
       status: 500,
