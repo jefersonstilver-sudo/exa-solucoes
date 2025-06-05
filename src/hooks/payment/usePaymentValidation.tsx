@@ -9,6 +9,14 @@ interface PaymentValidationResult {
   error?: string;
 }
 
+interface PaymentRequirementsParams {
+  acceptTerms: boolean;
+  unavailablePanels: string[];
+  sessionUser: any;
+  isSDKLoaded: boolean;
+  cartItems: any[];
+}
+
 export const usePaymentValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
 
@@ -59,12 +67,48 @@ export const usePaymentValidation = () => {
     }
   }, []);
 
+  const validatePaymentRequirements = useCallback(({
+    acceptTerms,
+    unavailablePanels,
+    sessionUser,
+    isSDKLoaded,
+    cartItems
+  }: PaymentRequirementsParams): boolean => {
+    // Check if terms are accepted
+    if (!acceptTerms) {
+      console.log('Terms not accepted');
+      return false;
+    }
+
+    // Check if user is logged in
+    if (!sessionUser) {
+      console.log('User not logged in');
+      return false;
+    }
+
+    // Check if cart has items
+    if (!cartItems || cartItems.length === 0) {
+      console.log('Cart is empty');
+      return false;
+    }
+
+    // Check if SDK is loaded (for credit card payments)
+    if (!isSDKLoaded) {
+      console.log('Payment SDK not loaded');
+      return false;
+    }
+
+    // All validations passed
+    return true;
+  }, []);
+
   const generateUniqueTransactionId = useCallback((userId: string, timestamp: number) => {
     return `TXN_${userId.substring(0, 8)}_${timestamp}_${Math.random().toString(36).substring(2, 8)}`;
   }, []);
 
   return {
     validateUniquePayment,
+    validatePaymentRequirements,
     generateUniqueTransactionId,
     isValidating
   };
