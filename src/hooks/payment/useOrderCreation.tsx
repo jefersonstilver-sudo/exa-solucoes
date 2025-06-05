@@ -4,6 +4,7 @@ import { prepareForInsert, prepareForUpdate, unwrapData, filterEq } from '@/util
 import { Panel } from '@/types/panel';
 import { CreatePaymentOrderParams, ProcessPaymentParams, StoreCheckoutInfoParams } from '@/types/payment';
 import { usePaymentValidation } from './usePaymentValidation';
+import { usePaymentDeduplication } from './usePaymentDeduplication';
 
 interface CartItem {
   panel: Panel;
@@ -12,6 +13,7 @@ interface CartItem {
 
 export const useOrderCreation = () => {
   const { validateUniquePayment, generateUniqueTransactionId } = usePaymentValidation();
+  const { preventDuplicateSubmission, createUniquePaymentKey } = usePaymentDeduplication();
   
   const createPaymentOrder = async (params: CreatePaymentOrderParams) => {
     const {
@@ -25,6 +27,11 @@ export const useOrderCreation = () => {
     } = params;
 
     try {
+      // CRITICAL: Block duplicate submissions immediately
+      if (!preventDuplicateSubmission()) {
+        throw new Error('Tentativa de pagamento duplicada detectada');
+      }
+
       // CRITICAL: Validate payment uniqueness to prevent duplicates
       const validation = await validateUniquePayment(sessionUser.id, totalPrice, cartItems);
       
@@ -57,28 +64,46 @@ export const useOrderCreation = () => {
         throw new Error(validation.error || 'Validação de pagamento falhou');
       }
 
+      // CRITICAL: Create unique payment key to prevent processing duplicates
+      const paymentKey = createUniquePaymentKey(sessionUser.id, totalPrice);
+      
+      // Check if this exact payment key was already processed
+      const { data: existingPayment } = await supabase
+        .from('pedidos')
+        .select('id')
+        .contains('log_pagamento', { payment_key: paymentKey })
+        .single();
+
+      if (existingPayment) {
+        throw new Error('Pagamento já processado para esta combinação user/valor/tempo');
+      }
+
       // Generate unique transaction ID to prevent duplicates
       const transactionId = generateUniqueTransactionId(sessionUser.id, Date.now());
 
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        'Iniciando criação do pedido com validação anti-duplicação',
+        'Iniciando criação do pedido com validação anti-duplicação REFORÇADA',
         { 
           userId: sessionUser.id,
           itemCount: cartItems.length,
           totalPrice,
           selectedPlan,
-          transactionId
+          transactionId,
+          paymentKey
         }
       );
 
-      // Create the order record with transaction ID for idempotency
+      // CRITICAL: Ensure correct total price (no division errors)
+      const correctTotalPrice = Number(totalPrice.toFixed(2));
+
+      // Create the order record with enhanced anti-duplication controls
       const orderData = prepareForInsert({
         client_id: sessionUser.id,
         lista_paineis: cartItems.map(item => item.panel.id),
         plano_meses: selectedPlan,
-        valor_total: totalPrice,
+        valor_total: correctTotalPrice, // Use correct total price
         cupom_id: couponId,
         data_inicio: startDate.toISOString().split('T')[0],
         data_fim: endDate.toISOString().split('T')[0],
@@ -87,9 +112,13 @@ export const useOrderCreation = () => {
         duracao: 30,
         log_pagamento: {
           transaction_id: transactionId,
+          payment_key: paymentKey,
+          original_total_price: totalPrice,
           created_at: new Date().toISOString(),
           validation_passed: true,
-          anti_duplicate_check: true
+          anti_duplicate_check: true,
+          cart_items_count: cartItems.length,
+          user_id_check: sessionUser.id
         }
       });
 
@@ -130,12 +159,13 @@ export const useOrderCreation = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        'Pedido criado com sucesso com validação anti-duplicação',
+        'Pedido criado com sucesso com validação anti-duplicação REFORÇADA',
         { 
           orderId: pedidoTyped.id,
-          totalPrice,
+          totalPrice: correctTotalPrice,
           itemCount: cartItems.length,
-          transactionId
+          transactionId,
+          paymentKey
         }
       );
 
@@ -175,7 +205,10 @@ export const useOrderCreation = () => {
       );
 
       // CRITICAL: Add unique payment identifier to prevent duplicate processing
-      const paymentKey = `payment_${pedidoId}_${Date.now()}`;
+      const paymentKey = `payment_${pedidoId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      
+      // CRITICAL: Ensure correct total price is passed
+      const correctTotalPrice = Number(totalPrice.toFixed(2));
       
       // Call the appropriate edge function based on payment method
       const functionName = paymentMethod === 'pix' ? 'process-pix-payment' : 'process-payment';
@@ -184,17 +217,22 @@ export const useOrderCreation = () => {
         body: {
           pedido_id: pedidoId,
           payment_method: paymentMethod,
-          total_amount: totalPrice,
+          total_amount: correctTotalPrice, // Use correct total price
           cart_items: cartItems.map(item => ({
             panel_id: item.panel.id,
             duration: item.duration,
-            price: totalPrice / cartItems.length
+            price: correctTotalPrice // Don't divide by cart items - use full price
           })),
           selected_plan: selectedPlan,
           coupon_id: couponId,
           user_id: sessionUser.id,
           payment_key: paymentKey, // Add unique payment key
-          idempotency_key: paymentKey // Add idempotency key
+          idempotency_key: paymentKey, // Add idempotency key
+          anti_duplicate_controls: {
+            original_total: totalPrice,
+            corrected_total: correctTotalPrice,
+            processing_timestamp: new Date().toISOString()
+          }
         }
       });
 
@@ -204,8 +242,6 @@ export const useOrderCreation = () => {
       if (!pedido) {
         throw new Error('Falha ao processar pagamento: resposta inválida');
       }
-
-      const pedidoTyped = pedido as any;
 
       // Get the updated order data only once
       const { data: updatedOrderData, error: fetchError } = await supabase

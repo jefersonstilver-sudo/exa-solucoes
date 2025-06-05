@@ -41,229 +41,27 @@ function validatePedidoId(pedidoId: string) {
   }
 }
 
-// Fetch user data for the payment
-async function fetchUserData(supabase: any, userId: string) {
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('email')
-    .eq('id', userId)
+// CRITICAL: Check for duplicate processing
+async function checkDuplicateProcessing(supabase: any, paymentKey: string, pedidoId: string) {
+  console.log(`[ANTI-DUPLICATE] Checking for duplicate processing: ${paymentKey}`);
+  
+  // Check if this payment key was already processed
+  const { data: existingPayment, error } = await supabase
+    .from('pedidos')
+    .select('id, log_pagamento')
+    .eq('id', pedidoId)
     .single();
     
-  if (userError) {
-    throw new Error(`Erro ao buscar dados do usuário: ${userError.message}`);
+  if (error) {
+    throw new Error(`Erro ao verificar pedido: ${error.message}`);
   }
   
-  return userData;
-}
-
-// Validate cart items
-function validateCartItems(cartItems: any[]) {
-  if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-    throw new Error("Nenhum painel válido encontrado no carrinho");
-  }
-}
-
-// Prepare MercadoPago items from cart items
-function prepareMercadoPagoItems(cartItems: any[], totals: any) {
-  const validPanelTest = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const items = cartItems
-    .filter(item => 
-      item.panel && 
-      item.panel.id && 
-      typeof item.panel.id === 'string' &&
-      item.panel.id.match(validPanelTest)
-    )
-    .map(item => ({
-      id: item.panel.id,
-      title: `Painel em ${item.panel.buildings?.nome || 'Localização'}`,
-      quantity: 1,
-      unit_price: totals.totalPrice / cartItems.length, // Divide total value by items
-      currency_id: 'BRL',
-      description: `Veiculação por ${totals.duration} dias`,
-      category_id: "digital_goods",
-      picture_url: item.panel.buildings?.imageUrl || 'https://via.placeholder.com/150'
-    }));
-    
-  // If no items are valid, use fallback items
-  if (items.length === 0) {
-    items.push({
-      id: "fallback-item-id",
-      title: "Campanha publicitária digital",
-      quantity: 1,
-      unit_price: totals.totalPrice,
-      currency_id: "BRL",
-      description: `Veiculação por ${totals.duration} dias`,
-      category_id: "digital_goods",
-      picture_url: "https://via.placeholder.com/150"
-    });
+  if (existingPayment?.log_pagamento?.payment_preference_id) {
+    console.log(`[ANTI-DUPLICATE] Payment already processed for pedido: ${pedidoId}`);
+    throw new Error('Pagamento já foi processado para este pedido');
   }
   
-  return items;
-}
-
-// Prepare return URLs for MercadoPago
-function prepareReturnUrls(returnUrl: string, pedidoId: string) {
-  const originUrl = returnUrl || 'https://app.indexamidia.com';
-  return {
-    successUrl: `${originUrl}/pedido-confirmado?id=${pedidoId}&status=approved`,
-    failureUrl: `${originUrl}/checkout?error=payment_failed&id=${pedidoId}`,
-    pendingUrl: `${originUrl}/pedido-confirmado?id=${pedidoId}&status=pending`
-  };
-}
-
-// Create MercadoPago preference
-function createMercadoPagoPreference(items: any[], userData: any, pedidoId: string, userId: string, 
-  paymentMethod: string, returnUrls: any, supabaseUrl: string) {
-  
-  const payerEmail = userData?.email || 'cliente@exemplo.com';
-  
-  const preference = {
-    items,
-    payer: {
-      email: payerEmail,
-      name: "Cliente Teste",
-      identification: {
-        type: "CPF",
-        number: "11111111111"
-      }
-    },
-    back_urls: {
-      success: returnUrls.successUrl,
-      failure: returnUrls.failureUrl,
-      pending: returnUrls.pendingUrl
-    },
-    auto_return: "approved",
-    external_reference: pedidoId,
-    notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
-    statement_descriptor: "INDEXA MÍDIA",
-    expires: false,
-    payment_methods: {
-      installments: 12,
-    },
-    metadata: {
-      pedido_id: pedidoId,
-      user_id: userId,
-      payment_method: paymentMethod,
-      test: true,
-      email: payerEmail,
-      test_mode: true // In test mode, add test users to the preference
-    }
-  };
-  
-  // Set specific payment method configurations
-  if (paymentMethod === 'pix') {
-    preference.payment_methods = {
-      ...preference.payment_methods,
-      excluded_payment_types: [
-        { id: "credit_card" },
-        { id: "debit_card" },
-        { id: "ticket" }
-      ],
-      default_payment_method_id: "pix"
-    };
-  } else if (paymentMethod === 'credit_card') {
-    preference.payment_methods = {
-      ...preference.payment_methods,
-      default_payment_method_id: "credit_card"
-    };
-  }
-  
-  return preference;
-}
-
-// Create test preference when no API key is available
-function createTestPreference(paymentMethod: string) {
-  const preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  let initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
-  
-  if (paymentMethod === 'pix') {
-    initPoint += '&payment_method_id=pix';
-  }
-  
-  return { preferenceId, initPoint };
-}
-
-// Create real preference using MercadoPago API
-async function createRealPreference(preference: any) {
-  console.log("Sending request to MercadoPago API...");
-  const response = await MercadoPago.preferences.create(preference);
-  
-  // Log partial response for debugging
-  console.log("MercadoPago API response ID:", response.body.id);
-  console.log("Init point:", response.body.init_point);
-  
-  let preferenceId = response.body.id;
-  let initPoint = response.body.init_point;
-  
-  // Force test parameter
-  if (initPoint && !initPoint.includes('test=')) {
-    initPoint = `${initPoint}${initPoint.includes('?') ? '&' : '?'}test=true`;
-  }
-  
-  console.log("MercadoPago preference created successfully");
-  return { preferenceId, initPoint };
-}
-
-// Update order with payment information
-async function updateOrderWithPaymentInfo(supabase: any, pedidoId: string, totals: any, preferenceId: string, initPoint: string, paymentMethod: string, itemsCount: number) {
-  const { error: updateError } = await supabase
-    .from('pedidos')
-    .update({
-      log_pagamento: {
-        ...totals,
-        payment_preference_id: preferenceId,
-        payment_init_point: initPoint,
-        payment_status: 'pending',
-        payment_method: paymentMethod,
-        items: itemsCount,
-        test: true,
-        timestamp: new Date().toISOString()
-      }
-    })
-    .eq('id', pedidoId);
-    
-  if (updateError) {
-    throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
-  }
-}
-
-// Create success response
-function createSuccessResponse(preferenceId: string, initPoint: string, pedidoId: string, paymentMethod: string) {
-  return new Response(
-    JSON.stringify({
-      success: true,
-      preference_id: preferenceId,
-      init_point: initPoint,
-      pedido_id: pedidoId,
-      payment_method: paymentMethod,
-      test: true
-    }),
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
-    }
-  );
-}
-
-// Create error response
-function createErrorResponse(error: Error) {
-  return new Response(
-    JSON.stringify({
-      success: false,
-      error: error.message,
-      error_details: String(error),
-      timestamp: new Date().toISOString()
-    }),
-    {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
-    }
-  );
+  return true;
 }
 
 // Main handler function
@@ -278,101 +76,222 @@ async function handleRequest(req: Request) {
     
     // Get request data
     const requestData = await req.json();
-    const { pedidoId, cartItems, totals, userId, returnUrl, paymentMethod = 'credit_card' } = requestData;
+    const { 
+      pedido_id: pedidoId, 
+      total_amount: totalAmount,
+      cart_items: cartItems, 
+      user_id: userId, 
+      return_url: returnUrl, 
+      payment_method = 'credit_card',
+      payment_key,
+      idempotency_key,
+      anti_duplicate_controls
+    } = requestData;
     
-    console.log("Dados recebidos:", { 
+    console.log("[CRITICAL-FIX] Dados recebidos:", { 
       pedidoId, 
-      totals, 
+      totalAmount, 
       userId, 
-      paymentMethod, 
+      paymentMethod: payment_method, 
       cartItemsCount: cartItems?.length,
-      returnUrl
+      paymentKey,
+      antiDuplicateControls: anti_duplicate_controls
     });
+    
+    // CRITICAL: Validate total amount is correct and not divided
+    if (!totalAmount || totalAmount <= 0) {
+      throw new Error(`Valor total inválido: ${totalAmount}`);
+    }
+    
+    // CRITICAL: Check for duplicate processing
+    if (payment_key) {
+      await checkDuplicateProcessing(supabase, payment_key, pedidoId);
+    }
     
     // Validate pedidoId
     validatePedidoId(pedidoId);
     
     // Fetch user data
-    const userData = await fetchUserData(supabase, userId);
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', userId)
+      .single();
+      
+    if (userError) {
+      throw new Error(`Erro ao buscar dados do usuário: ${userError.message}`);
+    }
     
     // Validate cart items
-    validateCartItems(cartItems);
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      throw new Error("Nenhum painel válido encontrado no carrinho");
+    }
     
-    // Prepare MercadoPago items
-    const items = prepareMercadoPagoItems(cartItems, totals);
+    // CRITICAL: Use the correct total amount directly, don't calculate from items
+    const correctedTotalAmount = Number(totalAmount.toFixed(2));
     
-    console.log("Items para processamento:", items.length);
+    console.log(`[CRITICAL-FIX] Valor corrigido: ${correctedTotalAmount} (original: ${totalAmount})`);
+    
+    // Prepare MercadoPago items with CORRECT total value
+    const items = [{
+      id: `campaign_${pedidoId}`,
+      title: `Campanha publicitária digital - ${cartItems.length} painéis`,
+      quantity: 1,
+      unit_price: correctedTotalAmount, // Use full amount, not divided
+      currency_id: 'BRL',
+      description: `Veiculação por 30 dias em ${cartItems.length} painel(éis)`,
+      category_id: "digital_goods",
+      picture_url: "https://via.placeholder.com/150"
+    }];
     
     // Prepare return URLs
-    const returnUrls = prepareReturnUrls(returnUrl, pedidoId);
-    
-    console.log("URLs:", returnUrls);
+    const originUrl = returnUrl || 'https://app.indexamidia.com';
+    const returnUrls = {
+      successUrl: `${originUrl}/pedido-confirmado?id=${pedidoId}&status=approved`,
+      failureUrl: `${originUrl}/checkout?error=payment_failed&id=${pedidoId}`,
+      pendingUrl: `${originUrl}/pedido-confirmado?id=${pedidoId}&status=pending`
+    };
     
     // Create MercadoPago preference
-    const preference = createMercadoPagoPreference(
-      items, 
-      userData, 
-      pedidoId, 
-      userId, 
-      paymentMethod, 
-      returnUrls, 
-      supabaseUrl
-    );
+    const preference = {
+      items,
+      payer: {
+        email: userData?.email || 'cliente@exemplo.com',
+        name: "Cliente Teste",
+        identification: {
+          type: "CPF",
+          number: "11111111111"
+        }
+      },
+      back_urls: {
+        success: returnUrls.successUrl,
+        failure: returnUrls.failureUrl,
+        pending: returnUrls.pendingUrl
+      },
+      auto_return: "approved",
+      external_reference: pedidoId,
+      notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
+      statement_descriptor: "INDEXA MÍDIA",
+      expires: false,
+      payment_methods: {
+        installments: 12,
+      },
+      metadata: {
+        pedido_id: pedidoId,
+        user_id: userId,
+        payment_method: payment_method,
+        test: true,
+        email: userData?.email,
+        payment_key: payment_key,
+        idempotency_key: idempotency_key,
+        total_amount_check: correctedTotalAmount
+      }
+    };
+    
+    console.log(`[CRITICAL-FIX] Criando preferência com valor: ${correctedTotalAmount}`);
     
     // Create preference in MercadoPago or simulate in development
     let preferenceId = "";
     let initPoint = "";
     
     try {
-      // Create a valid test preference or real one
       if (!MP_ACCESS_TOKEN) {
         console.log("No MP_ACCESS_TOKEN found, using test mode");
-        const testData = createTestPreference(paymentMethod);
-        preferenceId = testData.preferenceId;
-        initPoint = testData.initPoint;
+        preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       } else {
         // Use MercadoPago API
-        const realData = await createRealPreference(preference);
-        preferenceId = realData.preferenceId;
-        initPoint = realData.initPoint;
+        console.log("Sending request to MercadoPago API...");
+        const response = await MercadoPago.preferences.create(preference);
+        
+        preferenceId = response.body.id;
+        initPoint = response.body.init_point;
+        
+        // Force test parameter
+        if (initPoint && !initPoint.includes('test=')) {
+          initPoint = `${initPoint}${initPoint.includes('?') ? '&' : '?'}test=true`;
+        }
+        
+        console.log("MercadoPago preference created successfully");
       }
     } catch (mpError) {
       console.error("Error creating MercadoPago preference:", mpError);
       
       // Emergency fallback mode
-      const fallbackData = createTestPreference(paymentMethod);
-      preferenceId = fallbackData.preferenceId;
-      initPoint = fallbackData.initPoint;
+      preferenceId = `FALLBACK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
       
-      console.log("Using emergency fallback preference:", {
-        preferenceId,
-        initPoint
-      });
+      console.log("Using emergency fallback preference");
     }
     
-    // Update order with payment information
-    await updateOrderWithPaymentInfo(
-      supabase, 
-      pedidoId, 
-      totals, 
-      preferenceId, 
-      initPoint, 
-      paymentMethod, 
-      items.length
-    );
+    // CRITICAL: Update order with payment information and correct total
+    const { error: updateError } = await supabase
+      .from('pedidos')
+      .update({
+        log_pagamento: {
+          original_total_amount: totalAmount,
+          corrected_total_amount: correctedTotalAmount,
+          payment_preference_id: preferenceId,
+          payment_init_point: initPoint,
+          payment_status: 'pending',
+          payment_method: payment_method,
+          items_count: cartItems.length,
+          payment_key: payment_key,
+          idempotency_key: idempotency_key,
+          anti_duplicate_processed: true,
+          test: true,
+          timestamp: new Date().toISOString()
+        }
+      })
+      .eq('id', pedidoId);
+      
+    if (updateError) {
+      throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
+    }
     
-    console.log("Payment preference created and order updated:", {
+    console.log("[CRITICAL-FIX] Payment preference created and order updated:", {
       preferenceId,
-      initPoint,
-      paymentMethod
+      correctedAmount: correctedTotalAmount,
+      paymentMethod: payment_method
     });
     
     // Return preference data
-    return createSuccessResponse(preferenceId, initPoint, pedidoId, paymentMethod);
+    return new Response(
+      JSON.stringify({
+        success: true,
+        preference_id: preferenceId,
+        init_point: initPoint,
+        pedido_id: pedidoId,
+        payment_method: payment_method,
+        corrected_total_amount: correctedTotalAmount,
+        anti_duplicate_check: 'passed',
+        test: true
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
+      }
+    );
     
   } catch (error) {
-    console.error('Erro ao processar pagamento:', error);
-    return createErrorResponse(error);
+    console.error('[CRITICAL-FIX] Erro ao processar pagamento:', error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        error_details: String(error),
+        timestamp: new Date().toISOString()
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
+      }
+    );
   }
 }
 

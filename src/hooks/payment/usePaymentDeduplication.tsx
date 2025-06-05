@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -73,7 +74,7 @@ export const usePaymentDeduplication = () => {
     
     if (lastSubmission) {
       const timeDiff = now - parseInt(lastSubmission);
-      if (timeDiff < 5000) { // Prevent submissions within 5 seconds
+      if (timeDiff < 10000) { // INCREASED: Prevent submissions within 10 seconds
         toast.error('Aguarde alguns segundos antes de tentar novamente');
         return false;
       }
@@ -83,8 +84,15 @@ export const usePaymentDeduplication = () => {
     return true;
   }, []);
 
+  const createUniquePaymentKey = useCallback((userId: string, amount: number) => {
+    // Create a unique key based on user, amount, and current minute
+    const currentMinute = Math.floor(Date.now() / (60 * 1000));
+    return `PAYMENT_${userId}_${amount}_${currentMinute}`;
+  }, []);
+
   return {
     cleanupDuplicateOrders,
-    preventDuplicateSubmission
+    preventDuplicateSubmission,
+    createUniquePaymentKey
   };
 };
