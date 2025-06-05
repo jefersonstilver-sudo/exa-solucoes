@@ -109,12 +109,41 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // CORREÇÃO: Usar 'email_change' ao invés de 'signup' para usuários existentes
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'email_change',
-      email: email,
-      newEmail: email, // Para email_change, precisamos especificar o newEmail
-    });
+    // ESTRATÉGIA CORRIGIDA: Tentar primeiro 'confirmation', depois fallback para 'signup'
+    let linkData, linkError;
+    
+    console.log('🔗 [RESEND-EMAIL] Tentando gerar link de confirmação...');
+    
+    try {
+      // Tentar primeiro com type: 'confirmation' 
+      const result = await supabaseAdmin.auth.admin.generateLink({
+        type: 'confirmation',
+        email: email,
+      });
+      
+      linkData = result.data;
+      linkError = result.error;
+      
+      console.log('✅ [RESEND-EMAIL] Link gerado com type: confirmation');
+    } catch (confirmationError) {
+      console.log('⚠️ [RESEND-EMAIL] Falha com confirmation, tentando signup...');
+      
+      // Fallback para type: 'signup'
+      try {
+        const result = await supabaseAdmin.auth.admin.generateLink({
+          type: 'signup',
+          email: email,
+        });
+        
+        linkData = result.data;
+        linkError = result.error;
+        
+        console.log('✅ [RESEND-EMAIL] Link gerado com type: signup (fallback)');
+      } catch (signupError) {
+        console.error('❌ [RESEND-EMAIL] Ambas estratégias falharam:', { confirmationError, signupError });
+        linkError = signupError;
+      }
+    }
 
     if (linkError) {
       console.error('❌ [RESEND-EMAIL] Erro ao gerar link:', linkError);
