@@ -149,9 +149,47 @@ export const usePaymentValidation = () => {
     };
   }, []);
 
+  // Implementar o método que estava faltando
+  const validatePaymentRequirements = useCallback(({
+    acceptTerms,
+    unavailablePanels,
+    sessionUser,
+    isSDKLoaded,
+    cartItems
+  }: {
+    acceptTerms: boolean;
+    unavailablePanels: string[];
+    sessionUser: any;
+    isSDKLoaded: boolean;
+    cartItems: any[];
+  }) => {
+    // Verificar termos aceitos
+    if (!acceptTerms) {
+      return false;
+    }
+
+    // Verificar se o usuário está logado
+    if (!sessionUser || !sessionUser.id) {
+      return false;
+    }
+
+    // Verificar se há itens no carrinho
+    if (!cartItems || cartItems.length === 0) {
+      return false;
+    }
+
+    // Verificar se o SDK está carregado (se necessário)
+    if (!isSDKLoaded) {
+      console.warn('[PAYMENT-VALIDATION] SDK não carregado, mas permitindo prosseguir');
+    }
+
+    return true;
+  }, []);
+
   return {
     validateUniquePayment,
     generateUniqueTransactionId,
-    validatePaymentAmount
+    validatePaymentAmount,
+    validatePaymentRequirements
   };
 };

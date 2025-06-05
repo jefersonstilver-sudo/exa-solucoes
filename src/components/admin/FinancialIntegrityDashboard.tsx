@@ -16,9 +16,26 @@ interface FinancialStats {
   status: string;
 }
 
+interface AnomaliesData {
+  duplicate_orders: number;
+  zero_value_orders: number;
+  suspicious_timing: number;
+  missing_payment_logs: number;
+  anomaly_score: number;
+  status: string;
+}
+
+interface AuditResult {
+  success: boolean;
+  duplicates_fixed: number;
+  orphaned_attempts_migrated: number;
+  total_corrected_value: number;
+  final_june_total: number;
+}
+
 const FinancialIntegrityDashboard: React.FC = () => {
   const [stats, setStats] = useState<FinancialStats | null>(null);
-  const [anomalies, setAnomalies] = useState<any>(null);
+  const [anomalies, setAnomalies] = useState<AnomaliesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<string>('');
 
@@ -46,8 +63,9 @@ const FinancialIntegrityDashboard: React.FC = () => {
         return;
       }
 
-      setStats(reconciliation);
-      setAnomalies(anomaliesData);
+      // Type casting para garantir compatibilidade
+      setStats(reconciliation as FinancialStats);
+      setAnomalies(anomaliesData as AnomaliesData);
       setLastUpdate(new Date().toLocaleString('pt-BR'));
       
       console.log('📊 Dados financeiros atualizados:', {
@@ -79,7 +97,10 @@ const FinancialIntegrityDashboard: React.FC = () => {
 
       console.log('🔧 Resultado da auditoria emergencial:', auditResult);
       
-      toast.success(`Auditoria concluída: ${auditResult.duplicates_fixed} duplicados corrigidos, ${auditResult.orphaned_attempts_migrated} tentativas migradas`);
+      // Type casting para garantir acesso às propriedades
+      const result = auditResult as AuditResult;
+      
+      toast.success(`Auditoria concluída: ${result.duplicates_fixed} duplicados corrigidos, ${result.orphaned_attempts_migrated} tentativas migradas`);
       
       // Atualizar dados após auditoria
       await fetchFinancialData();
