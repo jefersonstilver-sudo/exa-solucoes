@@ -110,9 +110,9 @@ serve(async (req: Request) => {
       });
     }
 
-    // URLs CORRIGIDAS - usar a URL correta do Lovable
+    // URLs CORRIGIDAS - usar o domínio oficial www.indexamidia.com
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
-    const siteUrl = 'https://loving-bough-1xb6c3h.lovableproject.com';
+    const siteUrl = 'https://www.indexamidia.com';
     
     // URL de confirmação correta que vai redirecionar para /confirmacao
     const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${emailData.token_hash}&type=signup&redirect_to=${encodeURIComponent(siteUrl + '/confirmacao')}`;

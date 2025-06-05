@@ -37,9 +37,9 @@ export default function Confirmacao() {
           
           const decodedError = decodeURIComponent(errorDescription || '');
           
-          if (error === 'access_denied' || decodedError.includes('expired')) {
+          if (error === 'access_denied' || decodedError.includes('expired') || decodedError.includes('invalid')) {
             setStatus('expired');
-            setMessage('Link de confirmação expirado. Você pode solicitar um novo email de confirmação.');
+            setMessage('Link de confirmação expirado ou inválido. Você pode solicitar um novo email de confirmação.');
           } else {
             setStatus('error');
             setMessage(decodedError || 'Erro na confirmação do email');
