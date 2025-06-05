@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -63,9 +62,9 @@ const FinancialIntegrityDashboard: React.FC = () => {
         return;
       }
 
-      // Type casting para garantir compatibilidade
-      setStats(reconciliation as FinancialStats);
-      setAnomalies(anomaliesData as AnomaliesData);
+      // Type casting seguro para garantir compatibilidade
+      setStats(reconciliation as unknown as FinancialStats);
+      setAnomalies(anomaliesData as unknown as AnomaliesData);
       setLastUpdate(new Date().toLocaleString('pt-BR'));
       
       console.log('📊 Dados financeiros atualizados:', {
@@ -97,8 +96,8 @@ const FinancialIntegrityDashboard: React.FC = () => {
 
       console.log('🔧 Resultado da auditoria emergencial:', auditResult);
       
-      // Type casting para garantir acesso às propriedades
-      const result = auditResult as AuditResult;
+      // Type casting seguro para garantir acesso às propriedades
+      const result = auditResult as unknown as AuditResult;
       
       toast.success(`Auditoria concluída: ${result.duplicates_fixed} duplicados corrigidos, ${result.orphaned_attempts_migrated} tentativas migradas`);
       
