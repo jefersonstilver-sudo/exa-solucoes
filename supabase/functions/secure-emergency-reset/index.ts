@@ -15,7 +15,7 @@ function generateSecureToken(): string {
 }
 
 // Generate secure password with complexity requirements
-function generateSecurePassword(length: number = 16): string => {
+function generateSecurePassword(length: number = 16): string {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
   const numbers = '0123456789';
