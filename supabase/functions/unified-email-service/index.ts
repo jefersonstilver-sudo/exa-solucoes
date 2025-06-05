@@ -50,6 +50,17 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
+    if (!serviceRoleKey) {
+      console.error('❌ [UNIFIED-EMAIL] SUPABASE_SERVICE_ROLE_KEY não configurada');
+      return new Response(JSON.stringify({ 
+        error: 'SUPABASE_SERVICE_ROLE_KEY não configurada',
+        success: false 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
     // Roteamento baseado na ação
     if (action === 'resend') {
       // REENVIO DE EMAIL DE CONFIRMAÇÃO
@@ -78,18 +89,12 @@ serve(async (req: Request) => {
 
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
       const confirmationUrl = await linkGenerator.generateConfirmationLink(email);
-      
-      const redirectUrl = encodeURIComponent(`${baseUrl}/confirmacao`);
-      const finalUrl = confirmationUrl.replace(
-        /redirect_to=[^&]+/,
-        `redirect_to=${redirectUrl}`
-      );
 
       const userName = email.split('@')[0];
       const { data: emailData, error: emailError } = await emailService.sendResendConfirmationEmail(
         email, 
         userName, 
-        URLValidator.validateAndCorrectUrl(finalUrl)
+        URLValidator.validateAndCorrectUrl(confirmationUrl)
       );
 
       if (emailError) {
