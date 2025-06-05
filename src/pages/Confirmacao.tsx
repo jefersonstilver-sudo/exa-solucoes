@@ -4,16 +4,19 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, AlertCircle, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { useEmailConfirmation } from '@/hooks/useEmailConfirmation';
 
 export default function Confirmacao() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'already-confirmed'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'already-confirmed' | 'expired'>('loading');
   const [message, setMessage] = useState('Confirmando seu email...');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { resendConfirmationEmail, isResending } = useEmailConfirmation();
 
   useEffect(() => {
     const confirmUser = async () => {
@@ -37,7 +40,14 @@ export default function Confirmacao() {
           
           if (error) {
             console.error('❌ [CONFIRMACAO] Erro na URL:', error, errorDescription);
-            throw new Error(errorDescription || 'Erro na confirmação');
+            
+            if (error === 'email_confirm_expired') {
+              setStatus('expired');
+              setMessage('Link de confirmação expirado. Você pode solicitar um novo email de confirmação.');
+            } else {
+              throw new Error(errorDescription || 'Erro na confirmação');
+            }
+            return;
           }
           
           if (type === 'recovery') {
@@ -47,7 +57,9 @@ export default function Confirmacao() {
             return;
           }
           
-          throw new Error('Nenhum token de confirmação encontrado na URL');
+          setStatus('expired');
+          setMessage('Link de confirmação não encontrado ou expirado.');
+          return;
         }
 
         // Parse the hash to get the tokens
@@ -71,16 +83,22 @@ export default function Confirmacao() {
           console.error('❌ [CONFIRMACAO] Erro no hash:', error, errorDescription);
           
           if (error === 'email_confirm_expired') {
-            throw new Error('Link de confirmação expirado. Solicite um novo email de confirmação.');
+            setStatus('expired');
+            setMessage('Link de confirmação expirado. Você pode solicitar um novo email de confirmação.');
           } else if (error === 'email_confirm_invalid') {
-            throw new Error('Link de confirmação inválido ou já utilizado.');
+            setStatus('error');
+            setMessage('Link de confirmação inválido ou já utilizado.');
           } else {
-            throw new Error(errorDescription || 'Erro na confirmação do email');
+            setStatus('error');
+            setMessage(errorDescription || 'Erro na confirmação do email');
           }
+          return;
         }
         
         if (!access_token || !refresh_token) {
-          throw new Error('Tokens de autenticação não encontrados na URL');
+          setStatus('expired');
+          setMessage('Link de confirmação inválido ou expirado.');
+          return;
         }
 
         // Verificar sessão atual antes de definir nova
@@ -105,15 +123,21 @@ export default function Confirmacao() {
         
         // Verificar se o email foi confirmado
         const emailConfirmedAt = sessionData.session?.user?.email_confirmed_at;
+        const email = sessionData.session?.user?.email;
+        setUserEmail(email || null);
+        
         console.log('🔍 [CONFIRMACAO] Email confirmado em:', emailConfirmedAt);
         
         if (!emailConfirmedAt) {
           console.warn('⚠️ [CONFIRMACAO] Email ainda não confirmado após setSession');
+          setStatus('error');
+          setMessage('Erro na confirmação. Tente novamente ou solicite um novo email.');
+          return;
         }
         
         // Success!
         console.log('✅ [CONFIRMACAO] Email confirmado com sucesso!');
-        console.log('✅ [CONFIRMACAO] Usuário:', sessionData.session?.user?.email);
+        console.log('✅ [CONFIRMACAO] Usuário:', email);
         
         setStatus('success');
         
@@ -135,6 +159,7 @@ export default function Confirmacao() {
         let errorMessage = 'Falha ao confirmar o email';
         
         if (error.message?.includes('expired') || error.message?.includes('expirado')) {
+          setStatus('expired');
           errorMessage = 'Link de confirmação expirado. Solicite um novo email de confirmação.';
         } else if (error.message?.includes('invalid') || error.message?.includes('inválido')) {
           errorMessage = 'Link de confirmação inválido. Verifique se copiou o link completo.';
@@ -153,6 +178,15 @@ export default function Confirmacao() {
     confirmUser();
   }, [navigate, location]);
 
+  const handleResendEmail = async () => {
+    if (!userEmail) {
+      toast.error('Email não encontrado');
+      return;
+    }
+    
+    await resendConfirmationEmail(userEmail);
+  };
+
   return (
     <Layout>
       <motion.div 
@@ -170,6 +204,7 @@ export default function Confirmacao() {
               {status === 'loading' ? 'Processando confirmação...' : 
                status === 'success' ? 'Confirmação realizada!' : 
                status === 'already-confirmed' ? 'Email já confirmado' :
+               status === 'expired' ? 'Link expirado' :
                'Erro na confirmação'}
             </CardDescription>
           </CardHeader>
@@ -249,6 +284,52 @@ export default function Confirmacao() {
                 </div>
               </motion.div>
             )}
+
+            {status === 'expired' && (
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-center"
+              >
+                <div className="bg-amber-100 p-4 rounded-full inline-flex mb-4">
+                  <AlertCircle className="h-16 w-16 text-amber-600" />
+                </div>
+                <p className="text-lg text-gray-700 font-medium">Link Expirado</p>
+                <p className="text-sm text-amber-600 mt-2 max-w-sm">
+                  {message}
+                </p>
+                <div className="flex flex-col gap-2 mt-6">
+                  {userEmail && (
+                    <Button
+                      onClick={handleResendEmail}
+                      disabled={isResending}
+                      className="bg-indexa-purple hover:bg-indexa-purple-dark flex items-center gap-2"
+                    >
+                      {isResending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
+                      {isResending ? 'Enviando...' : 'Reenviar Email'}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/cadastro')}
+                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+                  >
+                    Criar Nova Conta
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/login')}
+                    className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                  >
+                    Voltar para Login
+                  </Button>
+                </div>
+              </motion.div>
+            )}
             
             {status === 'error' && (
               <motion.div 
@@ -264,6 +345,20 @@ export default function Confirmacao() {
                   {message}
                 </p>
                 <div className="flex flex-col gap-2 mt-6">
+                  {userEmail && (
+                    <Button
+                      onClick={handleResendEmail}
+                      disabled={isResending}
+                      className="bg-indexa-purple hover:bg-indexa-purple-dark flex items-center gap-2"
+                    >
+                      {isResending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
+                      {isResending ? 'Enviando...' : 'Reenviar Email'}
+                    </Button>
+                  )}
                   <Button
                     onClick={() => navigate('/cadastro')}
                     className="bg-indexa-purple hover:bg-indexa-purple-dark"

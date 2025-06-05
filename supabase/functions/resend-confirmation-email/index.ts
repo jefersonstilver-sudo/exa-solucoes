@@ -3,37 +3,45 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@4.0.0";
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string);
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function createSimpleEmailHTML(userName: string, confirmationUrl: string): string {
+// Template HTML melhorado
+function createConfirmationEmailHTML(userName: string, confirmationUrl: string): string {
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Confirmação de Email - Indexa</title>
+      <title>Confirme seu Email - Indexa</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .logo { text-align: center; color: #7c3aed; font-size: 32px; font-weight: bold; margin-bottom: 30px; }
+        .button { background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; margin: 20px 0; }
+        .footer { color: #999; font-size: 12px; margin-top: 30px; }
+      </style>
     </head>
-    <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
-      <div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px;">
-        <h1 style="color: #7c3aed; text-align: center;">INDEXA</h1>
-        <h2 style="color: #333;">Confirmação de Email</h2>
-        <p style="color: #666; line-height: 1.6;">
-          Clique no botão abaixo para confirmar seu email:
-        </p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${confirmationUrl}" 
-             style="background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-            Confirmar Email
+    <body>
+      <div class="container">
+        <div class="logo">INDEXA</div>
+        <h2>Bem-vindo(a), ${userName}!</h2>
+        <p>Obrigado por se cadastrar na Indexa! Para ativar sua conta e começar a anunciar, confirme seu email clicando no botão abaixo:</p>
+        <div style="text-align: center;">
+          <a href="${confirmationUrl}" class="button">
+            ✅ Confirmar Email
           </a>
         </div>
-        <p style="color: #999; font-size: 12px;">
-          Se você não solicitou este email, ignore esta mensagem.
+        <p>Ou copie e cole este link no seu navegador:</p>
+        <p style="word-break: break-all; background: #f8f8f8; padding: 10px; border-radius: 5px; font-size: 12px;">
+          ${confirmationUrl}
         </p>
+        <div class="footer">
+          <p>Se você não criou esta conta, pode ignorar este email.</p>
+          <p>Este link expira em 24 horas por segurança.</p>
+        </div>
       </div>
     </body>
     </html>
@@ -67,6 +75,21 @@ serve(async (req: Request) => {
 
     console.log('📧 [RESEND-EMAIL] Reenviando para:', email);
 
+    // Verificar se temos a chave do Resend
+    const resendKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendKey) {
+      console.error('❌ [RESEND-EMAIL] RESEND_API_KEY não encontrada');
+      return new Response(JSON.stringify({ 
+        error: 'RESEND_API_KEY não configurada',
+        success: false 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    const resend = new Resend(resendKey);
+
     // Inicializar cliente Supabase admin
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -93,10 +116,10 @@ serve(async (req: Request) => {
 
     // Enviar email
     const userName = email.split('@')[0];
-    const html = createSimpleEmailHTML(userName, confirmationUrl);
+    const html = createConfirmationEmailHTML(userName, confirmationUrl);
 
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: 'Indexa <onboarding@resend.dev>',
+      from: 'Indexa <noreply@indexamidia.com>',
       to: [email],
       subject: '🎯 Confirme seu email na Indexa (Reenviado)',
       html,
