@@ -4,62 +4,68 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, Clock, RefreshCw, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, Clock, RefreshCw, ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function EmailSent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
   const email = new URLSearchParams(location.search).get('email') || '';
   
   const [isResending, setIsResending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const handleResendEmail = async () => {
     if (!email) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Email não informado para reenvio."
-      });
+      toast.error('Email não informado para reenvio.');
       return;
     }
 
     setIsResending(true);
+    setLastError(null);
     
     try {
-      console.log('🔄 Reenviando email para:', email);
+      console.log('🔄 [EMAIL-SENT] Iniciando reenvio para:', email);
       
       const { data, error } = await supabase.functions.invoke('resend-confirmation-email', {
         body: { email }
       });
 
+      console.log('📧 [EMAIL-SENT] Resposta da função:', { data, error });
+
       if (error) {
-        console.error('❌ Erro ao reenviar:', error);
-        throw error;
+        console.error('❌ [EMAIL-SENT] Erro da função:', error);
+        throw new Error(error.message || 'Erro desconhecido na função');
       }
 
-      console.log('✅ Email reenviado:', data);
-      
-      setEmailSent(true);
-      toast({
-        title: "Email reenviado!",
-        description: "Verifique sua caixa de entrada."
-      });
-
-      // Reset after 3 seconds
-      setTimeout(() => setEmailSent(false), 3000);
+      if (data?.success) {
+        console.log('✅ [EMAIL-SENT] Email reenviado com sucesso');
+        setEmailSent(true);
+        toast.success('Email de confirmação reenviado! Verifique sua caixa de entrada.');
+        
+        setTimeout(() => setEmailSent(false), 5000);
+      } else {
+        throw new Error(data?.message || data?.error || 'Resposta inválida da função');
+      }
       
     } catch (error: any) {
-      console.error('💥 Erro ao reenviar email:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao reenviar",
-        description: "Tente novamente em alguns momentos."
-      });
+      console.error('💥 [EMAIL-SENT] Erro completo:', error);
+      
+      let errorMessage = 'Erro ao reenviar email. Tente novamente em alguns momentos.';
+      
+      if (error.message?.includes('RESEND_API_KEY')) {
+        errorMessage = 'Serviço de email não configurado. Contate o suporte.';
+      } else if (error.message?.includes('rate limit')) {
+        errorMessage = 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setLastError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsResending(false);
     }
@@ -90,7 +96,7 @@ export default function EmailSent() {
               <p className="text-gray-700 mb-4">
                 Enviamos um email de confirmação para:
               </p>
-              <p className="font-semibold text-indexa-purple bg-indexa-purple/5 px-4 py-2 rounded-lg">
+              <p className="font-semibold text-indexa-purple bg-indexa-purple/5 px-4 py-2 rounded-lg break-all">
                 {email}
               </p>
             </div>
@@ -112,6 +118,18 @@ export default function EmailSent() {
               </div>
             </div>
 
+            {lastError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-900">Erro no reenvio:</p>
+                    <p className="text-sm text-red-800 mt-1">{lastError}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="text-center text-sm text-gray-600">
               <p className="mb-4">
                 Não recebeu o email? Verifique sua pasta de spam ou lixo eletrônico.
@@ -121,7 +139,7 @@ export default function EmailSent() {
                 variant="outline"
                 onClick={handleResendEmail}
                 disabled={isResending || emailSent}
-                className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white"
+                className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white w-full"
               >
                 {isResending ? (
                   <>

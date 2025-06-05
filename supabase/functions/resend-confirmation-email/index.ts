@@ -8,7 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Template HTML idêntico ao da função principal
 function createConfirmationEmailHTML(userName: string, confirmationUrl: string): string {
   return `
     <!DOCTYPE html>
@@ -27,8 +26,8 @@ function createConfirmationEmailHTML(userName: string, confirmationUrl: string):
     <body>
       <div class="container">
         <div class="logo">INDEXA</div>
-        <h2>Bem-vindo(a), ${userName}!</h2>
-        <p>Obrigado por se cadastrar na Indexa! Para ativar sua conta e começar a anunciar, confirme seu email clicando no botão abaixo:</p>
+        <h2>Confirme seu email novamente</h2>
+        <p>Você solicitou o reenvio do email de confirmação. Clique no botão abaixo para confirmar seu email:</p>
         <div style="text-align: center;">
           <a href="${confirmationUrl}" class="button">
             ✅ Confirmar Email
@@ -39,7 +38,7 @@ function createConfirmationEmailHTML(userName: string, confirmationUrl: string):
           ${confirmationUrl}
         </p>
         <div class="footer">
-          <p>Se você não criou esta conta, pode ignorar este email.</p>
+          <p>Se você não solicitou este reenvio, pode ignorar este email.</p>
           <p>Este link expira em 24 horas por segurança.</p>
         </div>
       </div>
@@ -48,16 +47,11 @@ function createConfirmationEmailHTML(userName: string, confirmationUrl: string):
   `;
 }
 
-// Função para validar e corrigir URLs malformadas
 function validateAndCorrectUrl(url: string): string {
   try {
-    // Remover qualquer ponto no início do hostname
     let correctedUrl = url.replace(/https?:\/\/\.+/, 'https://');
-    
-    // Verificar se é uma URL válida
     const urlObj = new URL(correctedUrl);
     
-    // Se o hostname começar com ponto, corrigir
     if (urlObj.hostname.startsWith('.')) {
       urlObj.hostname = urlObj.hostname.substring(1);
       correctedUrl = urlObj.toString();
@@ -66,14 +60,13 @@ function validateAndCorrectUrl(url: string): string {
     return correctedUrl;
   } catch (error) {
     console.error('❌ [URL-VALIDATION] URL inválida:', url, error);
-    return url; // Retorna original se não conseguir corrigir
+    return url;
   }
 }
 
 serve(async (req: Request) => {
   console.log('🔄 [RESEND-EMAIL] Iniciando reenvio de email...');
   
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -97,7 +90,6 @@ serve(async (req: Request) => {
 
     console.log('📧 [RESEND-EMAIL] Reenviando para:', email);
 
-    // Verificar se temos a chave do Resend
     const resendKey = Deno.env.get('RESEND_API_KEY');
     if (!resendKey) {
       console.error('❌ [RESEND-EMAIL] RESEND_API_KEY não encontrada');
@@ -112,13 +104,11 @@ serve(async (req: Request) => {
 
     const resend = new Resend(resendKey);
 
-    // Inicializar cliente Supabase admin
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Gerar novo link de confirmação via Supabase Admin
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email: email,
@@ -134,29 +124,21 @@ serve(async (req: Request) => {
       throw new Error('Link de confirmação não foi gerado');
     }
 
-    // CORREÇÃO ROBUSTA: Detectar e validar o domínio atual
     const currentUrl = new URL(req.url);
     let baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
-    
-    // Validar e corrigir URL se necessário
     baseUrl = validateAndCorrectUrl(baseUrl);
     
-    // Modificar URL para usar domínio atual com validação extra
     const correctedUrl = confirmationUrl.replace(
       /redirect_to=[^&]+/,
       `redirect_to=${encodeURIComponent(baseUrl + '/confirmacao')}`
     );
 
-    // Validação final da URL corrigida
     const finalUrl = validateAndCorrectUrl(correctedUrl);
 
-    console.log('✅ [RESEND-EMAIL] Configuração de URLs:');
-    console.log('   - Request URL:', req.url);
-    console.log('   - Base URL detectada:', baseUrl);
-    console.log('   - URL original do Supabase:', confirmationUrl);
-    console.log('   - URL corrigida final:', finalUrl);
+    console.log('✅ [RESEND-EMAIL] URLs configuradas:');
+    console.log('   - Base URL:', baseUrl);
+    console.log('   - URL final:', finalUrl);
 
-    // Enviar email
     const userName = email.split('@')[0];
     const html = createConfirmationEmailHTML(userName, finalUrl);
 
