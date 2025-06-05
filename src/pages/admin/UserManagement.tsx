@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import SecureAdminReset from '@/components/admin/security/SecureAdminReset';
+import SecureEmergencyPasswordReset from '@/components/admin/setup/SecureEmergencyPasswordReset';
 
 interface UserData {
   id: string;
@@ -76,8 +76,8 @@ const UserManagement = () => {
           </div>
         </div>
 
-        {/* Secure Admin Reset Component */}
-        <SecureAdminReset />
+        {/* Secure Emergency Reset Component */}
+        <SecureEmergencyPasswordReset />
 
         <Card>
           <CardContent className="p-6">
