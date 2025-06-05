@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   isLoggedIn: boolean;
   isSuperAdmin: boolean;
+  isAdmin: boolean; // Added for backward compatibility
   logout: () => Promise<void>;
   hasRole: (role: string) => boolean;
 }
@@ -40,6 +40,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Derivar isSuperAdmin
   const isSuperAdmin = userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com';
+
+  // Derivar isAdmin (backward compatibility)
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
 
   // Função otimizada para extrair role do JWT
   const extractRoleFromJWT = (accessToken: string): UserRole | null => {
@@ -120,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isLoggedIn,
     isSuperAdmin,
+    isAdmin, // Added for backward compatibility
     logout,
     hasRole
   };
