@@ -30,8 +30,8 @@ export default function EmailSent() {
     try {
       console.log('🔄 [EMAIL-SENT] Iniciando reenvio para:', email);
       
-      const { data, error } = await supabase.functions.invoke('resend-confirmation-email', {
-        body: { email }
+      const { data, error } = await supabase.functions.invoke('unified-email-service', {
+        body: { action: 'resend', email }
       });
 
       console.log('📧 [EMAIL-SENT] Resposta da função:', { data, error });

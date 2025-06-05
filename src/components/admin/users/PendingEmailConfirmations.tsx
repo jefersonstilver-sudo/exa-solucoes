@@ -77,9 +77,9 @@ export default function PendingEmailConfirmations() {
       
       console.log('🔄 Reenviando email de confirmação para:', email);
       
-      // Chamar a edge function de reenvio
-      const { data, error } = await supabase.functions.invoke('resend-confirmation-email', {
-        body: { email }
+      // Chamar a edge function unificada de reenvio
+      const { data, error } = await supabase.functions.invoke('unified-email-service', {
+        body: { action: 'resend', email }
       });
       
       if (error) throw error;
