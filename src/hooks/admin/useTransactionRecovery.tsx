@@ -53,7 +53,7 @@ export const useTransactionRecovery = () => {
       }
 
       console.log('✅ Investigation result:', data);
-      const result = data as TransactionInvestigationResult;
+      const result = data as unknown as TransactionInvestigationResult;
       setInvestigationResult(result);
       
       if (result.new_pedido_created) {
@@ -87,7 +87,7 @@ export const useTransactionRecovery = () => {
       }
 
       console.log('📊 Reconciliation result:', data);
-      const result = data as ReconciliationResult;
+      const result = data as unknown as ReconciliationResult;
       setReconciliationResult(result);
       
       const status = result.reconciliation_status;
@@ -122,7 +122,7 @@ export const useTransactionRecovery = () => {
       }
 
       console.log('🛠️ Auto-fix result:', data);
-      const result = data as AutoFixResult;
+      const result = data as unknown as AutoFixResult;
       setAutoFixResult(result);
       
       if (result.transactions_fixed > 0) {
