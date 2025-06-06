@@ -150,8 +150,11 @@ class WebhookProcessor {
       // Atualizar pedido para pago
       const pedido = pedidos[0];
       
-      // CORRIGIDO: Criar objeto de log_pagamento corretamente
-      const currentLogPagamento = pedido.log_pagamento || {};
+      // CORRIGIDO: Verificar se log_pagamento existe e é um objeto antes de fazer spread
+      const currentLogPagamento = (pedido.log_pagamento && typeof pedido.log_pagamento === 'object') 
+        ? pedido.log_pagamento 
+        : {};
+      
       const updatedLogPagamento = {
         ...currentLogPagamento,
         payment_id: paymentData.id,
