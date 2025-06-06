@@ -1,4 +1,3 @@
-
 // Hook Principal de Checkout Unificado com Transações Únicas
 
 import { useState, useEffect } from 'react';
@@ -8,18 +7,17 @@ import { useUnifiedTransaction } from './useUnifiedTransaction';
 import { useEnhancedAttemptCapture } from './useEnhancedAttemptCapture';
 import { useUnifiedOrderCreator } from './payment/order/useUnifiedOrderCreator';
 import { useUserSession } from './useUserSession';
+import { useCouponValidator } from './useCouponValidator';
+import { useCartManager } from './useCartManager';
 import { toast } from 'sonner';
 import { logSystemEvent } from '@/utils/auditLogger';
 
 export const useUnifiedCheckout = () => {
   const navigate = useNavigate();
   const { user } = useUserSession();
-  const {
-    cartItems,
-    selectedPlan,
-    couponId,
-    handleClearCart
-  } = useCheckout();
+  const { cartItems, selectedPlan } = useCheckout();
+  const { couponId } = useCouponValidator();
+  const { handleClearCart } = useCartManager();
 
   const {
     currentTransactionId,

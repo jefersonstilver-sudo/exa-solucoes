@@ -6,6 +6,9 @@ import { CartItem } from '@/types/payment';
 import { calculateTotalPrice } from './checkoutUtils';
 import { logSystemEvent } from './auditLogger';
 
+// CORREÇÃO: Importar tipo PlanKey
+type PlanKey = 1 | 3 | 6 | 12;
+
 interface TransactionSession {
   id: string;
   transaction_id: string;
@@ -35,7 +38,7 @@ class TransactionSessionManager {
   async createTransactionSession(
     userId: string,
     cartItems: CartItem[],
-    selectedPlan: number
+    selectedPlan: PlanKey // CORREÇÃO: usar PlanKey em vez de number
   ): Promise<{ success: boolean; transactionId: string; calculatedPrice: number; sessionId: string }> {
     try {
       console.log("🆔 [TransactionSession] Criando nova sessão de transação");

@@ -50,8 +50,8 @@ export const useEnhancedAttemptCapture = () => {
         return { success: true, tentativaId: existingAttempt.id };
       }
 
-      // Preparar dados dos prédios selecionados
-      const prediosSelecionados = cartItems.map(item => item.panel.buildings?.id).filter(Boolean);
+      // Preparar dados dos prédios selecionados - CORREÇÃO: converter para números
+      const prediosSelecionados = cartItems.map(item => parseInt(item.panel.buildings?.id || '0')).filter(id => id > 0);
 
       // Criar tentativa com preço bloqueado
       const { data: tentativa, error } = await supabase
