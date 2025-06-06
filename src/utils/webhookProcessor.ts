@@ -65,15 +65,15 @@ class WebhookProcessor {
         console.log("📡 [Webhook] Status do pagamento não é 'approved':", paymentData.status);
       }
 
-      // Log do webhook processado
+      // Log do webhook processado - CORRIGIDO: JSON.stringify para serializar
       await supabase
         .from('webhook_logs')
         .insert({
           origem: 'mercadopago_webhook_processed',
           status: 'success',
           payload: {
-            webhook: payload,
-            payment: paymentData,
+            webhook: JSON.parse(JSON.stringify(payload)),
+            payment: JSON.parse(JSON.stringify(paymentData)),
             processed_at: new Date().toISOString()
           }
         });
@@ -83,15 +83,15 @@ class WebhookProcessor {
     } catch (error: any) {
       console.error("❌ [Webhook] Erro no processamento:", error);
       
-      // Log do erro
+      // Log do erro - CORRIGIDO: JSON.stringify para serializar
       await supabase
         .from('webhook_logs')
         .insert({
           origem: 'mercadopago_webhook_error',
           status: 'error',
           payload: {
-            webhook: payload,
-            error: error.message,
+            webhook: JSON.parse(JSON.stringify(payload)),
+            error: error.message || String(error),
             processed_at: new Date().toISOString()
           }
         });
@@ -149,18 +149,23 @@ class WebhookProcessor {
 
       // Atualizar pedido para pago
       const pedido = pedidos[0];
+      
+      // CORRIGIDO: Criar objeto de log_pagamento corretamente
+      const currentLogPagamento = pedido.log_pagamento || {};
+      const updatedLogPagamento = {
+        ...currentLogPagamento,
+        payment_id: paymentData.id,
+        payment_status: paymentData.status,
+        payment_approved_at: paymentData.date_approved,
+        processed_by_webhook: true,
+        webhook_processed_at: new Date().toISOString()
+      };
+
       const { error: updateError } = await supabase
         .from('pedidos')
         .update({
           status: 'pago',
-          log_pagamento: {
-            ...pedido.log_pagamento,
-            payment_id: paymentData.id,
-            payment_status: paymentData.status,
-            payment_approved_at: paymentData.date_approved,
-            processed_by_webhook: true,
-            webhook_processed_at: new Date().toISOString()
-          }
+          log_pagamento: updatedLogPagamento
         })
         .eq('id', pedido.id);
 
