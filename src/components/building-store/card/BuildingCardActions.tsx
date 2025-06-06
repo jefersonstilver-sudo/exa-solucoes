@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart,
@@ -24,18 +24,25 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
   const [showSuccess, setShowSuccess] = useState(false);
   const isMobile = useIsMobile();
   
-  const { addToCart, isItemInCart, isLoading } = useUnifiedCart();
+  const { addToCart, isItemInCart, isLoading, itemCount, forceUpdate } = useUnifiedCart();
   
-  // Check if item is in cart
+  // Check if item is in cart with enhanced logging
   const inCart = !isLoading && isItemInCart(building.id);
 
-  console.log('🛒 [BuildingCardActions] Renderizando:', {
-    buildingId: building.id,
-    buildingName: building.nome,
-    inCart,
-    isLoading,
-    isAdding
-  });
+  console.log('🛒 [BuildingCardActions] === RENDERIZANDO BUILDING CARD ACTIONS ===');
+  console.log('🛒 [BuildingCardActions] Building ID:', building.id);
+  console.log('🛒 [BuildingCardActions] Building Name:', building.nome);
+  console.log('🛒 [BuildingCardActions] inCart:', inCart);
+  console.log('🛒 [BuildingCardActions] isLoading:', isLoading);
+  console.log('🛒 [BuildingCardActions] isAdding:', isAdding);
+  console.log('🛒 [BuildingCardActions] Total cart items:', itemCount);
+  console.log('🛒 [BuildingCardActions] Force update counter:', forceUpdate);
+
+  // Effect to monitor state changes
+  useEffect(() => {
+    console.log('🔄 [BuildingCardActions] State changed for building:', building.nome);
+    console.log('🔄 [BuildingCardActions] New inCart state:', inCart);
+  }, [inCart, building.nome, forceUpdate]);
 
   const handleAddToCart = async () => {
     if (inCart || isAdding || isLoading) {
@@ -44,34 +51,57 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
     }
     
     try {
-      console.log('🛒 [BuildingCardActions] Iniciando adição');
+      console.log('🛒 [BuildingCardActions] === INICIANDO ADIÇÃO AO CARRINHO ===');
+      console.log('🛒 [BuildingCardActions] Building sendo adicionado:', {
+        id: building.id,
+        nome: building.nome,
+        preco_base: building.preco_base
+      });
+      
       setIsAdding(true);
       
       // Convert building to panel
       const panel = convertBuildingToPanel(building);
+      console.log('🔄 [BuildingCardActions] Panel convertido:', panel);
       
       // Add to cart
+      console.log('➕ [BuildingCardActions] Chamando addToCart...');
       await addToCart(panel, 30);
+      console.log('✅ [BuildingCardActions] addToCart executado com sucesso');
       
       // Show success state
       setShowSuccess(true);
+      
+      // Reset states after animation
       setTimeout(() => {
+        console.log('🔄 [BuildingCardActions] Resetando estados de animação');
         setIsAdding(false);
         setShowSuccess(false);
       }, 1500);
       
+      console.log('🎉 [BuildingCardActions] === ADIÇÃO CONCLUÍDA COM SUCESSO ===');
+      
     } catch (error) {
-      console.error('🛒 [BuildingCardActions] Erro:', error);
+      console.error('❌ [BuildingCardActions] Erro ao adicionar ao carrinho:', error);
       setIsAdding(false);
+      setShowSuccess(false);
       toast.error('Erro ao adicionar ao carrinho');
     }
   };
 
-  // Determine button state
+  // Determine button state with enhanced logging
   const getButtonState = () => {
-    if (isAdding) return 'loading';
-    if (showSuccess || inCart) return 'added';
-    return 'normal';
+    let state;
+    if (isAdding) {
+      state = 'loading';
+    } else if (showSuccess || inCart) {
+      state = 'added';
+    } else {
+      state = 'normal';
+    }
+    
+    console.log('🎨 [BuildingCardActions] Button state for', building.nome, ':', state);
+    return state;
   };
 
   const buttonState = getButtonState();
@@ -105,6 +135,13 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
         <p className="text-xs text-gray-500 mt-1">
           {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
         </p>
+        
+        {/* Debug info in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <p className="text-xs text-blue-500 mt-1">
+            Debug: inCart={String(inCart)}, state={buttonState}
+          </p>
+        )}
       </div>
       
       <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>

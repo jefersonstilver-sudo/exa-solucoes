@@ -13,16 +13,21 @@ const CartButton: React.FC<CartButtonProps> = ({
   isAnimating = false,
   onToggleCart
 }) => {
+  console.log('🛒 [CartButton] === RENDERIZANDO CART BUTTON ===');
+  console.log('🛒 [CartButton] cartItemsCount:', cartItemsCount);
+  console.log('🛒 [CartButton] isAnimating:', isAnimating);
+  console.log('🛒 [CartButton] onToggleCart function provided:', !!onToggleCart);
+
   const handleCartClick = () => {
-    console.log('🛒 [CartButton] Clique no carrinho detectado');
-    console.log('🛒 [CartButton] cartItemsCount:', cartItemsCount);
+    console.log('🛒 [CartButton] === CLIQUE NO CARRINHO DETECTADO ===');
+    console.log('🛒 [CartButton] Current cartItemsCount:', cartItemsCount);
     console.log('🛒 [CartButton] onToggleCart function:', !!onToggleCart);
     
     if (onToggleCart) {
       console.log('🛒 [CartButton] Chamando função toggleCart');
       onToggleCart();
     } else {
-      console.error('🛒 [CartButton] ERRO - onToggleCart não foi fornecida!');
+      console.error('🛒 [CartButton] ERRO CRÍTICO - onToggleCart não foi fornecida!');
     }
   };
 
@@ -35,9 +40,16 @@ const CartButton: React.FC<CartButtonProps> = ({
         variant="header"
       />
       
-      {/* Indicador visual adicional quando há itens */}
+      {/* Enhanced visual indicator when has items */}
       {cartItemsCount > 0 && (
         <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#00FFAB] rounded-full animate-pulse" />
+      )}
+      
+      {/* Debug info in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute -top-8 -left-4 bg-black text-white text-xs px-1 py-0.5 rounded opacity-75 pointer-events-none">
+          {cartItemsCount}
+        </div>
       )}
     </div>
   );
