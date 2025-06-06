@@ -6,8 +6,8 @@ export interface SimpleBuildingStore {
   id: string;
   nome: string;
   endereco: string;
-  cidade?: string; // ADICIONADO como opcional
-  estado?: string; // ADICIONADO como opcional
+  cidade?: string;
+  estado?: string;
   bairro: string;
   venue_type: string;
   status: string;
@@ -20,7 +20,7 @@ export interface SimpleBuildingStore {
   imagem_2: string;
   imagem_3: string;
   imagem_4: string;
-  imagens?: string[]; // ADICIONADO como opcional
+  imagens?: string[];
   amenities: string[];
   caracteristicas: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
@@ -66,8 +66,8 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       id: building.id,
       nome: building.nome,
       endereco: building.endereco || '',
-      cidade: building.cidade || '', // Adicionar campo
-      estado: building.estado || '', // Adicionar campo
+      cidade: '', // Database doesn't have this field yet
+      estado: '', // Database doesn't have this field yet
       bairro: building.bairro,
       venue_type: building.venue_type,
       status: building.status,
@@ -80,10 +80,10 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       imagem_2: building.imagem_2 || '',
       imagem_3: building.imagem_3 || '',
       imagem_4: building.imagem_4 || '',
-      imagens: building.imagens || [], // Adicionar campo
+      imagens: [], // Database doesn't have this field yet
       amenities: building.amenities || [],
       caracteristicas: building.caracteristicas || [],
-      padrao_publico: building.padrao_publico || 'normal',
+      padrao_publico: (['alto', 'medio', 'normal'].includes(building.padrao_publico) ? building.padrao_publico : 'normal') as 'alto' | 'medio' | 'normal',
       quantidade_telas: building.quantidade_telas || 1
     }));
 

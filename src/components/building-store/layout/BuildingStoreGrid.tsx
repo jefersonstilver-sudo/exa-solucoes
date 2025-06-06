@@ -2,7 +2,6 @@
 import React from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
-import { Panel } from '@/types/panel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingFilterSidebar from '../BuildingFilterSidebar';
 import BuildingStoreGrid from '../BuildingStoreGrid';
@@ -15,7 +14,6 @@ interface BuildingStoreGridLayoutProps {
   selectedLocation: { lat: number, lng: number } | null;
   filters: BuildingFilters;
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;
-  onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
@@ -24,8 +22,7 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
   isSearching,
   selectedLocation,
   filters,
-  handleFilterChange,
-  onAddToCart
+  handleFilterChange
 }) => {
   const isMobile = useIsMobile();
 
@@ -50,7 +47,6 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
             buildings={buildings}
             isLoading={isLoading}
             isSearching={isSearching}
-            onAddToCart={onAddToCart}
             selectedLocation={selectedLocation}
           />
         </div>
@@ -79,7 +75,6 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
           buildings={buildings}
           isLoading={isLoading}
           isSearching={isSearching}
-          onAddToCart={onAddToCart}
           selectedLocation={selectedLocation}
         />
       </div>
