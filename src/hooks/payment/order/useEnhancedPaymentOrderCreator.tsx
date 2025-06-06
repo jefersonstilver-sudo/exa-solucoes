@@ -264,7 +264,7 @@ export const useEnhancedPaymentOrderCreator = () => {
         }
       );
 
-      return pedido;
+      return pedidoTyped;
 
     } catch (error: any) {
       console.error('💥 [ENHANCED_ORDER_CREATOR] Erro fatal:', error);
