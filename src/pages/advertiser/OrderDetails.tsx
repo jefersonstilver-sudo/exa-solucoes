@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +17,7 @@ import { ContractStatusAlert } from '@/components/order/ContractStatusAlert';
 import { VideoDisplayStatus } from '@/components/order/VideoDisplayStatus';
 import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
+import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
 
 interface OrderDetails {
   id: string;
@@ -163,6 +163,9 @@ const OrderDetails = () => {
   // Usar dados recuperados se disponíveis
   const displayPanels = enhancedData?.recoveredPanels || orderDetails.lista_paineis || [];
 
+  // Use building IDs from the new lista_predios column
+  const displayBuildingIds = orderDetails?.lista_predios || [];
+
   console.log('🔍 [ORDER_DETAILS] Dados finais para exibição:', {
     originalPanels: orderDetails.lista_paineis,
     recoveredPanels: enhancedData?.recoveredPanels,
@@ -171,6 +174,8 @@ const OrderDetails = () => {
     contractStatus,
     hasStarted: contractStatus.hasStarted
   });
+
+  console.log('🔍 [ORDER_DETAILS] Building IDs para exibição:', displayBuildingIds);
 
   return (
     <>
@@ -196,6 +201,11 @@ const OrderDetails = () => {
 
         {/* Status de Exibição */}
         <VideoDisplayStatus orderId={orderDetails.id} />
+
+        {/* Locais Selecionados - Nova seção visual */}
+        <SelectedBuildingsSection 
+          listaPredios={displayBuildingIds}
+        />
 
         {/* Informações de Compra */}
         <PurchaseInfoCard orderDetails={orderDetails} />
