@@ -1,5 +1,4 @@
 
-
 // CORREÇÃO COMPLETA: Sistema de Cálculo de Preços Unificado
 
 import { Panel } from '@/types/panel';
@@ -13,7 +12,7 @@ interface CartItem {
   price?: number;
 }
 
-// FUNÇÃO ADICIONADA: Cálculo de preço de painel individual
+// FUNÇÃO CORRIGIDA: Cálculo de preço de painel individual
 export const getPanelPrice = (panel: Panel, duration: number = 30): number => {
   if (!panel?.buildings?.preco_base) {
     console.warn("💰 [getPanelPrice] Preço base não encontrado para o painel:", panel?.id);
@@ -24,19 +23,20 @@ export const getPanelPrice = (panel: Panel, duration: number = 30): number => {
   const months = duration / 30;
   const totalPrice = basePrice * months;
   
-  console.log("💰 [getPanelPrice] Cálculo individual:", {
+  console.log("💰 [getPanelPrice] CÁLCULO CORRIGIDO:", {
     panelId: panel.id,
     buildingName: panel.buildings?.nome,
     basePrice,
     duration,
     months,
-    totalPrice
+    totalPrice,
+    calculation: `R$ ${basePrice} × ${months} meses = R$ ${totalPrice}`
   });
   
   return totalPrice;
 };
 
-// FUNÇÃO PRINCIPAL: Cálculo de preço total com integridade
+// FUNÇÃO PRINCIPAL CORRIGIDA: Cálculo de preço total com integridade
 export const calculateTotalPrice = (
   selectedPlan: PlanKey | null,
   cartItems: CartItem[],
@@ -51,7 +51,7 @@ export const calculateTotalPrice = (
     return 0;
   }
 
-  console.log("💰 [CheckoutUtils] INICIANDO CÁLCULO TOTAL COM INTEGRIDADE:", {
+  console.log("💰 [CheckoutUtils] INICIANDO CÁLCULO CORRIGIDO:", {
     selectedPlan,
     cartItemsCount: cartItems.length,
     couponDiscount,
@@ -59,27 +59,89 @@ export const calculateTotalPrice = (
     timestamp: new Date().toISOString()
   });
 
-  // Usar o sistema de integridade para cálculo
-  const result = calculatePriceWithIntegrity({
-    selectedPlan,
-    cartItems,
-    couponDiscount,
-    couponValid
+  // CORREÇÃO CRÍTICA: Calcular subtotal corretamente
+  let subtotal = 0;
+  cartItems.forEach((item, index) => {
+    const basePrice = item.panel?.buildings?.preco_base || 0;
+    
+    if (basePrice <= 0) {
+      console.error(`❌ [CheckoutUtils] Item ${index}: preço base inválido (${basePrice})`);
+    }
+    
+    subtotal += basePrice;
+    
+    console.log(`💰 [CheckoutUtils] Item ${index} - CÁLCULO DETALHADO:`, {
+      panelId: item.panel?.id,
+      buildingName: item.panel?.buildings?.nome,
+      basePrice,
+      subtotalAtual: subtotal
+    });
   });
 
-  console.log("💰 [CheckoutUtils] RESULTADO DO CÁLCULO COM INTEGRIDADE:", {
-    finalPrice: result,
+  // CORREÇÃO CRÍTICA: Aplicar multiplicador do plano corretamente
+  const planMultiplier = selectedPlan;
+  let totalWithPlan = subtotal * planMultiplier;
+  
+  console.log("💰 [CheckoutUtils] CÁLCULO DO PLANO CORRIGIDO:", {
+    subtotal,
+    planMultiplier,
+    totalWithPlan,
+    calculation: `R$ ${subtotal} × ${planMultiplier} meses = R$ ${totalWithPlan}`
+  });
+
+  // Aplicar desconto se válido
+  let finalPrice = totalWithPlan;
+  if (couponValid && couponDiscount > 0) {
+    const discountAmount = (totalWithPlan * couponDiscount) / 100;
+    finalPrice = totalWithPlan - discountAmount;
+    
+    console.log("💰 [CheckoutUtils] DESCONTO APLICADO:", {
+      totalWithPlan,
+      couponDiscount,
+      discountAmount,
+      finalPrice
+    });
+  }
+
+  // Arredondar para 2 casas decimais
+  finalPrice = Math.round(finalPrice * 100) / 100;
+
+  // VALIDAÇÃO CRÍTICA: Verificar se o preço faz sentido
+  if (finalPrice <= 0) {
+    console.error("❌ [CheckoutUtils] PREÇO FINAL INVÁLIDO:", {
+      finalPrice,
+      subtotal,
+      planMultiplier,
+      totalWithPlan
+    });
+  }
+
+  // Detectar possível erro de divisão (valores muito baixos suspeitos)
+  if (finalPrice < 0.01) {
+    console.error("❌ [CheckoutUtils] VALOR SUSPEITO - Possível erro de cálculo:", {
+      finalPrice,
+      subtotal,
+      planMultiplier,
+      expectedMinimum: subtotal * planMultiplier
+    });
+  }
+
+  console.log("💰 [CheckoutUtils] RESULTADO FINAL CORRIGIDO:", {
     selectedPlan,
     cartItemsCount: cartItems.length,
-    couponApplied: couponValid,
+    finalPrice,
+    calculation: `Subtotal: R$ ${subtotal} × ${planMultiplier} meses = R$ ${finalPrice}`,
     timestamp: new Date().toISOString()
   });
 
   // Log para auditoria
-  logPriceCalculation('calculateTotalPrice', {
+  logPriceCalculation('calculateTotalPrice-CORRECTED', {
     selectedPlan,
     cartItemsCount: cartItems.length,
-    finalPrice: result,
+    finalPrice,
+    subtotal,
+    planMultiplier,
+    totalWithPlan,
     couponDiscount,
     couponValid,
     cartItems: cartItems.map(item => ({
@@ -89,7 +151,7 @@ export const calculateTotalPrice = (
     }))
   });
 
-  return result;
+  return finalPrice;
 };
 
 // Cálculo do subtotal do carrinho
@@ -207,4 +269,3 @@ export const validatePriceIntegrity = (
     difference
   };
 };
-
