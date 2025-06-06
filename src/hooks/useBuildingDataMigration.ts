@@ -17,8 +17,8 @@ export const useBuildingDataMigration = () => {
         .from('pedidos')
         .select('id, lista_paineis, lista_predios')
         .not('lista_paineis', 'is', null)
-        .neq('lista_paineis', '{}')
-        .or('lista_predios.is.null,lista_predios.eq.{}');
+        .neq('lista_paineis', '[]')
+        .or('lista_predios.is.null,lista_predios.eq.[]');
 
       if (fetchError) {
         console.error('❌ [MIGRATION] Erro ao buscar pedidos:', fetchError);
@@ -44,6 +44,7 @@ export const useBuildingDataMigration = () => {
           if (Array.isArray(pedido.lista_paineis)) {
             listaPaineis = pedido.lista_paineis;
           } else if (typeof pedido.lista_paineis === 'string') {
+            // Handle single string by converting to array
             listaPaineis = [pedido.lista_paineis];
           } else if (pedido.lista_paineis) {
             listaPaineis = [String(pedido.lista_paineis)];
@@ -142,7 +143,7 @@ export const useBuildingDataMigration = () => {
       console.log('📊 [MIGRATION] Dados do pedido:', pedido);
 
       // Se tem lista_paineis, extrair building_ids
-      if (pedido.lista_paineis && pedido.lista_paineis.length > 0) {
+      if (pedido.lista_paineis && Array.isArray(pedido.lista_paineis) && pedido.lista_paineis.length > 0) {
         const { data: painels, error: painelsError } = await supabase
           .from('painels')
           .select('building_id')

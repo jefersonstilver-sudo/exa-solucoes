@@ -15,6 +15,15 @@ interface PedidoType {
   client_id: string;
 }
 
+interface DatabasePedidoResponse {
+  id: string;
+  lista_paineis: string[] | null;
+  lista_predios: string[] | null;
+  valor_total: number | null;
+  client_id: string;
+  [key: string]: any;
+}
+
 export const useEnhancedPaymentOrderCreator = () => {
   const { validateUniquePayment, generateUniqueTransactionId } = usePaymentValidation();
   const { preventDuplicateSubmission, createUniquePaymentKey } = usePaymentDeduplication();
@@ -210,17 +219,19 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error(`Erro ao criar pedido: ${pedidoError.message}`);
       }
 
-      // Properly type the returned data using a safe check
+      // Properly type the returned data with explicit type assertion
       if (!pedidoData) {
         throw new Error('Falha ao criar pedido: dados inválidos retornados');
       }
 
+      const dbResponse = pedidoData as DatabasePedidoResponse;
+      
       const pedido: PedidoType = {
-        id: pedidoData.id,
-        lista_paineis: pedidoData.lista_paineis || [],
-        lista_predios: pedidoData.lista_predios || [],
-        valor_total: pedidoData.valor_total || 0,
-        client_id: pedidoData.client_id
+        id: dbResponse.id,
+        lista_paineis: dbResponse.lista_paineis || [],
+        lista_predios: dbResponse.lista_predios || [],
+        valor_total: dbResponse.valor_total || 0,
+        client_id: dbResponse.client_id
       };
 
       // VERIFICATION: Log the saved data to confirm it was saved correctly
