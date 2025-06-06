@@ -10,9 +10,9 @@ import {
   ChevronDown, 
   ChevronUp,
   CheckCircle,
-  MapPin,
   Hash
 } from 'lucide-react';
+import { ClickableLocationsDisplay } from './ClickableLocationsDisplay';
 
 interface PurchaseInfoCardProps {
   orderDetails: {
@@ -84,7 +84,6 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
   const purchaseDateTime = formatDateTime(orderDetails.created_at);
   const paymentStatus = getPaymentStatus();
   const transactionId = getTransactionId();
-  const panelsCount = orderDetails.lista_paineis?.length || 0;
 
   console.log('💳 [PURCHASE_INFO] Dados do pedido:', {
     orderDetails,
@@ -132,11 +131,14 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
             </div>
           </div>
           
+          {/* Substituindo Painéis por Locais Contratados */}
           <div className="flex items-center space-x-3">
-            <MapPin className="h-6 w-6 text-purple-500" />
             <div>
-              <p className="text-sm text-gray-600">Painéis Contratados</p>
-              <p className="font-medium">{panelsCount} {panelsCount === 1 ? 'painel' : 'painéis'}</p>
+              <p className="text-sm text-gray-600">Locais Contratados</p>
+              <ClickableLocationsDisplay 
+                listaPaineis={orderDetails.lista_paineis || []}
+                className="mt-1"
+              />
             </div>
           </div>
 
@@ -196,16 +198,6 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
                     <span className="text-gray-600">Período:</span>
                     <span className="font-medium text-sm">{getContractPeriod()}</span>
                   </div>
-                  {orderDetails.lista_paineis && orderDetails.lista_paineis.length > 0 && (
-                    <div className="mt-3">
-                      <span className="text-gray-600 text-sm">Painéis Selecionados:</span>
-                      <div className="mt-1 max-h-20 overflow-y-auto text-xs text-gray-500">
-                        {orderDetails.lista_paineis.map((panel, index) => (
-                          <div key={index} className="truncate">• {panel}</div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

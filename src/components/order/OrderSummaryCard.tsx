@@ -2,11 +2,9 @@
 import React from 'react';
 import { 
   DollarSign, 
-  MapPin, 
   Calendar 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LocationsTooltip } from './LocationsTooltip';
 
 interface OrderSummaryCardProps {
   orderDetails: {
@@ -34,15 +32,13 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const panelsCount = displayPanels.length;
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Resumo do Pedido</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-center space-x-3">
             <DollarSign className="h-8 w-8 text-green-500" />
             <div>
@@ -50,21 +46,6 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
               <p className="text-lg">{formatCurrency(orderDetails.valor_total)}</p>
             </div>
           </div>
-          
-          <LocationsTooltip listaPaineis={displayPanels}>
-            <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
-              <MapPin className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="font-medium">Locais</p>
-                <p className="text-lg">
-                  {panelsCount} selecionados
-                  {isRecovered && (
-                    <span className="text-xs text-blue-600 ml-1">(recuperados)</span>
-                  )}
-                </p>
-              </div>
-            </div>
-          </LocationsTooltip>
           
           <div className="flex items-center space-x-3">
             <Calendar className="h-8 w-8 text-purple-500" />
