@@ -7,6 +7,14 @@ import { usePaymentDeduplication } from '../usePaymentDeduplication';
 import { CreatePaymentOrderParams } from '@/types/order';
 import { useCheckoutDataPersistence } from '@/hooks/useCheckoutDataPersistence';
 
+interface PedidoType {
+  id: string;
+  lista_paineis: string[];
+  lista_predios: string[];
+  valor_total: number;
+  client_id: string;
+}
+
 export const useEnhancedPaymentOrderCreator = () => {
   const { validateUniquePayment, generateUniqueTransactionId } = usePaymentValidation();
   const { preventDuplicateSubmission, createUniquePaymentKey } = usePaymentDeduplication();
@@ -207,13 +215,7 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error('Falha ao criar pedido: dados inválidos retornados');
       }
 
-      const pedidoTyped = pedido as {
-        id: string;
-        lista_paineis: string[];
-        lista_predios: string[];
-        valor_total: number;
-        client_id: string;
-      };
+      const pedidoTyped = pedido as PedidoType;
 
       // VERIFICATION: Log the saved data to confirm it was saved correctly
       console.log('✅ [ENHANCED_ORDER_CREATOR] Pedido criado com sucesso!');
