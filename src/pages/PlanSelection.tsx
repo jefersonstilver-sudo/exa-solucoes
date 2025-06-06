@@ -9,6 +9,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { usePlanSelection } from '@/hooks/checkout/usePlanSelection';
 import { useCartVerification } from '@/hooks/checkout/useCartVerification';
+import { logPriceCalculation } from '@/utils/auditLogger';
 
 const PlanSelection = () => {
   const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
@@ -39,6 +40,34 @@ const PlanSelection = () => {
       setIsPageLoading(false);
     }
   }, [isSessionLoading, isLoggedIn, user]);
+
+  // Log detalhado quando cartItems mudam
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      console.log("📊 [PlanSelection] Cart items atualizados:", {
+        cartItemsLength: cartItems.length,
+        selectedPlan,
+        cartDetails: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          preco_base: item.panel.buildings?.preco_base,
+          price: item.price
+        }))
+      });
+
+      // Log para auditoria
+      logPriceCalculation('PlanSelection', {
+        cartItemsCount: cartItems.length,
+        selectedPlan,
+        cartItems: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          preco_base: item.panel.buildings?.preco_base,
+          price: item.price
+        }))
+      });
+    }
+  }, [cartItems, selectedPlan]);
   
   const isLoading = useMemo(() => {
     return isSessionLoading || isPageLoading;

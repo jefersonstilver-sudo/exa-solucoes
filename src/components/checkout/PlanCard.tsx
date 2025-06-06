@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Video } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -9,10 +9,12 @@ import { Plan, PlanKey } from '@/types/checkout';
 import { formatCurrency } from '@/utils/priceUtils';
 import { getPlanWithDynamicPricing } from '@/utils/checkoutUtils';
 import { Panel } from '@/types/panel';
+import { logPriceCalculation } from '@/utils/auditLogger';
 
 interface CartItem {
   panel: Panel;
   duration: number;
+  price?: number;
 }
 
 interface PlanCardProps {
@@ -31,10 +33,42 @@ const PlanCard: React.FC<PlanCardProps> = ({
   cartItems
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [dynamicPricing, setDynamicPricing] = useState<any>(null);
   
   // Calcular preços dinamicamente baseados no carrinho
-  const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
-  const { dynamicPricePerMonth, dynamicTotalPrice, dynamicSavings } = dynamicPlan;
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      console.log("💰 [PlanCard] Calculando preços dinâmicos:", {
+        planKey,
+        cartItemsLength: cartItems.length,
+        cartItems: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          preco_base: item.panel.buildings?.preco_base,
+          price: item.price
+        }))
+      });
+      
+      const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
+      setDynamicPricing(dynamicPlan);
+      
+      // Log para auditoria
+      logPriceCalculation(`PlanCard-${planKey}`, {
+        planKey,
+        cartItemsCount: cartItems.length,
+        dynamicPricing: dynamicPlan,
+        cartItems: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          preco_base: item.panel.buildings?.preco_base,
+          price: item.price
+        }))
+      });
+    } else {
+      console.log("💰 [PlanCard] Carrinho vazio, resetando preços");
+      setDynamicPricing(null);
+    }
+  }, [planKey, cartItems]);
   
   // Definir cores mais suaves baseadas no tipo de plano
   const getCardColors = () => {
@@ -85,6 +119,22 @@ const PlanCard: React.FC<PlanCardProps> = ({
       </Card>
     );
   }
+
+  // Aguardar cálculo dos preços dinâmicos
+  if (!dynamicPricing) {
+    return (
+      <Card className="border-2 border-gray-200 bg-white">
+        <CardContent className="p-4 sm:p-5 text-center">
+          <div className="h-8 w-8 border-2 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-gray-500 text-sm">
+            Calculando preços...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { dynamicPricePerMonth, dynamicTotalPrice, dynamicSavings } = dynamicPricing;
 
   return (
     <motion.div

@@ -3,7 +3,9 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { usePlanStorage } from './usePlanStorage';
 import { usePlanCalculations } from './usePlanCalculations';
 import { usePlanNavigation } from './usePlanNavigation';
-import { useCallback, useMemo } from 'react';
+import { useCart } from '@/contexts/SimpleCartContext';
+import { useCallback, useMemo, useEffect } from 'react';
+import { logPriceCalculation } from '@/utils/auditLogger';
 
 export const usePlanSelection = (hasCart: boolean) => {
   console.log("🔄 usePlanSelection: Hook chamado, hasCart:", hasCart);
@@ -12,9 +14,41 @@ export const usePlanSelection = (hasCart: boolean) => {
   const {
     selectedPlan, 
     setSelectedPlan,
-    cartItems,
     PLANS
   } = useCheckout();
+
+  // CORREÇÃO: Usar o carrinho do contexto correto
+  const { cartItems } = useCart();
+
+  // Log detalhado para debug
+  useEffect(() => {
+    console.log("🔄 usePlanSelection: Estados atualizados:", {
+      selectedPlan,
+      cartItemsLength: cartItems.length,
+      hasCart,
+      cartItems: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base,
+        price: item.price
+      }))
+    });
+    
+    // Log para auditoria quando há mudanças
+    if (cartItems.length > 0) {
+      logPriceCalculation('usePlanSelection', {
+        selectedPlan,
+        cartItemsCount: cartItems.length,
+        hasCart,
+        cartItems: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          preco_base: item.panel.buildings?.preco_base,
+          price: item.price
+        }))
+      });
+    }
+  }, [selectedPlan, cartItems, hasCart]);
 
   // Storage operations - memoizado para evitar re-criação
   const { savePlanToStorage } = usePlanStorage(setSelectedPlan);
@@ -36,12 +70,27 @@ export const usePlanSelection = (hasCart: boolean) => {
       cartItems: cartItems.map(item => ({
         panel_id: item.panel.id,
         building_name: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
+        preco_base: item.panel.buildings?.preco_base,
+        price: item.price
       }))
     });
     
     const result = calculatePrice(selectedPlan, cartItems, PLANS);
     console.log("💰 usePlanSelection - Resultado do cálculo:", result);
+    
+    // Log para auditoria
+    logPriceCalculation('usePlanSelection-calculateEstimatedPrice', {
+      selectedPlan,
+      cartItemsCount: cartItems.length,
+      estimatedPrice: result,
+      cartItems: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base,
+        price: item.price
+      }))
+    });
+    
     return result;
   }, [calculatePrice, selectedPlan, cartItems, PLANS]);
 
@@ -49,7 +98,7 @@ export const usePlanSelection = (hasCart: boolean) => {
   const returnValue = useMemo(() => ({
     selectedPlan,
     setSelectedPlan,
-    cartItems,
+    cartItems, // CORREÇÃO: Usar cartItems do contexto correto
     PLANS,
     calculateEstimatedPrice,
     handleProceed,
@@ -57,7 +106,7 @@ export const usePlanSelection = (hasCart: boolean) => {
   }), [
     selectedPlan,
     setSelectedPlan,
-    cartItems,
+    cartItems, // CORREÇÃO: Dependência correta
     PLANS,
     calculateEstimatedPrice,
     handleProceed,
