@@ -19,6 +19,8 @@ const CheckoutCoupon = () => {
     handleNextStep,
     handlePrevStep,
     isNextEnabled,
+    isCreatingPayment,
+    isNavigating,
     cartItems,
     selectedPlan,
     calculateTotalPrice // CORREÇÃO: usar função que sempre recalcula
@@ -132,11 +134,14 @@ const CheckoutCoupon = () => {
 
           {/* Navigation */}
           <CheckoutNavigation
+            onBack={handlePrevStep}
             onNext={handleNextStep}
-            onPrev={handlePrevStep}
+            isBackToStore={false}
             isNextEnabled={isNextEnabled}
-            nextLabel="Continuar para Revisão"
-            prevLabel="Voltar aos Planos"
+            isCreatingPayment={isCreatingPayment}
+            isNavigating={isNavigating}
+            isPaymentStep={false}
+            totalPrice={currentTotal}
           />
         </div>
       </div>
