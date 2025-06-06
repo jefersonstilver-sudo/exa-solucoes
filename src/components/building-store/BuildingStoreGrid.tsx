@@ -3,7 +3,6 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, MapPin, Sparkles } from 'lucide-react';
 import { BuildingStore } from '@/services/buildingStoreService';
-import { Panel } from '@/types/panel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingStoreCard from './BuildingStoreCard';
 
@@ -11,7 +10,6 @@ interface BuildingStoreGridProps {
   buildings: BuildingStore[] | undefined;
   isLoading: boolean;
   isSearching: boolean;
-  onAddToCart: (panel: Panel, duration?: number) => void;
   selectedLocation: { lat: number, lng: number } | null;
 }
 
@@ -19,7 +17,6 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   buildings,
   isLoading,
   isSearching,
-  onAddToCart,
   selectedLocation
 }) => {
   const isMobile = useIsMobile();
@@ -212,10 +209,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
               } : {}}
               className="group"
             >
-              <BuildingStoreCard
-                building={building}
-                onAddToCart={onAddToCart}
-              />
+              <BuildingStoreCard building={building} />
             </motion.div>
           );
         })}

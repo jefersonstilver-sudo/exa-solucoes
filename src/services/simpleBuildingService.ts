@@ -6,6 +6,8 @@ export interface SimpleBuildingStore {
   id: string;
   nome: string;
   endereco: string;
+  cidade?: string; // ADICIONADO como opcional
+  estado?: string; // ADICIONADO como opcional
   bairro: string;
   venue_type: string;
   status: string;
@@ -18,6 +20,7 @@ export interface SimpleBuildingStore {
   imagem_2: string;
   imagem_3: string;
   imagem_4: string;
+  imagens?: string[]; // ADICIONADO como opcional
   amenities: string[];
   caracteristicas: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
@@ -58,7 +61,33 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       });
     });
 
-    return buildings as SimpleBuildingStore[];
+    // Converter dados do banco para SimpleBuildingStore
+    const simpleBuildingStores: SimpleBuildingStore[] = buildings.map(building => ({
+      id: building.id,
+      nome: building.nome,
+      endereco: building.endereco || '',
+      cidade: building.cidade || '', // Adicionar campo
+      estado: building.estado || '', // Adicionar campo
+      bairro: building.bairro,
+      venue_type: building.venue_type,
+      status: building.status,
+      latitude: building.latitude,
+      longitude: building.longitude,
+      publico_estimado: building.publico_estimado || 0,
+      visualizacoes_mes: building.visualizacoes_mes || 0,
+      preco_base: building.preco_base || 280,
+      imagem_principal: building.imagem_principal || '',
+      imagem_2: building.imagem_2 || '',
+      imagem_3: building.imagem_3 || '',
+      imagem_4: building.imagem_4 || '',
+      imagens: building.imagens || [], // Adicionar campo
+      amenities: building.amenities || [],
+      caracteristicas: building.caracteristicas || [],
+      padrao_publico: building.padrao_publico || 'normal',
+      quantidade_telas: building.quantidade_telas || 1
+    }));
+
+    return simpleBuildingStores;
     
   } catch (error: any) {
     console.error('💥 [SIMPLE SERVICE] Erro crítico:', error);

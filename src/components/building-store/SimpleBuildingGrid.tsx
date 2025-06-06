@@ -3,23 +3,23 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Building2 } from 'lucide-react';
 import { SimpleBuildingStore } from '@/services/simpleBuildingService';
-import { Panel } from '@/types/panel';
-import { buildingToPanel } from '@/services/buildingStoreService';
+import { BuildingStore } from '@/services/buildingStoreService';
 import BuildingStoreCard from './BuildingStoreCard';
 
 interface SimpleBuildingGridProps {
   buildings: SimpleBuildingStore[];
   isLoading: boolean;
-  onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 // Adapter para converter SimpleBuildingStore para BuildingStore
-const convertToBuildingStore = (building: SimpleBuildingStore) => {
+const convertToBuildingStore = (building: SimpleBuildingStore): BuildingStore => {
   console.log('🔄 [SIMPLE GRID] Convertendo prédio:', building.nome);
   return {
     id: building.id,
     nome: building.nome,
     endereco: building.endereco,
+    cidade: building.cidade || '', // Adiciona campos faltantes com valores padrão
+    estado: building.estado || '',
     bairro: building.bairro,
     venue_type: building.venue_type,
     status: building.status,
@@ -32,6 +32,7 @@ const convertToBuildingStore = (building: SimpleBuildingStore) => {
     imagem_2: building.imagem_2,
     imagem_3: building.imagem_3,
     imagem_4: building.imagem_4,
+    imagens: building.imagens || [], // Adiciona campo faltante
     amenities: building.amenities || [],
     caracteristicas: building.caracteristicas || [],
     padrao_publico: building.padrao_publico,
@@ -41,8 +42,7 @@ const convertToBuildingStore = (building: SimpleBuildingStore) => {
 
 const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
   buildings,
-  isLoading,
-  onAddToCart
+  isLoading
 }) => {
   console.log('🏢 [SIMPLE GRID] === RENDERIZANDO ===');
   console.log('🏢 [SIMPLE GRID] buildings.length:', buildings.length);
@@ -107,10 +107,7 @@ const SimpleBuildingGrid: React.FC<SimpleBuildingGridProps> = ({
               transition: { duration: 0.2 }
             }}
           >
-            <BuildingStoreCard
-              building={convertedBuilding}
-              onAddToCart={onAddToCart}
-            />
+            <BuildingStoreCard building={convertedBuilding} />
           </motion.div>
         );
       })}

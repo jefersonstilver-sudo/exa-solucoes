@@ -67,7 +67,33 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       });
     });
 
-    return buildings as BuildingStore[];
+    // Converter dados do banco para BuildingStore
+    const buildingStores: BuildingStore[] = buildings.map(building => ({
+      id: building.id,
+      nome: building.nome,
+      endereco: building.endereco || '',
+      cidade: building.cidade || '', // Usar valor do banco ou padrão
+      estado: building.estado || '', // Usar valor do banco ou padrão
+      bairro: building.bairro,
+      venue_type: building.venue_type,
+      status: building.status,
+      latitude: building.latitude,
+      longitude: building.longitude,
+      publico_estimado: building.publico_estimado || 0,
+      visualizacoes_mes: building.visualizacoes_mes || 0,
+      preco_base: building.preco_base || 280,
+      imagem_principal: building.imagem_principal || '',
+      imagem_2: building.imagem_2 || '',
+      imagem_3: building.imagem_3 || '',
+      imagem_4: building.imagem_4 || '',
+      imagens: building.imagens || [], // Usar valor do banco ou array vazio
+      amenities: building.amenities || [],
+      caracteristicas: building.caracteristicas || [],
+      padrao_publico: building.padrao_publico || 'normal',
+      quantidade_telas: building.quantidade_telas || 1
+    }));
+
+    return buildingStores;
     
   } catch (error: any) {
     console.error('💥 [BUILDING STORE SERVICE] Erro crítico:', error);
@@ -84,17 +110,20 @@ export const buildingToPanel = (building: BuildingStore): Panel => {
   
   return {
     id: building.id,
+    code: `panel_${building.id}`,
     building_id: building.id,
-    posicao: 'centro',
-    largura: 1920,
-    altura: 1080,
     status: 'online',
     buildings: {
       id: building.id,
       nome: building.nome,
       endereco: building.endereco || '',
+      bairro: building.bairro,
       cidade: building.cidade || '',
       estado: building.estado || '',
+      cep: '', // Valor padrão
+      latitude: building.latitude,
+      longitude: building.longitude,
+      venue_type: building.venue_type,
       caracteristicas: building.caracteristicas || [],
       preco_base: building.preco_base || 280,
       quantidade_telas: building.quantidade_telas || 1,
