@@ -39,10 +39,17 @@ export const useBuildingDataMigration = () => {
         try {
           console.log(`🔄 [MIGRATION] Processando pedido ${pedido.id}...`);
           
-          // Convert lista_paineis to array if it's not already
-          const listaPaineis = Array.isArray(pedido.lista_paineis) 
-            ? pedido.lista_paineis 
-            : pedido.lista_paineis ? [pedido.lista_paineis] : [];
+          // Convert lista_paineis to array if it's not already - fix the type issue
+          let listaPaineis: string[];
+          if (Array.isArray(pedido.lista_paineis)) {
+            listaPaineis = pedido.lista_paineis;
+          } else if (typeof pedido.lista_paineis === 'string') {
+            listaPaineis = [pedido.lista_paineis];
+          } else if (pedido.lista_paineis) {
+            listaPaineis = [String(pedido.lista_paineis)];
+          } else {
+            listaPaineis = [];
+          }
           
           if (listaPaineis.length === 0) {
             console.log(`⚠️ [MIGRATION] Pedido ${pedido.id} não tem painéis válidos`);

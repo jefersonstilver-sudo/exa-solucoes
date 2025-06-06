@@ -210,6 +210,7 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error(`Erro ao criar pedido: ${pedidoError.message}`);
       }
 
+      // Properly type the returned data
       const pedido = unwrapData(pedidoData) as PedidoType;
       if (!pedido) {
         throw new Error('Falha ao criar pedido: dados inválidos retornados');
