@@ -76,7 +76,7 @@ export const useEnhancedPaymentOrderCreator = () => {
             .single();
             
           if (!error && existingOrder) {
-            return existingOrder;
+            return existingOrder as PedidoType;
           }
         }
         
@@ -210,21 +210,19 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error(`Erro ao criar pedido: ${pedidoError.message}`);
       }
 
-      const pedido = unwrapData(pedidoData);
+      const pedido = unwrapData(pedidoData) as PedidoType;
       if (!pedido) {
         throw new Error('Falha ao criar pedido: dados inválidos retornados');
       }
 
-      const pedidoTyped = pedido as PedidoType;
-
       // VERIFICATION: Log the saved data to confirm it was saved correctly
       console.log('✅ [ENHANCED_ORDER_CREATOR] Pedido criado com sucesso!');
       console.log('📊 [ENHANCED_ORDER_CREATOR] Dados salvos:', {
-        id: pedidoTyped.id,
-        lista_paineis: pedidoTyped.lista_paineis,
-        lista_predios: pedidoTyped.lista_predios,
-        valor_total: pedidoTyped.valor_total,
-        client_id: pedidoTyped.client_id
+        id: pedido.id,
+        lista_paineis: pedido.lista_paineis,
+        lista_predios: pedido.lista_predios,
+        valor_total: pedido.valor_total,
+        client_id: pedido.client_id
       });
 
       // Coupon usage handling
@@ -232,7 +230,7 @@ export const useEnhancedPaymentOrderCreator = () => {
         const couponUsageData = prepareForInsert({
           cupom_id: couponId,
           user_id: sessionUser.id,
-          pedido_id: pedidoTyped.id
+          pedido_id: pedido.id
         });
 
         const { error: couponError } = await supabase
@@ -251,20 +249,20 @@ export const useEnhancedPaymentOrderCreator = () => {
         LogLevel.INFO,
         'Pedido criado com dados completos e verificados',
         { 
-          orderId: pedidoTyped.id,
+          orderId: pedido.id,
           totalPrice: correctTotalPrice,
           itemCount: cartItems.length,
           panelIds: panelIds,
           buildingIds: buildingIds,
-          savedPanelIds: pedidoTyped.lista_paineis,
-          savedBuildingIds: pedidoTyped.lista_predios,
+          savedPanelIds: pedido.lista_paineis,
+          savedBuildingIds: pedido.lista_predios,
           transactionId,
           paymentKey,
           enhanced: true
         }
       );
 
-      return pedidoTyped;
+      return pedido;
 
     } catch (error: any) {
       console.error('💥 [ENHANCED_ORDER_CREATOR] Erro fatal:', error);
