@@ -167,7 +167,7 @@ export const useEnhancedPaymentOrderCreator = () => {
       const correctTotalPrice = Number(totalPrice.toFixed(2));
 
       // Create the order record with COMPLETE data
-      const orderData = prepareForInsert({
+      const orderData = {
         client_id: sessionUser.id,
         lista_paineis: panelIds,
         lista_predios: buildingIds,
@@ -200,7 +200,7 @@ export const useEnhancedPaymentOrderCreator = () => {
             price: item.duration ? (item.duration * 50) : 0 // Calculate price based on duration
           }))
         }
-      });
+      };
 
       console.log('💾 [ENHANCED_ORDER_CREATOR] Dados do pedido preparados:', {
         lista_paineis: orderData.lista_paineis,
@@ -210,7 +210,7 @@ export const useEnhancedPaymentOrderCreator = () => {
 
       const { data: pedidoData, error: pedidoError } = await supabase
         .from('pedidos')
-        .insert(orderData as any)
+        .insert(orderData)
         .select()
         .single();
 

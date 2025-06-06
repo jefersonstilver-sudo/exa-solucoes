@@ -17,8 +17,8 @@ export const useBuildingDataMigration = () => {
         .from('pedidos')
         .select('id, lista_paineis, lista_predios')
         .not('lista_paineis', 'is', null)
-        .neq('lista_paineis', '[]')
-        .or('lista_predios.is.null,lista_predios.eq.[]');
+        .not('lista_paineis', 'eq', '{}')
+        .or('lista_predios.is.null,lista_predios.eq.{}');
 
       if (fetchError) {
         console.error('❌ [MIGRATION] Erro ao buscar pedidos:', fetchError);
