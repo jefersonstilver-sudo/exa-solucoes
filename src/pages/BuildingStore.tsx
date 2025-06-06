@@ -4,7 +4,6 @@ import Layout from '@/components/layout/Layout';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader';
 import useBuildingStore from '@/hooks/useBuildingStore';
-import { useCartManager } from '@/hooks/useCartManager';
 
 const BuildingStore = () => {
   console.log('🏢 [BUILDING STORE] Página da loja carregada');
@@ -24,8 +23,6 @@ const BuildingStore = () => {
     initializeStore
   } = useBuildingStore();
 
-  const { handleAddToCart } = useCartManager();
-
   // Initialize store on mount
   React.useEffect(() => {
     console.log('🚀 [BUILDING STORE] Inicializando store');
@@ -38,8 +35,7 @@ const BuildingStore = () => {
     console.log('🔄 [BUILDING STORE] buildings.length:', buildings.length);
     console.log('🔄 [BUILDING STORE] isLoading:', isLoading);
     console.log('🔄 [BUILDING STORE] error:', error);
-    console.log('🔄 [BUILDING STORE] handleAddToCart function:', !!handleAddToCart);
-  }, [buildings, isLoading, error, handleAddToCart]);
+  }, [buildings, isLoading, error]);
 
   if (error) {
     return (
@@ -83,7 +79,6 @@ const BuildingStore = () => {
             handleFilterChange={handleFilterChange}
             handleSearch={handleSearch}
             handleClearLocation={handleClearLocation}
-            onAddToCart={handleAddToCart}
           />
         </div>
       </div>

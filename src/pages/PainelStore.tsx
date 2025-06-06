@@ -3,10 +3,8 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import useBuildingStore from '@/hooks/useBuildingStore';
-import { useCartManager } from '@/hooks/useCartManager';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PainelStore() {
   console.log('🏢 [PAINEL STORE] === INICIALIZANDO LOJA DE PRÉDIOS PROFISSIONAL ===');
@@ -27,15 +25,6 @@ export default function PainelStore() {
     initializeStore
   } = useBuildingStore();
 
-  const {
-    cartItems,
-    handleAddToCart,
-    handleRemoveFromCart,
-    handleClearCart,
-    handleChangeDuration,
-    handleProceedToCheckout
-  } = useCartManager();
-
   // Initialize store on mount
   useEffect(() => {
     console.log('🚀 [PAINEL STORE] Inicializando store da loja profissional');
@@ -48,21 +37,9 @@ export default function PainelStore() {
     console.log('🔄 [PAINEL STORE] buildings.length:', buildings.length);
     console.log('🔄 [PAINEL STORE] isLoading:', isLoading);
     console.log('🔄 [PAINEL STORE] error:', error);
-    console.log('🔄 [PAINEL STORE] cartItems.length:', cartItems.length);
     console.log('🔄 [PAINEL STORE] searchLocation:', searchLocation);
     console.log('🔄 [PAINEL STORE] selectedLocation:', selectedLocation);
-    console.log('🔄 [PAINEL STORE] handleAddToCart function:', !!handleAddToCart);
-  }, [buildings, isLoading, error, cartItems.length, searchLocation, selectedLocation, handleAddToCart]);
-
-  const handleCheckoutStart = () => {
-    logCheckoutEvent(
-      CheckoutEvent.CHECKOUT_INITIATION,
-      LogLevel.INFO,
-      "Iniciando checkout a partir da loja de prédios profissional",
-      { cartItemCount: cartItems.length, timestamp: Date.now() }
-    );
-    handleProceedToCheckout();
-  };
+  }, [buildings, isLoading, error, searchLocation, selectedLocation]);
 
   if (error) {
     console.error('❌ [PAINEL STORE] Erro na loja profissional:', error);
@@ -118,7 +95,6 @@ export default function PainelStore() {
           handleFilterChange={handleFilterChange}
           handleSearch={handleSearch}
           handleClearLocation={handleClearLocation}
-          onAddToCart={handleAddToCart}
         />
       </motion.div>
     </Layout>
