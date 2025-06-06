@@ -8,20 +8,23 @@ import { useBuildingNames } from '@/hooks/useBuildingNames';
 
 interface ClickableLocationsDisplayProps {
   listaPaineis: string[];
+  listaPredios?: string[];
   className?: string;
-  orderDetails?: any; // For fallback data extraction
+  orderDetails?: any;
 }
 
 export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps> = ({
   listaPaineis,
+  listaPredios,
   className = "",
   orderDetails
 }) => {
-  const { buildingNames, loading, error } = useBuildingNames(listaPaineis);
+  const { buildingNames, loading, error } = useBuildingNames(listaPaineis, listaPredios);
   const [isOpen, setIsOpen] = useState(false);
 
   console.log('🏢 [CLICKABLE_LOCATIONS] Dados recebidos:', {
     listaPaineis,
+    listaPredios,
     buildingNames,
     loading,
     error,
@@ -31,7 +34,7 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
     } : null
   });
 
-  // ENHANCED: Try to extract panel info from order logs if lista_paineis is empty
+  // Enhanced fallback para pedidos antigos
   const getFallbackLocationInfo = () => {
     if (!orderDetails?.log_pagamento) return null;
     
@@ -62,7 +65,7 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
     );
   }
 
-  // ENHANCED: Show different messages based on the error type
+  // Melhor tratamento de erros com priorização de lista_predios
   if (error || (buildingNames.length === 0 && !fallbackData?.panelNames?.length)) {
     return (
       <div className={`space-y-2 ${className}`}>
@@ -70,11 +73,12 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
           <AlertCircle className="h-4 w-4 text-orange-500" />
           <span className="text-orange-600 font-medium">Locais não carregados</span>
         </div>
-        {listaPaineis.length === 0 ? (
+        
+        {listaPredios && listaPredios.length === 0 && listaPaineis.length === 0 ? (
           <Alert className="border-orange-200 bg-orange-50">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              Este pedido foi criado sem informações de painéis. 
+              Este pedido foi criado sem informações de locais. 
               Entre em contato com o suporte para correção.
             </AlertDescription>
           </Alert>
@@ -82,8 +86,17 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
           <Alert className="border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              Erro ao carregar informações dos locais. 
-              IDs dos painéis: {listaPaineis.join(', ')}
+              Erro ao carregar informações dos locais.
+              {listaPredios && listaPredios.length > 0 && (
+                <div className="mt-1">
+                  IDs dos prédios: {listaPredios.join(', ')}
+                </div>
+              )}
+              {listaPaineis.length > 0 && (
+                <div className="mt-1">
+                  IDs dos painéis: {listaPaineis.join(', ')}
+                </div>
+              )}
             </AlertDescription>
           </Alert>
         )}
@@ -149,7 +162,11 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
         {/* DEBUG INFO for development */}
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-100 rounded">
-            <strong>Debug:</strong> Panel IDs: {listaPaineis.join(', ')}
+            <strong>Debug:</strong>
+            {listaPredios && listaPredios.length > 0 && (
+              <div>Prédios: {listaPredios.join(', ')}</div>
+            )}
+            <div>Painéis: {listaPaineis.join(', ')}</div>
             {fallbackData && (
               <div>Fallback: {fallbackData.panelIds.join(', ')}</div>
             )}

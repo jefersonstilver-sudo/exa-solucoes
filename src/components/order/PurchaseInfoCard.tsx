@@ -24,6 +24,7 @@ interface PurchaseInfoCardProps {
     log_pagamento?: any;
     status: string;
     lista_paineis?: string[];
+    lista_predios?: string[];
   };
 }
 
@@ -131,12 +132,13 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
             </div>
           </div>
           
-          {/* FIXED: Changed from "Painéis Contratados" to "Locais Contratados" with proper data passing */}
+          {/* UPDATED: Usar nova coluna lista_predios com fallback para lista_paineis */}
           <div className="flex items-center space-x-3">
             <div>
               <p className="text-sm text-gray-600">Locais Contratados</p>
               <ClickableLocationsDisplay 
                 listaPaineis={orderDetails.lista_paineis || []}
+                listaPredios={orderDetails.lista_predios || []}
                 orderDetails={orderDetails}
                 className="mt-1"
               />

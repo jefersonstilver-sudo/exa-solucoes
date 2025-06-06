@@ -768,6 +768,7 @@ export type Database = {
           duracao: number | null
           id: string
           lista_paineis: string[] | null
+          lista_predios: string[] | null
           log_pagamento: Json | null
           plano_meses: number
           status: string
@@ -784,6 +785,7 @@ export type Database = {
           duracao?: number | null
           id?: string
           lista_paineis?: string[] | null
+          lista_predios?: string[] | null
           log_pagamento?: Json | null
           plano_meses?: number
           status?: string
@@ -800,6 +802,7 @@ export type Database = {
           duracao?: number | null
           id?: string
           lista_paineis?: string[] | null
+          lista_predios?: string[] | null
           log_pagamento?: Json | null
           plano_meses?: number
           status?: string

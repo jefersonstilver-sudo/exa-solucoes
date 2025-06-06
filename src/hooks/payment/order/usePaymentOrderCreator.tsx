@@ -79,17 +79,22 @@ export const usePaymentOrderCreator = () => {
       // CRITICAL FIX: Extract panel IDs correctly from cartItems
       const panelIds = cartItems.map(item => item.panel.id);
       
+      // NEW: Extract building IDs from cartItems for lista_predios
+      const buildingIds = [...new Set(cartItems.map(item => item.panel.building_id).filter(Boolean))];
+      
       console.log('🔍 [ORDER_CREATOR] Panel IDs being saved:', panelIds);
+      console.log('🏢 [ORDER_CREATOR] Building IDs being saved:', buildingIds);
       console.log('🔍 [ORDER_CREATOR] Cart items:', cartItems);
 
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        'Iniciando criação do pedido com IDs de painéis corretos',
+        'Iniciando criação do pedido com IDs de painéis e prédios corretos',
         { 
           userId: sessionUser.id,
           itemCount: cartItems.length,
           panelIds: panelIds,
+          buildingIds: buildingIds,
           totalPrice,
           selectedPlan,
           transactionId,
@@ -100,10 +105,11 @@ export const usePaymentOrderCreator = () => {
       // CRITICAL: Ensure correct total price (no division errors)
       const correctTotalPrice = Number(totalPrice.toFixed(2));
 
-      // Create the order record with correctly extracted panel IDs
+      // Create the order record with correctly extracted panel and building IDs
       const orderData = prepareForInsert({
         client_id: sessionUser.id,
-        lista_paineis: panelIds, // FIXED: Use correctly extracted panel IDs
+        lista_paineis: panelIds,
+        lista_predios: buildingIds, // NEW: Save building IDs in the new column
         plano_meses: selectedPlan,
         valor_total: correctTotalPrice,
         cupom_id: couponId,
@@ -121,10 +127,13 @@ export const usePaymentOrderCreator = () => {
           anti_duplicate_check: true,
           cart_items_count: cartItems.length,
           user_id_check: sessionUser.id,
-          panel_ids_saved: panelIds, // ADDED: Track panel IDs in log for verification
+          panel_ids_saved: panelIds,
+          building_ids_saved: buildingIds, // NEW: Track building IDs in log
           cart_items_debug: cartItems.map(item => ({
             panel_id: item.panel.id,
+            building_id: item.panel.building_id,
             panel_name: item.panel.buildings?.nome || 'Nome não disponível',
+            building_name: item.panel.buildings?.nome || 'Nome não disponível',
             duration: item.duration
           }))
         }
@@ -147,8 +156,9 @@ export const usePaymentOrderCreator = () => {
 
       const pedidoTyped = pedido as any;
 
-      // VERIFICATION: Log the saved panel IDs to confirm they were saved correctly
+      // VERIFICATION: Log the saved panel and building IDs to confirm they were saved correctly
       console.log('✅ [ORDER_CREATOR] Pedido criado com lista_paineis:', pedidoTyped.lista_paineis);
+      console.log('✅ [ORDER_CREATOR] Pedido criado com lista_predios:', pedidoTyped.lista_predios);
 
       // If coupon was used, record its usage (only once)
       if (couponId) {
@@ -170,13 +180,15 @@ export const usePaymentOrderCreator = () => {
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        'Pedido criado com sucesso com lista de painéis correta',
+        'Pedido criado com sucesso com lista de painéis e prédios correta',
         { 
           orderId: pedidoTyped.id,
           totalPrice: correctTotalPrice,
           itemCount: cartItems.length,
           panelIds: panelIds,
+          buildingIds: buildingIds,
           savedPanelIds: pedidoTyped.lista_paineis,
+          savedBuildingIds: pedidoTyped.lista_predios,
           transactionId,
           paymentKey
         }
@@ -194,7 +206,9 @@ export const usePaymentOrderCreator = () => {
           userId: sessionUser?.id,
           cartItems: cartItems?.map(item => ({
             panelId: item.panel.id,
-            panelName: item.panel.buildings?.nome
+            buildingId: item.panel.building_id,
+            panelName: item.panel.buildings?.nome,
+            buildingName: item.panel.buildings?.nome
           }))
         }
       );

@@ -7,17 +7,50 @@ interface BuildingInfo {
   nome: string;
 }
 
-export const useBuildingNames = (listaPaineis: string[]) => {
+export const useBuildingNames = (listaPaineis: string[], listaPredios?: string[]) => {
   const [buildingNames, setBuildingNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBuildingNames = async () => {
-      console.log('🔍 [BUILDING_NAMES] Iniciando busca para painéis:', listaPaineis);
+      console.log('🔍 [BUILDING_NAMES] Iniciando busca - painéis:', listaPaineis, 'prédios:', listaPredios);
       
+      // Priorizar lista_predios se disponível
+      if (listaPredios && listaPredios.length > 0) {
+        console.log('📍 [BUILDING_NAMES] Usando lista_predios (nova coluna)');
+        
+        try {
+          setLoading(true);
+          setError(null);
+
+          const { data: buildings, error: buildingsError } = await supabase
+            .from('buildings')
+            .select('id, nome')
+            .in('id', listaPredios);
+
+          if (buildingsError) {
+            console.error('❌ [BUILDING_NAMES] Erro ao buscar prédios:', buildingsError);
+            throw buildingsError;
+          }
+
+          console.log('🏢 [BUILDING_NAMES] Prédios encontrados via lista_predios:', buildings);
+
+          const names = buildings?.map(b => b.nome) || ['Nomes dos prédios não encontrados'];
+          console.log('📝 [BUILDING_NAMES] Nomes finais dos prédios:', names);
+          
+          setBuildingNames(names);
+          setLoading(false);
+          return;
+        } catch (error) {
+          console.error('💥 [BUILDING_NAMES] Erro ao buscar via lista_predios:', error);
+          // Continuar com fallback para lista_paineis
+        }
+      }
+
+      // Fallback para lista_paineis (método antigo)
       if (!listaPaineis || listaPaineis.length === 0) {
-        console.log('⚠️ [BUILDING_NAMES] Lista de painéis vazia, retornando estado vazio');
+        console.log('⚠️ [BUILDING_NAMES] Nenhuma lista disponível, retornando estado vazio');
         setBuildingNames([]);
         setLoading(false);
         return;
@@ -27,7 +60,7 @@ export const useBuildingNames = (listaPaineis: string[]) => {
         setLoading(true);
         setError(null);
 
-        console.log('📡 [BUILDING_NAMES] Buscando painéis pelos IDs:', listaPaineis);
+        console.log('📡 [BUILDING_NAMES] Fallback: buscando painéis pelos IDs:', listaPaineis);
 
         // Buscar painéis pelos IDs
         const { data: painels, error: painelsError } = await supabase
@@ -88,7 +121,7 @@ export const useBuildingNames = (listaPaineis: string[]) => {
     };
 
     fetchBuildingNames();
-  }, [listaPaineis]);
+  }, [listaPaineis, listaPredios]);
 
   return { buildingNames, loading, error };
 };
