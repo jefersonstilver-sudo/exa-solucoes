@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +26,7 @@ interface OrderDetails {
   status: string;
   valor_total: number;
   lista_paineis: string[];
+  lista_predios?: string[];
   plano_meses: number;
   data_inicio?: string;
   data_fim?: string;
