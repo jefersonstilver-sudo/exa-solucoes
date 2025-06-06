@@ -94,7 +94,7 @@ export const useEnhancedPaymentOrderCreator = () => {
 
       // ENHANCED: Extract panel and building IDs with detailed logging
       const panelIds = cartItems.map(item => {
-        const panelId = item.panel?.id || item.id;
+        const panelId = item.panel?.id;
         console.log('🔍 [ENHANCED_ORDER_CREATOR] Extraindo panel ID:', panelId, 'do item:', item);
         return panelId;
       }).filter(Boolean);
@@ -175,12 +175,12 @@ export const useEnhancedPaymentOrderCreator = () => {
           building_ids_saved: buildingIds,
           enhanced_creation: true,
           cart_items_debug: cartItems.map(item => ({
-            panel_id: item.panel?.id || item.id,
+            panel_id: item.panel?.id,
             building_id: item.panel?.building_id,
             panel_name: item.panel?.buildings?.nome || 'Nome não disponível',
             building_name: item.panel?.buildings?.nome || 'Nome não disponível',
             duration: item.duration || 30,
-            price: item.price || 0
+            price: item.duration ? (item.duration * 50) : 0 // Calculate price based on duration
           }))
         }
       });
@@ -207,7 +207,13 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error('Falha ao criar pedido: dados inválidos retornados');
       }
 
-      const pedidoTyped = pedido as any;
+      const pedidoTyped = pedido as {
+        id: string;
+        lista_paineis: string[];
+        lista_predios: string[];
+        valor_total: number;
+        client_id: string;
+      };
 
       // VERIFICATION: Log the saved data to confirm it was saved correctly
       console.log('✅ [ENHANCED_ORDER_CREATOR] Pedido criado com sucesso!');
@@ -269,7 +275,7 @@ export const useEnhancedPaymentOrderCreator = () => {
           error: error.message,
           userId: sessionUser?.id,
           cartItems: cartItems?.map(item => ({
-            panelId: item.panel?.id || item.id,
+            panelId: item.panel?.id,
             buildingId: item.panel?.building_id,
             panelName: item.panel?.buildings?.nome,
             buildingName: item.panel?.buildings?.nome

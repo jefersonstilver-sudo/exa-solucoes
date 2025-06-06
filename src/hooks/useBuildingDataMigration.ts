@@ -17,8 +17,8 @@ export const useBuildingDataMigration = () => {
         .from('pedidos')
         .select('id, lista_paineis, lista_predios')
         .not('lista_paineis', 'is', null)
-        .neq('lista_paineis', '[]')
-        .or('lista_predios.is.null,lista_predios.eq.[]');
+        .neq('lista_paineis', '{}')
+        .or('lista_predios.is.null,lista_predios.eq.{}');
 
       if (fetchError) {
         console.error('❌ [MIGRATION] Erro ao buscar pedidos:', fetchError);
@@ -39,11 +39,21 @@ export const useBuildingDataMigration = () => {
         try {
           console.log(`🔄 [MIGRATION] Processando pedido ${pedido.id}...`);
           
+          // Convert lista_paineis to array if it's not already
+          const listaPaineis = Array.isArray(pedido.lista_paineis) 
+            ? pedido.lista_paineis 
+            : pedido.lista_paineis ? [pedido.lista_paineis] : [];
+          
+          if (listaPaineis.length === 0) {
+            console.log(`⚠️ [MIGRATION] Pedido ${pedido.id} não tem painéis válidos`);
+            continue;
+          }
+          
           // Buscar building_ids dos painéis
           const { data: painels, error: painelsError } = await supabase
             .from('painels')
             .select('building_id')
-            .in('id', pedido.lista_paineis || []);
+            .in('id', listaPaineis);
 
           if (painelsError) {
             console.error(`❌ [MIGRATION] Erro ao buscar painéis para pedido ${pedido.id}:`, painelsError);
