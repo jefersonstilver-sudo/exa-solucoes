@@ -1,21 +1,25 @@
 
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
-import { useFinancialIntegrityData } from '@/hooks/admin/useFinancialIntegrityData';
+import { useEnhancedFinancialIntegrityData } from '@/hooks/admin/useEnhancedFinancialIntegrityData';
 import DashboardHeader from './financial-integrity/DashboardHeader';
-import FinancialStatsCards from './financial-integrity/FinancialStatsCards';
+import EnhancedFinancialStatsCards from './financial-integrity/EnhancedFinancialStatsCards';
 import AnomaliesCard from './financial-integrity/AnomaliesCard';
 import MissingWebhooksAlert from './financial-integrity/MissingWebhooksAlert';
+import TransactionRecoveryCard from './financial-integrity/TransactionRecoveryCard';
+import LostTransactionsAlert from './financial-integrity/LostTransactionsAlert';
 
 const FinancialIntegrityDashboard: React.FC = () => {
   const {
     stats,
     anomalies,
+    reconciliationData,
     loading,
     lastUpdate,
     fetchFinancialData,
-    runEmergencyAudit
-  } = useFinancialIntegrityData();
+    runEmergencyAudit,
+    handleAutoFixTransactions
+  } = useEnhancedFinancialIntegrityData();
 
   if (loading && !stats) {
     return (
@@ -28,6 +32,9 @@ const FinancialIntegrityDashboard: React.FC = () => {
     );
   }
 
+  const missingTransactions = reconciliationData?.missing_transactions || 0;
+  const estimatedLoss = reconciliationData?.lost_revenue_estimate || 0;
+
   return (
     <div className="p-6 space-y-6">
       <DashboardHeader
@@ -37,7 +44,23 @@ const FinancialIntegrityDashboard: React.FC = () => {
         lastUpdate={lastUpdate}
       />
 
-      <FinancialStatsCards stats={stats} anomalies={anomalies} />
+      <EnhancedFinancialStatsCards 
+        stats={stats} 
+        anomalies={anomalies}
+        reconciliationData={reconciliationData}
+      />
+
+      {/* Transaction Recovery Section */}
+      <TransactionRecoveryCard />
+
+      {/* Lost Transactions Alert */}
+      <LostTransactionsAlert
+        missingCount={missingTransactions}
+        estimatedLoss={estimatedLoss}
+        onInvestigate={fetchFinancialData}
+        onAutoFix={handleAutoFixTransactions}
+        loading={loading}
+      />
 
       <AnomaliesCard anomalies={anomalies} />
 

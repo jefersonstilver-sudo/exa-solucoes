@@ -1099,6 +1099,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      auto_fix_lost_transactions: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       auto_recovery_system: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1287,6 +1291,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      investigate_missing_transaction: {
+        Args: { p_email: string; p_amount: number }
+        Returns: Json
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1324,6 +1332,10 @@ export type Database = {
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: boolean
+      }
+      mercadopago_reconciliation_check: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       migrate_orphaned_payments: {
         Args: Record<PropertyKey, never>
