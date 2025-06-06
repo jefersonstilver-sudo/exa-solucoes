@@ -1,6 +1,8 @@
 
 import { Panel } from '@/types/panel';
 import { PlanKey } from '@/types/checkout';
+import { calculateCartSubtotal, calculateTotalPrice } from '@/utils/checkoutUtils';
+import { formatCurrency } from '@/utils/priceUtils';
 
 interface CartItem {
   panel: Panel;
@@ -28,22 +30,31 @@ const CheckoutSummary = ({
   endDate,
   paymentMethod = 'credit_card'
 }: CheckoutSummaryProps) => {
-  // Calcular subtotal (preço base)
-  const calculateSubtotal = () => {
-    const pricePerItem = 250; // Valor fixo por item para exemplo
-    return cartItems.length * pricePerItem;
-  };
+  
+  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência
+  const subtotal = calculateCartSubtotal(cartItems);
+  const total = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+  const discount = couponValid && couponDiscount ? subtotal - total : 0;
 
-  // Calcular desconto
-  const calculateDiscount = () => {
-    if (!couponValid || couponDiscount <= 0) return 0;
-    return (calculateSubtotal() * couponDiscount) / 100;
-  };
-
-  // Calcular total
-  const calculateTotal = () => {
-    return calculateSubtotal() - calculateDiscount();
-  };
+  // Log detalhado para auditoria
+  console.log("📄 [CheckoutSummary] AUDITORIA DE PREÇOS:", {
+    component: "CheckoutSummary",
+    cartItemsCount: cartItems.length,
+    selectedPlan,
+    subtotal,
+    total,
+    discount,
+    couponValid,
+    couponDiscount,
+    paymentMethod,
+    cartDetails: cartItems.map(item => ({
+      panelId: item.panel.id,
+      buildingName: item.panel.buildings?.nome,
+      preco_base: item.panel.buildings?.preco_base,
+      duration: item.duration
+    })),
+    timestamp: new Date().toISOString()
+  });
 
   // Formatar data
   const formatDate = (date: Date) => {
@@ -130,28 +141,28 @@ const CheckoutSummary = ({
           </div>
         </div>
 
-        {/* Valores */}
+        {/* Valores - USANDO FUNÇÕES CENTRALIZADAS */}
         <div className="border-t pt-3 mt-3">
           <div className="flex justify-between mb-1">
             <span className="text-sm">Subtotal:</span>
-            <span className="font-medium">R$ {calculateSubtotal().toFixed(2)}</span>
+            <span className="font-medium">{formatCurrency(subtotal)}</span>
           </div>
           
-          {couponValid && (
+          {couponValid && discount > 0 && (
             <div className="flex justify-between mb-1 text-green-600">
               <span className="text-sm">Desconto ({couponDiscount}%):</span>
-              <span className="font-medium">-R$ {calculateDiscount().toFixed(2)}</span>
+              <span className="font-medium">-{formatCurrency(discount)}</span>
             </div>
           )}
           
           <div className="flex justify-between font-semibold mt-2 text-lg">
             <span>Total:</span>
-            <span className="text-indigo-900">R$ {calculateTotal().toFixed(2)}</span>
+            <span className="text-indigo-900">{formatCurrency(total)}</span>
           </div>
           
-          {couponValid && (
+          {couponValid && discount > 0 && (
             <div className="text-xs text-green-600 mt-1 text-right">
-              Você economizou R$ {calculateDiscount().toFixed(2)}!
+              Você economizou {formatCurrency(discount)}!
             </div>
           )}
         </div>

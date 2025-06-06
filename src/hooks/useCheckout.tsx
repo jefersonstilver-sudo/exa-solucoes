@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
@@ -60,7 +61,7 @@ export const useCheckout = () => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      `useCheckout: CONFIRMAÇÃO - Hook inicializado com WEBHOOK URL CORRIGIDA`,
+      `useCheckout: SISTEMA CORRIGIDO - Hook inicializado com cálculos unificados`,
       { 
         currentPath: location.pathname,
         webhookUrl: "https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19",
@@ -76,8 +77,21 @@ export const useCheckout = () => {
   const debouncedCartValidation = useCallback(() => {
     if (cartItems.length > 0) {
       console.log(`[useCheckout] Cart validated: ${cartItems.length} items`);
+      
+      // Log detalhado dos itens do carrinho para auditoria
+      console.log("🛒 [useCheckout] AUDITORIA DO CARRINHO:", {
+        itemCount: cartItems.length,
+        items: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          preco_base: item.panel.buildings?.preco_base,
+          duration: item.duration,
+          price: item.price
+        })),
+        timestamp: new Date().toISOString()
+      });
     }
-  }, [cartItems.length]);
+  }, [cartItems]);
 
   useEffect(() => {
     const timeout = setTimeout(debouncedCartValidation, 500);
@@ -138,6 +152,15 @@ export const useCheckout = () => {
     if (shouldCaptureAttempt) {
       const totalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
       
+      console.log("📊 [useCheckout] CAPTURANDO TENTATIVA COM PREÇOS CORRETOS:", {
+        userId: sessionUser.id,
+        cartItemsCount: cartItems.length,
+        selectedPlan,
+        totalPrice,
+        step,
+        timestamp: new Date().toISOString()
+      });
+      
       const timeout = setTimeout(() => {
         captureAttempt(sessionUser.id, cartItems, totalPrice);
       }, 2000);
@@ -146,13 +169,32 @@ export const useCheckout = () => {
     }
   }, [sessionUser?.id, cartItems.length, selectedPlan, step, couponDiscount, couponValid]);
 
-  // Usar os novos cálculos dinâmicos
+  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência
   const orderTotal = useMemo(() => {
-    return calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+    const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+    
+    console.log("💰 [useCheckout] TOTAL CALCULADO:", {
+      selectedPlan,
+      cartItemsCount: cartItems.length,
+      couponDiscount,
+      couponValid,
+      orderTotal: result,
+      timestamp: new Date().toISOString()
+    });
+    
+    return result;
   }, [selectedPlan, cartItems, couponDiscount, couponValid]);
 
   const cartSubtotal = useMemo(() => {
-    return calculateCartSubtotal(cartItems);
+    const result = calculateCartSubtotal(cartItems);
+    
+    console.log("💰 [useCheckout] SUBTOTAL CALCULADO:", {
+      cartItemsCount: cartItems.length,
+      cartSubtotal: result,
+      timestamp: new Date().toISOString()
+    });
+    
+    return result;
   }, [cartItems]);
 
   // Função wrapper para createPayment - com validação robusta
@@ -166,8 +208,8 @@ export const useCheckout = () => {
         throw new Error("Carrinho vazio");
       }
 
-      console.log('[useCheckout] Creating payment with valid user:', sessionUser.id);
-      console.log('[useCheckout] CONFIRMAÇÃO: Usando WEBHOOK URL CORRIGIDA no createPayment');
+      console.log('[useCheckout] SISTEMA CORRIGIDO - Creating payment with valid user:', sessionUser.id);
+      console.log('[useCheckout] CONFIRMAÇÃO: Usando cálculos unificados no createPayment');
       
       const response = await createPayment(options);
       
@@ -209,7 +251,7 @@ export const useCheckout = () => {
 
   // Handler para próximo step com payment method - memoizado
   const handleNextStepWithPayment = useCallback((paymentMethod?: string) => {
-    console.log(`[useCheckout] handleNextStepWithPayment: ${paymentMethod || 'default'}`);
+    console.log(`[useCheckout] SISTEMA CORRIGIDO - handleNextStepWithPayment: ${paymentMethod || 'default'}`);
     
     if (!sessionUser?.id) {
       console.error('[useCheckout] Cannot proceed - user not authenticated');

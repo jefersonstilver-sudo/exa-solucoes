@@ -4,17 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Calendar, Clock, CreditCard, Tag } from 'lucide-react';
 import { useCheckout } from '@/hooks/useCheckout';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/priceUtils';
 import { PLANS } from '@/constants/checkoutConstants';
+import { calculateCartSubtotal, calculateTotalPrice } from '@/utils/checkoutUtils';
 
 const ReviewStep = () => {
   const { 
     cartItems, 
     selectedPlan, 
     couponValid,
-    couponDiscount,
-    calculateTotalPrice,
-    calculateCartSubtotal
+    couponDiscount
   } = useCheckout();
 
   const formatPanelInfo = (panel: any) => {
@@ -32,9 +31,31 @@ const ReviewStep = () => {
   };
 
   const selectedMonths = PLANS[selectedPlan].months;
-  const totalOriginalPrice = calculateCartSubtotal();
-  const finalPrice = calculateTotalPrice();
+  
+  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência
+  const totalOriginalPrice = calculateCartSubtotal(cartItems);
+  const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   const discount = couponValid && couponDiscount ? totalOriginalPrice - finalPrice : 0;
+
+  // Log detalhado para auditoria
+  console.log("📋 [ReviewStep] AUDITORIA DE PREÇOS:", {
+    component: "ReviewStep",
+    cartItemsCount: cartItems.length,
+    selectedPlan,
+    selectedMonths,
+    totalOriginalPrice,
+    finalPrice,
+    discount,
+    couponValid,
+    couponDiscount,
+    cartDetails: cartItems.map(item => ({
+      panelId: item.panel.id,
+      buildingName: item.panel.buildings?.nome,
+      preco_base: item.panel.buildings?.preco_base,
+      duration: item.duration
+    })),
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="space-y-6">
@@ -78,7 +99,7 @@ const ReviewStep = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-medium text-gray-900">
-                    {formatCurrency(item.panel.buildings?.basePrice || 250)}/mês
+                    {formatCurrency(item.panel.buildings?.preco_base || 0)}/mês
                   </p>
                   <Badge variant="outline" className="text-xs mt-1">
                     {item.panel.resolucao || 'Resolução não informada'}
