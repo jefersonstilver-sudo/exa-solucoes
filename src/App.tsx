@@ -56,8 +56,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <CartProvider>
-          <Router>
+        <Router>
+          <CartProvider>
             <div className="min-h-screen bg-background">
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
@@ -169,8 +169,8 @@ function App() {
               </Suspense>
               <Toaster />
             </div>
-          </Router>
-        </CartProvider>
+          </CartProvider>
+        </Router>
       </TooltipProvider>
     </QueryClientProvider>
   );
