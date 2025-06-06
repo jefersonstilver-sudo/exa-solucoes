@@ -1,49 +1,94 @@
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import CouponStep from '@/components/checkout/CouponStep';
+import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
+import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
 import { useCheckout } from '@/hooks/useCheckout';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { formatCurrency } from '@/utils/priceUtils';
+import { logPriceCalculation } from '@/utils/auditLogger';
 
 const CheckoutCoupon = () => {
   const {
     couponCode,
     setCouponCode,
-    couponDiscount,
+    validateCoupon,
+    isValidatingCoupon,
     couponMessage,
     couponValid,
-    isValidatingCoupon,
-    validateCoupon,
     handleNextStep,
     handlePrevStep,
-    calculateTotalPrice
+    isNextEnabled,
+    cartItems,
+    selectedPlan,
+    calculateTotalPrice // CORREÇÃO: usar função que sempre recalcula
   } = useCheckout();
+  
+  // CORREÇÃO: Calcular total em tempo real sempre que cartItems ou selectedPlan mudam
+  const currentTotal = calculateTotalPrice();
+  
+  // Log detalhado para debug da página de cupons
+  useEffect(() => {
+    console.log("🏷️ [CheckoutCoupon] ESTADO DA PÁGINA:", {
+      cartItemsCount: cartItems.length,
+      selectedPlan,
+      currentTotal,
+      couponValid,
+      couponCode,
+      timestamp: new Date().toISOString(),
+      cartDetails: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
+      }))
+    });
 
-  const totalPrice = calculateTotalPrice();
+    // Log para auditoria
+    if (cartItems.length > 0) {
+      logPriceCalculation('CheckoutCoupon', {
+        cartItemsCount: cartItems.length,
+        selectedPlan,
+        currentTotal,
+        couponValid,
+        couponCode,
+        cartItems: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          preco_base: item.panel.buildings?.preco_base
+        }))
+      });
+    }
+  }, [cartItems, selectedPlan, currentTotal, couponValid, couponCode]);
+
+  // Validação de estado crítico
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      console.warn("⚠️ [CheckoutCoupon] CARRINHO VAZIO na página de cupons!");
+    }
+    
+    if (currentTotal === 0 && cartItems.length > 0) {
+      console.error("❌ [CheckoutCoupon] TOTAL ZERO com carrinho populado!", {
+        cartItemsCount: cartItems.length,
+        selectedPlan,
+        cartItems: cartItems.map(item => ({
+          panelId: item.panel.id,
+          preco_base: item.panel.buildings?.preco_base
+        }))
+      });
+    }
+  }, [cartItems.length, currentTotal, selectedPlan]);
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
-          {/* Unified Progress Header - SEMPRE na mesma posição */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8"
-          >
+          {/* Progress Header */}
+          <div className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8">
             <UnifiedCheckoutProgress currentStep={1} />
-          </motion.div>
+          </div>
 
           {/* Main Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 lg:p-8"
-          >
+          <div className="bg-white rounded-xl shadow-lg border p-6 sm:p-8 mb-6 sm:mb-8">
             <CouponStep
               couponCode={couponCode}
               setCouponCode={setCouponCode}
@@ -52,43 +97,47 @@ const CheckoutCoupon = () => {
               couponMessage={couponMessage}
               couponValid={couponValid}
             />
-          </motion.div>
+          </div>
 
-          {/* Navigation */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="flex flex-col sm:flex-row justify-between items-center mt-6 sm:mt-8 gap-4"
-          >
-            <Button
-              variant="outline"
-              onClick={handlePrevStep}
-              className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Voltar</span>
-            </Button>
-
-            <div className="text-center order-1 sm:order-2">
-              <p className="text-lg font-semibold text-gray-900">
-                Total: R$ {totalPrice.toFixed(2)}
-              </p>
-              {couponValid && couponDiscount > 0 && (
-                <p className="text-sm text-green-600">
-                  Desconto aplicado: {couponDiscount}%
-                </p>
+          {/* Summary Card - USANDO VALOR CALCULADO EM TEMPO REAL */}
+          <div className="bg-white rounded-xl shadow-lg border p-6 sm:p-8 mb-6 sm:mb-8">
+            <h3 className="text-lg font-semibold mb-4">Resumo do Pedido</h3>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total do pedido:</span>
+                <span className="font-medium text-lg">
+                  {formatCurrency(currentTotal)}
+                </span>
+              </div>
+              
+              {couponValid && (
+                <div className="flex justify-between text-green-600">
+                  <span>Desconto aplicado:</span>
+                  <span className="font-medium">Aplicado com sucesso!</span>
+                </div>
+              )}
+              
+              {/* Debug info para desenvolvimento */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                  <div>Cart Items: {cartItems.length}</div>
+                  <div>Selected Plan: {selectedPlan}</div>
+                  <div>Current Total: {formatCurrency(currentTotal)}</div>
+                  <div>Coupon Valid: {couponValid ? 'Sim' : 'Não'}</div>
+                </div>
               )}
             </div>
+          </div>
 
-            <Button
-              onClick={() => handleNextStep()}
-              className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
-            >
-              <span>Continuar</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </motion.div>
+          {/* Navigation */}
+          <CheckoutNavigation
+            onNext={handleNextStep}
+            onPrev={handlePrevStep}
+            isNextEnabled={isNextEnabled}
+            nextLabel="Continuar para Revisão"
+            prevLabel="Voltar aos Planos"
+          />
         </div>
       </div>
     </Layout>

@@ -15,6 +15,8 @@ import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
 import { CheckoutSteps, Plan, PlanKey } from '@/types/checkout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { PaymentResponse } from '@/types/payment';
+import { useCart } from '@/contexts/SimpleCartContext';
+import { logPriceCalculation } from '@/utils/auditLogger';
 
 export const STEPS = CHECKOUT_STEPS;
 export { PLANS };
@@ -24,7 +26,9 @@ export const useCheckout = () => {
   const location = useLocation();
   const orderId = searchParams.get('id');
   
-  const { cartItems, handleClearCart } = useCartManager();
+  // CORREÇÃO: Usar cartItems do contexto correto diretamente
+  const { cartItems } = useCart();
+  const { handleClearCart } = useCartManager();
   const { captureAttempt, clearAttempt } = useAttemptCapture();
   
   const {
@@ -169,21 +173,55 @@ export const useCheckout = () => {
     }
   }, [sessionUser?.id, cartItems.length, selectedPlan, step, couponDiscount, couponValid]);
 
-  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência
-  const orderTotal = useMemo(() => {
+  // CORREÇÃO CRÍTICA: calculateTotalPrice sempre recalcula com dados atuais
+  const calculateCurrentTotalPrice = useCallback(() => {
+    if (!selectedPlan || cartItems.length === 0) {
+      console.log("💰 [useCheckout] Cálculo cancelado - dados insuficientes:", {
+        selectedPlan,
+        cartItemsLength: cartItems.length
+      });
+      return 0;
+    }
+
     const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
     
-    console.log("💰 [useCheckout] TOTAL CALCULADO:", {
+    console.log("💰 [useCheckout] TOTAL RECALCULADO EM TEMPO REAL:", {
       selectedPlan,
       cartItemsCount: cartItems.length,
       couponDiscount,
       couponValid,
       orderTotal: result,
-      timestamp: new Date().toISOString()
+      currentPath: location.pathname,
+      timestamp: new Date().toISOString(),
+      cartDetails: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
+      }))
+    });
+
+    // Log para auditoria
+    logPriceCalculation('useCheckout-calculateCurrentTotalPrice', {
+      selectedPlan,
+      cartItemsCount: cartItems.length,
+      couponDiscount,
+      couponValid,
+      totalPrice: result,
+      currentPath: location.pathname,
+      cartItems: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
+      }))
     });
     
     return result;
-  }, [selectedPlan, cartItems, couponDiscount, couponValid]);
+  }, [selectedPlan, cartItems, couponDiscount, couponValid, location.pathname]);
+
+  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência - MAS SEMPRE RECALCULANDO
+  const orderTotal = useMemo(() => {
+    return calculateCurrentTotalPrice();
+  }, [calculateCurrentTotalPrice]);
 
   const cartSubtotal = useMemo(() => {
     const result = calculateCartSubtotal(cartItems);
@@ -287,7 +325,7 @@ export const useCheckout = () => {
     handlePrevStep: navigation.handlePrevStep,
     isNextEnabled: navigation.isNextEnabled,
     PLANS,
-    calculateTotalPrice: () => orderTotal,
+    calculateTotalPrice: calculateCurrentTotalPrice, // CORREÇÃO: sempre recalcula em tempo real
     calculateCartSubtotal: () => cartSubtotal,
     orderId,
     paymentMethod,
