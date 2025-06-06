@@ -1,34 +1,57 @@
 
-/* Minimal animations - Performance optimized */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Animações simples e confiáveis */
+.cart-pulse {
+  animation: cart-pulse 0.6s ease-out;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.2s ease-out;
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Reduce motion preference support */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+@keyframes cart-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
-/* GPU acceleration for smooth scrolling */
-.smooth-scroll {
-  transform: translateZ(0);
-  will-change: scroll-position;
+.button-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.button-hover:hover {
+  transform: scale(1.05);
+}
+
+.button-hover:active {
+  transform: scale(0.95);
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }

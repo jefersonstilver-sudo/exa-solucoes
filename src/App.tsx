@@ -1,28 +1,29 @@
+
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
-import { CartProvider } from '@/contexts/CartContext';
 import { AuthProvider } from '@/hooks/useAuth';
+import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MinimalLoader from '@/components/ui/MinimalLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
-// Importações diretas para páginas críticas (sem lazy loading)
+// Importações diretas para páginas críticas
 import Index from './pages/Index';
 import BuildingStore from './pages/BuildingStore';
 import PlanSelection from './pages/PlanSelection';
 import CheckoutCoupon from './pages/CheckoutCoupon';
 import CheckoutSummary from './pages/CheckoutSummary';
 import Checkout from './pages/Checkout';
-import Confirmacao from './pages/Confirmacao'; // CONFIRMAÇÃO DE EMAIL
+import Confirmacao from './pages/Confirmacao';
 import LoginPage from './pages/LoginPage';
 import Cadastro from './pages/Cadastro';
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 
-// Lazy load apenas para páginas menos usadas
+// Lazy load para páginas menos usadas
 const Marketing = lazy(() => import('./pages/Marketing'));
 const Produtora = lazy(() => import('./pages/Produtora'));
 const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
@@ -30,7 +31,7 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const EmailSent = lazy(() => import('./pages/EmailSent'));
-const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation')); // CONFIRMAÇÃO DE PEDIDO
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 
 // Lazy load das páginas da área do anunciante
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
@@ -44,8 +45,8 @@ const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layo
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -58,11 +59,11 @@ function App() {
       <TooltipProvider>
         <AuthProvider>
           <Router>
-            <CartProvider>
+            <SimpleCartProvider>
               <div className="min-h-screen bg-background">
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
-                    {/* Rotas principais - carregamento direto */}
+                    {/* Rotas principais */}
                     <Route path="/" element={<Index />} />
                     <Route path="/loja" element={<BuildingStore />} />
                     <Route path="/plano" element={<PlanSelection />} />
@@ -71,11 +72,8 @@ function App() {
                     <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
                     <Route path="/checkout/resumo" element={<CheckoutSummary />} />
                     <Route path="/checkout" element={<Checkout />} />
-
-                    {/* ROTA CORRIGIDA: Confirmação de EMAIL (não pedido) */}
                     <Route path="/confirmacao" element={<Confirmacao />} />
                     
-                    {/* ROTA SEPARADA: Confirmação de PEDIDO */}
                     <Route path="/pedido-confirmado" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <OrderConfirmation />
@@ -159,7 +157,7 @@ function App() {
                       } />
                     </Route>
 
-                    {/* Rotas de autenticação - sem lazy loading */}
+                    {/* Rotas de autenticação */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/cadastro" element={<Cadastro />} />
 
@@ -170,7 +168,7 @@ function App() {
                 </Suspense>
                 <Toaster />
               </div>
-            </CartProvider>
+            </SimpleCartProvider>
           </Router>
         </AuthProvider>
       </TooltipProvider>

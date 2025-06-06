@@ -3,7 +3,7 @@ import React, { ReactNode } from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/SimpleCartContext';
 import '@/styles/components.css';
 
 interface LayoutProps {
@@ -12,13 +12,10 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
-  console.log('🏗️ Layout: Renderizando Layout com sistema GLOBAL');
-  
   const { 
     cartItems, 
     isOpen, 
     toggleCart, 
-    isAnimating,
     removeFromCart,
     clearCart,
     updateDuration,
@@ -26,18 +23,11 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
     itemCount
   } = useCart();
 
-  console.log('🏗️ Layout: Cart state GLOBAL:', {
-    itemCount,
-    isAnimating,
-    isOpen,
-    cartItemsLength: cartItems.length
-  });
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 mobile-scroll-fix">
       <Header 
         cartItemsCount={itemCount}
-        cartAnimation={isAnimating}
+        cartAnimation={false}
         onToggleCart={toggleCart}
       />
       
