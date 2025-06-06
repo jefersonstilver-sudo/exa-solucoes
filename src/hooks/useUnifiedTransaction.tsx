@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useUserSession } from './useUserSession';
 import { transactionSessionManager } from '@/utils/transactionSessionManager';
 import { CartItem } from '@/types/payment';
+import { PlanKey } from '@/types/checkout';
 import { toast } from 'sonner';
 import { logSystemEvent } from '@/utils/auditLogger';
 
@@ -17,7 +18,7 @@ export const useUnifiedTransaction = () => {
   // Criar sessão de transação única
   const createTransactionSession = async (
     cartItems: CartItem[],
-    selectedPlan: number
+    selectedPlan: PlanKey
   ): Promise<{ success: boolean; transactionId: string; price: number }> => {
     if (!user?.id) {
       toast.error("Usuário não autenticado");
