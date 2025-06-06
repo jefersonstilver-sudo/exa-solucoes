@@ -53,17 +53,18 @@ export const useTransactionRecovery = () => {
       }
 
       console.log('✅ Investigation result:', data);
-      setInvestigationResult(data);
+      const result = data as TransactionInvestigationResult;
+      setInvestigationResult(result);
       
-      if (data.new_pedido_created) {
-        toast.success(`Transação recuperada! Novo pedido criado: ${data.new_pedido_created}`);
-      } else if (data.existing_pedido) {
+      if (result.new_pedido_created) {
+        toast.success(`Transação recuperada! Novo pedido criado: ${result.new_pedido_created}`);
+      } else if (result.existing_pedido) {
         toast.info('Pedido já existe no sistema');
       } else {
         toast.warning('Nenhuma ação necessária');
       }
 
-      return data;
+      return result;
     } catch (error) {
       console.error('💥 Error in investigation:', error);
       toast.error('Erro ao investigar transação');
@@ -86,18 +87,19 @@ export const useTransactionRecovery = () => {
       }
 
       console.log('📊 Reconciliation result:', data);
-      setReconciliationResult(data);
+      const result = data as ReconciliationResult;
+      setReconciliationResult(result);
       
-      const status = data.reconciliation_status;
+      const status = result.reconciliation_status;
       if (status === 'RECONCILED') {
         toast.success('✅ Sistema reconciliado com MercadoPago');
       } else if (status === 'MINOR_DISCREPANCY') {
-        toast.warning(`⚠️ Pequena discrepância detectada: ${data.missing_transactions} transações`);
+        toast.warning(`⚠️ Pequena discrepância detectada: ${result.missing_transactions} transações`);
       } else {
-        toast.error(`🚨 Discrepância crítica: ${data.missing_transactions} transações perdidas`);
+        toast.error(`🚨 Discrepância crítica: ${result.missing_transactions} transações perdidas`);
       }
 
-      return data;
+      return result;
     } catch (error) {
       console.error('💥 Error in reconciliation:', error);
       toast.error('Erro na reconciliação');
@@ -120,15 +122,16 @@ export const useTransactionRecovery = () => {
       }
 
       console.log('🛠️ Auto-fix result:', data);
-      setAutoFixResult(data);
+      const result = data as AutoFixResult;
+      setAutoFixResult(result);
       
-      if (data.transactions_fixed > 0) {
-        toast.success(`🎉 ${data.transactions_fixed} transações recuperadas automaticamente! Total: R$ ${data.total_recovered.toFixed(2)}`);
+      if (result.transactions_fixed > 0) {
+        toast.success(`🎉 ${result.transactions_fixed} transações recuperadas automaticamente! Total: R$ ${result.total_recovered.toFixed(2)}`);
       } else {
         toast.info('Nenhuma transação perdida encontrada para correção');
       }
 
-      return data;
+      return result;
     } catch (error) {
       console.error('💥 Error in auto-fix:', error);
       toast.error('Erro na correção automática');

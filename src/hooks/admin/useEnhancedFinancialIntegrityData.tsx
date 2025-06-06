@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { FinancialStats, AnomaliesData, AuditResult } from '@/components/admin/financial-integrity/types';
-import { useTransactionRecovery } from './useTransactionRecovery';
+import { useTransactionRecovery, AutoFixResult } from './useTransactionRecovery';
 
 export const useEnhancedFinancialIntegrityData = () => {
   const [stats, setStats] = useState<FinancialStats | null>(null);
@@ -99,7 +99,7 @@ export const useEnhancedFinancialIntegrityData = () => {
 
   const handleAutoFixTransactions = async () => {
     const result = await autoFixLostTransactions();
-    if (result && result.transactions_fixed > 0) {
+    if (result && (result as AutoFixResult).transactions_fixed > 0) {
       // Refresh data after auto-fix
       await fetchFinancialData();
     }
