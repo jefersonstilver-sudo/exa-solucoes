@@ -1,3 +1,4 @@
+
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -5,6 +6,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { CartProvider } from '@/contexts/CartContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import MinimalLoader from '@/components/ui/MinimalLoader';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 // Importações diretas para páginas críticas (sem lazy loading)
 import Index from './pages/Index';
@@ -14,9 +17,12 @@ import CheckoutCoupon from './pages/CheckoutCoupon';
 import CheckoutSummary from './pages/CheckoutSummary';
 import Checkout from './pages/Checkout';
 import Confirmacao from './pages/Confirmacao'; // CONFIRMAÇÃO DE EMAIL
+import LoginPage from './pages/LoginPage';
+import Cadastro from './pages/Cadastro';
+import SuperAdminPage from './pages/SuperAdminPage';
+import AdminPage from './pages/AdminPage';
 
 // Lazy load apenas para páginas menos usadas
-import { lazy } from 'react';
 const Marketing = lazy(() => import('./pages/Marketing'));
 const Produtora = lazy(() => import('./pages/Produtora'));
 const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
@@ -33,6 +39,7 @@ const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
 const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
 const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
+const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,7 +121,9 @@ function App() {
                   {/* ÁREA DO ANUNCIANTE */}
                   <Route path="/anunciante/*" element={
                     <ErrorBoundary>
-                      <CompleteResponsiveLayout />
+                      <Suspense fallback={<MinimalLoader />}>
+                        <CompleteResponsiveLayout />
+                      </Suspense>
                     </ErrorBoundary>
                   }>
                     <Route index element={
