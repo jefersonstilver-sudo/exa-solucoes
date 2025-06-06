@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +18,7 @@ import { VideoDisplayStatus } from '@/components/order/VideoDisplayStatus';
 import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
+import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 
 interface OrderDetails {
   id: string;
@@ -96,12 +96,8 @@ const OrderDetails = () => {
 
       console.log('📊 [ORDER_DETAILS] Pedido carregado:', userOrder);
       console.log('📍 [ORDER_DETAILS] Lista de painéis:', userOrder?.lista_paineis);
+      console.log('🏢 [ORDER_DETAILS] Lista de prédios:', userOrder?.lista_predios);
       console.log('💳 [ORDER_DETAILS] Log de pagamento:', userOrder?.log_pagamento);
-      console.log('📅 [ORDER_DETAILS] Datas do contrato:', {
-        data_inicio: userOrder?.data_inicio,
-        data_fim: userOrder?.data_fim,
-        status: userOrder?.status
-      });
       
       setOrderDetails(userOrder);
     } catch (error) {
@@ -115,7 +111,6 @@ const OrderDetails = () => {
   const handleVideoUpload = async (slotPosition: number, file: File) => {
     if (!userProfile?.id || !id) return;
     
-    // Verificar se o contrato está ativo antes de permitir upload
     if (contractStatus.isExpired) {
       toast.error('Não é possível fazer upload de vídeos para contratos expirados');
       return;
@@ -125,7 +120,6 @@ const OrderDetails = () => {
   };
 
   const handleVideoAction = async (action: () => Promise<void>) => {
-    // Verificar se o contrato está ativo antes de permitir ações
     if (contractStatus.isExpired) {
       toast.error('Não é possível realizar ações em contratos expirados');
       return;
@@ -168,13 +162,18 @@ const OrderDetails = () => {
   // Use building IDs from the new lista_predios column
   const displayBuildingIds = orderDetails?.lista_predios || [];
 
-  console.log('🔍 [ORDER_DETAILS] Dados finais para exibição:', {
+  // Verificar se há dados de localização incompletos
+  const hasLocationData = (displayBuildingIds && displayBuildingIds.length > 0) || 
+                         (displayPanels && displayPanels.length > 0);
+
+  console.log('🔍 [ORDER_DETAILS] Estado final dos dados:', {
     originalPanels: orderDetails.lista_paineis,
     recoveredPanels: enhancedData?.recoveredPanels,
     displayPanels,
+    displayBuildingIds,
+    hasLocationData,
     isRecovered: enhancedData?.isRecovered,
-    contractStatus,
-    hasStarted: contractStatus.hasStarted
+    contractStatus
   });
 
   console.log('🔍 [ORDER_DETAILS] Building IDs para exibição:', displayBuildingIds);
@@ -184,6 +183,11 @@ const OrderDetails = () => {
       <div className="space-y-6">
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
+
+        {/* Migration Fix Button - Show if no location data */}
+        {!hasLocationData && (
+          <MigrationFixButton orderId={orderDetails.id} />
+        )}
 
         {/* Enhanced Contract Status Card */}
         <EnhancedContractStatusCard
@@ -204,10 +208,12 @@ const OrderDetails = () => {
         {/* Status de Exibição */}
         <VideoDisplayStatus orderId={orderDetails.id} />
 
-        {/* Locais Selecionados - Nova seção visual */}
-        <SelectedBuildingsSection 
-          listaPredios={displayBuildingIds}
-        />
+        {/* Locais Selecionados - Show only if we have building data */}
+        {hasLocationData && displayBuildingIds.length > 0 && (
+          <SelectedBuildingsSection 
+            listaPredios={displayBuildingIds}
+          />
+        )}
 
         {/* Informações de Compra */}
         <PurchaseInfoCard orderDetails={orderDetails} />
@@ -226,7 +232,7 @@ const OrderDetails = () => {
           isRecovered={enhancedData?.isRecovered}
         />
 
-        {/* Gestão de Vídeos - Bloqueada se contrato expirado */}
+        {/* Gestão de Vídeos */}
         {contractStatus.isExpired ? (
           <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-300">
             <div className="text-center">
