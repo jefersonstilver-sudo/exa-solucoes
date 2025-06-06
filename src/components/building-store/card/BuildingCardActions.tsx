@@ -9,90 +9,65 @@ import {
   Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BuildingStore, buildingToPanel } from '@/services/buildingStoreService';
-import { Panel } from '@/types/panel';
+import { BuildingStore } from '@/services/buildingStoreService';
+import { convertBuildingToPanel } from '@/services/buildingToPanelService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { useCartManager } from '@/hooks/useCartManager';
-import { useEnhancedButtonAnimation } from '@/hooks/useEnhancedButtonAnimation';
+import { useUnifiedCart } from '@/hooks/useUnifiedCart';
 
 interface BuildingCardActionsProps {
   building: BuildingStore;
-  onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
-const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ 
-  building, 
-  onAddToCart 
-}) => {
+const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const isMobile = useIsMobile();
-  const { isAnimating, isPressed, animationType, startAnimation } = useEnhancedButtonAnimation();
   
-  // Connect to cart manager
-  const { isItemInCart, initialLoadDone } = useCartManager();
+  const { addToCart, isItemInCart, isLoading } = useUnifiedCart();
   
   // Check if item is in cart
-  const inCart = initialLoadDone ? isItemInCart(building.id) : false;
+  const inCart = !isLoading && isItemInCart(building.id);
 
   console.log('🛒 [BuildingCardActions] Renderizando:', {
     buildingId: building.id,
     buildingName: building.nome,
     inCart,
-    initialLoadDone,
-    isAdding,
-    isAnimating,
-    animationType
+    isLoading,
+    isAdding
   });
 
   const handleAddToCart = async () => {
-    if (inCart || isAdding) {
-      console.log('🛒 [BuildingCardActions] Item já está no carrinho ou sendo adicionado');
+    if (inCart || isAdding || isLoading) {
+      console.log('🛒 [BuildingCardActions] Operação bloqueada:', { inCart, isAdding, isLoading });
       return;
     }
     
     try {
-      console.log('🛒 [BuildingCardActions] Iniciando adição ao carrinho');
-      
-      // Estado otimista - mostrar loading imediatamente
+      console.log('🛒 [BuildingCardActions] Iniciando adição');
       setIsAdding(true);
-      startAnimation('loading');
       
-      // Convert Building to Panel before adding to cart
-      const panel = buildingToPanel(building);
+      // Convert building to panel
+      const panel = convertBuildingToPanel(building);
       
-      // Simular delay mínimo para feedback visual
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Add to cart
+      await addToCart(panel, 30);
       
-      // Call real add to cart function
-      await onAddToCart(panel, 30); // Default duration of 30 days
-      
-      console.log('🛒 [BuildingCardActions] Item adicionado com sucesso');
-      
-      // Mostrar estado de sucesso
+      // Show success state
       setShowSuccess(true);
-      startAnimation('success');
-      
-      // Reset states
       setTimeout(() => {
         setIsAdding(false);
         setShowSuccess(false);
       }, 1500);
       
     } catch (error) {
-      console.error('🛒 [BuildingCardActions] Erro ao adicionar ao carrinho:', error);
+      console.error('🛒 [BuildingCardActions] Erro:', error);
       setIsAdding(false);
-      startAnimation('error');
-      
-      toast.error('Erro ao adicionar ao carrinho', {
-        description: "Tente novamente em alguns instantes",
-        duration: 3000,
-      });
+      toast.error('Erro ao adicionar ao carrinho');
     }
   };
 
-  // Determinar estado do botão
+  // Determine button state
   const getButtonState = () => {
     if (isAdding) return 'loading';
     if (showSuccess || inCart) return 'added';
@@ -101,7 +76,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
 
   const buttonState = getButtonState();
 
-  // Styling baseado no estado com animações aprimoradas
+  // Button styles
   const getButtonStyles = () => {
     const baseStyles = `font-semibold transition-all duration-300 transform ${
       isMobile ? 'w-full py-3 text-base' : 'px-6 py-2 text-sm'
@@ -109,11 +84,11 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
 
     switch (buttonState) {
       case 'loading':
-        return `${baseStyles} bg-[#3C1361]/80 text-white cursor-wait scale-95 shadow-lg`;
+        return `${baseStyles} bg-[#3C1361]/80 text-white cursor-wait scale-95`;
       case 'added':
-        return `${baseStyles} bg-green-500 hover:bg-green-500 text-white cursor-default scale-100 shadow-xl`;
+        return `${baseStyles} bg-green-500 hover:bg-green-500 text-white cursor-default scale-100`;
       default:
-        return `${baseStyles} bg-[#3C1361] hover:bg-[#3C1361]/90 text-white hover:scale-105 hover:shadow-xl active:scale-95`;
+        return `${baseStyles} bg-[#3C1361] hover:bg-[#3C1361]/90 text-white hover:scale-105 active:scale-95`;
     }
   };
 
@@ -133,93 +108,51 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({
       </div>
       
       <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>
-        <motion.div
-          animate={
-            isAnimating 
-              ? { 
-                  scale: animationType === 'success' ? [1, 1.1, 1] : [1, 0.95, 1],
-                  rotateZ: animationType === 'success' ? [0, 2, 0] : 0
-                } 
-              : isPressed 
-                ? { scale: 0.98 }
-                : { scale: 1 }
-          }
-          transition={{ 
-            duration: isAnimating ? 0.8 : 0.2,
-            ease: "easeInOut"
-          }}
-          className={isMobile ? 'w-full' : ''}
+        <Button
+          onClick={handleAddToCart}
+          size={isMobile ? "default" : "sm"}
+          disabled={buttonState === 'added' || buttonState === 'loading' || isLoading}
+          className={getButtonStyles()}
         >
-          <Button
-            onClick={handleAddToCart}
-            size={isMobile ? "default" : "sm"}
-            disabled={buttonState === 'added' || buttonState === 'loading'}
-            className={getButtonStyles()}
-          >
-            <AnimatePresence mode="wait">
-              {buttonState === 'loading' ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex items-center"
-                >
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adicionando...
-                </motion.div>
-              ) : buttonState === 'added' ? (
-                <motion.div
-                  key="added"
-                  initial={{ opacity: 0, scale: 0.8, y: 5 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: -5 }}
-                  className="flex items-center"
-                >
-                  <motion.div
-                    animate={{ rotate: [0, 360] }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                  </motion.div>
-                  {inCart ? 'No Carrinho' : 'Adicionado!'}
-                  {!inCart && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: [0, 1.2, 1] }}
-                      transition={{ delay: 0.2, duration: 0.4 }}
-                    >
-                      <Sparkles className="h-3 w-3 ml-1 text-yellow-300" />
-                    </motion.div>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="normal"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex items-center"
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                  </motion.div>
-                  {isMobile ? 'Adicionar ao Carrinho' : 'Adicionar'}
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    whileHover={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ShoppingCart className="h-3 w-3 ml-1" />
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Button>
-        </motion.div>
+          <AnimatePresence mode="wait">
+            {buttonState === 'loading' ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center"
+              >
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Adicionando...
+              </motion.div>
+            ) : buttonState === 'added' ? (
+              <motion.div
+                key="added"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="flex items-center"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                {inCart ? 'No Carrinho' : 'Adicionado!'}
+                {!inCart && <Sparkles className="h-3 w-3 ml-1 text-yellow-300" />}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="normal"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {isMobile ? 'Adicionar ao Carrinho' : 'Adicionar'}
+                <ShoppingCart className="h-3 w-3 ml-1" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Button>
       </div>
     </div>
   );

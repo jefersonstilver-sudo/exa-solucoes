@@ -76,31 +76,25 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
  * Converte um BuildingStore em Panel para compatibilidade com o carrinho
  */
 export const buildingToPanel = (building: BuildingStore): Panel => {
+  console.log('🔄 [buildingToPanel] DEPRECATED: Use convertBuildingToPanel instead');
+  
   return {
     id: building.id,
-    code: `BLD-${building.id.slice(0, 8)}`,
     building_id: building.id,
-    status: 'ativo',
-    resolucao: '1920x1080',
+    posicao: 'centro',
+    largura: 1920,
+    altura: 1080,
+    status: 'online',
     buildings: {
       id: building.id,
       nome: building.nome,
-      endereco: building.endereco,
-      bairro: building.bairro,
-      cidade: building.bairro,
-      estado: 'SP',
-      cep: '00000-000',
-      latitude: building.latitude,
-      longitude: building.longitude,
-      imageUrl: getImageUrl(building.imagem_principal),
-      basePrice: building.preco_base,
-      venue_type: building.venue_type,
-      condominiumProfile: building.padrao_publico,
-      audience_profile: building.caracteristicas,
-      tags: building.amenities,
-      towers: Math.ceil(building.quantidade_telas / 2),
-      apartments: building.publico_estimado ? Math.ceil(building.publico_estimado / 3) : 100,
-      status: building.status
+      endereco: building.endereco || '',
+      cidade: building.cidade || '',
+      estado: building.estado || '',
+      caracteristicas: building.caracteristicas || [],
+      preco_base: building.preco_base || 280,
+      quantidade_telas: building.quantidade_telas || 1,
+      imagens: building.imagens || []
     }
   };
 };

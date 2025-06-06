@@ -3,8 +3,8 @@ import React, { ReactNode } from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
-import { useCartManager } from '@/hooks/useCartManager';
-import '@/styles/components.css'; // Importar CSS para prevenir footer duplicado
+import { useUnifiedCart } from '@/hooks/useUnifiedCart';
+import '@/styles/components.css';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,34 +12,32 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
-  console.log('🏗️ Layout: Renderizando Layout com footer ÚNICO e CartDrawer');
+  console.log('🏗️ Layout: Renderizando Layout com sistema unificado');
   
   const { 
     cartItems, 
-    cartOpen, 
+    isOpen, 
     toggleCart, 
-    cartAnimation,
-    handleRemoveFromCart,
-    handleClearCart,
-    handleChangeDuration,
-    handleProceedToCheckout
-  } = useCartManager();
-
-  // Calculate cart items count from cartItems array
-  const cartItemsCount = cartItems.length;
+    isAnimating,
+    removeFromCart,
+    clearCart,
+    updateDuration,
+    proceedToCheckout,
+    itemCount
+  } = useUnifiedCart();
 
   console.log('🏗️ Layout: Cart state:', {
-    cartItemsCount,
-    cartAnimation,
-    cartOpen,
-    cartItems: cartItems.map(item => ({ id: item.id, panelId: item.panel.id }))
+    itemCount,
+    isAnimating,
+    isOpen,
+    cartItemsLength: cartItems.length
   });
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 mobile-scroll-fix">
       <Header 
-        cartItemsCount={cartItemsCount}
-        cartAnimation={cartAnimation}
+        cartItemsCount={itemCount}
+        cartAnimation={isAnimating}
         onToggleCart={toggleCart}
       />
       
@@ -47,18 +45,16 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
         {children}
       </main>
       
-      {/* Cart Drawer - NOVO COMPONENTE ADICIONADO */}
       <CartDrawer
         cartItems={cartItems}
-        isOpen={cartOpen}
-        onClose={() => toggleCart()}
-        onRemoveFromCart={handleRemoveFromCart}
-        onClearCart={handleClearCart}
-        onChangeDuration={handleChangeDuration}
-        onProceedToCheckout={handleProceedToCheckout}
+        isOpen={isOpen}
+        onClose={toggleCart}
+        onRemoveFromCart={removeFromCart}
+        onClearCart={clearCart}
+        onChangeDuration={updateDuration}
+        onProceedToCheckout={proceedToCheckout}
       />
       
-      {/* ÚNICO FOOTER DA APLICAÇÃO */}
       <MobileOptimizedFooter />
     </div>
   );
