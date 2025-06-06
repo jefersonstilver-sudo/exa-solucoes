@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCartManager } from '@/hooks/useCartManager';
@@ -6,17 +5,18 @@ import { useCouponValidator } from '@/hooks/useCouponValidator';
 import { usePanelAvailability } from '@/hooks/usePanelAvailability';
 import { usePaymentProcessor } from '@/hooks/payment/usePaymentProcessor';
 import { useAttemptCapture } from '@/hooks/useAttemptCapture';
-import { calculateTotalPrice, calculateCartSubtotal } from '@/utils/checkoutUtils';
+import { calculateTotalPrice, calculateCartSubtotal, validatePriceIntegrity } from '@/utils/checkoutUtils';
 import { CHECKOUT_STEPS, PLANS } from '@/constants/checkoutConstants';
 import { useCheckoutState } from '@/hooks/checkout/useCheckoutState';
 import { useCheckoutAuth } from '@/hooks/checkout/useCheckoutAuth';
-import { useCartValidation } from '@/hooks/checkout/useCartValidation';
 import { useCheckoutNavigation } from '@/hooks/checkout/useCheckoutNavigation';
 import { CheckoutSteps, Plan, PlanKey } from '@/types/checkout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { PaymentResponse } from '@/types/payment';
 import { useCart } from '@/contexts/SimpleCartContext';
 import { logPriceCalculation } from '@/utils/auditLogger';
+import { duplicateOrderPrevention } from '@/utils/duplicateOrderPrevention';
+import { transactionRecoveryManager } from '@/utils/transactionRecoveryManager';
 
 export const STEPS = CHECKOUT_STEPS;
 export { PLANS };
@@ -65,13 +65,16 @@ export const useCheckout = () => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      `useCheckout: SISTEMA CORRIGIDO - Hook inicializado com cálculos unificados`,
+      `useCheckout: SISTEMA CORRIGIDO COM INTEGRIDADE - Hook inicializado`,
       { 
         currentPath: location.pathname,
         webhookUrl: "https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19",
         timestamp: new Date().toISOString()
       }
     );
+
+    // Iniciar monitoramento de recuperação automática
+    transactionRecoveryManager.monitorRealtimeTransactions();
   }, []); // Run only once
 
   // Hook de autenticação - executado apenas uma vez
@@ -101,6 +104,142 @@ export const useCheckout = () => {
     const timeout = setTimeout(debouncedCartValidation, 500);
     return () => clearTimeout(timeout);
   }, [debouncedCartValidation]);
+
+  // CORREÇÃO CRÍTICA: calculateTotalPrice sempre recalcula com dados atuais
+  const calculateCurrentTotalPrice = useCallback(() => {
+    if (!selectedPlan || cartItems.length === 0) {
+      console.log("💰 [useCheckout] Cálculo cancelado - dados insuficientes:", {
+        selectedPlan,
+        cartItemsLength: cartItems.length
+      });
+      return 0;
+    }
+
+    const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+    
+    console.log("💰 [useCheckout] TOTAL RECALCULADO COM SISTEMA DE INTEGRIDADE:", {
+      selectedPlan,
+      cartItemsCount: cartItems.length,
+      couponDiscount,
+      couponValid,
+      orderTotal: result,
+      currentPath: location.pathname,
+      timestamp: new Date().toISOString(),
+      cartDetails: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
+      }))
+    });
+
+    // Validar integridade antes de retornar
+    if (result <= 0) {
+      console.error("❌ [useCheckout] PREÇO INVÁLIDO DETECTADO:", {
+        result,
+        selectedPlan,
+        cartItemsCount: cartItems.length
+      });
+    }
+
+    return result;
+  }, [selectedPlan, cartItems, couponDiscount, couponValid, location.pathname]);
+
+  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência
+  const orderTotal = useMemo(() => {
+    return calculateCurrentTotalPrice();
+  }, [calculateCurrentTotalPrice]);
+
+  const cartSubtotal = useMemo(() => {
+    const result = calculateCartSubtotal(cartItems);
+    
+    console.log("💰 [useCheckout] SUBTOTAL CALCULADO:", {
+      cartItemsCount: cartItems.length,
+      cartSubtotal: result,
+      timestamp: new Date().toISOString()
+    });
+    
+    return result;
+  }, [cartItems]);
+
+  // Função wrapper para createPayment - com validação robusta e prevenção de duplicação
+  const wrappedCreatePayment = useCallback(async (options: any): Promise<any> => {
+    try {
+      if (!sessionUser?.id) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      if (cartItems.length === 0) {
+        throw new Error("Carrinho vazio");
+      }
+
+      const currentTotal = calculateCurrentTotalPrice();
+      
+      // NOVA VALIDAÇÃO: Verificar duplicação
+      if (duplicateOrderPrevention.isDuplicateAttempt(sessionUser.id, currentTotal, cartItems)) {
+        throw new Error("Tentativa de pedido duplicado detectada. Aguarde alguns minutos antes de tentar novamente.");
+      }
+
+      // NOVA VALIDAÇÃO: Adquirir lock de processamento
+      if (!duplicateOrderPrevention.acquireProcessingLock(sessionUser.id, currentTotal)) {
+        throw new Error("Processamento já em andamento. Aguarde.");
+      }
+
+      try {
+        // Registrar tentativa
+        const sessionId = duplicateOrderPrevention.registerAttempt(sessionUser.id, currentTotal, cartItems);
+        
+        console.log('[useCheckout] SISTEMA CORRIGIDO - Creating payment with validated data:', {
+          userId: sessionUser.id,
+          amount: currentTotal,
+          sessionId
+        });
+        
+        // Validar integridade do preço antes do pagamento
+        const integrityCheck = validatePriceIntegrity(selectedPlan!, cartItems, currentTotal);
+        if (!integrityCheck.isValid) {
+          console.error("❌ [useCheckout] FALHA NA VALIDAÇÃO DE INTEGRIDADE:", integrityCheck);
+          throw new Error(`Inconsistência de preço detectada. Diferença: R$ ${integrityCheck.difference.toFixed(2)}`);
+        }
+        
+        const response = await createPayment({
+          ...options,
+          totalPrice: currentTotal, // Garantir que o preço correto seja usado
+          sessionId
+        });
+        
+        if (response && response.success) {
+          await clearAttempt(sessionUser.id);
+        }
+        
+        return response;
+      } finally {
+        // Sempre liberar o lock
+        duplicateOrderPrevention.releaseProcessingLock(sessionUser.id, currentTotal);
+      }
+      
+    } catch (error) {
+      console.error('[useCheckout] Payment error:', error);
+      throw error;
+    }
+  }, [createPayment, sessionUser?.id, cartItems, calculateCurrentTotalPrice, selectedPlan, clearAttempt]);
+
+  // Usa o hook de navegação - com validações melhoradas
+  const navigation = useCheckoutNavigation({
+    step,
+    setStep,
+    selectedPlan,
+    cartItems,
+    couponDiscount,
+    couponValid,
+    acceptTerms,
+    unavailablePanels,
+    couponId,
+    startDate,
+    endDate,
+    sessionUser,
+    handleClearCart,
+    createPayment: wrappedCreatePayment
+  });
 
   // Set step baseado na rota - corrigido para nova ordem
   const currentPath = location.pathname;
@@ -173,134 +312,6 @@ export const useCheckout = () => {
     }
   }, [sessionUser?.id, cartItems.length, selectedPlan, step, couponDiscount, couponValid]);
 
-  // CORREÇÃO CRÍTICA: calculateTotalPrice sempre recalcula com dados atuais
-  const calculateCurrentTotalPrice = useCallback(() => {
-    if (!selectedPlan || cartItems.length === 0) {
-      console.log("💰 [useCheckout] Cálculo cancelado - dados insuficientes:", {
-        selectedPlan,
-        cartItemsLength: cartItems.length
-      });
-      return 0;
-    }
-
-    const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-    
-    console.log("💰 [useCheckout] TOTAL RECALCULADO EM TEMPO REAL:", {
-      selectedPlan,
-      cartItemsCount: cartItems.length,
-      couponDiscount,
-      couponValid,
-      orderTotal: result,
-      currentPath: location.pathname,
-      timestamp: new Date().toISOString(),
-      cartDetails: cartItems.map(item => ({
-        panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
-      }))
-    });
-
-    // Log para auditoria
-    logPriceCalculation('useCheckout-calculateCurrentTotalPrice', {
-      selectedPlan,
-      cartItemsCount: cartItems.length,
-      couponDiscount,
-      couponValid,
-      totalPrice: result,
-      currentPath: location.pathname,
-      cartItems: cartItems.map(item => ({
-        panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
-      }))
-    });
-    
-    return result;
-  }, [selectedPlan, cartItems, couponDiscount, couponValid, location.pathname]);
-
-  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência - MAS SEMPRE RECALCULANDO
-  const orderTotal = useMemo(() => {
-    return calculateCurrentTotalPrice();
-  }, [calculateCurrentTotalPrice]);
-
-  const cartSubtotal = useMemo(() => {
-    const result = calculateCartSubtotal(cartItems);
-    
-    console.log("💰 [useCheckout] SUBTOTAL CALCULADO:", {
-      cartItemsCount: cartItems.length,
-      cartSubtotal: result,
-      timestamp: new Date().toISOString()
-    });
-    
-    return result;
-  }, [cartItems]);
-
-  // Função wrapper para createPayment - com validação robusta
-  const wrappedCreatePayment = useCallback(async (options: any): Promise<any> => {
-    try {
-      if (!sessionUser?.id) {
-        throw new Error("Usuário não autenticado");
-      }
-
-      if (cartItems.length === 0) {
-        throw new Error("Carrinho vazio");
-      }
-
-      console.log('[useCheckout] SISTEMA CORRIGIDO - Creating payment with valid user:', sessionUser.id);
-      console.log('[useCheckout] CONFIRMAÇÃO: Usando cálculos unificados no createPayment');
-      
-      const response = await createPayment(options);
-      
-      if (response && response.success) {
-        await clearAttempt(sessionUser.id);
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('[useCheckout] Payment error:', error);
-      throw error;
-    }
-  }, [createPayment, sessionUser?.id, cartItems.length, clearAttempt]);
-
-  // Usa o hook de navegação - com validações melhoradas
-  const navigation = useCheckoutNavigation({
-    step,
-    setStep,
-    selectedPlan,
-    cartItems,
-    couponDiscount,
-    couponValid,
-    acceptTerms,
-    unavailablePanels,
-    couponId,
-    startDate,
-    endDate,
-    sessionUser,
-    handleClearCart,
-    createPayment: wrappedCreatePayment
-  });
-
-  // Adaptação da função validateCoupon - com debounce
-  const handleValidateCoupon = useCallback(() => {
-    if (couponCode.trim()) {
-      validateCoupon(couponCode, selectedPlan);
-    }
-  }, [couponCode, selectedPlan, validateCoupon]);
-
-  // Handler para próximo step com payment method - memoizado
-  const handleNextStepWithPayment = useCallback((paymentMethod?: string) => {
-    console.log(`[useCheckout] SISTEMA CORRIGIDO - handleNextStepWithPayment: ${paymentMethod || 'default'}`);
-    
-    if (!sessionUser?.id) {
-      console.error('[useCheckout] Cannot proceed - user not authenticated');
-      return;
-    }
-
-    if (navigation.handleNextStep && typeof navigation.handleNextStep === 'function') {
-      navigation.handleNextStep(paymentMethod);
-    }
-  }, [navigation.handleNextStep, sessionUser?.id]);
-
   return {
     step,
     STEPS,
@@ -320,8 +331,8 @@ export const useCheckout = () => {
     isNavigating: navigation.isNavigating,
     unavailablePanels,
     cartItems,
-    validateCoupon: handleValidateCoupon,
-    handleNextStep: handleNextStepWithPayment,
+    validateCoupon,
+    handleNextStep: navigation.handleNextStep,
     handlePrevStep: navigation.handlePrevStep,
     isNextEnabled: navigation.isNextEnabled,
     PLANS,
