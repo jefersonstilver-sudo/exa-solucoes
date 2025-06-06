@@ -210,11 +210,18 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error(`Erro ao criar pedido: ${pedidoError.message}`);
       }
 
-      // Properly type the returned data
-      const pedido = unwrapData(pedidoData) as PedidoType;
-      if (!pedido) {
+      // Properly type the returned data using a safe check
+      if (!pedidoData) {
         throw new Error('Falha ao criar pedido: dados inválidos retornados');
       }
+
+      const pedido: PedidoType = {
+        id: pedidoData.id,
+        lista_paineis: pedidoData.lista_paineis || [],
+        lista_predios: pedidoData.lista_predios || [],
+        valor_total: pedidoData.valor_total || 0,
+        client_id: pedidoData.client_id
+      };
 
       // VERIFICATION: Log the saved data to confirm it was saved correctly
       console.log('✅ [ENHANCED_ORDER_CREATOR] Pedido criado com sucesso!');
