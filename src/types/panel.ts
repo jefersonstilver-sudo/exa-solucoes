@@ -13,6 +13,8 @@ export interface Building {
   basePrice?: number;
   preco_base?: number; // Add this property for database compatibility
   venue_type: string; // Campo correto usado no banco
+  caracteristicas?: string[]; // ADICIONADO
+  imagens?: string[]; // ADICIONADO
   
   // Updated condominiumProfile to be either an object or a string
   condominiumProfile?: string | {
@@ -27,6 +29,7 @@ export interface Building {
   towers?: number;
   apartments?: number;
   status?: string;
+  quantidade_telas?: number; // ADICIONADO
 }
 
 export interface Panel {

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Panel } from '@/types/panel';
@@ -6,6 +7,8 @@ export interface BuildingStore {
   id: string;
   nome: string;
   endereco: string;
+  cidade: string; // ADICIONADO
+  estado: string; // ADICIONADO
   bairro: string;
   venue_type: string;
   status: string;
@@ -18,6 +21,7 @@ export interface BuildingStore {
   imagem_2: string;
   imagem_3: string;
   imagem_4: string;
+  imagens: string[]; // ADICIONADO
   amenities: string[];
   caracteristicas: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';

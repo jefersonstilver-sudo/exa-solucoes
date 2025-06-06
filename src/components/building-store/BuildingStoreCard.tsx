@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { BuildingStore } from '@/services/buildingStoreService';
-import { Panel } from '@/types/panel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingCardImage from './card/BuildingCardImage';
 import BuildingCardHeader from './card/BuildingCardHeader';
@@ -13,12 +12,10 @@ import BuildingCardActions from './card/BuildingCardActions';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
-  onAddToCart: (panel: Panel, duration?: number) => void;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
-  building, 
-  onAddToCart 
+  building
 }) => {
   const isMobile = useIsMobile();
 
@@ -87,10 +84,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
 
                 {/* Preço e Ações */}
                 <div className="mt-4">
-                  <BuildingCardActions 
-                    building={building}
-                    onAddToCart={onAddToCart}
-                  />
+                  <BuildingCardActions building={building} />
                 </div>
               </motion.div>
             </div>
@@ -163,10 +157,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
 
                 {/* Preço e Ações - No final */}
                 <div className="mt-auto">
-                  <BuildingCardActions 
-                    building={building}
-                    onAddToCart={onAddToCart}
-                  />
+                  <BuildingCardActions building={building} />
                 </div>
               </div>
             </motion.div>
