@@ -34,8 +34,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
     onClose();
   };
 
-  // Sempre renderizar o drawer quando houver itens, independente do estado isOpen
-  const shouldShow = cartItems.length > 0 && isOpen;
+  // Fix: Show drawer whenever isOpen is true, regardless of cart contents
+  // The internal PanelCart component will handle empty state appropriately
+  const shouldShow = isOpen;
 
   return (
     <AnimatePresence>
