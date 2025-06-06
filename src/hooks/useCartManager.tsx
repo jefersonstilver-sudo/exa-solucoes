@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
@@ -40,6 +39,10 @@ export const useCartManager = () => {
       setCartItems(fullCartItems);
       setInitialLoadDone(true);
       console.log('🛒 [useCartManager] Carrinho carregado:', fullCartItems.length, 'itens');
+      
+      // DEBUG: Log panel IDs being loaded
+      const panelIds = fullCartItems.map(item => item.panel.id);
+      console.log('🛒 [useCartManager] Panel IDs no carrinho:', panelIds);
     } catch (error) {
       console.error('🛒 [useCartManager] Erro ao carregar carrinho:', error);
       setInitialLoadDone(true);
@@ -55,6 +58,11 @@ export const useCartManager = () => {
       panel: item.panel,
       duration: item.duration
     }));
+    
+    // DEBUG: Log panel IDs being saved
+    const panelIds = cartItems.map(item => item.panel.id);
+    console.log('🛒 [useCartManager] Panel IDs sendo salvos:', panelIds);
+    
     saveCartToStorage(legacyCartItems);
   }, [cartItems, initialLoadDone]);
 
@@ -80,6 +88,7 @@ export const useCartManager = () => {
   // Add to cart function
   const handleAddToCart = useCallback((panel: Panel, duration: number = 30) => {
     console.log('🛒 [useCartManager] Adicionando ao carrinho:', panel.id, 'duração:', duration);
+    console.log('🛒 [useCartManager] Panel object:', panel);
     
     setCartItems(prev => {
       // Check if panel is already in cart
@@ -100,14 +109,9 @@ export const useCartManager = () => {
         );
       } else {
         console.log('🛒 [useCartManager] Adicionando novo item');
-        // Add new item
-        const newItem: CartItem = {
-          id: `cart_${panel.id}_${Date.now()}`,
-          panel,
-          duration,
-          addedAt: Date.now(),
-          price: getPanelPrice(panel, duration)
-        };
+        // Add new item to cart
+        const newItem = convertLegacyToCartItem({ panel, duration });
+        console.log('🛒 [useCartManager] Novo item criado:', newItem);
         return [...prev, newItem];
       }
     });
@@ -223,12 +227,11 @@ export const useCartManager = () => {
     // Cart state
     cartItems,
     cartOpen,
-    cartAnimation,
-    initialLoadDone,
-    isNavigating,
-    
-    // Cart state mutators
     setCartOpen,
+    cartAnimation,
+    isNavigating,
+    setIsNavigating,
+    initialLoadDone,
     
     // Cart operations
     toggleCart,

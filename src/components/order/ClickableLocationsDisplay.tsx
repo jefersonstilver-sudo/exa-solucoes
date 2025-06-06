@@ -1,28 +1,57 @@
 
 import React, { useState } from 'react';
-import { MapPin, Eye } from 'lucide-react';
+import { MapPin, Eye, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useBuildingNames } from '@/hooks/useBuildingNames';
 
 interface ClickableLocationsDisplayProps {
   listaPaineis: string[];
   className?: string;
+  orderDetails?: any; // For fallback data extraction
 }
 
 export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps> = ({
   listaPaineis,
-  className = ""
+  className = "",
+  orderDetails
 }) => {
   const { buildingNames, loading, error } = useBuildingNames(listaPaineis);
   const [isOpen, setIsOpen] = useState(false);
 
-  console.log('🏢 [CLICKABLE_LOCATIONS] Dados:', {
+  console.log('🏢 [CLICKABLE_LOCATIONS] Dados recebidos:', {
     listaPaineis,
     buildingNames,
     loading,
-    error
+    error,
+    orderDetails: orderDetails ? {
+      id: orderDetails.id,
+      log_pagamento: orderDetails.log_pagamento
+    } : null
   });
+
+  // ENHANCED: Try to extract panel info from order logs if lista_paineis is empty
+  const getFallbackLocationInfo = () => {
+    if (!orderDetails?.log_pagamento) return null;
+    
+    const logData = orderDetails.log_pagamento;
+    
+    // Check for panel IDs in different log structures
+    const panelIds = logData.panel_ids_saved || 
+                    logData.cart_items_debug?.map((item: any) => item.panel_id) ||
+                    [];
+    
+    const panelNames = logData.cart_items_debug?.map((item: any) => 
+      item.panel_name || 'Local não identificado'
+    ) || [];
+    
+    console.log('🔄 [CLICKABLE_LOCATIONS] Fallback data:', { panelIds, panelNames });
+    
+    return { panelIds, panelNames };
+  };
+
+  const fallbackData = getFallbackLocationInfo();
 
   if (loading) {
     return (
@@ -33,17 +62,48 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
     );
   }
 
-  if (error || buildingNames.length === 0) {
+  // ENHANCED: Show different messages based on the error type
+  if (error || (buildingNames.length === 0 && !fallbackData?.panelNames?.length)) {
     return (
-      <div className={`flex items-center space-x-2 ${className}`}>
-        <MapPin className="h-4 w-4 text-gray-400" />
-        <span className="text-gray-500">Locais não encontrados</span>
+      <div className={`space-y-2 ${className}`}>
+        <div className="flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 text-orange-500" />
+          <span className="text-orange-600 font-medium">Locais não carregados</span>
+        </div>
+        {listaPaineis.length === 0 ? (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Este pedido foi criado sem informações de painéis. 
+              Entre em contato com o suporte para correção.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Erro ao carregar informações dos locais. 
+              IDs dos painéis: {listaPaineis.join(', ')}
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     );
   }
 
-  const firstLocation = buildingNames[0];
-  const totalLocations = buildingNames.length;
+  // Use building names from hook or fallback data
+  const displayNames = buildingNames.length > 0 ? buildingNames : fallbackData?.panelNames || [];
+  const firstLocation = displayNames[0];
+  const totalLocations = displayNames.length;
+
+  if (totalLocations === 0) {
+    return (
+      <div className={`flex items-center space-x-2 ${className}`}>
+        <AlertCircle className="h-4 w-4 text-orange-500" />
+        <span className="text-orange-600">Nenhum local encontrado</span>
+      </div>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -74,7 +134,7 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
         </DialogHeader>
         
         <div className="space-y-2 max-h-80 overflow-y-auto">
-          {buildingNames.map((nome, index) => (
+          {displayNames.map((nome, index) => (
             <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
               <span className="font-medium text-gray-900">{nome}</span>
@@ -85,6 +145,16 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
         <div className="text-sm text-gray-600 mt-4 p-3 bg-blue-50 rounded-lg">
           <strong>Total:</strong> {totalLocations} {totalLocations === 1 ? 'local selecionado' : 'locais selecionados'} para exibição do seu conteúdo.
         </div>
+
+        {/* DEBUG INFO for development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-100 rounded">
+            <strong>Debug:</strong> Panel IDs: {listaPaineis.join(', ')}
+            {fallbackData && (
+              <div>Fallback: {fallbackData.panelIds.join(', ')}</div>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

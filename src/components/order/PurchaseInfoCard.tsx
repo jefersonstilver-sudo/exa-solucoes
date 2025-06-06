@@ -131,12 +131,13 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
             </div>
           </div>
           
-          {/* Substituindo Painéis por Locais Contratados */}
+          {/* FIXED: Changed from "Painéis Contratados" to "Locais Contratados" with proper data passing */}
           <div className="flex items-center space-x-3">
             <div>
               <p className="text-sm text-gray-600">Locais Contratados</p>
               <ClickableLocationsDisplay 
                 listaPaineis={orderDetails.lista_paineis || []}
+                orderDetails={orderDetails}
                 className="mt-1"
               />
             </div>
