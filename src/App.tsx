@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { CartProvider } from '@/contexts/CartContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MinimalLoader from '@/components/ui/MinimalLoader';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
 // Importações diretas para páginas críticas (sem lazy loading)
 import Index from './pages/Index';
