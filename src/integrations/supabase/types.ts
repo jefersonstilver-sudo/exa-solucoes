@@ -771,8 +771,11 @@ export type Database = {
           lista_predios: string[] | null
           log_pagamento: Json | null
           plano_meses: number
+          price_sync_verified: boolean | null
+          source_tentativa_id: string | null
           status: string
           termos_aceitos: boolean | null
+          transaction_id: string | null
           valor_total: number | null
         }
         Insert: {
@@ -788,8 +791,11 @@ export type Database = {
           lista_predios?: string[] | null
           log_pagamento?: Json | null
           plano_meses?: number
+          price_sync_verified?: boolean | null
+          source_tentativa_id?: string | null
           status?: string
           termos_aceitos?: boolean | null
+          transaction_id?: string | null
           valor_total?: number | null
         }
         Update: {
@@ -805,8 +811,11 @@ export type Database = {
           lista_predios?: string[] | null
           log_pagamento?: Json | null
           plano_meses?: number
+          price_sync_verified?: boolean | null
+          source_tentativa_id?: string | null
           status?: string
           termos_aceitos?: boolean | null
+          transaction_id?: string | null
           valor_total?: number | null
         }
         Relationships: [
@@ -944,6 +953,9 @@ export type Database = {
           id_user: string
           predio: string | null
           predios_selecionados: number[] | null
+          price_calculation_log: Json | null
+          price_locked: boolean | null
+          transaction_id: string | null
           valor_total: number | null
         }
         Insert: {
@@ -953,6 +965,9 @@ export type Database = {
           id_user: string
           predio?: string | null
           predios_selecionados?: number[] | null
+          price_calculation_log?: Json | null
+          price_locked?: boolean | null
+          transaction_id?: string | null
           valor_total?: number | null
         }
         Update: {
@@ -962,7 +977,55 @@ export type Database = {
           id_user?: string
           predio?: string | null
           predios_selecionados?: number[] | null
+          price_calculation_log?: Json | null
+          price_locked?: boolean | null
+          transaction_id?: string | null
           valor_total?: number | null
+        }
+        Relationships: []
+      }
+      transaction_sessions: {
+        Row: {
+          calculated_price: number
+          cart_items: Json
+          created_at: string
+          id: string
+          payment_external_id: string | null
+          pedido_id: string | null
+          selected_plan: number
+          status: string
+          tentativa_id: string | null
+          transaction_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calculated_price: number
+          cart_items: Json
+          created_at?: string
+          id?: string
+          payment_external_id?: string | null
+          pedido_id?: string | null
+          selected_plan: number
+          status?: string
+          tentativa_id?: string | null
+          transaction_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calculated_price?: number
+          cart_items?: Json
+          created_at?: string
+          id?: string
+          payment_external_id?: string | null
+          pedido_id?: string | null
+          selected_plan?: number
+          status?: string
+          tentativa_id?: string | null
+          transaction_id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1360,6 +1423,10 @@ export type Database = {
         Args: { p_payment_data: Json }
         Returns: Json
       }
+      recover_lost_transactions: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       reject_video: {
         Args: {
           p_pedido_video_id: string
@@ -1401,6 +1468,10 @@ export type Database = {
           valid: boolean
           message: string
         }[]
+      }
+      validate_price_integrity: {
+        Args: { p_transaction_id: string; p_expected_price: number }
+        Returns: boolean
       }
       validate_video_specs: {
         Args: {
