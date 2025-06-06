@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart,
   Check,
   Loader2,
   Plus,
-  Sparkles
+  Sparkles,
+  Bug
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BuildingStore } from '@/services/buildingStoreService';
@@ -22,91 +23,143 @@ interface BuildingCardActionsProps {
 const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [lastActionTime, setLastActionTime] = useState(0);
   const isMobile = useIsMobile();
+  const actionTimeoutRef = useRef<NodeJS.Timeout>();
   
-  const { addToCart, isItemInCart, isLoading, itemCount, forceUpdate } = useUnifiedCart();
+  const { addToCart, isItemInCart, isLoading, itemCount, syncVersion, debugClearCache } = useUnifiedCart();
   
-  // Check if item is in cart with enhanced logging
+  // Check if item is in cart with detailed logging and sync awareness
   const inCart = !isLoading && isItemInCart(building.id);
 
-  console.log('🛒 [BuildingCardActions] === RENDERIZANDO BUILDING CARD ACTIONS ===');
-  console.log('🛒 [BuildingCardActions] Building ID:', building.id);
-  console.log('🛒 [BuildingCardActions] Building Name:', building.nome);
-  console.log('🛒 [BuildingCardActions] inCart:', inCart);
-  console.log('🛒 [BuildingCardActions] isLoading:', isLoading);
-  console.log('🛒 [BuildingCardActions] isAdding:', isAdding);
-  console.log('🛒 [BuildingCardActions] Total cart items:', itemCount);
-  console.log('🛒 [BuildingCardActions] Force update counter:', forceUpdate);
+  console.log('🛒 [BuildingCardActions] === RENDERIZANDO ===');
+  console.log('🛒 [BuildingCardActions] Building:', { id: building.id, nome: building.nome });
+  console.log('🛒 [BuildingCardActions] States:', { inCart, isLoading, isAdding, showSuccess });
+  console.log('🛒 [BuildingCardActions] Cart info:', { itemCount, syncVersion });
 
-  // Effect to monitor state changes
+  // Reset success state when cart sync changes
   useEffect(() => {
-    console.log('🔄 [BuildingCardActions] State changed for building:', building.nome);
-    console.log('🔄 [BuildingCardActions] New inCart state:', inCart);
-  }, [inCart, building.nome, forceUpdate]);
+    if (inCart && showSuccess) {
+      console.log('🔄 [BuildingCardActions] Item confirmado no carrinho, mantendo sucesso');
+    } else if (inCart && !showSuccess) {
+      console.log('🔄 [BuildingCardActions] Item detectado no carrinho via sync');
+      setShowSuccess(true);
+      setIsAdding(false);
+    }
+  }, [inCart, showSuccess, syncVersion]);
+
+  // Auto-reset success state after delay
+  useEffect(() => {
+    if (showSuccess && !inCart) {
+      console.log('🔄 [BuildingCardActions] Resetando estado de sucesso');
+      setTimeout(() => {
+        setShowSuccess(false);
+        setIsAdding(false);
+      }, 2000);
+    }
+  }, [showSuccess, inCart]);
 
   const handleAddToCart = async () => {
+    const now = Date.now();
+    
+    // Prevent rapid clicks (debounce)
+    if (now - lastActionTime < 1000) {
+      console.log('⚠️ [BuildingCardActions] Clique muito rápido, ignorando');
+      return;
+    }
+    
     if (inCart || isAdding || isLoading) {
       console.log('🛒 [BuildingCardActions] Operação bloqueada:', { inCart, isAdding, isLoading });
       return;
     }
     
     try {
-      console.log('🛒 [BuildingCardActions] === INICIANDO ADIÇÃO AO CARRINHO ===');
-      console.log('🛒 [BuildingCardActions] Building sendo adicionado:', {
+      console.log('🛒 [BuildingCardActions] === INICIANDO ADIÇÃO ===');
+      console.log('🛒 [BuildingCardActions] Building data:', {
         id: building.id,
         nome: building.nome,
         preco_base: building.preco_base
       });
       
+      setLastActionTime(now);
       setIsAdding(true);
       
-      // Convert building to panel
+      // Clear any existing timeout
+      if (actionTimeoutRef.current) {
+        clearTimeout(actionTimeoutRef.current);
+      }
+      
+      // Convert building to panel with validation
       const panel = convertBuildingToPanel(building);
-      console.log('🔄 [BuildingCardActions] Panel convertido:', panel);
+      console.log('🔄 [BuildingCardActions] Panel convertido:', {
+        id: panel.id,
+        buildingId: panel.building_id,
+        nome: panel.buildings?.nome
+      });
+      
+      // Validate panel
+      if (!panel.id || !panel.buildings) {
+        throw new Error('Panel inválido após conversão');
+      }
       
       // Add to cart
       console.log('➕ [BuildingCardActions] Chamando addToCart...');
       await addToCart(panel, 30);
-      console.log('✅ [BuildingCardActions] addToCart executado com sucesso');
+      console.log('✅ [BuildingCardActions] addToCart executado');
       
       // Show success state
       setShowSuccess(true);
       
-      // Reset states after animation
-      setTimeout(() => {
-        console.log('🔄 [BuildingCardActions] Resetando estados de animação');
-        setIsAdding(false);
-        setShowSuccess(false);
-      }, 1500);
+      // Set timeout for state reset
+      actionTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 [BuildingCardActions] Timeout: resetando estados');
+        if (!inCart) {
+          setIsAdding(false);
+          setShowSuccess(false);
+        }
+      }, 2000);
       
-      console.log('🎉 [BuildingCardActions] === ADIÇÃO CONCLUÍDA COM SUCESSO ===');
+      console.log('🎉 [BuildingCardActions] === ADIÇÃO CONCLUÍDA ===');
       
     } catch (error) {
-      console.error('❌ [BuildingCardActions] Erro ao adicionar ao carrinho:', error);
+      console.error('❌ [BuildingCardActions] Erro:', error);
       setIsAdding(false);
       setShowSuccess(false);
-      toast.error('Erro ao adicionar ao carrinho');
+      toast.error(`Erro ao adicionar ${building.nome} ao carrinho`);
     }
   };
 
-  // Determine button state with enhanced logging
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (actionTimeoutRef.current) {
+        clearTimeout(actionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Enhanced button state logic
   const getButtonState = () => {
     let state;
     if (isAdding) {
       state = 'loading';
-    } else if (showSuccess || inCart) {
+    } else if (inCart || showSuccess) {
       state = 'added';
     } else {
       state = 'normal';
     }
     
-    console.log('🎨 [BuildingCardActions] Button state for', building.nome, ':', state);
+    console.log('🎨 [BuildingCardActions] Button state:', { 
+      building: building.nome, 
+      state,
+      factors: { isAdding, inCart, showSuccess }
+    });
     return state;
   };
 
   const buttonState = getButtonState();
 
-  // Button styles
+  // Enhanced button styles
   const getButtonStyles = () => {
     const baseStyles = `font-semibold transition-all duration-300 transform ${
       isMobile ? 'w-full py-3 text-base' : 'px-6 py-2 text-sm'
@@ -136,11 +189,20 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
           {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
         </p>
         
-        {/* Debug info in development */}
+        {/* Enhanced debug info */}
         {process.env.NODE_ENV === 'development' && (
-          <p className="text-xs text-blue-500 mt-1">
-            Debug: inCart={String(inCart)}, state={buttonState}
-          </p>
+          <div className="text-xs text-blue-500 mt-1 space-y-1">
+            <p>ID: {building.id}</p>
+            <p>InCart: {String(inCart)} | State: {buttonState}</p>
+            <p>Sync: {syncVersion} | Count: {itemCount}</p>
+            <button 
+              onClick={debugClearCache}
+              className="flex items-center gap-1 text-red-500 hover:text-red-700"
+            >
+              <Bug className="h-3 w-3" />
+              Debug Clear
+            </button>
+          </div>
         )}
       </div>
       

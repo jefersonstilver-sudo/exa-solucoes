@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
@@ -9,61 +9,86 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 
 const CART_KEY = 'indexa_unified_cart';
 
-// Simplified cart item creation
-const createCartItem = (panel: Panel, duration: number = 30): CartItem => ({
-  id: `cart_${panel.id}_${Date.now()}`,
-  panel,
-  duration,
-  addedAt: Date.now(),
-  price: getPanelPrice(panel, duration)
-});
+// Simplified cart item creation with validation
+const createCartItem = (panel: Panel, duration: number = 30): CartItem => {
+  if (!panel || !panel.id) {
+    throw new Error('Panel ou panel.id está undefined');
+  }
+  
+  return {
+    id: `cart_${panel.id}_${Date.now()}`,
+    panel,
+    duration,
+    addedAt: Date.now(),
+    price: getPanelPrice(panel, duration)
+  };
+};
+
+// Debounce helper
+const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+  
+  return useCallback((...args: any[]) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => callback(...args), delay);
+  }, [callback, delay]);
+};
 
 export const useUnifiedCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [forceUpdate, setForceUpdate] = useState(0);
+  const [syncVersion, setSyncVersion] = useState(0);
   const navigate = useNavigate();
+  const addingRef = useRef<Set<string>>(new Set());
 
-  // Force re-render function
-  const triggerForceUpdate = useCallback(() => {
-    console.log('🔄 [UnifiedCart] Triggering force update');
-    setForceUpdate(prev => prev + 1);
+  console.log('🛒 [UnifiedCart] === HOOK RENDERIZADO ===');
+  console.log('🛒 [UnifiedCart] cartItems.length:', cartItems.length);
+  console.log('🛒 [UnifiedCart] isOpen:', isOpen);
+  console.log('🛒 [UnifiedCart] isAnimating:', isAnimating);
+  console.log('🛒 [UnifiedCart] syncVersion:', syncVersion);
+
+  // Force sync function
+  const forceSync = useCallback(() => {
+    console.log('🔄 [UnifiedCart] Forcing sync update');
+    setSyncVersion(prev => prev + 1);
   }, []);
 
-  // Load cart on mount with detailed logging
+  // Load cart on mount with validation
   useEffect(() => {
-    console.log('🛒 [UnifiedCart] === INICIALIZANDO CARRINHO UNIFICADO ===');
+    console.log('🛒 [UnifiedCart] === INICIALIZANDO CARRINHO ===');
     try {
       const saved = localStorage.getItem(CART_KEY);
-      console.log('🛒 [UnifiedCart] localStorage raw data:', saved);
+      console.log('🛒 [UnifiedCart] localStorage raw:', saved);
       
       if (saved) {
         const parsed = JSON.parse(saved);
         console.log('🛒 [UnifiedCart] Parsed data:', parsed);
         
         if (Array.isArray(parsed)) {
-          setCartItems(parsed);
-          console.log('✅ [UnifiedCart] Carrinho carregado com sucesso:', parsed.length, 'itens');
-          parsed.forEach((item, index) => {
-            console.log(`🛒 [UnifiedCart] Item ${index + 1}:`, {
-              id: item.id,
-              panelId: item.panel?.id,
-              panelName: item.panel?.buildings?.nome,
-              duration: item.duration,
-              price: item.price
-            });
+          // Validate each item
+          const validItems = parsed.filter(item => {
+            const isValid = item && item.panel && item.panel.id && typeof item.duration === 'number';
+            if (!isValid) {
+              console.warn('⚠️ [UnifiedCart] Item inválido removido:', item);
+            }
+            return isValid;
           });
+          
+          setCartItems(validItems);
+          console.log('✅ [UnifiedCart] Carrinho carregado:', validItems.length, 'itens válidos');
         } else {
-          console.warn('⚠️ [UnifiedCart] Dados não são array, limpando carrinho');
+          console.warn('⚠️ [UnifiedCart] Dados não são array, limpando');
           localStorage.removeItem(CART_KEY);
         }
       } else {
-        console.log('📝 [UnifiedCart] Nenhum carrinho salvo encontrado');
+        console.log('📝 [UnifiedCart] Nenhum carrinho encontrado');
       }
     } catch (error) {
-      console.error('❌ [UnifiedCart] Erro ao carregar carrinho:', error);
+      console.error('❌ [UnifiedCart] Erro ao carregar:', error);
       localStorage.removeItem(CART_KEY);
     } finally {
       setIsLoading(false);
@@ -71,135 +96,178 @@ export const useUnifiedCart = () => {
     }
   }, []);
 
-  // Save cart when items change with detailed logging
+  // Save cart with integrity check
   useEffect(() => {
     if (!isLoading) {
       try {
-        console.log('💾 [UnifiedCart] Salvando carrinho:', cartItems.length, 'itens');
-        localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
+        console.log('💾 [UnifiedCart] Salvando carrinho:', cartItems.length);
         
-        // Log detailed cart state
-        cartItems.forEach((item, index) => {
-          console.log(`💾 [UnifiedCart] Salvando item ${index + 1}:`, {
+        // Validate before saving
+        const validItems = cartItems.filter(item => 
+          item && item.panel && item.panel.id && typeof item.duration === 'number'
+        );
+        
+        if (validItems.length !== cartItems.length) {
+          console.warn('⚠️ [UnifiedCart] Itens inválidos detectados durante salvamento');
+          setCartItems(validItems);
+          return;
+        }
+        
+        localStorage.setItem(CART_KEY, JSON.stringify(validItems));
+        
+        // Log detailed state
+        validItems.forEach((item, index) => {
+          console.log(`💾 [UnifiedCart] Item ${index + 1}:`, {
             id: item.id,
             panelId: item.panel?.id,
-            panelName: item.panel?.buildings?.nome
+            panelName: item.panel?.buildings?.nome,
+            duration: item.duration,
+            price: item.price
           });
         });
         
+        forceSync();
         console.log('✅ [UnifiedCart] Carrinho salvo com sucesso');
-        
-        // Trigger force update to ensure all components are notified
-        triggerForceUpdate();
       } catch (error) {
-        console.error('❌ [UnifiedCart] Erro ao salvar carrinho:', error);
+        console.error('❌ [UnifiedCart] Erro ao salvar:', error);
       }
     }
-  }, [cartItems, isLoading, triggerForceUpdate]);
+  }, [cartItems, isLoading, forceSync]);
 
-  // Check if item is in cart with enhanced logging
+  // Improved isItemInCart with detailed logging
   const isItemInCart = useCallback((panelId: string): boolean => {
     if (!panelId || isLoading) {
-      console.log('🔍 [UnifiedCart] isItemInCart: early return (no panelId or loading)');
+      console.log('🔍 [UnifiedCart] isItemInCart early return:', { panelId, isLoading });
       return false;
     }
     
-    const inCart = cartItems.some(item => item.panel.id === panelId);
-    console.log('🔍 [UnifiedCart] isItemInCart:', panelId, '→', inCart);
-    console.log('🔍 [UnifiedCart] Current cart panel IDs:', cartItems.map(item => item.panel.id));
+    const inCart = cartItems.some(item => {
+      const match = item.panel?.id === panelId;
+      console.log('🔍 [UnifiedCart] Comparing:', { 
+        itemPanelId: item.panel?.id, 
+        searchPanelId: panelId, 
+        match 
+      });
+      return match;
+    });
+    
+    console.log('🔍 [UnifiedCart] isItemInCart result:', { panelId, inCart, cartItemsCount: cartItems.length });
+    console.log('🔍 [UnifiedCart] Current cart panel IDs:', cartItems.map(item => item.panel?.id));
     
     return inCart;
-  }, [cartItems, isLoading, forceUpdate]);
+  }, [cartItems, isLoading, syncVersion]);
 
-  // Add item to cart with enhanced state management
-  const addToCart = useCallback((panel: Panel, duration: number = 30) => {
-    console.log('🛒 [UnifiedCart] === ADICIONANDO ITEM AO CARRINHO ===');
-    console.log('🛒 [UnifiedCart] Panel ID:', panel.id);
-    console.log('🛒 [UnifiedCart] Panel Name:', panel.buildings?.nome);
+  // Debounced add to cart with duplicate prevention
+  const addToCartInternal = useCallback(async (panel: Panel, duration: number = 30) => {
+    console.log('🛒 [UnifiedCart] === ADICIONANDO ITEM ===');
+    console.log('🛒 [UnifiedCart] Panel:', { id: panel.id, name: panel.buildings?.nome });
     console.log('🛒 [UnifiedCart] Duration:', duration);
-    console.log('🛒 [UnifiedCart] Current cart size BEFORE:', cartItems.length);
-    
-    setCartItems(prev => {
-      console.log('🔄 [UnifiedCart] Previous cart state:', prev.length, 'items');
-      
-      const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
-      console.log('🔍 [UnifiedCart] Existing item index:', existingIndex);
-      
-      let newCartItems;
-      if (existingIndex >= 0) {
-        // Update existing item
-        console.log('🔄 [UnifiedCart] Updating existing item');
-        newCartItems = prev.map((item, index) => 
-          index === existingIndex 
-            ? { ...item, duration, price: getPanelPrice(panel, duration), addedAt: Date.now() }
-            : item
-        );
-      } else {
-        // Add new item
-        console.log('➕ [UnifiedCart] Adding new item');
-        const newItem = createCartItem(panel, duration);
-        console.log('➕ [UnifiedCart] New item created:', newItem);
-        newCartItems = [...prev, newItem];
-      }
-      
-      console.log('✅ [UnifiedCart] New cart state:', newCartItems.length, 'items');
-      return newCartItems;
-    });
+    console.log('🛒 [UnifiedCart] Currently adding:', Array.from(addingRef.current));
 
-    // Trigger animation and open cart with proper timing
-    console.log('🎬 [UnifiedCart] Starting animation and opening cart');
-    setIsAnimating(true);
-    
-    // Use setTimeout to ensure state is updated before opening
-    setTimeout(() => {
-      console.log('📖 [UnifiedCart] Opening cart drawer');
-      setIsOpen(true);
-    }, 50);
-    
-    // Reset animation after duration
-    setTimeout(() => {
-      console.log('🎬 [UnifiedCart] Stopping animation');
-      setIsAnimating(false);
-    }, 800);
+    // Prevent duplicate additions
+    if (addingRef.current.has(panel.id)) {
+      console.warn('⚠️ [UnifiedCart] Já adicionando este item, ignorando');
+      return;
+    }
 
-    // Log event
-    logCheckoutEvent(
-      CheckoutEvent.ADD_TO_CART,
-      LogLevel.INFO,
-      "Item adicionado ao carrinho unificado",
-      { panelId: panel.id, duration }
-    );
+    // Mark as adding
+    addingRef.current.add(panel.id);
 
-    // Show success toast
-    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`);
-    
-    console.log('✅ [UnifiedCart] === ITEM ADICIONADO COM SUCESSO ===');
-  }, [cartItems]);
+    try {
+      setCartItems(prev => {
+        console.log('🔄 [UnifiedCart] Estado anterior:', prev.length, 'itens');
+        
+        const existingIndex = prev.findIndex(item => item.panel?.id === panel.id);
+        console.log('🔍 [UnifiedCart] Índice existente:', existingIndex);
+        
+        let newCartItems;
+        if (existingIndex >= 0) {
+          console.log('🔄 [UnifiedCart] Atualizando item existente');
+          newCartItems = prev.map((item, index) => 
+            index === existingIndex 
+              ? { ...item, duration, price: getPanelPrice(panel, duration), addedAt: Date.now() }
+              : item
+          );
+        } else {
+          console.log('➕ [UnifiedCart] Adicionando novo item');
+          const newItem = createCartItem(panel, duration);
+          console.log('➕ [UnifiedCart] Novo item:', newItem);
+          newCartItems = [...prev, newItem];
+        }
+        
+        console.log('✅ [UnifiedCart] Novo estado:', newCartItems.length, 'itens');
+        return newCartItems;
+      });
+
+      // Start animation
+      console.log('🎬 [UnifiedCart] Iniciando animação');
+      setIsAnimating(true);
+      
+      // Open cart after state update
+      setTimeout(() => {
+        console.log('📖 [UnifiedCart] Abrindo carrinho');
+        setIsOpen(true);
+      }, 100);
+      
+      // Stop animation
+      setTimeout(() => {
+        console.log('🎬 [UnifiedCart] Parando animação');
+        setIsAnimating(false);
+      }, 1000);
+
+      // Log event
+      logCheckoutEvent(
+        CheckoutEvent.ADD_TO_CART,
+        LogLevel.INFO,
+        "Item adicionado ao carrinho unificado",
+        { panelId: panel.id, duration }
+      );
+
+      // Success toast
+      toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`);
+      
+      console.log('✅ [UnifiedCart] === ADIÇÃO CONCLUÍDA ===');
+    } catch (error) {
+      console.error('❌ [UnifiedCart] Erro ao adicionar:', error);
+      toast.error('Erro ao adicionar ao carrinho');
+    } finally {
+      // Remove from adding set after delay
+      setTimeout(() => {
+        addingRef.current.delete(panel.id);
+        console.log('🔄 [UnifiedCart] Removido do set de adição:', panel.id);
+      }, 1000);
+    }
+  }, []);
+
+  // Debounced version
+  const addToCart = useDebounce(addToCartInternal, 300);
 
   // Remove item from cart
   const removeFromCart = useCallback((panelId: string) => {
     console.log('🗑️ [UnifiedCart] Removendo item:', panelId);
     
-    const itemToRemove = cartItems.find(item => item.panel.id === panelId);
-    setCartItems(prev => prev.filter(item => item.panel.id !== panelId));
+    const itemToRemove = cartItems.find(item => item.panel?.id === panelId);
+    setCartItems(prev => prev.filter(item => item.panel?.id !== panelId));
     
     toast.success(`${itemToRemove?.panel.buildings?.nome || 'Painel'} removido do carrinho`);
   }, [cartItems]);
 
-  // Clear cart
+  // Clear cart with confirmation
   const clearCart = useCallback(() => {
     console.log('🧹 [UnifiedCart] Limpando carrinho');
     setCartItems([]);
     localStorage.removeItem(CART_KEY);
+    addingRef.current.clear();
+    forceSync();
     toast.success('Carrinho limpo');
-  }, []);
+  }, [forceSync]);
 
   // Update duration
   const updateDuration = useCallback((panelId: string, duration: number) => {
-    console.log('📅 [UnifiedCart] Atualizando duração:', panelId, duration);
+    console.log('📅 [UnifiedCart] Atualizando duração:', { panelId, duration });
     
     setCartItems(prev => prev.map(item => 
-      item.panel.id === panelId 
+      item.panel?.id === panelId 
         ? { ...item, duration, price: getPanelPrice(item.panel, duration) }
         : item
     ));
@@ -207,17 +275,17 @@ export const useUnifiedCart = () => {
 
   // Toggle cart
   const toggleCart = useCallback(() => {
-    console.log('🔄 [UnifiedCart] Toggle carrinho - Estado atual:', isOpen);
+    console.log('🔄 [UnifiedCart] Toggle carrinho - atual:', isOpen);
     setIsOpen(prev => {
       const newState = !prev;
-      console.log('🔄 [UnifiedCart] Novo estado do carrinho:', newState);
+      console.log('🔄 [UnifiedCart] Novo estado:', newState);
       return newState;
     });
   }, [isOpen]);
 
   // Proceed to checkout
   const proceedToCheckout = useCallback(() => {
-    console.log('🛒➡️ [UnifiedCart] Proceeding to checkout');
+    console.log('🛒➡️ [UnifiedCart] Prosseguindo para checkout');
     if (cartItems.length === 0) {
       toast.error('Carrinho vazio');
       return;
@@ -227,15 +295,29 @@ export const useUnifiedCart = () => {
     navigate('/plano');
   }, [cartItems.length, navigate]);
 
+  // Debug function to clear problematic state
+  const debugClearCache = useCallback(() => {
+    console.log('🔧 [UnifiedCart] DEBUG: Limpando cache');
+    localStorage.removeItem(CART_KEY);
+    setCartItems([]);
+    addingRef.current.clear();
+    setIsOpen(false);
+    setIsAnimating(false);
+    forceSync();
+    toast.success('Cache limpo - Debug');
+  }, [forceSync]);
+
   // Enhanced state logging
   useEffect(() => {
-    console.log('📊 [UnifiedCart] === ESTADO ATUAL DO CARRINHO ===');
-    console.log('📊 [UnifiedCart] Items count:', cartItems.length);
-    console.log('📊 [UnifiedCart] Is open:', isOpen);
-    console.log('📊 [UnifiedCart] Is animating:', isAnimating);
-    console.log('📊 [UnifiedCart] Is loading:', isLoading);
-    console.log('📊 [UnifiedCart] Force update counter:', forceUpdate);
-  }, [cartItems, isOpen, isAnimating, isLoading, forceUpdate]);
+    console.log('📊 [UnifiedCart] === ESTADO DETALHADO ===');
+    console.log('📊 [UnifiedCart] Items:', cartItems.length);
+    console.log('📊 [UnifiedCart] Open:', isOpen);
+    console.log('📊 [UnifiedCart] Animating:', isAnimating);
+    console.log('📊 [UnifiedCart] Loading:', isLoading);
+    console.log('📊 [UnifiedCart] Sync version:', syncVersion);
+    console.log('📊 [UnifiedCart] Adding set:', Array.from(addingRef.current));
+    console.log('📊 [UnifiedCart] Panel IDs:', cartItems.map(item => item.panel?.id));
+  }, [cartItems, isOpen, isAnimating, isLoading, syncVersion]);
 
   return {
     // State
@@ -256,9 +338,10 @@ export const useUnifiedCart = () => {
     
     // Utils
     isItemInCart,
+    forceSync,
     
     // Debug
-    forceUpdate,
-    triggerForceUpdate
+    debugClearCache,
+    syncVersion
   };
 };

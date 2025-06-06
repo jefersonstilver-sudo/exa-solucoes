@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import ModernCartIcon from '@/components/cart/ModernCartIcon';
 
 interface CartButtonProps {
@@ -13,21 +13,24 @@ const CartButton: React.FC<CartButtonProps> = ({
   isAnimating = false,
   onToggleCart
 }) => {
-  console.log('🛒 [CartButton] === RENDERIZANDO CART BUTTON ===');
-  console.log('🛒 [CartButton] cartItemsCount:', cartItemsCount);
-  console.log('🛒 [CartButton] isAnimating:', isAnimating);
-  console.log('🛒 [CartButton] onToggleCart function provided:', !!onToggleCart);
+  console.log('🛒 [CartButton] === RENDERIZANDO ===');
+  console.log('🛒 [CartButton] Props:', { cartItemsCount, isAnimating, hasToggleCart: !!onToggleCart });
+
+  // Log state changes
+  useEffect(() => {
+    console.log('🔄 [CartButton] Estado mudou:', { cartItemsCount, isAnimating });
+  }, [cartItemsCount, isAnimating]);
 
   const handleCartClick = () => {
-    console.log('🛒 [CartButton] === CLIQUE NO CARRINHO DETECTADO ===');
-    console.log('🛒 [CartButton] Current cartItemsCount:', cartItemsCount);
-    console.log('🛒 [CartButton] onToggleCart function:', !!onToggleCart);
+    console.log('🛒 [CartButton] === CLIQUE DETECTADO ===');
+    console.log('🛒 [CartButton] Current count:', cartItemsCount);
+    console.log('🛒 [CartButton] onToggleCart available:', !!onToggleCart);
     
     if (onToggleCart) {
-      console.log('🛒 [CartButton] Chamando função toggleCart');
+      console.log('🛒 [CartButton] Executando toggleCart');
       onToggleCart();
     } else {
-      console.error('🛒 [CartButton] ERRO CRÍTICO - onToggleCart não foi fornecida!');
+      console.error('🛒 [CartButton] ❌ ERRO - onToggleCart não fornecida!');
     }
   };
 
@@ -40,15 +43,23 @@ const CartButton: React.FC<CartButtonProps> = ({
         variant="header"
       />
       
-      {/* Enhanced visual indicator when has items */}
+      {/* Enhanced visual indicators */}
       {cartItemsCount > 0 && (
-        <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#00FFAB] rounded-full animate-pulse" />
+        <>
+          {/* Pulse indicator */}
+          <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#00FFAB] rounded-full animate-pulse" />
+          
+          {/* Glow effect when animating */}
+          {isAnimating && (
+            <div className="absolute inset-0 bg-[#00FFAB]/20 rounded-full animate-ping" />
+          )}
+        </>
       )}
       
-      {/* Debug info in development */}
+      {/* Enhanced debug info */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="absolute -top-8 -left-4 bg-black text-white text-xs px-1 py-0.5 rounded opacity-75 pointer-events-none">
-          {cartItemsCount}
+        <div className="absolute -top-10 -left-6 bg-black text-white text-xs px-2 py-1 rounded opacity-75 pointer-events-none">
+          Count: {cartItemsCount} | Anim: {isAnimating ? 'Y' : 'N'}
         </div>
       )}
     </div>
