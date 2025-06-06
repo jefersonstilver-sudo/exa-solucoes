@@ -19,7 +19,7 @@ export const useCheckoutDataPersistence = () => {
     }
 
     // Verificar se os painéis existem no banco
-    const panelIds = cartItems.map(item => item.panel?.id || item.panel_id).filter(Boolean);
+    const panelIds = cartItems.map(item => item.panel?.id || item.id).filter(Boolean);
     console.log('🔍 [CHECKOUT_DEBUG] Panel IDs extraídos:', panelIds);
 
     if (panelIds.length > 0) {
@@ -62,7 +62,7 @@ export const useCheckoutDataPersistence = () => {
       
       // Extrair dados dos items do carrinho
       const panelIds = cartItems.map(item => {
-        const panelId = item.panel?.id || item.panel_id || item.id;
+        const panelId = item.panel?.id || item.id;
         console.log('🔍 [CHECKOUT_PERSISTENCE] Extraindo panel ID:', panelId, 'do item:', item);
         return panelId;
       }).filter(Boolean);
@@ -89,12 +89,12 @@ export const useCheckoutDataPersistence = () => {
       const attemptData = {
         id_user: userId,
         valor_total: totalPrice,
-        predios_selecionados: buildingIds,
+        predios_selecionados: buildingIds.map(id => Number(id)),
         credencial: JSON.stringify({
           panel_ids: panelIds,
           building_ids: buildingIds,
           cart_items_backup: cartItems.map(item => ({
-            panel_id: item.panel?.id || item.panel_id,
+            panel_id: item.panel?.id || item.id,
             building_id: item.panel?.building_id,
             panel_name: item.panel?.buildings?.nome || 'Nome não disponível',
             duration: item.duration || 30,
@@ -120,7 +120,7 @@ export const useCheckoutDataPersistence = () => {
       console.log('✅ [CHECKOUT_PERSISTENCE] Tentativa salva:', savedAttempt);
       return savedAttempt;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 [CHECKOUT_PERSISTENCE] Erro geral:', error);
       throw error;
     }
@@ -178,7 +178,7 @@ export const useCheckoutDataPersistence = () => {
         totalValue: attempt.valor_total
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 [CHECKOUT_PERSISTENCE] Erro ao recuperar tentativa:', error);
       return null;
     }

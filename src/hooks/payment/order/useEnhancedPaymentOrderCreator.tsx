@@ -94,7 +94,7 @@ export const useEnhancedPaymentOrderCreator = () => {
 
       // ENHANCED: Extract panel and building IDs with detailed logging
       const panelIds = cartItems.map(item => {
-        const panelId = item.panel?.id || item.panel_id || item.id;
+        const panelId = item.panel?.id || item.id;
         console.log('🔍 [ENHANCED_ORDER_CREATOR] Extraindo panel ID:', panelId, 'do item:', item);
         return panelId;
       }).filter(Boolean);
@@ -175,7 +175,7 @@ export const useEnhancedPaymentOrderCreator = () => {
           building_ids_saved: buildingIds,
           enhanced_creation: true,
           cart_items_debug: cartItems.map(item => ({
-            panel_id: item.panel?.id || item.panel_id,
+            panel_id: item.panel?.id || item.id,
             building_id: item.panel?.building_id,
             panel_name: item.panel?.buildings?.nome || 'Nome não disponível',
             building_name: item.panel?.buildings?.nome || 'Nome não disponível',
@@ -269,7 +269,7 @@ export const useEnhancedPaymentOrderCreator = () => {
           error: error.message,
           userId: sessionUser?.id,
           cartItems: cartItems?.map(item => ({
-            panelId: item.panel?.id || item.panel_id,
+            panelId: item.panel?.id || item.id,
             buildingId: item.panel?.building_id,
             panelName: item.panel?.buildings?.nome,
             buildingName: item.panel?.buildings?.nome

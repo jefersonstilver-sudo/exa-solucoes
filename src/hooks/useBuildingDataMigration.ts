@@ -17,8 +17,8 @@ export const useBuildingDataMigration = () => {
         .from('pedidos')
         .select('id, lista_paineis, lista_predios')
         .not('lista_paineis', 'is', null)
-        .neq('lista_paineis', '{}')
-        .or('lista_predios.is.null,lista_predios.eq.{}');
+        .neq('lista_paineis', '[]')
+        .or('lista_predios.is.null,lista_predios.eq.[]');
 
       if (fetchError) {
         console.error('❌ [MIGRATION] Erro ao buscar pedidos:', fetchError);
@@ -92,7 +92,7 @@ export const useBuildingDataMigration = () => {
       
       return { success: true, migrated: migratedCount, total: pedidosToMigrate.length };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 [MIGRATION] Erro geral na migração:', error);
       toast.error('Erro durante a migração');
       return { success: false, error: error.message };
@@ -162,45 +162,48 @@ export const useBuildingDataMigration = () => {
       }
 
       // Se não tem lista_paineis, tentar recuperar do log_pagamento
-      if (pedido.log_pagamento?.cart_items_debug) {
-        const panelIds = pedido.log_pagamento.cart_items_debug
-          .map(item => item.panel_id)
-          .filter(Boolean);
+      if (pedido.log_pagamento && typeof pedido.log_pagamento === 'object') {
+        const logData = pedido.log_pagamento as any;
+        if (logData.cart_items_debug && Array.isArray(logData.cart_items_debug)) {
+          const panelIds = logData.cart_items_debug
+            .map((item: any) => item.panel_id)
+            .filter(Boolean);
 
-        if (panelIds.length > 0) {
-          console.log('🔄 [MIGRATION] Tentando recuperar do log_pagamento:', panelIds);
-          
-          const { error: updateError } = await supabase
-            .from('pedidos')
-            .update({ lista_paineis: panelIds })
-            .eq('id', orderId);
+          if (panelIds.length > 0) {
+            console.log('🔄 [MIGRATION] Tentando recuperar do log_pagamento:', panelIds);
+            
+            const { error: updateError } = await supabase
+              .from('pedidos')
+              .update({ lista_paineis: panelIds })
+              .eq('id', orderId);
 
-          if (updateError) {
-            console.error('❌ [MIGRATION] Erro ao atualizar lista_paineis:', updateError);
-            throw updateError;
-          }
+            if (updateError) {
+              console.error('❌ [MIGRATION] Erro ao atualizar lista_paineis:', updateError);
+              throw updateError;
+            }
 
-          // Agora extrair building_ids
-          const { data: painels, error: painelsError } = await supabase
-            .from('painels')
-            .select('building_id')
-            .in('id', panelIds);
+            // Agora extrair building_ids
+            const { data: painels, error: painelsError } = await supabase
+              .from('painels')
+              .select('building_id')
+              .in('id', panelIds);
 
-          if (!painelsError && painels) {
-            const buildingIds = [...new Set(
-              painels.map(p => p.building_id).filter(Boolean)
-            )];
+            if (!painelsError && painels) {
+              const buildingIds = [...new Set(
+                painels.map(p => p.building_id).filter(Boolean)
+              )];
 
-            if (buildingIds.length > 0) {
-              const { error: updateBuildingsError } = await supabase
-                .from('pedidos')
-                .update({ lista_predios: buildingIds })
-                .eq('id', orderId);
+              if (buildingIds.length > 0) {
+                const { error: updateBuildingsError } = await supabase
+                  .from('pedidos')
+                  .update({ lista_predios: buildingIds })
+                  .eq('id', orderId);
 
-              if (!updateBuildingsError) {
-                console.log('✅ [MIGRATION] Dados recuperados e migrados');
-                toast.success('Dados recuperados e migrados com sucesso');
-                return { success: true };
+                if (!updateBuildingsError) {
+                  console.log('✅ [MIGRATION] Dados recuperados e migrados');
+                  toast.success('Dados recuperados e migrados com sucesso');
+                  return { success: true };
+                }
               }
             }
           }
@@ -210,7 +213,7 @@ export const useBuildingDataMigration = () => {
       toast.warning('Não foi possível extrair dados de localização');
       return { success: false, error: 'Dados insuficientes' };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 [MIGRATION] Erro ao corrigir pedido:', error);
       toast.error('Erro ao corrigir pedido');
       return { success: false, error: error.message };
