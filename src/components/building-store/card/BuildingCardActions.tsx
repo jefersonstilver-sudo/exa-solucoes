@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart,
@@ -14,7 +14,7 @@ import { BuildingStore } from '@/services/buildingStoreService';
 import { convertBuildingToPanel } from '@/services/buildingToPanelService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { useUnifiedCart } from '@/hooks/useUnifiedCart';
+import { useCart } from '@/contexts/CartContext';
 
 interface BuildingCardActionsProps {
   building: BuildingStore;
@@ -23,71 +23,40 @@ interface BuildingCardActionsProps {
 const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [lastActionTime, setLastActionTime] = useState(0);
   const isMobile = useIsMobile();
-  const actionTimeoutRef = useRef<NodeJS.Timeout>();
   
-  const { addToCart, isItemInCart, isLoading, itemCount, syncVersion, debugClearCache } = useUnifiedCart();
+  const { addToCart, isItemInCart, isLoading, itemCount, syncVersion, debugClearCache } = useCart();
   
-  // Check if item is in cart with detailed logging and sync awareness
+  // Check if item is in cart with global state
   const inCart = !isLoading && isItemInCart(building.id);
 
-  console.log('🛒 [BuildingCardActions] === RENDERIZANDO ===');
+  console.log('🛒 [BuildingCardActions] === RENDERIZANDO COM CONTEXTO GLOBAL ===');
   console.log('🛒 [BuildingCardActions] Building:', { id: building.id, nome: building.nome });
   console.log('🛒 [BuildingCardActions] States:', { inCart, isLoading, isAdding, showSuccess });
   console.log('🛒 [BuildingCardActions] Cart info:', { itemCount, syncVersion });
 
-  // Reset success state when cart sync changes
+  // Update success state when item is confirmed in cart
   useEffect(() => {
-    if (inCart && showSuccess) {
-      console.log('🔄 [BuildingCardActions] Item confirmado no carrinho, mantendo sucesso');
-    } else if (inCart && !showSuccess) {
-      console.log('🔄 [BuildingCardActions] Item detectado no carrinho via sync');
+    if (inCart && !showSuccess) {
+      console.log('🔄 [BuildingCardActions] Item detectado no carrinho global, mostrando sucesso');
       setShowSuccess(true);
       setIsAdding(false);
+    } else if (!inCart && showSuccess) {
+      console.log('🔄 [BuildingCardActions] Item removido do carrinho, resetando sucesso');
+      setShowSuccess(false);
     }
-  }, [inCart, showSuccess, syncVersion]);
-
-  // Auto-reset success state after delay
-  useEffect(() => {
-    if (showSuccess && !inCart) {
-      console.log('🔄 [BuildingCardActions] Resetando estado de sucesso');
-      setTimeout(() => {
-        setShowSuccess(false);
-        setIsAdding(false);
-      }, 2000);
-    }
-  }, [showSuccess, inCart]);
+  }, [inCart, showSuccess]);
 
   const handleAddToCart = async () => {
-    const now = Date.now();
-    
-    // Prevent rapid clicks (debounce)
-    if (now - lastActionTime < 1000) {
-      console.log('⚠️ [BuildingCardActions] Clique muito rápido, ignorando');
-      return;
-    }
-    
     if (inCart || isAdding || isLoading) {
       console.log('🛒 [BuildingCardActions] Operação bloqueada:', { inCart, isAdding, isLoading });
       return;
     }
     
     try {
-      console.log('🛒 [BuildingCardActions] === INICIANDO ADIÇÃO ===');
-      console.log('🛒 [BuildingCardActions] Building data:', {
-        id: building.id,
-        nome: building.nome,
-        preco_base: building.preco_base
-      });
+      console.log('🛒 [BuildingCardActions] === INICIANDO ADIÇÃO COM CONTEXTO GLOBAL ===');
       
-      setLastActionTime(now);
       setIsAdding(true);
-      
-      // Clear any existing timeout
-      if (actionTimeoutRef.current) {
-        clearTimeout(actionTimeoutRef.current);
-      }
       
       // Convert building to panel with validation
       const panel = convertBuildingToPanel(building);
@@ -97,29 +66,14 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
         nome: panel.buildings?.nome
       });
       
-      // Validate panel
-      if (!panel.id || !panel.buildings) {
-        throw new Error('Panel inválido após conversão');
-      }
-      
-      // Add to cart
-      console.log('➕ [BuildingCardActions] Chamando addToCart...');
+      // Add to cart using global context
       await addToCart(panel, 30);
-      console.log('✅ [BuildingCardActions] addToCart executado');
+      console.log('✅ [BuildingCardActions] addToCart global executado');
       
       // Show success state
       setShowSuccess(true);
       
-      // Set timeout for state reset
-      actionTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 [BuildingCardActions] Timeout: resetando estados');
-        if (!inCart) {
-          setIsAdding(false);
-          setShowSuccess(false);
-        }
-      }, 2000);
-      
-      console.log('🎉 [BuildingCardActions] === ADIÇÃO CONCLUÍDA ===');
+      console.log('🎉 [BuildingCardActions] === ADIÇÃO GLOBAL CONCLUÍDA ===');
       
     } catch (error) {
       console.error('❌ [BuildingCardActions] Erro:', error);
@@ -128,15 +82,6 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
       toast.error(`Erro ao adicionar ${building.nome} ao carrinho`);
     }
   };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (actionTimeoutRef.current) {
-        clearTimeout(actionTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Enhanced button state logic
   const getButtonState = () => {

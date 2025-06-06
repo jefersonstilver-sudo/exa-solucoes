@@ -3,7 +3,7 @@ import React, { ReactNode } from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
-import { useUnifiedCart } from '@/hooks/useUnifiedCart';
+import { useCart } from '@/contexts/CartContext';
 import '@/styles/components.css';
 
 interface LayoutProps {
@@ -12,7 +12,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
-  console.log('🏗️ Layout: Renderizando Layout com sistema unificado');
+  console.log('🏗️ Layout: Renderizando Layout com sistema GLOBAL');
   
   const { 
     cartItems, 
@@ -24,9 +24,9 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
     updateDuration,
     proceedToCheckout,
     itemCount
-  } = useUnifiedCart();
+  } = useCart();
 
-  console.log('🏗️ Layout: Cart state:', {
+  console.log('🏗️ Layout: Cart state GLOBAL:', {
     itemCount,
     isAnimating,
     isOpen,
