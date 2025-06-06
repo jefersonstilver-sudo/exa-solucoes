@@ -1,4 +1,5 @@
 
+
 import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import CouponStep from '@/components/checkout/CouponStep';
@@ -28,6 +29,13 @@ const CheckoutCoupon = () => {
   
   // CORREÇÃO: Calcular total em tempo real sempre que cartItems ou selectedPlan mudam
   const currentTotal = calculateTotalPrice();
+  
+  // Função wrapper para validateCoupon sem parâmetros
+  const handleValidateCoupon = () => {
+    if (couponCode && selectedPlan) {
+      validateCoupon(couponCode, selectedPlan);
+    }
+  };
   
   // Log detalhado para debug da página de cupons
   useEffect(() => {
@@ -94,7 +102,7 @@ const CheckoutCoupon = () => {
             <CouponStep
               couponCode={couponCode}
               setCouponCode={setCouponCode}
-              validateCoupon={validateCoupon}
+              validateCoupon={handleValidateCoupon}
               isValidatingCoupon={isValidatingCoupon}
               couponMessage={couponMessage}
               couponValid={couponValid}
@@ -150,3 +158,4 @@ const CheckoutCoupon = () => {
 };
 
 export default CheckoutCoupon;
+

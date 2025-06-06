@@ -1,4 +1,5 @@
 
+
 // Sistema de Recuperação de Transações Perdidas
 
 import { supabase } from '@/integrations/supabase/client';
@@ -75,12 +76,16 @@ class TransactionRecoveryManager {
         // Recuperar a tentativa como pedido válido
         const attempt = attempts[0];
         
+        // CORREÇÃO: Converter predios_selecionados para string[] e garantir que seja array de strings
+        const listaPaineis = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
+        const listaPredios = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
+        
         const { data: newOrder, error: createError } = await supabase
           .from('pedidos')
           .insert({
             client_id: userId,
-            lista_paineis: attempt.predios_selecionados?.map(String) || [],
-            lista_predios: attempt.predios_selecionados || [],
+            lista_paineis: listaPaineis,
+            lista_predios: listaPredios,
             plano_meses: 1,
             valor_total: amount,
             status: 'pago_pendente_video',
@@ -191,13 +196,17 @@ class TransactionRecoveryManager {
             .single();
 
           if (!existingOrder) {
+            // CORREÇÃO: Converter predios_selecionados para string[] 
+            const listaPaineis = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
+            const listaPredios = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
+            
             // Criar pedido para tentativa órfã
             const { data: newOrder, error: createError } = await supabase
               .from('pedidos')
               .insert({
                 client_id: userId,
-                lista_paineis: attempt.predios_selecionados?.map(String) || [],
-                lista_predios: attempt.predios_selecionados || [],
+                lista_paineis: listaPaineis,
+                lista_predios: listaPredios,
                 plano_meses: 1,
                 valor_total: attempt.valor_total,
                 status: 'pago_pendente_video',
@@ -294,3 +303,4 @@ class TransactionRecoveryManager {
 }
 
 export const transactionRecoveryManager = TransactionRecoveryManager.getInstance();
+

@@ -1,119 +1,162 @@
 
-// NOVA FUNCIONALIDADE: Sistema de auditoria para rastrear inconsistências de preços
 
-interface PriceAuditLog {
-  timestamp: string;
-  component: string;
-  action: string;
+// Sistema de Auditoria e Logs para Transações
+
+interface AuditLogEntry {
+  operation: string;
   data: any;
-  userId?: string;
-  sessionId?: string;
+  timestamp: string;
+  level: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
 }
 
-class PriceAuditLogger {
-  private static instance: PriceAuditLogger;
-  private logs: PriceAuditLog[] = [];
-  private sessionId: string;
+class AuditLogger {
+  private static instance: AuditLogger;
+  private logs: AuditLogEntry[] = [];
+  private readonly MAX_LOGS = 1000;
 
-  static getInstance(): PriceAuditLogger {
-    if (!PriceAuditLogger.instance) {
-      PriceAuditLogger.instance = new PriceAuditLogger();
+  static getInstance(): AuditLogger {
+    if (!AuditLogger.instance) {
+      AuditLogger.instance = new AuditLogger();
     }
-    return PriceAuditLogger.instance;
+    return AuditLogger.instance;
   }
 
-  private constructor() {
-    this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`🔍 [PriceAuditLogger] Iniciado - SessionID: ${this.sessionId}`);
-  }
-
-  log(component: string, action: string, data: any, userId?: string): void {
-    const logEntry: PriceAuditLog = {
-      timestamp: new Date().toISOString(),
-      component,
-      action,
+  private addLog(operation: string, data: any, level: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL' = 'INFO') {
+    const entry: AuditLogEntry = {
+      operation,
       data,
-      userId,
-      sessionId: this.sessionId
+      timestamp: new Date().toISOString(),
+      level
     };
 
-    this.logs.push(logEntry);
+    this.logs.unshift(entry);
     
-    // Manter apenas os últimos 50 logs para evitar memory leak
-    if (this.logs.length > 50) {
-      this.logs.shift();
+    // Manter apenas os logs mais recentes
+    if (this.logs.length > this.MAX_LOGS) {
+      this.logs = this.logs.slice(0, this.MAX_LOGS);
     }
 
-    console.log(`🔍 [AUDIT] ${component} - ${action}:`, data);
-
-    // Detectar inconsistências críticas
-    this.detectInconsistencies(logEntry);
+    // Log no console com formatação apropriada
+    const emoji = level === 'ERROR' ? '❌' : level === 'WARNING' ? '⚠️' : level === 'CRITICAL' ? '🚨' : '📊';
+    console.log(`${emoji} [AUDIT-${level}] ${operation}:`, data);
   }
 
-  private detectInconsistencies(logEntry: PriceAuditLog): void {
-    // Detectar valores suspeitos
-    if (logEntry.data?.totalPrice && logEntry.data.totalPrice < 1) {
-      console.warn(`⚠️ [AUDIT WARNING] Valor suspeito detectado em ${logEntry.component}:`, {
-        component: logEntry.component,
-        totalPrice: logEntry.data.totalPrice,
-        data: logEntry.data
-      });
+  logPriceCalculation(operation: string, data: any) {
+    this.addLog(`PRICE_CALCULATION:${operation}`, {
+      ...data,
+      calculationType: 'price_calculation'
+    }, 'INFO');
+  }
+
+  logTransactionAttempt(operation: string, data: any) {
+    this.addLog(`TRANSACTION:${operation}`, {
+      ...data,
+      transactionType: 'attempt'
+    }, 'INFO');
+  }
+
+  logPaymentProcessing(operation: string, data: any, level: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL' = 'INFO') {
+    this.addLog(`PAYMENT:${operation}`, {
+      ...data,
+      paymentType: 'processing'
+    }, level);
+  }
+
+  logSystemEvent(operation: string, data: any, level: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL' = 'INFO') {
+    this.addLog(`SYSTEM:${operation}`, {
+      ...data,
+      systemEvent: true
+    }, level);
+  }
+
+  // Obter logs filtrados
+  getLogs(filter?: { operation?: string; level?: string; limit?: number }) {
+    let filteredLogs = this.logs;
+
+    if (filter?.operation) {
+      filteredLogs = filteredLogs.filter(log => 
+        log.operation.toLowerCase().includes(filter.operation!.toLowerCase())
+      );
     }
 
-    // Detectar diferenças entre componentes
-    const recentLogs = this.logs.slice(-5);
-    const priceValues = recentLogs
-      .filter(log => log.data?.totalPrice || log.data?.finalPrice || log.data?.orderTotal)
-      .map(log => ({
-        component: log.component,
-        price: log.data.totalPrice || log.data.finalPrice || log.data.orderTotal,
-        timestamp: log.timestamp
-      }));
-
-    if (priceValues.length >= 2) {
-      const uniquePrices = [...new Set(priceValues.map(p => p.price))];
-      if (uniquePrices.length > 1) {
-        console.warn(`⚠️ [AUDIT WARNING] Preços inconsistentes detectados:`, priceValues);
-      }
+    if (filter?.level) {
+      filteredLogs = filteredLogs.filter(log => log.level === filter.level);
     }
+
+    if (filter?.limit) {
+      filteredLogs = filteredLogs.slice(0, filter.limit);
+    }
+
+    return filteredLogs;
   }
 
-  getAuditReport(): PriceAuditLog[] {
-    return [...this.logs];
-  }
-
-  exportAuditReport(): string {
-    return JSON.stringify({
-      sessionId: this.sessionId,
-      logs: this.logs,
-      summary: {
-        totalLogs: this.logs.length,
-        components: [...new Set(this.logs.map(log => log.component))],
-        timeRange: {
-          start: this.logs[0]?.timestamp,
-          end: this.logs[this.logs.length - 1]?.timestamp
-        }
-      }
-    }, null, 2);
-  }
-
-  clearLogs(): void {
+  // Limpar logs
+  clearLogs() {
     this.logs = [];
-    console.log('🔍 [PriceAuditLogger] Logs limpos');
+    console.log("🧹 [AUDIT] Logs limpos");
+  }
+
+  // Exportar logs para análise
+  exportLogs() {
+    return {
+      logs: this.logs,
+      exportedAt: new Date().toISOString(),
+      totalEntries: this.logs.length
+    };
+  }
+
+  // Estatísticas dos logs
+  getStats() {
+    const stats = {
+      total: this.logs.length,
+      byLevel: {} as Record<string, number>,
+      byOperation: {} as Record<string, number>,
+      lastHour: 0,
+      last24Hours: 0
+    };
+
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    this.logs.forEach(log => {
+      // Count by level
+      stats.byLevel[log.level] = (stats.byLevel[log.level] || 0) + 1;
+      
+      // Count by operation
+      const opType = log.operation.split(':')[0];
+      stats.byOperation[opType] = (stats.byOperation[opType] || 0) + 1;
+      
+      // Count by time
+      const logTime = new Date(log.timestamp);
+      if (logTime > oneHourAgo) {
+        stats.lastHour++;
+      }
+      if (logTime > oneDayAgo) {
+        stats.last24Hours++;
+      }
+    });
+
+    return stats;
   }
 }
 
-export const priceAuditLogger = PriceAuditLogger.getInstance();
+export const auditLogger = AuditLogger.getInstance();
 
-// Helper functions para facilitar o uso
-export const logPriceCalculation = (component: string, data: any, userId?: string) => {
-  priceAuditLogger.log(component, 'PRICE_CALCULATION', data, userId);
+// Funções helper para facilitar o uso
+export const logPriceCalculation = (operation: string, data: any) => {
+  auditLogger.logPriceCalculation(operation, data);
 };
 
-export const logPriceInconsistency = (component: string, data: any, userId?: string) => {
-  priceAuditLogger.log(component, 'PRICE_INCONSISTENCY', data, userId);
+export const logTransactionAttempt = (operation: string, data: any) => {
+  auditLogger.logTransactionAttempt(operation, data);
 };
 
-export const logCheckoutFlow = (component: string, data: any, userId?: string) => {
-  priceAuditLogger.log(component, 'CHECKOUT_FLOW', data, userId);
+export const logPaymentProcessing = (operation: string, data: any, level: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL' = 'INFO') => {
+  auditLogger.logPaymentProcessing(operation, data, level);
 };
+
+export const logSystemEvent = (operation: string, data: any, level: 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL' = 'INFO') => {
+  auditLogger.logSystemEvent(operation, data, level);
+};
+

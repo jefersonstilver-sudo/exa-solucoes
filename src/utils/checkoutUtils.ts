@@ -1,4 +1,5 @@
 
+
 // CORREÇÃO COMPLETA: Sistema de Cálculo de Preços Unificado
 
 import { Panel } from '@/types/panel';
@@ -11,6 +12,29 @@ interface CartItem {
   duration: number;
   price?: number;
 }
+
+// FUNÇÃO ADICIONADA: Cálculo de preço de painel individual
+export const getPanelPrice = (panel: Panel, duration: number = 30): number => {
+  if (!panel?.buildings?.preco_base) {
+    console.warn("💰 [getPanelPrice] Preço base não encontrado para o painel:", panel?.id);
+    return 0;
+  }
+  
+  const basePrice = panel.buildings.preco_base;
+  const months = duration / 30;
+  const totalPrice = basePrice * months;
+  
+  console.log("💰 [getPanelPrice] Cálculo individual:", {
+    panelId: panel.id,
+    buildingName: panel.buildings?.nome,
+    basePrice,
+    duration,
+    months,
+    totalPrice
+  });
+  
+  return totalPrice;
+};
 
 // FUNÇÃO PRINCIPAL: Cálculo de preço total com integridade
 export const calculateTotalPrice = (
@@ -183,3 +207,4 @@ export const validatePriceIntegrity = (
     difference
   };
 };
+
