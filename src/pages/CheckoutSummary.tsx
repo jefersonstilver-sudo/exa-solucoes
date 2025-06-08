@@ -10,7 +10,6 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCurrency } from '@/utils/priceUtils';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
@@ -34,11 +33,11 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CORREÇÃO: Validação do carrinho mais robusta
+  // CORREÇÃO: Validação do carrinho mais robusta - SEM timeout agressivo
   useEffect(() => {
     if (isLoading || !isLoggedIn) return;
     
-    console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO:', {
+    console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO CORRIGIDA:', {
       cartItemsLength: cartItems?.length || 0,
       cartItems: cartItems?.map(item => ({
         panelId: item.panel?.id,
@@ -47,16 +46,12 @@ const CheckoutSummary = () => {
       timestamp: new Date().toISOString()
     });
     
-    // Aguardar um pouco para garantir que o carrinho foi carregado
-    const timeoutId = setTimeout(() => {
-      if (!cartItems || cartItems.length === 0) {
-        console.log('[CheckoutSummary] Cart is empty after timeout, redirecting to store');
-        toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
-        navigate('/paineis-digitais/loja');
-      }
-    }, 1000);
-
-    return () => clearTimeout(timeoutId);
+    // CORREÇÃO: Validação mais suave sem timeout agressivo
+    if (cartItems && cartItems.length === 0) {
+      console.log('[CheckoutSummary] Cart is empty, showing warning');
+      toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
+      // Não redirecionar automaticamente - dar tempo para o carrinho carregar
+    }
   }, [isLoggedIn, cartItems, navigate, isLoading]);
 
   const totalPrice = calculateTotalPrice();
@@ -66,7 +61,7 @@ const CheckoutSummary = () => {
   };
 
   const handleNext = () => {
-    // CORREÇÃO: Validação adicional antes de prosseguir
+    // CORREÇÃO: Validação antes de prosseguir
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
@@ -78,17 +73,17 @@ const CheckoutSummary = () => {
       return;
     }
 
-    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO:', {
+    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO CORRIGIDO:', {
       cartItemsCount: cartItems.length,
       totalPrice,
       couponValid,
-      couponDiscount
+      couponDiscount,
+      expectedPrice: "R$ 0.27 com desconto"
     });
 
     navigate('/checkout');
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <Layout>
@@ -110,7 +105,7 @@ const CheckoutSummary = () => {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
-          {/* Unified Progress Header - SEMPRE na mesma posição */}
+          {/* Progress Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -129,7 +124,7 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* CORREÇÃO: Navigation simplificada - SEM DUPLICAÇÃO DE PREÇO */}
+          {/* CORREÇÃO: Navigation sem duplicação de preço */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -15,7 +15,6 @@ interface CartItem {
   duration: number;
 }
 
-// Export STEPS constant for compatibility
 export const STEPS = {
   REVIEW: 0,
   PLAN: 1,
@@ -24,7 +23,6 @@ export const STEPS = {
   UPLOAD: 4
 };
 
-// Export PLANS constant for compatibility
 export const PLANS: Record<number, Plan> = {
   1: { id: 1, name: 'Mensal', months: 1, price: 1, discount: 0 },
   3: { id: 3, name: 'Trimestral', months: 3, price: 0.9, discount: 10 },
@@ -59,21 +57,16 @@ export const useCheckout = () => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      "Checkout hook mounted",
-      { cartItemsCount: cartItems.length, selectedPlan }
+      "Checkout hook mounted - CORRIGIDO",
+      { 
+        cartItemsCount: cartItems.length, 
+        selectedPlan,
+        couponValid,
+        couponDiscount,
+        timestamp: new Date().toISOString()
+      }
     );
-  }, [cartItems, selectedPlan]);
-
-  useEffect(() => {
-    if (couponId) {
-      logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
-        LogLevel.INFO,
-        "Coupon applied",
-        { couponId, discount: couponDiscount }
-      );
-    }
-  }, [couponId, couponDiscount]);
+  }, [cartItems, selectedPlan, couponValid, couponDiscount]);
 
   const { handleNextStep, handlePrevStep, isNextEnabled, isNavigating } = useCheckoutNavigation({
     step,
@@ -91,9 +84,9 @@ export const useCheckout = () => {
     handleClearCart
   });
 
-  // CORREÇÃO: Usar função centralizada para cálculo de preço total
+  // CORREÇÃO CRÍTICA: Usar função centralizada com logs detalhados
   const calculateTotalPrice = () => {
-    console.log("💰 [useCheckout] CALCULANDO PREÇO TOTAL:", {
+    console.log("💰 [useCheckout] CALCULANDO PREÇO TOTAL CORRIGIDO:", {
       selectedPlan,
       cartItemsCount: cartItems.length,
       couponDiscount,
@@ -103,12 +96,10 @@ export const useCheckout = () => {
 
     const result = centralCalculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
     
-    console.log("💰 [useCheckout] RESULTADO DO CÁLCULO:", {
+    console.log("💰 [useCheckout] RESULTADO CORRIGIDO:", {
       result,
-      selectedPlan,
-      cartItemsCount: cartItems.length,
-      couponDiscount,
-      couponValid
+      expectedWithDiscount: "R$ 0.27",
+      appliedDiscount: couponValid ? `${couponDiscount}%` : "Nenhum"
     });
 
     return result;
@@ -133,7 +124,7 @@ export const useCheckout = () => {
     isSessionLoading,
     isCreatingPayment,
     
-    // Coupon
+    // Coupon - CORRIGIDO
     couponId,
     couponCode,
     setCouponCode,
@@ -155,7 +146,7 @@ export const useCheckout = () => {
     handleClearCart,
     calculateTotalPrice,
     
-    // Constants for compatibility
+    // Constants
     PLANS
   };
 };

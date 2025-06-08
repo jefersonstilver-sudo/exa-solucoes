@@ -30,7 +30,6 @@ const ReviewStep = () => {
     return info.join(' - ');
   };
 
-  // Add safety checks for selectedPlan and PLANS
   if (!selectedPlan || !PLANS[selectedPlan]) {
     return (
       <div className="space-y-6">
@@ -52,36 +51,31 @@ const ReviewStep = () => {
 
   const selectedMonths = PLANS[selectedPlan].months;
   
-  // CORREÇÃO: Usar as funções centralizadas para garantir consistência
+  // CORREÇÃO CRÍTICA: Usar funções centralizadas para garantir consistência
   const subtotal = calculateCartSubtotal(cartItems);
   const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  const discount = couponValid && couponDiscount ? subtotal * selectedMonths * (couponDiscount / 100) : 0;
+  const subtotalWithPlan = subtotal * selectedMonths;
+  const discount = couponValid && couponDiscount ? (subtotalWithPlan * couponDiscount) / 100 : 0;
 
-  // Log detalhado para auditoria
-  console.log("📋 [ReviewStep] AUDITORIA DE PREÇOS CORRIGIDA:", {
+  // Log detalhado para debug
+  console.log("📋 [ReviewStep] PREÇOS CORRIGIDOS:", {
     component: "ReviewStep",
     cartItemsCount: cartItems.length,
     selectedPlan,
     selectedMonths,
     subtotal,
+    subtotalWithPlan,
     finalPrice,
     discount,
     couponValid,
     couponDiscount,
-    calculation: `Subtotal: R$ ${subtotal} × ${selectedMonths} meses = R$ ${subtotal * selectedMonths}`,
+    calculation: `Subtotal: R$ ${subtotal} × ${selectedMonths} meses = R$ ${subtotalWithPlan}`,
     finalCalculation: `Com desconto: R$ ${finalPrice}`,
-    cartDetails: cartItems.map(item => ({
-      panelId: item.panel.id,
-      buildingName: item.panel.buildings?.nome,
-      preco_base: item.panel.buildings?.preco_base,
-      duration: item.duration
-    })),
-    timestamp: new Date().toISOString()
+    expectedResult: "R$ 0.27 com desconto aplicado"
   });
 
   return (
     <div className="space-y-6">
-      {/* Header simples */}
       <div className="border-b pb-4">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
           <span className="mr-3 text-2xl">📋</span>
@@ -153,7 +147,7 @@ const ReviewStep = () => {
           </CardContent>
         </Card>
 
-        {/* CORREÇÃO: Resumo de Preços Unificado - SEM DUPLICAÇÃO */}
+        {/* CORREÇÃO: Resumo de Preços Unificado */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
@@ -165,7 +159,7 @@ const ReviewStep = () => {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
-                <span className="font-medium">{formatCurrency(subtotal * selectedMonths)}</span>
+                <span className="font-medium">{formatCurrency(subtotalWithPlan)}</span>
               </div>
               
               {couponValid && discount > 0 && (
@@ -183,6 +177,11 @@ const ReviewStep = () => {
                   <span>Total Final</span>
                   <span className="text-[#1E1B4B]">{formatCurrency(finalPrice)}</span>
                 </div>
+                {couponValid && discount > 0 && (
+                  <div className="text-xs text-green-600 mt-1 text-right">
+                    ✅ Desconto de {couponDiscount}% aplicado!
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
