@@ -30,6 +30,26 @@ const ReviewStep = () => {
     return info.join(' - ');
   };
 
+  // Add safety checks for selectedPlan and PLANS
+  if (!selectedPlan || !PLANS[selectedPlan]) {
+    return (
+      <div className="space-y-6">
+        <div className="border-b pb-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <span className="mr-3 text-2xl">📋</span>
+            Revisão do Pedido
+          </h2>
+          <p className="text-gray-600 mt-2">Selecione um plano para visualizar o resumo</p>
+        </div>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-gray-500">Nenhum plano selecionado</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const selectedMonths = PLANS[selectedPlan].months;
   
   // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência
