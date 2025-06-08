@@ -52,22 +52,24 @@ const ReviewStep = () => {
 
   const selectedMonths = PLANS[selectedPlan].months;
   
-  // USAR AS FUNÇÕES CENTRALIZADAS para garantir consistência
-  const totalOriginalPrice = calculateCartSubtotal(cartItems);
+  // CORREÇÃO: Usar as funções centralizadas para garantir consistência
+  const subtotal = calculateCartSubtotal(cartItems);
   const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  const discount = couponValid && couponDiscount ? totalOriginalPrice - finalPrice : 0;
+  const discount = couponValid && couponDiscount ? subtotal * selectedMonths * (couponDiscount / 100) : 0;
 
   // Log detalhado para auditoria
-  console.log("📋 [ReviewStep] AUDITORIA DE PREÇOS:", {
+  console.log("📋 [ReviewStep] AUDITORIA DE PREÇOS CORRIGIDA:", {
     component: "ReviewStep",
     cartItemsCount: cartItems.length,
     selectedPlan,
     selectedMonths,
-    totalOriginalPrice,
+    subtotal,
     finalPrice,
     discount,
     couponValid,
     couponDiscount,
+    calculation: `Subtotal: R$ ${subtotal} × ${selectedMonths} meses = R$ ${subtotal * selectedMonths}`,
+    finalCalculation: `Com desconto: R$ ${finalPrice}`,
     cartDetails: cartItems.map(item => ({
       panelId: item.panel.id,
       buildingName: item.panel.buildings?.nome,
@@ -151,7 +153,7 @@ const ReviewStep = () => {
           </CardContent>
         </Card>
 
-        {/* Resumo de Preços */}
+        {/* CORREÇÃO: Resumo de Preços Unificado - SEM DUPLICAÇÃO */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
@@ -163,14 +165,14 @@ const ReviewStep = () => {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
-                <span className="font-medium">{formatCurrency(totalOriginalPrice)}</span>
+                <span className="font-medium">{formatCurrency(subtotal * selectedMonths)}</span>
               </div>
               
               {couponValid && discount > 0 && (
                 <div className="flex justify-between text-green-600 text-sm">
                   <span className="flex items-center">
                     <Tag className="h-4 w-4 mr-1" />
-                    Desconto aplicado
+                    Desconto aplicado ({couponDiscount}%)
                   </span>
                   <span className="font-medium">-{formatCurrency(discount)}</span>
                 </div>
@@ -178,7 +180,7 @@ const ReviewStep = () => {
               
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
+                  <span>Total Final</span>
                   <span className="text-[#1E1B4B]">{formatCurrency(finalPrice)}</span>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { useCheckoutNavigation } from './checkout/useCheckoutNavigation';
 import { PlanKey, Plan } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { calculateTotalPrice as centralCalculateTotalPrice } from '@/utils/checkoutUtils';
 
 interface CartItem {
   panel: Panel;
@@ -90,24 +91,27 @@ export const useCheckout = () => {
     handleClearCart
   });
 
-  // Calculate total price function for compatibility
+  // CORREÇÃO: Usar função centralizada para cálculo de preço total
   const calculateTotalPrice = () => {
-    if (!selectedPlan || cartItems.length === 0) return 0;
+    console.log("💰 [useCheckout] CALCULANDO PREÇO TOTAL:", {
+      selectedPlan,
+      cartItemsCount: cartItems.length,
+      couponDiscount,
+      couponValid,
+      timestamp: new Date().toISOString()
+    });
+
+    const result = centralCalculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
     
-    const plan = PLANS[selectedPlan];
-    if (!plan) return 0;
-    
-    const baseTotal = cartItems.reduce((total, item) => {
-      const basePrice = item.panel.buildings?.preco_base || 0;
-      return total + (basePrice * plan.price * selectedPlan);
-    }, 0);
-    
-    // Apply coupon discount if valid
-    if (couponValid && couponDiscount > 0) {
-      return baseTotal * (1 - couponDiscount / 100);
-    }
-    
-    return baseTotal;
+    console.log("💰 [useCheckout] RESULTADO DO CÁLCULO:", {
+      result,
+      selectedPlan,
+      cartItemsCount: cartItems.length,
+      couponDiscount,
+      couponValid
+    });
+
+    return result;
   };
 
   return {

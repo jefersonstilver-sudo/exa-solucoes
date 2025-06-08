@@ -10,6 +10,7 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/utils/priceUtils';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const CheckoutSummary = () => {
     couponDiscount
   } = useCheckout();
 
-  // Verificação de autenticação otimizada
+  // CORREÇÃO: Verificação de autenticação melhorada
   useEffect(() => {
     if (isLoading) return;
     
@@ -33,16 +34,30 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // Validação do carrinho
+  // CORREÇÃO: Validação do carrinho mais robusta
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !isLoggedIn) return;
     
-    if (isLoggedIn && cartItems.length === 0) {
-      console.log('[CheckoutSummary] Cart is empty, redirecting to store');
-      toast.error("Seu carrinho está vazio");
-      navigate('/paineis-digitais/loja');
-    }
-  }, [isLoggedIn, cartItems.length, navigate, isLoading]);
+    console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO:', {
+      cartItemsLength: cartItems?.length || 0,
+      cartItems: cartItems?.map(item => ({
+        panelId: item.panel?.id,
+        buildingName: item.panel?.buildings?.nome
+      })) || [],
+      timestamp: new Date().toISOString()
+    });
+    
+    // Aguardar um pouco para garantir que o carrinho foi carregado
+    const timeoutId = setTimeout(() => {
+      if (!cartItems || cartItems.length === 0) {
+        console.log('[CheckoutSummary] Cart is empty after timeout, redirecting to store');
+        toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
+        navigate('/paineis-digitais/loja');
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoggedIn, cartItems, navigate, isLoading]);
 
   const totalPrice = calculateTotalPrice();
 
@@ -51,6 +66,25 @@ const CheckoutSummary = () => {
   };
 
   const handleNext = () => {
+    // CORREÇÃO: Validação adicional antes de prosseguir
+    if (!cartItems || cartItems.length === 0) {
+      toast.error("Carrinho vazio. Adicione painéis para continuar.");
+      navigate('/paineis-digitais/loja');
+      return;
+    }
+
+    if (totalPrice <= 0) {
+      toast.error("Erro no cálculo do preço. Tente novamente.");
+      return;
+    }
+
+    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO:', {
+      cartItemsCount: cartItems.length,
+      totalPrice,
+      couponValid,
+      couponDiscount
+    });
+
     navigate('/checkout');
   };
 
@@ -95,7 +129,7 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* Navigation */}
+          {/* CORREÇÃO: Navigation simplificada - SEM DUPLICAÇÃO DE PREÇO */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,20 +145,9 @@ const CheckoutSummary = () => {
               <span>Voltar</span>
             </Button>
 
-            <div className="text-center order-1 sm:order-2">
-              <p className="text-lg font-semibold text-gray-900">
-                Total: R$ {totalPrice.toFixed(2)}
-              </p>
-              {couponValid && couponDiscount > 0 && (
-                <p className="text-sm text-green-600">
-                  Desconto aplicado: {couponDiscount}%
-                </p>
-              )}
-            </div>
-
             <Button
               onClick={handleNext}
-              disabled={!isLoggedIn || cartItems.length === 0}
+              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
               <span>Ir para Pagamento</span>
