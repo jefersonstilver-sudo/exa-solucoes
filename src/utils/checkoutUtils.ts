@@ -11,6 +11,28 @@ interface CartItem {
   price?: number;
 }
 
+// NOVA FUNÇÃO: Calcular preço de um painel individual
+export const getPanelPrice = (panel: Panel, duration: number = 30): number => {
+  if (!panel || !panel.buildings?.preco_base) {
+    console.warn("⚠️ [getPanelPrice] Panel ou preço base não encontrado:", { panel });
+    return 0;
+  }
+
+  const basePrice = panel.buildings.preco_base;
+  const months = duration / 30;
+  const totalPrice = basePrice * months;
+
+  console.log("💰 [getPanelPrice] Cálculo do preço do painel:", {
+    panelId: panel.id,
+    basePrice,
+    duration,
+    months,
+    totalPrice
+  });
+
+  return totalPrice;
+};
+
 // FUNÇÃO CORRIGIDA: Cálculo de preço total com desconto aplicado corretamente
 export const calculateTotalPrice = (
   selectedPlan: PlanKey | null,
