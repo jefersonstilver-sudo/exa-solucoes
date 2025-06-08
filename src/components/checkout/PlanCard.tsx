@@ -232,12 +232,21 @@ const PlanCard: React.FC<PlanCardProps> = ({
           
           {/* Features */}
           <div className="space-y-2 sm:space-y-3 mt-auto">
-            {plan.extras.map((extra, idx) => (
-              <div key={idx} className="flex items-start gap-2">
+            {plan.extras && plan.extras.length > 0 ? (
+              plan.extras.map((extra, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <CheckCircle className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
+                  <span className="text-xs sm:text-sm text-gray-600 leading-tight">{extra}</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-start gap-2">
                 <CheckCircle className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
-                <span className="text-xs sm:text-sm text-gray-600 leading-tight">{extra}</span>
+                <span className="text-xs sm:text-sm text-gray-600 leading-tight">
+                  Plano de {plan.months} {plan.months === 1 ? 'mês' : 'meses'}
+                </span>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
         
