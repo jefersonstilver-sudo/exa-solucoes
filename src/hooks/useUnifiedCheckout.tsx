@@ -147,19 +147,47 @@ export const useUnifiedCheckout = () => {
     }
   };
 
-  // Processar pagamento PIX
+  // CORREÇÃO: Processar pagamento PIX com integração da edge function
   const processPixPayment = async (pedidoId: string): Promise<boolean> => {
     try {
       setCurrentStep('payment');
       
-      console.log("💳 [UnifiedCheckout] Processando pagamento PIX:", pedidoId);
+      console.log("💳 [UnifiedCheckout] Processando pagamento PIX unificado:", {
+        pedidoId,
+        transactionId: currentTransactionId
+      });
+
+      if (!currentTransactionId) {
+        throw new Error("Transaction ID não encontrado");
+      }
 
       // Atualizar status para processamento de pagamento
       await updateTransactionStatus('payment_processing', {
         pedido_id: pedidoId
       });
 
-      // Limpar carrinho após início do pagamento
+      // CORREÇÃO: Chamar edge function com dados corretos
+      const { data, error } = await supabase.functions.invoke('process-pix-payment', {
+        body: {
+          transactionId: currentTransactionId,
+          pedidoId: pedidoId
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Falha ao processar pagamento PIX');
+      }
+
+      console.log("✅ [UnifiedCheckout] PIX processado com sucesso:", {
+        paymentId: data.pixData.paymentId,
+        amount: data.amount
+      });
+
+      // Limpar carrinho após sucesso
       handleClearCart();
       
       // Navegar para página de pagamento PIX
@@ -170,7 +198,7 @@ export const useUnifiedCheckout = () => {
       return true;
     } catch (error: any) {
       console.error("❌ [UnifiedCheckout] Erro no pagamento PIX:", error);
-      toast.error("Erro ao processar pagamento PIX");
+      toast.error(`Erro ao processar pagamento PIX: ${error.message}`);
       return false;
     }
   };

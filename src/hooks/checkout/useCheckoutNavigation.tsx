@@ -25,7 +25,6 @@ interface UseCheckoutNavigationProps {
   endDate: Date;
   sessionUser: any;
   handleClearCart: () => void;
-  createPayment: (options: any) => Promise<any>;
 }
 
 export const useCheckoutNavigation = ({
@@ -41,8 +40,7 @@ export const useCheckoutNavigation = ({
   startDate,
   endDate,
   sessionUser,
-  handleClearCart,
-  createPayment
+  handleClearCart
 }: UseCheckoutNavigationProps) => {
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -51,7 +49,7 @@ export const useCheckoutNavigation = ({
   const stepRoutes = {
     0: '/checkout/cupom',
     1: '/checkout/resumo',
-    2: '/checkout',
+    2: '/checkout', // CORREÇÃO: Agora usa o sistema unificado
     3: '/checkout/finalizar'
   };
   
@@ -62,7 +60,7 @@ export const useCheckoutNavigation = ({
         return true;
       case 1: // SUMMARY step  
         return cartItems.length > 0 && sessionUser?.id;
-      case 2: // PAYMENT METHOD SELECTION step
+      case 2: // UNIFIED CHECKOUT PAYMENT step
         return true;
       case 3: // UPLOAD step
         return true;
@@ -85,9 +83,9 @@ export const useCheckoutNavigation = ({
     }
   }, [step, navigate, setStep]);
 
-  // Navegação simplificada e direta
+  // CORREÇÃO: Navegação para checkout unificado
   const handleNextStep = useCallback(async (paymentMethod = 'pix') => {
-    console.log("[useCheckoutNavigation] handleNextStep iniciado", {
+    console.log("[useCheckoutNavigation] UNIFIED - handleNextStep iniciado", {
       step,
       paymentMethod,
       isNavigating,
@@ -119,10 +117,10 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // NAVEGAÇÃO DIRETA E SIMPLES
+      // CORREÇÃO: Navegação para sistema unificado
       if (step === 1) {
-        // Do resumo para pagamento - navegação direta
-        console.log('[useCheckoutNavigation] Step 1 -> 2 - Direct navigation to checkout');
+        // Do resumo para checkout unificado
+        console.log('[useCheckoutNavigation] Step 1 -> 2 - Navegação para checkout unificado');
         
         if (cartItems.length === 0) {
           sonnerToast.error("Carrinho vazio");
@@ -136,7 +134,7 @@ export const useCheckoutNavigation = ({
           return;
         }
 
-        // Navegação direta sem criar pedido ainda
+        // Navegação para checkout unificado que inicializará o sistema automaticamente
         navigate('/checkout');
         setStep(2);
         setIsNavigating(false);

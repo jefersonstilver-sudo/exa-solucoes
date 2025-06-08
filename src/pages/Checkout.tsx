@@ -1,7 +1,9 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
+import { useUnifiedCheckout } from '@/hooks/useUnifiedCheckout';
 import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Shield, Lock, Award, CreditCard } from 'lucide-react';
@@ -14,42 +16,52 @@ import PaymentMethodCard from '@/components/checkout/payment/PaymentMethodCard';
 import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import MobileCheckoutStepper from '@/components/checkout/MobileCheckoutStepper';
 import MobilePaymentMethods from '@/components/checkout/MobilePaymentMethods';
-import MobilePixQrCode from '@/components/checkout/payment/MobilePixQrCode';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
   const { isMobile } = useMobileBreakpoints();
-  // CRITICAL CHANGE: Default to PIX since credit card is temporarily disabled
-  const [selectedMethod, setSelectedMethod] = useState<string>('pix');
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
-  // Estados para o popup PIX
-  const [showPixDialog, setShowPixDialog] = useState(false);
-  const [pixData, setPixData] = useState<{
-    pix_url?: string;
-    pix_base64?: string;
-  }>({});
+  // CORREÇÃO CRÍTICA: Usar sistema unificado em vez do antigo
+  const {
+    currentTransactionId,
+    sessionPrice,
+    isProcessing,
+    currentStep,
+    initializeUnifiedCheckout,
+    processPixPayment,
+    validateBeforePayment,
+    clearUnifiedCheckout,
+    cartItems,
+    selectedPlan,
+    couponId
+  } = useUnifiedCheckout();
+
+  const [selectedMethod, setSelectedMethod] = useState<string>('pix');
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const orderId = searchParams.get('id') || searchParams.get('pedido');
-  
-  // Calculate total amount from cart
+
+  // CRÍTICO: Inicializar checkout unificado na montagem
   useEffect(() => {
-    try {
-      const cartItems = JSON.parse(localStorage.getItem('panelCart') || '[]');
-      const total = cartItems.reduce((sum: number, item: any) => {
-        const price = item.panel?.buildings?.basePrice || item.price || 250;
-        return sum + price;
-      }, 0);
-      setTotalAmount(total);
-    } catch (error) {
-      console.error("[Checkout] Error calculating total:", error);
-      setTotalAmount(0);
+    if (!isSessionLoading && isLoggedIn && cartItems.length > 0 && selectedPlan && !isInitialized) {
+      console.log("🔄 [Checkout] Inicializando sistema unificado");
+      initializeUnifiedCheckout().then((result) => {
+        if (result.success) {
+          setIsInitialized(true);
+          console.log("✅ [Checkout] Sistema unificado inicializado:", {
+            transactionId: result.transactionId,
+            price: result.price
+          });
+        } else {
+          console.error("❌ [Checkout] Falha na inicialização");
+          navigate('/checkout/resumo');
+        }
+      });
     }
-  }, []);
+  }, [isSessionLoading, isLoggedIn, cartItems.length, selectedPlan, isInitialized]);
 
   // Authentication check
   useEffect(() => {
@@ -59,117 +71,64 @@ const Checkout = () => {
     }
   }, [isLoggedIn, isSessionLoading, navigate]);
 
-  // Ensure PIX is always selected (since credit card is disabled)
+  // Cart validation
   useEffect(() => {
-    if (selectedMethod !== 'pix') {
-      console.log("[Checkout] Forcing PIX selection (credit card disabled)");
-      setSelectedMethod('pix');
+    if (!isSessionLoading && isLoggedIn && cartItems.length === 0) {
+      toast.error("Seu carrinho está vazio");
+      navigate('/checkout/resumo');
     }
-  }, [selectedMethod]);
+  }, [isSessionLoading, isLoggedIn, cartItems.length, navigate]);
 
   const handleBack = () => {
+    clearUnifiedCheckout();
     navigate('/checkout/resumo');
   };
 
-  const sendPixWebhook = async () => {
-    if (!user) {
-      toast.error("Dados do usuário não encontrados");
-      return;
-    }
-
-    try {
-      setIsProcessingPayment(true);
-      
-      // Get selected plan from localStorage or default
-      const selectedPlan = localStorage.getItem('selectedPlan') || '1';
-      const planNames = {
-        '1': '1 mês',
-        '3': '3 meses', 
-        '6': '6 meses',
-        '12': '12 meses'
-      };
-
-      // Get cart items (prédios/painéis escolhidos)
-      const cartItems = JSON.parse(localStorage.getItem('panelCart') || '[]');
-      const prediosEscolhidos = cartItems.map((item: any) => ({
-        painel_id: item.panel?.id || '',
-        painel_codigo: item.panel?.code || '',
-        predio_nome: item.panel?.buildings?.nome || '',
-        predio_endereco: item.panel?.buildings?.endereco || '',
-        predio_bairro: item.panel?.buildings?.bairro || '',
-        predio_cidade: item.panel?.buildings?.cidade || '',
-        duracao_dias: item.duration || 30,
-        preco: item.panel?.buildings?.basePrice || item.price || 250
-      }));
-
-      const webhookData = {
-        usuario_id: user.id,
-        nome_usuario: user.email?.split('@')[0] || 'Cliente',
-        email_usuario: user.email || '',
-        plano_escolhido: planNames[selectedPlan as keyof typeof planNames] || '1 mês',
-        periodo_meses: parseInt(selectedPlan),
-        valor_total: (totalAmount * 0.95).toFixed(2), // 5% discount for PIX
-        predios_escolhidos: prediosEscolhidos,
-        quantidade_paineis: prediosEscolhidos.length
-      };
-
-      console.log('[PIX Webhook] Enviando dados:', webhookData);
-
-      const response = await fetch('https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookData)
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log('[PIX Webhook] Resposta recebida:', responseData);
-        
-        // Verificar se recebemos pix_url e pix_base64
-        if (responseData.pix_url && responseData.pix_base64) {
-          setPixData({
-            pix_url: responseData.pix_url,
-            pix_base64: responseData.pix_base64
-          });
-          setShowPixDialog(true);
-          toast.success("QR Code PIX gerado com sucesso!");
-        } else {
-          console.warn('[PIX Webhook] Resposta sem dados PIX esperados:', responseData);
-          toast.success("Dados enviados com sucesso! Processando pagamento PIX...");
-          
-          setTimeout(() => {
-            toast.info("Em breve você será redirecionado para o PIX");
-          }, 1500);
-        }
-      } else {
-        throw new Error(`Erro no webhook: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('[PIX Webhook] Erro ao enviar webhook:', error);
-      toast.error("Erro ao processar pagamento PIX. Tente novamente.");
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
-  const handlePixPayment = () => {
+  // CORREÇÃO PRINCIPAL: Sistema PIX Unificado
+  const handlePixPayment = async () => {
     if (!acceptTerms) {
       toast.error("Você precisa aceitar os termos para continuar");
       return;
     }
-    sendPixWebhook();
-  };
 
-  // Remove credit card payment handler since it's disabled
-  const handleCreditCardPayment = () => {
-    toast.info("Pagamento com cartão estará disponível em breve!");
-  };
+    if (!currentTransactionId || !sessionPrice) {
+      toast.error("Erro: transação não inicializada");
+      return;
+    }
 
-  const handleClosePixDialog = () => {
-    setShowPixDialog(false);
-    setPixData({});
+    if (currentStep !== 'order') {
+      toast.error("Aguarde a finalização da preparação do pedido");
+      return;
+    }
+
+    try {
+      console.log("💳 [Checkout] Iniciando pagamento PIX unificado:", {
+        transactionId: currentTransactionId,
+        sessionPrice,
+        selectedPlan
+      });
+
+      // Validar integridade do preço antes do pagamento
+      const isValid = await validateBeforePayment(sessionPrice);
+      if (!isValid) {
+        toast.error("Erro de validação detectado. Reinicie o processo.");
+        clearUnifiedCheckout();
+        navigate('/checkout/resumo');
+        return;
+      }
+
+      // Processar pagamento com preço bloqueado
+      const success = await processPixPayment(currentTransactionId);
+      
+      if (!success) {
+        toast.error("Erro ao processar pagamento PIX");
+      }
+      // Se success = true, usuário já foi navegado para /pix-payment
+      
+    } catch (error) {
+      console.error("❌ [Checkout] Erro no pagamento:", error);
+      toast.error("Erro inesperado no pagamento");
+    }
   };
 
   if (isSessionLoading) {
@@ -193,13 +152,32 @@ const Checkout = () => {
     return null;
   }
 
-  const pixAmount = totalAmount * 0.95; // 5% discount
+  // Mostrar loading até sistema estar inicializado
+  if (!isInitialized || !currentTransactionId || !sessionPrice) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl shadow-lg p-8 text-center"
+          >
+            <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Preparando seu pedido...</p>
+            <p className="text-sm text-gray-500 mt-2">Calculando preços e criando transação única</p>
+          </motion.div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const pixAmount = sessionPrice * 0.95; // 5% discount
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
-          {/* Unified Progress Header - SEMPRE na mesma posição */}
+          {/* Unified Progress Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -208,7 +186,7 @@ const Checkout = () => {
             <UnifiedCheckoutProgress currentStep={3} />
           </motion.div>
 
-          {/* Back Button - Desktop and Mobile */}
+          {/* Back Button */}
           <Button
             variant="ghost"
             onClick={handleBack}
@@ -218,47 +196,57 @@ const Checkout = () => {
             Voltar
           </Button>
 
-          {/* Main content - Layout minimalista */}
+          {/* Transaction Info - NOVO: Mostrar informações da transação */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              <span className="font-medium text-blue-800">Transação Segura</span>
+            </div>
+            <div className="text-sm text-blue-700 space-y-1">
+              <div>ID da Transação: <code className="bg-blue-100 px-1 rounded">{currentTransactionId}</code></div>
+              <div>Preço Bloqueado: <span className="font-medium">R$ {sessionPrice.toFixed(2)}</span></div>
+              <div>Desconto PIX (5%): <span className="font-medium text-green-600">R$ {(sessionPrice * 0.05).toFixed(2)}</span></div>
+              <div>Total a Pagar: <span className="font-bold text-blue-800">R$ {pixAmount.toFixed(2)}</span></div>
+            </div>
+          </div>
+
+          {/* Main content */}
           <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-8'}`}>
             {/* Payment methods */}
             <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
               <div>
                 {isMobile ? (
-                  // Mobile payment methods
                   <div className="space-y-6">
                     <MobilePaymentMethods 
                       selectedMethod={selectedMethod}
                       onSelectMethod={setSelectedMethod}
-                      totalAmount={totalAmount}
+                      totalAmount={sessionPrice}
                     />
                   </div>
                 ) : (
-                  // Desktop payment methods
                   <Card className="shadow-lg border-0">
                     <CardContent className="p-6 sm:p-8">
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">
                         Como você deseja pagar?
                       </h2>
                       <p className="text-gray-600 mb-8">
-                        Atualmente disponível apenas pagamento via PIX
+                        Pagamento PIX com preço garantido e sem recálculos
                       </p>
 
                       <div className="space-y-4 mb-8">
-                        {/* PIX Payment Method - Only option available */}
                         <PaymentMethodCard
                           id="pix"
                           title="PIX"
-                          description="Pagamento instantâneo"
-                          originalAmount={totalAmount}
+                          description="Pagamento instantâneo com preço bloqueado"
+                          originalAmount={sessionPrice}
                           finalAmount={pixAmount}
                           discount={5}
                           icon="pix"
-                          selected={true} // Always selected since it's the only option
+                          selected={true}
                           onSelect={setSelectedMethod}
                           highlight={true}
                         />
                         
-                        {/* Credit card coming soon notice */}
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center space-x-2">
                             <CreditCard className="h-5 w-5 text-blue-600" />
@@ -272,7 +260,7 @@ const Checkout = () => {
                   </Card>
                 )}
                 
-                {/* Terms acceptance - Layout minimalista */}
+                {/* Terms acceptance */}
                 <div className={`${isMobile ? 'mt-6' : 'mt-8'}`}>
                   <Card className={`${isMobile ? '' : 'shadow-lg border-0'}`}>
                     <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
@@ -299,19 +287,20 @@ const Checkout = () => {
                         </Label>
                       </div>
 
-                      {/* Payment button - Only PIX available */}
                       <div className={`space-y-3 ${isMobile ? 'mt-4' : 'mt-6'}`}>
                         <Button
                           onClick={handlePixPayment}
-                          disabled={!acceptTerms || isProcessingPayment}
+                          disabled={!acceptTerms || isProcessing || currentStep !== 'order'}
                           className={`w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${isMobile ? 'h-12 text-base' : 'py-4 text-lg'}`}
                           size="lg"
                         >
-                          {isProcessingPayment ? (
+                          {isProcessing ? (
                             <>
                               <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                               Processando...
                             </>
+                          ) : currentStep !== 'order' ? (
+                            'Preparando pedido...'
                           ) : (
                             `Pagar com PIX - R$ ${pixAmount.toFixed(2)}`
                           )}
@@ -329,7 +318,7 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Summary sidebar - Desktop only - Layout minimalista */}
+            {/* Summary sidebar - Desktop only */}
             {!isMobile && (
               <div className="lg:col-span-1">
                 <motion.div
@@ -338,7 +327,6 @@ const Checkout = () => {
                   transition={{ delay: 0.2 }}
                   className="space-y-6 sticky top-8"
                 >
-                  {/* Order summary */}
                   <Card className="shadow-lg border-0">
                     <CardContent className="p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -347,13 +335,23 @@ const Checkout = () => {
                       
                       <div className="space-y-3">
                         <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Painéis selecionados</span>
+                          <span className="font-medium">{cartItems.length}</span>
+                        </div>
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Plano</span>
+                          <span className="font-medium">{selectedPlan} meses</span>
+                        </div>
+                        
+                        <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Subtotal</span>
-                          <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
+                          <span className="font-medium">R$ {sessionPrice.toFixed(2)}</span>
                         </div>
                         
                         <div className="flex justify-between text-sm text-green-600">
                           <span>Desconto PIX (5%)</span>
-                          <span>-R$ {(totalAmount * 0.05).toFixed(2)}</span>
+                          <span>-R$ {(sessionPrice * 0.05).toFixed(2)}</span>
                         </div>
                         
                         <div className="border-t pt-3">
@@ -368,27 +366,26 @@ const Checkout = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Security badges */}
                   <Card className="shadow-lg border-0">
                     <CardContent className="p-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Pagamento Seguro
+                        Segurança Total
                       </h3>
                       
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
                           <Shield className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">PIX Banco Central</span>
+                          <span className="text-sm text-gray-600">Preço bloqueado</span>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <Lock className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">Dados protegidos</span>
+                          <span className="text-sm text-gray-600">Transação única</span>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <Award className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">Aprovação instantânea</span>
+                          <span className="text-sm text-gray-600">Zero duplicação</span>
                         </div>
                       </div>
                     </CardContent>
@@ -399,20 +396,6 @@ const Checkout = () => {
           </div>
         </div>
       </div>
-
-      {/* Mobile PIX QR Code Dialog */}
-      <MobilePixQrCode
-        isOpen={showPixDialog}
-        onClose={handleClosePixDialog}
-        qrCodeBase64={pixData.pix_base64}
-        qrCodeText={pixData.pix_url}
-        amount={pixAmount}
-        onRefresh={() => {
-          handleClosePixDialog();
-          sendPixWebhook();
-        }}
-        isRefreshing={isProcessingPayment}
-      />
     </Layout>
   );
 };
