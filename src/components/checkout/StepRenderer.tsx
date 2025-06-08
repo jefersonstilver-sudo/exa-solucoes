@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { STEPS } from '@/hooks/useCheckout';
 import ReviewStep from '@/components/checkout/ReviewStep';
 import PlanSelector from '@/components/checkout/PlanSelector';
 import CouponStep from '@/components/checkout/CouponStep';
@@ -10,6 +9,15 @@ import UploadStep from '@/components/checkout/UploadStep';
 import TrustIndicators from '@/components/checkout/TrustIndicators';
 import { Panel } from '@/types/panel';
 import { Plan, PlanKey } from '@/types/checkout';
+
+// Define STEPS locally since we're not using the hook version
+const STEPS = {
+  REVIEW: 0,
+  PLAN: 1,
+  COUPON: 2,
+  PAYMENT: 3,
+  UPLOAD: 4
+};
 
 interface CartItem {
   panel: Panel;

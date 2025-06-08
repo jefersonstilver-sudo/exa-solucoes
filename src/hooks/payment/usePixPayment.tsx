@@ -3,13 +3,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// CORREÇÃO: Exportar a interface PixPaymentData
+// Export the interface PixPaymentData with all required properties
 export interface PixPaymentData {
   qrCodeBase64?: string;
   qrCode?: string;
   paymentId?: string;
   status?: string;
   createdAt?: string;
+  pedidoId?: string;
+  valorTotal?: number;
 }
 
 export const usePixPayment = (pedidoId: string | null) => {
@@ -34,7 +36,7 @@ export const usePixPayment = (pedidoId: string | null) => {
 
       console.log("🔄 [usePixPayment] Carregando dados do pagamento:", pedidoId);
 
-      // CORREÇÃO: Buscar pedido diretamente por ID
+      // Buscar pedido diretamente por ID
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
@@ -52,7 +54,7 @@ export const usePixPayment = (pedidoId: string | null) => {
         valor_total: pedido.valor_total
       });
 
-      // CORREÇÃO: Verificar se já tem dados de PIX com type assertion
+      // Verificar se já tem dados de PIX com type assertion
       const logPagamento = pedido.log_pagamento as any;
       const pixData = logPagamento?.pix_data;
       
@@ -63,7 +65,9 @@ export const usePixPayment = (pedidoId: string | null) => {
           qrCode: pixData.qrCode,
           paymentId: pixData.paymentId,
           status: pixData.status || 'pending',
-          createdAt: pedido.created_at
+          createdAt: pedido.created_at,
+          pedidoId: pedido.id,
+          valorTotal: pedido.valor_total
         });
       } else {
         // Se não tem dados PIX, processar pagamento
@@ -91,7 +95,9 @@ export const usePixPayment = (pedidoId: string | null) => {
           qrCode: data.pixData.qrCode,
           paymentId: data.pixData.paymentId,
           status: data.pixData.status,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          pedidoId: pedido.id,
+          valorTotal: pedido.valor_total
         });
 
         toast.success("QR Code PIX gerado com sucesso!");
@@ -114,7 +120,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       
       const { data: pedido, error } = await supabase
         .from('pedidos')
-        .select('status, log_pagamento')
+        .select('status, log_pagamento, valor_total')
         .eq('id', pedidoId)
         .single();
 
@@ -124,7 +130,8 @@ export const usePixPayment = (pedidoId: string | null) => {
       if (pedido.status === 'pago' && paymentData) {
         setPaymentData(prev => ({
           ...prev,
-          status: 'approved'
+          status: 'approved',
+          valorTotal: pedido.valor_total
         }));
         toast.success("Pagamento confirmado!");
       }

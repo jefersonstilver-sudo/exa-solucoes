@@ -1,123 +1,72 @@
 
-import { useCheckout } from '@/hooks/useCheckout';
-import { usePlanStorage } from './usePlanStorage';
-import { usePlanCalculations } from './usePlanCalculations';
-import { usePlanNavigation } from './usePlanNavigation';
-import { useCart } from '@/contexts/SimpleCartContext';
-import { useCallback, useMemo, useEffect } from 'react';
-import { logPriceCalculation } from '@/utils/auditLogger';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCartManager } from '../useCartManager';
+import { PlanKey, Plan } from '@/types/checkout';
+import { toast } from 'sonner';
+
+// Define PLANS locally
+const PLANS: Record<number, Plan> = {
+  1: { id: 1, name: 'Mensal', months: 1, price: 1, discount: 0 },
+  3: { id: 3, name: 'Trimestral', months: 3, price: 0.9, discount: 10 },
+  6: { id: 6, name: 'Semestral', months: 6, price: 0.8, discount: 20 },
+  12: { id: 12, name: 'Anual', months: 12, price: 0.7, discount: 30 }
+};
 
 export const usePlanSelection = (hasCart: boolean) => {
-  console.log("🔄 usePlanSelection: Hook chamado, hasCart:", hasCart);
+  const navigate = useNavigate();
+  const { cartItems, selectedPlan, setSelectedPlan } = useCartManager();
   
-  // Estados do checkout
-  const {
-    selectedPlan, 
-    setSelectedPlan,
-    PLANS
-  } = useCheckout();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // CORREÇÃO: Usar o carrinho do contexto correto
-  const { cartItems } = useCart();
-
-  // Log detalhado para debug
-  useEffect(() => {
-    console.log("🔄 usePlanSelection: Estados atualizados:", {
-      selectedPlan,
-      cartItemsLength: cartItems.length,
-      hasCart,
-      cartItems: cartItems.map(item => ({
-        panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base,
-        price: item.price
-      }))
-    });
+  // Calculate estimated price
+  const calculateEstimatedPrice = () => {
+    if (!selectedPlan || cartItems.length === 0) return 0;
     
-    // Log para auditoria quando há mudanças
-    if (cartItems.length > 0) {
-      logPriceCalculation('usePlanSelection', {
-        selectedPlan,
-        cartItemsCount: cartItems.length,
-        hasCart,
-        cartItems: cartItems.map(item => ({
-          panelId: item.panel.id,
-          buildingName: item.panel.buildings?.nome,
-          preco_base: item.panel.buildings?.preco_base,
-          price: item.price
-        }))
-      });
+    const plan = PLANS[selectedPlan];
+    if (!plan) return 0;
+    
+    return cartItems.reduce((total, item) => {
+      const basePrice = item.panel.buildings?.preco_base || 0;
+      return total + (basePrice * plan.price * selectedPlan);
+    }, 0);
+  };
+
+  // Navigate to coupon page
+  const handleGoToCoupon = async () => {
+    if (!selectedPlan) {
+      toast.error("Selecione um plano para continuar");
+      return;
     }
-  }, [selectedPlan, cartItems, hasCart]);
 
-  // Storage operations - memoizado para evitar re-criação
-  const { savePlanToStorage } = usePlanStorage(setSelectedPlan);
+    if (cartItems.length === 0) {
+      toast.error("Adicione painéis ao carrinho para continuar");
+      return;
+    }
 
-  // Calculations - memoizado
-  const { calculateEstimatedPrice: calculatePrice } = usePlanCalculations();
-
-  // Navigation - usando as funções estáveis
-  const { handleGoToCoupon, handleProceed } = usePlanNavigation(
-    selectedPlan, 
-    savePlanToStorage
-  );
-
-  // Wrapper para cálculo de preço com estado atual - memoizado
-  const calculateEstimatedPrice = useCallback(() => {
-    console.log("💰 usePlanSelection - Calculando preço estimado:", { 
-      selectedPlan, 
-      cartItemsLength: cartItems.length,
-      cartItems: cartItems.map(item => ({
-        panel_id: item.panel.id,
-        building_name: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base,
-        price: item.price
-      }))
-    });
+    setIsLoading(true);
     
-    const result = calculatePrice(selectedPlan, cartItems, PLANS);
-    console.log("💰 usePlanSelection - Resultado do cálculo:", result);
-    
-    // Log para auditoria
-    logPriceCalculation('usePlanSelection-calculateEstimatedPrice', {
-      selectedPlan,
-      cartItemsCount: cartItems.length,
-      estimatedPrice: result,
-      cartItems: cartItems.map(item => ({
-        panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base,
-        price: item.price
-      }))
-    });
-    
-    return result;
-  }, [calculatePrice, selectedPlan, cartItems, PLANS]);
+    try {
+      // Save selected plan to localStorage for persistence
+      localStorage.setItem('selectedPlan', selectedPlan.toString());
+      
+      // Navigate to coupon page
+      navigate('/checkout/cupom');
+    } catch (error) {
+      console.error("Error navigating to coupon page:", error);
+      toast.error("Erro ao prosseguir");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Memoizar o retorno para evitar re-renderizações desnecessárias
-  const returnValue = useMemo(() => ({
+  return {
     selectedPlan,
     setSelectedPlan,
-    cartItems, // CORREÇÃO: Usar cartItems do contexto correto
     PLANS,
+    cartItems,
     calculateEstimatedPrice,
-    handleProceed,
-    handleGoToCoupon
-  }), [
-    selectedPlan,
-    setSelectedPlan,
-    cartItems, // CORREÇÃO: Dependência correta
-    PLANS,
-    calculateEstimatedPrice,
-    handleProceed,
-    handleGoToCoupon
-  ]);
-
-  console.log("✅ usePlanSelection: Retornando valores:", {
-    selectedPlan,
-    cartItemsLength: cartItems.length,
-    hasHandlers: !!(handleProceed && handleGoToCoupon)
-  });
-
-  return returnValue;
+    handleGoToCoupon,
+    isLoading
+  };
 };
