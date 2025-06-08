@@ -2,12 +2,13 @@
 export interface Plan {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   months: number;
   discount: number;
-  mostPopular: boolean;
+  price: number; // Add this property
+  mostPopular?: boolean;
   pricePerMonth?: number; // Make optional since we calculate dynamically
-  extras: string[];
+  extras?: string[];
   
   // New fields needed for PlanSelector and CheckoutSummary
   color?: string;

@@ -89,10 +89,28 @@ export function useCouponValidator() {
     }
   }, []);
 
+  // Add missing functions for compatibility
+  const applyCoupon = useCallback((code: string) => {
+    setCouponCode(code);
+    // Additional apply logic if needed
+  }, []);
+
+  const removeCoupon = useCallback(() => {
+    setCouponCode('');
+    setValidationResult({
+      valid: false,
+      message: '',
+      couponId: null,
+      discountPercent: 0
+    });
+  }, []);
+
   return {
     isValidating,
     validateCoupon,
     validationResult,
+    applyCoupon,
+    removeCoupon,
     // Additional exported values for backward compatibility
     couponCode,
     setCouponCode,

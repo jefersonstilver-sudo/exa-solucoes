@@ -1,251 +1,41 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Panel } from '@/types/panel';
-import { CartItem } from '@/types/cart';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { getPanelPrice } from '@/utils/checkoutUtils';
-import { 
-  saveCartToStorage, 
-  loadCartFromStorage, 
-  CART_STORAGE_KEY 
-} from '@/services/cartStorageService';
 
-// Utility function to convert legacy cart item to full cart item
-const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number }): CartItem => {
-  return {
-    id: `cart_${legacyItem.panel.id}_${Date.now()}`,
-    panel: legacyItem.panel,
-    duration: legacyItem.duration,
-    addedAt: Date.now(),
-    price: getPanelPrice(legacyItem.panel, legacyItem.duration)
-  };
-};
+import { useState, useEffect } from 'react';
+import { useSimpleCart } from './useSimpleCart';
+import { PlanKey } from '@/types/checkout';
 
 export const useCartManager = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [cartAnimation, setCartAnimation] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
-  const [forceUpdate, setForceUpdate] = useState(0); // Para forçar re-render
-  const navigate = useNavigate();
+  const simpleCart = useSimpleCart();
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey | null>(null);
 
-  // Load cart on mount
+  // Load saved plan from localStorage on mount
   useEffect(() => {
-    console.log('🛒 [useCartManager] Carregando carrinho inicial...');
     try {
-      const loadedLegacyCart = loadCartFromStorage();
-      const fullCartItems = loadedLegacyCart.map(convertLegacyToCartItem);
-      setCartItems(fullCartItems);
-      setInitialLoadDone(true);
-      console.log('🛒 [useCartManager] Carrinho carregado:', fullCartItems.length, 'itens');
-      
-      // DEBUG: Log panel IDs being loaded
-      const panelIds = fullCartItems.map(item => item.panel.id);
-      console.log('🛒 [useCartManager] Panel IDs no carrinho:', panelIds);
+      const savedPlan = localStorage.getItem('selectedPlan');
+      if (savedPlan) {
+        const parsedPlan = parseInt(savedPlan);
+        if ([1, 3, 6, 12].includes(parsedPlan)) {
+          setSelectedPlan(parsedPlan as PlanKey);
+        }
+      }
     } catch (error) {
-      console.error('🛒 [useCartManager] Erro ao carregar carrinho:', error);
-      setInitialLoadDone(true);
+      console.error('Error loading saved plan:', error);
     }
   }, []);
 
-  // Save cart when items change
+  // Save plan to localStorage when it changes
   useEffect(() => {
-    if (!initialLoadDone) return;
-    
-    console.log('🛒 [useCartManager] Salvando carrinho:', cartItems.length, 'itens');
-    const legacyCartItems = cartItems.map(item => ({
-      panel: item.panel,
-      duration: item.duration
-    }));
-    
-    // DEBUG: Log panel IDs being saved
-    const panelIds = cartItems.map(item => item.panel.id);
-    console.log('🛒 [useCartManager] Panel IDs sendo salvos:', panelIds);
-    
-    saveCartToStorage(legacyCartItems);
-  }, [cartItems, initialLoadDone]);
-
-  // Força re-render quando forceUpdate muda
-  const triggerUpdate = useCallback(() => {
-    setForceUpdate(prev => prev + 1);
-  }, []);
-
-  // Simple check if item is in cart
-  const isItemInCart = useCallback((buildingId: string): boolean => {
-    if (!buildingId || !initialLoadDone) return false;
-    const inCart = cartItems.some(item => item.panel.id === buildingId);
-    console.log('🛒 [useCartManager] Verificando se item está no carrinho:', buildingId, '→', inCart);
-    return inCart;
-  }, [cartItems, initialLoadDone, forceUpdate]); // Adiciona forceUpdate como dependência
-
-  // Get cart item by building ID
-  const getCartItemByBuildingId = useCallback((buildingId: string): CartItem | null => {
-    if (!buildingId || !initialLoadDone) return null;
-    return cartItems.find(item => item.panel.id === buildingId) || null;
-  }, [cartItems, initialLoadDone]);
-
-  // Add to cart function
-  const handleAddToCart = useCallback((panel: Panel, duration: number = 30) => {
-    console.log('🛒 [useCartManager] Adicionando ao carrinho:', panel.id, 'duração:', duration);
-    console.log('🛒 [useCartManager] Panel object:', panel);
-    
-    setCartItems(prev => {
-      // Check if panel is already in cart
-      const existingIndex = prev.findIndex(item => item.panel.id === panel.id);
-      
-      if (existingIndex >= 0) {
-        console.log('🛒 [useCartManager] Atualizando item existente');
-        // Update existing item
-        return prev.map((item, index) => 
-          index === existingIndex 
-            ? {
-                ...item,
-                duration,
-                price: getPanelPrice(panel, duration),
-                addedAt: Date.now()
-              }
-            : item
-        );
-      } else {
-        console.log('🛒 [useCartManager] Adicionando novo item');
-        // Add new item to cart
-        const newItem = convertLegacyToCartItem({ panel, duration });
-        console.log('🛒 [useCartManager] Novo item criado:', newItem);
-        return [...prev, newItem];
+    if (selectedPlan) {
+      try {
+        localStorage.setItem('selectedPlan', selectedPlan.toString());
+      } catch (error) {
+        console.error('Error saving plan:', error);
       }
-    });
-    
-    // Força atualização imediata
-    setTimeout(() => {
-      triggerUpdate();
-    }, 100);
-    
-    // Animation and open cart
-    setCartAnimation(true);
-    setCartOpen(true);
-    
-    // Reset animation
-    setTimeout(() => setCartAnimation(false), 800);
-    
-    // Show success toast
-    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
-      description: "Painel adicionado com sucesso",
-      duration: 3000,
-    });
-  }, [triggerUpdate]);
-
-  // Remove from cart
-  const handleRemoveFromCart = useCallback((panelId: string) => {
-    console.log('🛒 [useCartManager] Removendo do carrinho:', panelId);
-    
-    const panelToRemove = cartItems.find(item => item.panel.id === panelId);
-    const panelName = panelToRemove?.panel.buildings?.nome || 'Painel';
-    
-    setCartItems(prev => prev.filter(item => item.panel.id !== panelId));
-    
-    // Força atualização
-    setTimeout(() => {
-      triggerUpdate();
-    }, 100);
-    
-    toast.success(`${panelName} removido do carrinho`, {
-      duration: 3000,
-    });
-  }, [cartItems, triggerUpdate]);
-
-  // Clear cart
-  const handleClearCart = useCallback(() => {
-    console.log('🛒 [useCartManager] Limpando carrinho');
-    setCartItems([]);
-    localStorage.removeItem(CART_STORAGE_KEY);
-    
-    // Força atualização
-    triggerUpdate();
-    
-    toast.success('Carrinho limpo', {
-      description: "Todos os itens foram removidos",
-      duration: 3000,
-    });
-  }, [triggerUpdate]);
-
-  // Change duration
-  const handleChangeDuration = useCallback((panelId: string, duration: number) => {
-    console.log('🛒 [useCartManager] Alterando duração:', panelId, '→', duration);
-    
-    setCartItems(prev => prev.map(item => 
-      item.panel.id === panelId 
-        ? {
-            ...item,
-            duration,
-            price: getPanelPrice(item.panel, duration)
-          }
-        : item
-    ));
-  }, []);
-
-  // Toggle cart
-  const toggleCart = useCallback(() => {
-    console.log('🛒 [useCartManager] Alternando estado do carrinho');
-    setCartOpen(prev => !prev);
-  }, []);
-
-  // Proceed to checkout
-  const handleProceedToCheckout = useCallback(() => {
-    console.log('🛒 [useCartManager] Prosseguindo para checkout');
-    if (cartItems.length === 0) {
-      toast.error('Carrinho vazio', {
-        description: 'Adicione itens ao carrinho antes de prosseguir',
-      });
-      return;
     }
-    
-    setIsNavigating(true);
-    setCartOpen(false);
-    navigate('/plano');
-  }, [cartItems.length, navigate]);
-
-  // Restore cart function (for backup)
-  const handleRestoreCart = useCallback(() => {
-    try {
-      const lastCart = sessionStorage.getItem('lastCart');
-      if (lastCart) {
-        const parsedCart = JSON.parse(lastCart);
-        setCartItems(parsedCart);
-        sessionStorage.removeItem('lastCart');
-        toast.success('Carrinho restaurado');
-        triggerUpdate();
-        return true;
-      }
-    } catch (e) {
-      console.error('Erro ao restaurar carrinho:', e);
-    }
-    return false;
-  }, [triggerUpdate]);
+  }, [selectedPlan]);
 
   return {
-    // Cart state
-    cartItems,
-    cartOpen,
-    setCartOpen,
-    cartAnimation,
-    isNavigating,
-    setIsNavigating,
-    initialLoadDone,
-    
-    // Cart operations
-    toggleCart,
-    handleAddToCart,
-    handleRemoveFromCart,
-    handleClearCart,
-    handleChangeDuration,
-    handleRestoreCart,
-    
-    // Checkout
-    handleProceedToCheckout,
-    
-    // Cart verification functions
-    isItemInCart,
-    getCartItemByBuildingId
+    ...simpleCart,
+    selectedPlan,
+    setSelectedPlan
   };
 };
