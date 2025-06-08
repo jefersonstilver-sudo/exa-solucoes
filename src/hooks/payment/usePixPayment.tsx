@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface PixPaymentData {
+// CORREÇÃO: Exportar a interface PixPaymentData
+export interface PixPaymentData {
   qrCodeBase64?: string;
   qrCode?: string;
   paymentId?: string;
@@ -51,8 +52,9 @@ export const usePixPayment = (pedidoId: string | null) => {
         valor_total: pedido.valor_total
       });
 
-      // Verificar se já tem dados de PIX
-      const pixData = pedido.log_pagamento?.pix_data;
+      // CORREÇÃO: Verificar se já tem dados de PIX com type assertion
+      const logPagamento = pedido.log_pagamento as any;
+      const pixData = logPagamento?.pix_data;
       
       if (pixData) {
         console.log("✅ [usePixPayment] Dados PIX encontrados no pedido");

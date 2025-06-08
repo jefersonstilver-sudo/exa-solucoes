@@ -1,3 +1,4 @@
+
 // Hook Principal de Checkout Unificado com Transações Únicas
 
 import { useState, useEffect } from 'react';
@@ -9,6 +10,7 @@ import { useUnifiedOrderCreator } from './payment/order/useUnifiedOrderCreator';
 import { useUserSession } from './useUserSession';
 import { useCouponValidator } from './useCouponValidator';
 import { useCartManager } from './useCartManager';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logSystemEvent } from '@/utils/auditLogger';
 
