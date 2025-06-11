@@ -24,7 +24,7 @@ interface ActiveCampaign {
   }[];
 }
 
-interface PedidoVideoWithVideo {
+interface PedidoVideoData {
   id: string;
   pedido_id: string;
   video_id: string;
@@ -96,7 +96,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       // Buscar vídeos dos pedidos
       const pedidoIds = pedidos.map(p => p.id);
-      const { data: videosData, error: videosError } = await supabase
+      const { data: rawVideosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
           id,
@@ -113,13 +113,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             url
           )
         `)
-        .in('pedido_id', pedidoIds)
-        .returns<PedidoVideoWithVideo[]>();
+        .in('pedido_id', pedidoIds);
 
       if (videosError) {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar vídeos:', videosError);
         throw videosError;
       }
+
+      // Cast the data to our expected type
+      const videosData = rawVideosData as PedidoVideoData[];
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
@@ -139,7 +141,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => ({
-            id: pv.video_id,
+            id: pv.video_id || pv.id,
             nome: pv.videos?.nome || 'Vídeo sem nome',
             url: pv.videos?.url || '',
             approval_status: pv.approval_status || 'pending',
