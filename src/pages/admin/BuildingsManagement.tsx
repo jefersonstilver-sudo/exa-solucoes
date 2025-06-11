@@ -1,18 +1,18 @@
 
 import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { useBuildingsData } from '@/hooks/useBuildingsData';
+import { useAdminBuildingsData } from '@/hooks/useAdminBuildingsData';
 import { useBuildingActions } from '@/hooks/useBuildingActions';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import BuildingHeader from '@/components/admin/buildings/BuildingHeader';
-import BuildingStatsCards from '@/components/admin/buildings/BuildingStatsCards';
+import AdminBuildingStatsCards from '@/components/admin/buildings/AdminBuildingStatsCards';
 import BuildingsFilterSection from '@/components/admin/buildings/BuildingsFilterSection';
-import BuildingsList from '@/components/admin/buildings/BuildingsList';
+import AdminBuildingsList from '@/components/admin/buildings/AdminBuildingsList';
 import BuildingsDialogSection from '@/components/admin/buildings/BuildingsDialogSection';
 
 const BuildingsManagement = () => {
-  const { buildings, stats, loading, refetch, deleteBuilding } = useBuildingsData();
+  const { buildings, stats, loading, refetch, deleteBuilding } = useAdminBuildingsData();
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     status: 'all',
@@ -37,8 +37,10 @@ const BuildingsManagement = () => {
     handleCloseDetails
   } = useBuildingActions(deleteBuilding, refetch);
 
-  console.log('🏢 [BUILDINGS MANAGEMENT] Estado atual:', {
+  console.log('🏢 [ADMIN BUILDINGS MANAGEMENT] Estado atual:', {
     totalBuildings: buildings.length,
+    activeBuildings: buildings.filter(b => b.status === 'ativo').length,
+    inactiveBuildings: buildings.filter(b => b.status === 'inativo').length,
     selectedBuilding: selectedBuilding?.nome || 'Nenhum',
     isDetailsOpen,
     isFormOpen
@@ -60,7 +62,7 @@ const BuildingsManagement = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
-        <span className="ml-2 text-indexa-purple">Carregando sistema completo...</span>
+        <span className="ml-2 text-indexa-purple">Carregando sistema administrativo completo...</span>
       </div>
     );
   }
@@ -68,7 +70,7 @@ const BuildingsManagement = () => {
   return (
     <ErrorBoundary
       onError={(error) => {
-        console.error('🚨 [BUILDINGS MANAGEMENT] Erro crítico:', error);
+        console.error('🚨 [ADMIN BUILDINGS MANAGEMENT] Erro crítico:', error);
       }}
     >
       <LoadingOverlay isLoading={operationLoading} message="Processando operação...">
@@ -79,7 +81,7 @@ const BuildingsManagement = () => {
             onNewBuilding={handleNewBuilding}
           />
 
-          <BuildingStatsCards stats={stats} />
+          <AdminBuildingStatsCards stats={stats} />
 
           <BuildingsFilterSection
             searchTerm={searchTerm}
@@ -89,7 +91,7 @@ const BuildingsManagement = () => {
             buildings={buildings}
           />
 
-          <BuildingsList
+          <AdminBuildingsList
             buildings={filteredBuildings}
             onView={handleViewBuilding}
             onEdit={handleEditBuilding}

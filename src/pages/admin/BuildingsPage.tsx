@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { useBuildingsData } from '@/hooks/useBuildingsData';
+import { useAdminBuildingsData } from '@/hooks/useAdminBuildingsData';
 import { useBuildingsPageHandlers } from '@/hooks/useBuildingsPageHandlers';
 import BuildingsPageLoader from '@/components/admin/buildings/BuildingsPageLoader';
-import BuildingsPageContent from '@/components/admin/buildings/BuildingsPageContent';
+import AdminBuildingsPageContent from '@/components/admin/buildings/AdminBuildingsPageContent';
 
 const BuildingsPage = () => {
-  const { buildings, stats, loading, refetch } = useBuildingsData();
+  const { buildings, stats, loading, refetch } = useAdminBuildingsData();
   const {
     searchTerm,
     setSearchTerm,
@@ -25,7 +25,7 @@ const BuildingsPage = () => {
   }
 
   return (
-    <BuildingsPageContent
+    <AdminBuildingsPageContent
       buildings={buildings}
       stats={stats}
       loading={loading}
