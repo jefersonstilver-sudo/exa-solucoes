@@ -113,7 +113,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             url
           )
         `)
-        .in('pedido_id', pedidoIds);
+        .in('pedido_id', pedidoIds)
+        .returns<PedidoVideoWithVideo[]>();
 
       if (videosError) {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar vídeos:', videosError);
@@ -125,7 +126,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = (videosData as PedidoVideoWithVideo[])?.filter(v => v.pedido_id === pedido.id) || [];
+        const pedidoVideos = videosData?.filter(v => v.pedido_id === pedido.id) || [];
 
         return {
           id: pedido.id,
