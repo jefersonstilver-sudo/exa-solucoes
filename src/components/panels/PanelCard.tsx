@@ -8,6 +8,7 @@ import { ShoppingCart, Users, Eye, Monitor, Building, Check, Loader2 } from 'luc
 import { Badge } from '@/components/ui/badge';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useButtonAnimation } from '@/hooks/useButtonAnimation';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 
 interface PanelCardProps {
   panel: Panel;
@@ -20,7 +21,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
   const { isAnimating, isPressed, startAnimation } = useButtonAnimation();
   
   // Connect to cart manager - simplified approach
-  const { isItemInCart, initialLoadDone } = useCartManager();
+  const { isItemInCart, initialLoadDone, setIsOpen } = useCartManager();
   
   // Simple check if item is in cart
   const inCart = initialLoadDone ? isItemInCart(panel.id) : false;
@@ -33,22 +34,10 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
     isAdding
   });
 
-  // Calculate price for 30 days (base price)
-  const calculatePrice = () => {
-    // Check if condominiumProfile is string or object and extract profile type
-    const isCommercial = typeof panel.buildings?.condominiumProfile === 'string' 
-      ? panel.buildings.condominiumProfile === 'commercial'
-      : panel.buildings?.condominiumProfile?.type === 'commercial';
-      
-    // Base price range between R$250 - R$380
-    const basePrice = isCommercial ? 350 : 280;
-    // Add slight variation based on panel ID to make prices look unique
-    const priceVariation = parseInt(panel.id.slice(-2), 16) % 40; // 0-39 variation
-    return basePrice + priceVariation;
-  };
+  // Use UNIFIED price calculation from checkoutUtils
+  const price = getPanelPrice(panel, 30); // 30 days default
   
-  // Generate data for panel display
-  const price = calculatePrice();
+  // Generate mock data for panel display
   const monthlyViews = Math.floor(Math.random() * 50000) + 10000;
   const estimatedResidents = Math.floor(Math.random() * 800) + 200;
   const screenCount = Math.floor(Math.random() * 2) + 1;
@@ -79,7 +68,7 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
     tap: { scale: 0.97, transition: { duration: 0.1 } }
   };
 
-  // Handle add to cart
+  // Handle add to cart with instant feedback
   const handleAddToCart = async () => {
     if (inCart || isAdding) {
       console.log('🛒 [PanelCard] Item já está no carrinho ou sendo adicionado');
@@ -89,16 +78,21 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
     try {
       console.log('🛒 [PanelCard] Iniciando adição ao carrinho');
       
-      // Estado otimista
+      // Start loading and animation immediately
       setIsAdding(true);
       startAnimation();
       
-      // Call the add to cart function
+      // Call the add to cart function with correct price
       await onAddToCart(panel, 30); // Default to 30 days
       
       console.log('🛒 [PanelCard] Item adicionado com sucesso');
       
-      // Reset loading
+      // Open cart drawer after adding
+      setTimeout(() => {
+        setIsOpen(true);
+      }, 500);
+      
+      // Reset loading after animation
       setTimeout(() => {
         setIsAdding(false);
       }, 1000);
@@ -123,6 +117,10 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
       variants={containerVariants}
       whileHover="hover"
       className="w-full"
+      animate={isAnimating ? {
+        scale: [1, 1.02, 1],
+      } : {}}
+      transition={{ duration: 0.6 }}
     >
       <Card className="overflow-hidden border border-gray-200 hover:border-[#3C1361]/50 rounded-2xl">
         <CardContent className="p-0">
@@ -152,6 +150,25 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
                   A {displayDistance} do local
                 </Badge>
               </div>
+            )}
+
+            {/* Success animation overlay */}
+            {isAnimating && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="absolute inset-0 bg-green-500/20 flex items-center justify-center"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  transition={{ duration: 0.6 }}
+                  className="bg-white rounded-full p-4 shadow-lg"
+                >
+                  <Check className="h-8 w-8 text-green-600" />
+                </motion.div>
+              </motion.div>
             )}
           </div>
           

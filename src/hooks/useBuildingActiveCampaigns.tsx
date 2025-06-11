@@ -27,7 +27,7 @@ interface ActiveCampaign {
 interface PedidoVideoData {
   id: string;
   pedido_id: string;
-  video_id: string;
+  video_id: string | null;
   approval_status: string;
   is_active: boolean;
   selected_for_display: boolean;
@@ -120,8 +120,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      // Cast the data to our expected type
-      const videosData = rawVideosData as PedidoVideoData[];
+      // Cast the data to our expected type with proper null handling
+      const videosData = (rawVideosData || []) as PedidoVideoData[];
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 

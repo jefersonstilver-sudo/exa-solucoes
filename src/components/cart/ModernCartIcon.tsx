@@ -72,11 +72,11 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
   return (
     <motion.div
       animate={isAnimating ? { 
-        scale: [1, 1.1, 1.05, 1],
-        rotate: [0, -5, 5, 0]
+        scale: [1, 1.15, 1],
+        rotate: [0, -8, 8, 0]
       } : {}}
       transition={{ 
-        duration: 0.8,
+        duration: 0.6,
         ease: "easeInOut"
       }}
       className="relative"
@@ -90,14 +90,14 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
       >
         <motion.div
           animate={isAnimating ? {
-            scale: [1, 1.2, 1],
+            scale: [1, 1.3, 1],
           } : {}}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
         >
           <ShoppingCart className={styles.icon} />
         </motion.div>
         
-        {/* Item count badge with enhanced animation */}
+        {/* Enhanced item count badge with better animations */}
         <AnimatePresence>
           {itemCount > 0 && (
             <motion.div
@@ -107,16 +107,16 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
                 opacity: 1, 
                 y: 0,
                 ...(isAnimating && {
-                  scale: [1, 1.3, 1],
+                  scale: [1, 1.4, 1],
                   backgroundColor: ['#ef4444', '#22c55e', '#ef4444']
                 })
               }}
               exit={{ scale: 0, opacity: 0, y: -10 }}
               transition={{ 
                 type: "spring", 
-                stiffness: 500, 
+                stiffness: 600, 
                 damping: 25,
-                duration: isAnimating ? 0.8 : 0.3
+                duration: isAnimating ? 0.6 : 0.25
               }}
               className={styles.badge}
             >
@@ -126,9 +126,9 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
                 <motion.span 
                   className="font-bold leading-none"
                   animate={isAnimating ? {
-                    scale: [1, 1.2, 1]
+                    scale: [1, 1.3, 1]
                   } : {}}
-                  transition={{ duration: 0.6 }}
+                  transition={{ duration: 0.5 }}
                 >
                   {itemCount > 99 ? '99+' : itemCount}
                 </motion.span>
@@ -138,21 +138,28 @@ const ModernCartIcon: React.FC<ModernCartIconProps> = ({
         </AnimatePresence>
       </Button>
       
-      {/* Enhanced pulse animation when adding items */}
+      {/* Enhanced success pulse animation */}
       {isAnimating && (
         <>
           <motion.div
-            className="absolute inset-0 rounded-full bg-[#00FFAB] opacity-20"
-            initial={{ scale: 1, opacity: 0.2 }}
-            animate={{ scale: 2, opacity: 0 }}
+            className="absolute inset-0 rounded-full bg-[#00FFAB] opacity-30"
+            initial={{ scale: 1, opacity: 0.3 }}
+            animate={{ scale: 2.5, opacity: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             style={{ pointerEvents: 'none' }}
           />
           <motion.div
-            className="absolute inset-0 rounded-full bg-green-400 opacity-30"
-            initial={{ scale: 1, opacity: 0.3 }}
-            animate={{ scale: 1.5, opacity: 0 }}
+            className="absolute inset-0 rounded-full bg-green-400 opacity-40"
+            initial={{ scale: 1, opacity: 0.4 }}
+            animate={{ scale: 2, opacity: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            style={{ pointerEvents: 'none' }}
+          />
+          <motion.div
+            className="absolute inset-0 rounded-full bg-white opacity-50"
+            initial={{ scale: 1, opacity: 0.5 }}
+            animate={{ scale: 1.8, opacity: 0 }}
+            transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
             style={{ pointerEvents: 'none' }}
           />
         </>

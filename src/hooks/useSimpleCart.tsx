@@ -12,6 +12,7 @@ export const useSimpleCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAnimating, setIsAnimating] = useState(false);
   const navigate = useNavigate();
 
   // Load cart on mount
@@ -46,17 +47,28 @@ export const useSimpleCart = () => {
     return cartItems.some(item => item.panel?.id === panelId);
   }, [cartItems]);
 
+  const triggerAnimation = useCallback(() => {
+    setIsAnimating(true);
+    setTimeout(() => setIsAnimating(false), 600);
+  }, []);
+
   const addToCart = useCallback((panel: Panel, duration: number = 30) => {
+    console.log('🛒 [useSimpleCart] Adicionando ao carrinho:', { panelId: panel.id, duration });
+    
     setCartItems(prev => {
       const existingIndex = prev.findIndex(item => item.panel?.id === panel.id);
       
       if (existingIndex >= 0) {
-        return prev.map((item, index) => 
+        // Update existing item
+        const updated = prev.map((item, index) => 
           index === existingIndex 
             ? { ...item, duration, price: getPanelPrice(panel, duration), addedAt: Date.now() }
             : item
         );
+        console.log('🛒 [useSimpleCart] Item atualizado no carrinho');
+        return updated;
       } else {
+        // Add new item
         const newItem: CartItem = {
           id: `cart_${panel.id}_${Date.now()}`,
           panel,
@@ -64,13 +76,20 @@ export const useSimpleCart = () => {
           addedAt: Date.now(),
           price: getPanelPrice(panel, duration)
         };
+        console.log('🛒 [useSimpleCart] Novo item adicionado ao carrinho:', newItem);
         return [...prev, newItem];
       }
     });
 
-    setIsOpen(true);
-    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`);
-  }, []);
+    // Trigger animation
+    triggerAnimation();
+    
+    // Show success toast
+    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
+      duration: 2000,
+      position: 'top-center'
+    });
+  }, [triggerAnimation]);
 
   const removeFromCart = useCallback((panelId: string) => {
     const item = cartItems.find(item => item.panel?.id === panelId);
@@ -106,6 +125,7 @@ export const useSimpleCart = () => {
     isOpen,
     setIsOpen,
     isLoading,
+    isAnimating,
     itemCount: cartItems.length,
     totalPrice: cartItems.reduce((sum, item) => sum + item.price, 0),
     isItemInCart,

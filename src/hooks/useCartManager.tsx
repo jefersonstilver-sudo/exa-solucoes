@@ -39,24 +39,36 @@ export const useCartManager = () => {
     }
   }, [selectedPlan]);
 
-  // Handler functions expected by components
-  const handleAddToCart = (panel: Panel, duration: number = 30) => {
+  // Enhanced handler functions with better feedback
+  const handleAddToCart = async (panel: Panel, duration: number = 30) => {
+    console.log('🛒 [CartManager] Adicionando ao carrinho:', { panelId: panel.id, duration });
+    
+    // Call the simple cart add function
     simpleCart.addToCart(panel, duration);
+    
+    // Auto-open cart after a short delay for better UX
+    setTimeout(() => {
+      simpleCart.setIsOpen(true);
+    }, 800);
   };
 
   const handleRemoveFromCart = (panelId: string) => {
+    console.log('🛒 [CartManager] Removendo do carrinho:', panelId);
     simpleCart.removeFromCart(panelId);
   };
 
   const handleClearCart = () => {
+    console.log('🛒 [CartManager] Limpando carrinho');
     simpleCart.clearCart();
   };
 
   const handleChangeDuration = (panelId: string, duration: number) => {
+    console.log('🛒 [CartManager] Alterando duração:', { panelId, duration });
     simpleCart.updateDuration(panelId, duration);
   };
 
   const handleProceedToCheckout = () => {
+    console.log('🛒 [CartManager] Procedendo para checkout');
     simpleCart.proceedToCheckout();
   };
 
@@ -65,7 +77,7 @@ export const useCartManager = () => {
     selectedPlan,
     setSelectedPlan,
     initialLoadDone,
-    // Handler functions
+    // Enhanced handler functions
     handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,
