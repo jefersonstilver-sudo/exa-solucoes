@@ -24,6 +24,22 @@ interface ActiveCampaign {
   }[];
 }
 
+interface PedidoVideo {
+  id: string;
+  pedido_id: string;
+  video_id: string;
+  approval_status: string;
+  is_active: boolean;
+  selected_for_display: boolean;
+  slot_position: number;
+  rejection_reason?: string;
+  videos: {
+    id: string;
+    nome: string;
+    url: string;
+  } | null;
+}
+
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,7 +125,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = videos?.filter(v => v.pedido_id === pedido.id) || [];
+        const pedidoVideos = (videos as PedidoVideo[])?.filter(v => v.pedido_id === pedido.id) || [];
 
         return {
           id: pedido.id,
@@ -122,13 +138,13 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => ({
-            id: pv.video_id || '',
+            id: pv.video_id || pv.id || '',
             nome: pv.videos?.nome || 'Vídeo sem nome',
             url: pv.videos?.url || '',
-            approval_status: pv.approval_status,
-            is_active: pv.is_active,
-            selected_for_display: pv.selected_for_display,
-            slot_position: pv.slot_position,
+            approval_status: pv.approval_status || 'pending',
+            is_active: pv.is_active || false,
+            selected_for_display: pv.selected_for_display || false,
+            slot_position: pv.slot_position || 0,
             rejection_reason: pv.rejection_reason
           }))
         };
