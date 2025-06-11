@@ -122,7 +122,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => ({
-            id: pv.video_id,
+            id: pv.video_id || '',
             nome: pv.videos?.nome || 'Vídeo sem nome',
             url: pv.videos?.url || '',
             approval_status: pv.approval_status,
