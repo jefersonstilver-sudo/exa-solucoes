@@ -21,6 +21,7 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
     handleDeleteBuilding,
     handleNewBuilding,
     handleViewBuilding,
+    handleViewCampaigns,
     handleEditBuilding,
     handleImageManager
   } = useBuildingOperations({
@@ -59,6 +60,7 @@ export const useBuildingActions = (deleteBuilding: (id: string) => Promise<void>
     handleDeleteBuilding,
     handleNewBuilding,
     handleViewBuilding,
+    handleViewCampaigns,
     handleEditBuilding,
     handleImageManager,
     handleSuccess,

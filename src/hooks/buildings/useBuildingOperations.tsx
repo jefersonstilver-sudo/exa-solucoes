@@ -1,9 +1,9 @@
-
+import { Building } from '@/types/panel';
 import { useBuildingLogger } from './useBuildingLogger';
 
 interface UseBuildingOperationsProps {
-  selectedBuilding: any;
-  setSelectedBuilding: (building: any) => void;
+  selectedBuilding: Building | null;
+  setSelectedBuilding: (building: Building | null) => void;
   isDetailsOpen: boolean;
   setIsDetailsOpen: (open: boolean) => void;
   isFormOpen: boolean;
@@ -32,52 +32,45 @@ export const useBuildingOperations = ({
 }: UseBuildingOperationsProps) => {
   const { logStateChange } = useBuildingLogger();
 
-  const handleViewBuilding = (building: any) => {
-    console.log('👁️ [BUILDING OPERATIONS] INÍCIO - handleViewBuilding para:', building?.nome);
+  const handleDeleteBuilding = async (building: any) => {
+    console.log('🔥 [BUILDING OPERATIONS] INÍCIO - handleDeleteBuilding:', building.nome);
     
-    if (!building) {
-      console.error('❌ [BUILDING OPERATIONS] Building não fornecido para visualização');
+    if (!window.confirm(`Tem certeza que deseja excluir o prédio "${building.nome}"? Esta ação é irreversível.`)) {
+      console.log('🚫 [BUILDING OPERATIONS] Exclusão cancelada pelo usuário.');
       return;
     }
 
-    const newState = {
-      selectedBuilding: building,
-      isDetailsOpen: true,
-      isFormOpen: false,
-      isImageManagerOpen: false,
-      operationLoading: false
-    };
+    try {
+      setOperationLoading(true);
+      logStateChange('DELETE_INITIATED', { operationLoading: true });
+      
+      await deleteBuilding(building.id);
+      
+      const newState = {
+        selectedBuilding: null,
+        isDetailsOpen: false,
+        isFormOpen: false,
+        isImageManagerOpen: false,
+        operationLoading: false
+      };
 
-    setSelectedBuilding(building);
-    setIsDetailsOpen(true);
-    setIsFormOpen(false);
-    setIsImageManagerOpen(false);
-    
-    logStateChange('VIEW_BUILDING', newState);
-    console.log('✅ [BUILDING OPERATIONS] Dialog de detalhes deve abrir para:', building.nome);
-  };
-
-  const handleEditBuilding = (building: any) => {
-    console.log('✏️ [BUILDING OPERATIONS] INÍCIO - handleEditBuilding para:', building?.nome);
-    
-    const newState = {
-      selectedBuilding: building,
-      isDetailsOpen: false,
-      isFormOpen: true,
-      isImageManagerOpen: false,
-      operationLoading: false
-    };
-
-    setSelectedBuilding(building);
-    setIsFormOpen(true);
-    setIsDetailsOpen(false);
-    setIsImageManagerOpen(false);
-    
-    logStateChange('EDIT_BUILDING', newState);
+      setSelectedBuilding(null);
+      setIsDetailsOpen(false);
+      setIsFormOpen(false);
+      setIsImageManagerOpen(false);
+      
+      logStateChange('DELETE_SUCCESS', newState);
+    } catch (error) {
+      console.error('🚨 [BUILDING OPERATIONS] Erro ao excluir prédio:', error);
+      logStateChange('DELETE_FAILED', { operationLoading: false, error });
+      alert('Ocorreu um erro ao excluir o prédio. Por favor, tente novamente.');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
   const handleNewBuilding = () => {
-    console.log('🆕 [BUILDING OPERATIONS] INÍCIO - handleNewBuilding');
+    console.log('✨ [BUILDING OPERATIONS] INÍCIO - handleNewBuilding');
     
     const newState = {
       selectedBuilding: null,
@@ -88,15 +81,68 @@ export const useBuildingOperations = ({
     };
 
     setSelectedBuilding(null);
-    setIsFormOpen(true);
     setIsDetailsOpen(false);
+    setIsFormOpen(true);
     setIsImageManagerOpen(false);
     
     logStateChange('NEW_BUILDING', newState);
   };
 
+  const handleViewBuilding = (building: any) => {
+    console.log('👁️ [BUILDING OPERATIONS] INÍCIO - handleViewBuilding:', building.nome);
+    
+    const newState = {
+      selectedBuilding: building,
+      isDetailsOpen: true,
+      isFormOpen: false,
+      isImageManagerOpen: false,
+      operationLoading: false
+    };
+
+    setSelectedBuilding(building);
+    setIsDetailsOpen(true);
+    
+    logStateChange('VIEW_BUILDING', newState);
+  };
+
+  const handleViewCampaigns = (building: any) => {
+    console.log('🎬 [BUILDING OPERATIONS] INÍCIO - handleViewCampaigns:', building.nome);
+    
+    const newState = {
+      selectedBuilding: building,
+      isDetailsOpen: true,
+      isFormOpen: false,
+      isImageManagerOpen: false,
+      operationLoading: false
+    };
+
+    setSelectedBuilding(building);
+    setIsDetailsOpen(true);
+    
+    logStateChange('VIEW_CAMPAIGNS', newState);
+  };
+
+  const handleEditBuilding = (building: any) => {
+    console.log('✏️ [BUILDING OPERATIONS] INÍCIO - handleEditBuilding:', building.nome);
+    
+    const newState = {
+      selectedBuilding: building,
+      isDetailsOpen: false,
+      isFormOpen: true,
+      isImageManagerOpen: false,
+      operationLoading: false
+    };
+
+    setSelectedBuilding(building);
+    setIsDetailsOpen(false);
+    setIsFormOpen(true);
+    setIsImageManagerOpen(false);
+    
+    logStateChange('EDIT_BUILDING', newState);
+  };
+
   const handleImageManager = (building: any) => {
-    console.log('🖼️ [BUILDING OPERATIONS] INÍCIO - handleImageManager para:', building?.nome);
+    console.log('🖼️ [BUILDING OPERATIONS] INÍCIO - handleImageManager:', building.nome);
     
     const newState = {
       selectedBuilding: building,
@@ -107,43 +153,19 @@ export const useBuildingOperations = ({
     };
 
     setSelectedBuilding(building);
-    setIsImageManagerOpen(true);
     setIsDetailsOpen(false);
     setIsFormOpen(false);
+    setIsImageManagerOpen(true);
     
     logStateChange('IMAGE_MANAGER', newState);
   };
 
-  const handleDeleteBuilding = async (building: any) => {
-    console.log('🗑️ [BUILDING OPERATIONS] INÍCIO - handleDeleteBuilding para:', building?.nome);
-    
-    if (window.confirm(`Tem certeza que deseja excluir o prédio "${building.nome}"?`)) {
-      setOperationLoading(true);
-      
-      try {
-        await deleteBuilding(building.id);
-        refetch();
-        
-        logStateChange('DELETE_BUILDING_SUCCESS', {
-          operationLoading: false
-        });
-      } catch (error) {
-        console.error('❌ [BUILDING OPERATIONS] Erro ao deletar prédio:', error);
-        
-        logStateChange('DELETE_BUILDING_ERROR', {
-          operationLoading: false
-        });
-      } finally {
-        setOperationLoading(false);
-      }
-    }
-  };
-
   return {
-    handleViewBuilding,
-    handleEditBuilding,
+    handleDeleteBuilding,
     handleNewBuilding,
-    handleImageManager,
-    handleDeleteBuilding
+    handleViewBuilding,
+    handleViewCampaigns,
+    handleEditBuilding,
+    handleImageManager
   };
 };

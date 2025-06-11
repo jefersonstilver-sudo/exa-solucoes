@@ -6,6 +6,7 @@ import BuildingSalesTab from './BuildingSalesTab';
 import BuildingLogsTab from './BuildingLogsTab';
 import AssignedPanelsTab from './AssignedPanelsTab';
 import AvailablePanelsTab from './AvailablePanelsTab';
+import BuildingActiveCampaignsTab from './BuildingActiveCampaignsTab';
 
 interface BuildingDetailsTabsContentProps {
   building: any;
@@ -39,8 +40,9 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
 
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-6">
         <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+        <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
         <TabsTrigger value="panels">Painéis ({panels?.length || 0})</TabsTrigger>
         <TabsTrigger value="available">Disponíveis</TabsTrigger>
         <TabsTrigger value="sales">Vendas ({sales?.length || 0})</TabsTrigger>
@@ -49,6 +51,13 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
 
       <TabsContent value="overview" className="space-y-6">
         <BuildingOverviewTab building={building} panels={panels} />
+      </TabsContent>
+
+      <TabsContent value="campaigns" className="space-y-6">
+        <BuildingActiveCampaignsTab 
+          buildingId={building?.id}
+          buildingName={building?.nome}
+        />
       </TabsContent>
 
       <TabsContent value="panels" className="space-y-6">

@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign } from 'lucide-react';
+import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video } from 'lucide-react';
 
 interface AdminBuildingCardProps {
   building: any;
@@ -11,6 +11,7 @@ interface AdminBuildingCardProps {
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
+  onViewCampaigns?: (building: any) => void;
 }
 
 const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
@@ -18,7 +19,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   onView,
   onEdit,
   onImageManager,
-  onDelete
+  onDelete,
+  onViewCampaigns
 }) => {
   console.log('🏢 [ADMIN BUILDING CARD] Renderizando prédio:', building.nome, 'Status:', building.status);
 
@@ -210,6 +212,18 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               <Image className="h-4 w-4" />
               Imagens
             </Button>
+
+            {onViewCampaigns && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewCampaigns(building)}
+                className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+              >
+                <Video className="h-4 w-4" />
+                Campanhas Ativas
+              </Button>
+            )}
             
             <Button
               variant="destructive"

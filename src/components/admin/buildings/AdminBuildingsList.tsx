@@ -10,6 +10,7 @@ interface AdminBuildingsListProps {
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
+  onViewCampaigns?: (building: any) => void;
 }
 
 const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
@@ -17,7 +18,8 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
   onView,
   onEdit,
   onImageManager,
-  onDelete
+  onDelete,
+  onViewCampaigns
 }) => {
   const activeBuildings = buildings.filter(b => b.status === 'ativo');
   const inactiveBuildings = buildings.filter(b => b.status === 'inativo');
@@ -49,6 +51,7 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
                 onEdit={onEdit}
                 onImageManager={onImageManager}
                 onDelete={onDelete}
+                onViewCampaigns={onViewCampaigns}
               />
             ))}
           </div>

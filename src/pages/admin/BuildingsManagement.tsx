@@ -31,6 +31,7 @@ const BuildingsManagement = () => {
     handleDeleteBuilding,
     handleNewBuilding,
     handleViewBuilding,
+    handleViewCampaigns,
     handleEditBuilding,
     handleImageManager,
     handleSuccess,
@@ -97,6 +98,7 @@ const BuildingsManagement = () => {
             onEdit={handleEditBuilding}
             onImageManager={handleImageManager}
             onDelete={handleDeleteBuilding}
+            onViewCampaigns={handleViewCampaigns}
           />
 
           <BuildingsDialogSection
