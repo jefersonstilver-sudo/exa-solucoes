@@ -143,10 +143,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // CORREÇÃO: Usar type assertion explícita para resolver o tipo 'never'
+            // CORREÇÃO: Safe access com fallbacks explícitos para evitar tipo 'never'
             const videoData = pv.videos as VideoData | null;
             
-            const videoId = videoData?.id || pv.video_id || pv.id;
+            // Use explicit fallback chain to avoid 'never' type
+            const videoId = videoData?.id || (pv.video_id as string) || pv.id;
             
             return {
               id: videoId,
