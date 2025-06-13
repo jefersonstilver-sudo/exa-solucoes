@@ -146,8 +146,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // CORREÇÃO: Safe access com fallbacks explícitos para evitar tipo 'never'
             const videoData = pv.videos as VideoData | null;
             
-            // CORREÇÃO: Use individual checks to avoid 'never' type inference
-            const finalVideoId: string = videoData?.id || pv.video_id || pv.id || 'unknown';
+            // CORREÇÃO: Handle nullable video_id explicitly to avoid 'never' type
+            let finalVideoId: string;
+            if (videoData?.id) {
+              finalVideoId = videoData.id;
+            } else if (pv.video_id) {
+              finalVideoId = pv.video_id;
+            } else {
+              finalVideoId = pv.id;
+            }
             
             return {
               id: finalVideoId,
