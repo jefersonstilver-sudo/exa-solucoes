@@ -143,18 +143,22 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // Safe access to video data with proper type handling
+            // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Handle video ID resolution with explicit type checking
-            const videoId = videoData?.id;
-            const pedidoVideoId = pv.video_id;
-            const fallbackId = pv.id;
-            
-            const finalVideoId: string = videoId || pedidoVideoId || fallbackId;
+            // Explicitly handle the video ID resolution to avoid 'never' type
+            const resolveVideoId = (): string => {
+              if (videoData && videoData.id) {
+                return videoData.id;
+              }
+              if (pv.video_id !== null) {
+                return pv.video_id;
+              }
+              return pv.id;
+            };
             
             return {
-              id: finalVideoId,
+              id: resolveVideoId(),
               nome: videoData?.nome || 'Vídeo sem nome',
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
