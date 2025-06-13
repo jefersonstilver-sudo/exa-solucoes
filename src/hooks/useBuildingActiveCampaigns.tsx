@@ -24,7 +24,7 @@ interface ActiveCampaign {
   }[];
 }
 
-interface PedidoVideoData {
+interface PedidoVideoQueryResult {
   id: string;
   pedido_id: string;
   video_id: string | null;
@@ -96,7 +96,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       // Buscar vídeos dos pedidos
       const pedidoIds = pedidos.map(p => p.id);
-      const { data: rawVideosData, error: videosError } = await supabase
+      const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
           id,
@@ -120,15 +120,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      // Cast the data to our expected type with proper null handling
-      const videosData = (rawVideosData || []) as PedidoVideoData[];
+      // Type the videos data properly
+      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
 
-      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
+      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
 
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = videosData?.filter(v => v.pedido_id === pedido.id) || [];
+        const pedidoVideos = typedVideosData?.filter(v => v.pedido_id === pedido.id) || [];
 
         return {
           id: pedido.id,
@@ -141,7 +141,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => ({
-            id: pv.video_id || pv.id,
+            id: pv.videos?.id || pv.video_id || pv.id,
             nome: pv.videos?.nome || 'Vídeo sem nome',
             url: pv.videos?.url || '',
             approval_status: pv.approval_status || 'pending',
