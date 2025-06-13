@@ -143,13 +143,22 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // CORREÇÃO: Usar type assertion segura para resolver o tipo 'never'
-            const videoId = (pv.videos?.id || pv.video_id || pv.id) as string;
+            // CORREÇÃO: Usar verificação segura de tipos para evitar 'never'
+            const videoData = pv.videos;
+            let videoId: string;
+            
+            if (videoData && typeof videoData === 'object' && 'id' in videoData) {
+              videoId = videoData.id;
+            } else if (pv.video_id) {
+              videoId = pv.video_id;
+            } else {
+              videoId = pv.id;
+            }
             
             return {
               id: videoId,
-              nome: pv.videos?.nome || 'Vídeo sem nome',
-              url: pv.videos?.url || '',
+              nome: videoData?.nome || 'Vídeo sem nome',
+              url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
               is_active: pv.is_active || false,
               selected_for_display: pv.selected_for_display || false,
