@@ -146,8 +146,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // CORREÇÃO: Safe access com fallbacks explícitos para evitar tipo 'never'
             const videoData = pv.videos as VideoData | null;
             
-            // CORREÇÃO: Use string coercion to ensure we always get a string ID
-            const finalVideoId = String(videoData?.id || pv.video_id || pv.id);
+            // CORREÇÃO: Handle null explicitly to avoid TypeScript 'never' type
+            const finalVideoId = videoData?.id || (pv.video_id ?? pv.id);
             
             return {
               id: finalVideoId,
