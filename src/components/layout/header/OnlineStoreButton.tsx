@@ -8,6 +8,7 @@ const OnlineStoreButton: React.FC = () => {
   const navigate = useNavigate();
 
   const handleStoreClick = () => {
+    // CORREÇÃO: Usar rota padronizada '/loja'
     navigate('/loja');
   };
 

@@ -143,8 +143,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // Use fallback logic to get the video ID safely
-            const videoId = pv.videos?.id || pv.video_id || pv.id;
+            // CORREÇÃO: Usar type assertion segura para resolver o tipo 'never'
+            const videoId = (pv.videos?.id || pv.video_id || pv.id) as string;
             
             return {
               id: videoId,

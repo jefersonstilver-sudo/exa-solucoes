@@ -37,7 +37,7 @@ const EmptyCart: React.FC = () => {
       
       <Button 
         variant="outline" 
-        onClick={() => navigate('/paineis-digitais/loja')}
+        onClick={() => navigate('/loja')}
         className="border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361] hover:text-white transition-colors px-8"
       >
         Explorar Painéis
