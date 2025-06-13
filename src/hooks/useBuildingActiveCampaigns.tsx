@@ -146,16 +146,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // CORREÇÃO: Safe access com fallbacks explícitos para evitar tipo 'never'
             const videoData = pv.videos as VideoData | null;
             
-            // CORREÇÃO: Extract each part of the fallback chain explicitly to avoid TypeScript 'never' type
-            const videoDataId = videoData?.id;
-            const videoIdFromRelation = pv.video_id;
-            const pedidoVideoId = pv.id;
-            
-            // Use explicit fallback with proper type safety
-            const videoId = videoDataId || videoIdFromRelation || pedidoVideoId;
+            // CORREÇÃO: Use string coercion to ensure we always get a string ID
+            const finalVideoId = String(videoData?.id || pv.video_id || pv.id);
             
             return {
-              id: videoId,
+              id: finalVideoId,
               nome: videoData?.nome || 'Vídeo sem nome',
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
