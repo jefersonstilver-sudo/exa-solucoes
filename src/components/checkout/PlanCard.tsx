@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Video, Gift, Studio } from 'lucide-react';
+import { CheckCircle, Video, Gift, Building } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -249,6 +248,8 @@ const PlanCard: React.FC<PlanCardProps> = ({
                     <Video className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
                   ) : extra.includes('🎬') ? (
                     <Gift className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
+                  ) : extra.includes('estúdio') || extra.includes('Aluguel') ? (
+                    <Building className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
                   ) : (
                     <CheckCircle className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
                   )}

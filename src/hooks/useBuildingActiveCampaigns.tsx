@@ -24,6 +24,12 @@ interface ActiveCampaign {
   }[];
 }
 
+interface VideoData {
+  id: string;
+  nome: string;
+  url: string;
+}
+
 interface PedidoVideoQueryResult {
   id: string;
   pedido_id: string;
@@ -33,11 +39,7 @@ interface PedidoVideoQueryResult {
   selected_for_display: boolean;
   slot_position: number;
   rejection_reason?: string;
-  videos: {
-    id: string;
-    nome: string;
-    url: string;
-  } | null;
+  videos: VideoData | null;
 }
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
