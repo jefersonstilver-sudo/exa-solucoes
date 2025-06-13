@@ -143,18 +143,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // CORREÇÃO: Safe access com fallbacks explícitos para evitar tipo 'never'
+            // Safe access to video data with proper type handling
             const videoData = pv.videos as VideoData | null;
             
-            // CORREÇÃO: Handle nullable video_id explicitly to avoid 'never' type
-            let finalVideoId: string;
-            if (videoData?.id) {
-              finalVideoId = videoData.id;
-            } else if (pv.video_id) {
-              finalVideoId = pv.video_id;
-            } else {
-              finalVideoId = pv.id;
-            }
+            // Handle video ID resolution with explicit type checking
+            const videoId = videoData?.id;
+            const pedidoVideoId = pv.video_id;
+            const fallbackId = pv.id;
+            
+            const finalVideoId: string = videoId || pedidoVideoId || fallbackId;
             
             return {
               id: finalVideoId,
