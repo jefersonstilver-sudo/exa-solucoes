@@ -1,9 +1,10 @@
 
-// CORREÇÃO COMPLETA: Sistema de Cálculo de Preços Unificado
+// CORREÇÃO COMPLETA: Sistema de Cálculo de Preços Unificado com preços corretos
 
 import { Panel } from '@/types/panel';
 import { PlanKey } from '@/types/checkout';
 import { logPriceCalculation } from './auditLogger';
+import { BASE_PRICE_PER_PANEL } from '@/constants/checkoutConstants';
 
 interface CartItem {
   panel: Panel;
@@ -33,7 +34,7 @@ export const getPanelPrice = (panel: Panel, duration: number = 30): number => {
   return totalPrice;
 };
 
-// FUNÇÃO CORRIGIDA: Cálculo de preço total com desconto aplicado corretamente
+// FUNÇÃO CORRIGIDA: Cálculo de preço total com desconto aplicado corretamente e preços específicos
 export const calculateTotalPrice = (
   selectedPlan: PlanKey | null,
   cartItems: CartItem[],
@@ -48,7 +49,7 @@ export const calculateTotalPrice = (
     return 0;
   }
 
-  console.log("💰 [CheckoutUtils] INICIANDO CÁLCULO CORRIGIDO:", {
+  console.log("💰 [CheckoutUtils] INICIANDO CÁLCULO COM PREÇOS CORRIGIDOS:", {
     selectedPlan,
     cartItemsCount: cartItems.length,
     couponDiscount,
@@ -56,37 +57,41 @@ export const calculateTotalPrice = (
     timestamp: new Date().toISOString()
   });
 
-  // Calcular subtotal dos painéis
-  let subtotal = 0;
-  cartItems.forEach((item, index) => {
-    const basePrice = item.panel?.buildings?.preco_base || 0;
-    subtotal += basePrice;
-    
-    console.log(`💰 [CheckoutUtils] Item ${index}:`, {
-      panelId: item.panel?.id,
-      buildingName: item.panel?.buildings?.nome,
-      basePrice,
-      subtotalAtual: subtotal
-    });
-  });
+  // Preços específicos por plano conforme especificação
+  const pricePerMonth = {
+    1: 200,   // R$ 200/mês
+    3: 160,   // R$ 160/mês (R$ 200 - 20%)
+    6: 140,   // R$ 140/mês 
+    12: 125   // R$ 125/mês
+  };
 
-  // Aplicar multiplicador do plano
-  let totalWithPlan = subtotal * selectedPlan;
+  const monthlyPrice = pricePerMonth[selectedPlan];
   
-  console.log("💰 [CheckoutUtils] TOTAL COM PLANO:", {
-    subtotal,
-    planMultiplier: selectedPlan,
+  if (!monthlyPrice) {
+    console.error("💰 [CheckoutUtils] Preço não encontrado para o plano:", selectedPlan);
+    return 0;
+  }
+
+  // Calcular total baseado no número de painéis × preço mensal × meses
+  const totalPanels = cartItems.length;
+  const totalWithPlan = totalPanels * monthlyPrice * selectedPlan;
+  
+  console.log("💰 [CheckoutUtils] CÁLCULO BASEADO NOS PREÇOS ESPECÍFICOS:", {
+    selectedPlan,
+    monthlyPrice,
+    totalPanels,
+    totalMonths: selectedPlan,
     totalWithPlan,
-    calculation: `R$ ${subtotal} × ${selectedPlan} meses = R$ ${totalWithPlan}`
+    calculation: `${totalPanels} painéis × R$ ${monthlyPrice}/mês × ${selectedPlan} meses = R$ ${totalWithPlan}`
   });
 
-  // Aplicar desconto se válido - CORREÇÃO CRÍTICA
+  // Aplicar desconto se válido
   let finalPrice = totalWithPlan;
   if (couponValid && couponDiscount > 0) {
     const discountAmount = (totalWithPlan * couponDiscount) / 100;
     finalPrice = totalWithPlan - discountAmount;
     
-    console.log("💰 [CheckoutUtils] DESCONTO APLICADO CORRETAMENTE:", {
+    console.log("💰 [CheckoutUtils] DESCONTO APLICADO:", {
       totalWithPlan,
       couponDiscount: `${couponDiscount}%`,
       discountAmount,
@@ -98,25 +103,25 @@ export const calculateTotalPrice = (
   // Arredondar para 2 casas decimais
   finalPrice = Math.round(finalPrice * 100) / 100;
 
-  console.log("💰 [CheckoutUtils] RESULTADO FINAL:", {
+  console.log("💰 [CheckoutUtils] RESULTADO FINAL CORRIGIDO:", {
     selectedPlan,
     cartItemsCount: cartItems.length,
     finalPrice,
-    withDiscount: couponValid && couponDiscount > 0,
-    expectedResult: "R$ 0.27 com desconto de 10%"
+    pricePerMonth: monthlyPrice,
+    withDiscount: couponValid && couponDiscount > 0
   });
 
   return finalPrice;
 };
 
-// Cálculo do subtotal do carrinho
+// Cálculo do subtotal do carrinho (baseado no preço base)
 export const calculateCartSubtotal = (cartItems: CartItem[]): number => {
   if (!cartItems || cartItems.length === 0) {
     return 0;
   }
 
   const subtotal = cartItems.reduce((total, item) => {
-    const basePrice = item.panel?.buildings?.preco_base || 0;
+    const basePrice = item.panel?.buildings?.preco_base || BASE_PRICE_PER_PANEL;
     return total + basePrice;
   }, 0);
 
@@ -134,14 +139,25 @@ export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[
     return null;
   }
 
-  const subtotal = calculateCartSubtotal(cartItems);
-  const totalPrice = subtotal * planKey;
-  const pricePerMonth = totalPrice / planKey;
-  const oneMonthTotal = subtotal * 1;
-  const savings = planKey > 1 ? (oneMonthTotal * planKey) - totalPrice : 0;
+  // Usar os preços específicos definidos
+  const pricePerMonth = {
+    1: 200,   // R$ 200/mês
+    3: 160,   // R$ 160/mês 
+    6: 140,   // R$ 140/mês 
+    12: 125   // R$ 125/mês
+  };
+
+  const monthlyPricePerPanel = pricePerMonth[planKey];
+  const totalPanels = cartItems.length;
+  const totalPrice = totalPanels * monthlyPricePerPanel * planKey;
+  const pricePerMonthTotal = totalPanels * monthlyPricePerPanel;
+  
+  // Calcular economia comparado ao plano mensal
+  const monthlyPlanTotal = totalPanels * pricePerMonth[1] * planKey;
+  const savings = planKey > 1 ? monthlyPlanTotal - totalPrice : 0;
 
   return {
-    dynamicPricePerMonth: pricePerMonth,
+    dynamicPricePerMonth: pricePerMonthTotal,
     dynamicTotalPrice: totalPrice,
     dynamicSavings: savings
   };

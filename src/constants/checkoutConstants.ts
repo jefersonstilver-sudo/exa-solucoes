@@ -8,16 +8,21 @@ export const CHECKOUT_STEPS = {
   UPLOAD: 4
 };
 
-// Planos disponíveis with updated structure - preços são calculados dinamicamente
+// Planos disponíveis with updated structure - preços corrigidos conforme especificação
 export const PLANS = {
   1: {
     id: 1,
     name: 'Plano Básico',
     description: '1 mês',
     months: 1,
-    discount: 0,
+    discount: 0, // Sem desconto
+    pricePerMonth: 200, // R$ 200/mês
     mostPopular: false,
-    extras: ['Flexibilidade total', 'Ideal para testes', 'Sem compromisso'],
+    extras: [
+      'Flexibilidade total', 
+      'Ideal para testes', 
+      'Sem compromisso'
+    ],
     productionIncluded: false,
     additionalProduction: {
       available: true,
@@ -27,43 +32,67 @@ export const PLANS = {
   },
   3: {
     id: 3,
-    name: 'Plano Popular',
+    name: 'Plano Trimestral',
     description: '3 meses',
     months: 3,
-    discount: 5,
+    discount: 20, // 20% de desconto
+    pricePerMonth: 160, // R$ 200 - 20% = R$ 160/mês
     mostPopular: true,
-    extras: ['Economize 5%', 'Maior visibilidade', 'Melhor custo-benefício'],
+    extras: [
+      'Economize 20% (R$ 40/mês)',
+      'Maior visibilidade',
+      '🎥 1 vídeo horizontal lettering de 15s por mês',
+      'Melhor custo-benefício'
+    ],
     productionIncluded: true,
     videosPerMonth: 1,
+    videoType: 'Vídeo horizontal lettering de 15 segundos',
     color: 'green',
-    tag: '🔥 Mais vendido'
+    tag: '🔥 Mais Popular'
   },
   6: {
     id: 6,
-    name: 'Plano Profissional',
+    name: 'Plano Semestral',
     description: '6 meses',
     months: 6,
-    discount: 15,
+    discount: 30, // 30% de desconto para chegar em R$ 140/mês
+    pricePerMonth: 140, // R$ 140/mês conforme especificado
     mostPopular: false,
-    extras: ['Economize 15%', 'Presença contínua', 'Máximo alcance'],
+    extras: [
+      'Economize 30% (R$ 60/mês)',
+      'Presença contínua',
+      '🎥 1 vídeo por mês',
+      '🎬 1 aluguel GRÁTIS do estúdio avançado Indexa Mídia',
+      'Máximo alcance'
+    ],
     productionIncluded: true,
     videosPerMonth: 1,
     studioUse: true,
+    studioBenefit: 'Aluguel grátis do estúdio avançado',
     color: 'purple',
-    tag: '✨ Plano Recomendado'
+    tag: '✨ Recomendado'
   },
   12: {
     id: 12,
-    name: 'Plano Empresarial',
+    name: 'Plano Anual',
     description: '12 meses',
     months: 12,
-    discount: 35,
+    discount: 37.5, // 37.5% de desconto para chegar em R$ 125/mês
+    pricePerMonth: 125, // R$ 125/mês conforme especificado
     mostPopular: false,
-    extras: ['Economize 35%', 'Máxima economia', 'Presença anual garantida'],
+    extras: [
+      'Economize 37.5% (R$ 75/mês)',
+      'Máxima economia',
+      '🎥 1 vídeo por mês',
+      '🎬 1 vídeo cinematográfico de até 1 minuto GRÁTIS',
+      'Para usar nas redes sociais',
+      'Presença anual garantida'
+    ],
     productionIncluded: true,
     videosPerMonth: 1,
     extendedDisplay: true,
     corporateBonus: true,
+    cinematicVideo: 'Vídeo cinematográfico de até 1 minuto para redes sociais',
     color: 'blue',
     tag: '💎 Máxima Economia'
   }
@@ -75,3 +104,6 @@ export const MP_ACCESS_TOKEN = 'TEST-1284714739337536-091623-...'; // Truncado p
 
 // Constantes de duração
 export const DAYS_IN_MONTH = 30;
+
+// Preço base por painel por mês
+export const BASE_PRICE_PER_PANEL = 200;

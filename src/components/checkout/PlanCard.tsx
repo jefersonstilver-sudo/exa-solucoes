@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Video } from 'lucide-react';
+import { CheckCircle, Video, Gift, Studio } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plan, PlanKey } from '@/types/checkout';
 import { formatCurrency } from '@/utils/priceUtils';
-import { getPlanWithDynamicPricing } from '@/utils/checkoutUtils';
 import { Panel } from '@/types/panel';
 import { logPriceCalculation } from '@/utils/auditLogger';
 
@@ -35,34 +34,45 @@ const PlanCard: React.FC<PlanCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [dynamicPricing, setDynamicPricing] = useState<any>(null);
   
-  // Calcular preços dinamicamente baseados no carrinho
+  // Calcular preços dinamicamente baseados no carrinho com preços corretos
   useEffect(() => {
     if (cartItems.length > 0) {
-      console.log("💰 [PlanCard] Calculando preços dinâmicos:", {
+      console.log("💰 [PlanCard] Calculando preços dinâmicos corrigidos:", {
         planKey,
-        cartItemsLength: cartItems.length,
-        cartItems: cartItems.map(item => ({
-          panelId: item.panel.id,
-          buildingName: item.panel.buildings?.nome,
-          preco_base: item.panel.buildings?.preco_base,
-          price: item.price
-        }))
+        cartItemsLength: cartItems.length
       });
       
-      const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
+      // Preços específicos por plano conforme especificação
+      const pricePerMonth = {
+        1: 200,   // R$ 200/mês
+        3: 160,   // R$ 160/mês (R$ 200 - 20%)
+        6: 140,   // R$ 140/mês 
+        12: 125   // R$ 125/mês
+      };
+
+      const monthlyPricePerPanel = pricePerMonth[planKey];
+      const totalPanels = cartItems.length;
+      const totalPrice = totalPanels * monthlyPricePerPanel * planKey;
+      const pricePerMonthTotal = totalPanels * monthlyPricePerPanel;
+      
+      // Calcular economia comparado ao plano mensal
+      const monthlyPlanTotal = totalPanels * pricePerMonth[1] * planKey;
+      const savings = planKey > 1 ? monthlyPlanTotal - totalPrice : 0;
+
+      const dynamicPlan = {
+        dynamicPricePerMonth: pricePerMonthTotal,
+        dynamicTotalPrice: totalPrice,
+        dynamicSavings: savings
+      };
+      
       setDynamicPricing(dynamicPlan);
       
       // Log para auditoria
       logPriceCalculation(`PlanCard-${planKey}`, {
         planKey,
         cartItemsCount: cartItems.length,
-        dynamicPricing: dynamicPlan,
-        cartItems: cartItems.map(item => ({
-          panelId: item.panel.id,
-          buildingName: item.panel.buildings?.nome,
-          preco_base: item.panel.buildings?.preco_base,
-          price: item.price
-        }))
+        monthlyPricePerPanel,
+        dynamicPricing: dynamicPlan
       });
     } else {
       console.log("💰 [PlanCard] Carrinho vazio, resetando preços");
@@ -161,7 +171,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
         {/* Header Tags */}
         {plan.mostPopular && (
           <div className={`${colors.header} text-center py-1.5 text-xs font-medium`}>
-            🔥 MAIS VENDIDO
+            🔥 MAIS POPULAR
           </div>
         )}
         
@@ -173,7 +183,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
         
         {planKey === 6 && !plan.tag && (
           <div className="bg-[#D6BCFA] text-[#1A1F2C] text-center py-1.5 text-xs font-medium">
-            ✨ PLANO RECOMENDADO
+            ✨ RECOMENDADO
           </div>
         )}
         
@@ -230,12 +240,18 @@ const PlanCard: React.FC<PlanCardProps> = ({
             )}
           </div>
           
-          {/* Features */}
+          {/* Features com benefícios específicos */}
           <div className="space-y-2 sm:space-y-3 mt-auto">
             {plan.extras && plan.extras.length > 0 ? (
               plan.extras.map((extra, idx) => (
                 <div key={idx} className="flex items-start gap-2">
-                  <CheckCircle className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
+                  {extra.includes('🎥') ? (
+                    <Video className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
+                  ) : extra.includes('🎬') ? (
+                    <Gift className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
+                  ) : (
+                    <CheckCircle className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.accent} flex-shrink-0 mt-0.5`} />
+                  )}
                   <span className="text-xs sm:text-sm text-gray-600 leading-tight">{extra}</span>
                 </div>
               ))
