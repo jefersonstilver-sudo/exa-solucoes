@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Calendar, Clock, CreditCard, Tag } from 'lucide-react';
+import { MapPin, Calendar, Clock, CreditCard, Tag, TrendingDown } from 'lucide-react';
 import { useCheckout } from '@/hooks/useCheckout';
 import { formatCurrency } from '@/utils/priceUtils';
 import { PLANS } from '@/constants/checkoutConstants';
@@ -147,7 +147,7 @@ const ReviewStep = () => {
           </CardContent>
         </Card>
 
-        {/* CORREÇÃO: Resumo de Preços Unificado */}
+        {/* CORREÇÃO: Resumo de Preços com Desconto Visual */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
@@ -157,29 +157,46 @@ const ReviewStep = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
+              {/* Preço Original com Risco */}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
-                <span className="font-medium">{formatCurrency(subtotalWithPlan)}</span>
+                <span className={`font-medium ${couponValid && discount > 0 ? 'line-through text-red-500' : ''}`}>
+                  {formatCurrency(subtotalWithPlan)}
+                </span>
               </div>
               
+              {/* Desconto Aplicado com Visual Atrativo */}
               {couponValid && discount > 0 && (
-                <div className="flex justify-between text-green-600 text-sm">
-                  <span className="flex items-center">
-                    <Tag className="h-4 w-4 mr-1" />
-                    Desconto aplicado ({couponDiscount}%)
-                  </span>
-                  <span className="font-medium">-{formatCurrency(discount)}</span>
-                </div>
+                <>
+                  <div className="flex justify-between text-green-600 text-sm bg-green-50 p-2 rounded-lg border border-green-200">
+                    <span className="flex items-center font-medium">
+                      <TrendingDown className="h-4 w-4 mr-1" />
+                      Desconto aplicado ({couponDiscount}%)
+                    </span>
+                    <span className="font-bold">-{formatCurrency(discount)}</span>
+                  </div>
+                  
+                  {/* Economia Total Destacada */}
+                  <div className="bg-green-100 p-3 rounded-lg border border-green-300">
+                    <div className="flex items-center justify-center text-green-800">
+                      <Tag className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">
+                        Você está economizando {formatCurrency(discount)}!
+                      </span>
+                    </div>
+                  </div>
+                </>
               )}
               
+              {/* Total Final Destacado */}
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total Final</span>
                   <span className="text-[#1E1B4B]">{formatCurrency(finalPrice)}</span>
                 </div>
                 {couponValid && discount > 0 && (
-                  <div className="text-xs text-green-600 mt-1 text-right">
-                    ✅ Desconto de {couponDiscount}% aplicado!
+                  <div className="text-xs text-green-600 mt-1 text-right font-medium">
+                    ✅ Desconto de {couponDiscount}% aplicado com sucesso!
                   </div>
                 )}
               </div>

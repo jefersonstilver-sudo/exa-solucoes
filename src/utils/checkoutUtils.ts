@@ -158,13 +158,14 @@ export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[
   const monthlyPlanTotal = totalPanels * pricePerMonth[1] * planKey;
   const savings = planKey > 1 ? monthlyPlanTotal - totalPrice : 0;
 
-  console.log("💰 [getPlanWithDynamicPricing] CÁLCULO CORRIGIDO:", {
+  console.log("💰 [getPlanWithDynamicPricing] CÁLCULO CORRIGIDO PARA PLANO ANUAL:", {
     planKey,
     totalPanels,
     monthlyPricePerPanel,
     planMonths: planKey,
     totalPrice,
-    calculation: `${totalPanels} × R$ ${monthlyPricePerPanel} × ${planKey} = R$ ${totalPrice}`
+    calculation: `${totalPanels} × R$ ${monthlyPricePerPanel} × ${planKey} = R$ ${totalPrice}`,
+    expected12MonthsResult: planKey === 12 ? "Deve ser R$ 1.500 para 1 painel" : "N/A"
   });
 
   return {
