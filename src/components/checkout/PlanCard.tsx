@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Video, Gift, Building } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Plan, PlanKey } from '@/types/checkout';
 import { formatCurrency } from '@/utils/priceUtils';
 import { Panel } from '@/types/panel';
 import { logPriceCalculation } from '@/utils/auditLogger';
+import { getPlanWithDynamicPricing } from '@/utils/checkoutUtils';
 
 interface CartItem {
   panel: Panel;
@@ -33,7 +35,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [dynamicPricing, setDynamicPricing] = useState<any>(null);
   
-  // Calcular preços dinamicamente baseados no carrinho com preços corretos
+  // CORREÇÃO: Calcular preços dinamicamente baseados no carrinho com preços corretos
   useEffect(() => {
     if (cartItems.length > 0) {
       console.log("💰 [PlanCard] Calculando preços dinâmicos corrigidos:", {
@@ -41,38 +43,19 @@ const PlanCard: React.FC<PlanCardProps> = ({
         cartItemsLength: cartItems.length
       });
       
-      // Preços específicos por plano conforme especificação
-      const pricePerMonth = {
-        1: 200,   // R$ 200/mês
-        3: 160,   // R$ 160/mês (R$ 200 - 20%)
-        6: 140,   // R$ 140/mês 
-        12: 125   // R$ 125/mês
-      };
-
-      const monthlyPricePerPanel = pricePerMonth[planKey];
-      const totalPanels = cartItems.length;
-      const totalPrice = totalPanels * monthlyPricePerPanel * planKey;
-      const pricePerMonthTotal = totalPanels * monthlyPricePerPanel;
+      // Usar função centralizada para calcular preços
+      const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
       
-      // Calcular economia comparado ao plano mensal
-      const monthlyPlanTotal = totalPanels * pricePerMonth[1] * planKey;
-      const savings = planKey > 1 ? monthlyPlanTotal - totalPrice : 0;
-
-      const dynamicPlan = {
-        dynamicPricePerMonth: pricePerMonthTotal,
-        dynamicTotalPrice: totalPrice,
-        dynamicSavings: savings
-      };
-      
-      setDynamicPricing(dynamicPlan);
-      
-      // Log para auditoria
-      logPriceCalculation(`PlanCard-${planKey}`, {
-        planKey,
-        cartItemsCount: cartItems.length,
-        monthlyPricePerPanel,
-        dynamicPricing: dynamicPlan
-      });
+      if (dynamicPlan) {
+        setDynamicPricing(dynamicPlan);
+        
+        // Log para auditoria
+        logPriceCalculation(`PlanCard-${planKey}`, {
+          planKey,
+          cartItemsCount: cartItems.length,
+          dynamicPricing: dynamicPlan
+        });
+      }
     } else {
       console.log("💰 [PlanCard] Carrinho vazio, resetando preços");
       setDynamicPricing(null);

@@ -72,15 +72,15 @@ export const calculateTotalPrice = (
     return 0;
   }
 
-  // Calcular total baseado no número de painéis × preço mensal × meses
+  // CORREÇÃO: Calcular total baseado no número de painéis × preço mensal × meses
   const totalPanels = cartItems.length;
   const totalWithPlan = totalPanels * monthlyPrice * selectedPlan;
   
-  console.log("💰 [CheckoutUtils] CÁLCULO BASEADO NOS PREÇOS ESPECÍFICOS:", {
+  console.log("💰 [CheckoutUtils] CÁLCULO CORRIGIDO:", {
     selectedPlan,
     monthlyPrice,
     totalPanels,
-    totalMonths: selectedPlan,
+    planMonths: selectedPlan,
     totalWithPlan,
     calculation: `${totalPanels} painéis × R$ ${monthlyPrice}/mês × ${selectedPlan} meses = R$ ${totalWithPlan}`
   });
@@ -133,7 +133,7 @@ export const calculateCartSubtotal = (cartItems: CartItem[]): number => {
   return subtotal;
 };
 
-// Calcular preços dinâmicos para exibição nos cartões de plano
+// CORREÇÃO: Calcular preços dinâmicos para exibição nos cartões de plano
 export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[]): any => {
   if (!cartItems || cartItems.length === 0) {
     return null;
@@ -149,12 +149,23 @@ export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[
 
   const monthlyPricePerPanel = pricePerMonth[planKey];
   const totalPanels = cartItems.length;
+  
+  // CORREÇÃO: Total = painéis × preço mensal × meses do plano
   const totalPrice = totalPanels * monthlyPricePerPanel * planKey;
   const pricePerMonthTotal = totalPanels * monthlyPricePerPanel;
   
   // Calcular economia comparado ao plano mensal
   const monthlyPlanTotal = totalPanels * pricePerMonth[1] * planKey;
   const savings = planKey > 1 ? monthlyPlanTotal - totalPrice : 0;
+
+  console.log("💰 [getPlanWithDynamicPricing] CÁLCULO CORRIGIDO:", {
+    planKey,
+    totalPanels,
+    monthlyPricePerPanel,
+    planMonths: planKey,
+    totalPrice,
+    calculation: `${totalPanels} × R$ ${monthlyPricePerPanel} × ${planKey} = R$ ${totalPrice}`
+  });
 
   return {
     dynamicPricePerMonth: pricePerMonthTotal,
