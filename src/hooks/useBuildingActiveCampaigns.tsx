@@ -143,8 +143,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // Safely extract the video ID with proper fallbacks
-            const videoId = pv.videos?.id || pv.video_id || String(pv.id);
+            // Extract video ID with explicit type checking
+            let videoId: string;
+            if (pv.videos && pv.videos.id) {
+              videoId = pv.videos.id;
+            } else if (pv.video_id) {
+              videoId = pv.video_id;
+            } else {
+              videoId = pv.id;
+            }
             
             return {
               id: videoId,
