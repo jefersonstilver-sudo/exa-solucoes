@@ -44,7 +44,6 @@ export const useCartManager = () => {
 
   // Sincronizar carrinho com localStorage ao entrar na página de resumo/checkout
   useEffect(() => {
-    // Checa se está na URL de checkout/revisão
     if (window.location.pathname.startsWith('/checkout/')) {
       const syncedFromLocal = forceLocalCartSync();
       if (
@@ -55,9 +54,18 @@ export const useCartManager = () => {
           previous: simpleCart.cartItems.length,
           new: syncedFromLocal.length,
         });
-        // Força atualização
-        simpleCart.setCartItems(syncedFromLocal);
-        setSyncedCartItems(syncedFromLocal);
+        // Corrija aqui: Limpe o carrinho e readicione todos os itens do localStorage
+        simpleCart.clearCart();
+        // Aguarda limpar, depois readiciona, evitando race condition
+        setTimeout(() => {
+          syncedFromLocal.forEach((item: any) => {
+            // Garante a estrutura mínima para addToCart: panel e duration
+            if (item.panel && item.duration) {
+              simpleCart.addToCart(item.panel, item.duration);
+            }
+          });
+          setSyncedCartItems(syncedFromLocal);
+        }, 100);
       } else {
         setSyncedCartItems(simpleCart.cartItems);
       }

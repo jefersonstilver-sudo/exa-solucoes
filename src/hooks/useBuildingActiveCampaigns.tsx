@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { PedidoVideoWithVideos, ActiveCampaign } from '@/types/buildingCampaigns';
@@ -101,13 +100,13 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
       // Processar dados com type guards explícitos
-      const typedVideosData: PedidoVideoWithVideos[] = (videosData || [])
+      const typedVideosData = (videosData || [])
         .filter((item): item is PedidoVideoWithVideos => 
           item !== null && 
           typeof item === 'object' && 
           'id' in item && 
           'pedido_id' in item
-        );
+        ) as PedidoVideoWithVideos[];
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
