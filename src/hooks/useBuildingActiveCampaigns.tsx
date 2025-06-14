@@ -146,20 +146,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Explicitly type the video ID to avoid 'never' inference
-            let videoId: string;
-            
-            if (videoData && videoData.id) {
-              videoId = videoData.id;
-            } else {
-              // Handle the nullable video_id properly
-              const nullableVideoId = pv.video_id;
-              if (nullableVideoId !== null) {
-                videoId = nullableVideoId;
-              } else {
-                videoId = pv.id;
-              }
-            }
+            // Use a simple fallback strategy for video ID
+            const videoId = videoData?.id || pv.video_id || pv.id;
             
             return {
               id: videoId,
