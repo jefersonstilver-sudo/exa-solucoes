@@ -99,16 +99,16 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // (EXPLICIT) Always type as PedidoVideoWithVideos[]
+      // EXPLICIT: Type videosData as PedidoVideoWithVideos[]
       const typedVideosData: PedidoVideoWithVideos[] = Array.isArray(videosData)
         ? (videosData as PedidoVideoWithVideos[])
         : [];
 
-      // Montar dados das campanhas com tipagem segura
+      // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // 👇🏻 Fix: Explicit function + param type for filter, to avoid TS inferring 'never'
+        // 👇 Fix: Ensuring the parameter type is explicitly PedidoVideoWithVideos
         const pedidoVideos = typedVideosData.filter(
           (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
         );
