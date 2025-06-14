@@ -122,15 +122,12 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      // Type the videos data properly
-      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
-
-      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
+      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = typedVideosData?.filter(v => v.pedido_id === pedido.id) || [];
+        const pedidoVideos = videosData?.filter(v => v.pedido_id === pedido.id) || [];
 
         return {
           id: pedido.id,
@@ -142,15 +139,12 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map(pv => {
-            // Safe access to video data
+          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
+            // Safe access to video data with explicit typing
             const videoData = pv.videos as VideoData | null;
             
-            // Use the pedido_video ID as the primary identifier
-            const videoId = pv.id;
-            
             return {
-              id: videoId,
+              id: String(pv.id), // Explicitly convert to string to avoid type issues
               nome: videoData?.nome || 'Vídeo sem nome',
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
