@@ -146,8 +146,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Simple and safe video ID extraction
-            const videoId = videoData?.id || pv.video_id || pv.id;
+            // Determine video ID with proper fallback
+            let videoId: string;
+            if (videoData?.id) {
+              videoId = videoData.id;
+            } else if (pv.video_id) {
+              videoId = pv.video_id;
+            } else {
+              videoId = pv.id;
+            }
             
             return {
               id: videoId,
