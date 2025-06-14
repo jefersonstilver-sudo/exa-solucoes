@@ -146,16 +146,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Determine video ID with proper type handling
-            const videoId: string = (() => {
-              if (videoData?.id) {
-                return videoData.id;
-              }
-              if (pv.video_id) {
-                return pv.video_id;
-              }
-              return pv.id;
-            })();
+            // Determine video ID with explicit type checking
+            let videoId: string;
+            if (videoData?.id) {
+              videoId = videoData.id;
+            } else if (pv.video_id !== null) {
+              videoId = pv.video_id;
+            } else {
+              videoId = pv.id;
+            }
             
             return {
               id: videoId,
