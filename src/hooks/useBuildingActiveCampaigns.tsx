@@ -128,7 +128,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = (videosData || []).filter(v => v.pedido_id === pedido.id);
+        const pedidoVideos: PedidoVideoQueryResult[] = (videosData || []).filter(v => v.pedido_id === pedido.id);
 
         return {
           id: pedido.id,
