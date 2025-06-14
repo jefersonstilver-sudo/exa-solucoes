@@ -92,6 +92,12 @@ const CheckoutSummary = () => {
     navigate('/checkout');
   };
 
+  // Adiciona handler para voltar
+  const handleBack = () => {
+    // Caso queira fazer uma navegação mais elaborada, pode customizar aqui
+    navigate('/selecionar-plano');
+  };
+
   if (isLoading) {
     return (
       <Layout>
