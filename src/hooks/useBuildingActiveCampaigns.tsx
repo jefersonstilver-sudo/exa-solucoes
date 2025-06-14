@@ -129,11 +129,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Safely filter videos with proper null checking
-        const allVideos = videosData || [];
-        const pedidoVideos = allVideos.filter((video) => 
-          video && video.pedido_id === pedido.id
-        ) as PedidoVideoQueryResult[];
+        // Use explicit type checking to ensure TypeScript understands the types
+        const allVideos: PedidoVideoQueryResult[] = videosData || [];
+        const pedidoVideos = allVideos.filter((video: PedidoVideoQueryResult) => 
+          video.pedido_id === pedido.id
+        );
 
         return {
           id: pedido.id,
@@ -145,7 +145,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv) => {
+          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
             // Safe access to video data with proper typing
             const videoData = pv.videos as VideoData | null;
             
