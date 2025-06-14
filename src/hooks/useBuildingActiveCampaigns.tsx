@@ -128,7 +128,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // Explicit cast to ensure typing in filter:
+        // Fix: Explicitly type argument so TS infers type correctly and doesn't use never
         const pedidoVideos = typedVideosData.filter(
           (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
         );
