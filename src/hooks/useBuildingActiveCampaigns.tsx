@@ -130,7 +130,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = typedVideosData?.filter(v => v.pedido_id === pedido.id) || [];
+        const pedidoVideos = typedVideosData?.filter((pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id) || [];
 
         return {
           id: pedido.id,
@@ -142,7 +142,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map(pv => {
+          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
             // Use fallback logic to get the video ID safely
             const videoId = pv.videos?.id || pv.video_id || pv.id;
             
