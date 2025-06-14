@@ -86,7 +86,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
       // Type assertion explícita para o resultado da query do Supabase
-      const typedVideosData = (videosData as PedidoVideoWithVideos[]) || [];
+      const typedVideosData: PedidoVideoWithVideos[] = (videosData || []) as PedidoVideoWithVideos[];
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
