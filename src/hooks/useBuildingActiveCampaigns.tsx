@@ -108,7 +108,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // 👇 Fix: Ensuring the parameter type is explicitly PedidoVideoWithVideos
+        // 👇 FIX: Explicit parameter type for filter & map
         const pedidoVideos = typedVideosData.filter(
           (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
         );
