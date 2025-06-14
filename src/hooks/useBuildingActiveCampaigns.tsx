@@ -146,15 +146,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Determine video ID with proper fallback
-            let videoId: string;
-            if (videoData?.id) {
-              videoId = videoData.id;
-            } else if (pv.video_id) {
-              videoId = pv.video_id;
-            } else {
-              videoId = pv.id;
-            }
+            // Use the pedido_video ID as the primary identifier
+            const videoId = pv.id;
             
             return {
               id: videoId,
