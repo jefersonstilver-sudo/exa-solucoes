@@ -101,7 +101,6 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       // Mapeie manualmente cada item para o tipo PedidoVideoWithVideos
       const typedVideosData: PedidoVideoWithVideos[] = (videosData ?? []).map((entry: any) => ({
-        // Propriedades obrigatórias de PedidoVideoRow
         id: entry.id,
         pedido_id: entry.pedido_id,
         video_id: entry.video_id,
@@ -110,12 +109,10 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         selected_for_display: entry.selected_for_display,
         slot_position: entry.slot_position,
         rejection_reason: entry.rejection_reason,
-        // Os campos abaixo podem ser nulos/indefinidos, pois não vêm do select do Supabase
         approved_at: entry.approved_at ?? undefined,
         approved_by: entry.approved_by ?? undefined,
         created_at: entry.created_at ?? undefined,
         updated_at: entry.updated_at ?? undefined,
-        // Propriedade especial populada pela relação videos
         videos: entry.videos
           ? {
               id: entry.videos.id,
@@ -129,9 +126,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // Nenhuma filtragem de tipo, apenas checagem de id correspondente
+        // SOLUÇÃO: Tipar explicitamente videoEntry
         const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter(
-          videoEntry => videoEntry.pedido_id === pedido.id
+          (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
         );
 
         return {
