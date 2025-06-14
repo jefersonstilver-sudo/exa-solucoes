@@ -42,6 +42,17 @@ interface PedidoVideoQueryResult {
   videos: VideoData | null;
 }
 
+interface PedidoQueryResult {
+  id: string;
+  client_id: string;
+  valor_total: number;
+  data_inicio: string;
+  data_fim: string;
+  status: string;
+  plano_meses: number;
+  lista_predios: string[];
+}
+
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
   const [loading, setLoading] = useState(false);
@@ -88,8 +99,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         return;
       }
 
+      // Type the pedidos data properly
+      const typedPedidos = pedidos as PedidoQueryResult[];
+
       // Buscar dados dos clientes
-      const clientIds = pedidos.map(p => p.client_id);
+      const clientIds = typedPedidos.map(p => p.client_id);
       const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
 
       if (clientsError) {
@@ -97,7 +111,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Buscar vídeos dos pedidos
-      const pedidoIds = pedidos.map(p => p.id);
+      const pedidoIds = typedPedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -128,7 +142,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
 
       // Montar dados das campanhas
-      const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
+      const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoQueryResult) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         const pedidoVideos = typedVideosData?.filter((pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id) || [];
 
