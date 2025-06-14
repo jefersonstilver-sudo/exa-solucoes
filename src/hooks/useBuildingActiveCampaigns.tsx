@@ -146,15 +146,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Determine video ID with explicit type casting to resolve TypeScript inference issue
-            let videoId: string;
-            if (videoData?.id) {
-              videoId = videoData.id;
-            } else if (pv.video_id) {
-              videoId = pv.video_id;
-            } else {
-              videoId = pv.id;
-            }
+            // Simple and explicit video ID assignment to avoid TypeScript inference issues
+            const videoId = videoData?.id || pv.video_id || pv.id;
             
             return {
               id: videoId,
