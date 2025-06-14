@@ -106,16 +106,16 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           typeof item === 'object' && 
           'id' in item && 
           'pedido_id' in item
-        ) as PedidoVideoWithVideos[];
+        );
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        
-        // Filtrar vídeos usando type guard mais explícito
-        const pedidoVideos = (typedVideosData.filter((videoEntry) => {
+
+        // ✅ FIX: Remove type assertion and trust the array type
+        const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter((videoEntry) => {
           return videoEntry && videoEntry.pedido_id === pedido.id;
-        }) as PedidoVideoWithVideos[]);
+        });
 
         return {
           id: pedido.id,
