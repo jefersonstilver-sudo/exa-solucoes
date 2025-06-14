@@ -129,10 +129,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Properly type the filtered videos array
-        const pedidoVideos = (videosData || []).filter((v): v is PedidoVideoQueryResult => 
-          v.pedido_id === pedido.id
-        );
+        // Safely filter videos with proper null checking
+        const allVideos = videosData || [];
+        const pedidoVideos = allVideos.filter((video) => 
+          video && video.pedido_id === pedido.id
+        ) as PedidoVideoQueryResult[];
 
         return {
           id: pedido.id,
