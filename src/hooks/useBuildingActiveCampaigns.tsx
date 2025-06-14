@@ -140,12 +140,12 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map(pv => {
+          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
             // Safe access to video data with proper typing
             const videoData = pv.videos as VideoData | null;
             
             return {
-              id: pv.id, // Now properly typed as string
+              id: pv.id,
               nome: videoData?.nome || 'Vídeo sem nome',
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
