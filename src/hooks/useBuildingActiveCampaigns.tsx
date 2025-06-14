@@ -31,7 +31,7 @@ interface VideoData {
 }
 
 interface PedidoVideoQueryResult {
-  id: string;  // This should always be a string, not nullable
+  id: string;
   pedido_id: string;
   video_id: string | null;
   approval_status: string;
@@ -146,8 +146,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Determine video ID with explicit type handling - using nullish coalescing
-            const videoId: string = videoData?.id ?? pv.video_id ?? pv.id;
+            // Determine video ID with explicit type casting to resolve TypeScript inference issue
+            let videoId: string;
+            if (videoData?.id) {
+              videoId = videoData.id;
+            } else if (pv.video_id) {
+              videoId = pv.video_id;
+            } else {
+              videoId = pv.id;
+            }
             
             return {
               id: videoId,
