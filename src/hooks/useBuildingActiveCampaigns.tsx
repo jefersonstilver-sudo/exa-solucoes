@@ -126,9 +126,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // Agora o filtro funciona sem erro, pois typedVideosData já é tipado
+        // EXPLICITLY TYPE THE PARAM: no chance for TS confusion
         const pedidoVideos = typedVideosData.filter(
-          (videoEntry) => videoEntry.pedido_id === pedido.id
+          (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
         );
 
         return {
@@ -151,9 +151,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
               is_active: videoEntry.is_active || false,
               selected_for_display: videoEntry.selected_for_display || false,
               slot_position: videoEntry.slot_position || 0,
-              rejection_reason: videoEntry.rejection_reason
+              rejection_reason: videoEntry.rejection_reason,
             };
-          })
+          }),
         };
       });
 
