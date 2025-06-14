@@ -99,8 +99,31 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // Corrigido: tipagem explícita SEM GUARDS
-      const typedVideosData: PedidoVideoWithVideos[] = (videosData ?? []);
+      // Mapeie manualmente cada item para o tipo PedidoVideoWithVideos
+      const typedVideosData: PedidoVideoWithVideos[] = (videosData ?? []).map((entry: any) => ({
+        // Propriedades obrigatórias de PedidoVideoRow
+        id: entry.id,
+        pedido_id: entry.pedido_id,
+        video_id: entry.video_id,
+        approval_status: entry.approval_status,
+        is_active: entry.is_active,
+        selected_for_display: entry.selected_for_display,
+        slot_position: entry.slot_position,
+        rejection_reason: entry.rejection_reason,
+        // Os campos abaixo podem ser nulos/indefinidos, pois não vêm do select do Supabase
+        approved_at: entry.approved_at ?? undefined,
+        approved_by: entry.approved_by ?? undefined,
+        created_at: entry.created_at ?? undefined,
+        updated_at: entry.updated_at ?? undefined,
+        // Propriedade especial populada pela relação videos
+        videos: entry.videos
+          ? {
+              id: entry.videos.id,
+              nome: entry.videos.nome,
+              url: entry.videos.url,
+            }
+          : null,
+      }));
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
