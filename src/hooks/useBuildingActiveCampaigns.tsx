@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { PedidoVideoWithVideos, ActiveCampaign } from '@/types/buildingCampaigns';
@@ -99,22 +100,16 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // Processar dados com type guards explícitos
-      const typedVideosData: PedidoVideoWithVideos[] = (videosData || [])
-        .filter((item): item is PedidoVideoWithVideos =>
-          item !== null &&
-          typeof item === 'object' &&
-          'id' in item &&
-          'pedido_id' in item
-        );
+      // CORREÇÃO: Simplifique o filtro para que TS nunca infira never
+      const typedVideosData = (videosData || []) as PedidoVideoWithVideos[];
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // FIX FINAL: Filter with a plain function so TypeScript knows the entry type
         const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter(videoEntry => {
-          return videoEntry?.pedido_id === pedido.id;
+          // Checar se o pedido_id está presente e corresponde
+          return videoEntry && videoEntry.pedido_id === pedido.id;
         });
 
         return {
@@ -128,7 +123,6 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map((videoEntry) => {
-            // Acesso seguro aos dados do vídeo com verificação de null
             const videoData = videoEntry.videos;
             
             return {
@@ -169,3 +163,5 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
     refetch: fetchActiveCampaigns
   };
 };
+
+// Fim da correção
