@@ -93,9 +93,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
         // Filtrar vídeos com tipo explícito definido
-        const pedidoVideos = typedVideosData.filter((videoEntry: PedidoVideoWithVideos) => 
-          videoEntry.pedido_id === pedido.id
-        );
+        const pedidoVideos = typedVideosData.filter((videoEntry: PedidoVideoWithVideos) => {
+          return videoEntry && videoEntry.pedido_id === pedido.id;
+        });
 
         return {
           id: pedido.id,
