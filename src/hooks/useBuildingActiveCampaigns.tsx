@@ -146,19 +146,18 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Explicitly handle the video ID resolution to avoid 'never' type
-            const resolveVideoId = (): string => {
-              if (videoData && videoData.id) {
-                return videoData.id;
-              }
-              if (pv.video_id !== null) {
-                return pv.video_id;
-              }
-              return pv.id;
-            };
+            // Simple video ID resolution - use pedido_video.id as fallback
+            let videoId: string;
+            if (videoData?.id) {
+              videoId = videoData.id;
+            } else if (pv.video_id) {
+              videoId = pv.video_id;
+            } else {
+              videoId = pv.id;
+            }
             
             return {
-              id: resolveVideoId(),
+              id: videoId,
               nome: videoData?.nome || 'Vídeo sem nome',
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
