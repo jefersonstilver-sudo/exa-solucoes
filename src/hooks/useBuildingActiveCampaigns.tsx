@@ -96,7 +96,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos
+      // Buscar vídeos dos pedidos with proper typing
       const pedidoIds = pedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
@@ -115,7 +115,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             url
           )
         `)
-        .in('pedido_id', pedidoIds);
+        .in('pedido_id', pedidoIds)
+        .returns<PedidoVideoQueryResult[]>();
 
       if (videosError) {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar vídeos:', videosError);
@@ -127,7 +128,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = videosData?.filter(v => v.pedido_id === pedido.id) || [];
+        const pedidoVideos = (videosData || []).filter(v => v.pedido_id === pedido.id);
 
         return {
           id: pedido.id,
@@ -139,12 +140,12 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
-            // Safe access to video data with explicit typing
+          videos: pedidoVideos.map(pv => {
+            // Safe access to video data with proper typing
             const videoData = pv.videos as VideoData | null;
             
             return {
-              id: String(pv.id), // Explicitly convert to string to avoid type issues
+              id: pv.id, // Now properly typed as string
               nome: videoData?.nome || 'Vídeo sem nome',
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
