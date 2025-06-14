@@ -113,9 +113,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
         // Filtrar vídeos usando type guard mais explícito
-        const pedidoVideos = typedVideosData.filter((videoEntry) => {
+        const pedidoVideos = (typedVideosData.filter((videoEntry) => {
           return videoEntry && videoEntry.pedido_id === pedido.id;
-        });
+        }) as PedidoVideoWithVideos[]);
 
         return {
           id: pedido.id,
