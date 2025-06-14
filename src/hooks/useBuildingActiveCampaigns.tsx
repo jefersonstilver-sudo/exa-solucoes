@@ -100,7 +100,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Type the pedidos data properly
-      const typedPedidos: PedidoQueryResult[] = pedidos as PedidoQueryResult[];
+      const typedPedidos = pedidos as PedidoQueryResult[];
 
       // Buscar dados dos clientes
       const clientIds = typedPedidos.map((p) => p.client_id);
@@ -136,8 +136,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      // Type the videos data properly
-      const typedVideosData: PedidoVideoQueryResult[] = (videosData || []) as PedidoVideoQueryResult[];
+      // Type the videos data properly with explicit casting
+      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
 
@@ -146,7 +146,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       
       for (const pedido of typedPedidos) {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = typedVideosData.filter((pv) => pv.pedido_id === pedido.id);
+        
+        // Filter videos for this specific pedido with explicit typing
+        const pedidoVideos: PedidoVideoQueryResult[] = typedVideosData.filter(
+          (pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id
+        );
 
         const campaign: ActiveCampaign = {
           id: pedido.id,
@@ -158,7 +162,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv) => {
+          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
             // Use fallback logic to get the video ID safely
             const videoId = pv.videos?.id || pv.video_id || pv.id;
             
