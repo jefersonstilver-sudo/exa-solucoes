@@ -103,7 +103,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const typedPedidos: PedidoQueryResult[] = pedidos as PedidoQueryResult[];
 
       // Buscar dados dos clientes
-      const clientIds = typedPedidos.map((p: PedidoQueryResult) => p.client_id);
+      const clientIds = typedPedidos.map((p) => p.client_id);
       const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
 
       if (clientsError) {
@@ -111,7 +111,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Buscar vídeos dos pedidos
-      const pedidoIds = typedPedidos.map((p: PedidoQueryResult) => p.id);
+      const pedidoIds = typedPedidos.map((p) => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -146,7 +146,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       
       for (const pedido of typedPedidos) {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = typedVideosData.filter((pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id);
+        const pedidoVideos = typedVideosData.filter((pv) => pv.pedido_id === pedido.id);
 
         const campaign: ActiveCampaign = {
           id: pedido.id,
@@ -158,7 +158,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
+          videos: pedidoVideos.map((pv) => {
             // Use fallback logic to get the video ID safely
             const videoId = pv.videos?.id || pv.video_id || pv.id;
             
