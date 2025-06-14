@@ -129,9 +129,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Use explicit type checking to ensure TypeScript understands the types
-        const allVideos: PedidoVideoQueryResult[] = videosData || [];
-        const pedidoVideos = allVideos.filter((video: PedidoVideoQueryResult) => 
+        // Properly handle the videosData with null check and explicit typing
+        const allVideos = videosData ?? [];
+        const pedidoVideos = allVideos.filter((video) => 
           video.pedido_id === pedido.id
         );
 
@@ -145,7 +145,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
+          videos: pedidoVideos.map((pv) => {
             // Safe access to video data with proper typing
             const videoData = pv.videos as VideoData | null;
             
