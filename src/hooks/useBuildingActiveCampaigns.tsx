@@ -3,6 +3,18 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { PedidoVideoWithVideos, ActiveCampaign } from '@/types/buildingCampaigns';
 
+// Type for pedido from Supabase query
+interface PedidoFromQuery {
+  id: string;
+  client_id: string;
+  valor_total: number;
+  data_inicio: string;
+  data_fim: string;
+  status: string;
+  plano_meses: number;
+  lista_predios: string[];
+}
+
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,8 +61,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         return;
       }
 
+      // Type assertion for pedidos with proper typing
+      const typedPedidos = pedidos as PedidoFromQuery[];
+
       // Buscar dados dos clientes
-      const clientIds = pedidos.map(p => p.client_id);
+      const clientIds = typedPedidos.map(p => p.client_id);
       const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
 
       if (clientsError) {
@@ -58,7 +73,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Buscar vídeos dos pedidos com tipagem explícita
-      const pedidoIds = pedidos.map(p => p.id);
+      const pedidoIds = typedPedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -95,7 +110,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         );
 
       // Montar dados das campanhas com tipagem segura
-      const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
+      const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
         // Filtrar vídeos usando type guard mais explícito
