@@ -112,9 +112,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // ✅ FIX: Remove type assertion and trust the array type
-        const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter((videoEntry) => {
-          // TypeScript now knows videoEntry is PedidoVideoWithVideos
+        // FIX: Explicitly type the filter parameter for TypeScript
+        const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter((videoEntry: PedidoVideoWithVideos) => {
           return videoEntry && videoEntry.pedido_id === pedido.id;
         });
 
