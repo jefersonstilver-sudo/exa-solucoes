@@ -64,28 +64,31 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, cartItems, navigate, isLoading]);
 
+  // Busque sempre QTDE real do carrinho sincronizado
+  const realCartCount = cartItems?.length || 0;
   const totalPrice = calculateTotalPrice();
 
-  const handleBack = () => {
-    navigate('/checkout/cupom');
-  };
+  // Trava o next button apenas se realmente estiver zerado
+  const nextDisabled = !isLoggedIn || realCartCount === 0 || totalPrice <= 0;
 
+  // Handler robusto para avançar:
   const handleNext = () => {
-    // NOVO: Checagem robusta do carrinho real
-    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-      toast.error("Carrinho vazio ou estado inconsistente. Tente recarregar a página ou adicionar novamente.");
-      // Limpeza opcional, para corrigir problemas de estado
+    if (!cartItems || !Array.isArray(cartItems) || realCartCount === 0) {
+      toast.error("Seu carrinho está vazio ou está em estado inconsistente. Tente recarregar a página ou adicionar um painel novamente.");
       handleClearCart?.();
       return;
     }
 
     if (totalPrice <= 0) {
-      toast.error("Erro no cálculo do preço. Tente novamente.");
+      toast.error("Erro no cálculo do valor final. Revise seu carrinho e tente novamente.");
       return;
     }
 
-    // Navegação direta para o checkout unificado
-    console.log('[CheckoutSummary] Indo para /checkout', { cartItemsCount: cartItems.length });
+    // Log detalhado antes de avançar
+    console.log('[CheckoutSummary] Tudo validado, navegando para o pagamento:', {
+      realCartCount,
+      totalPrice
+    });
     navigate('/checkout');
   };
 
@@ -129,7 +132,7 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* CORREÇÃO: Navigation sem duplicação de preço */}
+          {/* Navigation - Corrigir botão "Ir para Pagamento" */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -145,10 +148,11 @@ const CheckoutSummary = () => {
               <span>Voltar</span>
             </Button>
 
+            {/* Corrigir habilitação do botão */}
             <Button
               onClick={handleNext}
-              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
-              className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
+              disabled={nextDisabled}
+              className={`flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3 ${nextDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <span>Ir para Pagamento</span>
               <ArrowRight className="h-4 w-4" />

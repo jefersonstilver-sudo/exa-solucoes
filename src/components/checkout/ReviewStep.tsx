@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,20 +12,13 @@ const ReviewStep = () => {
     cartItems, 
     selectedPlan, 
     couponValid,
-    couponDiscount
+    couponDiscount,
   } = useCheckout();
 
   const formatPanelInfo = (panel: any) => {
     const info = [];
-    
-    if (panel.buildings?.nome) {
-      info.push(panel.buildings.nome);
-    }
-    
-    if (panel.buildings?.bairro) {
-      info.push(panel.buildings.bairro);
-    }
-    
+    if (panel.buildings?.nome) info.push(panel.buildings.nome);
+    if (panel.buildings?.bairro) info.push(panel.buildings.bairro);
     return info.join(' - ');
   };
 
@@ -50,30 +42,24 @@ const ReviewStep = () => {
   }
 
   const selectedMonths = PLANS[selectedPlan].months;
-  
-  // CORREÇÃO CRÍTICA: Usar funções centralizadas para garantir consistência
   const subtotal = calculateCartSubtotal(cartItems);
-  const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   const subtotalWithPlan = subtotal * selectedMonths;
-  const discount = couponValid && couponDiscount ? (subtotalWithPlan * couponDiscount) / 100 : 0;
 
-  // CORREÇÃO: Log mais detalhado para mostrar valores de desconto
-  console.log("📋 [ReviewStep] PREÇOS CORRIGIDOS COM DESCONTO:", {
-    component: "ReviewStep",
+  // Corrigir cálculo do desconto para garantir que tudo esteja correto
+  const discount = couponValid && couponDiscount ? (subtotalWithPlan * couponDiscount) / 100 : 0;
+  const finalPrice = subtotalWithPlan - discount;
+
+  // Logging detalhado para garantir visibilidade
+  console.log("📋 [ReviewStep] PREÇOS REVISADOS:", {
     cartItemsCount: cartItems.length,
     selectedPlan,
     selectedMonths,
     subtotal,
     subtotalWithPlan,
-    finalPrice,
-    discount,
     couponValid,
     couponDiscount,
-    hasDiscount: couponValid && discount > 0,
-    calculation: `Subtotal: R$ ${subtotal} × ${selectedMonths} meses = R$ ${subtotalWithPlan}`,
-    discountCalculation: `Desconto: R$ ${subtotalWithPlan} × ${couponDiscount}% = R$ ${discount}`,
-    finalCalculation: `Com desconto: R$ ${finalPrice}`,
-    shouldShowDiscount: couponValid && discount > 0
+    discount,
+    finalPrice,
   });
 
   return (
@@ -149,7 +135,7 @@ const ReviewStep = () => {
           </CardContent>
         </Card>
 
-        {/* CORREÇÃO: Resumo de Preços com Desconto SEMPRE Visível quando aplicado */}
+        {/* Resumo de Preços */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
@@ -159,15 +145,17 @@ const ReviewStep = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {/* Preço Original - sempre mostrar como riscado quando há desconto */}
+              {/* Subtotal original */}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
-                <span className={`font-medium ${couponValid && discount > 0 ? 'line-through text-red-500 text-xs' : ''}`}>
+                <span className="text-gray-600">
+                  Subtotal ({cartItems.length} painel{cartItems.length === 1 ? '' : 's'} × {selectedMonths} mês{selectedMonths === 1 ? '' : 'es'})
+                </span>
+                <span className={couponValid && discount > 0 ? "font-medium line-through text-red-500 text-xs" : "font-medium"}>
                   {formatCurrency(subtotalWithPlan)}
                 </span>
               </div>
-              
-              {/* CORREÇÃO: Desconto SEMPRE visível quando aplicado */}
+
+              {/* Valor do desconto, sempre visível quando houver */}
               {couponValid && discount > 0 && (
                 <>
                   <div className="flex justify-between text-green-600 text-sm bg-green-50 p-3 rounded-lg border border-green-200">
@@ -177,28 +165,25 @@ const ReviewStep = () => {
                     </span>
                     <span className="font-bold text-green-700">-{formatCurrency(discount)}</span>
                   </div>
-                  
-                  {/* Economia Total Destacada com Visual Melhorado */}
-                  <div className="bg-gradient-to-r from-green-100 to-green-200 p-4 rounded-lg border-2 border-green-300 shadow-sm">
-                    <div className="flex items-center justify-center text-green-800">
-                      <Tag className="h-5 w-5 mr-2" />
-                      <span className="text-base font-bold">
-                        🎉 Você está economizando {formatCurrency(discount)}!
-                      </span>
-                    </div>
+                  <div className="bg-gradient-to-r from-green-100 to-green-200 p-4 rounded-lg border-2 border-green-300 shadow-sm text-center flex items-center justify-center">
+                    <Tag className="h-5 w-5 mr-2" />
+                    <span className="text-base font-bold text-green-800">
+                      🎉 Sua economia: {formatCurrency(discount)}
+                    </span>
                   </div>
                 </>
               )}
-              
-              {/* Total Final Destacado */}
+
+              {/* Total Final */}
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total Final</span>
                   <span className="text-[#1E1B4B] text-xl">{formatCurrency(finalPrice)}</span>
                 </div>
+                {/* Observação do desconto */}
                 {couponValid && discount > 0 && (
-                  <div className="text-xs text-green-600 mt-2 text-right font-medium bg-green-50 p-2 rounded">
-                    ✅ Desconto de {couponDiscount}% aplicado com sucesso! Economia de {formatCurrency(discount)}
+                  <div className="text-xs text-green-700 mt-2 text-right font-medium bg-green-50 p-2 rounded">
+                    ✅ Desconto de {couponDiscount}% aplicado! Você economizou {formatCurrency(discount)} no seu pedido.
                   </div>
                 )}
               </div>
