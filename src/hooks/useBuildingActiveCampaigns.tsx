@@ -1,28 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface ActiveCampaign {
-  id: string;
-  client_id: string;
-  client_email: string;
-  client_name: string;
-  valor_total: number;
-  data_inicio: string;
-  data_fim: string;
-  status: string;
-  plano_meses: number;
-  videos: {
-    id: string;
-    nome: string;
-    url: string;
-    approval_status: string;
-    is_active: boolean;
-    selected_for_display: boolean;
-    slot_position: number;
-    rejection_reason?: string;
-  }[];
-}
+import type { PedidoVideoWithVideos, ActiveCampaign } from '@/types/buildingCampaigns';
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
@@ -78,7 +57,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos - deixar TypeScript inferir o tipo automaticamente
+      // Buscar vídeos dos pedidos com tipagem explícita
       const pedidoIds = pedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
@@ -106,14 +85,17 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // Montar dados das campanhas - sem type assertion forçada
+      // Type assertion explícita para o resultado da query do Supabase
+      const typedVideosData = (videosData as PedidoVideoWithVideos[]) || [];
+
+      // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filtrar vídeos sem type assertion - deixar TypeScript inferir
-        const pedidoVideos = videosData?.filter(videoEntry => 
+        // Filtrar vídeos com tipo explícito definido
+        const pedidoVideos = typedVideosData.filter((videoEntry: PedidoVideoWithVideos) => 
           videoEntry.pedido_id === pedido.id
-        ) || [];
+        );
 
         return {
           id: pedido.id,
@@ -125,7 +107,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map(videoEntry => {
+          videos: pedidoVideos.map((videoEntry: PedidoVideoWithVideos) => {
             // Acesso seguro aos dados do vídeo com verificação de null
             const videoData = videoEntry.videos;
             
