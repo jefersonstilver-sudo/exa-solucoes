@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
 
 interface ActiveCampaign {
   id: string;
@@ -23,15 +22,6 @@ interface ActiveCampaign {
     slot_position: number;
     rejection_reason?: string;
   }[];
-}
-
-// Usar tipos do Supabase para os dados de vídeo
-type PedidoVideoRow = Database['public']['Tables']['pedido_videos']['Row'];
-type VideoRow = Database['public']['Tables']['videos']['Row'];
-
-// Interface para o resultado da query com relação
-interface PedidoVideoWithVideos extends PedidoVideoRow {
-  videos: VideoRow | null;
 }
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
@@ -88,7 +78,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos usando tipos do Supabase
+      // Buscar vídeos dos pedidos - deixar TypeScript inferir o tipo automaticamente
       const pedidoIds = pedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
@@ -116,15 +106,14 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // Montar dados das campanhas com type assertion correta
+      // Montar dados das campanhas - sem type assertion forçada
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Type assertion para o tipo correto
-        const allVideos = (videosData as PedidoVideoWithVideos[]) || [];
-        const pedidoVideos = allVideos.filter(pv => 
-          pv.pedido_id === pedido.id
-        );
+        // Filtrar vídeos sem type assertion - deixar TypeScript inferir
+        const pedidoVideos = videosData?.filter(videoEntry => 
+          videoEntry.pedido_id === pedido.id
+        ) || [];
 
         return {
           id: pedido.id,
@@ -136,19 +125,19 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map(pv => {
-            // Acesso seguro aos dados do vídeo
-            const videoData = pv.videos;
+          videos: pedidoVideos.map(videoEntry => {
+            // Acesso seguro aos dados do vídeo com verificação de null
+            const videoData = videoEntry.videos;
             
             return {
-              id: pv.id,
+              id: videoEntry.id,
               nome: videoData?.nome || 'Vídeo sem nome',
               url: videoData?.url || '',
-              approval_status: pv.approval_status || 'pending',
-              is_active: pv.is_active || false,
-              selected_for_display: pv.selected_for_display || false,
-              slot_position: pv.slot_position || 0,
-              rejection_reason: pv.rejection_reason
+              approval_status: videoEntry.approval_status || 'pending',
+              is_active: videoEntry.is_active || false,
+              selected_for_display: videoEntry.selected_for_display || false,
+              slot_position: videoEntry.slot_position || 0,
+              rejection_reason: videoEntry.rejection_reason
             };
           })
         };
