@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { PedidoVideoWithVideos, ActiveCampaign } from '@/types/buildingCampaigns';
@@ -100,17 +99,17 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // CORREÇÃO: Simplifique o filtro para que TS nunca infira never
-      const typedVideosData = (videosData || []) as PedidoVideoWithVideos[];
+      // Corrigido: tipagem explícita SEM GUARDS
+      const typedVideosData: PedidoVideoWithVideos[] = (videosData ?? []);
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter(videoEntry => {
-          // Checar se o pedido_id está presente e corresponde
-          return videoEntry && videoEntry.pedido_id === pedido.id;
-        });
+        // Nenhuma filtragem de tipo, apenas checagem de id correspondente
+        const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter(
+          videoEntry => videoEntry.pedido_id === pedido.id
+        );
 
         return {
           id: pedido.id,
@@ -124,7 +123,6 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map((videoEntry) => {
             const videoData = videoEntry.videos;
-            
             return {
               id: videoEntry.id,
               nome: videoData?.nome || 'Vídeo sem nome',
