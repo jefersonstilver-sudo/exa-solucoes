@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -19,8 +18,19 @@ const CheckoutSummary = () => {
     cartItems,
     calculateTotalPrice,
     couponValid,
-    couponDiscount
+    couponDiscount,
+    handleClearCart
   } = useCheckout();
+
+  // NOVO: Log do estado detalhado ao renderizar
+  useEffect(() => {
+    console.log('[CheckoutSummary] Estado atual:', {
+      cartItemsCount: cartItems?.length,
+      cartItems,
+      localStorageCart: localStorage.getItem('simple_cart'),
+      url: window.location.href
+    });
+  }, [cartItems]);
 
   // CORREÇÃO: Verificação de autenticação melhorada
   useEffect(() => {
@@ -61,10 +71,11 @@ const CheckoutSummary = () => {
   };
 
   const handleNext = () => {
-    // CORREÇÃO: Validação antes de prosseguir
-    if (!cartItems || cartItems.length === 0) {
-      toast.error("Carrinho vazio. Adicione painéis para continuar.");
-      navigate('/paineis-digitais/loja');
+    // NOVO: Checagem robusta do carrinho real
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      toast.error("Carrinho vazio ou estado inconsistente. Tente recarregar a página ou adicionar novamente.");
+      // Limpeza opcional, para corrigir problemas de estado
+      handleClearCart?.();
       return;
     }
 
@@ -73,14 +84,8 @@ const CheckoutSummary = () => {
       return;
     }
 
-    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO CORRIGIDO:', {
-      cartItemsCount: cartItems.length,
-      totalPrice,
-      couponValid,
-      couponDiscount,
-      expectedPrice: "R$ 0.27 com desconto"
-    });
-
+    // Navegação direta para o checkout unificado
+    console.log('[CheckoutSummary] Indo para /checkout', { cartItemsCount: cartItems.length });
     navigate('/checkout');
   };
 

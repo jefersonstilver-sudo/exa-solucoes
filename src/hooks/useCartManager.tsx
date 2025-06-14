@@ -5,10 +5,24 @@ import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { useNavigate } from 'react-router-dom';
 
+// Helper para forçar atualização e sincronização de carrinho a partir do localStorage ao entrar na página de resumo
+const forceLocalCartSync = () => {
+  try {
+    const localCart = localStorage.getItem('simple_cart');
+    if (localCart) {
+      return JSON.parse(localCart);
+    }
+  } catch (e) {
+    console.error('Erro ao ler simple_cart do localStorage:', e);
+  }
+  return [];
+};
+
 export const useCartManager = () => {
   const simpleCart = useSimpleCart();
   const [selectedPlan, setSelectedPlan] = useState<PlanKey | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [syncedCartItems, setSyncedCartItems] = useState(simpleCart.cartItems);
   const navigate = useNavigate();
 
   // Load saved plan from localStorage on mount
@@ -28,6 +42,30 @@ export const useCartManager = () => {
     }
   }, []);
 
+  // Sincronizar carrinho com localStorage ao entrar na página de resumo/checkout
+  useEffect(() => {
+    // Checa se está na URL de checkout/revisão
+    if (window.location.pathname.startsWith('/checkout/')) {
+      const syncedFromLocal = forceLocalCartSync();
+      if (
+        Array.isArray(syncedFromLocal) &&
+        syncedFromLocal.length !== simpleCart.cartItems.length
+      ) {
+        console.log('[CartManager] Sincronizando carrinho do localStorage:', {
+          previous: simpleCart.cartItems.length,
+          new: syncedFromLocal.length,
+        });
+        // Força atualização
+        simpleCart.setCartItems(syncedFromLocal);
+        setSyncedCartItems(syncedFromLocal);
+      } else {
+        setSyncedCartItems(simpleCart.cartItems);
+      }
+    } else {
+      setSyncedCartItems(simpleCart.cartItems);
+    }
+  }, [simpleCart.cartItems]);
+
   // Save plan to localStorage when it changes
   useEffect(() => {
     if (selectedPlan) {
@@ -42,10 +80,10 @@ export const useCartManager = () => {
   // Enhanced handler functions with better feedback
   const handleAddToCart = async (panel: Panel, duration: number = 30) => {
     console.log('🛒 [CartManager] Adicionando ao carrinho:', { panelId: panel.id, duration });
-    
+
     // Call the simple cart add function
     simpleCart.addToCart(panel, duration);
-    
+
     // Auto-open cart after a short delay for better UX
     setTimeout(() => {
       simpleCart.setIsOpen(true);
@@ -68,8 +106,23 @@ export const useCartManager = () => {
   };
 
   const handleProceedToCheckout = () => {
-    console.log('🛒 [CartManager] Procedendo para checkout');
-    simpleCart.proceedToCheckout();
+    // Adicionando log detalhado
+    console.log('[CartManager] Procedendo para checkout', {
+      simpleCartLength: simpleCart.cartItems.length,
+      syncedCartLength: syncedCartItems.length,
+    });
+    // Garante sincronização antes de navegar
+    if (
+      syncedCartItems.length === 0 ||
+      !Array.isArray(syncedCartItems) ||
+      !syncedCartItems[0]?.panel
+    ) {
+      alert('Seu carrinho está vazio ou em estado inconsistente. Tente recarregar a página ou adicionar um painel novamente.');
+      return;
+    }
+
+    simpleCart.setIsOpen(false);
+    navigate('/plano');
   };
 
   return {
@@ -77,7 +130,7 @@ export const useCartManager = () => {
     selectedPlan,
     setSelectedPlan,
     initialLoadDone,
-    // Enhanced handler functions
+    cartItems: syncedCartItems, // sempre retorna os sincronizados
     handleAddToCart,
     handleRemoveFromCart,
     handleClearCart,
