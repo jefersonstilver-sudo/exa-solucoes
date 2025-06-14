@@ -100,7 +100,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
       // Mapeie manualmente cada item para o tipo PedidoVideoWithVideos
-      const typedVideosData = ((videosData ?? []).map((entry: any) => ({
+      const typedVideosData: PedidoVideoWithVideos[] = (videosData ?? []).map((entry: any) => ({
         id: entry.id,
         pedido_id: entry.pedido_id,
         video_id: entry.video_id,
@@ -120,15 +120,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
               url: entry.videos.url,
             }
           : null,
-      })) as PedidoVideoWithVideos[]);
+      }));
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // Use proper type assertion so TS knows typedVideosData is PedidoVideoWithVideos[]
-        const pedidoVideos = (typedVideosData as PedidoVideoWithVideos[]).filter(
-          videoEntry => videoEntry.pedido_id === pedido.id
+        // Agora o filtro funciona sem erro, pois typedVideosData já é tipado
+        const pedidoVideos = typedVideosData.filter(
+          (videoEntry) => videoEntry.pedido_id === pedido.id
         );
 
         return {
