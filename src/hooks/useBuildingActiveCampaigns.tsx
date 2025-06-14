@@ -100,7 +100,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Type the pedidos data properly
-      const typedPedidos = pedidos as PedidoQueryResult[];
+      const typedPedidos: PedidoQueryResult[] = pedidos as PedidoQueryResult[];
 
       // Buscar dados dos clientes
       const clientIds = typedPedidos.map((p: PedidoQueryResult) => p.client_id);
@@ -137,16 +137,18 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Type the videos data properly
-      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
+      const typedVideosData: PedidoVideoQueryResult[] = (videosData || []) as PedidoVideoQueryResult[];
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
 
       // Montar dados das campanhas
-      const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoQueryResult) => {
+      const campaignsData: ActiveCampaign[] = [];
+      
+      for (const pedido of typedPedidos) {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         const pedidoVideos = typedVideosData.filter((pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id);
 
-        return {
+        const campaign: ActiveCampaign = {
           id: pedido.id,
           client_id: pedido.client_id,
           client_email: client?.email || 'Email não encontrado',
@@ -172,7 +174,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             };
           })
         };
-      });
+        
+        campaignsData.push(campaign);
+      }
 
       setCampaigns(campaignsData);
       console.log('✅ [ACTIVE CAMPAIGNS] Campanhas processadas:', campaignsData.length);
