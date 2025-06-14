@@ -30,7 +30,8 @@ interface VideoData {
   url: string;
 }
 
-interface PedidoVideoQueryResult {
+// Interface mais específica para o retorno da query com relação
+interface PedidoVideoWithRelation {
   id: string;
   pedido_id: string;
   video_id: string | null;
@@ -96,7 +97,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos with proper typing
+      // Buscar vídeos dos pedidos - sem .returns() para deixar TypeScript inferir corretamente
       const pedidoIds = pedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
@@ -115,8 +116,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             url
           )
         `)
-        .in('pedido_id', pedidoIds)
-        .returns<PedidoVideoQueryResult[]>();
+        .in('pedido_id', pedidoIds);
 
       if (videosError) {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar vídeos:', videosError);
@@ -125,13 +125,13 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // Montar dados das campanhas
+      // Montar dados das campanhas com tipagem explícita
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Properly handle the videosData with null check and explicit typing
-        const allVideos = videosData ?? [];
-        const pedidoVideos = allVideos.filter((video) => 
+        // Tratar videosData como array de PedidoVideoWithRelation
+        const allVideos = (videosData as PedidoVideoWithRelation[]) || [];
+        const pedidoVideos = allVideos.filter(video => 
           video.pedido_id === pedido.id
         );
 
@@ -145,9 +145,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv) => {
-            // Safe access to video data with proper typing
-            const videoData = pv.videos as VideoData | null;
+          videos: pedidoVideos.map(pv => {
+            // Safe access to video data
+            const videoData = pv.videos;
             
             return {
               id: pv.id,
