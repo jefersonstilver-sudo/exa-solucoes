@@ -103,7 +103,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const typedPedidos = pedidos as PedidoQueryResult[];
 
       // Buscar dados dos clientes
-      const clientIds = typedPedidos.map(p => p.client_id);
+      const clientIds = typedPedidos.map((p: PedidoQueryResult) => p.client_id);
       const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
 
       if (clientsError) {
@@ -111,7 +111,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Buscar vídeos dos pedidos
-      const pedidoIds = typedPedidos.map(p => p.id);
+      const pedidoIds = typedPedidos.map((p: PedidoQueryResult) => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -144,7 +144,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoQueryResult) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-        const pedidoVideos = typedVideosData?.filter((pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id) || [];
+        const pedidoVideos = typedVideosData.filter((pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id);
 
         return {
           id: pedido.id,
