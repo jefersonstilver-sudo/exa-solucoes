@@ -24,13 +24,14 @@ interface ActiveCampaign {
   }[];
 }
 
-interface VideoData {
+// Interface específica para os dados de vídeo retornados pela query
+interface VideoRelationData {
   id: string;
   nome: string;
   url: string;
 }
 
-// Interface mais específica para o retorno da query com relação
+// Interface para o resultado da query de pedido_videos com relação
 interface PedidoVideoWithRelation {
   id: string;
   pedido_id: string;
@@ -40,7 +41,7 @@ interface PedidoVideoWithRelation {
   selected_for_display: boolean;
   slot_position: number;
   rejection_reason?: string;
-  videos: VideoData | null;
+  videos: VideoRelationData | null;
 }
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
@@ -97,7 +98,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos - sem .returns() para deixar TypeScript inferir corretamente
+      // Buscar vídeos dos pedidos com tipagem explícita
       const pedidoIds = pedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
@@ -125,12 +126,12 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // Montar dados das campanhas com tipagem explícita
+      // Montar dados das campanhas com tratamento seguro de tipos
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Tratar videosData como array de PedidoVideoWithRelation
-        const allVideos = (videosData as PedidoVideoWithRelation[]) || [];
+        // Garantir que videosData seja tratado como array válido
+        const allVideos: PedidoVideoWithRelation[] = Array.isArray(videosData) ? videosData : [];
         const pedidoVideos = allVideos.filter(video => 
           video.pedido_id === pedido.id
         );
@@ -146,7 +147,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // Safe access to video data
+            // Acesso seguro aos dados do vídeo com verificação de null
             const videoData = pv.videos;
             
             return {
