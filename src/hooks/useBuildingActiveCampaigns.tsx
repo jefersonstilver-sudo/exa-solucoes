@@ -53,6 +53,14 @@ interface PedidoQueryResult {
   lista_predios: string[];
 }
 
+interface AuthUser {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+  };
+}
+
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,11 +112,14 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       // Buscar dados dos clientes
       const clientIds = typedPedidos.map((p) => p.client_id);
-      const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
+      const { data: clientsResponse, error: clientsError } = await supabase.auth.admin.listUsers();
 
       if (clientsError) {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
+
+      // Type the clients data properly
+      const clients: AuthUser[] = clientsResponse?.users || [];
 
       // Buscar vídeos dos pedidos
       const pedidoIds = typedPedidos.map((p) => p.id);
@@ -157,7 +168,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = [];
       
       for (const pedido of typedPedidos) {
-        const client = clients?.users?.find(u => u.id === pedido.client_id);
+        const client = clients.find((u: AuthUser) => u.id === pedido.client_id);
         
         // Filter videos for this specific pedido
         const pedidoVideos = typedVideosData.filter(pv => pv.pedido_id === pedido.id);
