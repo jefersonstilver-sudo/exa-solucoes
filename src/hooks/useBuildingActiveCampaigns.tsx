@@ -99,29 +99,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // EXPLICIT: Always type as PedidoVideoWithVideos[]
+      // (EXPLICIT) Always type as PedidoVideoWithVideos[]
       const typedVideosData: PedidoVideoWithVideos[] = Array.isArray(videosData)
-        ? videosData.map((entry: any) => ({
-            id: entry.id,
-            pedido_id: entry.pedido_id,
-            video_id: entry.video_id,
-            approval_status: entry.approval_status,
-            is_active: entry.is_active,
-            selected_for_display: entry.selected_for_display,
-            slot_position: entry.slot_position,
-            rejection_reason: entry.rejection_reason,
-            approved_at: entry.approved_at ?? undefined,
-            approved_by: entry.approved_by ?? undefined,
-            created_at: entry.created_at ?? undefined,
-            updated_at: entry.updated_at ?? undefined,
-            videos: entry.videos
-              ? {
-                  id: entry.videos.id,
-                  nome: entry.videos.nome,
-                  url: entry.videos.url,
-                }
-              : null,
-          }))
+        ? (videosData as PedidoVideoWithVideos[])
         : [];
 
       // Montar dados das campanhas com tipagem segura
@@ -129,9 +109,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
         // 👇🏻 Fix: Explicit function + param type for filter, to avoid TS inferring 'never'
-        const pedidoVideos = typedVideosData.filter(function(videoEntry: PedidoVideoWithVideos) {
-          return videoEntry.pedido_id === pedido.id;
-        });
+        const pedidoVideos = typedVideosData.filter(
+          (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
+        );
 
         return {
           id: pedido.id,
