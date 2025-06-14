@@ -146,8 +146,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             // Safe access to video data
             const videoData = pv.videos as VideoData | null;
             
-            // Simple and explicit video ID assignment to avoid TypeScript inference issues
-            const videoId = videoData?.id || pv.video_id || pv.id;
+            // Explicit video ID resolution with proper type handling
+            const videoId: string = videoData?.id || (pv.video_id as string) || pv.id;
             
             return {
               id: videoId,
