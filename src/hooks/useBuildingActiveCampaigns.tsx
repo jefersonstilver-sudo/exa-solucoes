@@ -100,11 +100,11 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
       // Processar dados com type guards explícitos
-      const typedVideosData = (videosData || [])
-        .filter((item): item is PedidoVideoWithVideos => 
-          item !== null && 
-          typeof item === 'object' && 
-          'id' in item && 
+      const typedVideosData: PedidoVideoWithVideos[] = (videosData || [])
+        .filter((item): item is PedidoVideoWithVideos =>
+          item !== null &&
+          typeof item === 'object' &&
+          'id' in item &&
           'pedido_id' in item
         );
 
@@ -114,6 +114,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
         // ✅ FIX: Remove type assertion and trust the array type
         const pedidoVideos: PedidoVideoWithVideos[] = typedVideosData.filter((videoEntry) => {
+          // TypeScript now knows videoEntry is PedidoVideoWithVideos
           return videoEntry && videoEntry.pedido_id === pedido.id;
         });
 
