@@ -85,15 +85,21 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
-      // Type assertion explícita para o resultado da query do Supabase
-      const typedVideosData: PedidoVideoWithVideos[] = (videosData || []) as PedidoVideoWithVideos[];
+      // Processar dados com type guards explícitos
+      const typedVideosData: PedidoVideoWithVideos[] = (videosData || [])
+        .filter((item): item is PedidoVideoWithVideos => 
+          item !== null && 
+          typeof item === 'object' && 
+          'id' in item && 
+          'pedido_id' in item
+        );
 
       // Montar dados das campanhas com tipagem segura
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filtrar vídeos com tipo explícito definido
-        const pedidoVideos = typedVideosData.filter((videoEntry: PedidoVideoWithVideos) => {
+        // Filtrar vídeos usando type guard mais explícito
+        const pedidoVideos = typedVideosData.filter((videoEntry) => {
           return videoEntry && videoEntry.pedido_id === pedido.id;
         });
 
@@ -107,7 +113,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((videoEntry: PedidoVideoWithVideos) => {
+          videos: pedidoVideos.map((videoEntry) => {
             // Acesso seguro aos dados do vídeo com verificação de null
             const videoData = videoEntry.videos;
             
