@@ -136,10 +136,22 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      // Type the videos data properly with explicit casting
-      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
+      // Ensure proper typing for videos data
+      const typedVideosData: PedidoVideoQueryResult[] = Array.isArray(videosData) 
+        ? videosData.map(item => ({
+            id: item.id,
+            pedido_id: item.pedido_id,
+            video_id: item.video_id,
+            approval_status: item.approval_status,
+            is_active: item.is_active,
+            selected_for_display: item.selected_for_display,
+            slot_position: item.slot_position,
+            rejection_reason: item.rejection_reason,
+            videos: item.videos
+          }))
+        : [];
 
-      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
+      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData.length);
 
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = [];
@@ -147,10 +159,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       for (const pedido of typedPedidos) {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filter videos for this specific pedido with explicit typing
-        const pedidoVideos: PedidoVideoQueryResult[] = typedVideosData.filter(
-          (pv: PedidoVideoQueryResult) => pv.pedido_id === pedido.id
-        );
+        // Filter videos for this specific pedido
+        const pedidoVideos = typedVideosData.filter(pv => pv.pedido_id === pedido.id);
 
         const campaign: ActiveCampaign = {
           id: pedido.id,
@@ -162,7 +172,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
+          videos: pedidoVideos.map(pv => {
             // Use fallback logic to get the video ID safely
             const videoId = pv.videos?.id || pv.video_id || pv.id;
             
