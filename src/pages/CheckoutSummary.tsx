@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -18,19 +19,8 @@ const CheckoutSummary = () => {
     cartItems,
     calculateTotalPrice,
     couponValid,
-    couponDiscount,
-    handleClearCart
+    couponDiscount
   } = useCheckout();
-
-  // NOVO: Log do estado detalhado ao renderizar
-  useEffect(() => {
-    console.log('[CheckoutSummary] Estado atual:', {
-      cartItemsCount: cartItems?.length,
-      cartItems,
-      localStorageCart: localStorage.getItem('simple_cart'),
-      url: window.location.href
-    });
-  }, [cartItems]);
 
   // CORREÇÃO: Verificação de autenticação melhorada
   useEffect(() => {
@@ -64,38 +54,34 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, cartItems, navigate, isLoading]);
 
-  // Busque sempre QTDE real do carrinho sincronizado
-  const realCartCount = cartItems?.length || 0;
   const totalPrice = calculateTotalPrice();
 
-  // Trava o next button apenas se realmente estiver zerado
-  const nextDisabled = !isLoggedIn || realCartCount === 0 || totalPrice <= 0;
+  const handleBack = () => {
+    navigate('/checkout/cupom');
+  };
 
-  // Handler robusto para avançar:
   const handleNext = () => {
-    if (!cartItems || !Array.isArray(cartItems) || realCartCount === 0) {
-      toast.error("Seu carrinho está vazio ou está em estado inconsistente. Tente recarregar a página ou adicionar um painel novamente.");
-      handleClearCart?.();
+    // CORREÇÃO: Validação antes de prosseguir
+    if (!cartItems || cartItems.length === 0) {
+      toast.error("Carrinho vazio. Adicione painéis para continuar.");
+      navigate('/paineis-digitais/loja');
       return;
     }
 
     if (totalPrice <= 0) {
-      toast.error("Erro no cálculo do valor final. Revise seu carrinho e tente novamente.");
+      toast.error("Erro no cálculo do preço. Tente novamente.");
       return;
     }
 
-    // Log detalhado antes de avançar
-    console.log('[CheckoutSummary] Tudo validado, navegando para o pagamento:', {
-      realCartCount,
-      totalPrice
+    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO CORRIGIDO:', {
+      cartItemsCount: cartItems.length,
+      totalPrice,
+      couponValid,
+      couponDiscount,
+      expectedPrice: "R$ 0.27 com desconto"
     });
-    navigate('/checkout');
-  };
 
-  // Adiciona handler para voltar
-  const handleBack = () => {
-    // Caso queira fazer uma navegação mais elaborada, pode customizar aqui
-    navigate('/selecionar-plano');
+    navigate('/checkout');
   };
 
   if (isLoading) {
@@ -138,7 +124,7 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* Navigation - Corrigir botão "Ir para Pagamento" */}
+          {/* CORREÇÃO: Navigation sem duplicação de preço */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -154,11 +140,10 @@ const CheckoutSummary = () => {
               <span>Voltar</span>
             </Button>
 
-            {/* Corrigir habilitação do botão */}
             <Button
               onClick={handleNext}
-              disabled={nextDisabled}
-              className={`flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3 ${nextDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
+              className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
               <span>Ir para Pagamento</span>
               <ArrowRight className="h-4 w-4" />

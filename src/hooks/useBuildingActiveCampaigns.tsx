@@ -1,17 +1,45 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { PedidoVideoWithVideos, ActiveCampaign } from '@/types/buildingCampaigns';
 
-// Type for pedido from Supabase query
-interface PedidoFromQuery {
+interface ActiveCampaign {
   id: string;
   client_id: string;
+  client_email: string;
+  client_name: string;
   valor_total: number;
   data_inicio: string;
   data_fim: string;
   status: string;
   plano_meses: number;
-  lista_predios: string[];
+  videos: {
+    id: string;
+    nome: string;
+    url: string;
+    approval_status: string;
+    is_active: boolean;
+    selected_for_display: boolean;
+    slot_position: number;
+    rejection_reason?: string;
+  }[];
+}
+
+interface VideoData {
+  id: string;
+  nome: string;
+  url: string;
+}
+
+interface PedidoVideoQueryResult {
+  id: string;
+  pedido_id: string;
+  video_id: string | null;
+  approval_status: string;
+  is_active: boolean;
+  selected_for_display: boolean;
+  slot_position: number;
+  rejection_reason?: string;
+  videos: VideoData | null;
 }
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
@@ -60,19 +88,16 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         return;
       }
 
-      // Type assertion for pedidos with proper typing
-      const typedPedidos = pedidos as PedidoFromQuery[];
-
       // Buscar dados dos clientes
-      const clientIds = typedPedidos.map(p => p.client_id);
+      const clientIds = pedidos.map(p => p.client_id);
       const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
 
       if (clientsError) {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos com tipagem explícita
-      const pedidoIds = typedPedidos.map(p => p.id);
+      // Buscar vídeos dos pedidos
+      const pedidoIds = pedidos.map(p => p.id);
       const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -97,21 +122,15 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
+      // Type the videos data properly
+      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
 
-      // EXPLICIT: Type videosData as PedidoVideoWithVideos[]
-      const typedVideosData: PedidoVideoWithVideos[] = Array.isArray(videosData)
-        ? (videosData as PedidoVideoWithVideos[])
-        : [];
+      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
 
       // Montar dados das campanhas
-      const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
+      const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
-
-        // 👇 FIX: Explicit parameter type for filter & map
-        const pedidoVideos = typedVideosData.filter(
-          (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
-        );
+        const pedidoVideos = typedVideosData?.filter(v => v.pedido_id === pedido.id) || [];
 
         return {
           id: pedido.id,
@@ -123,19 +142,21 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((videoEntry: PedidoVideoWithVideos) => {
-            const videoData = videoEntry.videos;
+          videos: pedidoVideos.map(pv => {
+            // Use fallback logic to get the video ID safely
+            const videoId = pv.videos?.id || pv.video_id || pv.id;
+            
             return {
-              id: videoEntry.id,
-              nome: videoData?.nome || 'Vídeo sem nome',
-              url: videoData?.url || '',
-              approval_status: videoEntry.approval_status || 'pending',
-              is_active: videoEntry.is_active || false,
-              selected_for_display: videoEntry.selected_for_display || false,
-              slot_position: videoEntry.slot_position || 0,
-              rejection_reason: videoEntry.rejection_reason,
+              id: videoId,
+              nome: pv.videos?.nome || 'Vídeo sem nome',
+              url: pv.videos?.url || '',
+              approval_status: pv.approval_status || 'pending',
+              is_active: pv.is_active || false,
+              selected_for_display: pv.selected_for_display || false,
+              slot_position: pv.slot_position || 0,
+              rejection_reason: pv.rejection_reason
             };
-          }),
+          })
         };
       });
 
@@ -163,5 +184,3 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
     refetch: fetchActiveCampaigns
   };
 };
-
-// Fim da correção

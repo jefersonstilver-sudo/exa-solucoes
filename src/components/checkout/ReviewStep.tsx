@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +13,20 @@ const ReviewStep = () => {
     cartItems, 
     selectedPlan, 
     couponValid,
-    couponDiscount,
+    couponDiscount
   } = useCheckout();
 
   const formatPanelInfo = (panel: any) => {
     const info = [];
-    if (panel.buildings?.nome) info.push(panel.buildings.nome);
-    if (panel.buildings?.bairro) info.push(panel.buildings.bairro);
+    
+    if (panel.buildings?.nome) {
+      info.push(panel.buildings.nome);
+    }
+    
+    if (panel.buildings?.bairro) {
+      info.push(panel.buildings.bairro);
+    }
+    
     return info.join(' - ');
   };
 
@@ -42,24 +50,28 @@ const ReviewStep = () => {
   }
 
   const selectedMonths = PLANS[selectedPlan].months;
+  
+  // CORREÇÃO CRÍTICA: Usar funções centralizadas para garantir consistência
   const subtotal = calculateCartSubtotal(cartItems);
+  const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   const subtotalWithPlan = subtotal * selectedMonths;
-
-  // Corrigir cálculo do desconto para garantir que tudo esteja correto
   const discount = couponValid && couponDiscount ? (subtotalWithPlan * couponDiscount) / 100 : 0;
-  const finalPrice = subtotalWithPlan - discount;
 
-  // Logging detalhado para garantir visibilidade
-  console.log("📋 [ReviewStep] PREÇOS REVISADOS:", {
+  // Log detalhado para debug
+  console.log("📋 [ReviewStep] PREÇOS CORRIGIDOS:", {
+    component: "ReviewStep",
     cartItemsCount: cartItems.length,
     selectedPlan,
     selectedMonths,
     subtotal,
     subtotalWithPlan,
+    finalPrice,
+    discount,
     couponValid,
     couponDiscount,
-    discount,
-    finalPrice,
+    calculation: `Subtotal: R$ ${subtotal} × ${selectedMonths} meses = R$ ${subtotalWithPlan}`,
+    finalCalculation: `Com desconto: R$ ${finalPrice}`,
+    expectedResult: "R$ 0.27 com desconto aplicado"
   });
 
   return (
@@ -135,7 +147,7 @@ const ReviewStep = () => {
           </CardContent>
         </Card>
 
-        {/* Resumo de Preços */}
+        {/* CORREÇÃO: Resumo de Preços com Desconto Visual */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
@@ -145,45 +157,46 @@ const ReviewStep = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {/* Subtotal original */}
+              {/* Preço Original com Risco */}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">
-                  Subtotal ({cartItems.length} painel{cartItems.length === 1 ? '' : 's'} × {selectedMonths} mês{selectedMonths === 1 ? '' : 'es'})
-                </span>
-                <span className={couponValid && discount > 0 ? "font-medium line-through text-red-500 text-xs" : "font-medium"}>
+                <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
+                <span className={`font-medium ${couponValid && discount > 0 ? 'line-through text-red-500' : ''}`}>
                   {formatCurrency(subtotalWithPlan)}
                 </span>
               </div>
-
-              {/* Valor do desconto, sempre visível quando houver */}
+              
+              {/* Desconto Aplicado com Visual Atrativo */}
               {couponValid && discount > 0 && (
                 <>
-                  <div className="flex justify-between text-green-600 text-sm bg-green-50 p-3 rounded-lg border border-green-200">
+                  <div className="flex justify-between text-green-600 text-sm bg-green-50 p-2 rounded-lg border border-green-200">
                     <span className="flex items-center font-medium">
-                      <TrendingDown className="h-4 w-4 mr-2" />
+                      <TrendingDown className="h-4 w-4 mr-1" />
                       Desconto aplicado ({couponDiscount}%)
                     </span>
-                    <span className="font-bold text-green-700">-{formatCurrency(discount)}</span>
+                    <span className="font-bold">-{formatCurrency(discount)}</span>
                   </div>
-                  <div className="bg-gradient-to-r from-green-100 to-green-200 p-4 rounded-lg border-2 border-green-300 shadow-sm text-center flex items-center justify-center">
-                    <Tag className="h-5 w-5 mr-2" />
-                    <span className="text-base font-bold text-green-800">
-                      🎉 Sua economia: {formatCurrency(discount)}
-                    </span>
+                  
+                  {/* Economia Total Destacada */}
+                  <div className="bg-green-100 p-3 rounded-lg border border-green-300">
+                    <div className="flex items-center justify-center text-green-800">
+                      <Tag className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">
+                        Você está economizando {formatCurrency(discount)}!
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
-
-              {/* Total Final */}
+              
+              {/* Total Final Destacado */}
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total Final</span>
-                  <span className="text-[#1E1B4B] text-xl">{formatCurrency(finalPrice)}</span>
+                  <span className="text-[#1E1B4B]">{formatCurrency(finalPrice)}</span>
                 </div>
-                {/* Observação do desconto */}
                 {couponValid && discount > 0 && (
-                  <div className="text-xs text-green-700 mt-2 text-right font-medium bg-green-50 p-2 rounded">
-                    ✅ Desconto de {couponDiscount}% aplicado! Você economizou {formatCurrency(discount)} no seu pedido.
+                  <div className="text-xs text-green-600 mt-1 text-right font-medium">
+                    ✅ Desconto de {couponDiscount}% aplicado com sucesso!
                   </div>
                 )}
               </div>
