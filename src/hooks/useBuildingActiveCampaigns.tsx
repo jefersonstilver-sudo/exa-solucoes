@@ -128,10 +128,10 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = typedPedidos.map((pedido: PedidoFromQuery) => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
 
-        // Fix: Explicitly type argument so TS infers type correctly and doesn't use never
-        const pedidoVideos = typedVideosData.filter(
-          (videoEntry: PedidoVideoWithVideos) => videoEntry.pedido_id === pedido.id
-        );
+        // 👇🏻 Fix: Explicit function + param type for filter, to avoid TS inferring 'never'
+        const pedidoVideos = typedVideosData.filter(function(videoEntry: PedidoVideoWithVideos) {
+          return videoEntry.pedido_id === pedido.id;
+        });
 
         return {
           id: pedido.id,
