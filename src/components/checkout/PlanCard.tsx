@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Video, Gift, Building, X, Star, Crown, Zap } from 'lucide-react';
@@ -21,10 +22,7 @@ interface PlanCardProps {
   planKey: PlanKey;
   isSelected: boolean;
   onSelect: () => void;
-  basePrice: number; // Add basePrice prop
-  finalPrice: number; // Add finalPrice prop
-  cartItems?: CartItem[]; // Make cartItems optional
-  disabled?: boolean; // Add disabled prop
+  cartItems: CartItem[];
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({
@@ -32,27 +30,37 @@ const PlanCard: React.FC<PlanCardProps> = ({
   planKey,
   isSelected,
   onSelect,
-  basePrice,
-  finalPrice,
-  cartItems = [], // Default to empty array
-  disabled = false
+  cartItems
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [dynamicPricing, setDynamicPricing] = useState<any>(null);
   
-  // Calculate dynamic pricing based on basePrice and finalPrice passed as props
+  // CORREÇÃO: Calcular preços dinamicamente baseados no carrinho com preços corretos
   useEffect(() => {
-    if (basePrice > 0) {
-      const dynamicPricePerMonth = finalPrice / planKey;
-      const dynamicSavings = (basePrice * planKey) - finalPrice;
-      
-      setDynamicPricing({
-        dynamicPricePerMonth,
-        dynamicTotalPrice: finalPrice,
-        dynamicSavings: dynamicSavings > 0 ? dynamicSavings : 0
+    if (cartItems.length > 0) {
+      console.log("💰 [PlanCard] Calculando preços dinâmicos corrigidos:", {
+        planKey,
+        cartItemsLength: cartItems.length
       });
+      
+      // Usar função centralizada para calcular preços
+      const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
+      
+      if (dynamicPlan) {
+        setDynamicPricing(dynamicPlan);
+        
+        // Log para auditoria
+        logPriceCalculation(`PlanCard-${planKey}`, {
+          planKey,
+          cartItemsCount: cartItems.length,
+          dynamicPricing: dynamicPlan
+        });
+      }
+    } else {
+      console.log("💰 [PlanCard] Carrinho vazio, resetando preços");
+      setDynamicPricing(null);
     }
-  }, [basePrice, finalPrice, planKey]);
+  }, [planKey, cartItems]);
   
   // Definir cores e estilos específicos para cada plano
   const getPlanStyle = () => {
@@ -116,27 +124,27 @@ const PlanCard: React.FC<PlanCardProps> = ({
   const style = getPlanStyle();
   const IconComponent = style.icon;
 
-  // Show loading state if no pricing data
-  if (!dynamicPricing && basePrice > 0) {
+  // Não mostrar card se carrinho estiver vazio
+  if (!cartItems.length) {
     return (
-      <Card className="border-2 border-gray-200 bg-white">
+      <Card className="border-2 border-gray-200 bg-gray-50 opacity-50">
         <CardContent className="p-4 sm:p-5 text-center">
-          <div className="h-8 w-8 border-2 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
           <p className="text-gray-500 text-sm">
-            Calculando preços...
+            Adicione prédios ao carrinho para ver os preços
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  // Show empty state if no base price
-  if (basePrice === 0) {
+  // Aguardar cálculo dos preços dinâmicos
+  if (!dynamicPricing) {
     return (
-      <Card className="border-2 border-gray-200 bg-gray-50 opacity-50">
+      <Card className="border-2 border-gray-200 bg-white">
         <CardContent className="p-4 sm:p-5 text-center">
+          <div className="h-8 w-8 border-2 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
           <p className="text-gray-500 text-sm">
-            Adicione prédios ao carrinho para ver os preços
+            Calculando preços...
           </p>
         </CardContent>
       </Card>
@@ -153,7 +161,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
       }}
       transition={{ duration: 0.4 }}
       whileHover={{ 
-        scale: planKey === 1 ? 1 : 1.02,
+        scale: planKey === 1 ? 1 : 1.02, // Mensal não tem hover scale
         boxShadow: planKey === 1 ? 'none' : '0 10px 30px rgba(0, 0, 0, 0.1)' 
       }}
       onHoverStart={() => setIsHovered(true)}
@@ -165,11 +173,10 @@ const PlanCard: React.FC<PlanCardProps> = ({
           overflow-hidden transition-all cursor-pointer h-full flex flex-col border-2
           ${style.border}
           ${style.glow || ''}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         `}
-        onClick={disabled ? undefined : onSelect}
+        onClick={onSelect}
       >
-        {/* Header Tags */}
+        {/* Header Tags Específicos */}
         {planKey === 3 && (
           <div className={`${style.header} text-center py-2 text-sm font-bold tracking-wide`}>
             🔥 MAIS POPULAR 🔥
@@ -195,7 +202,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
         )}
         
         <CardContent className="p-4 sm:p-5 flex-grow flex flex-col">
-          {/* Plan Title with icon */}
+          {/* Plan Title com ícone */}
           <div className="text-center mb-4">
             <div className="flex items-center justify-center gap-2 mb-2">
               <IconComponent className={`h-5 w-5 ${style.iconColor}`} />

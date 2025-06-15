@@ -1,18 +1,18 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { CartItem } from '@/types/cart';
+import ModernCartHeader from './ModernCartHeader';
 import ModernCartItem from './ModernCartItem';
-import ModernEmptyCart from './ModernEmptyCart';
 import ModernCartSummary from './ModernCartSummary';
+import ModernEmptyCart from './ModernEmptyCart';
 
 interface ModernCartLayoutProps {
   cartItems: CartItem[];
-  onRemove: (id: string) => void;
+  onRemove: (panelId: string) => void;
   onClear: () => void;
-  onChangeDuration: (id: string, duration: number) => void;
+  onChangeDuration: (panelId: string, duration: number) => void;
   onProceedToCheckout: () => void;
   isCheckoutLoading?: boolean;
 }
@@ -25,88 +25,58 @@ const ModernCartLayout: React.FC<ModernCartLayoutProps> = ({
   onProceedToCheckout,
   isCheckoutLoading = false
 }) => {
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+  const isEmpty = cartItems.length === 0;
 
-  const handleCheckout = () => {
-    console.log("🛒 [ModernCartLayout] Iniciando checkout:", {
-      cartItemsCount: cartItems.length,
-      totalPrice,
-      isLoading: isCheckoutLoading
-    });
-    
-    if (cartItems.length === 0) {
-      console.warn("🛒 [ModernCartLayout] Tentativa de checkout com carrinho vazio");
-      return;
-    }
-    
-    if (isCheckoutLoading) {
-      console.warn("🛒 [ModernCartLayout] Checkout já em andamento");
-      return;
-    }
-    
-    onProceedToCheckout();
-  };
-
-  if (cartItems.length === 0) {
+  if (isEmpty) {
     return <ModernEmptyCart />;
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 max-w-md mx-auto">
-      {/* Cart Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <ShoppingCart className="h-5 w-5 text-[#3C1361]" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              Seu Carrinho ({cartItems.length})
-            </h2>
-          </div>
-          {cartItems.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClear}
-              className="text-gray-500 hover:text-red-500 hover:bg-red-50"
-              disabled={isCheckoutLoading}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
+    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-white">
+      {/* Header */}
+      <ModernCartHeader 
+        itemCount={cartItems.length}
+        onClear={onClear}
+      />
+      
+      {/* Items List - optimized for many items */}
+      <ScrollArea className="flex-1 px-2">
+        <div className="space-y-2 py-2">
+          <AnimatePresence mode="popLayout">
+            {cartItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ 
+                  opacity: 0, 
+                  y: -5, 
+                  scale: 0.98,
+                  transition: { duration: 0.15 }
+                }}
+                transition={{ 
+                  duration: 0.2,
+                  delay: Math.min(index * 0.02, 0.3) // Cap delay for many items
+                }}
+                layout
+              >
+                <ModernCartItem
+                  item={item}
+                  onRemove={onRemove}
+                  onChangeDuration={onChangeDuration}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
-      </div>
-
-      {/* Cart Items */}
-      <div className="max-h-80 overflow-y-auto">
-        <AnimatePresence>
-          {cartItems.map((item) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ModernCartItem
-                item={item}
-                onRemove={onRemove}
-                onChangeDuration={onChangeDuration}
-                isDisabled={isCheckoutLoading}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {/* Cart Summary */}
-      <div className="p-6 border-t border-gray-200">
-        <ModernCartSummary 
-          cartItems={cartItems}
-          totalPrice={totalPrice}
-          onProceedToCheckout={handleCheckout}
-          isCheckoutLoading={isCheckoutLoading}
-        />
-      </div>
+      </ScrollArea>
+      
+      {/* Summary and Checkout */}
+      <ModernCartSummary
+        cartItems={cartItems}
+        onProceedToCheckout={onProceedToCheckout}
+        isCheckoutLoading={isCheckoutLoading}
+      />
     </div>
   );
 };

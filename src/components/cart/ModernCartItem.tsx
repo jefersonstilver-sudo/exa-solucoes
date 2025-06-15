@@ -10,14 +10,12 @@ interface ModernCartItemProps {
   item: CartItem;
   onRemove: (panelId: string) => void;
   onChangeDuration: (panelId: string, duration: number) => void;
-  isDisabled?: boolean;
 }
 
 const ModernCartItem: React.FC<ModernCartItemProps> = ({
   item,
   onRemove,
-  onChangeDuration,
-  isDisabled = false
+  onChangeDuration
 }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const panel = item.panel;
@@ -42,7 +40,6 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
         bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden
         hover:shadow-md transition-shadow duration-300
         ${isRemoving ? 'opacity-50' : ''}
-        ${isDisabled ? 'opacity-60' : ''}
       `}
       whileHover={{ scale: 1.002 }}
       layout
@@ -66,7 +63,7 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleRemove}
-            disabled={isRemoving || isDisabled}
+            disabled={isRemoving}
             className="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors p-1 h-7 w-7 ml-2 flex-shrink-0"
             title="Remover item"
           >

@@ -29,7 +29,7 @@ serve(async (req) => {
       throw new Error("transactionId e pedidoId são obrigatórios");
     }
 
-    // Buscar pedido por ID e verificar transaction_id
+    // CORREÇÃO CRÍTICA: Buscar pedido por transaction_id EM VEZ de recalcular
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .select('*')
@@ -47,13 +47,13 @@ serve(async (req) => {
       transaction_id: pedido.transaction_id
     });
 
-    // Usar preço do pedido com desconto PIX
+    // USAR PREÇO DO PEDIDO (sem recalcular!)
     const finalAmount = pedido.valor_total * 0.95; // 5% discount PIX
 
     // Simular criação do QR Code PIX (substitua pela integração real)
     const pixData = {
       qrCodeBase64: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==`,
-      qrCode: `00020126330014BR.GOV.BCB.PIX0111${transactionId}5204000053039865802BR5925INDEXA MIDIA DIGITAL LTDA6009SAO PAULO62070503***6304`,
+      qrCode: `PIX_SIMULADO_${transactionId}_${finalAmount.toFixed(2)}`,
       paymentId: `pix_${transactionId}`,
       status: 'pending'
     };
