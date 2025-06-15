@@ -22,7 +22,8 @@ const CheckoutSummary = () => {
     currentTransactionId,
     currentStep,
     isInitialized,
-    isProcessing
+    isProcessing,
+    processPixPayment
   } = useUnifiedCheckout();
 
   // Verificação de autenticação
@@ -65,8 +66,8 @@ const CheckoutSummary = () => {
     navigate('/checkout/cupom');
   };
 
-  const handleNext = () => {
-    console.log('[CheckoutSummary] TENTATIVA DE AVANÇO PARA PAGAMENTO:', {
+  const handleNext = async () => {
+    console.log('[CheckoutSummary] INICIANDO PROCESSO DE PAGAMENTO PIX:', {
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
       currentTransactionId,
@@ -89,44 +90,38 @@ const CheckoutSummary = () => {
       return;
     }
 
-    // CORREÇÃO: Permitir avanço se temos transactionId e sessionPrice, independente do currentStep
-    if (currentTransactionId && sessionPrice > 0) {
-      console.log('[CheckoutSummary] ✅ DADOS VÁLIDOS ENCONTRADOS - PROSSEGUINDO:', {
+    // Se não temos transactionId ou sessionPrice, inicializar primeiro
+    if (!currentTransactionId || !sessionPrice) {
+      console.log('[CheckoutSummary] ⚠️ FALTAM DADOS - REDIRECIONANDO PARA CHECKOUT PRINCIPAL');
+      toast.info("Preparando dados de pagamento...");
+      navigate('/checkout');
+      return;
+    }
+
+    try {
+      console.log('[CheckoutSummary] ✅ DADOS VÁLIDOS - PROCESSANDO PIX:', {
         transactionId: currentTransactionId,
         sessionPrice,
         cartItemsCount: cartItems.length,
         selectedPlan
       });
 
-      toast.success("Prosseguindo para pagamento...");
-      navigate('/checkout');
-      return;
-    }
+      toast.loading("Processando pagamento PIX...");
 
-    // Se não temos dados válidos, tentar inicializar
-    if (!currentTransactionId || sessionPrice <= 0) {
-      console.log('[CheckoutSummary] ⚠️ DADOS INSUFICIENTES - TENTANDO REINICIALIZAR:', {
-        hasTransactionId: !!currentTransactionId,
-        sessionPrice,
-        isInitialized
-      });
+      // Processar pagamento PIX diretamente - isso já navega para /pix-payment
+      const pixSuccess = await processPixPayment(currentTransactionId);
       
-      toast.info("Preparando dados de pagamento... Aguarde um momento.");
+      if (!pixSuccess) {
+        toast.error("Erro ao processar pagamento PIX. Tente novamente.");
+        return;
+      }
+
+      // O processPixPayment já faz a navegação para /pix-payment
+      console.log('[CheckoutSummary] ✅ PIX PROCESSADO COM SUCESSO');
       
-      // Dar tempo para o sistema se sincronizar
-      setTimeout(() => {
-        // Verificar novamente após delay
-        if (currentTransactionId && sessionPrice > 0) {
-          console.log('[CheckoutSummary] ✅ DADOS SINCRONIZADOS APÓS DELAY');
-          navigate('/checkout');
-        } else {
-          console.error('[CheckoutSummary] ❌ FALHA NA SINCRONIZAÇÃO');
-          toast.error("Erro na preparação do pagamento. Retornando ao plano.");
-          navigate('/plano');
-        }
-      }, 2000);
-      
-      return;
+    } catch (error: any) {
+      console.error('[CheckoutSummary] ❌ ERRO NO PROCESSAMENTO PIX:', error);
+      toast.error(`Erro ao processar pagamento: ${error.message}`);
     }
   };
 
@@ -221,11 +216,11 @@ const CheckoutSummary = () => {
               {isProcessing ? (
                 <>
                   <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <span>Preparando...</span>
+                  <span>Processando PIX...</span>
                 </>
               ) : (
                 <>
-                  <span>Ir para Pagamento</span>
+                  <span>Ir para Pagamento PIX</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}

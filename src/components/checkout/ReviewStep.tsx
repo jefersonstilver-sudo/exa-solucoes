@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, CreditCard, Tag, CheckCircle } from 'lucide-react';
+import { MapPin, Calendar, CreditCard, Tag, CheckCircle, TrendingDown } from 'lucide-react';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useCouponValidator } from '@/hooks/useCouponValidator';
 import { formatCurrency } from '@/utils/formatters';
@@ -182,7 +182,7 @@ const ReviewStep = () => {
           )}
         </div>
 
-        {/* Coluna Direita - Resumo de Preços */}
+        {/* Coluna Direita - Resumo de Preços com Desconto Visual */}
         <div className="lg:col-span-1">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -195,48 +195,76 @@ const ReviewStep = () => {
               Resumo de Preços
             </h3>
             
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">
-                  Subtotal ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'} × {selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'})
-                </span>
-                <span className="font-medium">{formatCurrency(subtotalWithPlan)}</span>
-              </div>
-              
+            <div className="space-y-4">
+              {/* Preço Original com Risco se houver desconto */}
               {couponValid && discount > 0 && (
-                <>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <TrendingDown className="h-4 w-4 text-red-600 mr-2" />
+                      <span className="text-sm text-red-600 font-medium">Preço Original</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-red-600 line-through">
+                        {formatCurrency(subtotalWithPlan)}
+                      </div>
+                      <div className="text-xs text-red-500">Sem desconto</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cálculo detalhado */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">
+                    Subtotal ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'} × {selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'})
+                  </span>
+                  <span className="font-medium">{formatCurrency(subtotalWithPlan)}</span>
+                </div>
+                
+                {couponValid && discount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Desconto ({couponDiscount}%)</span>
                     <span className="font-medium">-{formatCurrency(discount)}</span>
                   </div>
-                  <div className="border-t border-gray-200 pt-2">
-                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">
-                          🎉 Você está economizando {formatCurrency(discount)}!
-                        </div>
-                        <div className="text-sm text-green-500 mt-1">
-                          Desconto aplicado com sucesso
-                        </div>
-                      </div>
+                )}
+              </div>
+              
+              {/* Grande Destaque da Economia */}
+              {couponValid && discount > 0 && (
+                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+                  <div className="text-center">
+                    <div className="text-sm font-medium opacity-90 mb-1">🎉 Você está economizando</div>
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(discount)}
+                    </div>
+                    <div className="text-sm opacity-90 mt-1">
+                      Com o plano anual!
                     </div>
                   </div>
-                </>
+                </div>
               )}
               
-              <div className="border-t border-gray-200 pt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-900">Total Final</span>
-                  <span className="text-2xl font-bold text-[#3C1361]">{formatCurrency(finalPrice)}</span>
-                </div>
-                {couponValid && discount > 0 && (
-                  <div className="text-xs text-gray-500 text-right mt-1">
-                    Era {formatCurrency(subtotalWithPlan)} • Economia de {formatCurrency(discount)}
+              {/* Total Final com destaque */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="bg-[#3C1361] rounded-lg p-4 text-white">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold">Total Final</span>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">{formatCurrency(finalPrice)}</div>
+                      {couponValid && discount > 0 && (
+                        <div className="text-sm opacity-90">
+                          Era {formatCurrency(subtotalWithPlan)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
+            {/* Método de Pagamento */}
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="text-sm text-blue-800">
                 <div className="font-medium mb-1">Método de Pagamento</div>
