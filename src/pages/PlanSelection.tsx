@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +17,7 @@ const PLANS: Record<PlanKey, Plan> = {
     duration: '1 mês',
     months: 1,
     discount: 0,
-    price: 0, // Will be calculated dynamically
+    price: 0,
     popular: false,
     description: 'Ideal para campanhas pontuais'
   },
@@ -28,7 +27,7 @@ const PLANS: Record<PlanKey, Plan> = {
     duration: '3 meses',
     months: 3,
     discount: 10,
-    price: 0, // Will be calculated dynamically
+    price: 0,
     popular: false,
     description: 'Economize 10% no valor total'
   },
@@ -38,7 +37,7 @@ const PLANS: Record<PlanKey, Plan> = {
     duration: '6 meses',
     months: 6,
     discount: 15,
-    price: 0, // Will be calculated dynamically
+    price: 0,
     popular: true,
     description: 'Plano mais popular - 15% desconto'
   },
@@ -48,7 +47,7 @@ const PLANS: Record<PlanKey, Plan> = {
     duration: '12 meses',
     months: 12,
     discount: 25,
-    price: 0, // Will be calculated dynamically
+    price: 0,
     popular: false,
     description: 'Máxima economia - 25% desconto'
   }
@@ -60,7 +59,6 @@ const PlanSelection = () => {
   const { cartItems, selectedPlan, setSelectedPlan, handleClearCart } = useCartManager();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Check authentication
   useEffect(() => {
     if (isLoading) return;
     
@@ -71,7 +69,6 @@ const PlanSelection = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // Check cart
   useEffect(() => {
     if (isLoading || !isLoggedIn) return;
     
@@ -97,7 +94,6 @@ const PlanSelection = () => {
   };
 
   const handleContinue = async () => {
-    // Validation
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
@@ -124,7 +120,6 @@ const PlanSelection = () => {
         userId: user.id
       });
 
-      // Navigate to coupon step
       navigate('/checkout/cupom');
     } catch (error) {
       console.error('[PlanSelection] Error:', error);
