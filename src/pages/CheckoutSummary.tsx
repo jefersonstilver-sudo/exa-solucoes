@@ -6,7 +6,7 @@ import Layout from '@/components/layout/Layout';
 import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import ReviewStep from '@/components/checkout/ReviewStep';
 import { useUserSession } from '@/hooks/useUserSession';
-import { useCheckout } from '@/hooks/useCheckout';
+import { useUnifiedCheckout } from '@/hooks/useUnifiedCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,12 +17,15 @@ const CheckoutSummary = () => {
   
   const {
     cartItems,
-    calculateTotalPrice,
-    couponValid,
-    couponDiscount
-  } = useCheckout();
+    selectedPlan,
+    sessionPrice,
+    currentTransactionId,
+    currentStep,
+    isInitialized,
+    isProcessing
+  } = useUnifiedCheckout();
 
-  // CORREÇÃO: Verificação de autenticação melhorada
+  // Verificação de autenticação
   useEffect(() => {
     if (isLoading) return;
     
@@ -33,52 +36,79 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CORREÇÃO: Validação do carrinho mais robusta - SEM timeout agressivo
+  // Validação suave do carrinho sem redirecionamento agressivo
   useEffect(() => {
     if (isLoading || !isLoggedIn) return;
     
-    console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO CORRIGIDA:', {
+    console.log('[CheckoutSummary] VALIDAÇÃO SUAVE DO CARRINHO:', {
       cartItemsLength: cartItems?.length || 0,
-      cartItems: cartItems?.map(item => ({
-        panelId: item.panel?.id,
-        buildingName: item.panel?.buildings?.nome
-      })) || [],
+      selectedPlan,
+      isInitialized,
+      currentTransactionId,
+      currentStep,
       timestamp: new Date().toISOString()
     });
     
-    // CORREÇÃO: Validação mais suave sem timeout agressivo
+    // Warning suave sem redirecionamento automático
     if (cartItems && cartItems.length === 0) {
-      console.log('[CheckoutSummary] Cart is empty, showing warning');
+      console.warn('[CheckoutSummary] Carrinho vazio detectado');
       toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
-      // Não redirecionar automaticamente - dar tempo para o carrinho carregar
     }
-  }, [isLoggedIn, cartItems, navigate, isLoading]);
 
-  const totalPrice = calculateTotalPrice();
+    if (!selectedPlan) {
+      console.warn('[CheckoutSummary] Plano não selecionado');
+      toast.error("Selecione um plano para continuar.");
+    }
+  }, [isLoggedIn, cartItems, selectedPlan, isInitialized, currentTransactionId, currentStep, isLoading]);
 
   const handleBack = () => {
     navigate('/checkout/cupom');
   };
 
   const handleNext = () => {
-    // CORREÇÃO: Validação antes de prosseguir
+    // Validações básicas
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
       return;
     }
 
-    if (totalPrice <= 0) {
-      toast.error("Erro no cálculo do preço. Tente novamente.");
+    if (!selectedPlan) {
+      toast.error("Selecione um plano para continuar.");
+      navigate('/plano');
       return;
     }
 
-    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO CORRIGIDO:', {
+    // Verificar se o sistema unificado está pronto
+    if (!isInitialized || !currentTransactionId || currentStep !== 'payment') {
+      console.log('[CheckoutSummary] Sistema unificado não está pronto:', {
+        isInitialized,
+        currentTransactionId,
+        currentStep,
+        sessionPrice
+      });
+      
+      toast.info("Preparando sistema de pagamento... Aguarde um momento.");
+      
+      // Dar mais tempo para o sistema unificado se inicializar
+      setTimeout(() => {
+        if (currentTransactionId && sessionPrice > 0) {
+          navigate('/checkout');
+        } else {
+          toast.error("Erro na preparação do pagamento. Tente novamente.");
+          navigate('/plano');
+        }
+      }, 2000);
+      
+      return;
+    }
+
+    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO:', {
       cartItemsCount: cartItems.length,
-      totalPrice,
-      couponValid,
-      couponDiscount,
-      expectedPrice: "R$ 0.27 com desconto"
+      selectedPlan,
+      sessionPrice,
+      currentTransactionId,
+      isInitialized
     });
 
     navigate('/checkout');
@@ -124,7 +154,28 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* CORREÇÃO: Navigation sem duplicação de preço */}
+          {/* Status do Sistema Unificado - Debug Info */}
+          {process.env.NODE_ENV === 'development' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+            >
+              <h4 className="font-medium text-blue-800 mb-2">Status do Sistema Unificado</h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <div>Inicializado: {isInitialized ? '✅' : '❌'}</div>
+                <div>Transaction ID: {currentTransactionId || 'Nenhum'}</div>
+                <div>Etapa Atual: {currentStep}</div>
+                <div>Preço da Sessão: R$ {sessionPrice?.toFixed(2) || '0.00'}</div>
+                <div>Processando: {isProcessing ? '✅' : '❌'}</div>
+                <div>Carrinho: {cartItems?.length || 0} itens</div>
+                <div>Plano: {selectedPlan || 'Não selecionado'}</div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Navigation */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -142,11 +193,26 @@ const CheckoutSummary = () => {
 
             <Button
               onClick={handleNext}
-              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
+              disabled={
+                !isLoggedIn || 
+                !cartItems || 
+                cartItems.length === 0 || 
+                !selectedPlan ||
+                isProcessing
+              }
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
-              <span>Ir para Pagamento</span>
-              <ArrowRight className="h-4 w-4" />
+              {isProcessing ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span>Preparando...</span>
+                </>
+              ) : (
+                <>
+                  <span>Ir para Pagamento</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </motion.div>
         </div>

@@ -3,21 +3,22 @@ import { useState, useEffect } from 'react';
 import { useSimpleCart } from './useSimpleCart';
 import { PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
-import { useNavigate } from 'react-router-dom';
+
+const SELECTED_PLAN_KEY = 'selected_plan';
 
 export const useCartManager = () => {
   const simpleCart = useSimpleCart();
   const [selectedPlan, setSelectedPlan] = useState<PlanKey | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-  const navigate = useNavigate();
 
   // Load saved plan from localStorage on mount
   useEffect(() => {
     try {
-      const savedPlan = localStorage.getItem('selectedPlan');
+      const savedPlan = localStorage.getItem(SELECTED_PLAN_KEY);
       if (savedPlan) {
         const parsedPlan = parseInt(savedPlan);
         if ([1, 3, 6, 12].includes(parsedPlan)) {
+          console.log('🔄 [CartManager] Plano carregado do localStorage:', parsedPlan);
           setSelectedPlan(parsedPlan as PlanKey);
         }
       }
@@ -28,16 +29,39 @@ export const useCartManager = () => {
     }
   }, []);
 
-  // Save plan to localStorage when it changes
+  // Save plan to localStorage when it changes and sync across tabs
   useEffect(() => {
-    if (selectedPlan) {
+    if (selectedPlan && initialLoadDone) {
       try {
-        localStorage.setItem('selectedPlan', selectedPlan.toString());
+        console.log('💾 [CartManager] Salvando plano selecionado:', selectedPlan);
+        localStorage.setItem(SELECTED_PLAN_KEY, selectedPlan.toString());
+        
+        // Disparar evento para sincronizar entre abas
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: SELECTED_PLAN_KEY,
+          newValue: selectedPlan.toString()
+        }));
       } catch (error) {
         console.error('Error saving plan:', error);
       }
     }
-  }, [selectedPlan]);
+  }, [selectedPlan, initialLoadDone]);
+
+  // Listen for storage changes to sync selectedPlan across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === SELECTED_PLAN_KEY && e.newValue) {
+        const newPlan = parseInt(e.newValue);
+        if ([1, 3, 6, 12].includes(newPlan)) {
+          console.log('🔄 [CartManager] Plano sincronizado de outra aba:', newPlan);
+          setSelectedPlan(newPlan as PlanKey);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Enhanced handler functions with better feedback
   const handleAddToCart = async (panel: Panel, duration: number = 30) => {
@@ -60,6 +84,9 @@ export const useCartManager = () => {
   const handleClearCart = () => {
     console.log('🛒 [CartManager] Limpando carrinho');
     simpleCart.clearCart();
+    // Limpar também o plano selecionado
+    setSelectedPlan(null);
+    localStorage.removeItem(SELECTED_PLAN_KEY);
   };
 
   const handleChangeDuration = (panelId: string, duration: number) => {
@@ -72,10 +99,16 @@ export const useCartManager = () => {
     simpleCart.proceedToCheckout();
   };
 
+  // Enhanced setSelectedPlan with logging
+  const handleSetSelectedPlan = (plan: PlanKey | null) => {
+    console.log('📋 [CartManager] Alterando plano selecionado:', { from: selectedPlan, to: plan });
+    setSelectedPlan(plan);
+  };
+
   return {
     ...simpleCart,
     selectedPlan,
-    setSelectedPlan,
+    setSelectedPlan: handleSetSelectedPlan,
     initialLoadDone,
     // Enhanced handler functions
     handleAddToCart,
