@@ -9,34 +9,46 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useCartManager } from '@/hooks/useCartManager';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { PlanKey } from '@/types/checkout';
+import { PlanKey, Plan } from '@/types/checkout';
 
-const PLANS = {
+const PLANS: Record<PlanKey, Plan> = {
   1: {
+    id: 1,
     name: 'Plano Mensal',
     duration: '1 mês',
+    months: 1,
     discount: 0,
+    price: 0, // Will be calculated dynamically
     popular: false,
     description: 'Ideal para campanhas pontuais'
   },
   3: {
+    id: 3,
     name: 'Plano Trimestral',
     duration: '3 meses',
+    months: 3,
     discount: 10,
+    price: 0, // Will be calculated dynamically
     popular: false,
     description: 'Economize 10% no valor total'
   },
   6: {
+    id: 6,
     name: 'Plano Semestral',
     duration: '6 meses',
+    months: 6,
     discount: 15,
+    price: 0, // Will be calculated dynamically
     popular: true,
     description: 'Plano mais popular - 15% desconto'
   },
   12: {
+    id: 12,
     name: 'Plano Anual',
     duration: '12 meses',
+    months: 12,
     discount: 25,
+    price: 0, // Will be calculated dynamically
     popular: false,
     description: 'Máxima economia - 25% desconto'
   }
@@ -205,7 +217,7 @@ const PlanSelection = () => {
                   basePrice={basePrice}
                   finalPrice={finalPrice}
                   isSelected={selectedPlan === planKey}
-                  onSelect={handlePlanSelect}
+                  onSelect={() => handlePlanSelect(planKey)}
                   disabled={totalItems === 0}
                 />
               );

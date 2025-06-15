@@ -100,23 +100,12 @@ const ModernCartLayout: React.FC<ModernCartLayoutProps> = ({
 
       {/* Cart Summary */}
       <div className="p-6 border-t border-gray-200">
-        <ModernCartSummary totalPrice={totalPrice} />
-        
-        {/* Checkout Button */}
-        <Button
-          onClick={handleCheckout}
-          disabled={cartItems.length === 0 || isCheckoutLoading}
-          className="w-full mt-4 bg-[#3C1361] hover:bg-[#3C1361]/90 text-white py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isCheckoutLoading ? (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Processando...</span>
-            </div>
-          ) : (
-            'Finalizar Compra'
-          )}
-        </Button>
+        <ModernCartSummary 
+          cartItems={cartItems}
+          totalPrice={totalPrice}
+          onProceedToCheckout={handleCheckout}
+          isCheckoutLoading={isCheckoutLoading}
+        />
       </div>
     </div>
   );

@@ -105,6 +105,14 @@ export const useSimpleCart = () => {
     toast.success("Carrinho limpo!");
   };
 
+  const toggleCart = () => {
+    setIsOpen(prev => !prev);
+  };
+
+  const isItemInCart = (panelId: string): boolean => {
+    return cartItems.some(item => item.panel.id === panelId);
+  };
+
   const proceedToCheckout = () => {
     console.log('🛒 [SimpleCart] Iniciando checkout:', {
       cartItemsCount: cartItems.length,
@@ -177,10 +185,15 @@ export const useSimpleCart = () => {
     clearCart,
     proceedToCheckout,
     setIsOpen,
+    toggleCart,
     
     // Computed
     getTotalPrice,
     getItemCount,
+    isItemInCart,
+    
+    // Computed aliases for compatibility
+    itemCount: getItemCount(),
     
     // Compatibility with existing code
     setCartItems,

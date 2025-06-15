@@ -10,14 +10,15 @@ interface ModernCartSummaryProps {
   cartItems: CartItem[];
   onProceedToCheckout: () => void;
   isCheckoutLoading?: boolean;
+  totalPrice: number;
 }
 
 const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
   cartItems,
   onProceedToCheckout,
-  isCheckoutLoading = false
+  isCheckoutLoading = false,
+  totalPrice
 }) => {
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
   const itemCount = cartItems.length;
 
   return (
