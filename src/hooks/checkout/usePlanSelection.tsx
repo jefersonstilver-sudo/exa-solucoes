@@ -5,12 +5,12 @@ import { useCartManager } from '../useCartManager';
 import { PlanKey, Plan } from '@/types/checkout';
 import { toast } from 'sonner';
 
-// Define PLANS locally
+// Define PLANS locally with duration property
 const PLANS: Record<number, Plan> = {
-  1: { id: 1, name: 'Mensal', months: 1, price: 1, discount: 0 },
-  3: { id: 3, name: 'Trimestral', months: 3, price: 0.9, discount: 10 },
-  6: { id: 6, name: 'Semestral', months: 6, price: 0.8, discount: 20 },
-  12: { id: 12, name: 'Anual', months: 12, price: 0.7, discount: 30 }
+  1: { id: 1, name: 'Mensal', duration: '1 mês', months: 1, price: 1, discount: 0 },
+  3: { id: 3, name: 'Trimestral', duration: '3 meses', months: 3, price: 0.9, discount: 10 },
+  6: { id: 6, name: 'Semestral', duration: '6 meses', months: 6, price: 0.8, discount: 20 },
+  12: { id: 12, name: 'Anual', duration: '12 meses', months: 12, price: 0.7, discount: 30 }
 };
 
 export const usePlanSelection = (hasCart: boolean) => {

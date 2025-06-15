@@ -27,6 +27,9 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
 }) => {
   const planKeys = Object.keys(plans).map(Number) as PlanKey[];
 
+  // Calculate base price from cart items
+  const basePrice = cartItems.reduce((sum, item) => sum + (item.panel.buildings?.preco_base || 0), 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -58,16 +61,23 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         initial="hidden"
         animate="visible"
       >
-        {planKeys.map((planKey) => (
-          <PlanCard
-            key={planKey}
-            plan={plans[planKey]}
-            planKey={planKey}
-            isSelected={selectedPlan === planKey}
-            onSelect={() => onSelectPlan(planKey)}
-            cartItems={cartItems}
-          />
-        ))}
+        {planKeys.map((planKey) => {
+          const plan = plans[planKey];
+          const finalPrice = basePrice * planKey * (1 - plan.discount / 100);
+          
+          return (
+            <PlanCard
+              key={planKey}
+              plan={plan}
+              planKey={planKey}
+              isSelected={selectedPlan === planKey}
+              onSelect={() => onSelectPlan(planKey)}
+              cartItems={cartItems}
+              basePrice={basePrice}
+              finalPrice={finalPrice}
+            />
+          );
+        })}
       </motion.div>
 
       {/* Help text when cart is empty */}
