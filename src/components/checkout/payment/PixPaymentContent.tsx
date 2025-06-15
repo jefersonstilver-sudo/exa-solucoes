@@ -1,11 +1,13 @@
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import PixPaymentRealtimeWrapper from './PixPaymentRealtimeWrapper';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, RefreshCw, Copy, Clock, CheckCircle } from 'lucide-react';
+import { QRCodeDisplay } from './QRCodeDisplay';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
-import { useUserSession } from '@/hooks/useUserSession';
-import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
+import { toast } from 'sonner';
 
 interface PixPaymentContentProps {
   paymentData: PixPaymentData;
@@ -24,80 +26,194 @@ const PixPaymentContent = ({
   error,
   pedidoId
 }: PixPaymentContentProps) => {
-  const { user } = useUserSession();
-  const { isMobile } = useMobileBreakpoints();
+  const handleCopyPixCode = () => {
+    if (paymentData.qrCode) {
+      navigator.clipboard.writeText(paymentData.qrCode);
+      toast.success('Código PIX copiado!');
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const getStatusBadge = () => {
+    switch (paymentData.status) {
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-800">Rejeitado</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">Processando</Badge>;
+    }
+  };
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${isMobile ? 'py-4' : 'py-8'}`}>
-      <div className={`${isMobile ? 'px-4' : 'container mx-auto px-4 max-w-2xl'}`}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+        
         {/* Header */}
-        <div className={`${isMobile ? 'mb-4' : 'mb-6'}`}>
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className={`flex items-center text-gray-600 hover:text-gray-800 ${isMobile ? '-ml-2' : ''}`}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {isMobile ? 'Voltar' : 'Voltar ao checkout'}
-          </Button>
-        </div>
-
-        {/* Título */}
-        <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
-          <h1 className={`font-bold text-gray-900 mb-2 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Pagamento via PIX
           </h1>
-          <p className={`text-gray-600 ${isMobile ? 'text-sm px-2' : ''}`}>
-            {isMobile 
-              ? 'Escaneie o QR code ou copie o código PIX'
-              : 'Escaneie o QR code ou copie o código PIX para finalizar seu pagamento'
-            }
+          <p className="text-gray-600">
+            Escaneie o QR Code ou copie o código para finalizar seu pagamento
           </p>
-        </div>
+        </motion.div>
 
-        {/* Card principal */}
-        <div className={`bg-white rounded-lg shadow-sm border ${isMobile ? 'p-4' : 'p-6'}`}>
-          {/* Informações do pedido */}
-          <div className={`bg-blue-50 rounded-lg ${isMobile ? 'p-3 mb-4' : 'p-4 mb-6'}`}>
-            <h3 className={`font-medium text-blue-900 ${isMobile ? 'text-sm mb-1' : 'mb-2'}`}>
-              Detalhes do Pedido
-            </h3>
-            <div className={`space-y-1 text-blue-800 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-              <div>Pedido: {paymentData.pedidoId}</div>
-              <div>Valor: R$ {paymentData.valorTotal.toFixed(2)}</div>
-              <div>Status: {paymentData.status === 'pending' ? 'Aguardando pagamento' : paymentData.status}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* QR Code Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center space-x-2">
+                  <svg viewBox="0 0 512 512" className="h-6 w-6 text-green-600" fill="currentColor">
+                    <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
+                  </svg>
+                  <span>QR Code PIX</span>
+                </CardTitle>
+                <CardDescription>
+                  Escaneie com o app do seu banco
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center space-y-4">
+                <QRCodeDisplay qrCodeBase64={paymentData.qrCodeBase64} />
+                
+                {paymentData.qrCode && (
+                  <Button
+                    onClick={handleCopyPixCode}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar código PIX
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Payment Details */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="space-y-6"
+          >
+            
+            {/* Payment Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Detalhes do Pagamento</span>
+                  {getStatusBadge()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Valor:</span>
+                  <span className="font-semibold text-lg">
+                    {paymentData.valorTotal ? formatCurrency(paymentData.valorTotal * 0.95) : 'R$ 0,00'}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Pedido:</span>
+                  <span className="font-mono text-sm">{pedidoId}</span>
+                </div>
+                
+                {paymentData.paymentId && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ID Pagamento:</span>
+                    <span className="font-mono text-sm">{paymentData.paymentId}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Status:</span>
+                  <span className="capitalize">{paymentData.status || 'Pendente'}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Instructions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5" />
+                  <span>Como pagar</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ol className="space-y-3 text-sm">
+                  <li className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 bg-[#3C1361] text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                    <span>Abra o app do seu banco</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 bg-[#3C1361] text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                    <span>Escaneie o QR Code ou copie o código PIX</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 bg-[#3C1361] text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                    <span>Confirme o pagamento</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center text-xs">
+                      <CheckCircle className="h-3 w-3" />
+                    </span>
+                    <span>Pronto! Seu pagamento será processado automaticamente</span>
+                  </li>
+                </ol>
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                onClick={onRefreshStatus}
+                disabled={isLoading}
+                className="w-full"
+                variant="outline"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Verificando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Verificar Status do Pagamento
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={onBack}
+                variant="outline"
+                className="w-full"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
             </div>
-          </div>
-
-          {/* Wrapper com monitoramento em tempo real */}
-          <PixPaymentRealtimeWrapper
-            qrCodeBase64={paymentData.qrCodeBase64}
-            qrCodeText={paymentData.qrCode}
-            status={paymentData.status}
-            paymentId={paymentData.paymentId}
-            onRefreshStatus={onRefreshStatus}
-            userId={user?.id}
-            pedidoId={pedidoId}
-          />
-        </div>
-
-        {/* Instruções */}
-        <div className={`bg-white rounded-lg shadow-sm border ${isMobile ? 'p-4 mt-4' : 'p-6 mt-6'}`}>
-          <h3 className={`font-medium text-gray-900 ${isMobile ? 'text-sm mb-2' : 'mb-3'}`}>
-            Como pagar com PIX
-          </h3>
-          <ol className={`list-decimal list-inside space-y-2 text-gray-600 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            <li>Abra o aplicativo do seu banco</li>
-            <li>Escolha a opção "Pagar com PIX"</li>
-            <li>Escaneie o QR code ou copie e cole o código PIX</li>
-            <li>Confirme o pagamento no seu aplicativo</li>
-            <li>Aguarde a confirmação automática (pode levar alguns segundos)</li>
-          </ol>
-        </div>
-
-        {/* Aviso de segurança */}
-        <div className={`text-center text-gray-500 ${isMobile ? 'mt-4 text-xs' : 'mt-4 text-xs'}`}>
-          🔒 Pagamento seguro processado pelo MercadoPago
+          </motion.div>
         </div>
       </div>
     </div>

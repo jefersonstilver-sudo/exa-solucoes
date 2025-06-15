@@ -17,6 +17,9 @@ import PlanSelection from './pages/PlanSelection';
 import CheckoutCoupon from './pages/CheckoutCoupon';
 import CheckoutSummary from './pages/CheckoutSummary';
 import Checkout from './pages/Checkout';
+import CheckoutFinish from './pages/CheckoutFinish';
+import PixPayment from './pages/PixPayment';
+import Payment from './pages/Payment';
 import Confirmacao from './pages/Confirmacao';
 import LoginPage from './pages/LoginPage';
 import Cadastro from './pages/Cadastro';
@@ -69,11 +72,19 @@ function App() {
                     <Route path="/plano" element={<PlanSelection />} />
                     <Route path="/planos" element={<PlanSelection />} />
                     <Route path="/selecionar-plano" element={<PlanSelection />} />
+                    
+                    {/* CHECKOUT FLOW CORRIGIDO */}
                     <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
                     <Route path="/checkout/resumo" element={<CheckoutSummary />} />
                     <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/confirmacao" element={<Confirmacao />} />
+                    <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
                     
+                    {/* PAGAMENTO - ROTAS CORRIGIDAS */}
+                    <Route path="/pix-payment" element={<PixPayment />} />
+                    <Route path="/payment" element={<Payment />} />
+                    
+                    {/* CONFIRMAÇÕES */}
+                    <Route path="/confirmacao" element={<Confirmacao />} />
                     <Route path="/pedido-confirmado" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <OrderConfirmation />

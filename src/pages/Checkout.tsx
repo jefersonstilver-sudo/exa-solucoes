@@ -1,399 +1,233 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useUserSession } from '@/hooks/useUserSession';
-import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
-import { useUnifiedCheckout } from '@/hooks/useUnifiedCheckout';
-import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Shield, Lock, Award, CreditCard } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import PaymentMethodCard from '@/components/checkout/payment/PaymentMethodCard';
+import { useNavigate } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
 import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
-import MobileCheckoutStepper from '@/components/checkout/MobileCheckoutStepper';
-import MobilePaymentMethods from '@/components/checkout/MobilePaymentMethods';
+import { useUserSession } from '@/hooks/useUserSession';
+import { useCheckout } from '@/hooks/useCheckout';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { isLoggedIn, isLoading: isSessionLoading, user } = useUserSession();
-  const { isMobile } = useMobileBreakpoints();
-  
-  // CORREÇÃO CRÍTICA: Usar sistema unificado em vez do antigo
-  const {
-    currentTransactionId,
-    sessionPrice,
-    isProcessing,
-    currentStep,
-    initializeUnifiedCheckout,
-    processPixPayment,
-    validateBeforePayment,
-    clearUnifiedCheckout,
-    cartItems,
-    selectedPlan,
-    couponId
-  } = useUnifiedCheckout();
+  const { isLoggedIn, user, isLoading } = useUserSession();
+  const { cartItems, selectedPlan, calculateTotalPrice } = useCheckout();
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const [selectedMethod, setSelectedMethod] = useState<string>('pix');
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  const orderId = searchParams.get('id') || searchParams.get('pedido');
-
-  // CRÍTICO: Inicializar checkout unificado na montagem
+  // Verificação de autenticação
   useEffect(() => {
-    if (!isSessionLoading && isLoggedIn && cartItems.length > 0 && selectedPlan && !isInitialized) {
-      console.log("🔄 [Checkout] Inicializando sistema unificado");
-      initializeUnifiedCheckout().then((result) => {
-        if (result.success) {
-          setIsInitialized(true);
-          console.log("✅ [Checkout] Sistema unificado inicializado:", {
-            transactionId: result.transactionId,
-            price: result.price
-          });
-        } else {
-          console.error("❌ [Checkout] Falha na inicialização");
-          navigate('/checkout/resumo');
-        }
-      });
-    }
-  }, [isSessionLoading, isLoggedIn, cartItems.length, selectedPlan, isInitialized]);
-
-  // Authentication check
-  useEffect(() => {
-    if (!isSessionLoading && !isLoggedIn) {
+    if (isLoading) return;
+    
+    if (!isLoggedIn || !user?.id) {
+      console.log('[Checkout] User not authenticated, redirecting to login');
       toast.error("Você precisa estar logado para continuar");
       navigate('/login?redirect=/checkout');
+      return;
     }
-  }, [isLoggedIn, isSessionLoading, navigate]);
 
-  // Cart validation
-  useEffect(() => {
-    if (!isSessionLoading && isLoggedIn && cartItems.length === 0) {
-      toast.error("Seu carrinho está vazio");
-      navigate('/checkout/resumo');
+    // Validar carrinho
+    if (!cartItems || cartItems.length === 0) {
+      toast.error("Carrinho vazio. Adicione painéis para continuar.");
+      navigate('/paineis-digitais/loja');
+      return;
     }
-  }, [isSessionLoading, isLoggedIn, cartItems.length, navigate]);
+
+    if (!selectedPlan) {
+      toast.error("Selecione um plano para continuar.");
+      navigate('/plano');
+      return;
+    }
+  }, [isLoggedIn, user?.id, isLoading, cartItems, selectedPlan, navigate]);
+
+  const totalPrice = calculateTotalPrice();
 
   const handleBack = () => {
-    clearUnifiedCheckout();
     navigate('/checkout/resumo');
   };
 
-  // CORREÇÃO PRINCIPAL: Sistema PIX Unificado
-  const handlePixPayment = async () => {
-    if (!acceptTerms) {
-      toast.error("Você precisa aceitar os termos para continuar");
+  const handleProcessPixPayment = async () => {
+    if (!user?.id || !cartItems || cartItems.length === 0 || !selectedPlan) {
+      toast.error("Dados incompletos para processar pagamento");
       return;
     }
 
-    if (!currentTransactionId || !sessionPrice) {
-      toast.error("Erro: transação não inicializada");
-      return;
-    }
-
-    if (currentStep !== 'order') {
-      toast.error("Aguarde a finalização da preparação do pedido");
-      return;
-    }
+    setIsProcessing(true);
 
     try {
-      console.log("💳 [Checkout] Iniciando pagamento PIX unificado:", {
-        transactionId: currentTransactionId,
-        sessionPrice,
-        selectedPlan
-      });
+      console.log("🔄 [Checkout] Criando pedido para PIX...");
 
-      // Validar integridade do preço antes do pagamento
-      const isValid = await validateBeforePayment(sessionPrice);
-      if (!isValid) {
-        toast.error("Erro de validação detectado. Reinicie o processo.");
-        clearUnifiedCheckout();
-        navigate('/checkout/resumo');
-        return;
+      // Preparar dados do pedido
+      const painelIds = cartItems.map(item => item.panel.id);
+      const predioIds = cartItems.map(item => item.panel.buildings?.id).filter(Boolean);
+      
+      const dataInicio = new Date().toISOString().split('T')[0];
+      const dataFim = new Date(Date.now() + selectedPlan * 30 * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0];
+
+      // Criar pedido
+      const { data: pedido, error } = await supabase
+        .from('pedidos')
+        .insert({
+          client_id: user.id,
+          lista_paineis: painelIds,
+          lista_predios: predioIds,
+          plano_meses: selectedPlan,
+          valor_total: totalPrice,
+          status: 'pendente',
+          data_inicio: dataInicio,
+          data_fim: dataFim,
+          termos_aceitos: true,
+          log_pagamento: {
+            payment_method: 'pix',
+            created_via: 'checkout_page',
+            created_at: new Date().toISOString(),
+            cart_items_count: cartItems.length
+          }
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
       }
 
-      // Processar pagamento com preço bloqueado
-      const success = await processPixPayment(currentTransactionId);
-      
-      if (!success) {
-        toast.error("Erro ao processar pagamento PIX");
-      }
-      // Se success = true, usuário já foi navegado para /pix-payment
-      
-    } catch (error) {
-      console.error("❌ [Checkout] Erro no pagamento:", error);
-      toast.error("Erro inesperado no pagamento");
+      console.log("✅ [Checkout] Pedido criado:", pedido.id);
+
+      // Navegar para página PIX com o ID do pedido
+      navigate(`/pix-payment?pedido=${pedido.id}`);
+
+    } catch (error: any) {
+      console.error("❌ [Checkout] Erro ao processar pagamento:", error);
+      toast.error(`Erro ao processar pagamento: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  if (isSessionLoading) {
+  if (isLoading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 py-8 flex items-center justify-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
           >
             <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando pagamento...</p>
+            <p className="text-gray-600">Carregando checkout...</p>
           </motion.div>
         </div>
       </Layout>
     );
   }
-
-  if (!isLoggedIn || !user?.id) {
-    return null;
-  }
-
-  // Mostrar loading até sistema estar inicializado
-  if (!isInitialized || !currentTransactionId || !sessionPrice) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8 text-center"
-          >
-            <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Preparando seu pedido...</p>
-            <p className="text-sm text-gray-500 mt-2">Calculando preços e criando transação única</p>
-          </motion.div>
-        </div>
-      </Layout>
-    );
-  }
-
-  const pixAmount = sessionPrice * 0.95; // 5% discount
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
-          {/* Unified Progress Header */}
+          {/* Progress Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8"
           >
-            <UnifiedCheckoutProgress currentStep={3} />
+            <UnifiedCheckoutProgress currentStep={2} />
           </motion.div>
 
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={handleBack}
-            className="flex items-center text-gray-600 hover:text-gray-800 mb-4 -ml-2"
+          {/* Payment Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 lg:p-8"
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Voltar
-          </Button>
+            <div className="space-y-6">
+              <div className="border-b pb-4">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <span className="mr-3 text-2xl">💳</span>
+                  Escolha seu Método de Pagamento
+                </h2>
+                <p className="text-gray-600 mt-2">Selecione como deseja pagar sua campanha</p>
+              </div>
 
-          {/* Transaction Info - NOVO: Mostrar informações da transação */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-5 w-5 text-blue-600" />
-              <span className="font-medium text-blue-800">Transação Segura</span>
-            </div>
-            <div className="text-sm text-blue-700 space-y-1">
-              <div>ID da Transação: <code className="bg-blue-100 px-1 rounded">{currentTransactionId}</code></div>
-              <div>Preço Bloqueado: <span className="font-medium">R$ {sessionPrice.toFixed(2)}</span></div>
-              <div>Desconto PIX (5%): <span className="font-medium text-green-600">R$ {(sessionPrice * 0.05).toFixed(2)}</span></div>
-              <div>Total a Pagar: <span className="font-bold text-blue-800">R$ {pixAmount.toFixed(2)}</span></div>
-            </div>
-          </div>
-
-          {/* Main content */}
-          <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-8'}`}>
-            {/* Payment methods */}
-            <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
-              <div>
-                {isMobile ? (
-                  <div className="space-y-6">
-                    <MobilePaymentMethods 
-                      selectedMethod={selectedMethod}
-                      onSelectMethod={setSelectedMethod}
-                      totalAmount={sessionPrice}
-                    />
-                  </div>
-                ) : (
-                  <Card className="shadow-lg border-0">
-                    <CardContent className="p-6 sm:p-8">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        Como você deseja pagar?
-                      </h2>
-                      <p className="text-gray-600 mb-8">
-                        Pagamento PIX com preço garantido e sem recálculos
-                      </p>
-
-                      <div className="space-y-4 mb-8">
-                        <PaymentMethodCard
-                          id="pix"
-                          title="PIX"
-                          description="Pagamento instantâneo com preço bloqueado"
-                          originalAmount={sessionPrice}
-                          finalAmount={pixAmount}
-                          discount={5}
-                          icon="pix"
-                          selected={true}
-                          onSelect={setSelectedMethod}
-                          highlight={true}
-                        />
-                        
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-center space-x-2">
-                            <CreditCard className="h-5 w-5 text-blue-600" />
-                            <span className="text-blue-700 font-medium">
-                              💳 Cartão de crédito estará disponível em breve!
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {/* Terms acceptance */}
-                <div className={`${isMobile ? 'mt-6' : 'mt-8'}`}>
-                  <Card className={`${isMobile ? '' : 'shadow-lg border-0'}`}>
-                    <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
-                      <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
-                        <Checkbox 
-                          id="terms" 
-                          checked={acceptTerms} 
-                          onCheckedChange={(checked) => setAcceptTerms(!!checked)}
-                          className="h-5 w-5 mt-0.5 border-gray-300 text-[#3C1361] focus:ring-[#3C1361]"
-                        />
-                        <Label 
-                          htmlFor="terms" 
-                          className={`text-gray-600 cursor-pointer leading-relaxed ${isMobile ? 'text-sm' : 'text-sm'}`}
-                        >
-                          Li e concordo com os{' '}
-                          <a href="/termos" className="text-[#3C1361] hover:underline font-medium">
-                            Termos de Uso
-                          </a>{' '}
-                          e a{' '}
-                          <a href="/privacidade" className="text-[#3C1361] hover:underline font-medium">
-                            Política de Privacidade
-                          </a>
-                          .
-                        </Label>
-                      </div>
-
-                      <div className={`space-y-3 ${isMobile ? 'mt-4' : 'mt-6'}`}>
-                        <Button
-                          onClick={handlePixPayment}
-                          disabled={!acceptTerms || isProcessing || currentStep !== 'order'}
-                          className={`w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${isMobile ? 'h-12 text-base' : 'py-4 text-lg'}`}
-                          size="lg"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                              Processando...
-                            </>
-                          ) : currentStep !== 'order' ? (
-                            'Preparando pedido...'
-                          ) : (
-                            `Pagar com PIX - R$ ${pixAmount.toFixed(2)}`
-                          )}
-                        </Button>
-                        
-                        {!acceptTerms && (
-                          <p className={`text-amber-600 text-center ${isMobile ? 'text-sm' : 'text-sm'}`}>
-                            ⚠️ Aceite os termos para continuar
-                          </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+              {/* Resumo rápido */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total a pagar:</span>
+                  <span className="text-2xl font-bold text-[#3C1361]">
+                    R$ {totalPrice.toFixed(2)}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  {cartItems.length} painel(s) × {selectedPlan} mês(es)
                 </div>
               </div>
-            </div>
 
-            {/* Summary sidebar - Desktop only */}
-            {!isMobile && (
-              <div className="lg:col-span-1">
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="space-y-6 sticky top-8"
+              {/* Método PIX */}
+              <div className="border border-gray-200 rounded-lg p-6 hover:border-[#3C1361] transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <svg viewBox="0 0 512 512" className="h-6 w-6 text-green-600" fill="currentColor">
+                        <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">PIX</h3>
+                      <p className="text-sm text-gray-600">Pagamento instantâneo via PIX</p>
+                      <p className="text-xs text-green-600 font-medium">Desconto de 5%</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-600">
+                      R$ {(totalPrice * 0.95).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-500 line-through">
+                      R$ {totalPrice.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleProcessPixPayment}
+                  disabled={isProcessing}
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white"
                 >
-                  <Card className="shadow-lg border-0">
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Resumo do Pedido
-                      </h3>
-                      
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Painéis selecionados</span>
-                          <span className="font-medium">{cartItems.length}</span>
-                        </div>
-                        
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Plano</span>
-                          <span className="font-medium">{selectedPlan} meses</span>
-                        </div>
-                        
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Subtotal</span>
-                          <span className="font-medium">R$ {sessionPrice.toFixed(2)}</span>
-                        </div>
-                        
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>Desconto PIX (5%)</span>
-                          <span>-R$ {(sessionPrice * 0.05).toFixed(2)}</span>
-                        </div>
-                        
-                        <div className="border-t pt-3">
-                          <div className="flex justify-between text-lg font-bold">
-                            <span>Total</span>
-                            <span className="text-[#3C1361]">
-                              R$ {pixAmount.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="shadow-lg border-0">
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Segurança Total
-                      </h3>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <Shield className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">Preço bloqueado</span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <Lock className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">Transação única</span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <Award className="h-5 w-5 text-green-600" />
-                          <span className="text-sm text-gray-600">Zero duplicação</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                  {isProcessing ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Pagar com PIX
+                    </>
+                  )}
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
+          </motion.div>
+
+          {/* Navigation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex flex-col sm:flex-row justify-between items-center mt-6 sm:mt-8 gap-4"
+          >
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Voltar</span>
+            </Button>
+          </motion.div>
         </div>
       </div>
     </Layout>
