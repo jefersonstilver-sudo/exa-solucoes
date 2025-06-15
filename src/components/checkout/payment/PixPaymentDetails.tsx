@@ -37,14 +37,13 @@ const PixPaymentDetails = ({
   
   // Log QR code data on component mount
   useEffect(() => {
-    console.log('[PixPaymentDetails] DADOS RECEBIDOS:', {
+    console.log('[PixPaymentDetails] Rendered with QR code data:', {
       hasQRCodeBase64: !!qrCodeBase64,
       hasQRCodeText: !!qrCodeText,
       status,
       paymentId,
       pedidoId,
-      createdAt,
-      qrCodeBase64Preview: qrCodeBase64 ? qrCodeBase64.substring(0, 50) + '...' : 'N/A'
+      createdAt
     });
     
     // Basic validation of QR code data
@@ -60,9 +59,7 @@ const PixPaymentDetails = ({
     );
     
     if (!hasValidQR) {
-      console.warn('[PixPaymentDetails] ⚠️ DADOS QR AUSENTES - pode precisar regenerar');
-    } else {
-      console.log('[PixPaymentDetails] ✅ DADOS QR VÁLIDOS - exibindo interface');
+      console.warn('[PixPaymentDetails] Missing QR code data, might need to refresh');
     }
   }, [qrCodeBase64, qrCodeText, status, paymentId, pedidoId, createdAt]);
   
@@ -85,12 +82,12 @@ const PixPaymentDetails = ({
   const handleRefreshStatus = async () => {
     setIsRefreshing(true);
     try {
-      console.log('[PixPaymentDetails] 🔄 Atualizando status do pagamento...');
-      
       // REGENERAÇÃO DE QR CODE: Chamar o edge function para gerar novo QR
       if (isQrExpired || (!qrCodeBase64 && !qrCodeText)) {
-        console.log('[PixPaymentDetails] 🔄 Regenerando PIX QR code...');
+        console.log('[PixPaymentDetails] Regenerating PIX QR code...');
         
+        // Aqui você chamaria seu edge function para regenerar o QR
+        // Por enquanto, apenas refresh do status
         await onRefreshStatus();
         setIsQrExpired(false);
         
@@ -113,7 +110,7 @@ const PixPaymentDetails = ({
         localStorage.setItem('lastCompletedOrderId', pedidoId);
       }
     } catch (error) {
-      console.error("[PixPaymentDetails] ❌ Erro ao atualizar status:", error);
+      console.error("[PixPaymentDetails] Erro ao atualizar status:", error);
       toast.error("Erro ao atualizar status");
       
       // Log refresh error
@@ -175,7 +172,7 @@ const PixPaymentDetails = ({
           onRefresh={handleRefreshStatus}
           isRefreshing={isRefreshing}
         />
-      ) : (!qrCodeBase64 && !qrCodeText) ? (
+      ) : !qrCodeBase64 && !qrCodeText ? (
         <PixQrCodeMissing
           onRefresh={handleRefreshStatus}
           isRefreshing={isRefreshing}
