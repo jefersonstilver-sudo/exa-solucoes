@@ -27,6 +27,16 @@ const PixPaymentContent = ({
   const { user } = useUserSession();
   const { isMobile } = useMobileBreakpoints();
 
+  // Log dos dados recebidos
+  console.log("🎯 [PixPaymentContent] Dados recebidos:", {
+    hasQrCodeBase64: !!paymentData.qrCodeBase64,
+    hasQrCode: !!paymentData.qrCode,
+    paymentId: paymentData.paymentId,
+    status: paymentData.status,
+    valorTotal: paymentData.valorTotal,
+    pedidoId: paymentData.pedidoId
+  });
+
   return (
     <div className={`min-h-screen bg-gray-50 ${isMobile ? 'py-4' : 'py-8'}`}>
       <div className={`${isMobile ? 'px-4' : 'container mx-auto px-4 max-w-2xl'}`}>
@@ -63,9 +73,10 @@ const PixPaymentContent = ({
               Detalhes do Pedido
             </h3>
             <div className={`space-y-1 text-blue-800 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-              <div>Pedido: {paymentData.pedidoId}</div>
-              <div>Valor: R$ {paymentData.valorTotal.toFixed(2)}</div>
+              <div>Pedido: {paymentData.pedidoId || pedidoId}</div>
+              <div>Valor: R$ {(paymentData.valorTotal || 0).toFixed(2)}</div>
               <div>Status: {paymentData.status === 'pending' ? 'Aguardando pagamento' : paymentData.status}</div>
+              {paymentData.paymentId && <div>ID Pagamento: {paymentData.paymentId}</div>}
             </div>
           </div>
 
@@ -73,8 +84,8 @@ const PixPaymentContent = ({
           <PixPaymentRealtimeWrapper
             qrCodeBase64={paymentData.qrCodeBase64}
             qrCodeText={paymentData.qrCode}
-            status={paymentData.status}
-            paymentId={paymentData.paymentId}
+            status={paymentData.status || 'pending'}
+            paymentId={paymentData.paymentId || ''}
             onRefreshStatus={onRefreshStatus}
             userId={user?.id}
             pedidoId={pedidoId}
@@ -94,6 +105,20 @@ const PixPaymentContent = ({
             <li>Aguarde a confirmação automática (pode levar alguns segundos)</li>
           </ol>
         </div>
+
+        {/* Debug info em desenvolvimento */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className={`bg-gray-100 rounded-lg border ${isMobile ? 'p-3 mt-4' : 'p-4 mt-6'}`}>
+            <h4 className="font-medium text-gray-800 mb-2">Debug Info</h4>
+            <div className="text-xs text-gray-600 space-y-1">
+              <div>QR Code Base64: {paymentData.qrCodeBase64 ? 'Presente' : 'Ausente'}</div>
+              <div>QR Code Text: {paymentData.qrCode ? 'Presente' : 'Ausente'}</div>
+              <div>Payment ID: {paymentData.paymentId || 'N/A'}</div>
+              <div>Status: {paymentData.status || 'N/A'}</div>
+              <div>Valor Total: R$ {(paymentData.valorTotal || 0).toFixed(2)}</div>
+            </div>
+          </div>
+        )}
 
         {/* Aviso de segurança */}
         <div className={`text-center text-gray-500 ${isMobile ? 'mt-4 text-xs' : 'mt-4 text-xs'}`}>

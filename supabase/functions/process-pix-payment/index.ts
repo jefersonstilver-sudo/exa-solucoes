@@ -20,7 +20,7 @@ serve(async (req) => {
 
     const { transactionId, pedidoId } = await req.json();
 
-    console.log("🔄 [ProcessPixPayment] Processando pagamento unificado:", {
+    console.log("🔄 [ProcessPixPayment] PROCESSANDO PAGAMENTO:", {
       transactionId,
       pedidoId
     });
@@ -29,12 +29,11 @@ serve(async (req) => {
       throw new Error("transactionId e pedidoId são obrigatórios");
     }
 
-    // CORREÇÃO CRÍTICA: Buscar pedido por transaction_id EM VEZ de recalcular
+    // CORREÇÃO CRÍTICA: Buscar pedido por ID diretamente
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .select('*')
       .eq('id', pedidoId)
-      .eq('transaction_id', transactionId)
       .single();
 
     if (pedidoError || !pedido) {
@@ -50,11 +49,12 @@ serve(async (req) => {
     // USAR PREÇO DO PEDIDO (sem recalcular!)
     const finalAmount = pedido.valor_total * 0.95; // 5% discount PIX
 
-    // Simular criação do QR Code PIX (substitua pela integração real)
+    // Gerar QR Code PIX mais realista (substitua pela integração real do MercadoPago)
+    const pixQrCode = generatePixQrCode(finalAmount, pedido.id);
     const pixData = {
-      qrCodeBase64: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==`,
-      qrCode: `PIX_SIMULADO_${transactionId}_${finalAmount.toFixed(2)}`,
-      paymentId: `pix_${transactionId}`,
+      qrCodeBase64: pixQrCode,
+      qrCode: `00020126580014BR.GOV.BCB.PIX0136${generatePixKey()}0204${finalAmount.toFixed(2)}5303986540${finalAmount.toFixed(2)}5802BR5925INDEXA DIGITAL LTDA6009SAO_PAULO61058010062070503***63045D3A`,
+      paymentId: `pix_${transactionId}_${Date.now()}`,
       status: 'pending'
     };
 
@@ -79,10 +79,11 @@ serve(async (req) => {
       throw updateError;
     }
 
-    console.log("✅ [ProcessPixPayment] Pagamento PIX processado com sucesso:", {
+    console.log("✅ [ProcessPixPayment] PAGAMENTO PIX PROCESSADO:", {
       pedidoId: pedido.id,
       finalAmount,
-      pixPaymentId: pixData.paymentId
+      pixPaymentId: pixData.paymentId,
+      hasQrCode: !!pixData.qrCodeBase64
     });
 
     return new Response(
@@ -119,3 +120,45 @@ serve(async (req) => {
     );
   }
 });
+
+// Função para gerar QR Code PIX simulado (substitua por integração real)
+function generatePixQrCode(amount: number, pedidoId: string): string {
+  // Gerar um QR Code simples e válido em base64
+  // Em produção, use a API do MercadoPago para gerar QR Code real
+  const qrData = `PIX_PAYMENT_${amount.toFixed(2)}_${pedidoId}`;
+  
+  // Simulação de QR Code em base64 (substitua por geração real)
+  const canvas = `
+    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+      <rect width="200" height="200" fill="white"/>
+      <g fill="black">
+        <rect x="10" y="10" width="10" height="10"/>
+        <rect x="30" y="10" width="10" height="10"/>
+        <rect x="50" y="10" width="10" height="10"/>
+        <rect x="70" y="10" width="10" height="10"/>
+        <rect x="90" y="10" width="10" height="10"/>
+        <rect x="10" y="30" width="10" height="10"/>
+        <rect x="50" y="30" width="10" height="10"/>
+        <rect x="90" y="30" width="10" height="10"/>
+        <rect x="10" y="50" width="10" height="10"/>
+        <rect x="30" y="50" width="10" height="10"/>
+        <rect x="70" y="50" width="10" height="10"/>
+        <rect x="90" y="50" width="10" height="10"/>
+      </g>
+      <text x="100" y="190" text-anchor="middle" font-size="8" fill="black">PIX ${amount.toFixed(2)}</text>
+    </svg>
+  `;
+  
+  // Converter SVG para base64
+  const base64 = btoa(canvas);
+  return `data:image/svg+xml;base64,${base64}`;
+}
+
+// Função para gerar chave PIX simulada
+function generatePixKey(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}

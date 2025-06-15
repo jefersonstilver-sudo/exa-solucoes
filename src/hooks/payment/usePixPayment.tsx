@@ -36,71 +36,53 @@ export const usePixPayment = (pedidoId: string | null) => {
 
       console.log("🔄 [usePixPayment] Carregando dados do pagamento:", pedidoId);
 
-      // Buscar pedido diretamente por ID
+      // CORREÇÃO: Buscar por transaction_id em vez de ID direto
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
-        .eq('id', pedidoId)
+        .eq('transaction_id', pedidoId)
         .single();
 
       if (pedidoError || !pedido) {
-        throw new Error(`Pedido não encontrado: ${pedidoError?.message}`);
-      }
+        // Se não encontrou por transaction_id, tentar por ID direto
+        const { data: pedidoById, error: errorById } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', pedidoId)
+          .single();
 
-      console.log("✅ [usePixPayment] Pedido carregado:", {
-        id: pedido.id,
-        status: pedido.status,
-        transaction_id: pedido.transaction_id,
-        valor_total: pedido.valor_total
-      });
+        if (errorById || !pedidoById) {
+          throw new Error(`Pedido não encontrado: ${pedidoError?.message || errorById?.message}`);
+        }
 
-      // Verificar se já tem dados de PIX com type assertion
-      const logPagamento = pedido.log_pagamento as any;
-      const pixData = logPagamento?.pix_data;
-      
-      if (pixData) {
-        console.log("✅ [usePixPayment] Dados PIX encontrados no pedido");
-        setPaymentData({
-          qrCodeBase64: pixData.qrCodeBase64,
-          qrCode: pixData.qrCode,
-          paymentId: pixData.paymentId,
-          status: pixData.status || 'pending',
-          createdAt: pedido.created_at,
-          pedidoId: pedido.id,
-          valorTotal: pedido.valor_total
-        });
-      } else {
-        // Se não tem dados PIX, processar pagamento
-        console.log("🔄 [usePixPayment] Processando pagamento PIX...");
+        // Usar o pedido encontrado por ID
+        console.log("✅ [usePixPayment] Pedido encontrado por ID:", pedidoById.id);
         
-        const { data, error } = await supabase.functions.invoke('process-pix-payment', {
-          body: {
-            transactionId: pedido.transaction_id,
-            pedidoId: pedido.id
-          }
-        });
-
-        if (error) {
-          throw error;
+        const pixData = await processPixPayment(pedidoById);
+        setPaymentData(pixData);
+      } else {
+        console.log("✅ [usePixPayment] Pedido encontrado por transaction_id:", pedido.id);
+        
+        // Verificar se já tem dados de PIX
+        const logPagamento = pedido.log_pagamento as any;
+        const existingPixData = logPagamento?.pix_data;
+        
+        if (existingPixData && existingPixData.qrCodeBase64) {
+          console.log("✅ [usePixPayment] Dados PIX já existentes");
+          setPaymentData({
+            qrCodeBase64: existingPixData.qrCodeBase64,
+            qrCode: existingPixData.qrCode,
+            paymentId: existingPixData.paymentId,
+            status: existingPixData.status || 'pending',
+            createdAt: pedido.created_at,
+            pedidoId: pedido.id,
+            valorTotal: pedido.valor_total
+          });
+        } else {
+          // Processar novo pagamento PIX
+          const pixData = await processPixPayment(pedido);
+          setPaymentData(pixData);
         }
-
-        if (!data.success) {
-          throw new Error(data.error || 'Falha ao processar pagamento PIX');
-        }
-
-        console.log("✅ [usePixPayment] Pagamento PIX processado:", data);
-
-        setPaymentData({
-          qrCodeBase64: data.pixData.qrCodeBase64,
-          qrCode: data.pixData.qrCode,
-          paymentId: data.pixData.paymentId,
-          status: data.pixData.status,
-          createdAt: new Date().toISOString(),
-          pedidoId: pedido.id,
-          valorTotal: pedido.valor_total
-        });
-
-        toast.success("QR Code PIX gerado com sucesso!");
       }
 
     } catch (error: any) {
@@ -112,19 +94,68 @@ export const usePixPayment = (pedidoId: string | null) => {
     }
   };
 
+  const processPixPayment = async (pedido: any): Promise<PixPaymentData> => {
+    console.log("🔄 [usePixPayment] Processando pagamento PIX para pedido:", pedido.id);
+    
+    const { data, error } = await supabase.functions.invoke('process-pix-payment', {
+      body: {
+        transactionId: pedido.transaction_id || pedido.id,
+        pedidoId: pedido.id
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data.success) {
+      throw new Error(data.error || 'Falha ao processar pagamento PIX');
+    }
+
+    console.log("✅ [usePixPayment] Pagamento PIX processado:", data);
+
+    const pixPaymentData: PixPaymentData = {
+      qrCodeBase64: data.pixData.qrCodeBase64,
+      qrCode: data.pixData.qrCode,
+      paymentId: data.pixData.paymentId,
+      status: data.pixData.status,
+      createdAt: new Date().toISOString(),
+      pedidoId: pedido.id,
+      valorTotal: data.amount || pedido.valor_total
+    };
+
+    toast.success("QR Code PIX gerado com sucesso!");
+    return pixPaymentData;
+  };
+
   const refreshPaymentStatus = async () => {
     if (!pedidoId) return;
     
     try {
       console.log("🔄 [usePixPayment] Atualizando status do pagamento");
       
-      const { data: pedido, error } = await supabase
+      // Buscar por transaction_id primeiro
+      let pedido;
+      const { data: pedidoByTx } = await supabase
         .from('pedidos')
-        .select('status, log_pagamento, valor_total')
-        .eq('id', pedidoId)
+        .select('*')
+        .eq('transaction_id', pedidoId)
         .single();
 
-      if (error) throw error;
+      if (pedidoByTx) {
+        pedido = pedidoByTx;
+      } else {
+        const { data: pedidoById } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', pedidoId)
+          .single();
+        pedido = pedidoById;
+      }
+
+      if (!pedido) {
+        throw new Error('Pedido não encontrado para atualização');
+      }
 
       // Atualizar status se mudou
       if (pedido.status === 'pago' && paymentData) {
