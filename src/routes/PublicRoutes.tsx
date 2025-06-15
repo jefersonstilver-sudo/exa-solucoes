@@ -13,24 +13,23 @@ import Confirmacao from '@/pages/Confirmacao';
 export const PublicRoutes = () => {
   return (
     <Routes>
-      {/* Plan selection - CORRIGIR ROTA PRINCIPAL */}
-      <Route path="/plano" element={<PlanSelection />} />
+      {/* Plan selection */}
       <Route path="/planos" element={<PlanSelection />} />
       <Route path="/selecionar-plano" element={<PlanSelection />} />
       
-      {/* FLUXO DE CHECKOUT UNIFICADO - Rotas corrigidas e organizadas */}
+      {/* MEGA CHECKOUT FLOW - Rotas corrigidas */}
       <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
       <Route path="/checkout/resumo" element={<CheckoutSummary />} />
-      <Route path="/checkout" element={<Checkout />} /> {/* PÁGINA DE PAGAMENTO */}
+      <Route path="/checkout" element={<Checkout />} /> {/* SELEÇÃO DE MÉTODO DE PAGAMENTO */}
       <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
       
       {/* Payment processing pages */}
       <Route path="/pix-payment" element={<PixPayment />} />
       <Route path="/payment" element={<Payment />} />
       
-      {/* CONFIRMAÇÕES */}
-      <Route path="/confirmacao" element={<Confirmacao />} />
-      <Route path="/pedido-confirmado" element={<Confirmacao />} />
+      {/* CONFIRMAÇÕES SEPARADAS */}
+      <Route path="/confirmacao" element={<Confirmacao />} /> {/* EMAIL CONFIRMATION */}
+      <Route path="/pedido-confirmado" element={<Confirmacao />} /> {/* ORDER CONFIRMATION - usando a mesma página por enquanto */}
     </Routes>
   );
 };

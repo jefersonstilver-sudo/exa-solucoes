@@ -111,22 +111,12 @@ export const useSimpleCart = () => {
     ));
   }, []);
 
-  // CORREÇÃO CRÍTICA: Navegar para rota correta
   const proceedToCheckout = useCallback(() => {
     if (cartItems.length === 0) {
       toast.error('Carrinho vazio');
       return;
     }
-    
-    console.log('🛒 [useSimpleCart] Procedendo para checkout:', {
-      cartItemsCount: cartItems.length,
-      navigatingTo: '/plano'
-    });
-    
-    // Fechar carrinho antes de navegar
     setIsOpen(false);
-    
-    // Navegar para página de seleção de plano CORRETA
     navigate('/plano');
   }, [cartItems.length, navigate]);
 

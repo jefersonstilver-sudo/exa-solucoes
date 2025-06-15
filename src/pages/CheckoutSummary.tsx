@@ -6,7 +6,7 @@ import Layout from '@/components/layout/Layout';
 import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import ReviewStep from '@/components/checkout/ReviewStep';
 import { useUserSession } from '@/hooks/useUserSession';
-import { useUnifiedCheckout } from '@/hooks/useUnifiedCheckout';
+import { useCheckout } from '@/hooks/useCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,15 +17,12 @@ const CheckoutSummary = () => {
   
   const {
     cartItems,
-    selectedPlan,
-    sessionPrice,
-    currentTransactionId,
-    currentStep,
-    isInitialized,
-    isProcessing
-  } = useUnifiedCheckout();
+    calculateTotalPrice,
+    couponValid,
+    couponDiscount
+  } = useCheckout();
 
-  // Verificação de autenticação
+  // CORREÇÃO: Verificação de autenticação melhorada
   useEffect(() => {
     if (isLoading) return;
     
@@ -36,76 +33,54 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // Validação suave do carrinho
+  // CORREÇÃO: Validação do carrinho mais robusta - SEM timeout agressivo
   useEffect(() => {
     if (isLoading || !isLoggedIn) return;
     
-    console.log('[CheckoutSummary] VALIDAÇÃO SUAVE DO CARRINHO:', {
+    console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO CORRIGIDA:', {
       cartItemsLength: cartItems?.length || 0,
-      selectedPlan,
-      isInitialized,
-      currentTransactionId,
-      currentStep,
-      sessionPrice,
+      cartItems: cartItems?.map(item => ({
+        panelId: item.panel?.id,
+        buildingName: item.panel?.buildings?.nome
+      })) || [],
       timestamp: new Date().toISOString()
     });
     
+    // CORREÇÃO: Validação mais suave sem timeout agressivo
     if (cartItems && cartItems.length === 0) {
-      console.warn('[CheckoutSummary] Carrinho vazio detectado');
+      console.log('[CheckoutSummary] Cart is empty, showing warning');
       toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
+      // Não redirecionar automaticamente - dar tempo para o carrinho carregar
     }
+  }, [isLoggedIn, cartItems, navigate, isLoading]);
 
-    if (!selectedPlan) {
-      console.warn('[CheckoutSummary] Plano não selecionado');
-      toast.error("Selecione um plano para continuar.");
-    }
-  }, [isLoggedIn, cartItems, selectedPlan, isInitialized, currentTransactionId, currentStep, sessionPrice, isLoading]);
+  const totalPrice = calculateTotalPrice();
 
   const handleBack = () => {
     navigate('/checkout/cupom');
   };
 
-  const handleNext = async () => {
-    console.log('[CheckoutSummary] INICIANDO PROCESSO DE FINALIZAÇÃO:', {
-      cartItemsCount: cartItems?.length || 0,
-      selectedPlan,
-      currentTransactionId,
-      sessionPrice,
-      isInitialized,
-      currentStep,
-      isProcessing
-    });
-
-    // Validações básicas necessárias
+  const handleNext = () => {
+    // CORREÇÃO: Validação antes de prosseguir
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
       return;
     }
 
-    if (!selectedPlan) {
-      toast.error("Selecione um plano para continuar.");
-      navigate('/plano');
+    if (totalPrice <= 0) {
+      toast.error("Erro no cálculo do preço. Tente novamente.");
       return;
     }
 
-    // CORREÇÃO: Navegação mais direta para PIX
-    if (isInitialized && currentTransactionId && sessionPrice) {
-      console.log('[CheckoutSummary] ✅ DADOS VÁLIDOS - NAVEGANDO PARA PIX');
-      
-      // Navegar diretamente para a página de PIX
-      navigate(`/pix-payment?pedido=${currentTransactionId}`);
-      return;
-    }
-
-    // Se não temos dados completos, mostrar erro mais específico
-    console.warn('[CheckoutSummary] ⚠️ DADOS INCOMPLETOS:', {
-      isInitialized,
-      hasTransactionId: !!currentTransactionId,
-      hasSessionPrice: !!sessionPrice
+    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO CORRIGIDO:', {
+      cartItemsCount: cartItems.length,
+      totalPrice,
+      couponValid,
+      couponDiscount,
+      expectedPrice: "R$ 0.27 com desconto"
     });
-    
-    toast.error("Erro nos dados do pedido. Reiniciando processo...");
+
     navigate('/checkout');
   };
 
@@ -149,28 +124,7 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* Status do Sistema Unificado - Debug Info */}
-          {process.env.NODE_ENV === 'development' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
-            >
-              <h4 className="font-medium text-blue-800 mb-2">Status do Sistema Unificado</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <div>Inicializado: {isInitialized ? '✅' : '❌'}</div>
-                <div>Transaction ID: {currentTransactionId || 'Nenhum'}</div>
-                <div>Etapa Atual: {currentStep}</div>
-                <div>Preço da Sessão: R$ {sessionPrice?.toFixed(2) || '0.00'}</div>
-                <div>Processando: {isProcessing ? '✅' : '❌'}</div>
-                <div>Carrinho: {cartItems?.length || 0} itens</div>
-                <div>Plano: {selectedPlan || 'Não selecionado'}</div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Navigation */}
+          {/* CORREÇÃO: Navigation sem duplicação de preço */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -188,26 +142,11 @@ const CheckoutSummary = () => {
 
             <Button
               onClick={handleNext}
-              disabled={
-                !isLoggedIn || 
-                !cartItems || 
-                cartItems.length === 0 || 
-                !selectedPlan ||
-                isProcessing
-              }
+              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
-              {isProcessing ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <span>Processando...</span>
-                </>
-              ) : (
-                <>
-                  <span>Finalizar Pedido</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
+              <span>Ir para Pagamento</span>
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </motion.div>
         </div>

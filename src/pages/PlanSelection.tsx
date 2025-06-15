@@ -10,35 +10,28 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 import { usePlanSelection } from '@/hooks/checkout/usePlanSelection';
 import { useCartVerification } from '@/hooks/checkout/useCartVerification';
 import { logPriceCalculation } from '@/utils/auditLogger';
-import { useCartManager } from '@/hooks/useCartManager';
 
 const PlanSelection = () => {
   const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [authVerified, setAuthVerified] = useState(false);
   
-  // Usar useCartManager em vez de usePlanSelection
+  const { hasCart, initialLoadDone } = useCartVerification(authVerified);
+  
   const { 
-    cartItems, 
     selectedPlan, 
-    setSelectedPlan,
-    initialLoadDone 
-  } = useCartManager();
-  
-  const { hasCart } = useCartVerification(authVerified);
-  
-  const { 
+    setSelectedPlan, 
     PLANS, 
+    cartItems, 
     calculateEstimatedPrice,
-    handleGoToCoupon,
-    isLoading: isPlanLoading
+    handleGoToCoupon
   } = usePlanSelection(hasCart);
   
   useEffect(() => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      "PlanSelection: Componente montado com CartManager",
+      "PlanSelection: Componente montado",
       { isLoggedIn, userId: user?.id || 'não autenticado' }
     );
     
@@ -77,8 +70,8 @@ const PlanSelection = () => {
   }, [cartItems, selectedPlan]);
   
   const isLoading = useMemo(() => {
-    return isSessionLoading || isPageLoading || !initialLoadDone;
-  }, [isSessionLoading, isPageLoading, initialLoadDone]);
+    return isSessionLoading || isPageLoading;
+  }, [isSessionLoading, isPageLoading]);
   
   if (isLoading) {
     return <PlanLoadingIndicator />;
@@ -96,7 +89,7 @@ const PlanSelection = () => {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
-          {/* Unified Progress Header */}
+          {/* Unified Progress Header - SEMPRE na mesma posição */}
           <div className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8">
             <UnifiedCheckoutProgress currentStep={0} />
           </div>
