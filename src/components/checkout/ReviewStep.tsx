@@ -24,23 +24,23 @@ const ReviewStep = () => {
   const subtotal = calculateCartSubtotal(cartItems);
   const subtotalWithPlan = subtotal * selectedPlan;
   const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  const discount = couponValid && couponDiscount ? subtotalWithPlan - finalPrice : 0;
+  
+  // CORREÇÃO: Calcular desconto do plano anual (não cupom)
+  const planDiscount = selectedPlan === 12 ? subtotalWithPlan - finalPrice : 0;
+  const discountPercentage = selectedPlan === 12 ? 37.5 : 0; // 37.5% de desconto no plano anual
 
   // Log detalhado para auditoria
   console.log("📋 [ReviewStep] PREÇOS CORRIGIDOS:", {
     component: "ReviewStep",
     cartItemsCount: cartItems.length,
     selectedPlan,
-    selectedMonths: selectedPlan,
     subtotal,
     subtotalWithPlan,
     finalPrice,
-    discount,
+    planDiscount,
+    discountPercentage,
     couponValid,
-    couponDiscount,
-    calculation: `Subtotal: R$ ${subtotal} × ${selectedPlan} meses = R$ ${subtotalWithPlan}`,
-    finalCalculation: `Com desconto: R$ ${finalPrice}`,
-    expectedResult: `R$ ${(discount / 100).toFixed(2)} com desconto aplicado`
+    couponDiscount
   });
 
   // Log para auditoria
@@ -49,7 +49,7 @@ const ReviewStep = () => {
     cartItemsCount: cartItems.length,
     subtotal,
     finalPrice,
-    discount,
+    planDiscount,
     couponValid,
     couponDiscount
   });
@@ -172,7 +172,7 @@ const ReviewStep = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold text-green-600">
-                      -{formatCurrency(discount)}
+                      -{formatCurrency(couponDiscount ? subtotalWithPlan * (couponDiscount / 100) : 0)}
                     </div>
                     <div className="text-xs text-green-500">Economia garantida!</div>
                   </div>
@@ -182,7 +182,7 @@ const ReviewStep = () => {
           )}
         </div>
 
-        {/* Coluna Direita - Resumo de Preços com Desconto Visual */}
+        {/* Coluna Direita - Resumo de Preços CORRIGIDO */}
         <div className="lg:col-span-1">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -196,8 +196,16 @@ const ReviewStep = () => {
             </h3>
             
             <div className="space-y-4">
-              {/* Preço Original com Risco se houver desconto */}
-              {couponValid && discount > 0 && (
+              {/* Subtotal */}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">
+                  Subtotal ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'})
+                </span>
+                <span className="font-medium">{formatCurrency(subtotal)}/mês</span>
+              </div>
+
+              {/* Preço Original com Plano (RISCADO se houver desconto) */}
+              {selectedPlan === 12 && planDiscount > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -208,41 +216,32 @@ const ReviewStep = () => {
                       <div className="text-lg font-bold text-red-600 line-through">
                         {formatCurrency(subtotalWithPlan)}
                       </div>
-                      <div className="text-xs text-red-500">Sem desconto</div>
+                      <div className="text-xs text-red-500">Sem desconto anual</div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Cálculo detalhado */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">
-                    Subtotal ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'} × {selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'})
-                  </span>
-                  <span className="font-medium">{formatCurrency(subtotalWithPlan)}</span>
-                </div>
-                
-                {couponValid && discount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Desconto ({couponDiscount}%)</span>
-                    <span className="font-medium">-{formatCurrency(discount)}</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Grande Destaque da Economia */}
-              {couponValid && discount > 0 && (
+              {/* Grande Destaque da Economia do Plano Anual */}
+              {selectedPlan === 12 && planDiscount > 0 && (
                 <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
                   <div className="text-center">
                     <div className="text-sm font-medium opacity-90 mb-1">🎉 Você está economizando</div>
                     <div className="text-2xl font-bold">
-                      {formatCurrency(discount)}
+                      {formatCurrency(planDiscount)}
                     </div>
                     <div className="text-sm opacity-90 mt-1">
-                      Com o plano anual!
+                      Com o plano anual! ({discountPercentage}% OFF)
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Desconto do Cupom (se aplicável) */}
+              {couponValid && couponDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Desconto Cupom ({couponDiscount}%)</span>
+                  <span className="font-medium">-{formatCurrency(finalPrice * (couponDiscount / 100))}</span>
                 </div>
               )}
               
@@ -253,7 +252,7 @@ const ReviewStep = () => {
                     <span className="text-lg font-semibold">Total Final</span>
                     <div className="text-right">
                       <div className="text-2xl font-bold">{formatCurrency(finalPrice)}</div>
-                      {couponValid && discount > 0 && (
+                      {selectedPlan === 12 && planDiscount > 0 && (
                         <div className="text-sm opacity-90">
                           Era {formatCurrency(subtotalWithPlan)}
                         </div>

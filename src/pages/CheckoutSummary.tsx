@@ -22,8 +22,7 @@ const CheckoutSummary = () => {
     currentTransactionId,
     currentStep,
     isInitialized,
-    isProcessing,
-    processPixPayment
+    isProcessing
   } = useUnifiedCheckout();
 
   // Verificação de autenticação
@@ -37,7 +36,7 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // Validação suave do carrinho sem redirecionamento agressivo
+  // Validação suave do carrinho
   useEffect(() => {
     if (isLoading || !isLoggedIn) return;
     
@@ -47,10 +46,10 @@ const CheckoutSummary = () => {
       isInitialized,
       currentTransactionId,
       currentStep,
+      sessionPrice,
       timestamp: new Date().toISOString()
     });
     
-    // Warning suave sem redirecionamento automático
     if (cartItems && cartItems.length === 0) {
       console.warn('[CheckoutSummary] Carrinho vazio detectado');
       toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
@@ -60,14 +59,14 @@ const CheckoutSummary = () => {
       console.warn('[CheckoutSummary] Plano não selecionado');
       toast.error("Selecione um plano para continuar.");
     }
-  }, [isLoggedIn, cartItems, selectedPlan, isInitialized, currentTransactionId, currentStep, isLoading]);
+  }, [isLoggedIn, cartItems, selectedPlan, isInitialized, currentTransactionId, currentStep, sessionPrice, isLoading]);
 
   const handleBack = () => {
     navigate('/checkout/cupom');
   };
 
   const handleNext = async () => {
-    console.log('[CheckoutSummary] INICIANDO PROCESSO DE PAGAMENTO PIX:', {
+    console.log('[CheckoutSummary] INICIANDO PROCESSO DE FINALIZAÇÃO:', {
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
       currentTransactionId,
@@ -90,39 +89,24 @@ const CheckoutSummary = () => {
       return;
     }
 
-    // Se não temos transactionId ou sessionPrice, inicializar primeiro
-    if (!currentTransactionId || !sessionPrice) {
-      console.log('[CheckoutSummary] ⚠️ FALTAM DADOS - REDIRECIONANDO PARA CHECKOUT PRINCIPAL');
-      toast.info("Preparando dados de pagamento...");
-      navigate('/checkout');
+    // CORREÇÃO: Navegação mais direta para PIX
+    if (isInitialized && currentTransactionId && sessionPrice) {
+      console.log('[CheckoutSummary] ✅ DADOS VÁLIDOS - NAVEGANDO PARA PIX');
+      
+      // Navegar diretamente para a página de PIX
+      navigate(`/pix-payment?pedido=${currentTransactionId}`);
       return;
     }
 
-    try {
-      console.log('[CheckoutSummary] ✅ DADOS VÁLIDOS - PROCESSANDO PIX:', {
-        transactionId: currentTransactionId,
-        sessionPrice,
-        cartItemsCount: cartItems.length,
-        selectedPlan
-      });
-
-      toast.loading("Processando pagamento PIX...");
-
-      // Processar pagamento PIX diretamente - isso já navega para /pix-payment
-      const pixSuccess = await processPixPayment(currentTransactionId);
-      
-      if (!pixSuccess) {
-        toast.error("Erro ao processar pagamento PIX. Tente novamente.");
-        return;
-      }
-
-      // O processPixPayment já faz a navegação para /pix-payment
-      console.log('[CheckoutSummary] ✅ PIX PROCESSADO COM SUCESSO');
-      
-    } catch (error: any) {
-      console.error('[CheckoutSummary] ❌ ERRO NO PROCESSAMENTO PIX:', error);
-      toast.error(`Erro ao processar pagamento: ${error.message}`);
-    }
+    // Se não temos dados completos, mostrar erro mais específico
+    console.warn('[CheckoutSummary] ⚠️ DADOS INCOMPLETOS:', {
+      isInitialized,
+      hasTransactionId: !!currentTransactionId,
+      hasSessionPrice: !!sessionPrice
+    });
+    
+    toast.error("Erro nos dados do pedido. Reiniciando processo...");
+    navigate('/checkout');
   };
 
   if (isLoading) {
@@ -216,11 +200,11 @@ const CheckoutSummary = () => {
               {isProcessing ? (
                 <>
                   <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <span>Processando PIX...</span>
+                  <span>Processando...</span>
                 </>
               ) : (
                 <>
-                  <span>Ir para Pagamento PIX</span>
+                  <span>Finalizar Pedido</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
