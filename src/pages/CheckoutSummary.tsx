@@ -7,6 +7,7 @@ import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgre
 import ReviewStep from '@/components/checkout/ReviewStep';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useUnifiedCheckout } from '@/hooks/useUnifiedCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,7 +23,9 @@ const CheckoutSummary = () => {
     couponDiscount
   } = useCheckout();
 
-  // CORREÇÃO: Verificação de autenticação melhorada
+  const { initializeUnifiedCheckout, isProcessing } = useUnifiedCheckout();
+
+  // Verificação de autenticação
   useEffect(() => {
     if (isLoading) return;
     
@@ -33,11 +36,11 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CORREÇÃO: Validação do carrinho mais robusta - SEM timeout agressivo
+  // Validação do carrinho
   useEffect(() => {
     if (isLoading || !isLoggedIn) return;
     
-    console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO CORRIGIDA:', {
+    console.log('[CheckoutSummary] Validando carrinho:', {
       cartItemsLength: cartItems?.length || 0,
       cartItems: cartItems?.map(item => ({
         panelId: item.panel?.id,
@@ -46,13 +49,11 @@ const CheckoutSummary = () => {
       timestamp: new Date().toISOString()
     });
     
-    // CORREÇÃO: Validação mais suave sem timeout agressivo
     if (cartItems && cartItems.length === 0) {
       console.log('[CheckoutSummary] Cart is empty, showing warning');
       toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
-      // Não redirecionar automaticamente - dar tempo para o carrinho carregar
     }
-  }, [isLoggedIn, cartItems, navigate, isLoading]);
+  }, [isLoggedIn, cartItems, isLoading]);
 
   const totalPrice = calculateTotalPrice();
 
@@ -60,8 +61,8 @@ const CheckoutSummary = () => {
     navigate('/checkout/cupom');
   };
 
-  const handleNext = () => {
-    // CORREÇÃO: Validação antes de prosseguir
+  const handleNext = async () => {
+    // Validação antes de prosseguir
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
@@ -73,15 +74,27 @@ const CheckoutSummary = () => {
       return;
     }
 
-    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO CORRIGIDO:', {
+    console.log('[CheckoutSummary] Iniciando checkout unificado:', {
       cartItemsCount: cartItems.length,
       totalPrice,
       couponValid,
-      couponDiscount,
-      expectedPrice: "R$ 0.27 com desconto"
+      couponDiscount
     });
 
-    navigate('/checkout');
+    try {
+      // Inicializar o checkout unificado
+      const result = await initializeUnifiedCheckout();
+      
+      if (result.success) {
+        console.log('[CheckoutSummary] Checkout inicializado com sucesso, navegando para checkout');
+        navigate('/checkout');
+      } else {
+        toast.error("Erro ao inicializar checkout. Tente novamente.");
+      }
+    } catch (error) {
+      console.error('[CheckoutSummary] Erro ao inicializar checkout:', error);
+      toast.error("Erro ao processar checkout. Tente novamente.");
+    }
   };
 
   if (isLoading) {
@@ -124,7 +137,7 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* CORREÇÃO: Navigation sem duplicação de preço */}
+          {/* Navigation */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -135,6 +148,7 @@ const CheckoutSummary = () => {
               variant="outline"
               onClick={handleBack}
               className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
+              disabled={isProcessing}
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Voltar</span>
@@ -142,11 +156,20 @@ const CheckoutSummary = () => {
 
             <Button
               onClick={handleNext}
-              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
+              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0 || isProcessing}
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
-              <span>Ir para Pagamento</span>
-              <ArrowRight className="h-4 w-4" />
+              {isProcessing ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Inicializando...</span>
+                </>
+              ) : (
+                <>
+                  <span>Ir para Pagamento</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </motion.div>
         </div>

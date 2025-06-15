@@ -149,7 +149,7 @@ export const useUnifiedCheckout = () => {
     }
   };
 
-  // CORREÇÃO: Processar pagamento PIX com integração da edge function
+  // Processar pagamento PIX com integração da edge function
   const processPixPayment = async (pedidoId: string): Promise<boolean> => {
     try {
       setCurrentStep('payment');
@@ -168,7 +168,7 @@ export const useUnifiedCheckout = () => {
         pedido_id: pedidoId
       });
 
-      // CORREÇÃO: Chamar edge function com dados corretos
+      // Chamar edge function com dados corretos
       const { data, error } = await supabase.functions.invoke('process-pix-payment', {
         body: {
           transactionId: currentTransactionId,
