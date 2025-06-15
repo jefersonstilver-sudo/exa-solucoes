@@ -66,7 +66,17 @@ const CheckoutSummary = () => {
   };
 
   const handleNext = () => {
-    // Validações básicas
+    console.log('[CheckoutSummary] TENTATIVA DE AVANÇO PARA PAGAMENTO:', {
+      cartItemsCount: cartItems?.length || 0,
+      selectedPlan,
+      currentTransactionId,
+      sessionPrice,
+      isInitialized,
+      currentStep,
+      isProcessing
+    });
+
+    // Validações básicas necessárias
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
@@ -79,39 +89,45 @@ const CheckoutSummary = () => {
       return;
     }
 
-    // Verificar se o sistema unificado está pronto
-    if (!isInitialized || !currentTransactionId || currentStep !== 'payment') {
-      console.log('[CheckoutSummary] Sistema unificado não está pronto:', {
-        isInitialized,
-        currentTransactionId,
-        currentStep,
-        sessionPrice
+    // CORREÇÃO: Permitir avanço se temos transactionId e sessionPrice, independente do currentStep
+    if (currentTransactionId && sessionPrice > 0) {
+      console.log('[CheckoutSummary] ✅ DADOS VÁLIDOS ENCONTRADOS - PROSSEGUINDO:', {
+        transactionId: currentTransactionId,
+        sessionPrice,
+        cartItemsCount: cartItems.length,
+        selectedPlan
+      });
+
+      toast.success("Prosseguindo para pagamento...");
+      navigate('/checkout');
+      return;
+    }
+
+    // Se não temos dados válidos, tentar inicializar
+    if (!currentTransactionId || sessionPrice <= 0) {
+      console.log('[CheckoutSummary] ⚠️ DADOS INSUFICIENTES - TENTANDO REINICIALIZAR:', {
+        hasTransactionId: !!currentTransactionId,
+        sessionPrice,
+        isInitialized
       });
       
-      toast.info("Preparando sistema de pagamento... Aguarde um momento.");
+      toast.info("Preparando dados de pagamento... Aguarde um momento.");
       
-      // Dar mais tempo para o sistema unificado se inicializar
+      // Dar tempo para o sistema se sincronizar
       setTimeout(() => {
+        // Verificar novamente após delay
         if (currentTransactionId && sessionPrice > 0) {
+          console.log('[CheckoutSummary] ✅ DADOS SINCRONIZADOS APÓS DELAY');
           navigate('/checkout');
         } else {
-          toast.error("Erro na preparação do pagamento. Tente novamente.");
+          console.error('[CheckoutSummary] ❌ FALHA NA SINCRONIZAÇÃO');
+          toast.error("Erro na preparação do pagamento. Retornando ao plano.");
           navigate('/plano');
         }
       }, 2000);
       
       return;
     }
-
-    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO:', {
-      cartItemsCount: cartItems.length,
-      selectedPlan,
-      sessionPrice,
-      currentTransactionId,
-      isInitialized
-    });
-
-    navigate('/checkout');
   };
 
   if (isLoading) {

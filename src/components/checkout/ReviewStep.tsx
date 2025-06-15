@@ -1,208 +1,255 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { MapPin, Calendar, Clock, CreditCard, Tag, TrendingDown } from 'lucide-react';
-import { useCheckout } from '@/hooks/useCheckout';
-import { formatCurrency } from '@/utils/priceUtils';
-import { PLANS } from '@/constants/checkoutConstants';
-import { calculateCartSubtotal, calculateTotalPrice } from '@/utils/checkoutUtils';
+import { motion } from 'framer-motion';
+import { MapPin, Calendar, CreditCard, Tag, CheckCircle } from 'lucide-react';
+import { useCartManager } from '@/hooks/useCartManager';
+import { useCouponValidator } from '@/hooks/useCouponValidator';
+import { formatCurrency } from '@/utils/formatters';
+import { calculateTotalPrice, calculateCartSubtotal } from '@/utils/checkoutUtils';
+import { logPriceCalculation } from '@/utils/auditLogger';
 
 const ReviewStep = () => {
-  const { 
-    cartItems, 
-    selectedPlan, 
-    couponValid,
-    couponDiscount
-  } = useCheckout();
+  const { cartItems, selectedPlan } = useCartManager();
+  const { couponValid, couponDiscount, couponCode } = useCouponValidator();
 
-  const formatPanelInfo = (panel: any) => {
-    const info = [];
-    
-    if (panel.buildings?.nome) {
-      info.push(panel.buildings.nome);
-    }
-    
-    if (panel.buildings?.bairro) {
-      info.push(panel.buildings.bairro);
-    }
-    
-    return info.join(' - ');
-  };
-
-  if (!selectedPlan || !PLANS[selectedPlan]) {
+  if (!selectedPlan || cartItems.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="border-b pb-4">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-            <span className="mr-3 text-2xl">📋</span>
-            Revisão do Pedido
-          </h2>
-          <p className="text-gray-600 mt-2">Selecione um plano para visualizar o resumo</p>
-        </div>
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-gray-500">Nenhum plano selecionado</p>
-          </CardContent>
-        </Card>
+      <div className="text-center py-8">
+        <p className="text-gray-500">Dados incompletos para revisão</p>
       </div>
     );
   }
 
-  const selectedMonths = PLANS[selectedPlan].months;
-  
-  // CORREÇÃO CRÍTICA: Usar funções centralizadas para garantir consistência
+  // Cálculos usando funções centralizadas
   const subtotal = calculateCartSubtotal(cartItems);
+  const subtotalWithPlan = subtotal * selectedPlan;
   const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  const subtotalWithPlan = subtotal * selectedMonths;
-  const discount = couponValid && couponDiscount ? (subtotalWithPlan * couponDiscount) / 100 : 0;
+  const discount = couponValid && couponDiscount ? subtotalWithPlan - finalPrice : 0;
 
-  // Log detalhado para debug
+  // Log detalhado para auditoria
   console.log("📋 [ReviewStep] PREÇOS CORRIGIDOS:", {
     component: "ReviewStep",
     cartItemsCount: cartItems.length,
     selectedPlan,
-    selectedMonths,
+    selectedMonths: selectedPlan,
     subtotal,
     subtotalWithPlan,
     finalPrice,
     discount,
     couponValid,
     couponDiscount,
-    calculation: `Subtotal: R$ ${subtotal} × ${selectedMonths} meses = R$ ${subtotalWithPlan}`,
+    calculation: `Subtotal: R$ ${subtotal} × ${selectedPlan} meses = R$ ${subtotalWithPlan}`,
     finalCalculation: `Com desconto: R$ ${finalPrice}`,
-    expectedResult: "R$ 0.27 com desconto aplicado"
+    expectedResult: `R$ ${(discount / 100).toFixed(2)} com desconto aplicado`
   });
+
+  // Log para auditoria
+  logPriceCalculation('ReviewStep', {
+    selectedPlan,
+    cartItemsCount: cartItems.length,
+    subtotal,
+    finalPrice,
+    discount,
+    couponValid,
+    couponDiscount
+  });
+
+  const getStartDate = () => new Date();
+  const getEndDate = () => {
+    const end = new Date();
+    end.setMonth(end.getMonth() + selectedPlan);
+    return end;
+  };
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    }).format(date);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="border-b pb-4">
+      {/* Header */}
+      <div className="space-y-2">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-          <span className="mr-3 text-2xl">📋</span>
+          <CheckCircle className="mr-3 h-6 w-6 text-green-500" />
           Revisão do Pedido
         </h2>
-        <p className="text-gray-600 mt-2">Confirme os detalhes do seu pedido antes de prosseguir</p>
+        <p className="text-gray-600">Confirme os detalhes do seu pedido antes de prosseguir</p>
       </div>
 
-      {/* Painéis Selecionados */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <MapPin className="h-5 w-5 mr-2 text-[#1E1B4B]" />
-            Painéis Selecionados ({cartItems.length})
-          </CardTitle>
-          <CardDescription>
-            Painéis que serão utilizados em sua campanha
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {cartItems.map((item) => (
-              <div key={item.panel.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-[#1E1B4B]/10 rounded-lg flex items-center justify-center">
-                      <MapPin className="h-6 w-6 text-[#1E1B4B]" />
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Coluna Esquerda - Detalhes do Pedido */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Painéis Selecionados */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gray-50 rounded-lg p-4"
+          >
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <MapPin className="mr-2 h-5 w-5 text-[#3C1361]" />
+              Painéis Selecionados ({cartItems.length})
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">Painéis que serão utilizados em sua campanha</p>
+            
+            <div className="space-y-3">
+              {cartItems.map((item, index) => (
+                <div key={item.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">
+                        {item.panel.buildings?.nome || 'Painel sem nome'}
+                      </h4>
+                      <div className="flex items-center text-gray-500 text-sm mt-1">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        <span>
+                          {item.panel.buildings?.bairro}, {item.panel.buildings?.cidade}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">{formatPanelInfo(item.panel)}</h4>
-                      <p className="text-sm text-gray-500">{item.panel.code}</p>
-                      {item.panel.localizacao && (
-                        <p className="text-xs text-gray-400">{item.panel.localizacao}</p>
-                      )}
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900">
+                        {formatCurrency(item.panel.buildings?.preco_base || 0)}/mês
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium text-gray-900">
-                    {formatCurrency(item.panel.buildings?.preco_base || 0)}/mês
-                  </p>
-                  <Badge variant="outline" className="text-xs mt-1">
-                    {item.panel.resolucao || 'Resolução não informada'}
-                  </Badge>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Duração da Campanha */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gray-50 rounded-lg p-4"
+          >
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <Calendar className="mr-2 h-5 w-5 text-[#3C1361]" />
+              Duração da Campanha
+            </h3>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <div className="text-sm text-gray-500">Plano Selecionado</div>
+                  <div className="font-semibold text-gray-900">
+                    {selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Data de Início</div>
+                  <div className="font-semibold text-gray-900">{formatDate(getStartDate())}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Data de Término</div>
+                  <div className="font-semibold text-gray-900">{formatDate(getEndDate())}</div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Grid de informações */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Duração */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Calendar className="h-5 w-5 mr-2 text-[#1E1B4B]" />
-              Duração da Campanha
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-3">
-              <Clock className="h-5 w-5 text-gray-400" />
-              <span className="text-lg font-medium">
-                {selectedMonths} {selectedMonths === 1 ? 'mês' : 'meses'}
-              </span>
             </div>
-          </CardContent>
-        </Card>
+          </motion.div>
 
-        {/* CORREÇÃO: Resumo de Preços com Desconto Visual */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <CreditCard className="h-5 w-5 mr-2 text-[#1E1B4B]" />
+          {/* Cupom Aplicado */}
+          {couponValid && couponCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-green-50 rounded-lg p-4 border border-green-200"
+            >
+              <h3 className="font-semibold text-green-800 mb-2 flex items-center">
+                <Tag className="mr-2 h-5 w-5 text-green-600" />
+                Cupom de Desconto Aplicado
+              </h3>
+              <div className="bg-white rounded-lg p-3 border border-green-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium text-green-800">Código: {couponCode}</div>
+                    <div className="text-sm text-green-600">Desconto de {couponDiscount}%</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-600">
+                      -{formatCurrency(discount)}
+                    </div>
+                    <div className="text-xs text-green-500">Economia garantida!</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Coluna Direita - Resumo de Preços */}
+        <div className="lg:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-lg border border-gray-200 p-6 sticky top-6"
+          >
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+              <CreditCard className="mr-2 h-5 w-5 text-[#3C1361]" />
               Resumo de Preços
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h3>
+            
             <div className="space-y-3">
-              {/* Preço Original com Risco */}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
-                <span className={`font-medium ${couponValid && discount > 0 ? 'line-through text-red-500' : ''}`}>
-                  {formatCurrency(subtotalWithPlan)}
+                <span className="text-gray-600">
+                  Subtotal ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'} × {selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'})
                 </span>
+                <span className="font-medium">{formatCurrency(subtotalWithPlan)}</span>
               </div>
               
-              {/* Desconto Aplicado com Visual Atrativo */}
               {couponValid && discount > 0 && (
                 <>
-                  <div className="flex justify-between text-green-600 text-sm bg-green-50 p-2 rounded-lg border border-green-200">
-                    <span className="flex items-center font-medium">
-                      <TrendingDown className="h-4 w-4 mr-1" />
-                      Desconto aplicado ({couponDiscount}%)
-                    </span>
-                    <span className="font-bold">-{formatCurrency(discount)}</span>
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Desconto ({couponDiscount}%)</span>
+                    <span className="font-medium">-{formatCurrency(discount)}</span>
                   </div>
-                  
-                  {/* Economia Total Destacada */}
-                  <div className="bg-green-100 p-3 rounded-lg border border-green-300">
-                    <div className="flex items-center justify-center text-green-800">
-                      <Tag className="h-4 w-4 mr-2" />
-                      <span className="text-sm font-medium">
-                        Você está economizando {formatCurrency(discount)}!
-                      </span>
+                  <div className="border-t border-gray-200 pt-2">
+                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600">
+                          🎉 Você está economizando {formatCurrency(discount)}!
+                        </div>
+                        <div className="text-sm text-green-500 mt-1">
+                          Desconto aplicado com sucesso
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </>
               )}
               
-              {/* Total Final Destacado */}
-              <div className="border-t pt-3">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total Final</span>
-                  <span className="text-[#1E1B4B]">{formatCurrency(finalPrice)}</span>
+              <div className="border-t border-gray-200 pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-900">Total Final</span>
+                  <span className="text-2xl font-bold text-[#3C1361]">{formatCurrency(finalPrice)}</span>
                 </div>
                 {couponValid && discount > 0 && (
-                  <div className="text-xs text-green-600 mt-1 text-right font-medium">
-                    ✅ Desconto de {couponDiscount}% aplicado com sucesso!
+                  <div className="text-xs text-gray-500 text-right mt-1">
+                    Era {formatCurrency(subtotalWithPlan)} • Economia de {formatCurrency(discount)}
                   </div>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-sm text-blue-800">
+                <div className="font-medium mb-1">Método de Pagamento</div>
+                <div className="flex items-center">
+                  <svg className="h-4 w-4 mr-2" viewBox="0 0 512 512" fill="currentColor">
+                    <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
+                  </svg>
+                  PIX (Instantâneo)
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
