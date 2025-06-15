@@ -1,18 +1,18 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { X, ShoppingCart, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types/cart';
-import ModernCartHeader from './ModernCartHeader';
 import ModernCartItem from './ModernCartItem';
-import ModernCartSummary from './ModernCartSummary';
 import ModernEmptyCart from './ModernEmptyCart';
+import ModernCartSummary from './ModernCartSummary';
 
 interface ModernCartLayoutProps {
   cartItems: CartItem[];
-  onRemove: (panelId: string) => void;
+  onRemove: (id: string) => void;
   onClear: () => void;
-  onChangeDuration: (panelId: string, duration: number) => void;
+  onChangeDuration: (id: string, duration: number) => void;
   onProceedToCheckout: () => void;
   isCheckoutLoading?: boolean;
 }
@@ -25,58 +25,99 @@ const ModernCartLayout: React.FC<ModernCartLayoutProps> = ({
   onProceedToCheckout,
   isCheckoutLoading = false
 }) => {
-  const isEmpty = cartItems.length === 0;
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
 
-  if (isEmpty) {
+  const handleCheckout = () => {
+    console.log("🛒 [ModernCartLayout] Iniciando checkout:", {
+      cartItemsCount: cartItems.length,
+      totalPrice,
+      isLoading: isCheckoutLoading
+    });
+    
+    if (cartItems.length === 0) {
+      console.warn("🛒 [ModernCartLayout] Tentativa de checkout com carrinho vazio");
+      return;
+    }
+    
+    if (isCheckoutLoading) {
+      console.warn("🛒 [ModernCartLayout] Checkout já em andamento");
+      return;
+    }
+    
+    onProceedToCheckout();
+  };
+
+  if (cartItems.length === 0) {
     return <ModernEmptyCart />;
   }
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-white">
-      {/* Header */}
-      <ModernCartHeader 
-        itemCount={cartItems.length}
-        onClear={onClear}
-      />
-      
-      {/* Items List - optimized for many items */}
-      <ScrollArea className="flex-1 px-2">
-        <div className="space-y-2 py-2">
-          <AnimatePresence mode="popLayout">
-            {cartItems.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ 
-                  opacity: 0, 
-                  y: -5, 
-                  scale: 0.98,
-                  transition: { duration: 0.15 }
-                }}
-                transition={{ 
-                  duration: 0.2,
-                  delay: Math.min(index * 0.02, 0.3) // Cap delay for many items
-                }}
-                layout
-              >
-                <ModernCartItem
-                  item={item}
-                  onRemove={onRemove}
-                  onChangeDuration={onChangeDuration}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 max-w-md mx-auto">
+      {/* Cart Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <ShoppingCart className="h-5 w-5 text-[#3C1361]" />
+            <h2 className="text-lg font-semibold text-gray-900">
+              Seu Carrinho ({cartItems.length})
+            </h2>
+          </div>
+          {cartItems.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              className="text-gray-500 hover:text-red-500 hover:bg-red-50"
+              disabled={isCheckoutLoading}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-      </ScrollArea>
-      
-      {/* Summary and Checkout */}
-      <ModernCartSummary
-        cartItems={cartItems}
-        onProceedToCheckout={onProceedToCheckout}
-        isCheckoutLoading={isCheckoutLoading}
-      />
+      </div>
+
+      {/* Cart Items */}
+      <div className="max-h-80 overflow-y-auto">
+        <AnimatePresence>
+          {cartItems.map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ModernCartItem
+                item={item}
+                onRemove={onRemove}
+                onChangeDuration={onChangeDuration}
+                isDisabled={isCheckoutLoading}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Cart Summary */}
+      <div className="p-6 border-t border-gray-200">
+        <ModernCartSummary totalPrice={totalPrice} />
+        
+        {/* Checkout Button */}
+        <Button
+          onClick={handleCheckout}
+          disabled={cartItems.length === 0 || isCheckoutLoading}
+          className="w-full mt-4 bg-[#3C1361] hover:bg-[#3C1361]/90 text-white py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isCheckoutLoading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Processando...</span>
+            </div>
+          ) : (
+            'Finalizar Compra'
+          )}
+        </Button>
+      </div>
     </div>
   );
 };
