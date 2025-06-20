@@ -143,8 +143,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
-            // CORREÇÃO CRÍTICA: Usar nullish coalescing e fallback seguro
-            const videoId: string = pv.video_id ?? pv.id ?? '';
+            // CORREÇÃO CRÍTICA: Implementar fallback seguro com type assertion
+            const videoId: string = pv.video_id || pv.id || '';
             const videoData = pv.videos;
             
             return {
