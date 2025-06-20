@@ -30,10 +30,11 @@ interface VideoData {
   url: string;
 }
 
+// CORREÇÃO DEFINITIVA: Interface corrigida baseada no schema real do banco
 interface PedidoVideoQueryResult {
   id: string;
   pedido_id: string;
-  video_id: string | null;
+  video_id: string; // CORRIGIDO: video_id é NOT NULL no banco, então string direta
   approval_status: string;
   is_active: boolean;
   selected_for_display: boolean;
@@ -41,6 +42,13 @@ interface PedidoVideoQueryResult {
   rejection_reason?: string;
   videos: VideoData | null;
 }
+
+// Função para gerar nome automático quando necessário
+const generateVideoName = (clientName: string, dataInicio: string, slotPosition: number): string => {
+  const date = new Date(dataInicio).toISOString().split('T')[0].replace(/-/g, '');
+  const cleanClientName = clientName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+  return `${cleanClientName}_${date}_Video${slotPosition}`;
+};
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
@@ -122,8 +130,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      // Type the videos data properly
-      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
+      // CORREÇÃO DEFINITIVA: Tipagem correta para evitar erros de 'never'
+      const typedVideosData = videosData as PedidoVideoQueryResult[];
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
 
@@ -131,10 +139,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // CORREÇÃO CRÍTICA: Usar type guard para garantir tipagem correta
-        const pedidoVideos = (typedVideosData || []).filter(
-          (v): v is PedidoVideoQueryResult => v.pedido_id === pedido.id
-        );
+        // CORREÇÃO DEFINITIVA: Filtro simples sem type guards desnecessários
+        const pedidoVideos = typedVideosData.filter(v => v.pedido_id === pedido.id);
 
         return {
           id: pedido.id,
@@ -147,13 +153,19 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map((pv) => {
-            // CORREÇÃO CRÍTICA: Usar video_id como ID principal, com fallback para o ID do pedido_video
-            const videoId: string = pv.video_id || pv.id;
+            // CORREÇÃO DEFINITIVA: video_id é sempre string, sem necessidade de fallback
+            const videoId = pv.video_id;
             const videoData = pv.videos;
+            
+            // GERAÇÃO AUTOMÁTICA DE NOME: Se não houver nome, gerar automaticamente
+            const clientName = client?.user_metadata?.full_name || client?.email || 'Cliente';
+            const videoName = videoData?.nome && videoData.nome.trim() 
+              ? videoData.nome 
+              : generateVideoName(clientName, pedido.data_inicio, pv.slot_position);
             
             return {
               id: videoId,
-              nome: videoData?.nome || 'Vídeo sem nome',
+              nome: videoName,
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
               is_active: pv.is_active || false,
