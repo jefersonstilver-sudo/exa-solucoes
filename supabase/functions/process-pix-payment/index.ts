@@ -20,7 +20,7 @@ serve(async (req) => {
 
     const { transactionId, pedidoId } = await req.json();
 
-    console.log("🔄 [ProcessPixPayment] Processando pagamento unificado:", {
+    console.log("🔄 [ProcessPixPayment] Processando pagamento PIX:", {
       transactionId,
       pedidoId
     });
@@ -29,12 +29,11 @@ serve(async (req) => {
       throw new Error("transactionId e pedidoId são obrigatórios");
     }
 
-    // CORREÇÃO CRÍTICA: Buscar pedido por transaction_id EM VEZ de recalcular
+    // Buscar pedido por ID
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .select('*')
       .eq('id', pedidoId)
-      .eq('transaction_id', transactionId)
       .single();
 
     if (pedidoError || !pedido) {
@@ -43,17 +42,16 @@ serve(async (req) => {
 
     console.log("✅ [ProcessPixPayment] Pedido encontrado:", {
       id: pedido.id,
-      valor_total: pedido.valor_total,
-      transaction_id: pedido.transaction_id
+      valor_total: pedido.valor_total
     });
 
-    // USAR PREÇO DO PEDIDO (sem recalcular!)
-    const finalAmount = pedido.valor_total * 0.95; // 5% discount PIX
+    // Calcular valor final com desconto PIX (5%)
+    const finalAmount = pedido.valor_total * 0.95;
 
-    // Simular criação do QR Code PIX (substitua pela integração real)
+    // Gerar dados PIX (simulação - substituir por integração real com Mercado Pago)
     const pixData = {
       qrCodeBase64: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==`,
-      qrCode: `PIX_SIMULADO_${transactionId}_${finalAmount.toFixed(2)}`,
+      qrCode: `PIX_${transactionId}_${finalAmount.toFixed(2).replace('.', '')}`,
       paymentId: `pix_${transactionId}`,
       status: 'pending'
     };
@@ -65,12 +63,10 @@ serve(async (req) => {
         log_pagamento: {
           ...pedido.log_pagamento,
           pix_data: pixData,
-          unified_system: true,
-          processed_via: 'unified_edge_function',
+          processed_at: new Date().toISOString(),
           final_amount: finalAmount,
           original_amount: pedido.valor_total,
-          discount_applied: 5,
-          processed_at: new Date().toISOString()
+          discount_applied: 5
         }
       })
       .eq('id', pedido.id);
@@ -79,11 +75,7 @@ serve(async (req) => {
       throw updateError;
     }
 
-    console.log("✅ [ProcessPixPayment] Pagamento PIX processado com sucesso:", {
-      pedidoId: pedido.id,
-      finalAmount,
-      pixPaymentId: pixData.paymentId
-    });
+    console.log("✅ [ProcessPixPayment] PIX processado com sucesso");
 
     return new Response(
       JSON.stringify({
