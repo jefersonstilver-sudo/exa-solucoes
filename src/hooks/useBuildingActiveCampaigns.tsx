@@ -142,9 +142,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map(pv => {
-            // CORREÇÃO: Garantir que sempre temos um ID válido
-            const videoId = pv.video_id || String(pv.id);
+          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
+            // CORREÇÃO: Garantir que sempre temos um ID válido com tipo explícito
+            const videoId: string = pv.video_id || pv.id;
             const videoData = pv.videos;
             
             return {
