@@ -130,8 +130,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      // CORREÇÃO DEFINITIVA: Tipagem correta para evitar erros de 'never'
-      const typedVideosData = videosData as PedidoVideoQueryResult[];
+      // CORREÇÃO DEFINITIVA: Verificação de null antes da tipagem
+      const typedVideosData = (videosData || []) as PedidoVideoQueryResult[];
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', typedVideosData?.length || 0);
 
