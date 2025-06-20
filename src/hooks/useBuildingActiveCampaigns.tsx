@@ -146,7 +146,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv) => {
+          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
             // CORREÇÃO CRÍTICA: Usar video_id como ID principal, com fallback para o ID do pedido_video
             const videoId: string = pv.video_id || pv.id;
             const videoData = pv.videos;
