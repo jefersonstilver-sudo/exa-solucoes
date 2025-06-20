@@ -142,17 +142,22 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map(pv => ({
-            // CORREÇÃO: Garantir que sempre temos um ID válido
-            id: pv.videos?.id || pv.video_id || pv.id || `fallback_${pv.pedido_id}_${Math.random()}`,
-            nome: pv.videos?.nome || 'Vídeo sem nome',
-            url: pv.videos?.url || '',
-            approval_status: pv.approval_status || 'pending',
-            is_active: pv.is_active || false,
-            selected_for_display: pv.selected_for_display || false,
-            slot_position: pv.slot_position || 0,
-            rejection_reason: pv.rejection_reason
-          }))
+          videos: pedidoVideos.map(pv => {
+            // CORREÇÃO: Garantir que o video_id existe ou usar o id do pedido_video
+            const videoId = pv.video_id || pv.id;
+            const videoData = pv.videos;
+            
+            return {
+              id: videoId,
+              nome: videoData?.nome || 'Vídeo sem nome',
+              url: videoData?.url || '',
+              approval_status: pv.approval_status || 'pending',
+              is_active: pv.is_active || false,
+              selected_for_display: pv.selected_for_display || false,
+              slot_position: pv.slot_position || 0,
+              rejection_reason: pv.rejection_reason
+            };
+          })
         };
       });
 
