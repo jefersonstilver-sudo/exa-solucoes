@@ -131,9 +131,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // CORREÇÃO CRÍTICA: Tipagem explícita para evitar tipo 'never'
-        const pedidoVideos: PedidoVideoQueryResult[] = (typedVideosData || []).filter(
-          (v: PedidoVideoQueryResult) => v.pedido_id === pedido.id
+        // CORREÇÃO CRÍTICA: Usar type guard para garantir tipagem correta
+        const pedidoVideos = (typedVideosData || []).filter(
+          (v): v is PedidoVideoQueryResult => v.pedido_id === pedido.id
         );
 
         return {
@@ -146,7 +146,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           data_fim: pedido.data_fim,
           status: pedido.status,
           plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv: PedidoVideoQueryResult) => {
+          videos: pedidoVideos.map((pv) => {
             // CORREÇÃO CRÍTICA: Usar video_id como ID principal, com fallback para o ID do pedido_video
             const videoId: string = pv.video_id || pv.id;
             const videoData = pv.videos;
