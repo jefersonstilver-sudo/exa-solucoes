@@ -143,8 +143,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
           status: pedido.status,
           plano_meses: pedido.plano_meses,
           videos: pedidoVideos.map(pv => {
-            // CORREÇÃO: Usar o video_id se disponível, senão o id do pedido_video
-            const videoId: string = pv.video_id || pv.id;
+            // CORREÇÃO: Usar video_id se disponível, caso contrário usar o id do pedido_video
+            const videoId = pv.video_id ? pv.video_id : pv.id;
             const videoData = pv.videos;
             
             return {
