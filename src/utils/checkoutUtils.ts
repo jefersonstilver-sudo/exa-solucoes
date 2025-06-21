@@ -1,4 +1,3 @@
-
 // CORREÇÃO COMPLETA: Sistema de Cálculo de Preços Unificado com preços corretos
 
 import { Panel } from '@/types/panel';
@@ -17,6 +16,25 @@ const PLAN_PRICES = {
   3: 160,   // R$ 160/mês (20% desconto)
   6: 140,   // R$ 140/mês (30% desconto)
   12: 125   // R$ 125/mês (37.5% desconto)
+};
+
+// FUNÇÃO ADICIONADA: Calcular preço de um painel individual (compatibilidade)
+export const getPanelPrice = (panel: Panel, duration: number = 30): number => {
+  // Usar preço base do plano mensal como padrão para compatibilidade
+  const pricePerMonth = PLAN_PRICES[1]; // R$ 200/mês
+  const months = duration / 30;
+  const totalPrice = pricePerMonth * months;
+  
+  console.log("💰 [getPanelPrice] CÁLCULO INDIVIDUAL:", {
+    panelId: panel.id,
+    duration,
+    months,
+    pricePerMonth,
+    totalPrice,
+    calculation: `R$ ${pricePerMonth}/mês × ${months} meses = R$ ${totalPrice}`
+  });
+  
+  return totalPrice;
 };
 
 // FUNÇÃO CORRIGIDA: Cálculo de preço total com preços fixos por plano
