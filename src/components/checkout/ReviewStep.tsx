@@ -6,7 +6,7 @@ import { MapPin, Calendar, Clock, CreditCard, Tag } from 'lucide-react';
 import { useCheckout } from '@/hooks/useCheckout';
 import { formatCurrency } from '@/utils/priceUtils';
 import { PLANS } from '@/constants/checkoutConstants';
-import { calculateCartSubtotal, calculateTotalPrice } from '@/utils/checkoutUtils';
+import { calculateCartSubtotal, calculateTotalPrice, getPlanDiscount } from '@/utils/checkoutUtils';
 
 const ReviewStep = () => {
   const { 
@@ -51,27 +51,31 @@ const ReviewStep = () => {
 
   const selectedMonths = PLANS[selectedPlan].months;
   
-  // CORREÇÃO CRÍTICA: Usar funções centralizadas para garantir consistência
-  const subtotal = calculateCartSubtotal(cartItems);
+  // CORREÇÃO: Cálculo detalhado para exibir desconto aplicado
+  const subtotalMensal = calculateCartSubtotal(cartItems, 1); // Preço mensal sem desconto
+  const subtotalComPlano = calculateCartSubtotal(cartItems, selectedPlan); // Preço mensal com desconto do plano
+  const subtotalTotal = subtotalMensal * selectedMonths; // Total sem nenhum desconto
+  const subtotalComPlanoTotal = subtotalComPlano * selectedMonths; // Total com desconto do plano
+  const descontoPorPlano = subtotalTotal - subtotalComPlanoTotal; // Desconto aplicado pelo plano
+  
   const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
-  const subtotalWithPlan = subtotal * selectedMonths;
-  const discount = couponValid && couponDiscount ? (subtotalWithPlan * couponDiscount) / 100 : 0;
+  const descontoCupom = couponValid && couponDiscount ? (subtotalComPlanoTotal * couponDiscount) / 100 : 0;
 
   // Log detalhado para debug
-  console.log("📋 [ReviewStep] PREÇOS CORRIGIDOS:", {
+  console.log("📋 [ReviewStep] CÁLCULO DETALHADO DE PREÇOS:", {
     component: "ReviewStep",
     cartItemsCount: cartItems.length,
     selectedPlan,
     selectedMonths,
-    subtotal,
-    subtotalWithPlan,
+    subtotalMensal,
+    subtotalComPlano,
+    subtotalTotal,
+    subtotalComPlanoTotal,
+    descontoPorPlano,
+    descontoCupom,
     finalPrice,
-    discount,
-    couponValid,
-    couponDiscount,
-    calculation: `Subtotal: R$ ${subtotal} × ${selectedMonths} meses = R$ ${subtotalWithPlan}`,
-    finalCalculation: `Com desconto: R$ ${finalPrice}`,
-    expectedResult: "R$ 0.27 com desconto aplicado"
+    planDiscount: `${getPlanDiscount(selectedPlan) * 100}%`,
+    couponDiscount: couponValid ? `${couponDiscount}%` : "Nenhum"
   });
 
   return (
@@ -147,7 +151,7 @@ const ReviewStep = () => {
           </CardContent>
         </Card>
 
-        {/* CORREÇÃO: Resumo de Preços Unificado */}
+        {/* Resumo de Preços com Desconto Detalhado */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
@@ -159,16 +163,28 @@ const ReviewStep = () => {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal ({cartItems.length} painéis × {selectedMonths} meses)</span>
-                <span className="font-medium">{formatCurrency(subtotalWithPlan)}</span>
+                <span className="font-medium">{formatCurrency(subtotalTotal)}</span>
               </div>
               
-              {couponValid && discount > 0 && (
-                <div className="flex justify-between text-green-600 text-sm">
+              {/* Desconto do Plano - NOVO */}
+              {descontoPorPlano > 0 && (
+                <div className="flex justify-between text-red-600 text-sm">
                   <span className="flex items-center">
                     <Tag className="h-4 w-4 mr-1" />
-                    Desconto aplicado ({couponDiscount}%)
+                    Desconto {PLANS[selectedPlan].name} ({getPlanDiscount(selectedPlan) * 100}%)
                   </span>
-                  <span className="font-medium">-{formatCurrency(discount)}</span>
+                  <span className="font-medium line-through">-{formatCurrency(descontoPorPlano)}</span>
+                </div>
+              )}
+              
+              {/* Desconto do Cupom */}
+              {couponValid && descontoCupom > 0 && (
+                <div className="flex justify-between text-red-600 text-sm">
+                  <span className="flex items-center">
+                    <Tag className="h-4 w-4 mr-1" />
+                    Desconto cupom ({couponDiscount}%)
+                  </span>
+                  <span className="font-medium line-through">-{formatCurrency(descontoCupom)}</span>
                 </div>
               )}
               
@@ -177,9 +193,9 @@ const ReviewStep = () => {
                   <span>Total Final</span>
                   <span className="text-[#1E1B4B]">{formatCurrency(finalPrice)}</span>
                 </div>
-                {couponValid && discount > 0 && (
+                {(descontoPorPlano > 0 || (couponValid && descontoCupom > 0)) && (
                   <div className="text-xs text-green-600 mt-1 text-right">
-                    ✅ Desconto de {couponDiscount}% aplicado!
+                    ✅ Você economizou {formatCurrency(descontoPorPlano + descontoCupom)}!
                   </div>
                 )}
               </div>
