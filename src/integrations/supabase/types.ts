@@ -697,6 +697,44 @@ export type Database = {
           },
         ]
       }
+      payment_status_tracking: {
+        Row: {
+          created_at: string | null
+          detalhes: Json | null
+          id: string
+          origem: string
+          pedido_id: string
+          status_anterior: string
+          status_novo: string
+        }
+        Insert: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          origem: string
+          pedido_id: string
+          status_anterior: string
+          status_novo: string
+        }
+        Update: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          origem?: string
+          pedido_id?: string
+          status_anterior?: string
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_status_tracking_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedido_videos: {
         Row: {
           approval_status: string
@@ -1173,6 +1211,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      can_access_order: {
+        Args: { p_pedido_id: string }
+        Returns: boolean
+      }
+      cancel_expired_orders: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       check_panel_availability: {
         Args: { p_panel_id: string; p_start_date: string; p_end_date: string }
         Returns: boolean
@@ -1413,6 +1459,10 @@ export type Database = {
       }
       notify_contracts_expiring_soon: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      process_mercadopago_webhook: {
+        Args: { webhook_data: Json }
         Returns: Json
       }
       process_mercadopago_webhook_enhanced: {

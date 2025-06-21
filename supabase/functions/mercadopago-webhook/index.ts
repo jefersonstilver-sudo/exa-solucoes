@@ -18,169 +18,64 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const payload = await req.json();
-    console.log("🔔 [MercadoPago Webhook] UNIFIED - Webhook recebido:", payload);
-
-    // Log do webhook
-    const { error: logError } = await supabase
-      .from('webhook_logs')
-      .insert({
-        origem: 'mercadopago-unified',
-        payload: payload,
-        status: 'received',
-        recebido_em: new Date().toISOString()
-      });
-
-    if (logError) {
-      console.error("❌ Erro ao salvar log do webhook:", logError);
-    }
-
-    // Extrair dados do pagamento
-    const paymentData = payload.data || payload;
-    const paymentStatus = payload.action || paymentData.status;
-    const externalReference = paymentData.external_reference;
-    const paymentId = paymentData.id;
-    const amount = paymentData.transaction_amount;
-
-    console.log("📊 [MercadoPago Webhook] Dados extraídos:", {
-      paymentStatus,
-      externalReference,
-      paymentId,
-      amount
+    const webhookData = await req.json();
+    
+    console.log("🔔 [MercadoPago Webhook] Recebido:", {
+      type: webhookData.type,
+      action: webhookData.action,
+      data_id: webhookData.data?.id
     });
 
-    if (paymentStatus === 'payment.approved' || paymentStatus === 'approved') {
-      console.log("✅ [MercadoPago Webhook] Pagamento aprovado detectado");
+    // Processar webhook usando a função do banco
+    const { data, error } = await supabase.rpc('process_mercadopago_webhook', {
+      webhook_data: webhookData
+    });
 
-      // CORREÇÃO CRÍTICA: Buscar pedido por transaction_id ou external_reference
-      let pedidoQuery = supabase
-        .from('pedidos')
-        .select('*');
-
-      // Tentar encontrar por external_reference (transaction_id) primeiro
-      if (externalReference) {
-        pedidoQuery = pedidoQuery.eq('transaction_id', externalReference);
-      } else if (amount) {
-        // Fallback: buscar por valor (menos confiável, mas necessário para transações antigas)
-        pedidoQuery = pedidoQuery
-          .eq('valor_total', amount)
-          .eq('status', 'pendente')
-          .order('created_at', { ascending: false })
-          .limit(1);
-      } else {
-        throw new Error("Não foi possível identificar o pedido (sem external_reference ou amount)");
-      }
-
-      const { data: pedidos, error: pedidoError } = await pedidoQuery;
-
-      if (pedidoError) {
-        throw new Error(`Erro ao buscar pedido: ${pedidoError.message}`);
-      }
-
-      if (!pedidos || pedidos.length === 0) {
-        console.warn("⚠️ [MercadoPago Webhook] Nenhum pedido encontrado para:", {
-          externalReference,
-          amount
-        });
-        
-        // Log para investigação posterior
-        await supabase
-          .from('log_eventos_sistema')
-          .insert({
-            tipo_evento: 'WEBHOOK_ORPHAN_PAYMENT',
-            descricao: `Pagamento órfão detectado: external_reference=${externalReference}, amount=${amount}, paymentId=${paymentId}`
-          });
-
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: "Pedido não encontrado",
-            investigation_needed: true 
-          }),
-          { 
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-
-      const pedido = Array.isArray(pedidos) ? pedidos[0] : pedidos;
-
-      console.log("🎯 [MercadoPago Webhook] Pedido encontrado:", {
-        id: pedido.id,
-        transaction_id: pedido.transaction_id,
-        valor_total: pedido.valor_total,
-        status_atual: pedido.status
-      });
-
-      // Atualizar pedido para pago
-      const { error: updateError } = await supabase
-        .from('pedidos')
-        .update({
-          status: 'pago_pendente_video',
-          log_pagamento: {
-            ...pedido.log_pagamento,
-            webhook_data: payload,
-            payment_confirmed_at: new Date().toISOString(),
-            mercadopago_payment_id: paymentId,
-            unified_system_confirmed: true,
-            found_by: externalReference ? 'transaction_id' : 'amount_fallback'
-          }
-        })
-        .eq('id', pedido.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      // Atualizar sessão de transação se existir
-      if (pedido.transaction_id) {
-        const { error: sessionError } = await supabase
-          .from('transaction_sessions')
-          .update({
-            status: 'completed',
-            payment_external_id: paymentId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('transaction_id', pedido.transaction_id);
-
-        if (sessionError) {
-          console.warn("⚠️ Erro ao atualizar sessão de transação:", sessionError);
-        }
-      }
-
-      console.log("✅ [MercadoPago Webhook] Pedido atualizado com sucesso:", pedido.id);
-
-      // Log de sucesso
-      await supabase
-        .from('log_eventos_sistema')
-        .insert({
-          tipo_evento: 'UNIFIED_PAYMENT_CONFIRMED',
-          descricao: `Pagamento confirmado via webhook: pedido_id=${pedido.id}, transaction_id=${pedido.transaction_id}, valor=${pedido.valor_total}`
-        });
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Pagamento processado com sucesso",
-          pedido_id: pedido.id 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (error) {
+      throw error;
     }
 
-    // Para outros tipos de webhook
-    console.log("ℹ️ [MercadoPago Webhook] Webhook não relacionado a pagamento aprovado");
-    
+    console.log("✅ [MercadoPago Webhook] Processado:", data);
+
+    // Se pagamento foi confirmado, criar notificação para o usuário
+    if (data.success && data.pedido_id) {
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: (await supabase
+            .from('pedidos')
+            .select('client_id')
+            .eq('id', data.pedido_id)
+            .single()
+          ).data?.client_id,
+          title: 'Pagamento Confirmado!',
+          message: 'Seu pagamento PIX foi confirmado. Agora você pode enviar seu vídeo.',
+          type: 'success',
+          metadata: {
+            pedido_id: data.pedido_id,
+            payment_method: 'pix'
+          }
+        });
+
+      if (notificationError) {
+        console.error("⚠️ [MercadoPago Webhook] Erro ao criar notificação:", notificationError);
+      }
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Webhook recebido mas não processado" 
+      JSON.stringify({
+        success: true,
+        message: 'Webhook processed successfully'
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ [MercadoPago Webhook] Erro:", error);
     
     return new Response(
@@ -189,8 +84,11 @@ serve(async (req) => {
         error: error.message
       }),
       { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        status: 400,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
       }
     );
   }
