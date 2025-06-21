@@ -5,6 +5,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { toast } from 'sonner';
 import { sendPixPaymentWebhook, getUserInfo, PixWebhookData, PixWebhookResponse } from '@/utils/paymentWebhooks';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { useOrderManager } from '@/hooks/useOrderManager';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 
 interface PixPaymentButtonProps {
@@ -21,6 +22,7 @@ const PixPaymentButton = ({
   totalPrice 
 }: PixPaymentButtonProps) => {
   const { user } = useUserSession();
+  const { createPendingOrder, isCreating } = useOrderManager();
   const [isLoading, setIsLoading] = useState(false);
   const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<PixWebhookResponse | null>(null);
@@ -29,12 +31,12 @@ const PixPaymentButton = ({
     try {
       setIsLoading(true);
       
-      console.log("🎯 [PixPaymentButton] SISTEMA CORRIGIDO - Iniciando PIX");
+      console.log("🎯 [PixPaymentButton] FLUXO PIX COMPLETO INICIADO");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        "Botão PIX clicado - sistema corrigido",
+        "Iniciando fluxo PIX completo com criação de pedido",
         { totalPrice, timestamp: new Date().toISOString() }
       );
       
@@ -44,7 +46,7 @@ const PixPaymentButton = ({
         return;
       }
 
-      // Buscar dados do usuário com logs detalhados
+      // Buscar dados do usuário
       console.log("👤 Buscando dados do usuário:", user.id);
       const userInfo = await getUserInfo(user.id);
       
@@ -53,10 +55,8 @@ const PixPaymentButton = ({
         toast.error("Erro ao buscar dados do usuário");
         return;
       }
-      
-      console.log("✅ Dados do usuário encontrados:", userInfo);
 
-      // Buscar itens do carrinho com validação melhorada
+      // Buscar itens do carrinho
       const cartItemsStr = localStorage.getItem('indexa_unified_cart');
       console.log("🛒 Dados brutos do carrinho:", cartItemsStr);
       
@@ -69,81 +69,99 @@ const PixPaymentButton = ({
         return;
       }
       
-      console.log("🛒 Itens do carrinho parseados:", cartItems);
-      
       if (!cartItems || cartItems.length === 0) {
         console.error("❌ Carrinho vazio");
         toast.error("Carrinho vazio");
         return;
       }
 
-      // Plano selecionado
-      const selectedPlan = localStorage.getItem('selectedPlan') || '1';
-      console.log("📋 Plano selecionado:", selectedPlan);
-      
-      // Calcular desconto PIX (5% off)
-      const discountedTotal = totalPrice * 0.95;
-      console.log("💰 Preço com desconto PIX:", discountedTotal);
+      const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+      const discountedTotal = totalPrice * 0.95; // 5% desconto PIX
 
-      // Formatar prédios para o webhook com logs
-      const formattedPredios = cartItems.map((item: any, index: number) => {
-        const predio = {
-          id: item.panel?.id || `panel_${index}`,
-          nome: item.panel?.buildings?.nome || item.panel?.nome || `Painel ${index + 1}`
-        };
-        console.log(`🏢 Prédio ${index + 1}:`, predio);
-        return predio;
+      console.log("💰 Valores calculados:", {
+        originalPrice: totalPrice,
+        discountedTotal,
+        selectedPlan
       });
 
-      // Datas do período
+      // PASSO 1: CRIAR PEDIDO PENDENTE
+      console.log("🏗️ PASSO 1: Criando pedido pendente...");
+      toast.info("Criando seu pedido...", { duration: 2000 });
+      
+      const orderResult = await createPendingOrder({
+        clientId: user.id,
+        cartItems,
+        selectedPlan,
+        totalPrice: discountedTotal,
+        couponId: null // TODO: Implementar cupom se necessário
+      });
+
+      if (!orderResult.success) {
+        throw new Error(`Erro ao criar pedido: ${orderResult.error}`);
+      }
+
+      console.log("✅ PASSO 1 COMPLETO: Pedido criado:", {
+        pedidoId: orderResult.pedidoId,
+        transactionId: orderResult.transactionId
+      });
+
+      // PASSO 2: PREPARAR DADOS PARA WEBHOOK N8N
+      const formattedPredios = cartItems.map((item: any, index: number) => ({
+        id: item.panel?.id || `panel_${index}`,
+        nome: item.panel?.buildings?.nome || item.panel?.nome || `Painel ${index + 1}`,
+        painel_ids: [item.panel?.id] // IDs específicos dos painéis
+      }));
+
       const now = new Date();
       const endDate = new Date(now);
-      endDate.setDate(now.getDate() + 30);
+      endDate.setMonth(now.getMonth() + selectedPlan);
 
       const formatDate = (date: Date) => {
         return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
       };
 
-      const formattedPeriod = {
-        inicio: formatDate(now),
-        fim: formatDate(endDate)
-      };
-      console.log("📅 Período formatado:", formattedPeriod);
-
-      // Dados para o webhook N8N
+      // DADOS COMPLETOS PARA N8N
       const webhookData: PixWebhookData = {
         cliente_id: user.id,
+        pedido_id: orderResult.pedidoId!, // 🔥 NOVO: ID do pedido criado
+        transaction_id: orderResult.transactionId!, // 🔥 NOVO: ID único para rastreamento
         email: userInfo.email,
         nome: userInfo.nome,
-        plano_escolhido: `${selectedPlan} ${parseInt(selectedPlan) === 1 ? 'mês' : 'meses'}`,
-        periodo_meses: parseInt(selectedPlan),
+        plano_escolhido: `${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`,
+        periodo_meses: selectedPlan,
         predios_selecionados: formattedPredios,
         valor_total: discountedTotal.toFixed(2),
-        periodo_exibicao: formattedPeriod
+        periodo_exibicao: {
+          inicio: formatDate(now),
+          fim: formatDate(endDate)
+        }
       };
 
-      console.log("📡 [PixPaymentButton] SISTEMA CORRIGIDO - Dados finais para webhook:", JSON.stringify(webhookData, null, 2));
+      console.log("📡 PASSO 2: Enviando para N8N webhook:", JSON.stringify(webhookData, null, 2));
 
-      // Chamar webhook N8N com tratamento melhorado
+      // PASSO 3: GERAR PIX VIA N8N
+      console.log("💳 PASSO 3: Gerando QR Code PIX...");
       toast.info("Gerando QR Code PIX...", { duration: 2000 });
       
       const response = await sendPixPaymentWebhook(webhookData);
       
-      console.log("✅ [PixPaymentButton] SISTEMA CORRIGIDO - Resposta do webhook:", response);
+      console.log("✅ PASSO 3 COMPLETO: Resposta do N8N:", response);
       
       if (response.success && (response.qrCodeBase64 || response.pix_base64)) {
         // Armazenar dados PIX e abrir popup
         setPixData(response);
         setQrCodeDialogOpen(true);
         
-        console.log("🎉 QR Code PIX gerado com sucesso!");
+        console.log("🎉 FLUXO PIX COMPLETO: QR Code gerado com sucesso!");
         toast.success("QR Code PIX gerado com sucesso!");
         
         logCheckoutEvent(
           CheckoutEvent.PAYMENT_EVENT,
           LogLevel.SUCCESS,
-          "QR Code PIX gerado com sucesso via webhook N8N - SISTEMA CORRIGIDO",
+          "Fluxo PIX completo executado com sucesso",
           { 
+            pedidoId: orderResult.pedidoId,
+            transactionId: orderResult.transactionId,
             hasQrCode: !!(response.qrCodeBase64 || response.pix_base64),
             hasUrl: !!(response.qrCodeText || response.pix_url)
           }
@@ -153,12 +171,12 @@ const PixPaymentButton = ({
       }
       
     } catch (error: any) {
-      console.error("❌ [PixPaymentButton] SISTEMA CORRIGIDO - Erro:", error);
+      console.error("❌ [PixPaymentButton] ERRO NO FLUXO PIX:", error);
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        "Erro ao processar PIX via webhook N8N - SISTEMA CORRIGIDO",
+        "Erro no fluxo PIX completo",
         { error: error.message, stack: error.stack }
       );
       
@@ -172,14 +190,16 @@ const PixPaymentButton = ({
     <>
       <Button
         onClick={handlePayWithPix}
-        disabled={isDisabled || isLoading || externalIsLoading}
+        disabled={isDisabled || isLoading || externalIsLoading || isCreating}
         className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
         size="lg"
       >
-        {isLoading || externalIsLoading ? (
+        {isLoading || externalIsLoading || isCreating ? (
           <div className="flex items-center space-x-2">
             <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span>Gerando QR Code PIX...</span>
+            <span>
+              {isCreating ? "Criando pedido..." : "Gerando QR Code PIX..."}
+            </span>
           </div>
         ) : (
           <div className="flex items-center space-x-2">
@@ -192,15 +212,14 @@ const PixPaymentButton = ({
         )}
       </Button>
 
-      {/* Popup do QR Code PIX - SISTEMA CORRIGIDO */}
+      {/* Popup do QR Code PIX */}
       {pixData && (
         <PixQrCodeDialog
           isOpen={qrCodeDialogOpen}
           onClose={() => {
-            console.log("🔄 [PixPaymentButton] SISTEMA CORRIGIDO - Fechando popup e continuando fluxo");
+            console.log("🔄 [PixPaymentButton] Fechando popup PIX e continuando fluxo");
             setQrCodeDialogOpen(false);
-            // Chamar onClick após fechar o popup para continuar fluxo
-            onClick();
+            onClick(); // Continuar fluxo original
           }}
           qrCodeBase64={pixData.qrCodeBase64}
           qrCodeText={pixData.qrCodeText}

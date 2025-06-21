@@ -1,9 +1,10 @@
-
 // SISTEMA RESTAURADO: Webhook N8N Real para PIX - VERSÃO CORRIGIDA
 const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
 
 export interface PixWebhookData {
   cliente_id: string;
+  pedido_id?: string; // 🔥 NOVO: ID do pedido criado
+  transaction_id?: string; // 🔥 NOVO: ID único de rastreamento
   email: string;
   nome: string;
   plano_escolhido: string;
@@ -11,6 +12,7 @@ export interface PixWebhookData {
   predios_selecionados: Array<{
     id: string;
     nome: string;
+    painel_ids?: string[]; // 🔥 NOVO: IDs específicos dos painéis
   }>;
   valor_total: string;
   periodo_exibicao: {
@@ -26,6 +28,9 @@ export interface PixWebhookResponse {
   paymentLink?: string;
   pix_url?: string;
   pix_base64?: string;
+  pedido_id?: string; // 🔥 NOVO: N8N deve retornar o pedido_id
+  transaction_id?: string; // 🔥 NOVO: N8N deve retornar o transaction_id
+  external_reference?: string; // 🔥 NOVO: Para MercadoPago
   message?: string;
   error?: string;
 }

@@ -19,13 +19,13 @@ serve(async (req) => {
     );
 
     const payload = await req.json();
-    console.log("🔔 [MercadoPago Webhook] UNIFIED - Webhook recebido:", payload);
+    console.log("🔔 [MercadoPago Webhook] SISTEMA PIX COMPLETO - Webhook recebido:", payload);
 
     // Log do webhook
     const { error: logError } = await supabase
       .from('webhook_logs')
       .insert({
-        origem: 'mercadopago-unified',
+        origem: 'mercadopago-pix-completo',
         payload: payload,
         status: 'received',
         recebido_em: new Date().toISOString()
@@ -52,23 +52,21 @@ serve(async (req) => {
     if (paymentStatus === 'payment.approved' || paymentStatus === 'approved') {
       console.log("✅ [MercadoPago Webhook] Pagamento aprovado detectado");
 
-      // CORREÇÃO CRÍTICA: Buscar pedido por transaction_id ou external_reference
-      let pedidoQuery = supabase
-        .from('pedidos')
-        .select('*');
-
-      // Tentar encontrar por external_reference (transaction_id) primeiro
+      // 🔥 BUSCA APRIMORADA: Priorizar transaction_id
+      let pedidoQuery = supabase.from('pedidos').select('*');
+      
       if (externalReference) {
+        // Buscar por transaction_id (método preferencial)
+        console.log("🔍 Buscando pedido por transaction_id:", externalReference);
         pedidoQuery = pedidoQuery.eq('transaction_id', externalReference);
-      } else if (amount) {
-        // Fallback: buscar por valor (menos confiável, mas necessário para transações antigas)
+      } else {
+        // Fallback: buscar por valor e status
+        console.log("🔍 Fallback: Buscando por valor e status pendente");
         pedidoQuery = pedidoQuery
           .eq('valor_total', amount)
           .eq('status', 'pendente')
           .order('created_at', { ascending: false })
           .limit(1);
-      } else {
-        throw new Error("Não foi possível identificar o pedido (sem external_reference ou amount)");
       }
 
       const { data: pedidos, error: pedidoError } = await pedidoQuery;
@@ -80,22 +78,23 @@ serve(async (req) => {
       if (!pedidos || pedidos.length === 0) {
         console.warn("⚠️ [MercadoPago Webhook] Nenhum pedido encontrado para:", {
           externalReference,
-          amount
+          amount,
+          searchMethod: externalReference ? 'transaction_id' : 'valor_fallback'
         });
         
         // Log para investigação posterior
         await supabase
           .from('log_eventos_sistema')
           .insert({
-            tipo_evento: 'WEBHOOK_ORPHAN_PAYMENT',
-            descricao: `Pagamento órfão detectado: external_reference=${externalReference}, amount=${amount}, paymentId=${paymentId}`
+            tipo_evento: 'WEBHOOK_PEDIDO_NAO_ENCONTRADO',
+            descricao: `Pagamento confirmado mas pedido não encontrado: external_reference=${externalReference}, amount=${amount}, paymentId=${paymentId}`
           });
 
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: "Pedido não encontrado",
-            investigation_needed: true 
+            message: "Pedido não encontrado - investigação necessária",
+            details: { externalReference, amount, paymentId }
           }),
           { 
             status: 404,
@@ -110,22 +109,27 @@ serve(async (req) => {
         id: pedido.id,
         transaction_id: pedido.transaction_id,
         valor_total: pedido.valor_total,
-        status_atual: pedido.status
+        status_atual: pedido.status,
+        lista_paineis: pedido.lista_paineis
       });
 
-      // Atualizar pedido para pago
+      // 🔥 ATUALIZAÇÃO COMPLETA DO PEDIDO
+      const updatedLogPagamento = {
+        ...(pedido.log_pagamento || {}),
+        payment_confirmed_at: new Date().toISOString(),
+        mercadopago_payment_id: paymentId,
+        external_reference: externalReference,
+        payment_status: 'approved',
+        webhook_processed: true,
+        sistema_pix_completo: true,
+        found_by_method: externalReference ? 'transaction_id' : 'valor_fallback'
+      };
+
       const { error: updateError } = await supabase
         .from('pedidos')
         .update({
-          status: 'pago_pendente_video',
-          log_pagamento: {
-            ...pedido.log_pagamento,
-            webhook_data: payload,
-            payment_confirmed_at: new Date().toISOString(),
-            mercadopago_payment_id: paymentId,
-            unified_system_confirmed: true,
-            found_by: externalReference ? 'transaction_id' : 'amount_fallback'
-          }
+          status: 'pago_pendente_video', // 🔥 AGUARDANDO UPLOAD DE VÍDEO
+          log_pagamento: updatedLogPagamento
         })
         .eq('id', pedido.id);
 
@@ -133,60 +137,69 @@ serve(async (req) => {
         throw updateError;
       }
 
-      // Atualizar sessão de transação se existir
-      if (pedido.transaction_id) {
-        const { error: sessionError } = await supabase
-          .from('transaction_sessions')
-          .update({
-            status: 'completed',
-            payment_external_id: paymentId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('transaction_id', pedido.transaction_id);
+      // Tracking do status
+      await supabase
+        .from('payment_status_tracking')
+        .insert({
+          pedido_id: pedido.id,
+          status_anterior: pedido.status,
+          status_novo: 'pago_pendente_video',
+          origem: 'mercadopago_webhook_pix_completo',
+          detalhes: {
+            payment_id: paymentId,
+            external_reference: externalReference,
+            amount: amount,
+            transaction_id: pedido.transaction_id,
+            lista_paineis: pedido.lista_paineis
+          }
+        });
 
-        if (sessionError) {
-          console.warn("⚠️ Erro ao atualizar sessão de transação:", sessionError);
-        }
-      }
+      console.log("✅ [MercadoPago Webhook] Pedido atualizado com sucesso:", {
+        pedidoId: pedido.id,
+        newStatus: 'pago_pendente_video',
+        listaPaineis: pedido.lista_paineis?.length || 0
+      });
 
-      console.log("✅ [MercadoPago Webhook] Pedido atualizado com sucesso:", pedido.id);
-
-      // Log de sucesso
+      // Log de sucesso do sistema PIX completo
       await supabase
         .from('log_eventos_sistema')
         .insert({
-          tipo_evento: 'UNIFIED_PAYMENT_CONFIRMED',
-          descricao: `Pagamento confirmado via webhook: pedido_id=${pedido.id}, transaction_id=${pedido.transaction_id}, valor=${pedido.valor_total}`
+          tipo_evento: 'PIX_COMPLETO_CONFIRMADO',
+          descricao: `Sistema PIX completo: Pedido ${pedido.id} confirmado via webhook. Transaction: ${pedido.transaction_id}, Valor: ${pedido.valor_total}, Painéis: ${pedido.lista_paineis?.length || 0}`
         });
 
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "Pagamento processado com sucesso",
-          pedido_id: pedido.id 
+          message: "Sistema PIX completo - Pagamento processado com sucesso",
+          pedido_id: pedido.id,
+          status: 'pago_pendente_video',
+          paineis_count: pedido.lista_paineis?.length || 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Para outros tipos de webhook
-    console.log("ℹ️ [MercadoPago Webhook] Webhook não relacionado a pagamento aprovado");
+    console.log("ℹ️ [MercadoPago Webhook] Webhook recebido mas não é pagamento aprovado:", paymentStatus);
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Webhook recebido mas não processado" 
+        message: "Webhook recebido mas não processado",
+        action: paymentStatus
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error("❌ [MercadoPago Webhook] Erro:", error);
+    console.error("❌ [MercadoPago Webhook] Erro no sistema PIX completo:", error);
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error.message,
+        sistema: 'pix_completo'
       }),
       { 
         status: 500,
