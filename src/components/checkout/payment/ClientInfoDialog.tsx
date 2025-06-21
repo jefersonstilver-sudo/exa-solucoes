@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -51,8 +50,8 @@ const ClientInfoDialog = ({
     setIsSending(true);
     
     try {
-      // Get additional user information, passing both ID and email
-      const userInfo = await getUserInfo(clientId, clientEmail);
+      // CORREÇÃO: Chamar getUserInfo apenas com userId
+      const userInfo = await getUserInfo(clientId);
       
       if (!userInfo) {
         throw new Error("Não foi possível obter informações do usuário");
@@ -77,7 +76,7 @@ const ClientInfoDialog = ({
       // Create webhook payload
       const webhookData: PixWebhookData = {
         cliente_id: clientId,
-        email: userInfo.email || clientEmail, // Use the email we got or fall back to the provided one
+        email: userInfo.email || clientEmail,
         nome: userInfo.nome,
         plano_escolhido: "Mensal", // Default plan
         periodo_meses: 1, // Default to 1 month

@@ -84,9 +84,10 @@ export const getUserInfo = async (userId: string) => {
   try {
     const { supabase } = await import('@/integrations/supabase/client');
     
+    // CORREÇÃO: Buscar apenas as colunas que existem na tabela users
     const { data: user, error } = await supabase
       .from('users')
-      .select('email, nome, full_name')
+      .select('email')
       .eq('id', userId)
       .single();
     
@@ -95,12 +96,20 @@ export const getUserInfo = async (userId: string) => {
       return null;
     }
     
+    // CORREÇÃO: Buscar dados adicionais do auth.users se necessário
+    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
+    
+    const fullName = authUser?.user?.user_metadata?.full_name || 
+                     authUser?.user?.user_metadata?.name || 
+                     user?.email?.split('@')[0] || 
+                     'Cliente';
+    
     return {
-      email: user.email || '',
-      nome: user.nome || user.full_name || 'Cliente'
+      email: user?.email || '',
+      nome: fullName
     };
   } catch (error) {
-    console.error("Erro ao importar supabase:", error);
+    console.error("Erro ao buscar informações do usuário:", error);
     return null;
   }
 };
