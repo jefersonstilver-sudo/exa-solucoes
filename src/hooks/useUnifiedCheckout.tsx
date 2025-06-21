@@ -90,7 +90,7 @@ export const useUnifiedCheckout = () => {
       }
 
       await updateTransactionStatus('tentativa_created', {
-        tentativa_id: attemptResult.tent ativaId
+        tentativa_id: attemptResult.tentativaId
       });
 
       console.log("✅ [UnifiedCheckout] Tentativa capturada:", attemptResult.tentativaId);
