@@ -3,13 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Copy, CheckCircle, RefreshCw, Shield, Clock } from 'lucide-react';
+import { ArrowLeft, Copy, CheckCircle, RefreshCw } from 'lucide-react';
 import { QRCodeDisplay } from './QRCodeDisplay';
 import { toast } from 'sonner';
 import PixCountdownTimer from './PixCountdownTimer';
 import PaymentStatusBadge from './PaymentStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrderSecurity } from '@/hooks/useOrderSecurity';
 
 interface PixPaymentContentProps {
   paymentData: {
@@ -39,18 +38,17 @@ const PixPaymentContent = ({
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const { isAuthorized, isLoading: securityLoading } = useOrderSecurity(pedidoId);
 
   // Auto-refresh status every 10 seconds
   useEffect(() => {
-    if (paymentData.status === 'pending' && isAuthorized) {
+    if (paymentData.status === 'pending') {
       const interval = setInterval(async () => {
         await handleRefreshStatus();
       }, 10000);
 
       return () => clearInterval(interval);
     }
-  }, [paymentData.status, isAuthorized]);
+  }, [paymentData.status]);
 
   const handleRefreshStatus = async () => {
     setIsRefreshing(true);
@@ -101,52 +99,6 @@ const PixPaymentContent = ({
     navigate('/anunciante/pedidos');
   };
 
-  // Verificação de segurança
-  if (securityLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center"
-        >
-          <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-pulse" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Verificando Permissões</h2>
-          <p className="text-gray-600">Validando acesso ao pedido...</p>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (!isAuthorized) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <div className="bg-white rounded-xl shadow-lg border p-8 text-center">
-            <div className="text-red-500 text-6xl mb-4">🚫</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Acesso Negado</h2>
-            <p className="text-gray-600 mb-6">
-              Você não tem permissão para acessar este pedido ou ele pode ter expirado.
-              <br />
-              <span className="text-sm text-gray-500 mt-2 block">
-                Pedidos são cancelados automaticamente após 24 horas sem pagamento.
-              </span>
-            </p>
-            <div className="space-y-4">
-              <Button onClick={() => navigate('/paineis-digitais/loja')} className="w-full">
-                Fazer Novo Pedido
-              </Button>
-              <Button onClick={onBack} variant="outline" className="w-full">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
@@ -166,18 +118,18 @@ const PixPaymentContent = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20 sm:pt-24">
-      <div className="container mx-auto px-4 py-4 sm:py-6 max-w-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-2xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6 sm:mb-8"
+          className="text-center mb-8"
         >
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Pagamento PIX
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-gray-600">
             Escaneie o QR Code ou copie o código PIX para finalizar o pagamento
           </p>
         </motion.div>
@@ -187,15 +139,9 @@ const PixPaymentContent = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 lg:p-8"
+          className="bg-white rounded-xl shadow-lg border p-6 sm:p-8"
         >
-          <div className="space-y-4 sm:space-y-6">
-            {/* Security Badge */}
-            <div className="flex items-center justify-center space-x-2 text-green-600 bg-green-50 rounded-lg p-3">
-              <Shield className="h-5 w-5" />
-              <span className="text-sm font-medium">Pagamento Seguro e Verificado</span>
-            </div>
-
+          <div className="space-y-6">
             {/* Status Badge */}
             <div className="flex justify-center">
               <PaymentStatusBadge status={paymentData.status || 'pending'} />
@@ -203,24 +149,18 @@ const PixPaymentContent = ({
 
             {/* Timer */}
             {paymentData.status === 'pending' && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Clock className="h-5 w-5 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-800">Tempo para pagamento:</span>
-                </div>
-                <PixCountdownTimer
-                  initialSeconds={600} // 10 minutes
-                  onExpire={() => {
-                    toast.error("QR Code expirado. Clique em regenerar para criar um novo.");
-                  }}
-                  isActive={paymentData.status === 'pending'}
-                  paymentStatus={paymentData.status || 'pending'}
-                  createdAt={paymentData.createdAt}
-                />
-              </div>
+              <PixCountdownTimer
+                initialSeconds={600} // 10 minutes
+                onExpire={() => {
+                  toast.error("QR Code expirado. Clique em regenerar para criar um novo.");
+                }}
+                isActive={paymentData.status === 'pending'}
+                paymentStatus={paymentData.status || 'pending'}
+                createdAt={paymentData.createdAt}
+              />
             )}
 
-            {/* QR Code */}
+            {/* QR Code - CORRIGIDO */}
             <div className="flex justify-center">
               <QRCodeDisplay 
                 qrCodeBase64={paymentData.qrCodeBase64} 
@@ -244,7 +184,7 @@ const PixPaymentContent = ({
                 
                 <Button
                   onClick={handleCopyPixCode}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  className="w-full bg-green-600 hover:bg-green-700"
                   size="lg"
                 >
                   <Copy className="h-5 w-5 mr-2" />
@@ -257,7 +197,7 @@ const PixPaymentContent = ({
             {paymentData.valorTotal && (
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <p className="text-sm text-gray-600">Valor a pagar:</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-green-600">
                   R$ {(paymentData.valorTotal * 0.95).toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-500">
@@ -268,7 +208,7 @@ const PixPaymentContent = ({
             )}
 
             {/* Actions */}
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
               <Button
                 onClick={handleRefreshStatus}
                 disabled={isRefreshing}
@@ -288,6 +228,7 @@ const PixPaymentContent = ({
                 )}
               </Button>
 
+              {/* Botão Regenerar QR Code */}
               <Button
                 onClick={handleRegenerateQRCode}
                 disabled={isRegenerating}
@@ -328,20 +269,6 @@ const PixPaymentContent = ({
                 <li>5. Aguarde a confirmação automática</li>
               </ol>
             </div>
-
-            {/* Security Notice */}
-            <div className="bg-gray-50 border-l-4 border-green-500 p-4">
-              <div className="flex items-start space-x-3">
-                <Shield className="h-5 w-5 text-green-600 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-gray-900 mb-1">Pagamento Seguro</p>
-                  <p className="text-gray-600">
-                    Seu pedido é cancelado automaticamente após 24 horas sem pagamento. 
-                    Todos os pagamentos são processados de forma segura pelo MercadoPago.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </motion.div>
 
@@ -350,7 +277,7 @@ const PixPaymentContent = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-4 sm:mt-6 flex justify-center"
+          className="mt-6 flex justify-center"
         >
           <Button
             variant="outline"

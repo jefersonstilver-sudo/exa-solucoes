@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useOrderSecurity } from '@/hooks/useOrderSecurity';
 
+// Export the interface PixPaymentData with all required properties
 export interface PixPaymentData {
   qrCodeBase64?: string;
   qrCode?: string;
@@ -18,7 +18,6 @@ export const usePixPayment = (pedidoId: string | null) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<PixPaymentData | null>(null);
-  const { isAuthorized, isLoading: securityLoading } = useOrderSecurity(pedidoId);
 
   useEffect(() => {
     if (!pedidoId) {
@@ -27,23 +26,15 @@ export const usePixPayment = (pedidoId: string | null) => {
       return;
     }
 
-    // Aguardar verificação de segurança antes de carregar dados
-    if (!securityLoading) {
-      if (isAuthorized) {
-        loadPaymentData();
-      } else {
-        setError("Acesso negado ou pedido expirado");
-        setIsLoading(false);
-      }
-    }
-  }, [pedidoId, isAuthorized, securityLoading]);
+    loadPaymentData();
+  }, [pedidoId]);
 
   const loadPaymentData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔄 [usePixPayment] Carregando dados do pagamento (com segurança):", pedidoId);
+      console.log("🔄 [usePixPayment] Carregando dados do pagamento:", pedidoId);
 
       // Buscar pedido diretamente por ID
       const { data: pedido, error: pedidoError } = await supabase
@@ -63,16 +54,11 @@ export const usePixPayment = (pedidoId: string | null) => {
         valor_total: pedido.valor_total
       });
 
-      // Verificar se pedido não foi cancelado automaticamente
-      if (pedido.status === 'cancelado_automaticamente') {
-        throw new Error("Este pedido foi cancelado automaticamente por expiração (24h)");
-      }
-
-      // Verificar se já tem dados de PIX
+      // Verificar se já tem dados de PIX com type assertion
       const logPagamento = pedido.log_pagamento as any;
       const pixData = logPagamento?.pix_data;
       
-      if (pixData && pixData.qrCodeBase64) {
+      if (pixData) {
         console.log("✅ [usePixPayment] Dados PIX encontrados no pedido");
         setPaymentData({
           qrCodeBase64: pixData.qrCodeBase64,
@@ -89,6 +75,7 @@ export const usePixPayment = (pedidoId: string | null) => {
         
         const { data, error } = await supabase.functions.invoke('process-pix-payment', {
           body: {
+            transactionId: pedido.transaction_id,
             pedidoId: pedido.id
           }
         });
@@ -119,18 +106,14 @@ export const usePixPayment = (pedidoId: string | null) => {
     } catch (error: any) {
       console.error("❌ [usePixPayment] Erro:", error);
       setError(error.message || 'Erro ao carregar pagamento');
-      
-      // Se erro de acesso, não mostrar toast para não poluir
-      if (!error.message.includes('expirado') && !error.message.includes('cancelado')) {
-        toast.error(`Erro no pagamento: ${error.message}`);
-      }
+      toast.error(`Erro no pagamento: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const refreshPaymentStatus = async () => {
-    if (!pedidoId ||!isAuthorized) return;
+    if (!pedidoId) return;
     
     try {
       console.log("🔄 [usePixPayment] Atualizando status do pagamento");
@@ -143,26 +126,14 @@ export const usePixPayment = (pedidoId: string | null) => {
 
       if (error) throw error;
 
-      // Verificar se pedido foi cancelado
-      if (pedido.status === 'cancelado_automaticamente') {
-        setError("Pedido foi cancelado automaticamente por expiração");
-        toast.error("Seu pedido expirou após 24 horas. Faça um novo pedido.");
-        return;
-      }
-
       // Atualizar status se mudou
-      if (pedido.status === 'pago_pendente_video' && paymentData) {
+      if (pedido.status === 'pago' && paymentData) {
         setPaymentData(prev => ({
           ...prev,
           status: 'approved',
           valorTotal: pedido.valor_total
         }));
-        toast.success("🎉 Pagamento confirmado! Agora você pode enviar seu vídeo.");
-        
-        // Redirecionar após confirmação
-        setTimeout(() => {
-          window.location.href = '/anunciante/pedidos';
-        }, 2000);
+        toast.success("Pagamento confirmado!");
       }
 
     } catch (error: any) {
@@ -170,18 +141,8 @@ export const usePixPayment = (pedidoId: string | null) => {
     }
   };
 
-  // Se não autorizado, retornar dados vazios para que o componente mostre a tela de acesso negado
-  if (!securityLoading && !isAuthorized) {
-    return {
-      isLoading: false,
-      error: "Acesso negado ou pedido expirado",
-      paymentData: null,
-      refreshPaymentStatus: () => Promise.resolve()
-    };
-  }
-
   return {
-    isLoading: isLoading || securityLoading,
+    isLoading,
     error,
     paymentData,
     refreshPaymentStatus
