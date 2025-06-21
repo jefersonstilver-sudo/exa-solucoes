@@ -96,9 +96,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos
+      // Buscar vídeos dos pedidos com tipo explícito
       const pedidoIds = pedidos.map(p => p.id);
-      const { data: videosData, error: videosError } = await supabase
+      const { data: rawVideosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
           id,
@@ -122,17 +122,24 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
+      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', rawVideosData?.length || 0);
+
+      // Type assertion with explicit type checking
+      const videosData = rawVideosData as PedidoVideoQueryResult[] | null;
 
       // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filtro seguro com type assertion explícita
-        const allVideos = videosData as PedidoVideoQueryResult[] | null;
-        const pedidoVideos = (allVideos || []).filter(v => {
-          return v && v.pedido_id === pedido.id;
-        });
+        // Filtrar vídeos de forma mais segura
+        const pedidoVideos: PedidoVideoQueryResult[] = [];
+        if (videosData && Array.isArray(videosData)) {
+          videosData.forEach(videoItem => {
+            if (videoItem && videoItem.pedido_id === pedido.id) {
+              pedidoVideos.push(videoItem);
+            }
+          });
+        }
 
         return {
           id: pedido.id,
