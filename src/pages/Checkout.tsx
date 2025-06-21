@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -7,7 +7,7 @@ import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgre
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard } from 'lucide-react';
+import { ArrowLeft, CreditCard, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import PixPaymentButton from '@/components/checkout/navigation/PixPaymentButton';
 
@@ -34,11 +34,10 @@ const Checkout = () => {
     navigate('/checkout/resumo');
   };
 
-  // SISTEMA RESTAURADO: Função para ser chamada após o popup PIX
+  // SISTEMA ORIGINAL: Função simples para redirecionamento após PIX
   const handlePixPaymentComplete = () => {
-    console.log("🎯 [Checkout] PIX payment popup fechado - sistema restaurado");
-    // O PixPaymentButton já redireciona para /anunciante/pedidos
-    // Esta função é chamada quando o popup é fechado
+    console.log("✅ [Checkout] SISTEMA ORIGINAL - PIX payment completado");
+    // O redirecionamento é feito no PixQrCodeDialog
   };
 
   // Loading state
@@ -72,77 +71,133 @@ const Checkout = () => {
             <UnifiedCheckoutProgress currentStep={2} />
           </motion.div>
 
-          {/* Payment Content */}
+          {/* Payment Content - SISTEMA ORIGINAL RESTAURADO */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 lg:p-8"
           >
-            <div className="space-y-6">
-              <div className="border-b pb-4">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <span className="mr-3 text-2xl">💳</span>
+            <div className="space-y-8">
+              <div className="border-b pb-6">
+                <h2 className="text-3xl font-bold text-gray-900 flex items-center mb-2">
+                  <span className="mr-3 text-3xl">💳</span>
                   Finalizar Pagamento
                 </h2>
-                <p className="text-gray-600 mt-2">Pague com PIX e receba 5% de desconto</p>
+                <p className="text-lg text-gray-600">Escolha sua forma de pagamento</p>
               </div>
 
-              {/* Resumo rápido */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total a pagar:</span>
-                  <span className="text-2xl font-bold text-[#3C1361]">
-                    R$ {totalPrice.toFixed(2)}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {cartItems.length} painel(s) × {selectedPlan} mês(es)
+              {/* Resumo da compra */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Resumo da sua campanha</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Painéis selecionados:</span>
+                    <span className="font-semibold">{cartItems.length} painel(s)</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Período:</span>
+                    <span className="font-semibold">{selectedPlan} mês(es)</span>
+                  </div>
+                  <div className="border-t pt-3">
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="text-gray-700 font-medium">Total:</span>
+                      <span className="text-2xl font-bold text-[#3C1361]">
+                        R$ {totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Método PIX - SISTEMA RESTAURADO */}
-              <div className="border-2 border-green-200 rounded-lg p-6 bg-green-50">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                      <svg viewBox="0 0 512 512" className="h-6 w-6 text-green-600" fill="currentColor">
-                        <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Pagamento PIX</h3>
-                      <p className="text-sm text-gray-600">Pagamento instantâneo com desconto</p>
-                      <p className="text-xs text-green-600 font-medium">✅ Aprovação imediata</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-green-600">
-                      R$ {(totalPrice * 0.95).toFixed(2)}
-                    </div>
-                    <div className="text-xs text-gray-500 line-through">
-                      R$ {totalPrice.toFixed(2)}
-                    </div>
-                    <div className="text-xs text-green-600">Economia de 5%</div>
-                  </div>
-                </div>
+              {/* Métodos de Pagamento - SISTEMA ORIGINAL */}
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-gray-900">Métodos de Pagamento</h3>
                 
-                {/* SISTEMA RESTAURADO: Usar PixPaymentButton que abre popup */}
-                <div className="w-full">
-                  <PixPaymentButton
-                    onClick={handlePixPaymentComplete}
-                    isDisabled={false}
-                    isLoading={false}
-                    totalPrice={totalPrice}
-                  />
+                {/* PIX - Método Principal */}
+                <div className="border-2 border-green-200 rounded-xl p-6 bg-gradient-to-r from-green-50 to-emerald-50">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center">
+                        <svg viewBox="0 0 512 512" className="h-8 w-8 text-green-600" fill="currentColor">
+                          <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-gray-900">PIX</h4>
+                        <p className="text-gray-600">Pagamento instantâneo</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className="text-green-600 font-semibold">✅ Aprovação imediata</span>
+                          <span className="text-green-600 font-semibold">• 5% de desconto</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-600">
+                        R$ {(totalPrice * 0.95).toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500 line-through">
+                        R$ {totalPrice.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-green-600 font-medium">Economia de 5%</div>
+                    </div>
+                  </div>
+                  
+                  {/* Botão PIX - SISTEMA ORIGINAL */}
+                  <div className="w-full">
+                    <PixPaymentButton
+                      onClick={handlePixPaymentComplete}
+                      isDisabled={false}
+                      isLoading={false}
+                      totalPrice={totalPrice}
+                    />
+                  </div>
+                </div>
+
+                {/* Cartão de Crédito - Em Breve (SISTEMA ORIGINAL) */}
+                <div className="border-2 border-gray-200 rounded-xl p-6 bg-gray-50 opacity-75">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center">
+                        <CreditCard className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-gray-700">Cartão de Crédito</h4>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-orange-500" />
+                          <span className="text-orange-600 font-semibold">Em breve</span>
+                        </div>
+                        <p className="text-gray-500 text-sm">Parcelamento em até 12x</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-gray-400">
+                        R$ {totalPrice.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-400">Em 12x sem juros</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Informações adicionais */}
-              <div className="text-center text-sm text-gray-500 space-y-2">
-                <p>🔒 Pagamento 100% seguro</p>
-                <p>⚡ Aprovação instantânea via PIX</p>
-                <p>📱 QR Code será exibido em popup após clicar em "Pagar com PIX"</p>
+              {/* Informações de Segurança */}
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <div className="text-center space-y-3">
+                  <div className="flex justify-center items-center space-x-6 text-sm text-blue-700">
+                    <div className="flex items-center space-x-2">
+                      <span>🔒</span>
+                      <span>Pagamento 100% seguro</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span>⚡</span>
+                      <span>Aprovação instantânea</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span>📱</span>
+                      <span>QR Code via popup</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>

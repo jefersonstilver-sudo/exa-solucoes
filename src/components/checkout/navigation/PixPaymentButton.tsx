@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -26,59 +27,52 @@ const PixPaymentButton = ({
   
   const handlePayWithPix = async () => {
     try {
-      // Set loading state
       setIsLoading(true);
       
-      // Enhanced logging
-      console.log("[PixPaymentButton] Botão 'Pagar com PIX' clicado");
+      console.log("🎯 [PixPaymentButton] SISTEMA ORIGINAL RESTAURADO - Iniciando PIX");
       
       logCheckoutEvent(
-        CheckoutEvent.DEBUG_EVENT,
+        CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        "Botão 'Pagar com PIX' clicado na página de checkout",
-        { timestamp: new Date().toISOString(), totalPrice }
+        "Botão PIX clicado - sistema original restaurado",
+        { totalPrice, timestamp: new Date().toISOString() }
       );
       
-      // Get user information
       if (!user) {
         toast.error("Usuário não autenticado");
-        setIsLoading(false);
         return;
       }
 
-      // Get cart items from localStorage
-      const cartItemsStr = localStorage.getItem('indexa_cart');
-      const cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
-
-      // Get selected plan from localStorage
-      const selectedPlan = localStorage.getItem('selectedPlan') || '1';
-      
-      // Calculate discount if using PIX (5% off)
-      const pixDiscount = 0.05;
-      const discountedTotal = totalPrice * (1 - pixDiscount);
-
-      // Get user details
+      // Buscar dados do usuário
       const userInfo = await getUserInfo(user.id);
       
       if (!userInfo) {
         toast.error("Erro ao buscar dados do usuário");
-        setIsLoading(false);
         return;
       }
 
-      // Format cart items to match the expected structure
+      // Buscar itens do carrinho
+      const cartItemsStr = localStorage.getItem('indexa_unified_cart');
+      const cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
+      
+      if (cartItems.length === 0) {
+        toast.error("Carrinho vazio");
+        return;
+      }
+
+      // Plano selecionado
+      const selectedPlan = localStorage.getItem('selectedPlan') || '1';
+      
+      // Calcular desconto PIX (5% off)
+      const discountedTotal = totalPrice * 0.95;
+
+      // Formatar prédios para o webhook
       const formattedPredios = cartItems.map((item: any) => ({
         id: item.panel?.id || '',
-        nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
+        nome: item.panel?.buildings?.nome || 'Painel'
       }));
 
-      console.log("[PixPaymentButton] Dados formatados para webhook:", {
-        cartItems: formattedPredios,
-        selectedPlan,
-        discountedTotal
-      });
-
-      // Get current date and end date (30 days from now)
+      // Datas do período
       const now = new Date();
       const endDate = new Date(now);
       endDate.setDate(now.getDate() + 30);
@@ -87,7 +81,7 @@ const PixPaymentButton = ({
         return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
       };
 
-      // Prepare webhook data
+      // Dados para o webhook N8N
       const webhookData: PixWebhookData = {
         cliente_id: user.id,
         email: userInfo.email,
@@ -102,29 +96,41 @@ const PixPaymentButton = ({
         }
       };
 
-      // Send webhook and get response with QR code data
+      console.log("📡 [PixPaymentButton] Enviando para webhook N8N:", webhookData);
+
+      // SISTEMA ORIGINAL: Chamar apenas o webhook N8N real
       const response = await sendPixPaymentWebhook(webhookData);
       
-      console.log("[PixPaymentButton] Resposta do webhook:", response);
+      console.log("✅ [PixPaymentButton] Resposta do webhook N8N:", response);
       
-      if (response.success) {
-        // Store the PIX data and show the QR code dialog
+      if (response.success && (response.qrCodeBase64 || response.pix_base64)) {
+        // Armazenar dados PIX e abrir popup
         setPixData(response);
         setQrCodeDialogOpen(true);
+        
         toast.success("QR Code PIX gerado com sucesso!");
+        
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_EVENT,
+          LogLevel.SUCCESS,
+          "QR Code PIX gerado com sucesso via webhook N8N",
+          { hasQrCode: !!(response.qrCodeBase64 || response.pix_base64) }
+        );
       } else {
-        toast.error("Erro ao processar pagamento PIX");
+        throw new Error(response.error || "Erro ao gerar QR Code PIX");
       }
-    } catch (error) {
-      console.error("[PixPaymentButton] Erro ao processar pagamento:", error);
+      
+    } catch (error: any) {
+      console.error("❌ [PixPaymentButton] Erro:", error);
+      
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        "Erro ao processar PIX na página de checkout",
-        { error: String(error) }
+        "Erro ao processar PIX via webhook N8N",
+        { error: error.message }
       );
       
-      toast.error("Erro ao processar pagamento PIX");
+      toast.error(`Erro ao processar pagamento PIX: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -135,24 +141,32 @@ const PixPaymentButton = ({
       <Button
         onClick={handlePayWithPix}
         disabled={isDisabled || isLoading || externalIsLoading}
-        className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-md"
+        className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+        size="lg"
       >
         {isLoading || externalIsLoading ? (
-          <>
-            <span className="mr-2">Processando...</span>
-            <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          </>
+          <div className="flex items-center space-x-2">
+            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Gerando QR Code PIX...</span>
+          </div>
         ) : (
-          <>Pagar com PIX {totalPrice ? `R$ ${(totalPrice * 0.95).toFixed(2)}` : ''}</>
+          <div className="flex items-center space-x-2">
+            <span>💳 Pagar com PIX</span>
+            <span className="bg-emerald-600 px-2 py-1 rounded text-sm">
+              R$ {(totalPrice * 0.95).toFixed(2)}
+            </span>
+            <span className="text-emerald-200 text-sm">(5% desconto)</span>
+          </div>
         )}
       </Button>
 
+      {/* Popup do QR Code PIX */}
       {pixData && (
         <PixQrCodeDialog
           isOpen={qrCodeDialogOpen}
           onClose={() => {
             setQrCodeDialogOpen(false);
-            // Call the original onClick after closing the dialog to continue with checkout process
+            // Chamar onClick após fechar o popup para continuar fluxo
             onClick();
           }}
           qrCodeBase64={pixData.qrCodeBase64}
