@@ -2,7 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
+import { HomepageBannerCarousel } from '@/components/ui/homepage-banner';
 import { supabase } from '@/integrations/supabase/client';
+import { useHomepageBanners } from '@/hooks/useHomepageBanners';
 import { Loader2 } from 'lucide-react';
 
 interface HomepageConfig {
@@ -17,6 +19,7 @@ interface HomepageConfig {
 const Index = () => {
   const [configs, setConfigs] = useState<HomepageConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { banners, isLoading: bannersLoading } = useHomepageBanners();
 
   useEffect(() => {
     const fetchConfigs = async () => {
@@ -66,7 +69,7 @@ const Index = () => {
     fetchConfigs();
   }, []);
 
-  if (isLoading) {
+  if (isLoading || bannersLoading) {
     return (
       <Layout>
         <section className="py-16 px-4 min-h-screen flex items-center justify-center">
@@ -90,29 +93,38 @@ const Index = () => {
         <div className="absolute inset-0 bg-black/20"></div>
         
         <div className="max-w-7xl mx-auto relative z-10 w-full">
-          {/* Mobile: Cards empilhados verticalmente */}
-          <div className="grid grid-cols-1 gap-3 lg:hidden">
-            {configs.map((config) => (
-              <ServiceCard
-                key={config.id}
-                title={config.title}
-                backgroundImage={config.image_url}
-                href={config.href}
-                className="h-[180px]"
+          {/* Mobile: Banner no topo + Cards empilhados verticalmente */}
+          <div className="lg:hidden space-y-4">
+            {/* Banner no mobile */}
+            <div className="h-48 md:h-64">
+              <HomepageBannerCarousel 
+                banners={banners} 
+                className="w-full h-full"
               />
-            ))}
+            </div>
+            
+            {/* Cards empilhados no mobile */}
+            <div className="grid grid-cols-1 gap-3">
+              {configs.map((config) => (
+                <ServiceCard
+                  key={config.id}
+                  title={config.title}
+                  backgroundImage={config.image_url}
+                  href={config.href}
+                  className="h-[180px]"
+                />
+              ))}
+            </div>
           </div>
 
           {/* Desktop: Banner central + Cards na lateral direita */}
           <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8 lg:h-[480px]">
             {/* Área central para banner - 8 colunas */}
-            <div className="lg:col-span-8 flex items-center justify-center">
-              <div className="w-full h-full bg-gradient-to-r from-indexa-purple/20 to-purple-600/20 rounded-2xl border-2 border-dashed border-white/30 flex items-center justify-center">
-                <div className="text-center text-white">
-                  <h2 className="text-3xl font-bold mb-4">Espaço para Banner Rotativo</h2>
-                  <p className="text-lg opacity-80">Área reservada para conteúdo principal</p>
-                </div>
-              </div>
+            <div className="lg:col-span-8">
+              <HomepageBannerCarousel 
+                banners={banners} 
+                className="w-full h-full"
+              />
             </div>
 
             {/* Cards empilhados na lateral direita - 4 colunas */}
