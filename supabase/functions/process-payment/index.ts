@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
@@ -56,12 +55,111 @@ async function checkDuplicateProcessing(supabase: any, paymentKey: string, pedid
     throw new Error(`Erro ao verificar pedido: ${error.message}`);
   }
   
-  if (existingPayment?.log_pagamento?.payment_preference_id) {
+  if (existingPayment?.log_pagamento?.payment_preference_id || existingPayment?.log_pagamento?.pixData) {
     console.log(`[ANTI-DUPLICATE] Payment already processed for pedido: ${pedidoId}`);
     throw new Error('Pagamento já foi processado para este pedido');
   }
   
   return true;
+}
+
+// Generate PIX payment with MercadoPago
+async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string) {
+  try {
+    console.log(`🎯 [PIX] Gerando pagamento PIX para pedido: ${pedidoId}, valor: ${totalAmount}`);
+    
+    // Create PIX payment preference
+    const preference = {
+      items: [{
+        id: `campaign_${pedidoId}`,
+        title: `Campanha publicitária digital`,
+        quantity: 1,
+        unit_price: totalAmount,
+        currency_id: 'BRL',
+        description: `Veiculação publicitária`,
+        category_id: "digital_goods"
+      }],
+      payer: {
+        email: userEmail || 'cliente@exemplo.com'
+      },
+      payment_methods: {
+        excluded_payment_types: [
+          { id: "credit_card" },
+          { id: "debit_card" },
+          { id: "ticket" }
+        ],
+        installments: 1
+      },
+      external_reference: pedidoId,
+      metadata: {
+        pedido_id: pedidoId,
+        payment_method: 'pix',
+        total_amount: totalAmount
+      }
+    };
+
+    // Create preference in MercadoPago
+    const response = await MercadoPago.preferences.create(preference);
+    const preferenceId = response.body.id;
+    
+    console.log(`✅ [PIX] Preferência criada: ${preferenceId}`);
+    
+    // Create payment specifically for PIX
+    const payment = {
+      transaction_amount: totalAmount,
+      description: `Campanha publicitária digital - Pedido ${pedidoId}`,
+      payment_method_id: 'pix',
+      payer: {
+        email: userEmail || 'cliente@exemplo.com'
+      },
+      external_reference: pedidoId,
+      metadata: {
+        pedido_id: pedidoId
+      }
+    };
+
+    const paymentResponse = await MercadoPago.payment.create(payment);
+    const paymentData = paymentResponse.body;
+    
+    console.log(`✅ [PIX] Pagamento PIX criado:`, {
+      id: paymentData.id,
+      status: paymentData.status,
+      hasQrCode: !!paymentData.point_of_interaction?.transaction_data?.qr_code_base64
+    });
+
+    // Extract PIX data
+    const pixData = {
+      paymentId: paymentData.id.toString(),
+      status: paymentData.status,
+      qrCode: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      qrCodeBase64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
+      preferenceId: preferenceId,
+      createdAt: new Date().toISOString()
+    };
+
+    // Update order with PIX data
+    const { error: updateError } = await supabase
+      .from('pedidos')
+      .update({
+        log_pagamento: {
+          pixData: pixData,
+          payment_method: 'pix',
+          total_amount: totalAmount,
+          timestamp: new Date().toISOString()
+        }
+      })
+      .eq('id', pedidoId);
+
+    if (updateError) {
+      throw new Error(`Erro ao salvar dados PIX: ${updateError.message}`);
+    }
+
+    return { success: true, pixData };
+
+  } catch (error: any) {
+    console.error(`❌ [PIX] Erro ao gerar PIX:`, error);
+    throw new Error(`Falha ao gerar PIX: ${error.message}`);
+  }
 }
 
 // Main handler function
@@ -88,7 +186,7 @@ async function handleRequest(req: Request) {
       anti_duplicate_controls
     } = requestData;
     
-    console.log("[CRITICAL-FIX] Dados recebidos:", { 
+    console.log("[PAYMENT-REAL] SISTEMA CORRIGIDO - Dados recebidos:", { 
       pedidoId, 
       totalAmount, 
       userId, 
@@ -121,6 +219,27 @@ async function handleRequest(req: Request) {
     if (userError) {
       throw new Error(`Erro ao buscar dados do usuário: ${userError.message}`);
     }
+
+    // CORREÇÃO ESPECÍFICA PARA PIX
+    if (payment_method === 'pix') {
+      console.log("🎯 [PAYMENT-REAL] Processando PIX com integração real");
+      const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userData?.email);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          pixData: pixResult.pixData,
+          pedido_id: pedidoId,
+          payment_method: 'pix'
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        }
+      );
+    }
     
     // Validate cart items
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
@@ -130,7 +249,7 @@ async function handleRequest(req: Request) {
     // CRITICAL: Use the correct total amount directly, don't calculate from items
     const correctedTotalAmount = Number(totalAmount.toFixed(2));
     
-    console.log(`[CRITICAL-FIX] Valor corrigido: ${correctedTotalAmount} (original: ${totalAmount})`);
+    console.log(`[PAYMENT-REAL] Valor corrigido: ${correctedTotalAmount} (original: ${totalAmount})`);
     
     // Prepare MercadoPago items with CORRECT total value
     const items = [{
@@ -188,7 +307,7 @@ async function handleRequest(req: Request) {
       }
     };
     
-    console.log(`[CRITICAL-FIX] Criando preferência com valor: ${correctedTotalAmount}`);
+    console.log(`[PAYMENT-REAL] Criando preferência com valor: ${correctedTotalAmount}`);
     
     // Create preference in MercadoPago or simulate in development
     let preferenceId = "";
@@ -249,7 +368,7 @@ async function handleRequest(req: Request) {
       throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
     }
     
-    console.log("[CRITICAL-FIX] Payment preference created and order updated:", {
+    console.log("[PAYMENT-REAL] Payment preference created and order updated:", {
       preferenceId,
       correctedAmount: correctedTotalAmount,
       paymentMethod: payment_method
@@ -276,7 +395,7 @@ async function handleRequest(req: Request) {
     );
     
   } catch (error) {
-    console.error('[CRITICAL-FIX] Erro ao processar pagamento:', error);
+    console.error('[PAYMENT-REAL] Erro ao processar pagamento:', error);
     return new Response(
       JSON.stringify({
         success: false,

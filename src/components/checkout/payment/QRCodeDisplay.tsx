@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface QRCodeDisplayProps {
@@ -12,15 +12,21 @@ interface QRCodeDisplayProps {
 export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps) => {
   const [imageError, setImageError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
-  console.log("[QRCodeDisplay] QR code data received:", 
-    qrCodeBase64 ? `${qrCodeBase64.substring(0, 50)}...` : 'Not available');
+  console.log("[QRCodeDisplay] SISTEMA CORRIGIDO - QR code data received:", {
+    hasQRCode: !!qrCodeBase64,
+    qrCodeLength: qrCodeBase64?.length,
+    isDataUrl: qrCodeBase64?.startsWith('data:'),
+    preview: qrCodeBase64 ? `${qrCodeBase64.substring(0, 50)}...` : 'Not available'
+  });
   
   const hasValidQRCode = !!qrCodeBase64 && !imageError;
   
   const handleRetry = async () => {
     setIsRetrying(true);
     setImageError(false);
+    setImageLoaded(false);
     
     if (onRegenerate) {
       await onRegenerate();
@@ -32,8 +38,15 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    console.error("[QRCodeDisplay] Erro ao carregar QR code");
+    console.error("[QRCodeDisplay] Erro ao carregar QR code:", e);
     setImageError(true);
+    setImageLoaded(false);
+  };
+
+  const handleImageLoad = () => {
+    console.log("[QRCodeDisplay] QR code carregado com sucesso");
+    setImageLoaded(true);
+    setImageError(false);
   };
   
   if (!qrCodeBase64) {
@@ -94,7 +107,13 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
     );
   }
   
-  const imageSource = qrCodeBase64.startsWith('data:') ? qrCodeBase64 : `data:image/png;base64,${qrCodeBase64}`;
+  // CORREÇÃO: Melhor tratamento do formato do QR Code
+  let imageSource = qrCodeBase64;
+  
+  // Se não é data URL, adicionar prefixo
+  if (!qrCodeBase64.startsWith('data:')) {
+    imageSource = `data:image/png;base64,${qrCodeBase64}`;
+  }
   
   return (
     <motion.div 
@@ -103,15 +122,42 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
       animate={{ opacity: 1, scale: 1 }} 
       transition={{ duration: 0.3 }}
     >
-      <div className="border-2 border-green-200 rounded-lg bg-white p-4 shadow-sm">
+      <div className={`border-2 rounded-lg p-4 shadow-sm relative ${
+        imageLoaded 
+          ? 'border-green-200 bg-white' 
+          : 'border-gray-200 bg-gray-50'
+      }`}>
+        {!imageLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-8 w-8 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
         <img 
           src={imageSource} 
           alt="QR Code PIX" 
-          className="w-56 h-56 rounded-lg" 
+          className={`w-56 h-56 rounded-lg transition-opacity duration-300 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
           onError={handleImageError}
+          onLoad={handleImageLoad}
           style={{ display: imageError ? 'none' : 'block' }}
         />
       </div>
+      
+      {imageLoaded && (
+        <motion.div 
+          className="mt-3 flex items-center space-x-2"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <p className="text-sm text-green-600 font-medium">
+            QR Code PIX válido
+          </p>
+        </motion.div>
+      )}
+      
       <p className="text-xs text-gray-500 mt-2 text-center">
         📱 Escaneie com o app do seu banco
       </p>

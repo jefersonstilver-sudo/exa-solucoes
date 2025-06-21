@@ -46,14 +46,14 @@ const PaymentGateway = ({
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      `PaymentGateway inicializado - WEBHOOK URL CORRIGIDA`,
+      `PaymentGateway SISTEMA CORRIGIDO - inicializado`,
       { 
         orderId, 
         paymentMethod,
         hasPix: !!pixData,
         hasPreference: !!preferenceId,
         hasUserId: !!userId,
-        webhookUrl: "https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19"
+        sistemCorrigido: true
       }
     );
     
@@ -89,7 +89,7 @@ const PaymentGateway = ({
     );
   };
   
-  // Prosseguir com o pagamento
+  // Prosseguir com o pagamento - SISTEMA CORRIGIDO
   const handleProceedPayment = async () => {
     setIsLoading(true);
     
@@ -106,67 +106,42 @@ const PaymentGateway = ({
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
       } else if (paymentMethod === 'pix') {
-        console.log("🎯 PaymentGateway: Iniciando fluxo PIX com WEBHOOK CORRIGIDO");
+        console.log("🎯 PaymentGateway: SISTEMA CORRIGIDO - Iniciando fluxo PIX real");
         
-        // If we're in PIX payment flow, send the webhook and then navigate
-        if (userId) {
-          // Get user information
-          const userInfo = await getUserInfo(userId);
-          
-          if (!userInfo) {
-            toast.error("Erro ao buscar dados do usuário");
-            setIsLoading(false);
-            return;
+        // CORREÇÃO: Usar a função process-payment com payment_method=pix
+        const { data: pixResponse, error } = await supabase.functions.invoke('process-payment', {
+          body: {
+            pedido_id: orderId,
+            payment_method: 'pix',
+            total_amount: totalAmount,
+            cart_items: [],
+            user_id: userId,
+            return_url: window.location.origin,
+            payment_key: `pix_${orderId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
           }
-          
-          // Get cart items from localStorage
-          const cartItemsStr = localStorage.getItem('indexa_cart');
-          const cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
-          
-          // Format cart items for the webhook
-          const formattedPredios = cartItems.map((item: any) => ({
-            id: item.panel?.id || '',
-            nome: item.panel?.nome || item.panel?.buildings?.nome || 'Painel'
-          }));
-          
-          // Get selected plan or default to 1 month
-          const selectedPlan = localStorage.getItem('selectedPlan') || '1';
-          
-          // Prepare webhook data
-          const webhookData = {
-            cliente_id: userId,
-            email: userInfo.email,
-            nome: userInfo.nome,
-            plano_escolhido: "Mensal",
-            periodo_meses: parseInt(selectedPlan),
-            predios_selecionados: formattedPredios,
-            valor_total: totalAmount.toFixed(2),
-            periodo_exibicao: {
-              inicio: new Date().toLocaleDateString('pt-BR'),
-              fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('pt-BR')
-            }
-          };
-          
-          console.log("🎯 PaymentGateway: Enviando dados para webhook CORRIGIDO:", webhookData);
-          
-          // Send webhook and handle response
-          const response = await sendPixPaymentWebhook(webhookData);
-          
-          if (response.success) {
-            // Show success and navigate to PIX payment page
-            toast.success("PIX gerado com sucesso!");
-          } else {
-            toast.error("Erro ao gerar PIX");
-          }
+        });
+        
+        if (error) {
+          console.error("❌ Erro ao processar PIX:", error);
+          toast.error(`Erro ao gerar PIX: ${error.message}`);
+          setIsLoading(false);
+          return;
         }
         
-        navigate(`/pix-payment?pedido=${orderId}`);
+        if (pixResponse.success) {
+          console.log("✅ PIX processado com sucesso:", pixResponse);
+          toast.success("PIX gerado com sucesso!");
+          navigate(`/pix-payment?pedido=${orderId}`);
+        } else {
+          toast.error("Erro ao gerar PIX");
+          setIsLoading(false);
+        }
       } else {
         toast.error("Configuração de pagamento inválida");
         setIsLoading(false);
       }
     } catch (error) {
-      console.error("[PaymentGateway] Erro ao processar pagamento:", error);
+      console.error("[PaymentGateway] SISTEMA CORRIGIDO - Erro ao processar pagamento:", error);
       toast.error("Erro ao processar pagamento");
       setIsLoading(false);
     }
