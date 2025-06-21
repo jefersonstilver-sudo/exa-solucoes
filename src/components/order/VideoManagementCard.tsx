@@ -9,7 +9,7 @@ interface VideoManagementCardProps {
   videoSlots: VideoSlot[];
   uploading: boolean;
   uploadProgress: { [key: number]: number };
-  onUpload: (slotPosition: number, file: File) => Promise<void>;
+  onUpload: (slotPosition: number, file: File, title: string) => Promise<void>;
   onActivate: (slotId: string) => Promise<void>;
   onRemove: (slotId: string) => Promise<void>;
   onSelectForDisplay: (slotId: string) => Promise<void>;
@@ -34,7 +34,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
           Gestão de Vídeos
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Envie até 4 vídeos e selecione qual será exibido nos painéis.
+          Envie até 4 vídeos com títulos descritivos e selecione qual será exibido nos painéis.
         </p>
       </CardHeader>
       <CardContent>

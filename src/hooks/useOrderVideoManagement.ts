@@ -101,11 +101,22 @@ export const useOrderVideoManagement = (orderId: string) => {
     }
   };
 
-  const uploadVideo = async (slotPosition: number, file: File, userId: string) => {
+  const uploadVideo = async (slotPosition: number, file: File, userId: string, videoTitle?: string) => {
     try {
-      console.log('📤 [ORDER_VIDEO] Iniciando upload:', { slotPosition, fileName: file.name, fileSize: file.size });
+      console.log('📤 [ORDER_VIDEO] Iniciando upload:', { 
+        slotPosition, 
+        fileName: file.name, 
+        fileSize: file.size,
+        videoTitle 
+      });
+      
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
+
+      // Validar título se fornecido
+      if (videoTitle && (videoTitle.length < 3 || videoTitle.length > 50)) {
+        throw new Error('Título deve ter entre 3 e 50 caracteres');
+      }
 
       const success = await uploadVideoAction(
         slotPosition,
@@ -115,12 +126,12 @@ export const useOrderVideoManagement = (orderId: string) => {
         (progress) => {
           console.log(`📊 [ORDER_VIDEO] Progresso upload slot ${slotPosition}:`, progress);
           setUploadProgress(prev => ({ ...prev, [slotPosition]: progress }));
-        }
+        },
+        videoTitle // Passar título para o serviço
       );
 
       if (success) {
         console.log('✅ [ORDER_VIDEO] Upload concluído com sucesso');
-        // Limpar progresso após um tempo
         setTimeout(() => {
           setUploadProgress(prev => {
             const newProgress = { ...prev };

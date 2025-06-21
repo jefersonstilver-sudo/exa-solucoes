@@ -12,14 +12,24 @@ export const uploadVideo = async (
   file: File,
   userId: string,
   orderId: string,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  videoTitle?: string
 ): Promise<boolean> => {
   try {
     console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
     console.log('👤 User ID:', userId);
     console.log('📋 Order ID:', orderId);
+    console.log('🏷️ Video Title:', videoTitle);
 
-    // Limpar uploads pendentes antes de tentar novo upload
+    // Validar título se fornecido
+    if (videoTitle) {
+      if (videoTitle.length < 3 || videoTitle.length > 50) {
+        toast.error('Título deve ter entre 3 e 50 caracteres');
+        return false;
+      }
+    }
+
+    // Limpar uploads pendentes
     onProgress?.(5);
     const cleanedCount = await cleanupPendingUploads(userId);
     if (cleanedCount > 0) {
@@ -38,17 +48,16 @@ export const uploadVideo = async (
     console.log('✅ Vídeo validado com sucesso:', validation.metadata);
     onProgress?.(20);
 
-    // Upload para storage com retry automático
+    // Upload para storage
     let videoUrl: string;
     let retryCount = 0;
-    const maxRetries = 2; // Reduzido para evitar demora excessiva
+    const maxRetries = 2;
 
     while (retryCount <= maxRetries) {
       try {
         console.log(`📤 Tentativa ${retryCount + 1} de upload...`);
         
         videoUrl = await uploadVideoToStorage(file, userId, (progress) => {
-          // Mapear progresso do storage para 20-80% do progresso total
           onProgress?.(20 + (progress * 0.6));
         });
         
@@ -62,7 +71,6 @@ export const uploadVideo = async (
           throw new Error(`Upload falhou após ${maxRetries + 1} tentativas: ${uploadError.message}`);
         }
         
-        // Aguardar antes de tentar novamente (backoff exponencial)
         const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
         console.log(`⏱️ Aguardando ${delay}ms antes da próxima tentativa...`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -71,10 +79,13 @@ export const uploadVideo = async (
 
     onProgress?.(85);
 
-    // Criar registro do vídeo com validação
+    // Usar título fornecido ou nome do arquivo como fallback
+    const finalVideoName = videoTitle || file.name;
+
+    // Criar registro do vídeo
     const videoData = {
       client_id: userId,
-      nome: file.name,
+      nome: finalVideoName,
       url: videoUrl,
       origem: 'cliente',
       status: 'ativo',
@@ -84,7 +95,7 @@ export const uploadVideo = async (
       altura: validation.metadata.height,
       tamanho_arquivo: validation.metadata.size,
       formato: validation.metadata.format,
-      tem_audio: false // Sempre false para garantir que seja mutado
+      tem_audio: false
     };
 
     console.log('💾 Criando registro de vídeo:', videoData);
@@ -159,7 +170,7 @@ export const uploadVideo = async (
 
     onProgress?.(100);
     console.log('🎉 Upload completo com sucesso!');
-    toast.success('Vídeo enviado com sucesso!');
+    toast.success(`Vídeo "${finalVideoName}" enviado com sucesso!`);
     return true;
 
   } catch (error) {
