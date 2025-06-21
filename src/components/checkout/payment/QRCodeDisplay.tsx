@@ -13,8 +13,8 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
   const [imageError, setImageError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   
-  console.log("[QRCodeDisplay] QR code data received:", 
-    qrCodeBase64 ? `${qrCodeBase64.substring(0, 50)}...` : 'Not available');
+  console.log("[QRCodeDisplay] CORREÇÃO IMPLEMENTADA - QR code data received:", 
+    qrCodeBase64 ? `${qrCodeBase64.substring(0, 100)}...` : 'Not available');
   
   const hasValidQRCode = !!qrCodeBase64 && !imageError;
   
@@ -32,8 +32,17 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    console.error("[QRCodeDisplay] Erro ao carregar QR code");
+    console.error("[QRCodeDisplay] ERRO DE IMAGEM DETECTADO:", {
+      src: e.currentTarget.src,
+      format: qrCodeBase64?.substring(0, 30),
+      error: e.type
+    });
     setImageError(true);
+  };
+
+  const handleImageLoad = () => {
+    console.log("[QRCodeDisplay] ✅ IMAGEM CARREGADA COM SUCESSO!");
+    setImageError(false);
   };
   
   if (!qrCodeBase64) {
@@ -94,7 +103,29 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
     );
   }
   
-  const imageSource = qrCodeBase64.startsWith('data:') ? qrCodeBase64 : `data:image/png;base64,${qrCodeBase64}`;
+  // CORREÇÃO: Detectar automaticamente o formato (SVG ou PNG)
+  let imageSource = qrCodeBase64;
+  
+  // Se não tem data: no início, assumir que é base64 puro e detectar formato
+  if (!qrCodeBase64.startsWith('data:')) {
+    // Tentar detectar se é SVG pela presença de tags SVG na string decodificada
+    try {
+      const decoded = atob(qrCodeBase64);
+      if (decoded.includes('<svg') || decoded.includes('xmlns="http://www.w3.org/2000/svg"')) {
+        imageSource = `data:image/svg+xml;base64,${qrCodeBase64}`;
+        console.log("[QRCodeDisplay] ✅ FORMATO SVG DETECTADO E CORRIGIDO");
+      } else {
+        imageSource = `data:image/png;base64,${qrCodeBase64}`;
+        console.log("[QRCodeDisplay] ✅ FORMATO PNG ASSUMIDO");
+      }
+    } catch (error) {
+      // Se falhar ao decodificar, assumir PNG
+      imageSource = `data:image/png;base64,${qrCodeBase64}`;
+      console.log("[QRCodeDisplay] ⚠️ FORMATO PNG ASSUMIDO (erro ao decodificar)");
+    }
+  }
+  
+  console.log("[QRCodeDisplay] FONTE FINAL DA IMAGEM:", imageSource.substring(0, 50) + "...");
   
   return (
     <motion.div 
@@ -109,7 +140,12 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
           alt="QR Code PIX" 
           className="w-56 h-56 rounded-lg" 
           onError={handleImageError}
-          style={{ display: imageError ? 'none' : 'block' }}
+          onLoad={handleImageLoad}
+          style={{ 
+            display: imageError ? 'none' : 'block',
+            maxWidth: '100%',
+            height: 'auto'
+          }}
         />
       </div>
       <p className="text-xs text-gray-500 mt-2 text-center">
