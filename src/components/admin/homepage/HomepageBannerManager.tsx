@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const HomepageBannerManager = () => {
     title: '',
     subtitle: '',
     link_url: '',
+    image_url: '',
     order_position: 1,
     is_active: true,
   });
@@ -87,6 +89,7 @@ const HomepageBannerManager = () => {
         title: '',
         subtitle: '',
         link_url: '',
+        image_url: '',
         order_position: allBanners.length + 1,
         is_active: true,
       });
