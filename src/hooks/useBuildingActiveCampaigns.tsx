@@ -124,25 +124,27 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', rawVideosData?.length || 0);
 
-      // Processar dados com verificação de tipos
+      // Processar dados com verificação de tipos mais segura
       const videosData = rawVideosData as PedidoVideoQueryResult[] | null;
 
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filtrar vídeos de forma segura com verificação completa de tipos
+        // Filtrar vídeos com type assertion segura
         const pedidoVideos: PedidoVideoQueryResult[] = [];
         if (videosData && Array.isArray(videosData)) {
-          videosData.forEach(videoItem => {
-            // Verificar se videoItem existe e tem as propriedades necessárias
+          for (const videoItem of videosData) {
+            // Verificação mais robusta com type assertion
             if (videoItem && 
                 typeof videoItem === 'object' && 
-                'pedido_id' in videoItem && 
-                'video_id' in videoItem &&
-                videoItem.pedido_id === pedido.id) {
-              pedidoVideos.push(videoItem);
+                videoItem !== null &&
+                'pedido_id' in videoItem) {
+              const typedVideoItem = videoItem as PedidoVideoQueryResult;
+              if (typedVideoItem.pedido_id === pedido.id) {
+                pedidoVideos.push(typedVideoItem);
+              }
             }
-          });
+          }
         }
 
         return {
