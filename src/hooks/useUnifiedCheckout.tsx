@@ -13,6 +13,7 @@ import { useCartManager } from './useCartManager';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logSystemEvent } from '@/utils/auditLogger';
+import { PlanKey } from '@/types/checkout';
 
 export const useUnifiedCheckout = () => {
   const navigate = useNavigate();
@@ -59,8 +60,11 @@ export const useUnifiedCheckout = () => {
     try {
       console.log("🚀 [UnifiedCheckout] Inicializando checkout unificado");
 
+      // CORRIGIDO: Cast para PlanKey
+      const planKey = selectedPlan as PlanKey;
+      
       // Passo 1: Criar sessão de transação única
-      const sessionResult = await createTransactionSession(cartItems, selectedPlan);
+      const sessionResult = await createTransactionSession(cartItems, planKey);
       
       if (!sessionResult.success) {
         throw new Error("Falha ao criar sessão de transação");
@@ -77,7 +81,7 @@ export const useUnifiedCheckout = () => {
       const attemptResult = await captureAttempt(
         sessionResult.transactionId,
         cartItems,
-        selectedPlan,
+        planKey,
         sessionResult.price
       );
 
@@ -86,7 +90,7 @@ export const useUnifiedCheckout = () => {
       }
 
       await updateTransactionStatus('tentativa_created', {
-        tentativa_id: attemptResult.tentativaId
+        tentativa_id: attemptResult.tent ativaId
       });
 
       console.log("✅ [UnifiedCheckout] Tentativa capturada:", attemptResult.tentativaId);
@@ -98,7 +102,7 @@ export const useUnifiedCheckout = () => {
         sessionResult.transactionId,
         attemptResult.tentativaId!,
         cartItems,
-        selectedPlan,
+        planKey,
         sessionResult.price,
         couponId
       );
@@ -119,7 +123,7 @@ export const useUnifiedCheckout = () => {
         tentativaId: attemptResult.tentativaId,
         pedidoId: orderResult.pedidoId,
         finalPrice: sessionResult.price,
-        selectedPlan,
+        selectedPlan: planKey,
         cartItemsCount: cartItems.length
       });
 

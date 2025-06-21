@@ -7,6 +7,7 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { formatCurrency } from '@/utils/priceUtils';
 import { PLANS } from '@/constants/checkoutConstants';
 import { calculateCartSubtotal, calculateTotalPrice, getPlanDiscount } from '@/utils/checkoutUtils';
+import { PlanKey } from '@/types/checkout';
 
 const ReviewStep = () => {
   const { 
@@ -30,7 +31,10 @@ const ReviewStep = () => {
     return info.join(' - ');
   };
 
-  if (!selectedPlan || !PLANS[selectedPlan]) {
+  // CORRIGIDO: Cast para PlanKey
+  const planKey = selectedPlan as PlanKey;
+
+  if (!selectedPlan || !PLANS[planKey]) {
     return (
       <div className="space-y-6">
         <div className="border-b pb-4">
@@ -49,16 +53,16 @@ const ReviewStep = () => {
     );
   }
 
-  const selectedMonths = PLANS[selectedPlan].months;
+  const selectedMonths = PLANS[planKey].months;
   
   // CORREÇÃO: Cálculo detalhado para exibir desconto aplicado
   const subtotalMensal = calculateCartSubtotal(cartItems, 1); // Preço mensal sem desconto
-  const subtotalComPlano = calculateCartSubtotal(cartItems, selectedPlan); // Preço mensal com desconto do plano
+  const subtotalComPlano = calculateCartSubtotal(cartItems, planKey); // CORRIGIDO
   const subtotalTotal = subtotalMensal * selectedMonths; // Total sem nenhum desconto
   const subtotalComPlanoTotal = subtotalComPlano * selectedMonths; // Total com desconto do plano
   const descontoPorPlano = subtotalTotal - subtotalComPlanoTotal; // Desconto aplicado pelo plano
   
-  const finalPrice = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+  const finalPrice = calculateTotalPrice(planKey, cartItems, couponDiscount, couponValid); // CORRIGIDO
   const descontoCupom = couponValid && couponDiscount ? (subtotalComPlanoTotal * couponDiscount) / 100 : 0;
 
   // Log detalhado para debug
@@ -74,7 +78,7 @@ const ReviewStep = () => {
     descontoPorPlano,
     descontoCupom,
     finalPrice,
-    planDiscount: `${getPlanDiscount(selectedPlan) * 100}%`,
+    planDiscount: `${getPlanDiscount(planKey) * 100}%`, // CORRIGIDO
     couponDiscount: couponValid ? `${couponDiscount}%` : "Nenhum"
   });
 
@@ -171,7 +175,7 @@ const ReviewStep = () => {
                 <div className="flex justify-between text-red-600 text-sm">
                   <span className="flex items-center">
                     <Tag className="h-4 w-4 mr-1" />
-                    Desconto {PLANS[selectedPlan].name} ({getPlanDiscount(selectedPlan) * 100}%)
+                    Desconto {PLANS[planKey].name} ({getPlanDiscount(planKey) * 100}%) {/* CORRIGIDO */}
                   </span>
                   <span className="font-medium line-through">-{formatCurrency(descontoPorPlano)}</span>
                 </div>

@@ -16,6 +16,7 @@ export const useCheckout = () => {
   const [couponCode, setCouponCode] = useState<string>('');
   const [couponValid, setCouponValid] = useState<boolean>(false);
   const [couponMessage, setCouponMessage] = useState<string>('');
+  const [couponDiscount, setCouponDiscount] = useState<number>(0); // ADICIONADO
   const [isValidatingCoupon, setIsValidatingCoupon] = useState<boolean>(false);
   const [isCreatingPayment, setIsCreatingPayment] = useState<boolean>(false);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
@@ -44,20 +45,21 @@ export const useCheckout = () => {
     let total = basePrice * planMultiplier;
     
     // Aplicar desconto de cupom se válido
-    if (couponValid) {
-      total = total * 0.9; // 10% de desconto como exemplo
+    if (couponValid && couponDiscount > 0) {
+      total = total * (1 - couponDiscount / 100); // CORRIGIDO
     }
     
     console.log("💰 [useCheckout] Calculando preço total:", {
       basePrice,
       planMultiplier,
       couponValid,
+      couponDiscount,
       total,
       cartItemCount: unifiedCart.cartItems.length
     });
     
     return total;
-  }, [unifiedCart.totalPrice, selectedPlan, couponValid, unifiedCart.cartItems.length]);
+  }, [unifiedCart.totalPrice, selectedPlan, couponValid, couponDiscount, unifiedCart.cartItems.length]);
 
   // Validar cupom
   const validateCoupon = useCallback(async (code: string, plan: number) => {
@@ -72,6 +74,7 @@ export const useCheckout = () => {
       
       if (code.toLowerCase() === 'desconto10') {
         setCouponValid(true);
+        setCouponDiscount(10); // ADICIONADO
         setCouponMessage('Cupom aplicado! 10% de desconto');
         toast.success('Cupom aplicado com sucesso!');
         
@@ -82,7 +85,8 @@ export const useCheckout = () => {
           { code, plan }
         );
       } else {
-        setCouponValid(false); 
+        setCouponValid(false);
+        setCouponDiscount(0); // ADICIONADO 
         setCouponMessage('Cupom inválido ou expirado');
         toast.error('Cupom inválido');
         
@@ -95,6 +99,7 @@ export const useCheckout = () => {
       }
     } catch (error) {
       setCouponValid(false);
+      setCouponDiscount(0); // ADICIONADO
       setCouponMessage('Erro ao validar cupom');
       toast.error('Erro ao validar cupom');
       
@@ -150,6 +155,7 @@ export const useCheckout = () => {
     couponCode,
     setCouponCode,
     couponValid,
+    couponDiscount, // ADICIONADO
     couponMessage,
     isValidatingCoupon,
     isCreatingPayment,

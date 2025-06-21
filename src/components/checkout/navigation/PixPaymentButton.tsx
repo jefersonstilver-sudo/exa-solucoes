@@ -73,7 +73,7 @@ const PixPaymentButton = ({
         items: cartResult.cartItems.map(item => ({
           id: item.id || item.panel?.id,
           panelId: item.panel?.id,
-          buildingName: item.panel?.buildings?.nome || item.panel?.nome,
+          buildingName: item.panel?.buildings?.nome || 'Nome não disponível', // CORRIGIDO
           price: item.price
         }))
       });
@@ -105,7 +105,7 @@ const PixPaymentButton = ({
       // PASSO 4: Preparar dados para webhook N8N
       const formattedPredios = cartResult.cartItems.map((item: any, index: number) => ({
         id: item.panel?.id || item.id || `panel_${index}`,
-        nome: item.panel?.buildings?.nome || item.panel?.nome || `Painel ${index + 1}`,
+        nome: item.panel?.buildings?.nome || `Painel ${index + 1}`, // CORRIGIDO
         painel_ids: [item.panel?.id || item.id]
       }));
 
