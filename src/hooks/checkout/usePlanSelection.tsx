@@ -4,13 +4,38 @@ import { useNavigate } from 'react-router-dom';
 import { useCartManager } from '../useCartManager';
 import { PlanKey, Plan } from '@/types/checkout';
 import { toast } from 'sonner';
+import { calculateTotalPrice } from '@/utils/checkoutUtils';
 
-// Define PLANS locally
+// Define PLANS locally com preços corretos
 const PLANS: Record<number, Plan> = {
-  1: { id: 1, name: 'Mensal', months: 1, price: 1, discount: 0 },
-  3: { id: 3, name: 'Trimestral', months: 3, price: 0.9, discount: 10 },
-  6: { id: 6, name: 'Semestral', months: 6, price: 0.8, discount: 20 },
-  12: { id: 12, name: 'Anual', months: 12, price: 0.7, discount: 30 }
+  1: { 
+    id: 1, 
+    name: 'Mensal', 
+    months: 1, 
+    price: 200, // R$ 200/mês
+    discount: 0 
+  },
+  3: { 
+    id: 3, 
+    name: 'Trimestral', 
+    months: 3, 
+    price: 160, // R$ 160/mês (20% desconto)
+    discount: 20 
+  },
+  6: { 
+    id: 6, 
+    name: 'Semestral', 
+    months: 6, 
+    price: 140, // R$ 140/mês (30% desconto)
+    discount: 30 
+  },
+  12: { 
+    id: 12, 
+    name: 'Anual', 
+    months: 12, 
+    price: 125, // R$ 125/mês (37.5% desconto)
+    discount: 37.5 
+  }
 };
 
 export const usePlanSelection = (hasCart: boolean) => {
@@ -19,17 +44,27 @@ export const usePlanSelection = (hasCart: boolean) => {
   
   const [isLoading, setIsLoading] = useState(false);
 
-  // Calculate estimated price
+  // CORREÇÃO: Usar função centralizada para calcular preço estimado
   const calculateEstimatedPrice = () => {
-    if (!selectedPlan || cartItems.length === 0) return 0;
+    if (!selectedPlan || cartItems.length === 0) {
+      console.log("💰 [usePlanSelection] Cálculo cancelado - dados insuficientes:", {
+        selectedPlan,
+        cartItemsLength: cartItems.length
+      });
+      return 0;
+    }
     
-    const plan = PLANS[selectedPlan];
-    if (!plan) return 0;
+    // Usar função centralizada para garantir consistência
+    const result = calculateTotalPrice(selectedPlan, cartItems, 0, false);
     
-    return cartItems.reduce((total, item) => {
-      const basePrice = item.panel.buildings?.preco_base || 0;
-      return total + (basePrice * plan.price * selectedPlan);
-    }, 0);
+    console.log("💰 [usePlanSelection] PREÇO ESTIMADO CORRIGIDO:", {
+      selectedPlan,
+      cartItemsLength: cartItems.length,
+      estimatedPrice: result,
+      calculation: `${cartItems.length} painéis × R$ ${PLANS[selectedPlan]?.price}/mês × ${selectedPlan} meses = R$ ${result}`
+    });
+    
+    return result;
   };
 
   // Navigate to coupon page

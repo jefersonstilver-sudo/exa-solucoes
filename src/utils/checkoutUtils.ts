@@ -4,7 +4,6 @@
 import { Panel } from '@/types/panel';
 import { PlanKey } from '@/types/checkout';
 import { logPriceCalculation } from './auditLogger';
-import { BASE_PRICE_PER_PANEL } from '@/constants/checkoutConstants';
 
 interface CartItem {
   panel: Panel;
@@ -12,29 +11,15 @@ interface CartItem {
   price?: number;
 }
 
-// NOVA FUNÇÃO: Calcular preço de um painel individual
-export const getPanelPrice = (panel: Panel, duration: number = 30): number => {
-  if (!panel || !panel.buildings?.preco_base) {
-    console.warn("⚠️ [getPanelPrice] Panel ou preço base não encontrado:", { panel });
-    return 0;
-  }
-
-  const basePrice = panel.buildings.preco_base;
-  const months = duration / 30;
-  const totalPrice = basePrice * months;
-
-  console.log("💰 [getPanelPrice] Cálculo do preço do painel:", {
-    panelId: panel.id,
-    basePrice,
-    duration,
-    months,
-    totalPrice
-  });
-
-  return totalPrice;
+// PREÇOS FIXOS POR PLANO (em reais por mês por painel)
+const PLAN_PRICES = {
+  1: 200,   // R$ 200/mês
+  3: 160,   // R$ 160/mês (20% desconto)
+  6: 140,   // R$ 140/mês (30% desconto)
+  12: 125   // R$ 125/mês (37.5% desconto)
 };
 
-// FUNÇÃO CORRIGIDA: Cálculo de preço total com desconto aplicado corretamente e preços específicos
+// FUNÇÃO CORRIGIDA: Cálculo de preço total com preços fixos por plano
 export const calculateTotalPrice = (
   selectedPlan: PlanKey | null,
   cartItems: CartItem[],
@@ -49,7 +34,7 @@ export const calculateTotalPrice = (
     return 0;
   }
 
-  console.log("💰 [CheckoutUtils] INICIANDO CÁLCULO COM PREÇOS CORRIGIDOS:", {
+  console.log("💰 [CheckoutUtils] INICIANDO CÁLCULO CORRIGIDO:", {
     selectedPlan,
     cartItemsCount: cartItems.length,
     couponDiscount,
@@ -57,32 +42,24 @@ export const calculateTotalPrice = (
     timestamp: new Date().toISOString()
   });
 
-  // Preços específicos por plano conforme especificação
-  const pricePerMonth = {
-    1: 200,   // R$ 200/mês
-    3: 160,   // R$ 160/mês (R$ 200 - 20%)
-    6: 140,   // R$ 140/mês 
-    12: 125   // R$ 125/mês
-  };
-
-  const monthlyPrice = pricePerMonth[selectedPlan];
+  const pricePerMonth = PLAN_PRICES[selectedPlan];
   
-  if (!monthlyPrice) {
+  if (!pricePerMonth) {
     console.error("💰 [CheckoutUtils] Preço não encontrado para o plano:", selectedPlan);
     return 0;
   }
 
-  // CORREÇÃO: Calcular total baseado no número de painéis × preço mensal × meses
+  // CORREÇÃO: Total = número de painéis × preço mensal × meses do plano
   const totalPanels = cartItems.length;
-  const totalWithPlan = totalPanels * monthlyPrice * selectedPlan;
+  const totalWithPlan = totalPanels * pricePerMonth * selectedPlan;
   
   console.log("💰 [CheckoutUtils] CÁLCULO CORRIGIDO:", {
     selectedPlan,
-    monthlyPrice,
+    pricePerMonth,
     totalPanels,
     planMonths: selectedPlan,
     totalWithPlan,
-    calculation: `${totalPanels} painéis × R$ ${monthlyPrice}/mês × ${selectedPlan} meses = R$ ${totalWithPlan}`
+    calculation: `${totalPanels} painéis × R$ ${pricePerMonth}/mês × ${selectedPlan} meses = R$ ${totalWithPlan}`
   });
 
   // Aplicar desconto se válido
@@ -107,64 +84,37 @@ export const calculateTotalPrice = (
     selectedPlan,
     cartItemsCount: cartItems.length,
     finalPrice,
-    pricePerMonth: monthlyPrice,
+    pricePerMonth,
     withDiscount: couponValid && couponDiscount > 0
   });
 
   return finalPrice;
 };
 
-// Cálculo do subtotal do carrinho (baseado no preço base)
-export const calculateCartSubtotal = (cartItems: CartItem[]): number => {
-  if (!cartItems || cartItems.length === 0) {
-    return 0;
-  }
-
-  const subtotal = cartItems.reduce((total, item) => {
-    const basePrice = item.panel?.buildings?.preco_base || BASE_PRICE_PER_PANEL;
-    return total + basePrice;
-  }, 0);
-
-  console.log("💰 [CheckoutUtils] SUBTOTAL CALCULADO:", {
-    cartItemsCount: cartItems.length,
-    subtotal
-  });
-
-  return subtotal;
-};
-
-// CORREÇÃO: Calcular preços dinâmicos para exibição nos cartões de plano
+// NOVA FUNÇÃO: Calcular preços dinâmicos para exibição nos cartões de plano
 export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[]): any => {
   if (!cartItems || cartItems.length === 0) {
     return null;
   }
 
-  // Usar os preços específicos definidos
-  const pricePerMonth = {
-    1: 200,   // R$ 200/mês
-    3: 160,   // R$ 160/mês 
-    6: 140,   // R$ 140/mês 
-    12: 125   // R$ 125/mês
-  };
-
-  const monthlyPricePerPanel = pricePerMonth[planKey];
+  const pricePerMonth = PLAN_PRICES[planKey];
   const totalPanels = cartItems.length;
   
-  // CORREÇÃO: Total = painéis × preço mensal × meses do plano
-  const totalPrice = totalPanels * monthlyPricePerPanel * planKey;
-  const pricePerMonthTotal = totalPanels * monthlyPricePerPanel;
+  // Total = painéis × preço mensal × meses do plano
+  const totalPrice = totalPanels * pricePerMonth * planKey;
+  const pricePerMonthTotal = totalPanels * pricePerMonth;
   
   // Calcular economia comparado ao plano mensal
-  const monthlyPlanTotal = totalPanels * pricePerMonth[1] * planKey;
+  const monthlyPlanTotal = totalPanels * PLAN_PRICES[1] * planKey;
   const savings = planKey > 1 ? monthlyPlanTotal - totalPrice : 0;
 
   console.log("💰 [getPlanWithDynamicPricing] CÁLCULO CORRIGIDO:", {
     planKey,
     totalPanels,
-    monthlyPricePerPanel,
+    pricePerMonth,
     planMonths: planKey,
     totalPrice,
-    calculation: `${totalPanels} × R$ ${monthlyPricePerPanel} × ${planKey} = R$ ${totalPrice}`
+    calculation: `${totalPanels} × R$ ${pricePerMonth} × ${planKey} = R$ ${totalPrice}`
   });
 
   return {
@@ -172,6 +122,29 @@ export const getPlanWithDynamicPricing = (planKey: PlanKey, cartItems: CartItem[
     dynamicTotalPrice: totalPrice,
     dynamicSavings: savings
   };
+};
+
+// Função para obter preço por mês de um plano específico
+export const getPlanMonthlyPrice = (planKey: PlanKey): number => {
+  return PLAN_PRICES[planKey] || 0;
+};
+
+// Cálculo do subtotal do carrinho (baseado nos preços dos planos)
+export const calculateCartSubtotal = (cartItems: CartItem[], selectedPlan: PlanKey = 1): number => {
+  if (!cartItems || cartItems.length === 0) {
+    return 0;
+  }
+
+  const pricePerMonth = PLAN_PRICES[selectedPlan];
+  const subtotal = cartItems.length * pricePerMonth;
+
+  console.log("💰 [CheckoutUtils] SUBTOTAL CALCULADO:", {
+    cartItemsCount: cartItems.length,
+    pricePerMonth,
+    subtotal
+  });
+
+  return subtotal;
 };
 
 // Validar integridade de preços

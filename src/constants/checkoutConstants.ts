@@ -8,14 +8,14 @@ export const CHECKOUT_STEPS = {
   UPLOAD: 4
 };
 
-// Planos disponíveis with updated structure - preços corrigidos conforme especificação
+// CORREÇÃO: Planos com preços fixos corretos conforme especificação
 export const PLANS = {
   1: {
     id: 1,
     name: 'Plano Básico',
     description: '1 mês',
     months: 1,
-    discount: 0, // Sem desconto
+    discount: 0,
     pricePerMonth: 200, // R$ 200/mês
     mostPopular: false,
     extras: [
@@ -35,8 +35,8 @@ export const PLANS = {
     name: 'Plano Trimestral',
     description: '3 meses',
     months: 3,
-    discount: 20, // 20% de desconto
-    pricePerMonth: 160, // R$ 200 - 20% = R$ 160/mês
+    discount: 20,
+    pricePerMonth: 160, // R$ 160/mês (20% desconto)
     mostPopular: true,
     extras: [
       'Economize 20% (R$ 40/mês)',
@@ -55,8 +55,8 @@ export const PLANS = {
     name: 'Plano Semestral',
     description: '6 meses',
     months: 6,
-    discount: 30, // 30% de desconto para chegar em R$ 140/mês
-    pricePerMonth: 140, // R$ 140/mês conforme especificado
+    discount: 30,
+    pricePerMonth: 140, // R$ 140/mês
     mostPopular: false,
     extras: [
       'Economize 30% (R$ 60/mês)',
@@ -77,8 +77,8 @@ export const PLANS = {
     name: 'Plano Anual',
     description: '12 meses',
     months: 12,
-    discount: 37.5, // 37.5% de desconto para chegar em R$ 125/mês
-    pricePerMonth: 125, // R$ 125/mês conforme especificado
+    discount: 37.5,
+    pricePerMonth: 125, // R$ 125/mês
     mostPopular: false,
     extras: [
       'Economize 37.5% (R$ 75/mês)',
@@ -105,5 +105,5 @@ export const MP_ACCESS_TOKEN = 'TEST-1284714739337536-091623-...'; // Truncado p
 // Constantes de duração
 export const DAYS_IN_MONTH = 30;
 
-// Preço base por painel por mês
+// CORREÇÃO: Preço base agora é usado apenas como referência, cálculos usam preços fixos
 export const BASE_PRICE_PER_PANEL = 200;

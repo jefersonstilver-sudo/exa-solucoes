@@ -5,7 +5,7 @@ import { calculateTotalPrice } from '@/utils/checkoutUtils';
 import { logPriceCalculation } from '@/utils/auditLogger';
 
 export const usePlanCalculations = () => {
-  // Calculate estimated total price based on cart and selected plan - USANDO FUNÇÃO CENTRALIZADA
+  // CORREÇÃO: Usar função centralizada para consistência total
   const calculateEstimatedPrice = (
     selectedPlan: PlanKey | null,
     cartItems: CartItem[],
@@ -19,18 +19,17 @@ export const usePlanCalculations = () => {
       return 0;
     }
     
-    // Use the same calculation logic as checkoutUtils to ensure consistency
+    // CORREÇÃO: Usar função centralizada em vez de lógica própria
     const result = calculateTotalPrice(selectedPlan, cartItems, 0, false);
     
-    console.log("💰 [usePlanCalculations] RESULTADO ESTIMADO:", {
+    console.log("💰 [usePlanCalculations] RESULTADO CORRIGIDO:", {
       selectedPlan,
       cartItemsLength: cartItems.length,
       estimatedPrice: result,
       timestamp: new Date().toISOString(),
       cartDetails: cartItems.map(item => ({
         panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
+        buildingName: item.panel.buildings?.nome
       }))
     });
     
@@ -41,8 +40,7 @@ export const usePlanCalculations = () => {
       estimatedPrice: result,
       cartItems: cartItems.map(item => ({
         panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
+        buildingName: item.panel.buildings?.nome
       }))
     });
     
