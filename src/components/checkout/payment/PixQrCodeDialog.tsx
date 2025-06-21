@@ -34,34 +34,50 @@ const PixQrCodeDialog = ({
 }: PixQrCodeDialogProps) => {
   const navigate = useNavigate();
   
-  // SISTEMA ORIGINAL: Usar dados do webhook N8N
+  // SISTEMA CORRIGIDO: Usar dados do webhook N8N com logs
   const finalQrCodeBase64 = pix_base64 || qrCodeBase64;
   const finalQrCodeText = pix_url || qrCodeText;
+
+  console.log("🖼️ [PixQrCodeDialog] SISTEMA CORRIGIDO - Dados recebidos:", {
+    isOpen,
+    hasQrCodeBase64: !!finalQrCodeBase64,
+    hasQrCodeText: !!finalQrCodeText,
+    hasPaymentLink: !!paymentLink,
+    pix_base64: !!pix_base64,
+    pix_url: !!pix_url
+  });
 
   const handleCopyQrCode = () => {
     if (finalQrCodeText) {
       navigator.clipboard.writeText(finalQrCodeText)
         .then(() => {
+          console.log("📋 Código PIX copiado com sucesso");
           toast.success("Código PIX copiado!");
           logCheckoutEvent(
             CheckoutEvent.USER_ACTION,
             LogLevel.INFO,
-            "Código PIX copiado pelo usuário",
+            "Código PIX copiado pelo usuário - SISTEMA CORRIGIDO",
             { timestamp: new Date().toISOString() }
           );
         })
-        .catch(() => toast.error("Erro ao copiar código PIX"));
+        .catch((error) => {
+          console.error("❌ Erro ao copiar código PIX:", error);
+          toast.error("Erro ao copiar código PIX");
+        });
+    } else {
+      console.error("❌ Código PIX não disponível para cópia");
+      toast.error("Código PIX não disponível");
     }
   };
 
-  // SISTEMA ORIGINAL: Redirecionamento direto para pedidos
+  // SISTEMA CORRIGIDO: Redirecionamento direto para pedidos
   const redirectToOrders = () => {
-    console.log("🔄 [PixQrCodeDialog] SISTEMA ORIGINAL - Redirecionando para pedidos");
+    console.log("🔄 [PixQrCodeDialog] SISTEMA CORRIGIDO - Redirecionando para pedidos");
     
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
-      "Redirecionamento para pedidos após PIX",
+      "Redirecionamento para pedidos após PIX - SISTEMA CORRIGIDO",
       { timestamp: new Date().toISOString() }
     );
 
@@ -74,22 +90,44 @@ const PixQrCodeDialog = ({
   };
 
   const handleClose = () => {
-    console.log("❌ [PixQrCodeDialog] Botão fechar clicado");
+    console.log("❌ [PixQrCodeDialog] SISTEMA CORRIGIDO - Botão fechar clicado");
     redirectToOrders();
   };
 
   const handlePaymentConfirmed = () => {
-    console.log("✅ [PixQrCodeDialog] SISTEMA ORIGINAL - Pagamento confirmado");
+    console.log("✅ [PixQrCodeDialog] SISTEMA CORRIGIDO - Pagamento confirmado pelo usuário");
     
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_EVENT,
       LogLevel.SUCCESS,
-      "Usuário confirmou pagamento PIX",
+      "Usuário confirmou pagamento PIX - SISTEMA CORRIGIDO",
       { timestamp: new Date().toISOString() }
     );
     
     redirectToOrders();
   };
+
+  // Se não há dados do QR Code, mostrar erro
+  if (!finalQrCodeBase64 && !finalQrCodeText) {
+    console.error("❌ [PixQrCodeDialog] SISTEMA CORRIGIDO - Dados PIX não disponíveis");
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-red-600">Erro no PIX</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-gray-600 mb-4">
+              Não foi possível gerar o QR Code PIX. Tente novamente.
+            </p>
+            <Button onClick={handleClose} className="bg-red-600 hover:bg-red-700">
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -161,7 +199,7 @@ const PixQrCodeDialog = ({
             </div>
           )}
 
-          {/* Botão "Já Paguei" - SISTEMA ORIGINAL */}
+          {/* Botão "Já Paguei" - SISTEMA CORRIGIDO */}
           <div className="w-full pt-4 border-t border-green-200">
             <Button
               onClick={handlePaymentConfirmed}

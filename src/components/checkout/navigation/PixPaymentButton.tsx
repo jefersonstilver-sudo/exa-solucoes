@@ -29,48 +29,71 @@ const PixPaymentButton = ({
     try {
       setIsLoading(true);
       
-      console.log("🎯 [PixPaymentButton] SISTEMA ORIGINAL RESTAURADO - Iniciando PIX");
+      console.log("🎯 [PixPaymentButton] SISTEMA CORRIGIDO - Iniciando PIX");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        "Botão PIX clicado - sistema original restaurado",
+        "Botão PIX clicado - sistema corrigido",
         { totalPrice, timestamp: new Date().toISOString() }
       );
       
       if (!user) {
+        console.error("❌ Usuário não autenticado");
         toast.error("Usuário não autenticado");
         return;
       }
 
-      // Buscar dados do usuário
+      // Buscar dados do usuário com logs detalhados
+      console.log("👤 Buscando dados do usuário:", user.id);
       const userInfo = await getUserInfo(user.id);
       
       if (!userInfo) {
+        console.error("❌ Erro ao buscar dados do usuário");
         toast.error("Erro ao buscar dados do usuário");
         return;
       }
-
-      // Buscar itens do carrinho
-      const cartItemsStr = localStorage.getItem('indexa_unified_cart');
-      const cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
       
-      if (cartItems.length === 0) {
+      console.log("✅ Dados do usuário encontrados:", userInfo);
+
+      // Buscar itens do carrinho com validação melhorada
+      const cartItemsStr = localStorage.getItem('indexa_unified_cart');
+      console.log("🛒 Dados brutos do carrinho:", cartItemsStr);
+      
+      let cartItems = [];
+      try {
+        cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
+      } catch (parseError) {
+        console.error("❌ Erro ao fazer parse do carrinho:", parseError);
+        toast.error("Erro ao ler dados do carrinho");
+        return;
+      }
+      
+      console.log("🛒 Itens do carrinho parseados:", cartItems);
+      
+      if (!cartItems || cartItems.length === 0) {
+        console.error("❌ Carrinho vazio");
         toast.error("Carrinho vazio");
         return;
       }
 
       // Plano selecionado
       const selectedPlan = localStorage.getItem('selectedPlan') || '1';
+      console.log("📋 Plano selecionado:", selectedPlan);
       
       // Calcular desconto PIX (5% off)
       const discountedTotal = totalPrice * 0.95;
+      console.log("💰 Preço com desconto PIX:", discountedTotal);
 
-      // Formatar prédios para o webhook
-      const formattedPredios = cartItems.map((item: any) => ({
-        id: item.panel?.id || '',
-        nome: item.panel?.buildings?.nome || 'Painel'
-      }));
+      // Formatar prédios para o webhook com logs
+      const formattedPredios = cartItems.map((item: any, index: number) => {
+        const predio = {
+          id: item.panel?.id || `panel_${index}`,
+          nome: item.panel?.buildings?.nome || item.panel?.nome || `Painel ${index + 1}`
+        };
+        console.log(`🏢 Prédio ${index + 1}:`, predio);
+        return predio;
+      });
 
       // Datas do período
       const now = new Date();
@@ -81,6 +104,12 @@ const PixPaymentButton = ({
         return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
       };
 
+      const formattedPeriod = {
+        inicio: formatDate(now),
+        fim: formatDate(endDate)
+      };
+      console.log("📅 Período formatado:", formattedPeriod);
+
       // Dados para o webhook N8N
       const webhookData: PixWebhookData = {
         cliente_id: user.id,
@@ -90,44 +119,47 @@ const PixPaymentButton = ({
         periodo_meses: parseInt(selectedPlan),
         predios_selecionados: formattedPredios,
         valor_total: discountedTotal.toFixed(2),
-        periodo_exibicao: {
-          inicio: formatDate(now),
-          fim: formatDate(endDate)
-        }
+        periodo_exibicao: formattedPeriod
       };
 
-      console.log("📡 [PixPaymentButton] Enviando para webhook N8N:", webhookData);
+      console.log("📡 [PixPaymentButton] SISTEMA CORRIGIDO - Dados finais para webhook:", JSON.stringify(webhookData, null, 2));
 
-      // SISTEMA ORIGINAL: Chamar apenas o webhook N8N real
+      // Chamar webhook N8N com tratamento melhorado
+      toast.info("Gerando QR Code PIX...", { duration: 2000 });
+      
       const response = await sendPixPaymentWebhook(webhookData);
       
-      console.log("✅ [PixPaymentButton] Resposta do webhook N8N:", response);
+      console.log("✅ [PixPaymentButton] SISTEMA CORRIGIDO - Resposta do webhook:", response);
       
       if (response.success && (response.qrCodeBase64 || response.pix_base64)) {
         // Armazenar dados PIX e abrir popup
         setPixData(response);
         setQrCodeDialogOpen(true);
         
+        console.log("🎉 QR Code PIX gerado com sucesso!");
         toast.success("QR Code PIX gerado com sucesso!");
         
         logCheckoutEvent(
           CheckoutEvent.PAYMENT_EVENT,
           LogLevel.SUCCESS,
-          "QR Code PIX gerado com sucesso via webhook N8N",
-          { hasQrCode: !!(response.qrCodeBase64 || response.pix_base64) }
+          "QR Code PIX gerado com sucesso via webhook N8N - SISTEMA CORRIGIDO",
+          { 
+            hasQrCode: !!(response.qrCodeBase64 || response.pix_base64),
+            hasUrl: !!(response.qrCodeText || response.pix_url)
+          }
         );
       } else {
         throw new Error(response.error || "Erro ao gerar QR Code PIX");
       }
       
     } catch (error: any) {
-      console.error("❌ [PixPaymentButton] Erro:", error);
+      console.error("❌ [PixPaymentButton] SISTEMA CORRIGIDO - Erro:", error);
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        "Erro ao processar PIX via webhook N8N",
-        { error: error.message }
+        "Erro ao processar PIX via webhook N8N - SISTEMA CORRIGIDO",
+        { error: error.message, stack: error.stack }
       );
       
       toast.error(`Erro ao processar pagamento PIX: ${error.message}`);
@@ -160,11 +192,12 @@ const PixPaymentButton = ({
         )}
       </Button>
 
-      {/* Popup do QR Code PIX */}
+      {/* Popup do QR Code PIX - SISTEMA CORRIGIDO */}
       {pixData && (
         <PixQrCodeDialog
           isOpen={qrCodeDialogOpen}
           onClose={() => {
+            console.log("🔄 [PixPaymentButton] SISTEMA CORRIGIDO - Fechando popup e continuando fluxo");
             setQrCodeDialogOpen(false);
             // Chamar onClick após fechar o popup para continuar fluxo
             onClick();
