@@ -95,9 +95,14 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
             <img
               src={banner.image_url}
               alt={banner.title || 'Banner'}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover sm:object-contain lg:object-cover"
+              style={{
+                objectPosition: 'center'
+              }}
               loading={index === 0 ? "eager" : "lazy"}
             />
+            {/* Background gradient para mobile quando usar object-contain */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indexa-purple/10 via-transparent to-purple-600/10 pointer-events-none sm:block lg:hidden" />
             {/* Subtle overlay for better dot visibility */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
           </div>

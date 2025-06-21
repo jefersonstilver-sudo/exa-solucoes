@@ -95,8 +95,8 @@ const Index = () => {
         <div className="max-w-7xl mx-auto relative z-10 w-full">
           {/* Mobile: Banner no topo + Cards empilhados verticalmente */}
           <div className="lg:hidden space-y-4">
-            {/* Banner no mobile */}
-            <div className="h-48 md:h-64">
+            {/* Banner no mobile - aumentando altura significativamente */}
+            <div className="h-[300px] sm:h-[350px] md:h-[400px]">
               <HomepageBannerCarousel 
                 banners={banners} 
                 className="w-full h-full"
