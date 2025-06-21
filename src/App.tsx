@@ -68,7 +68,12 @@ function App() {
                   <Routes>
                     {/* Rotas principais */}
                     <Route path="/" element={<Index />} />
+                    
+                    {/* CORREÇÃO: Rotas da loja unificadas */}
                     <Route path="/loja" element={<BuildingStore />} />
+                    <Route path="/paineis-digitais/loja" element={<BuildingStore />} />
+                    <Route path="/building-store" element={<BuildingStore />} />
+                    
                     <Route path="/plano" element={<PlanSelection />} />
                     <Route path="/planos" element={<PlanSelection />} />
                     <Route path="/selecionar-plano" element={<PlanSelection />} />

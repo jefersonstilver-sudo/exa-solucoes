@@ -5,6 +5,7 @@ import { useCouponValidator } from './useCouponValidator';
 import { useUserSession } from './useUserSession';
 import { useEnhancedAttemptCapture } from './useEnhancedAttemptCapture';
 import { useCheckoutNavigation } from './checkout/useCheckoutNavigation';
+import { useCartDebug } from './useCartDebug';
 import { PlanKey, Plan } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
@@ -33,6 +34,10 @@ export const PLANS: Record<number, Plan> = {
 export const useCheckout = () => {
   const { user: sessionUser, isLoading: isSessionLoading } = useUserSession();
   const { cartItems, selectedPlan, setSelectedPlan, handleClearCart } = useCartManager();
+  
+  // CORREÇÃO: Adicionar debug do carrinho
+  const { debugCart } = useCartDebug(cartItems, 'useCheckout');
+  
   const { 
     couponId, 
     couponCode,
@@ -66,7 +71,10 @@ export const useCheckout = () => {
         timestamp: new Date().toISOString()
       }
     );
-  }, [cartItems, selectedPlan, couponValid, couponDiscount]);
+    
+    // Debug automático quando há mudanças
+    debugCart();
+  }, [cartItems, selectedPlan, couponValid, couponDiscount, debugCart]);
 
   const { handleNextStep, handlePrevStep, isNextEnabled, isNavigating } = useCheckoutNavigation({
     step,
@@ -98,7 +106,6 @@ export const useCheckout = () => {
     
     console.log("💰 [useCheckout] RESULTADO CORRIGIDO:", {
       result,
-      expectedWithDiscount: "R$ 0.27",
       appliedDiscount: couponValid ? `${couponDiscount}%` : "Nenhum"
     });
 
@@ -145,6 +152,9 @@ export const useCheckout = () => {
     // Actions
     handleClearCart,
     calculateTotalPrice,
+    
+    // Debug
+    debugCart,
     
     // Constants
     PLANS

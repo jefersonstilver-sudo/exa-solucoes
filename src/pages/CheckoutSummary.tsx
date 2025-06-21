@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const { isLoggedIn, user, isLoading } = useUserSession();
+  const [hasValidatedCart, setHasValidatedCart] = useState(false);
   
   const {
     cartItems,
@@ -33,26 +34,38 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CORREÇÃO: Validação do carrinho mais robusta - SEM timeout agressivo
+  // CORREÇÃO: Validação do carrinho mais robusta - COM delay para permitir carregamento
   useEffect(() => {
-    if (isLoading || !isLoggedIn) return;
+    if (isLoading || !isLoggedIn || hasValidatedCart) return;
     
-    console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO CORRIGIDA:', {
-      cartItemsLength: cartItems?.length || 0,
-      cartItems: cartItems?.map(item => ({
-        panelId: item.panel?.id,
-        buildingName: item.panel?.buildings?.nome
-      })) || [],
-      timestamp: new Date().toISOString()
-    });
-    
-    // CORREÇÃO: Validação mais suave sem timeout agressivo
-    if (cartItems && cartItems.length === 0) {
-      console.log('[CheckoutSummary] Cart is empty, showing warning');
-      toast.error("Seu carrinho está vazio. Adicione painéis para continuar.");
-      // Não redirecionar automaticamente - dar tempo para o carrinho carregar
-    }
-  }, [isLoggedIn, cartItems, navigate, isLoading]);
+    // Dar tempo para o carrinho carregar
+    const validateCartTimer = setTimeout(() => {
+      console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO CORRIGIDA:', {
+        cartItemsLength: cartItems?.length || 0,
+        cartItems: cartItems?.map(item => ({
+          panelId: item.panel?.id,
+          buildingName: item.panel?.buildings?.nome
+        })) || [],
+        timestamp: new Date().toISOString()
+      });
+      
+      // CORREÇÃO: Validação menos agressiva
+      if (!cartItems || cartItems.length === 0) {
+        console.log('[CheckoutSummary] Cart appears empty, showing warning but NOT redirecting immediately');
+        toast.error("Seu carrinho parece estar vazio. Se o problema persistir, adicione painéis novamente.", {
+          duration: 5000,
+          action: {
+            label: "Ir para Loja",
+            onClick: () => navigate('/paineis-digitais/loja')
+          }
+        });
+      }
+      
+      setHasValidatedCart(true);
+    }, 1000); // 1 segundo para carregar
+
+    return () => clearTimeout(validateCartTimer);
+  }, [isLoggedIn, cartItems, navigate, isLoading, hasValidatedCart]);
 
   const totalPrice = calculateTotalPrice();
 
@@ -77,8 +90,7 @@ const CheckoutSummary = () => {
       cartItemsCount: cartItems.length,
       totalPrice,
       couponValid,
-      couponDiscount,
-      expectedPrice: "R$ 0.27 com desconto"
+      couponDiscount
     });
 
     navigate('/checkout');
