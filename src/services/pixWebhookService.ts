@@ -1,10 +1,10 @@
 import { PixWebhookData, PixWebhookResponse } from '@/types/pixWebhook';
 
-const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19';
+const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
 
 export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWebhookResponse> => {
   const timestamp = new Date().toISOString();
-  console.log("🎯 MAPEAMENTO CORRIGIDO - Enviando dados para webhook N8N:", PIX_WEBHOOK_URL);
+  console.log("🎯 MAPEAMENTO CORRIGIDO - Enviando dados para webhook N8N PRODUÇÃO:", PIX_WEBHOOK_URL);
   console.log("⏰ TIMESTAMP:", timestamp);
   console.log("📊 Dados do PIX COMPLETOS:", JSON.stringify(data, null, 2));
   
@@ -29,24 +29,25 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       ...data,
       timestamp,
       webhook_version: "2.0",
-      source: "indexa-app"
+      source: "indexa-app",
+      environment: "production"
     };
 
-    console.log("🚀 ENVIANDO PAYLOAD COMPLETO PARA N8N:", JSON.stringify(webhookPayload, null, 2));
+    console.log("🚀 ENVIANDO PAYLOAD COMPLETO PARA N8N PRODUÇÃO:", JSON.stringify(webhookPayload, null, 2));
 
     const response = await fetch(PIX_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'IndexaApp/2.0',
+        'User-Agent': 'IndexaApp/2.0-Production',
         'X-Timestamp': timestamp
       },
       body: JSON.stringify(webhookPayload),
       signal: AbortSignal.timeout(30000)
     });
     
-    console.log("📡 RESPOSTA DO N8N WEBHOOK:", {
+    console.log("📡 RESPOSTA DO N8N WEBHOOK PRODUÇÃO:", {
       status: response.status,
       statusText: response.statusText,
       url: PIX_WEBHOOK_URL,
@@ -58,39 +59,39 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       let errorText = '';
       try {
         errorText = await response.text();
-        console.error("❌ Erro HTTP do N8N webhook:", {
+        console.error("❌ Erro HTTP do N8N webhook PRODUÇÃO:", {
           status: response.status,
           statusText: response.statusText,
           body: errorText,
           url: PIX_WEBHOOK_URL
         });
       } catch (e) {
-        console.error("❌ Erro ao ler resposta de erro do N8N:", e);
+        console.error("❌ Erro ao ler resposta de erro do N8N PRODUÇÃO:", e);
       }
-      throw new Error(`N8N Webhook falhou: ${response.status} - ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+      throw new Error(`N8N Webhook PRODUÇÃO falhou: ${response.status} - ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
     }
     
     let result;
     const responseText = await response.text();
-    console.log("📄 RESPOSTA BRUTA DO N8N:", responseText);
+    console.log("📄 RESPOSTA BRUTA DO N8N PRODUÇÃO:", responseText);
     
     if (!responseText || responseText.trim() === '') {
-      console.error("❌ N8N retornou resposta vazia");
-      throw new Error("N8N webhook retornou resposta vazia");
+      console.error("❌ N8N PRODUÇÃO retornou resposta vazia");
+      throw new Error("N8N webhook PRODUÇÃO retornou resposta vazia");
     }
     
     try {
       result = JSON.parse(responseText);
-      console.log("✅ JSON DO N8N PARSEADO:", result);
+      console.log("✅ JSON DO N8N PRODUÇÃO PARSEADO:", result);
     } catch (parseError) {
-      console.error("❌ Erro ao fazer parse do JSON do N8N:", parseError);
+      console.error("❌ Erro ao fazer parse do JSON do N8N PRODUÇÃO:", parseError);
       console.error("❌ Resposta que causou erro:", responseText);
       
       if (responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
-        throw new Error("N8N retornou uma página HTML em vez de JSON. Verifique se o webhook está ativo.");
+        throw new Error("N8N PRODUÇÃO retornou uma página HTML em vez de JSON. Verifique se o webhook está ativo.");
       }
       
-      throw new Error(`Resposta do N8N não é um JSON válido: ${parseError.message}`);
+      throw new Error(`Resposta do N8N PRODUÇÃO não é um JSON válido: ${parseError.message}`);
     }
     
     // CORREÇÃO: Verificar se tem dados PIX com múltiplos formatos e mapear corretamente
@@ -104,7 +105,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       result.qr_code
     );
     
-    console.log("🔍 MAPEAMENTO CORRIGIDO - VERIFICAÇÃO DE DADOS PIX DO N8N:", {
+    console.log("🔍 MAPEAMENTO CORRIGIDO - VERIFICAÇÃO DE DADOS PIX DO N8N PRODUÇÃO:", {
       hasPixData,
       availableFields: Object.keys(result),
       pix_base64: !!result.pix_base64,
@@ -131,7 +132,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
         ...result
       };
       
-      console.log("✅ MAPEAMENTO CORRIGIDO - DADOS PIX MAPEADOS CORRETAMENTE:", {
+      console.log("✅ MAPEAMENTO CORRIGIDO - DADOS PIX MAPEADOS CORRETAMENTE (PRODUÇÃO):", {
         hasQrCodeBase64: !!pixResponse.qrCodeBase64,
         hasQrCodeText: !!pixResponse.qrCodeText,
         hasPixUrl: !!pixResponse.pix_url,
@@ -142,17 +143,17 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       
       return pixResponse;
     } else {
-      console.error("❌ N8N não retornou dados PIX:", result);
+      console.error("❌ N8N PRODUÇÃO não retornou dados PIX:", result);
       
       if (result.success === false && result.error) {
-        throw new Error(`Erro do N8N: ${result.error}`);
+        throw new Error(`Erro do N8N PRODUÇÃO: ${result.error}`);
       }
       
-      throw new Error("N8N não retornou dados PIX válidos. Campos esperados: pix_base64, pix_url");
+      throw new Error("N8N PRODUÇÃO não retornou dados PIX válidos. Campos esperados: pix_base64, pix_url");
     }
     
   } catch (error) {
-    console.error("❌ ERRO COMPLETO NO N8N WEBHOOK:", {
+    console.error("❌ ERRO COMPLETO NO N8N WEBHOOK PRODUÇÃO:", {
       error: error.message,
       stack: error.stack,
       name: error.name,
@@ -163,11 +164,11 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
     let userMessage = "Erro ao processar pagamento PIX";
     
     if (error.name === 'AbortError') {
-      userMessage = "Timeout ao conectar com N8N. Tente novamente.";
+      userMessage = "Timeout ao conectar com N8N PRODUÇÃO. Tente novamente.";
     } else if (error.message.includes('fetch')) {
-      userMessage = "Erro de conexão com N8N. Verifique sua internet.";
+      userMessage = "Erro de conexão com N8N PRODUÇÃO. Verifique sua internet.";
     } else if (error.message.includes('JSON')) {
-      userMessage = "Erro na resposta do N8N. Tente novamente em alguns minutos.";
+      userMessage = "Erro na resposta do N8N PRODUÇÃO. Tente novamente em alguns minutos.";
     } else if (error.message.includes('N8N')) {
       userMessage = error.message; // Usar mensagem específica do N8N
     }
