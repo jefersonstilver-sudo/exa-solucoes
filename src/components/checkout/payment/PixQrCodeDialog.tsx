@@ -8,10 +8,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, CheckCircle, X, Smartphone } from 'lucide-react';
+import { Copy, CheckCircle, X, Smartphone, AlertCircle } from 'lucide-react';
 import { QRCodeDisplay } from '@/components/checkout/payment/QRCodeDisplay';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { clearAllCarts } from '@/utils/cartUtils';
 
 interface PixQrCodeDialogProps {
   isOpen: boolean;
@@ -34,95 +35,106 @@ const PixQrCodeDialog = ({
 }: PixQrCodeDialogProps) => {
   const navigate = useNavigate();
   
-  // SISTEMA CORRIGIDO: Usar dados do webhook N8N com logs
+  // Sistema unificado para dados PIX
   const finalQrCodeBase64 = pix_base64 || qrCodeBase64;
   const finalQrCodeText = pix_url || qrCodeText;
+  const isTestMode = finalQrCodeText?.includes('teste') || finalQrCodeBase64?.includes('test');
 
-  console.log("🖼️ [PixQrCodeDialog] SISTEMA CORRIGIDO - Dados recebidos:", {
+  console.log("🖼️ [PixQrCodeDialog] SISTEMA UNIFICADO - Dados recebidos:", {
     isOpen,
     hasQrCodeBase64: !!finalQrCodeBase64,
     hasQrCodeText: !!finalQrCodeText,
     hasPaymentLink: !!paymentLink,
-    pix_base64: !!pix_base64,
-    pix_url: !!pix_url
+    isTestMode,
+    qrTextPreview: finalQrCodeText?.substring(0, 50) + '...'
   });
 
   const handleCopyQrCode = () => {
     if (finalQrCodeText) {
       navigator.clipboard.writeText(finalQrCodeText)
         .then(() => {
-          console.log("📋 Código PIX copiado com sucesso");
+          console.log("📋 [PixQrCodeDialog] Código PIX copiado");
           toast.success("Código PIX copiado!");
           logCheckoutEvent(
             CheckoutEvent.USER_ACTION,
             LogLevel.INFO,
-            "Código PIX copiado pelo usuário - SISTEMA CORRIGIDO",
-            { timestamp: new Date().toISOString() }
+            "Código PIX copiado pelo usuário",
+            { isTestMode, timestamp: new Date().toISOString() }
           );
         })
         .catch((error) => {
-          console.error("❌ Erro ao copiar código PIX:", error);
+          console.error("❌ [PixQrCodeDialog] Erro ao copiar:", error);
           toast.error("Erro ao copiar código PIX");
         });
     } else {
-      console.error("❌ Código PIX não disponível para cópia");
       toast.error("Código PIX não disponível");
     }
   };
 
-  // SISTEMA CORRIGIDO: Redirecionamento direto para pedidos
   const redirectToOrders = () => {
-    console.log("🔄 [PixQrCodeDialog] SISTEMA CORRIGIDO - Redirecionando para pedidos");
+    console.log("🔄 [PixQrCodeDialog] SISTEMA UNIFICADO - Redirecionando para pedidos");
     
     logCheckoutEvent(
       CheckoutEvent.NAVIGATION_EVENT,
       LogLevel.INFO,
-      "Redirecionamento para pedidos após PIX - SISTEMA CORRIGIDO",
-      { timestamp: new Date().toISOString() }
+      "Redirecionamento para pedidos após PIX",
+      { isTestMode, timestamp: new Date().toISOString() }
     );
 
-    // Limpar carrinho
-    localStorage.removeItem('indexa_unified_cart');
-    localStorage.removeItem('panelCart');
+    // Limpar todos os carrinhos
+    clearAllCarts();
     
     toast.success("Redirecionando para seus pedidos...");
     navigate('/anunciante/pedidos');
   };
 
   const handleClose = () => {
-    console.log("❌ [PixQrCodeDialog] SISTEMA CORRIGIDO - Botão fechar clicado");
+    console.log("❌ [PixQrCodeDialog] Botão fechar clicado");
     redirectToOrders();
   };
 
   const handlePaymentConfirmed = () => {
-    console.log("✅ [PixQrCodeDialog] SISTEMA CORRIGIDO - Pagamento confirmado pelo usuário");
+    console.log("✅ [PixQrCodeDialog] Pagamento confirmado pelo usuário");
     
     logCheckoutEvent(
       CheckoutEvent.PAYMENT_EVENT,
       LogLevel.SUCCESS,
-      "Usuário confirmou pagamento PIX - SISTEMA CORRIGIDO",
-      { timestamp: new Date().toISOString() }
+      "Usuário confirmou pagamento PIX",
+      { isTestMode, timestamp: new Date().toISOString() }
     );
     
     redirectToOrders();
   };
 
-  // Se não há dados do QR Code, mostrar erro
+  // Se não há dados do QR Code, mostrar erro com opções
   if (!finalQrCodeBase64 && !finalQrCodeText) {
-    console.error("❌ [PixQrCodeDialog] SISTEMA CORRIGIDO - Dados PIX não disponíveis");
+    console.error("❌ [PixQrCodeDialog] Dados PIX não disponíveis");
     return (
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-red-600">Erro no PIX</DialogTitle>
+            <DialogTitle className="text-center text-red-600 flex items-center justify-center space-x-2">
+              <AlertCircle className="h-5 w-5" />
+              <span>Erro ao Gerar PIX</span>
+            </DialogTitle>
           </DialogHeader>
-          <div className="text-center py-4">
-            <p className="text-gray-600 mb-4">
-              Não foi possível gerar o QR Code PIX. Tente novamente.
+          <div className="text-center py-6 space-y-4">
+            <p className="text-gray-600">
+              Não foi possível gerar o QR Code PIX no momento.
             </p>
-            <Button onClick={handleClose} className="bg-red-600 hover:bg-red-700">
-              Fechar
-            </Button>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-700">
+                Seu pedido foi criado com sucesso! Você pode acompanhar o status na área de pedidos.
+              </p>
+            </div>
+            <div className="flex flex-col space-y-2">
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Tentar Novamente
+              </Button>
+              <Button onClick={handleClose} className="bg-blue-600 hover:bg-blue-700">
+                Ver Meus Pedidos
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -150,9 +162,23 @@ const PixQrCodeDialog = ({
             </div>
             <div>
               <div className="text-gray-900">QR Code PIX</div>
-              <div className="text-sm font-normal text-green-600">Pagamento gerado com sucesso!</div>
+              <div className="text-sm font-normal text-green-600">
+                {isTestMode ? "Modo de Teste" : "Pagamento gerado com sucesso!"}
+              </div>
             </div>
           </DialogTitle>
+          
+          {/* Indicador de modo de teste */}
+          {isTestMode && (
+            <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mb-4">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <span className="text-sm text-yellow-800 font-medium">
+                  Modo de Teste - QR Code para demonstração
+                </span>
+              </div>
+            </div>
+          )}
         </DialogHeader>
         
         <div className="flex flex-col items-center space-y-6 py-4">
@@ -199,7 +225,7 @@ const PixQrCodeDialog = ({
             </div>
           )}
 
-          {/* Botão "Já Paguei" - SISTEMA CORRIGIDO */}
+          {/* Botão "Já Paguei" */}
           <div className="w-full pt-4 border-t border-green-200">
             <Button
               onClick={handlePaymentConfirmed}

@@ -5,20 +5,22 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
 import { useUserSession } from '@/hooks/useUserSession';
-import { useCheckout } from '@/hooks/useCheckout';
+import { useUnifiedCart } from '@/hooks/useUnifiedCart';
+import { usePaymentDebug } from '@/hooks/usePaymentDebug';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard, Clock } from 'lucide-react';
+import { ArrowLeft, CreditCard, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import PixPaymentButton from '@/components/checkout/navigation/PixPaymentButton';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, user, isLoading } = useUserSession();
-  const { cartItems, selectedPlan, calculateTotalPrice } = useCheckout();
+  const { isLoggedIn, user, isLoading: userLoading } = useUserSession();
+  const { cartItems, totalPrice, isLoading: cartLoading } = useUnifiedCart();
+  const { debugInfo, refreshDebugInfo } = usePaymentDebug(user);
 
   // Verificação de autenticação
   useEffect(() => {
-    if (isLoading) return;
+    if (userLoading) return;
     
     if (!isLoggedIn || !user?.id) {
       console.log('[Checkout] User not authenticated, redirecting to login');
@@ -26,22 +28,29 @@ const Checkout = () => {
       navigate('/login?redirect=/checkout');
       return;
     }
-  }, [isLoggedIn, user?.id, isLoading, navigate]);
+  }, [isLoggedIn, user?.id, userLoading, navigate]);
 
-  const totalPrice = calculateTotalPrice();
+  // Verificar carrinho vazio
+  useEffect(() => {
+    if (!cartLoading && cartItems.length === 0) {
+      console.warn("⚠️ [Checkout] Carrinho vazio, redirecionando para loja");
+      toast.warning("Seu carrinho está vazio. Adicione painéis para continuar.");
+      navigate('/loja');
+    }
+  }, [cartItems.length, cartLoading, navigate]);
+
+  const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
 
   const handleBack = () => {
     navigate('/checkout/resumo');
   };
 
-  // SISTEMA ORIGINAL: Função simples para redirecionamento após PIX
   const handlePixPaymentComplete = () => {
-    console.log("✅ [Checkout] SISTEMA ORIGINAL - PIX payment completado");
-    // O redirecionamento é feito no PixQrCodeDialog
+    console.log("✅ [Checkout] PIX payment completado");
   };
 
   // Loading state
-  if (isLoading) {
+  if (userLoading || cartLoading) {
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 py-8 flex items-center justify-center">
@@ -51,7 +60,7 @@ const Checkout = () => {
             className="text-center"
           >
             <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Verificando autenticação...</p>
+            <p className="text-gray-600">Carregando checkout...</p>
           </motion.div>
         </div>
       </Layout>
@@ -71,7 +80,41 @@ const Checkout = () => {
             <UnifiedCheckoutProgress currentStep={2} />
           </motion.div>
 
-          {/* Payment Content - SISTEMA ORIGINAL RESTAURADO */}
+          {/* Debug Panel (apenas em desenvolvimento) */}
+          {process.env.NODE_ENV === 'development' && debugInfo && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-gray-900 text-white rounded-xl p-4 mb-6 text-xs"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold">Debug Panel</h3>
+                <Button onClick={refreshDebugInfo} size="sm" variant="outline">
+                  Refresh
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-yellow-400">Carrinho:</p>
+                  <p>Items: {debugInfo.cartStatus.itemCount}</p>
+                  <p>Source: {debugInfo.cartStatus.usedKey}</p>
+                  <p>Total: R$ {debugInfo.cartStatus.totalPrice.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-green-400">Usuário:</p>
+                  <p>Auth: {debugInfo.userStatus.isAuthenticated ? 'Sim' : 'Não'}</p>
+                  <p>ID: {debugInfo.userStatus.userId?.substring(0, 8)}...</p>
+                </div>
+                <div>
+                  <p className="text-blue-400">Sistema:</p>
+                  <p>Plano: {debugInfo.systemStatus.selectedPlan} mês(es)</p>
+                  <p>Time: {new Date(debugInfo.timestamp).toLocaleTimeString()}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Payment Content */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -110,7 +153,7 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Métodos de Pagamento - SISTEMA ORIGINAL */}
+              {/* Métodos de Pagamento */}
               <div className="space-y-6">
                 <h3 className="text-xl font-semibold text-gray-900">Métodos de Pagamento</h3>
                 
@@ -143,18 +186,18 @@ const Checkout = () => {
                     </div>
                   </div>
                   
-                  {/* Botão PIX - SISTEMA ORIGINAL */}
+                  {/* Botão PIX */}
                   <div className="w-full">
                     <PixPaymentButton
                       onClick={handlePixPaymentComplete}
-                      isDisabled={false}
+                      isDisabled={cartItems.length === 0}
                       isLoading={false}
                       totalPrice={totalPrice}
                     />
                   </div>
                 </div>
 
-                {/* Cartão de Crédito - Em Breve (SISTEMA ORIGINAL) */}
+                {/* Cartão de Crédito - Em Breve */}
                 <div className="border-2 border-gray-200 rounded-xl p-6 bg-gray-50 opacity-75">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
