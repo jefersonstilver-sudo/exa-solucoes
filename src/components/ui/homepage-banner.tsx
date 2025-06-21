@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { HomepageBanner } from '@/hooks/useHomepageBanners';
 
 interface HomepageBannerCarouselProps {
@@ -16,19 +15,26 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const nextSlide = useCallback(() => {
-    if (banners.length === 0) return;
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
-  }, [banners.length]);
-
-  const prevSlide = useCallback(() => {
-    if (banners.length === 0) return;
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + banners.length) % banners.length);
-  }, [banners.length]);
+    if (banners.length === 0 || isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
+      setIsTransitioning(false);
+    }, 50);
+  }, [banners.length, isTransitioning]);
 
   const goToSlide = (index: number) => {
-    setCurrentIndex(index);
+    if (index === currentIndex || isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex(index);
+      setIsTransitioning(false);
+    }, 50);
   };
 
   // Auto-play functionality
@@ -68,55 +74,86 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Banner Image - Now clickable */}
-      <div 
-        className={`relative w-full h-full ${currentBanner.link_url ? 'cursor-pointer' : ''}`}
-        onClick={handleBannerClick}
-      >
-        <img
-          src={currentBanner.image_url}
-          alt={currentBanner.title || 'Banner'}
-          className="w-full h-full object-cover transition-opacity duration-500"
-          loading="lazy"
-        />
+      {/* Banner Images with Modern Transition Effects */}
+      <div className="relative w-full h-full">
+        {banners.map((banner, index) => (
+          <div
+            key={banner.id}
+            className={`absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out transform ${
+              index === currentIndex 
+                ? 'opacity-100 scale-100 z-10' 
+                : 'opacity-0 scale-105 z-0'
+            } ${banner.link_url ? 'cursor-pointer' : ''}`}
+            onClick={index === currentIndex ? handleBannerClick : undefined}
+            style={{
+              transform: index === currentIndex 
+                ? 'translateZ(0) scale(1)' 
+                : 'translateZ(0) scale(1.05)',
+              willChange: 'transform, opacity'
+            }}
+          >
+            <img
+              src={banner.image_url}
+              alt={banner.title || 'Banner'}
+              className="w-full h-full object-cover"
+              loading={index === 0 ? "eager" : "lazy"}
+            />
+            {/* Subtle overlay for better dot visibility */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+          </div>
+        ))}
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Modern Navigation Dots */}
       {banners.length > 1 && (
-        <>
-          <button
-            onClick={prevSlide}
-            className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 md:p-2 rounded-full transition-all duration-200 z-10"
-            aria-label="Banner anterior"
-          >
-            <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 md:p-2 rounded-full transition-all duration-200 z-10"
-            aria-label="Próximo banner"
-          >
-            <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-          </button>
-        </>
-      )}
-
-      {/* Dots Indicators */}
-      {banners.length > 1 && (
-        <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+        <div className="absolute bottom-4 md:bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-3 z-20">
           {banners.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-200 ${
-                index === currentIndex 
-                  ? 'bg-white scale-110' 
-                  : 'bg-white/50 hover:bg-white/80'
+              className={`relative group transition-all duration-300 ease-out ${
+                index === currentIndex ? 'scale-110' : 'scale-100 hover:scale-105'
               }`}
               aria-label={`Ir para banner ${index + 1}`}
-            />
+            >
+              {/* Outer ring */}
+              <div className={`w-4 h-4 md:w-5 md:h-5 rounded-full border-2 transition-all duration-300 ${
+                index === currentIndex 
+                  ? 'border-white bg-white/20 shadow-lg shadow-white/25' 
+                  : 'border-white/60 hover:border-white/80 bg-transparent'
+              }`}>
+                {/* Inner dot */}
+                <div className={`absolute inset-1 rounded-full transition-all duration-300 ${
+                  index === currentIndex 
+                    ? 'bg-white scale-100' 
+                    : 'bg-white/40 scale-75 group-hover:bg-white/60 group-hover:scale-85'
+                }`} />
+                
+                {/* Progress ring for current slide */}
+                {index === currentIndex && (
+                  <div 
+                    className="absolute inset-0 rounded-full border-2 border-transparent border-t-white/80 animate-spin"
+                    style={{
+                      animation: `spin ${autoPlayInterval}ms linear infinite`
+                    }}
+                  />
+                )}
+              </div>
+              
+              {/* Hover glow effect */}
+              <div className={`absolute inset-0 rounded-full transition-all duration-300 ${
+                index === currentIndex 
+                  ? 'shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
+                  : 'shadow-none group-hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+              }`} />
+            </button>
           ))}
         </div>
+      )}
+
+      {/* Loading transition overlay */}
+      {isTransitioning && (
+        <div className="absolute inset-0 bg-black/10 z-30 transition-opacity duration-200" />
       )}
     </div>
   );
