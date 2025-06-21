@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -247,6 +248,7 @@ const OrderDetails = () => {
           </div>
         ) : (
           <VideoManagementCard
+            orderStatus={orderDetails.status}
             videoSlots={videoSlots}
             uploading={uploading}
             uploadProgress={uploadProgress}
