@@ -1,7 +1,6 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+// SISTEMA RESTAURADO: Webhook N8N Real para PIX
+const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
 
 export interface PixWebhookData {
   cliente_id: string;
@@ -9,11 +8,14 @@ export interface PixWebhookData {
   nome: string;
   plano_escolhido: string;
   periodo_meses: number;
-  predios_selecionados: Array<{id: string, nome: string}>;
+  predios_selecionados: Array<{
+    id: string;
+    nome: string;
+  }>;
   valor_total: string;
-  periodo_exibicao: string | {
-    inicio?: string;
-    fim?: string;
+  periodo_exibicao: {
+    inicio: string;
+    fim: string;
   };
 }
 
@@ -24,177 +26,81 @@ export interface PixWebhookResponse {
   paymentLink?: string;
   pix_url?: string;
   pix_base64?: string;
+  message?: string;
+  error?: string;
 }
 
-/**
- * Sends payment data to the PIX webhook and returns the response
- */
-export const sendPixPaymentWebhook = async (webhookData: PixWebhookData): Promise<PixWebhookResponse> => {
+export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWebhookResponse> => {
+  console.log("🎯 SISTEMA RESTAURADO - Enviando dados para webhook N8N:", PIX_WEBHOOK_URL);
+  console.log("📊 Dados do PIX:", data);
+  
   try {
-    // WEBHOOK URL CORRIGIDA CONFORME SOLICITADO
-    const webhookUrl = "https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19";
-    
-    // Log detalhado antes de enviar o webhook
-    console.log("[PIX Webhook] 🎯 URL OFICIAL SENDO USADA:", webhookUrl);
-    console.log("[PIX Webhook] Enviando dados para webhook:", JSON.stringify(webhookData, null, 2));
-    
-    logCheckoutEvent(
-      CheckoutEvent.PAYMENT_PROCESSING,
-      LogLevel.INFO,
-      `Iniciando chamada do webhook PIX com URL CORRETA`,
-      { webhookUrl, paymentData: webhookData }
-    );
-    
-    // Teste de conectividade primeiro
-    console.log("[PIX Webhook] 🚀 Testando conectividade...");
-    
-    // Send data to webhook with improved error handling and timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
-    
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(PIX_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'Indexa-PIX-Webhook/1.0'
+        'Accept': 'application/json'
       },
-      body: JSON.stringify(webhookData),
-      signal: controller.signal
+      body: JSON.stringify(data)
     });
-
-    clearTimeout(timeoutId);
-
-    console.log("[PIX Webhook] ✅ Resposta recebida - Status:", response.status);
-    console.log("[PIX Webhook] Headers da resposta:", Object.fromEntries(response.headers.entries()));
-
-    // Verificar se a resposta é OK
+    
+    console.log("📡 Resposta do webhook - Status:", response.status);
+    
     if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
+      const errorText = await response.text();
+      console.error("❌ Erro HTTP do webhook:", errorText);
+      throw new Error(`Webhook falhou: ${response.status} - ${errorText}`);
     }
-
-    // Parse the webhook response
-    let responseData: Record<string, any> = {};
-    const responseText = await response.text();
     
-    console.log("[PIX Webhook] Raw response text:", responseText);
+    const result = await response.json();
+    console.log("✅ SISTEMA RESTAURADO - Resposta do webhook:", result);
     
-    try {
-      responseData = JSON.parse(responseText);
-      console.log("[PIX Webhook] ✅ Resposta JSON parseada:", responseData);
-    } catch (parseError) {
-      console.error("[PIX Webhook] ❌ Erro ao parsear JSON:", parseError);
-      console.log("[PIX Webhook] Response text que causou erro:", responseText);
-      
-      // Se não conseguir parsear JSON, ainda assim continua com dados mock
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.WARNING,
-        `Webhook respondeu mas JSON inválido`,
-        { responseText, parseError: String(parseError) }
-      );
-    }
-
-    // Log the webhook call success
-    console.log("[PIX Webhook] 🎉 Webhook chamado com sucesso");
-    
-    logCheckoutEvent(
-      CheckoutEvent.PAYMENT_PROCESSING,
-      LogLevel.INFO,
-      `Webhook PIX chamado com sucesso - URL CORRETA CONFIRMADA`,
-      { webhookData, responseData, finalUrl: webhookUrl }
-    );
-    
-    // Check if we have actual data from the webhook response
-    if (responseData && Object.keys(responseData).length > 0) {
-      // Use actual data from webhook
+    // Verificar se tem dados PIX na resposta
+    if (result.pix_base64 || result.qrCodeBase64) {
       return {
         success: true,
-        qrCodeBase64: responseData.pix_base64 || responseData.qrCodeBase64,
-        qrCodeText: responseData.pix_url || responseData.qrCodeText,
-        paymentLink: responseData.pix_url || responseData.paymentLink,
-        pix_url: responseData.pix_url,
-        pix_base64: responseData.pix_base64
+        qrCodeBase64: result.pix_base64 || result.qrCodeBase64,
+        qrCodeText: result.pix_url || result.qrCodeText,
+        paymentLink: result.paymentLink,
+        pix_url: result.pix_url,
+        pix_base64: result.pix_base64,
+        ...result
       };
+    } else {
+      console.error("❌ Resposta sem dados PIX:", result);
+      throw new Error("Webhook não retornou dados PIX válidos");
     }
     
-    // Mock response for testing or fallback
-    // This mock data simulates what we expect to receive from the API
-    const mockResponse = {
-      success: true,
-      qrCodeBase64: "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",
-      qrCodeText: "00020126580014BR.GOV.BCB.PIX0136a629534e-7693-4846-b028-f142082a88e15204000053039865406123.455802BR5925John Doe6009SAO PAULO62070503***6304E2CA",
-      paymentLink: "https://payment-link.example",
-      pix_url: "00020126580014BR.GOV.BCB.PIX0136a629534e-7693-4846-b028-f142082a88e15204000053039865406123.455802BR5925John Doe6009SAO PAULO62070503***6304E2CA",
-      pix_base64: "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",
-    };
-    
-    console.log("[PIX Webhook] 🎯 Usando dados mock para teste");
-    toast.success("PIX gerado com sucesso! (Usando dados de teste)");
-    return mockResponse;
   } catch (error) {
-    // Enhanced error logging
-    console.error("[PIX Webhook] ❌ ERRO DETALHADO:", error);
-    console.error("[PIX Webhook] Tipo do erro:", error.constructor.name);
-    console.error("[PIX Webhook] Stack trace:", error.stack);
-    
-    if (error.name === 'AbortError') {
-      console.error("[PIX Webhook] ❌ Timeout na requisição (15s)");
-    } else if (error.message.includes('Failed to fetch')) {
-      console.error("[PIX Webhook] ❌ Erro de conectividade/CORS");
-    }
-    
-    logCheckoutEvent(
-      CheckoutEvent.PAYMENT_ERROR,
-      LogLevel.ERROR,
-      `Erro ao chamar webhook PIX: ${error}`,
-      { error: String(error), webhookUrl: "https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19" }
-    );
-    
-    toast.error("Erro ao processar pagamento PIX. Tente novamente.");
+    console.error("❌ SISTEMA RESTAURADO - Erro no webhook:", error);
     return {
-      success: false
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido no webhook'
     };
   }
 };
 
-/**
- * Gets user information directly from provided client ID and email
- * Rather than querying the database, we use the data we already have
- */
-export const getUserInfo = async (userId: string, userEmail?: string): Promise<{email: string; nome: string} | null> => {
+export const getUserInfo = async (userId: string) => {
   try {
-    if (!userId) {
-      console.error("[PIX Webhook] ID de usuário não fornecido");
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('email, nome, full_name')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error("Erro ao buscar usuário:", error);
       return null;
     }
-    
-    // Use the provided email or get it from the session
-    let email = userEmail || "";
-    
-    // If we don't have an email yet, try to get it from the auth session as a fallback
-    if (!email) {
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user?.email) {
-        email = data.session.user.email;
-      }
-    }
-    
-    if (!email) {
-      console.error("[PIX Webhook] Email não disponível para o usuário");
-      return null;
-    }
-    
-    // Extract a name from the email (before the @ symbol)
-    // or use "Cliente" as a fallback
-    const nome = email.split('@')[0] || 'Cliente';
     
     return {
-      email,
-      nome
+      email: user.email || '',
+      nome: user.nome || user.full_name || 'Cliente'
     };
   } catch (error) {
-    console.error("[PIX Webhook] Erro ao obter informações do usuário:", error);
+    console.error("Erro ao importar supabase:", error);
     return null;
   }
 };

@@ -13,7 +13,7 @@ import PaymentMethodSelector from './PaymentMethodSelector';
 import PixPaymentDetails from './PixPaymentDetails';
 import CreditCardPayment from './CreditCardPayment';
 import PixPaymentDebugger from './PixPaymentDebugger';
-import { sendPixPaymentWebhook, getUserInfo } from '@/utils/paymentWebhooks';
+import PixPaymentButton from '../navigation/PixPaymentButton';
 
 interface PaymentGatewayProps {
   orderId: string;
@@ -39,7 +39,7 @@ const PaymentGateway = ({
 }: PaymentGatewayProps) => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<string>(
-    localStorage.getItem('preferred_payment_method') || 'credit_card'
+    localStorage.getItem('preferred_payment_method') || 'pix'
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
@@ -48,14 +48,14 @@ const PaymentGateway = ({
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      `PaymentGateway SISTEMA CORRIGIDO - inicializado`,
+      `PaymentGateway SISTEMA RESTAURADO - inicializado`,
       { 
         orderId, 
         paymentMethod,
         hasPix: !!pixData,
         hasPreference: !!preferenceId,
         hasUserId: !!userId,
-        sistemCorrigido: true
+        sistemaRestaurado: true
       }
     );
     
@@ -91,59 +91,26 @@ const PaymentGateway = ({
     );
   };
   
-  // Prosseguir com o pagamento - SISTEMA CORRIGIDO
-  const handleProceedPayment = async () => {
+  // SISTEMA RESTAURADO: Usar PixPaymentButton que abre popup
+  const handlePixPayment = () => {
+    console.log("🎯 PaymentGateway: SISTEMA RESTAURADO - Usando PixPaymentButton com popup");
+    // O PixPaymentButton vai lidar com a abertura do popup
+  };
+  
+  // Prosseguir com cartão de crédito
+  const handleCreditCardPayment = async () => {
     setIsLoading(true);
     
-    // Validate user authentication first
-    if (paymentMethod === 'pix' && !userId) {
-      toast.error("Usuário não autenticado");
-      setIsLoading(false);
-      navigate('/login?redirect=/checkout');
-      return;
-    }
-    
     try {
-      if (paymentMethod === 'credit_card' && preferenceId) {
+      if (preferenceId) {
         toast.info("Redirecionando para o MercadoPago...");
         handleMercadoPagoRedirect(preferenceId, paymentMethod);
-      } else if (paymentMethod === 'pix') {
-        console.log("🎯 PaymentGateway: SISTEMA CORRIGIDO - Iniciando fluxo PIX real");
-        
-        // CORREÇÃO: Usar a função process-payment com payment_method=pix
-        const { data: pixResponse, error } = await supabase.functions.invoke('process-payment', {
-          body: {
-            pedido_id: orderId,
-            payment_method: 'pix',
-            total_amount: totalAmount,
-            cart_items: [],
-            user_id: userId,
-            return_url: window.location.origin,
-            payment_key: `pix_${orderId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
-          }
-        });
-        
-        if (error) {
-          console.error("❌ Erro ao processar PIX:", error);
-          toast.error(`Erro ao gerar PIX: ${error.message}`);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (pixResponse.success) {
-          console.log("✅ PIX processado com sucesso:", pixResponse);
-          toast.success("PIX gerado com sucesso!");
-          navigate(`/pix-payment?pedido=${orderId}`);
-        } else {
-          toast.error("Erro ao gerar PIX");
-          setIsLoading(false);
-        }
       } else {
         toast.error("Configuração de pagamento inválida");
         setIsLoading(false);
       }
     } catch (error) {
-      console.error("[PaymentGateway] SISTEMA CORRIGIDO - Erro ao processar pagamento:", error);
+      console.error("[PaymentGateway] Erro ao processar cartão:", error);
       toast.error("Erro ao processar pagamento");
       setIsLoading(false);
     }
@@ -194,23 +161,39 @@ const PaymentGateway = ({
               />
             ) : (
               <div className="text-center py-10">
-                <p className="text-gray-500">Selecione um método de pagamento para continuar</p>
+                <h3 className="text-lg font-semibold mb-4">
+                  {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Selecione um método de pagamento'}
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  {paymentMethod === 'pix' 
+                    ? 'Clique no botão abaixo para gerar seu QR Code PIX'
+                    : 'Selecione um método de pagamento para continuar'
+                  }
+                </p>
               </div>
             )}
           </div>
         </div>
         
-        <div className="mt-8 text-center">
-          {!pixData && !preferenceId && (
+        {/* SISTEMA RESTAURADO: Botões de pagamento */}
+        <div className="mt-8 text-center space-y-4">
+          {paymentMethod === 'pix' && !pixData && (
+            <PixPaymentButton
+              onClick={handlePixPayment}
+              isDisabled={false}
+              isLoading={isLoading}
+              totalPrice={totalAmount}
+            />
+          )}
+          
+          {paymentMethod === 'credit_card' && !preferenceId && (
             <Button 
-              onClick={handleProceedPayment} 
+              onClick={handleCreditCardPayment} 
               disabled={isLoading}
               size="lg"
-              className={paymentMethod === 'pix' ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {isLoading ? "Processando..." : paymentMethod === 'pix' ? 
-                `Pagar com PIX ${totalAmount ? `R$ ${(totalAmount * 0.95).toFixed(2)}` : ''}` : 
-                "Prosseguir com pagamento"}
+              {isLoading ? "Processando..." : `Pagar com Cartão R$ ${totalAmount.toFixed(2)}`}
             </Button>
           )}
         </div>
