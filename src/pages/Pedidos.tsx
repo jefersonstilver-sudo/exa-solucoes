@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -14,13 +13,15 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [typeFilter, setTypeFilter] = useState('todos');
+  const [showVerifier, setShowVerifier] = useState<string | null>(null);
   const { isLoggedIn, user, hasRole } = useUserSession();
-  const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(user?.id);
+  const { userOrdersAndAttempts, loading, refreshData } = useUserOrdersAndAttempts(user?.id);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -84,10 +85,11 @@ const Pedidos: React.FC = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  // Renderização de card para visualização mobile
+  // Renderização de card para visualização mobile com verificador
   const renderMobileCard = (item: any) => {
     const status = formatStatus(item);
     const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
+    const isPendingPix = item.type === 'order' && item.status === 'pendente';
 
     return (
       <Card key={`${item.type}-${item.id}`} className="mb-4 p-4 bg-white border-gray-200">
@@ -137,6 +139,20 @@ const Pedidos: React.FC = () => {
             <p className="text-gray-900 font-semibold">{paineisList.length}</p>
           </div>
         </div>
+        
+        {/* Verificador de pagamento para pedidos pendentes */}
+        {isPendingPix && (
+          <div className="mt-4">
+            <ManualPaymentVerifier
+              pedidoId={item.id}
+              currentStatus={item.status}
+              onStatusUpdated={() => {
+                refreshData();
+                toast.success("Dados atualizados!");
+              }}
+            />
+          </div>
+        )}
         
         {item.type === 'order' ? (
           <Button
@@ -279,78 +295,111 @@ const Pedidos: React.FC = () => {
                       {filteredItems.map((item) => {
                         const status = formatStatus(item);
                         const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
+                        const isPendingPix = item.type === 'order' && item.status === 'pendente';
                         
                         return (
-                          <TableRow key={`${item.type}-${item.id}`} className="border-gray-200 hover:bg-gray-50">
-                            <TableCell>
-                              {item.type === 'attempt' ? (
-                                <Badge variant="outline" className="border-orange-500 text-orange-700">
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  Tentativa
+                          <React.Fragment key={`${item.type}-${item.id}`}>
+                            <TableRow className="border-gray-200 hover:bg-gray-50">
+                              <TableCell>
+                                {item.type === 'attempt' ? (
+                                  <Badge variant="outline" className="border-orange-500 text-orange-700">
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    Tentativa
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="border-green-500 text-green-700">
+                                    Pedido
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="font-medium text-gray-900">
+                                {item.id.substring(0, 8)}...
+                              </TableCell>
+                              <TableCell className="text-gray-800 font-medium">
+                                {formatDate(item.created_at)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={status.color}>
+                                  {status.label}
                                 </Badge>
-                              ) : (
-                                <Badge variant="outline" className="border-green-500 text-green-700">
-                                  Pedido
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="font-medium text-gray-900">
-                              {item.id.substring(0, 8)}...
-                            </TableCell>
-                            <TableCell className="text-gray-800 font-medium">
-                              {formatDate(item.created_at)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={status.color}>
-                                {status.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
-                              R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
-                            </TableCell>
-                            <TableCell className="text-gray-800 font-medium">
-                              {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <div className="flex items-center text-gray-800 font-medium">
-                                <CalendarClock className="h-4 w-4 mr-1 text-indexa-purple" />
-                                <span>
-                                  {item.type === 'order' && item.data_inicio 
-                                    ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
-                                    : 'Não definido'
-                                  }
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-gray-800 font-medium">
-                              {paineisList.length}
-                            </TableCell>
-                            <TableCell>
-                              {item.type === 'order' ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => navigate(`/pedido-confirmado?id=${item.id}`)}
-                                  className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-                                >
-                                  Detalhes
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    toast.info('Tentativa não finalizada. Experimente fazer um novo pedido!');
-                                    navigate('/paineis-digitais/loja');
-                                  }}
-                                  className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
-                                >
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  Finalizar
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
+                              </TableCell>
+                              <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
+                                R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
+                              </TableCell>
+                              <TableCell className="text-gray-800 font-medium">
+                                {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                <div className="flex items-center text-gray-800 font-medium">
+                                  <CalendarClock className="h-4 w-4 mr-1 text-indexa-purple" />
+                                  <span>
+                                    {item.type === 'order' && item.data_inicio 
+                                      ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
+                                      : 'Não definido'
+                                    }
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-gray-800 font-medium">
+                                {paineisList.length}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col space-y-2">
+                                  {item.type === 'order' ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => navigate(`/pedido-confirmado?id=${item.id}`)}
+                                      className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
+                                    >
+                                      Detalhes
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        toast.info('Tentativa não finalizada. Experimente fazer um novo pedido!');
+                                        navigate('/paineis-digitais/loja');
+                                      }}
+                                      className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
+                                    >
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Finalizar
+                                    </Button>
+                                  )}
+                                  
+                                  {isPendingPix && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setShowVerifier(showVerifier === item.id ? null : item.id)}
+                                      className="border-blue-500 text-blue-700 hover:bg-blue-500 hover:text-white font-medium"
+                                    >
+                                      {showVerifier === item.id ? 'Ocultar' : 'Verificar Pag.'}
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            
+                            {/* Linha expandida com verificador */}
+                            {isPendingPix && showVerifier === item.id && (
+                              <TableRow>
+                                <TableCell colSpan={9} className="p-4 bg-blue-50">
+                                  <ManualPaymentVerifier
+                                    pedidoId={item.id}
+                                    currentStatus={item.status}
+                                    onStatusUpdated={() => {
+                                      refreshData();
+                                      setShowVerifier(null);
+                                      toast.success("Dados atualizados!");
+                                    }}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
                         );
                       })}
                     </TableBody>
