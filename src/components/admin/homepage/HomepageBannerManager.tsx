@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,8 @@ const HomepageBannerManager = () => {
     is_active: true,
   });
   const [uploadingFile, setUploadingFile] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     loadAllBanners();
@@ -44,33 +45,109 @@ const HomepageBannerManager = () => {
     setAllBanners(data);
   };
 
-  const handleImageUpload = async (file: File, bannerId?: string) => {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Imagem muito grande. Máximo 5MB.');
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>, bannerId?: string) => {
+    const file = event.target.files?.[0];
+    console.log('🔍 File selected:', file ? {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    } : 'No file');
+
+    if (!file) {
+      console.log('❌ No file selected');
       return;
     }
 
+    // Validação de tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      console.log('❌ Invalid file type:', file.type);
+      toast.error('Formato de arquivo inválido. Use JPG, PNG ou WebP.');
+      return;
+    }
+
+    // Validação de tamanho (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      console.log('❌ File too large:', file.size);
+      toast.error('Arquivo muito grande. Máximo 5MB.');
+      return;
+    }
+
+    console.log('✅ File validation passed');
+
+    // Para banner novo
+    if (!bannerId) {
+      setSelectedFile(file);
+      
+      // Criar preview local
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const previewUrl = e.target?.result as string;
+        console.log('📸 Preview created for new banner');
+        setImagePreview(previewUrl);
+      };
+      reader.readAsDataURL(file);
+      
+      // Upload automático após seleção
+      handleImageUpload(file);
+    } else {
+      // Para banner existente
+      handleImageUpload(file, bannerId);
+    }
+
+    // Limpar input
+    event.target.value = '';
+  };
+
+  const handleImageUpload = async (file: File, bannerId?: string) => {
     const uploading = bannerId || 'new';
     setUploadingFile(uploading);
+    
+    console.log('🚀 Starting upload for:', uploading, 'File:', file.name);
 
     try {
+      toast.info('Enviando imagem...', { id: 'upload-toast' });
+      
       const imageUrl = await uploadImage(file);
-      if (!imageUrl) return;
+      console.log('📤 Upload result:', imageUrl);
+      
+      if (!imageUrl) {
+        console.log('❌ Upload failed - no URL returned');
+        toast.error('Erro no upload da imagem');
+        return;
+      }
+
+      console.log('✅ Upload successful:', imageUrl);
+      toast.success('Imagem enviada com sucesso!', { id: 'upload-toast' });
 
       if (bannerId) {
+        // Atualizar banner existente
         await updateBanner(bannerId, { image_url: imageUrl });
+        console.log('✅ Banner updated:', bannerId);
       } else {
-        setNewBanner(prev => ({ ...prev, image_url: imageUrl }));
+        // Atualizar estado do novo banner
+        setNewBanner(prev => ({ 
+          ...prev, 
+          image_url: imageUrl 
+        }));
+        console.log('✅ New banner state updated with image URL');
       }
       
       await loadAllBanners();
+    } catch (error) {
+      console.error('❌ Upload error:', error);
+      toast.error('Erro ao fazer upload da imagem');
     } finally {
       setUploadingFile(null);
+      console.log('🏁 Upload process completed');
     }
   };
 
   const handleCreateBanner = async () => {
+    console.log('🎯 Creating banner with data:', newBanner);
+    
     if (!newBanner.image_url) {
+      console.log('❌ No image URL available');
       toast.error('Selecione uma imagem para o banner');
       return;
     }
@@ -85,6 +162,7 @@ const HomepageBannerManager = () => {
     });
 
     if (success) {
+      console.log('✅ Banner created successfully');
       setIsCreating(false);
       setNewBanner({
         title: '',
@@ -94,6 +172,8 @@ const HomepageBannerManager = () => {
         order_position: allBanners.length + 1,
         is_active: true,
       });
+      setSelectedFile(null);
+      setImagePreview(null);
       await loadAllBanners();
     }
   };
@@ -108,6 +188,20 @@ const HomepageBannerManager = () => {
       await deleteBanner(id);
       await loadAllBanners();
     }
+  };
+
+  const resetNewBanner = () => {
+    setIsCreating(false);
+    setNewBanner({
+      title: '',
+      subtitle: '',
+      link_url: '',
+      image_url: '',
+      order_position: allBanners.length + 1,
+      is_active: true,
+    });
+    setSelectedFile(null);
+    setImagePreview(null);
   };
 
   const activeBannersCount = allBanners.filter(b => b.is_active).length;
@@ -193,7 +287,7 @@ const HomepageBannerManager = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               Criar Novo Banner
-              <Button variant="ghost" size="sm" onClick={() => setIsCreating(false)}>
+              <Button variant="ghost" size="sm" onClick={resetNewBanner}>
                 <X className="h-4 w-4" />
               </Button>
             </CardTitle>
@@ -202,36 +296,60 @@ const HomepageBannerManager = () => {
             {/* Imagem e Link - Destaque */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label className="text-base font-semibold">Imagem do Banner</Label>
-                <div className="mt-2">
+                <Label className="text-base font-semibold">Imagem do Banner *</Label>
+                <div className="mt-2 space-y-3">
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file);
-                    }}
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={(e) => handleFileSelection(e)}
                     className="hidden"
                     id="new-banner-upload"
                   />
                   <label
                     htmlFor="new-banner-upload"
-                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    className={`cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors ${
+                      uploadingFile === 'new' ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
                     {uploadingFile === 'new' ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Enviando...
+                      </>
                     ) : (
-                      <Upload className="h-4 w-4 mr-2" />
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {selectedFile ? 'Alterar Imagem' : 'Selecionar Imagem'}
+                      </>
                     )}
-                    Selecionar Imagem
                   </label>
-                  {newBanner.image_url && (
-                    <div className="mt-2">
+                  
+                  {/* Status do arquivo selecionado */}
+                  {selectedFile && (
+                    <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span>Arquivo: {selectedFile.name}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 ml-4">
+                        Tamanho: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Preview */}
+                  {(imagePreview || newBanner.image_url) && (
+                    <div className="relative">
                       <img 
-                        src={newBanner.image_url} 
+                        src={imagePreview || newBanner.image_url} 
                         alt="Preview" 
                         className="w-full h-32 object-cover rounded border"
                       />
+                      {uploadingFile === 'new' && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
+                          <Loader2 className="h-6 w-6 animate-spin text-white" />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -290,16 +408,27 @@ const HomepageBannerManager = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleCreateBanner}
-                disabled={isSaving || !newBanner.image_url}
+                disabled={isSaving || !newBanner.image_url || uploadingFile === 'new'}
                 className="bg-indexa-purple hover:bg-indexa-purple-dark"
               >
                 {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Criar Banner
               </Button>
-              <Button variant="outline" onClick={() => setIsCreating(false)}>
+              <Button variant="outline" onClick={resetNewBanner}>
                 Cancelar
               </Button>
             </div>
+            
+            {/* Debug info */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                <strong>Debug:</strong>
+                <div>Selected File: {selectedFile?.name || 'None'}</div>
+                <div>Image URL: {newBanner.image_url || 'None'}</div>
+                <div>Upload Status: {uploadingFile || 'Idle'}</div>
+                <div>Can Create: {(!newBanner.image_url || uploadingFile === 'new') ? 'No' : 'Yes'}</div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -375,17 +504,14 @@ const HomepageBannerManager = () => {
                 <div className="flex-shrink-0 flex gap-2">
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file, banner.id);
-                    }}
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={(e) => handleFileSelection(e, banner.id)}
                     className="hidden"
                     id={`banner-upload-${banner.id}`}
                   />
                   <label
                     htmlFor={`banner-upload-${banner.id}`}
-                    className="cursor-pointer inline-flex items-center px-2 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    className="cursor-pointer inline-flex items-center px-2 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                   >
                     {uploadingFile === banner.id ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
