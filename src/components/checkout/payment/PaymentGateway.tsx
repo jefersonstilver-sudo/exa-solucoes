@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
 import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDebugService';
 import { handleMercadoPagoRedirect } from '@/services/mercadoPagoService';

@@ -85,7 +85,7 @@ export const usePixPayment = (pedidoId: string | null) => {
             payment_method: 'pix',
             total_amount: pedido.valor_total,
             cart_items: [],
-            user_id: pedido.user_id,
+            user_id: pedido.client_id, // CORREÇÃO: usar client_id em vez de user_id
             return_url: window.location.origin,
             payment_key: `pix_${pedido.id}_${Date.now()}`
           }
