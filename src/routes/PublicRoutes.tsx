@@ -6,7 +6,6 @@ import Checkout from '@/pages/Checkout';
 import CheckoutCoupon from '@/pages/CheckoutCoupon';
 import CheckoutSummary from '@/pages/CheckoutSummary';
 import CheckoutFinish from '@/pages/CheckoutFinish';
-import PixPayment from '@/pages/PixPayment';
 import Payment from '@/pages/Payment';
 import Confirmacao from '@/pages/Confirmacao';
 
@@ -24,7 +23,6 @@ export const PublicRoutes = () => {
       <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
       
       {/* Payment processing pages */}
-      <Route path="/pix-payment" element={<PixPayment />} />
       <Route path="/payment" element={<Payment />} />
       
       {/* CONFIRMAÇÕES SEPARADAS */}

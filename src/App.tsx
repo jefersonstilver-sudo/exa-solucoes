@@ -18,7 +18,6 @@ import CheckoutCoupon from './pages/CheckoutCoupon';
 import CheckoutSummary from './pages/CheckoutSummary';
 import Checkout from './pages/Checkout';
 import CheckoutFinish from './pages/CheckoutFinish';
-import PixPayment from './pages/PixPayment';
 import Payment from './pages/Payment';
 import Confirmacao from './pages/Confirmacao';
 import LoginPage from './pages/LoginPage';
@@ -85,7 +84,6 @@ function App() {
                     <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
                     
                     {/* PAGAMENTO - ROTAS CORRIGIDAS */}
-                    <Route path="/pix-payment" element={<PixPayment />} />
                     <Route path="/payment" element={<Payment />} />
                     
                     {/* CONFIRMAÇÕES */}
