@@ -45,52 +45,59 @@ export const useCheckoutNavigation = ({
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
   
-  // Mapeamento correto dos steps para as rotas
+  // CORREÇÃO: Mapeamento correto e simplificado das rotas
   const stepRoutes = {
-    0: '/checkout/cupom',
-    1: '/checkout/resumo',
-    2: '/checkout', // Página de pagamento PIX
-    3: '/checkout/finalizar'
+    0: '/selecionar-plano',      // Seleção de plano
+    1: '/checkout/cupom',        // Cupom
+    2: '/checkout/resumo',       // Resumo
+    3: '/checkout',              // Pagamento PIX
+    4: '/checkout/finalizar'     // Upload/Finalizar
   };
   
   // Determine if the next button should be enabled
   const isNextEnabled = useCallback(() => {
     switch (step) {
-      case 0: // COUPON step
-        return true;
-      case 1: // SUMMARY step  
+      case 0: // PLAN SELECTION
+        return selectedPlan !== null && cartItems.length > 0;
+      case 1: // COUPON step
+        return true; // Cupom é opcional
+      case 2: // SUMMARY step  
         return cartItems.length > 0 && sessionUser?.id;
-      case 2: // PAYMENT step - PIX
-        return true;
-      case 3: // UPLOAD step
+      case 3: // PAYMENT step - PIX
+        return acceptTerms;
+      case 4: // UPLOAD step
         return true;
       default:
         return false;
     }
-  }, [step, cartItems.length, sessionUser?.id]);
+  }, [step, cartItems.length, sessionUser?.id, selectedPlan, acceptTerms]);
   
   // Navigate to the previous step
   const handlePrevStep = useCallback(() => {
+    console.log('[useCheckoutNavigation] SISTEMA CORRIGIDO - Navegação anterior:', { currentStep: step });
+    
     if (step > 0) {
       const prevStep = step - 1;
       const route = stepRoutes[prevStep as keyof typeof stepRoutes];
       if (route) {
         navigate(route);
+        setStep(prevStep);
       }
-      setStep(prevStep);
     } else {
       navigate('/selecionar-plano');
     }
   }, [step, navigate, setStep]);
 
-  // CORREÇÃO: Navegação melhorada para fluxo PIX
+  // CORREÇÃO: Navegação linear e mais robusta
   const handleNextStep = useCallback(async (paymentMethod = 'pix') => {
-    console.log("[useCheckoutNavigation] FLUXO PIX CORRIGIDO - handleNextStep iniciado", {
+    console.log("[useCheckoutNavigation] SISTEMA CORRIGIDO - handleNextStep:", {
       step,
       paymentMethod,
       isNavigating,
       sessionUser: !!sessionUser?.id,
-      cartItems: cartItems.length
+      cartItems: cartItems.length,
+      selectedPlan,
+      isNextEnabled: isNextEnabled()
     });
   
     // Prevenir navegação dupla
@@ -103,7 +110,7 @@ export const useCheckoutNavigation = ({
     if (!sessionUser?.id) {
       console.error('[useCheckoutNavigation] User not authenticated');
       sonnerToast.error("Você precisa estar logado para continuar");
-      navigate('/login?redirect=/checkout/resumo');
+      navigate('/login?redirect=' + encodeURIComponent(window.location.pathname));
       return;
     }
     
@@ -113,51 +120,60 @@ export const useCheckoutNavigation = ({
       // Validar se pode prosseguir
       if (!isNextEnabled()) {
         console.warn('[useCheckoutNavigation] Navigation blocked - requirements not met');
+        
+        // Feedback específico baseado no step
+        switch (step) {
+          case 0:
+            sonnerToast.error("Selecione um plano para continuar");
+            break;
+          case 2:
+            sonnerToast.error("Verifique os dados do seu pedido");
+            break;
+          case 3:
+            sonnerToast.error("Aceite os termos para continuar");
+            break;
+          default:
+            sonnerToast.error("Complete os campos obrigatórios");
+        }
+        
         setIsNavigating(false);
         return;
       }
 
-      // CORREÇÃO: Fluxo específico para pagamento PIX
-      if (step === 1) {
-        // Do resumo para checkout PIX
-        console.log('[useCheckoutNavigation] Step 1 -> 2 - Navegação para pagamento PIX');
+      // CORREÇÃO: Navegação linear step por step
+      const nextStep = step + 1;
+      const route = stepRoutes[nextStep as keyof typeof stepRoutes];
+      
+      if (route) {
+        console.log('[useCheckoutNavigation] SISTEMA CORRIGIDO - Navegando para:', route);
         
-        if (cartItems.length === 0) {
-          sonnerToast.error("Carrinho vazio");
-          setIsNavigating(false);
-          return;
+        // Salvar estado atual
+        localStorage.setItem('checkout_step', nextStep.toString());
+        localStorage.setItem('checkout_cart', JSON.stringify(cartItems));
+        if (selectedPlan) {
+          localStorage.setItem('selected_plan', selectedPlan.toString());
         }
-
-        if (!selectedPlan) {
-          sonnerToast.error("Nenhum plano selecionado");
-          setIsNavigating(false);
-          return;
-        }
-
-        // CORREÇÃO: Ir diretamente para a página de checkout PIX
-        console.log('[useCheckoutNavigation] REDIRECIONANDO PARA CHECKOUT PIX');
-        navigate('/checkout');
-        setStep(2);
-        setIsNavigating(false);
-        return;
-      } 
-      else {
-        // Navegação normal para outros steps
-        const nextStep = step + 1;
-        const route = stepRoutes[nextStep as keyof typeof stepRoutes];
         
-        if (route) {
-          navigate(route);
-          setStep(nextStep);
-        }
-        setIsNavigating(false);
+        // Navegar
+        navigate(route);
+        setStep(nextStep);
+        
+        // Feedback visual
+        sonnerToast.success("Próxima etapa carregada", { duration: 1500 });
+      } else {
+        console.error('[useCheckoutNavigation] No route found for step:', nextStep);
+        sonnerToast.error("Erro na navegação. Tente novamente.");
       }
+      
     } catch (error) {
       console.error("[useCheckoutNavigation] Error:", error);
       sonnerToast.error("Erro ao processar sua solicitação");
-      setIsNavigating(false);
+    } finally {
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 1000);
     }
-  }, [step, sessionUser?.id, cartItems, selectedPlan, navigate, setStep, isNavigating, isNextEnabled]);
+  }, [step, sessionUser?.id, cartItems, selectedPlan, navigate, setStep, isNextEnabled, isNavigating]);
 
   return {
     handleNextStep,

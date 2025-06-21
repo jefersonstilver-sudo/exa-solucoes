@@ -1,122 +1,65 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { isCartEmpty, loadCartFromStorage, CART_STORAGE_KEY } from '@/services/cartStorageService';
+import { useCartManager } from '@/hooks/useCartManager';
+import { toast } from 'sonner';
 
-export const useCartVerification = (isAuthVerified: boolean) => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
+export const useCartVerification = (authVerified: boolean) => {
+  const { cartItems, initialLoadDone } = useCartManager();
   const [hasCart, setHasCart] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [cartVerified, setCartVerified] = useState(false);
 
-  // Verificação de carrinho
   useEffect(() => {
-    // Só executar quando a autenticação estiver verificada
-    if (!isAuthVerified) return;
+    if (!authVerified || !initialLoadDone) return;
+
+    console.log('🔍 [useCartVerification] SISTEMA CORRIGIDO - Verificando carrinho:', {
+      cartItemsLength: cartItems?.length || 0,
+      authVerified,
+      initialLoadDone,
+      timestamp: new Date().toISOString()
+    });
+
+    // CORREÇÃO: Verificação mais flexível
+    const hasValidCart = cartItems && cartItems.length > 0;
     
-    const verifyCart = async () => {
+    if (hasValidCart) {
+      setHasCart(true);
+      console.log('✅ [useCartVerification] Carrinho válido encontrado');
+    } else {
+      // Tentar recuperar do localStorage antes de considerar vazio
       try {
-        console.log("PlanSelection: Verificando carrinho no localStorage");
+        const savedCart = localStorage.getItem('checkout_cart');
+        const simpleCart = localStorage.getItem('simple_cart');
         
-        // Verificação direta do localStorage
-        const rawCart = localStorage.getItem(CART_STORAGE_KEY);
-        console.log(`PlanSelection: Valor direto do localStorage [${CART_STORAGE_KEY}]:`, rawCart);
-        
-        // Verificação robusta do carrinho
-        if (isCartEmpty()) {
-          console.log(`PlanSelection: Carrinho vazio ou inválido detectado [${CART_STORAGE_KEY}]`);
-          
-          logCheckoutEvent(
-            CheckoutEvent.LOAD_CART, 
-            LogLevel.WARNING, 
-            `ALERTA: Carrinho vazio ou inválido detectado [${CART_STORAGE_KEY}] na página de seleção de plano - redirecionando`, 
-            { 
-              timestamp: Date.now(),
-              storageKey: CART_STORAGE_KEY,
-              localStorageValue: rawCart
-            }
-          );
-          
-          toast({
-            title: "Carrinho vazio",
-            description: "Adicione itens ao carrinho antes de selecionar um plano.",
-            variant: "destructive"
-          });
-          
-          // Redirecionamento imediato para a loja
-          navigate('/paineis-digitais/loja');
-          return;
-        }
-        
-        // Carregar carrinho com função aprimorada
-        const parsedCart = loadCartFromStorage();
-        console.log("PlanSelection: Carrinho carregado:", parsedCart);
-        
-        // Verificar explicitamente se temos itens no carrinho
-        if (parsedCart.length === 0) {
-          logCheckoutEvent(
-            CheckoutEvent.LOAD_CART, 
-            LogLevel.WARNING, 
-            `Carrinho vazio após carregamento [${CART_STORAGE_KEY}] - redirecionando para loja`, 
-            { timestamp: Date.now(), storageKey: CART_STORAGE_KEY }
-          );
-          
-          toast({
-            title: "Carrinho vazio",
-            description: "Adicione itens ao carrinho antes de selecionar um plano.",
-            variant: "destructive"
-          });
-          
-          navigate('/paineis-digitais/loja');
-          return;
-        }
-        
-        // Se chegamos aqui, temos um carrinho válido com itens
-        logCheckoutEvent(
-          CheckoutEvent.LOAD_CART, 
-          LogLevel.SUCCESS, 
-          `Carrinho carregado com sucesso [${CART_STORAGE_KEY}] na página de seleção de plano: ${parsedCart.length} itens`, 
-          { 
-            itemCount: parsedCart.length, 
-            timestamp: Date.now(),
-            storageKey: CART_STORAGE_KEY
+        if (savedCart || simpleCart) {
+          const parsedCart = JSON.parse(savedCart || simpleCart || '[]');
+          if (parsedCart && parsedCart.length > 0) {
+            console.log('🔄 [useCartVerification] Carrinho recuperado do storage');
+            setHasCart(true);
+            setCartVerified(true);
+            return;
           }
-        );
-        
-        setHasCart(true);
-        
-      } catch (e) {
-        // Tratamento robusto de erro
-        console.error(`Erro crítico ao carregar carrinho [${CART_STORAGE_KEY}]:`, e);
-        
-        logCheckoutEvent(
-          CheckoutEvent.LOAD_CART, 
-          LogLevel.ERROR, 
-          `ERRO CRÍTICO ao carregar carrinho [${CART_STORAGE_KEY}] na página de seleção de plano`, 
-          { error: String(e), timestamp: Date.now(), storageKey: CART_STORAGE_KEY }
-        );
-        
-        toast({
-          title: "Erro ao carregar carrinho",
-          description: "Ocorreu um erro ao carregar seu carrinho. Tente novamente.",
-          variant: "destructive"
-        });
-        
-        navigate('/paineis-digitais/loja');
-        return;
-      } finally {
-        setInitialLoadDone(true);
+        }
+      } catch (error) {
+        console.error('Erro ao recuperar carrinho do storage:', error);
       }
-    };
+      
+      // CORREÇÃO: Não bloquear imediatamente, dar uma chance
+      console.log('⚠️ [useCartVerification] Carrinho vazio - dando tempo para carregar');
+      setHasCart(false);
+      
+      // Toast informativo em vez de erro bloqueante
+      if (cartVerified) { // Só mostrar se já verificou antes
+        toast.info("Verificando itens do carrinho...", { duration: 3000 });
+      }
+    }
     
-    verifyCart();
-  }, [isAuthVerified, navigate, toast]);
+    setCartVerified(true);
+  }, [cartItems, authVerified, initialLoadDone, cartVerified]);
 
   return {
     hasCart,
-    setHasCart,
-    initialLoadDone
+    cartVerified,
+    initialLoadDone,
+    cartItems: cartItems || []
   };
 };
