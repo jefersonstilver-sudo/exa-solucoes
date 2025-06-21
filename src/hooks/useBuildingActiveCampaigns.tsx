@@ -1,46 +1,8 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-interface ActiveCampaign {
-  id: string;
-  client_id: string;
-  client_email: string;
-  client_name: string;
-  valor_total: number;
-  data_inicio: string;
-  data_fim: string;
-  status: string;
-  plano_meses: number;
-  videos: {
-    id: string;
-    nome: string;
-    url: string;
-    approval_status: string;
-    is_active: boolean;
-    selected_for_display: boolean;
-    slot_position: number;
-    rejection_reason?: string;
-  }[];
-}
-
-interface VideoData {
-  id: string;
-  nome: string;
-  url: string;
-}
-
-interface PedidoVideoQueryResult {
-  id: string;
-  pedido_id: string;
-  video_id: string;
-  approval_status: string;
-  is_active: boolean;
-  selected_for_display: boolean;
-  slot_position: number;
-  rejection_reason?: string;
-  videos: VideoData | null;
-}
+import { ActiveCampaign } from './useBuildingActiveCampaigns/types';
+import { fetchActivePedidos, fetchClients, fetchPedidoVideos } from './useBuildingActiveCampaigns/dataFetchers';
+import { processCampaignsData } from './useBuildingActiveCampaigns/dataProcessor';
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
@@ -57,31 +19,8 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
     setError(null);
 
     try {
-      console.log('🎬 [ACTIVE CAMPAIGNS] Buscando campanhas ativas para prédio:', buildingId);
-
       // Buscar pedidos que incluem este prédio e estão ativos
-      const { data: pedidos, error: pedidosError } = await supabase
-        .from('pedidos')
-        .select(`
-          id,
-          client_id,
-          valor_total,
-          data_inicio,
-          data_fim,
-          status,
-          plano_meses,
-          lista_predios
-        `)
-        .contains('lista_predios', [buildingId])
-        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado'])
-        .gte('data_fim', new Date().toISOString().split('T')[0]);
-
-      if (pedidosError) {
-        console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar pedidos:', pedidosError);
-        throw pedidosError;
-      }
-
-      console.log('📋 [ACTIVE CAMPAIGNS] Pedidos encontrados:', pedidos?.length || 0);
+      const pedidos = await fetchActivePedidos(buildingId);
 
       if (!pedidos || pedidos.length === 0) {
         setCampaigns([]);
@@ -89,73 +28,14 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       }
 
       // Buscar dados dos clientes
-      const clientIds = pedidos.map(p => p.client_id);
-      const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
-
-      if (clientsError) {
-        console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
-      }
+      const clients = await fetchClients();
 
       // Buscar vídeos dos pedidos
       const pedidoIds = pedidos.map(p => p.id);
-      const { data: videosData, error: videosError } = await supabase
-        .from('pedido_videos')
-        .select(`
-          id,
-          pedido_id,
-          video_id,
-          approval_status,
-          is_active,
-          selected_for_display,
-          slot_position,
-          rejection_reason,
-          videos (
-            id,
-            nome,
-            url
-          )
-        `)
-        .in('pedido_id', pedidoIds);
+      const videosData = await fetchPedidoVideos(pedidoIds);
 
-      if (videosError) {
-        console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar vídeos:', videosError);
-        throw videosError;
-      }
-
-      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
-
-      const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
-        const client = clients?.users?.find(u => u.id === pedido.client_id);
-        
-        // Filtrar vídeos para este pedido específico
-        const pedidoVideos = videosData?.filter(video => video.pedido_id === pedido.id) || [];
-
-        return {
-          id: pedido.id,
-          client_id: pedido.client_id,
-          client_email: client?.email || 'Email não encontrado',
-          client_name: client?.user_metadata?.full_name || client?.email || 'Nome não encontrado',
-          valor_total: pedido.valor_total || 0,
-          data_inicio: pedido.data_inicio,
-          data_fim: pedido.data_fim,
-          status: pedido.status,
-          plano_meses: pedido.plano_meses,
-          videos: pedidoVideos.map((pv) => {
-            const videoData = pv.videos;
-            
-            return {
-              id: pv.video_id || '',
-              nome: videoData?.nome || 'Título não definido',
-              url: videoData?.url || '',
-              approval_status: pv.approval_status || 'pending',
-              is_active: pv.is_active || false,
-              selected_for_display: pv.selected_for_display || false,
-              slot_position: pv.slot_position || 0,
-              rejection_reason: pv.rejection_reason
-            };
-          })
-        };
-      });
+      // Processar dados das campanhas
+      const campaignsData = processCampaignsData(pedidos, clients, videosData);
 
       setCampaigns(campaignsData);
       console.log('✅ [ACTIVE CAMPAIGNS] Campanhas processadas:', campaignsData.length);
