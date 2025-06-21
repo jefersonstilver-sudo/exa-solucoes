@@ -34,13 +34,13 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CORREÇÃO: Validação do carrinho mais robusta - COM delay para permitir carregamento
+  // CORREÇÃO: Validação do carrinho menos agressiva
   useEffect(() => {
     if (isLoading || !isLoggedIn || hasValidatedCart) return;
     
     // Dar tempo para o carrinho carregar
     const validateCartTimer = setTimeout(() => {
-      console.log('[CheckoutSummary] VALIDAÇÃO DO CARRINHO CORRIGIDA:', {
+      console.log('[CheckoutSummary] VALIDAÇÃO CORRIGIDA - Verificando carrinho:', {
         cartItemsLength: cartItems?.length || 0,
         cartItems: cartItems?.map(item => ({
           panelId: item.panel?.id,
@@ -49,10 +49,10 @@ const CheckoutSummary = () => {
         timestamp: new Date().toISOString()
       });
       
-      // CORREÇÃO: Validação menos agressiva
+      // CORREÇÃO: Apenas mostrar aviso, não redirecionar automaticamente
       if (!cartItems || cartItems.length === 0) {
-        console.log('[CheckoutSummary] Cart appears empty, showing warning but NOT redirecting immediately');
-        toast.error("Seu carrinho parece estar vazio. Se o problema persistir, adicione painéis novamente.", {
+        console.log('[CheckoutSummary] Carrinho vazio detectado - mostrando aviso');
+        toast.error("Seu carrinho está vazio. Adicione painéis para continuar.", {
           duration: 5000,
           action: {
             label: "Ir para Loja",
@@ -62,7 +62,7 @@ const CheckoutSummary = () => {
       }
       
       setHasValidatedCart(true);
-    }, 1000); // 1 segundo para carregar
+    }, 1500); // 1.5 segundos para carregar
 
     return () => clearTimeout(validateCartTimer);
   }, [isLoggedIn, cartItems, navigate, isLoading, hasValidatedCart]);
@@ -73,8 +73,17 @@ const CheckoutSummary = () => {
     navigate('/checkout/cupom');
   };
 
+  // CORREÇÃO: Função de navegação para pagamento melhorada
   const handleNext = () => {
-    // CORREÇÃO: Validação antes de prosseguir
+    console.log('[CheckoutSummary] BOTÃO IR PARA PAGAMENTO CLICADO - CORRIGIDO:', {
+      cartItemsCount: cartItems?.length || 0,
+      totalPrice,
+      couponValid,
+      couponDiscount,
+      timestamp: new Date().toISOString()
+    });
+
+    // Validações básicas
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
@@ -86,13 +95,13 @@ const CheckoutSummary = () => {
       return;
     }
 
-    console.log('[CheckoutSummary] PROSSEGUINDO PARA PAGAMENTO CORRIGIDO:', {
-      cartItemsCount: cartItems.length,
-      totalPrice,
-      couponValid,
-      couponDiscount
-    });
-
+    // CORREÇÃO: Navegar diretamente para a página de checkout PIX
+    console.log('[CheckoutSummary] NAVEGANDO PARA CHECKOUT PIX - /checkout');
+    
+    // Adicionar feedback visual
+    toast.success("Redirecionando para pagamento...", { duration: 2000 });
+    
+    // Navegar para a página de checkout que já está preparada para PIX
     navigate('/checkout');
   };
 
@@ -136,7 +145,7 @@ const CheckoutSummary = () => {
             <ReviewStep />
           </motion.div>
 
-          {/* CORREÇÃO: Navigation sem duplicação de preço */}
+          {/* Navigation - CORRIGIDA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -157,7 +166,7 @@ const CheckoutSummary = () => {
               disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
-              <span>Ir para Pagamento</span>
+              <span>Ir para Pagamento PIX</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
           </motion.div>

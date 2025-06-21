@@ -16,8 +16,9 @@ const Checkout = () => {
   const { isLoggedIn, user, isLoading } = useUserSession();
   const { cartItems, selectedPlan, calculateTotalPrice } = useCheckout();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cartValidated, setCartValidated] = useState(false);
 
-  // Verificação de autenticação
+  // CORREÇÃO: Verificação de autenticação melhorada
   useEffect(() => {
     if (isLoading) return;
     
@@ -27,20 +28,49 @@ const Checkout = () => {
       navigate('/login?redirect=/checkout');
       return;
     }
+  }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-    // Validar carrinho
-    if (!cartItems || cartItems.length === 0) {
-      toast.error("Carrinho vazio. Adicione painéis para continuar.");
-      navigate('/paineis-digitais/loja');
-      return;
-    }
+  // CORREÇÃO: Validação do carrinho com delay e menos agressiva
+  useEffect(() => {
+    if (isLoading || !isLoggedIn || cartValidated) return;
+    
+    // Dar tempo para o carrinho carregar do localStorage
+    const validateTimer = setTimeout(() => {
+      console.log('[Checkout] VALIDAÇÃO CORRIGIDA - Verificando carrinho:', {
+        cartItemsLength: cartItems?.length || 0,
+        selectedPlan,
+        timestamp: new Date().toISOString()
+      });
+      
+      // CORREÇÃO: Só redirecionar se realmente não há dados após tempo suficiente
+      if (!cartItems || cartItems.length === 0) {
+        console.log('[Checkout] Carrinho vazio detectado - mostrando aviso');
+        toast.error("Carrinho vazio. Redirecionando para a loja.", {
+          duration: 3000
+        });
+        
+        // Dar mais tempo antes de redirecionar
+        setTimeout(() => {
+          navigate('/paineis-digitais/loja');
+        }, 2000);
+        return;
+      }
 
-    if (!selectedPlan) {
-      toast.error("Selecione um plano para continuar.");
-      navigate('/plano');
-      return;
-    }
-  }, [isLoggedIn, user?.id, isLoading, cartItems, selectedPlan, navigate]);
+      if (!selectedPlan) {
+        console.log('[Checkout] Plano não selecionado - redirecionando');
+        toast.error("Selecione um plano para continuar.");
+        navigate('/plano');
+        return;
+      }
+
+      // Marcar como validado para evitar loops
+      setCartValidated(true);
+      console.log('[Checkout] Validação concluída com sucesso');
+      
+    }, 2000); // 2 segundos para permitir carregamento
+
+    return () => clearTimeout(validateTimer);
+  }, [isLoggedIn, cartItems, selectedPlan, navigate, isLoading, cartValidated]);
 
   const totalPrice = calculateTotalPrice();
 
@@ -48,17 +78,23 @@ const Checkout = () => {
     navigate('/checkout/resumo');
   };
 
+  // CORREÇÃO: Função para processar PIX melhorada
   const handleProcessPixPayment = async () => {
     if (!user?.id || !cartItems || cartItems.length === 0 || !selectedPlan) {
       toast.error("Dados incompletos para processar pagamento");
       return;
     }
 
+    console.log("🔄 [Checkout] PROCESSAMENTO PIX CORRIGIDO:", {
+      userId: user.id,
+      cartItemsCount: cartItems.length,
+      selectedPlan,
+      totalPrice
+    });
+
     setIsProcessing(true);
 
     try {
-      console.log("🔄 [Checkout] Criando pedido para PIX...");
-
       // Preparar dados do pedido
       const painelIds = cartItems.map(item => item.panel.id);
       const predioIds = cartItems.map(item => item.panel.buildings?.id).filter(Boolean);
@@ -82,7 +118,7 @@ const Checkout = () => {
           termos_aceitos: true,
           log_pagamento: {
             payment_method: 'pix',
-            created_via: 'checkout_page',
+            created_via: 'checkout_page_corrected',
             created_at: new Date().toISOString(),
             cart_items_count: cartItems.length
           }
@@ -94,10 +130,13 @@ const Checkout = () => {
         throw error;
       }
 
-      console.log("✅ [Checkout] Pedido criado:", pedido.id);
+      console.log("✅ [Checkout] Pedido criado com sucesso:", pedido.id);
+      toast.success("Pedido criado! Redirecionando para pagamento PIX...");
 
-      // Navegar para página PIX com o ID do pedido
-      navigate(`/pix-payment?pedido=${pedido.id}`);
+      // CORREÇÃO: Navegar para página PIX após pequeno delay
+      setTimeout(() => {
+        navigate(`/pix-payment?pedido=${pedido.id}`);
+      }, 1000);
 
     } catch (error: any) {
       console.error("❌ [Checkout] Erro ao processar pagamento:", error);
@@ -107,7 +146,8 @@ const Checkout = () => {
     }
   };
 
-  if (isLoading) {
+  // Loading state melhorado
+  if (isLoading || !cartValidated) {
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 py-8 flex items-center justify-center">
@@ -117,7 +157,9 @@ const Checkout = () => {
             className="text-center"
           >
             <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando checkout...</p>
+            <p className="text-gray-600">
+              {isLoading ? "Verificando autenticação..." : "Carregando dados do carrinho..."}
+            </p>
           </motion.div>
         </div>
       </Layout>
@@ -148,9 +190,9 @@ const Checkout = () => {
               <div className="border-b pb-4">
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                   <span className="mr-3 text-2xl">💳</span>
-                  Escolha seu Método de Pagamento
+                  Finalizar Pagamento
                 </h2>
-                <p className="text-gray-600 mt-2">Selecione como deseja pagar sua campanha</p>
+                <p className="text-gray-600 mt-2">Pague com PIX e receba 5% de desconto</p>
               </div>
 
               {/* Resumo rápido */}
@@ -166,9 +208,9 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Método PIX */}
-              <div className="border border-gray-200 rounded-lg p-6 hover:border-[#3C1361] transition-colors">
-                <div className="flex items-center justify-between">
+              {/* Método PIX - MELHORADO */}
+              <div className="border-2 border-green-200 rounded-lg p-6 bg-green-50">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                       <svg viewBox="0 0 512 512" className="h-6 w-6 text-green-600" fill="currentColor">
@@ -176,9 +218,9 @@ const Checkout = () => {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">PIX</h3>
-                      <p className="text-sm text-gray-600">Pagamento instantâneo via PIX</p>
-                      <p className="text-xs text-green-600 font-medium">Desconto de 5%</p>
+                      <h3 className="font-semibold text-gray-900">Pagamento PIX</h3>
+                      <p className="text-sm text-gray-600">Pagamento instantâneo com desconto</p>
+                      <p className="text-xs text-green-600 font-medium">✅ Aprovação imediata</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -188,26 +230,34 @@ const Checkout = () => {
                     <div className="text-xs text-gray-500 line-through">
                       R$ {totalPrice.toFixed(2)}
                     </div>
+                    <div className="text-xs text-green-600">Economia de 5%</div>
                   </div>
                 </div>
                 
                 <Button
                   onClick={handleProcessPixPayment}
                   disabled={isProcessing}
-                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+                  size="lg"
                 >
                   {isProcessing ? (
                     <>
                       <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Processando...
+                      Processando pagamento...
                     </>
                   ) : (
                     <>
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Pagar com PIX
+                      <CreditCard className="h-5 w-5 mr-2" />
+                      Pagar com PIX - R$ {(totalPrice * 0.95).toFixed(2)}
                     </>
                   )}
                 </Button>
+              </div>
+
+              {/* Informações adicionais */}
+              <div className="text-center text-sm text-gray-500">
+                <p>🔒 Pagamento 100% seguro</p>
+                <p>⚡ Aprovação instantânea via PIX</p>
               </div>
             </div>
           </motion.div>
@@ -225,7 +275,7 @@ const Checkout = () => {
               className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Voltar</span>
+              <span>Voltar ao Resumo</span>
             </Button>
           </motion.div>
         </div>

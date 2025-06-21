@@ -49,7 +49,7 @@ export const useCheckoutNavigation = ({
   const stepRoutes = {
     0: '/checkout/cupom',
     1: '/checkout/resumo',
-    2: '/checkout', // CORREÇÃO: Agora usa o sistema unificado
+    2: '/checkout', // Página de pagamento PIX
     3: '/checkout/finalizar'
   };
   
@@ -60,7 +60,7 @@ export const useCheckoutNavigation = ({
         return true;
       case 1: // SUMMARY step  
         return cartItems.length > 0 && sessionUser?.id;
-      case 2: // UNIFIED CHECKOUT PAYMENT step
+      case 2: // PAYMENT step - PIX
         return true;
       case 3: // UPLOAD step
         return true;
@@ -83,9 +83,9 @@ export const useCheckoutNavigation = ({
     }
   }, [step, navigate, setStep]);
 
-  // CORREÇÃO: Navegação para checkout unificado
+  // CORREÇÃO: Navegação melhorada para fluxo PIX
   const handleNextStep = useCallback(async (paymentMethod = 'pix') => {
-    console.log("[useCheckoutNavigation] UNIFIED - handleNextStep iniciado", {
+    console.log("[useCheckoutNavigation] FLUXO PIX CORRIGIDO - handleNextStep iniciado", {
       step,
       paymentMethod,
       isNavigating,
@@ -117,10 +117,10 @@ export const useCheckoutNavigation = ({
         return;
       }
 
-      // CORREÇÃO: Navegação para sistema unificado
+      // CORREÇÃO: Fluxo específico para pagamento PIX
       if (step === 1) {
-        // Do resumo para checkout unificado
-        console.log('[useCheckoutNavigation] Step 1 -> 2 - Navegação para checkout unificado');
+        // Do resumo para checkout PIX
+        console.log('[useCheckoutNavigation] Step 1 -> 2 - Navegação para pagamento PIX');
         
         if (cartItems.length === 0) {
           sonnerToast.error("Carrinho vazio");
@@ -134,7 +134,8 @@ export const useCheckoutNavigation = ({
           return;
         }
 
-        // Navegação para checkout unificado que inicializará o sistema automaticamente
+        // CORREÇÃO: Ir diretamente para a página de checkout PIX
+        console.log('[useCheckoutNavigation] REDIRECIONANDO PARA CHECKOUT PIX');
         navigate('/checkout');
         setStep(2);
         setIsNavigating(false);
