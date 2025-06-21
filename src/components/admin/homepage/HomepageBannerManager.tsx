@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,10 +65,10 @@ const HomepageBannerManager = () => {
       return;
     }
 
-    // Validação de tamanho (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validação de tamanho (15MB max)
+    if (file.size > 15 * 1024 * 1024) {
       console.log('❌ File too large:', file.size);
-      toast.error('Arquivo muito grande. Máximo 5MB.');
+      toast.error('Arquivo muito grande. Máximo 15MB.');
       return;
     }
 
@@ -223,7 +222,7 @@ const HomepageBannerManager = () => {
           <p className="text-gray-600 mt-1">
             Gerencie até 5 banners rotativos da homepage. <br />
             <span className="text-sm text-gray-500">
-              Tamanho recomendado: 1920x600px (desktop) | Auto-adaptativo (mobile)
+              Tamanho recomendado: 1920x600px (desktop) | Auto-adaptativo (mobile) | Máximo 15MB
             </span>
           </p>
         </div>
