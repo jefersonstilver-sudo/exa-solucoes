@@ -130,11 +130,16 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filtrar vídeos de forma segura
+        // Filtrar vídeos de forma segura com verificação completa de tipos
         const pedidoVideos: PedidoVideoQueryResult[] = [];
         if (videosData && Array.isArray(videosData)) {
           videosData.forEach(videoItem => {
-            if (videoItem && videoItem.pedido_id === pedido.id) {
+            // Verificar se videoItem existe e tem as propriedades necessárias
+            if (videoItem && 
+                typeof videoItem === 'object' && 
+                'pedido_id' in videoItem && 
+                'video_id' in videoItem &&
+                videoItem.pedido_id === pedido.id) {
               pedidoVideos.push(videoItem);
             }
           });
