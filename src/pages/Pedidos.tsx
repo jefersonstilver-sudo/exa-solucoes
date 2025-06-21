@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -21,7 +22,7 @@ const Pedidos: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState('todos');
   const [showVerifier, setShowVerifier] = useState<string | null>(null);
   const { isLoggedIn, user, hasRole } = useUserSession();
-  const { userOrdersAndAttempts, loading, refreshData } = useUserOrdersAndAttempts(user?.id);
+  const { userOrdersAndAttempts, loading, refetch } = useUserOrdersAndAttempts(user?.id);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -147,7 +148,7 @@ const Pedidos: React.FC = () => {
               pedidoId={item.id}
               currentStatus={item.status}
               onStatusUpdated={() => {
-                refreshData();
+                refetch();
                 toast.success("Dados atualizados!");
               }}
             />
@@ -391,7 +392,7 @@ const Pedidos: React.FC = () => {
                                     pedidoId={item.id}
                                     currentStatus={item.status}
                                     onStatusUpdated={() => {
-                                      refreshData();
+                                      refetch();
                                       setShowVerifier(null);
                                       toast.success("Dados atualizados!");
                                     }}
