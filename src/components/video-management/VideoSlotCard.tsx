@@ -41,7 +41,7 @@ interface VideoSlotCardProps {
   slot: VideoSlot;
   uploading: boolean;
   uploadProgress: { [key: number]: number };
-  onUpload: (slotPosition: number, file: File) => void;
+  onUpload: (slotPosition: number, file: File, title: string) => void;
   onActivate: (slotId: string) => void;
   onRemove: (slotId: string) => void;
   onSelectForDisplay: (slotId: string) => void;

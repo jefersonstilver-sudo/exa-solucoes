@@ -128,10 +128,10 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // CORREÇÃO DEFINITIVA: Filtro seguro com verificação de tipo
-        const pedidoVideos = (videosData || []).filter((v): v is PedidoVideoQueryResult => 
-          v !== null && v.pedido_id === pedido.id
-        );
+        // Filtro seguro para vídeos do pedido
+        const pedidoVideos = (videosData || []).filter((v: any): v is PedidoVideoQueryResult => {
+          return v && typeof v === 'object' && v.pedido_id === pedido.id;
+        });
 
         return {
           id: pedido.id,

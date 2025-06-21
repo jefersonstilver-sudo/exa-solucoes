@@ -26,6 +26,10 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onSelectForDisplay,
   onDownload
 }) => {
+  const handleUpload = async (slotPosition: number, file: File, title: string) => {
+    await onUpload(slotPosition, file, title);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -42,7 +46,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
           videoSlots={videoSlots}
           uploading={uploading}
           uploadProgress={uploadProgress}
-          onUpload={onUpload}
+          onUpload={handleUpload}
           onActivate={onActivate}
           onRemove={onRemove}
           onSelectForDisplay={onSelectForDisplay}
