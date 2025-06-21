@@ -16,9 +16,8 @@ const Checkout = () => {
   const { isLoggedIn, user, isLoading } = useUserSession();
   const { cartItems, selectedPlan, calculateTotalPrice } = useCheckout();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cartValidated, setCartValidated] = useState(false);
 
-  // CORREÇÃO: Verificação de autenticação melhorada
+  // Verificação de autenticação
   useEffect(() => {
     if (isLoading) return;
     
@@ -30,55 +29,13 @@ const Checkout = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CORREÇÃO: Validação do carrinho com delay e menos agressiva
-  useEffect(() => {
-    if (isLoading || !isLoggedIn || cartValidated) return;
-    
-    // Dar tempo para o carrinho carregar do localStorage
-    const validateTimer = setTimeout(() => {
-      console.log('[Checkout] VALIDAÇÃO CORRIGIDA - Verificando carrinho:', {
-        cartItemsLength: cartItems?.length || 0,
-        selectedPlan,
-        timestamp: new Date().toISOString()
-      });
-      
-      // CORREÇÃO: Só redirecionar se realmente não há dados após tempo suficiente
-      if (!cartItems || cartItems.length === 0) {
-        console.log('[Checkout] Carrinho vazio detectado - mostrando aviso');
-        toast.error("Carrinho vazio. Redirecionando para a loja.", {
-          duration: 3000
-        });
-        
-        // Dar mais tempo antes de redirecionar
-        setTimeout(() => {
-          navigate('/paineis-digitais/loja');
-        }, 2000);
-        return;
-      }
-
-      if (!selectedPlan) {
-        console.log('[Checkout] Plano não selecionado - redirecionando');
-        toast.error("Selecione um plano para continuar.");
-        navigate('/plano');
-        return;
-      }
-
-      // Marcar como validado para evitar loops
-      setCartValidated(true);
-      console.log('[Checkout] Validação concluída com sucesso');
-      
-    }, 2000); // 2 segundos para permitir carregamento
-
-    return () => clearTimeout(validateTimer);
-  }, [isLoggedIn, cartItems, selectedPlan, navigate, isLoading, cartValidated]);
-
   const totalPrice = calculateTotalPrice();
 
   const handleBack = () => {
     navigate('/checkout/resumo');
   };
 
-  // CORREÇÃO: Função para processar PIX melhorada
+  // CORREÇÃO: Função para processar PIX simplificada
   const handleProcessPixPayment = async () => {
     if (!user?.id || !cartItems || cartItems.length === 0 || !selectedPlan) {
       toast.error("Dados incompletos para processar pagamento");
@@ -103,7 +60,7 @@ const Checkout = () => {
       const dataFim = new Date(Date.now() + selectedPlan * 30 * 24 * 60 * 60 * 1000)
         .toISOString().split('T')[0];
 
-      // Criar pedido
+      // Criar pedido primeiro
       const { data: pedido, error } = await supabase
         .from('pedidos')
         .insert({
@@ -131,9 +88,26 @@ const Checkout = () => {
       }
 
       console.log("✅ [Checkout] Pedido criado com sucesso:", pedido.id);
-      toast.success("Pedido criado! Redirecionando para pagamento PIX...");
+      
+      // Processar PIX com edge function (CORRIGIDO)
+      const { data: pixResponse, error: pixError } = await supabase.functions.invoke('process-pix-payment', {
+        body: {
+          pedidoId: pedido.id  // Apenas pedidoId é necessário
+        }
+      });
 
-      // CORREÇÃO: Navegar para página PIX após pequeno delay
+      if (pixError) {
+        throw pixError;
+      }
+
+      if (!pixResponse.success) {
+        throw new Error(pixResponse.error || 'Falha ao processar PIX');
+      }
+
+      console.log("✅ [Checkout] PIX processado:", pixResponse);
+      toast.success("PIX gerado! Redirecionando para pagamento...");
+
+      // Redirecionar para página PIX
       setTimeout(() => {
         navigate(`/pix-payment?pedido=${pedido.id}`);
       }, 1000);
@@ -146,8 +120,8 @@ const Checkout = () => {
     }
   };
 
-  // Loading state melhorado
-  if (isLoading || !cartValidated) {
+  // Loading state
+  if (isLoading) {
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 py-8 flex items-center justify-center">
@@ -157,9 +131,7 @@ const Checkout = () => {
             className="text-center"
           >
             <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">
-              {isLoading ? "Verificando autenticação..." : "Carregando dados do carrinho..."}
-            </p>
+            <p className="text-gray-600">Verificando autenticação...</p>
           </motion.div>
         </div>
       </Layout>
@@ -208,7 +180,7 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Método PIX - MELHORADO */}
+              {/* Método PIX */}
               <div className="border-2 border-green-200 rounded-lg p-6 bg-green-50">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
