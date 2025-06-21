@@ -6,6 +6,7 @@ import {
   uploadVideoToStorage,
   cleanupPendingUploads
 } from '@/services/videoStorageService';
+import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
 
 export const uploadVideo = async (
   slotPosition: number,
@@ -19,7 +20,18 @@ export const uploadVideo = async (
     console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
     console.log('👤 User ID:', userId);
     console.log('📋 Order ID:', orderId);
-    console.log('🏷️ Video Title:', videoTitle);
+
+    // NOVA VALIDAÇÃO DE SEGURANÇA
+    onProgress?.(5);
+    const securityValidation = await validateVideoUploadPermission(orderId);
+    
+    if (!securityValidation.canUpload) {
+      console.error('🔒 [VideoUpload] Upload bloqueado por segurança:', securityValidation);
+      toast.error(`Upload não permitido: ${securityValidation.reason}`);
+      return false;
+    }
+
+    console.log('✅ [VideoUpload] Validação de segurança aprovada');
 
     // Validar título se fornecido
     if (videoTitle) {
@@ -30,14 +42,14 @@ export const uploadVideo = async (
     }
 
     // Limpar uploads pendentes
-    onProgress?.(5);
+    onProgress?.(10);
     const cleanedCount = await cleanupPendingUploads(userId);
     if (cleanedCount > 0) {
       console.log(`🧹 ${cleanedCount} registros órfãos removidos`);
     }
 
     // Validar vídeo
-    onProgress?.(10);
+    onProgress?.(15);
     const validation = await validateVideoFile(file);
     if (!validation.valid) {
       console.error('❌ Validação falhou:', validation.errors);
@@ -46,7 +58,7 @@ export const uploadVideo = async (
     }
 
     console.log('✅ Vídeo validado com sucesso:', validation.metadata);
-    onProgress?.(20);
+    onProgress?.(25);
 
     // Upload para storage
     let videoUrl: string;
@@ -58,7 +70,7 @@ export const uploadVideo = async (
         console.log(`📤 Tentativa ${retryCount + 1} de upload...`);
         
         videoUrl = await uploadVideoToStorage(file, userId, (progress) => {
-          onProgress?.(20 + (progress * 0.6));
+          onProgress?.(25 + (progress * 0.6));
         });
         
         console.log('✅ Upload para storage concluído, URL:', videoUrl);
@@ -77,7 +89,7 @@ export const uploadVideo = async (
       }
     }
 
-    onProgress?.(85);
+    onProgress?.(90);
 
     // Usar título fornecido ou nome do arquivo como fallback
     const finalVideoName = videoTitle || file.name;
@@ -135,8 +147,8 @@ export const uploadVideo = async (
         .update({
           video_id: videoRecord.id,
           approval_status: 'pending',
-          selected_for_display: false, // Resetar seleção
-          is_active: false, // Resetar ativação
+          selected_for_display: false,
+          is_active: false,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingSlot.id);
@@ -147,7 +159,7 @@ export const uploadVideo = async (
       }
       slotResult = { error: null };
     } else {
-      // Criar nova entrada
+      // Criar nova entrada (o trigger do banco validará automaticamente)
       console.log('➕ Criando nova entrada no slot');
       const { error: insertError } = await supabase
         .from('pedido_videos')
@@ -156,7 +168,7 @@ export const uploadVideo = async (
           video_id: videoRecord.id,
           slot_position: slotPosition,
           approval_status: 'pending',
-          selected_for_display: false, // Será definido pelo usuário posteriormente
+          selected_for_display: false,
           is_active: false
         });
 
@@ -165,6 +177,13 @@ export const uploadVideo = async (
 
     if (slotResult.error) {
       console.error('❌ Erro ao gerenciar slot:', slotResult.error);
+      
+      // Verificar se é erro de segurança do trigger
+      if (slotResult.error.message?.includes('não permitido para pedidos não pagos')) {
+        toast.error('Upload não permitido: pedido não foi pago');
+        return false;
+      }
+      
       throw new Error(`Erro ao salvar no slot: ${slotResult.error.message}`);
     }
 
@@ -176,7 +195,14 @@ export const uploadVideo = async (
   } catch (error) {
     console.error('💥 Erro no upload:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    toast.error(`Erro ao fazer upload do vídeo: ${errorMessage}`);
+    
+    // Tratamento específico para erros de segurança
+    if (errorMessage.includes('não permitido para pedidos não pagos')) {
+      toast.error('Upload bloqueado: apenas pedidos pagos podem enviar vídeos');
+    } else {
+      toast.error(`Erro ao fazer upload do vídeo: ${errorMessage}`);
+    }
+    
     return false;
   }
 };

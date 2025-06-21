@@ -1199,6 +1199,10 @@ export type Database = {
         Args: { p_pedido_video_id: string; p_approved_by: string }
         Returns: boolean
       }
+      audit_unauthorized_uploads: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       auto_cleanup_paid_attempts: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1234,6 +1238,10 @@ export type Database = {
         }[]
       }
       cleanup_orphaned_users: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      cleanup_unauthorized_uploads: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
@@ -1535,6 +1543,10 @@ export type Database = {
           valid: boolean
           errors: string[]
         }[]
+      }
+      validate_video_upload_permission: {
+        Args: { p_pedido_id: string }
+        Returns: boolean
       }
     }
     Enums: {
