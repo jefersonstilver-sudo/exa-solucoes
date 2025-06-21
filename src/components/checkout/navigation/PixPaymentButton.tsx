@@ -27,6 +27,39 @@ const PixPaymentButton = ({
   const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<PixWebhookResponse | null>(null);
   
+  // 🔥 FUNÇÃO UNIFICADA PARA BUSCAR CARRINHO
+  const getCartItems = () => {
+    console.log("🛒 [PixPaymentButton] BUSCANDO CARRINHO - Verificando todas as chaves...");
+    
+    const possibleKeys = ['simple_cart', 'indexa_unified_cart', 'panelCart'];
+    let cartItems = [];
+    let usedKey = '';
+    
+    for (const key of possibleKeys) {
+      const cartData = localStorage.getItem(key);
+      console.log(`🔍 [PixPaymentButton] Verificando chave '${key}':`, cartData ? 'ENCONTRADO' : 'VAZIO');
+      
+      if (cartData) {
+        try {
+          const parsed = JSON.parse(cartData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            cartItems = parsed;
+            usedKey = key;
+            console.log(`✅ [PixPaymentButton] Carrinho encontrado em '${key}':`, {
+              itemCount: cartItems.length,
+              firstItem: cartItems[0]
+            });
+            break;
+          }
+        } catch (error) {
+          console.error(`❌ [PixPaymentButton] Erro ao parsear '${key}':`, error);
+        }
+      }
+    }
+    
+    return { cartItems, usedKey };
+  };
+  
   const handlePayWithPix = async () => {
     try {
       setIsLoading(true);
@@ -56,24 +89,31 @@ const PixPaymentButton = ({
         return;
       }
 
-      // Buscar itens do carrinho
-      const cartItemsStr = localStorage.getItem('indexa_unified_cart');
-      console.log("🛒 Dados brutos do carrinho:", cartItemsStr);
-      
-      let cartItems = [];
-      try {
-        cartItems = cartItemsStr ? JSON.parse(cartItemsStr) : [];
-      } catch (parseError) {
-        console.error("❌ Erro ao fazer parse do carrinho:", parseError);
-        toast.error("Erro ao ler dados do carrinho");
-        return;
-      }
+      // 🔥 BUSCAR ITENS DO CARRINHO COM FUNÇÃO UNIFICADA
+      const { cartItems, usedKey } = getCartItems();
       
       if (!cartItems || cartItems.length === 0) {
-        console.error("❌ Carrinho vazio");
-        toast.error("Carrinho vazio");
+        console.error("❌ Carrinho vazio - Debug completo:", {
+          allLocalStorageKeys: Object.keys(localStorage),
+          localStorage_simple_cart: localStorage.getItem('simple_cart'),
+          localStorage_indexa_unified_cart: localStorage.getItem('indexa_unified_cart'),
+          localStorage_panelCart: localStorage.getItem('panelCart')
+        });
+        toast.error("Carrinho vazio. Adicione painéis antes de prosseguir.");
         return;
       }
+
+      console.log("🛒 Carrinho carregado com sucesso:", {
+        source: usedKey,
+        itemCount: cartItems.length,
+        items: cartItems.map(item => ({
+          id: item.id || item.panel?.id,
+          panelId: item.panel?.id,
+          buildingName: item.panel?.buildings?.nome || item.panel?.nome,
+          duration: item.duration,
+          price: item.price
+        }))
+      });
 
       const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
       const discountedTotal = totalPrice * 0.95; // 5% desconto PIX
@@ -93,7 +133,7 @@ const PixPaymentButton = ({
         cartItems,
         selectedPlan,
         totalPrice: discountedTotal,
-        couponId: null // TODO: Implementar cupom se necessário
+        couponId: null
       });
 
       if (!orderResult.success) {
@@ -107,9 +147,9 @@ const PixPaymentButton = ({
 
       // PASSO 2: PREPARAR DADOS PARA WEBHOOK N8N
       const formattedPredios = cartItems.map((item: any, index: number) => ({
-        id: item.panel?.id || `panel_${index}`,
+        id: item.panel?.id || item.id || `panel_${index}`,
         nome: item.panel?.buildings?.nome || item.panel?.nome || `Painel ${index + 1}`,
-        painel_ids: [item.panel?.id] // IDs específicos dos painéis
+        painel_ids: [item.panel?.id || item.id]
       }));
 
       const now = new Date();
@@ -123,8 +163,8 @@ const PixPaymentButton = ({
       // DADOS COMPLETOS PARA N8N
       const webhookData: PixWebhookData = {
         cliente_id: user.id,
-        pedido_id: orderResult.pedidoId!, // 🔥 NOVO: ID do pedido criado
-        transaction_id: orderResult.transactionId!, // 🔥 NOVO: ID único para rastreamento
+        pedido_id: orderResult.pedidoId!,
+        transaction_id: orderResult.transactionId!,
         email: userInfo.email,
         nome: userInfo.nome,
         plano_escolhido: `${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`,
@@ -163,7 +203,8 @@ const PixPaymentButton = ({
             pedidoId: orderResult.pedidoId,
             transactionId: orderResult.transactionId,
             hasQrCode: !!(response.qrCodeBase64 || response.pix_base64),
-            hasUrl: !!(response.qrCodeText || response.pix_url)
+            hasUrl: !!(response.qrCodeText || response.pix_url),
+            cartSource: usedKey
           }
         );
       } else {
