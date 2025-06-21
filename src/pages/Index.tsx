@@ -90,16 +90,43 @@ const Index = () => {
         <div className="absolute inset-0 bg-black/20"></div>
         
         <div className="max-w-7xl mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-8">
+          {/* Mobile: Cards empilhados verticalmente */}
+          <div className="grid grid-cols-1 gap-3 lg:hidden">
             {configs.map((config) => (
               <ServiceCard
                 key={config.id}
                 title={config.title}
                 backgroundImage={config.image_url}
                 href={config.href}
-                className="h-[180px] md:h-[420px]"
+                className="h-[180px]"
               />
             ))}
+          </div>
+
+          {/* Desktop: Banner central + Cards na lateral direita */}
+          <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8 lg:h-[480px]">
+            {/* Área central para banner - 8 colunas */}
+            <div className="lg:col-span-8 flex items-center justify-center">
+              <div className="w-full h-full bg-gradient-to-r from-indexa-purple/20 to-purple-600/20 rounded-2xl border-2 border-dashed border-white/30 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <h2 className="text-3xl font-bold mb-4">Espaço para Banner Rotativo</h2>
+                  <p className="text-lg opacity-80">Área reservada para conteúdo principal</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cards empilhados na lateral direita - 4 colunas */}
+            <div className="lg:col-span-4 flex flex-col gap-4">
+              {configs.map((config) => (
+                <ServiceCard
+                  key={config.id}
+                  title={config.title}
+                  backgroundImage={config.image_url}
+                  href={config.href}
+                  className="h-[150px] flex-1"
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
