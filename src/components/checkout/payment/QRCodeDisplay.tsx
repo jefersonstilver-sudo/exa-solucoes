@@ -14,10 +14,11 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
   const [isRetrying, setIsRetrying] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   
-  console.log("[QRCodeDisplay] SISTEMA CORRIGIDO - QR code data received:", {
+  console.log("[QRCodeDisplay] MAPEAMENTO CORRIGIDO - QR code data received:", {
     hasQRCode: !!qrCodeBase64,
     qrCodeLength: qrCodeBase64?.length,
     isDataUrl: qrCodeBase64?.startsWith('data:'),
+    isBase64Only: qrCodeBase64 && !qrCodeBase64.startsWith('data:'),
     preview: qrCodeBase64 ? `${qrCodeBase64.substring(0, 50)}...` : 'Not available'
   });
   
@@ -38,7 +39,10 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    console.error("[QRCodeDisplay] Erro ao carregar QR code:", e);
+    console.error("[QRCodeDisplay] Erro ao carregar QR code:", {
+      error: e,
+      imageSrc: (e.target as HTMLImageElement).src?.substring(0, 100) + '...'
+    });
     setImageError(true);
     setImageLoaded(false);
   };
@@ -107,12 +111,18 @@ export const QRCodeDisplay = ({ qrCodeBase64, onRegenerate }: QRCodeDisplayProps
     );
   }
   
-  // CORREÇÃO: Melhor tratamento do formato do QR Code
+  // CORREÇÃO: Melhor tratamento do formato do QR Code com validação
   let imageSource = qrCodeBase64;
   
-  // Se não é data URL, adicionar prefixo
+  // CORREÇÃO: Verificar se é base64 válido e adicionar prefixo se necessário
   if (!qrCodeBase64.startsWith('data:')) {
-    imageSource = `data:image/png;base64,${qrCodeBase64}`;
+    // Verificar se parece ser base64 válido
+    if (qrCodeBase64.match(/^[A-Za-z0-9+/=]+$/)) {
+      imageSource = `data:image/png;base64,${qrCodeBase64}`;
+      console.log("[QRCodeDisplay] CORREÇÃO: Adicionado prefixo data URL ao base64");
+    } else {
+      console.warn("[QRCodeDisplay] AVISO: QR Code não parece ser base64 válido:", qrCodeBase64.substring(0, 50));
+    }
   }
   
   return (

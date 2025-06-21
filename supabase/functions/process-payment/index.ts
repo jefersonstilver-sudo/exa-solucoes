@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
@@ -127,22 +128,26 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       hasQrCode: !!paymentData.point_of_interaction?.transaction_data?.qr_code_base64
     });
 
-    // Extract PIX data
+    // CORREÇÃO: Mapear corretamente os dados PIX para o formato esperado pelo frontend
     const pixData = {
       paymentId: paymentData.id.toString(),
       status: paymentData.status,
       qrCode: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
       qrCodeBase64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
+      qrCodeText: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      pix_url: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      pix_base64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
       preferenceId: preferenceId,
       createdAt: new Date().toISOString()
     };
 
-    // Update order with PIX data
+    // Update order with PIX data - ESTRUTURA CORRIGIDA
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
         log_pagamento: {
           pixData: pixData,
+          pix_data: pixData, // Adicionar também no formato alternativo
           payment_method: 'pix',
           total_amount: totalAmount,
           timestamp: new Date().toISOString()
@@ -153,6 +158,12 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
     if (updateError) {
       throw new Error(`Erro ao salvar dados PIX: ${updateError.message}`);
     }
+
+    console.log(`✅ [PIX] Dados PIX salvos com mapeamento correto:`, {
+      qrCodeBase64: !!pixData.qrCodeBase64,
+      qrCode: !!pixData.qrCode,
+      paymentId: pixData.paymentId
+    });
 
     return { success: true, pixData };
 

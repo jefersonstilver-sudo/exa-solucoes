@@ -34,7 +34,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔄 [usePixPayment] SISTEMA CORRIGIDO - Carregando dados PIX:", pedidoId);
+      console.log("🔄 [usePixPayment] MAPEAMENTO CORRIGIDO - Carregando dados PIX:", pedidoId);
 
       // Buscar pedido diretamente por ID
       const { data: pedido, error: pedidoError } = await supabase
@@ -54,27 +54,31 @@ export const usePixPayment = (pedidoId: string | null) => {
         hasLogPagamento: !!pedido.log_pagamento
       });
 
-      // Verificar se já tem dados de PIX
+      // CORREÇÃO: Verificar se já tem dados de PIX com múltiplos formatos
       const logPagamento = pedido.log_pagamento as any;
       
-      // CORREÇÃO: Procurar pelos dados PIX na estrutura correta
       if (logPagamento?.pixData || logPagamento?.pix_data) {
         const pixData = logPagamento.pixData || logPagamento.pix_data;
-        console.log("✅ [usePixPayment] Dados PIX encontrados no pedido:", {
-          hasQrCode: !!pixData.qrCodeBase64,
-          hasQrText: !!pixData.qrCode,
-          status: pixData.status
+        
+        console.log("✅ [usePixPayment] MAPEAMENTO CORRIGIDO - Dados PIX encontrados:", {
+          hasQrCodeBase64: !!(pixData.qrCodeBase64 || pixData.pix_base64),
+          hasQrCode: !!(pixData.qrCode || pixData.qrCodeText || pixData.pix_url),
+          status: pixData.status,
+          rawPixData: pixData
         });
         
+        // CORREÇÃO: Mapear corretamente com fallbacks para múltiplos formatos
         setPaymentData({
-          qrCodeBase64: pixData.qrCodeBase64,
-          qrCode: pixData.qrCode,
-          paymentId: pixData.paymentId,
+          qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
+          qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
+          paymentId: pixData.paymentId || pixData.id,
           status: pixData.status || pedido.status,
           createdAt: pedido.created_at,
           pedidoId: pedido.id,
           valorTotal: pedido.valor_total
         });
+        
+        console.log("✅ [usePixPayment] Dados PIX mapeados corretamente para o frontend");
       } else {
         // Se não tem dados PIX, processar com a função REAL
         console.log("🔄 [usePixPayment] CORREÇÃO - Processando PIX com função real...");
@@ -85,7 +89,7 @@ export const usePixPayment = (pedidoId: string | null) => {
             payment_method: 'pix',
             total_amount: pedido.valor_total,
             cart_items: [],
-            user_id: pedido.client_id, // CORREÇÃO: usar client_id em vez de user_id
+            user_id: pedido.client_id,
             return_url: window.location.origin,
             payment_key: `pix_${pedido.id}_${Date.now()}`
           }
@@ -113,10 +117,11 @@ export const usePixPayment = (pedidoId: string | null) => {
           const pixData = updatedLogPagamento?.pixData || updatedLogPagamento?.pix_data;
           
           if (pixData) {
+            // CORREÇÃO: Mesmo mapeamento com fallbacks
             setPaymentData({
-              qrCodeBase64: pixData.qrCodeBase64,
-              qrCode: pixData.qrCode,
-              paymentId: pixData.paymentId,
+              qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
+              qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
+              paymentId: pixData.paymentId || pixData.id,
               status: pixData.status || 'pending',
               createdAt: updatedPedido.created_at,
               pedidoId: updatedPedido.id,
@@ -133,7 +138,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment] SISTEMA CORRIGIDO - Erro:", error);
+      console.error("❌ [usePixPayment] MAPEAMENTO CORRIGIDO - Erro:", error);
       setError(error.message || 'Erro ao carregar pagamento PIX');
       toast.error(`Erro no pagamento PIX: ${error.message}`);
     } finally {

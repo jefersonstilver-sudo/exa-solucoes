@@ -4,7 +4,7 @@ const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093
 
 export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWebhookResponse> => {
   const timestamp = new Date().toISOString();
-  console.log("🎯 SISTEMA CORRIGIDO - Enviando dados para webhook N8N:", PIX_WEBHOOK_URL);
+  console.log("🎯 MAPEAMENTO CORRIGIDO - Enviando dados para webhook N8N:", PIX_WEBHOOK_URL);
   console.log("⏰ TIMESTAMP:", timestamp);
   console.log("📊 Dados do PIX COMPLETOS:", JSON.stringify(data, null, 2));
   
@@ -43,8 +43,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
         'X-Timestamp': timestamp
       },
       body: JSON.stringify(webhookPayload),
-      // Adicionar timeout
-      signal: AbortSignal.timeout(30000) // 30 segundos
+      signal: AbortSignal.timeout(30000)
     });
     
     console.log("📡 RESPOSTA DO N8N WEBHOOK:", {
@@ -71,7 +70,6 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       throw new Error(`N8N Webhook falhou: ${response.status} - ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
     }
     
-    // Tentar fazer parse da resposta com tratamento de erro melhorado
     let result;
     const responseText = await response.text();
     console.log("📄 RESPOSTA BRUTA DO N8N:", responseText);
@@ -88,7 +86,6 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       console.error("❌ Erro ao fazer parse do JSON do N8N:", parseError);
       console.error("❌ Resposta que causou erro:", responseText);
       
-      // Se não é JSON, talvez seja um HTML de erro ou texto simples
       if (responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
         throw new Error("N8N retornou uma página HTML em vez de JSON. Verifique se o webhook está ativo.");
       }
@@ -96,7 +93,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       throw new Error(`Resposta do N8N não é um JSON válido: ${parseError.message}`);
     }
     
-    // Verificar se tem dados PIX na resposta - MÚLTIPLOS FORMATOS
+    // CORREÇÃO: Verificar se tem dados PIX com múltiplos formatos e mapear corretamente
     const hasPixData = !!(
       result.pix_base64 || 
       result.qrCodeBase64 || 
@@ -107,7 +104,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       result.qr_code
     );
     
-    console.log("🔍 VERIFICAÇÃO DE DADOS PIX DO N8N:", {
+    console.log("🔍 MAPEAMENTO CORRIGIDO - VERIFICAÇÃO DE DADOS PIX DO N8N:", {
       hasPixData,
       availableFields: Object.keys(result),
       pix_base64: !!result.pix_base64,
@@ -118,23 +115,35 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
     });
     
     if (hasPixData) {
+      // CORREÇÃO: Mapear CORRETAMENTE para o formato esperado pelo frontend
       const pixResponse = {
         success: true,
+        // Mapear qrCodeBase64 com fallbacks
         qrCodeBase64: result.pix_base64 || result.qrCodeBase64 || result.qr_code_base64,
+        // Mapear qrCodeText com fallbacks 
         qrCodeText: result.pix_url || result.qrCodeText || result.qr_code,
+        // Mapear campos extras
         paymentLink: result.paymentLink || result.payment_link,
         pix_url: result.pix_url,
         pix_base64: result.pix_base64,
         message: result.message,
+        id_transacao: result.id_transacao,
         ...result
       };
       
-      console.log("✅ DADOS PIX RECEBIDOS DO N8N:", pixResponse);
+      console.log("✅ MAPEAMENTO CORRIGIDO - DADOS PIX MAPEADOS CORRETAMENTE:", {
+        hasQrCodeBase64: !!pixResponse.qrCodeBase64,
+        hasQrCodeText: !!pixResponse.qrCodeText,
+        hasPixUrl: !!pixResponse.pix_url,
+        hasPixBase64: !!pixResponse.pix_base64,
+        qrCodeBase64Length: pixResponse.qrCodeBase64?.length,
+        qrCodeTextPreview: pixResponse.qrCodeText?.substring(0, 50)
+      });
+      
       return pixResponse;
     } else {
       console.error("❌ N8N não retornou dados PIX:", result);
       
-      // Se o webhook retornou sucesso mas sem dados PIX
       if (result.success === false && result.error) {
         throw new Error(`Erro do N8N: ${result.error}`);
       }
@@ -151,7 +160,6 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       timestamp
     });
     
-    // Melhorar mensagens de erro para o usuário
     let userMessage = "Erro ao processar pagamento PIX";
     
     if (error.name === 'AbortError') {
