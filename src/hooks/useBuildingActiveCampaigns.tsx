@@ -96,7 +96,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos com tipo explícito
+      // Buscar vídeos dos pedidos com tipagem explícita
       const pedidoIds = pedidos.map(p => p.id);
       const { data: rawVideosData, error: videosError } = await supabase
         .from('pedido_videos')
@@ -124,14 +124,13 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
 
       console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', rawVideosData?.length || 0);
 
-      // Type assertion with explicit type checking
+      // Processar dados com verificação de tipos
       const videosData = rawVideosData as PedidoVideoQueryResult[] | null;
 
-      // Montar dados das campanhas
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filtrar vídeos de forma mais segura
+        // Filtrar vídeos de forma segura
         const pedidoVideos: PedidoVideoQueryResult[] = [];
         if (videosData && Array.isArray(videosData)) {
           videosData.forEach(videoItem => {
