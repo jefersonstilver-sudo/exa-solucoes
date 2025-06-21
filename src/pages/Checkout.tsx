@@ -9,13 +9,12 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import PixPaymentButton from '@/components/checkout/navigation/PixPaymentButton';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { isLoggedIn, user, isLoading } = useUserSession();
   const { cartItems, selectedPlan, calculateTotalPrice } = useCheckout();
-  const [isProcessing, setIsProcessing] = useState(false);
 
   // Verificação de autenticação
   useEffect(() => {
@@ -35,89 +34,11 @@ const Checkout = () => {
     navigate('/checkout/resumo');
   };
 
-  // CORREÇÃO: Função para processar PIX simplificada
-  const handleProcessPixPayment = async () => {
-    if (!user?.id || !cartItems || cartItems.length === 0 || !selectedPlan) {
-      toast.error("Dados incompletos para processar pagamento");
-      return;
-    }
-
-    console.log("🔄 [Checkout] PROCESSAMENTO PIX CORRIGIDO:", {
-      userId: user.id,
-      cartItemsCount: cartItems.length,
-      selectedPlan,
-      totalPrice
-    });
-
-    setIsProcessing(true);
-
-    try {
-      // Preparar dados do pedido
-      const painelIds = cartItems.map(item => item.panel.id);
-      const predioIds = cartItems.map(item => item.panel.buildings?.id).filter(Boolean);
-      
-      const dataInicio = new Date().toISOString().split('T')[0];
-      const dataFim = new Date(Date.now() + selectedPlan * 30 * 24 * 60 * 60 * 1000)
-        .toISOString().split('T')[0];
-
-      // Criar pedido primeiro
-      const { data: pedido, error } = await supabase
-        .from('pedidos')
-        .insert({
-          client_id: user.id,
-          lista_paineis: painelIds,
-          lista_predios: predioIds,
-          plano_meses: selectedPlan,
-          valor_total: totalPrice,
-          status: 'pendente',
-          data_inicio: dataInicio,
-          data_fim: dataFim,
-          termos_aceitos: true,
-          log_pagamento: {
-            payment_method: 'pix',
-            created_via: 'checkout_page_corrected',
-            created_at: new Date().toISOString(),
-            cart_items_count: cartItems.length
-          }
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      console.log("✅ [Checkout] Pedido criado com sucesso:", pedido.id);
-      
-      // Processar PIX com edge function (CORRIGIDO)
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke('process-pix-payment', {
-        body: {
-          pedidoId: pedido.id  // Apenas pedidoId é necessário
-        }
-      });
-
-      if (pixError) {
-        throw pixError;
-      }
-
-      if (!pixResponse.success) {
-        throw new Error(pixResponse.error || 'Falha ao processar PIX');
-      }
-
-      console.log("✅ [Checkout] PIX processado:", pixResponse);
-      toast.success("PIX gerado! Redirecionando para pagamento...");
-
-      // Redirecionar para página PIX
-      setTimeout(() => {
-        navigate(`/pix-payment?pedido=${pedido.id}`);
-      }, 1000);
-
-    } catch (error: any) {
-      console.error("❌ [Checkout] Erro ao processar pagamento:", error);
-      toast.error(`Erro ao processar pagamento: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
-    }
+  // SISTEMA RESTAURADO: Função para ser chamada após o popup PIX
+  const handlePixPaymentComplete = () => {
+    console.log("🎯 [Checkout] PIX payment popup fechado - sistema restaurado");
+    // O PixPaymentButton já redireciona para /anunciante/pedidos
+    // Esta função é chamada quando o popup é fechado
   };
 
   // Loading state
@@ -180,7 +101,7 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Método PIX */}
+              {/* Método PIX - SISTEMA RESTAURADO */}
               <div className="border-2 border-green-200 rounded-lg p-6 bg-green-50">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
@@ -206,30 +127,22 @@ const Checkout = () => {
                   </div>
                 </div>
                 
-                <Button
-                  onClick={handleProcessPixPayment}
-                  disabled={isProcessing}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
-                  size="lg"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Processando pagamento...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="h-5 w-5 mr-2" />
-                      Pagar com PIX - R$ {(totalPrice * 0.95).toFixed(2)}
-                    </>
-                  )}
-                </Button>
+                {/* SISTEMA RESTAURADO: Usar PixPaymentButton que abre popup */}
+                <div className="w-full">
+                  <PixPaymentButton
+                    onClick={handlePixPaymentComplete}
+                    isDisabled={false}
+                    isLoading={false}
+                    totalPrice={totalPrice}
+                  />
+                </div>
               </div>
 
               {/* Informações adicionais */}
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-gray-500 space-y-2">
                 <p>🔒 Pagamento 100% seguro</p>
                 <p>⚡ Aprovação instantânea via PIX</p>
+                <p>📱 QR Code será exibido em popup após clicar em "Pagar com PIX"</p>
               </div>
             </div>
           </motion.div>
