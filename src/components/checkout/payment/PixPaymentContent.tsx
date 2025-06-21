@@ -8,6 +8,7 @@ import { QRCodeDisplay } from './QRCodeDisplay';
 import { toast } from 'sonner';
 import PixCountdownTimer from './PixCountdownTimer';
 import PaymentStatusBadge from './PaymentStatusBadge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PixPaymentContentProps {
   paymentData: {
@@ -36,6 +37,7 @@ const PixPaymentContent = ({
 }: PixPaymentContentProps) => {
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Auto-refresh status every 10 seconds
   useEffect(() => {
@@ -56,6 +58,31 @@ const PixPaymentContent = ({
       console.error('Error refreshing status:', error);
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleRegenerateQRCode = async () => {
+    if (!pedidoId) return;
+    
+    setIsRegenerating(true);
+    try {
+      console.log("🔄 [PixPaymentContent] Regenerando QR Code para pedido:", pedidoId);
+      
+      const { data, error } = await supabase.functions.invoke('process-pix-payment', {
+        body: { pedidoId }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      toast.success("QR Code regenerado com sucesso!");
+      await onRefreshStatus();
+      
+    } catch (error: any) {
+      console.error("❌ [PixPaymentContent] Erro ao regenerar QR Code:", error);
+      toast.error(`Erro ao regenerar QR Code: ${error.message}`);
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -125,7 +152,7 @@ const PixPaymentContent = ({
               <PixCountdownTimer
                 initialSeconds={600} // 10 minutes
                 onExpire={() => {
-                  toast.error("QR Code expirado. Atualize para gerar um novo.");
+                  toast.error("QR Code expirado. Clique em regenerar para criar um novo.");
                 }}
                 isActive={paymentData.status === 'pending'}
                 paymentStatus={paymentData.status || 'pending'}
@@ -133,12 +160,13 @@ const PixPaymentContent = ({
               />
             )}
 
-            {/* QR Code */}
-            {paymentData.qrCodeBase64 && (
-              <div className="flex justify-center">
-                <QRCodeDisplay qrCodeBase64={paymentData.qrCodeBase64} />
-              </div>
-            )}
+            {/* QR Code - CORRIGIDO */}
+            <div className="flex justify-center">
+              <QRCodeDisplay 
+                qrCodeBase64={paymentData.qrCodeBase64} 
+                onRegenerate={handleRegenerateQRCode}
+              />
+            </div>
 
             {/* PIX Code */}
             {paymentData.qrCode && (
@@ -196,6 +224,26 @@ const PixPaymentContent = ({
                   <>
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Verificar Status do Pagamento
+                  </>
+                )}
+              </Button>
+
+              {/* Botão Regenerar QR Code */}
+              <Button
+                onClick={handleRegenerateQRCode}
+                disabled={isRegenerating}
+                variant="outline"
+                className="w-full border-green-300 text-green-700 hover:bg-green-50"
+              >
+                {isRegenerating ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Regenerando QR Code...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Regenerar QR Code
                   </>
                 )}
               </Button>
