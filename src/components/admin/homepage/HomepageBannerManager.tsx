@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Upload, X, Eye, Plus, GripVertical } from 'lucide-react';
+import { Loader2, Upload, X, Eye, Plus, GripVertical, ExternalLink } from 'lucide-react';
 import { useHomepageBanners, HomepageBanner } from '@/hooks/useHomepageBanners';
 import { toast } from 'sonner';
 
@@ -198,47 +199,71 @@ const HomepageBannerManager = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Imagem e Link - Destaque */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="new-title">Título</Label>
-                <Input
-                  id="new-title"
-                  value={newBanner.title}
-                  onChange={(e) => setNewBanner(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Título do banner (opcional)"
-                />
+                <Label className="text-base font-semibold">Imagem do Banner</Label>
+                <div className="mt-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                    className="hidden"
+                    id="new-banner-upload"
+                  />
+                  <label
+                    htmlFor="new-banner-upload"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    {uploadingFile === 'new' ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    Selecionar Imagem
+                  </label>
+                  {newBanner.image_url && (
+                    <div className="mt-2">
+                      <img 
+                        src={newBanner.image_url} 
+                        alt="Preview" 
+                        className="w-full h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+
               <div>
-                <Label htmlFor="new-link">Link de Destino</Label>
+                <Label htmlFor="new-link" className="text-base font-semibold flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  Link de Destino
+                </Label>
                 <Input
                   id="new-link"
                   value={newBanner.link_url}
                   onChange={(e) => setNewBanner(prev => ({ ...prev, link_url: e.target.value }))}
-                  placeholder="/caminho-da-pagina (opcional)"
+                  placeholder="https://exemplo.com ou /pagina"
+                  className="mt-2"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  URL completa ou caminho da página (opcional)
+                </p>
               </div>
             </div>
             
-            <div>
-              <Label htmlFor="new-subtitle">Subtítulo</Label>
-              <Textarea
-                id="new-subtitle"
-                value={newBanner.subtitle}
-                onChange={(e) => setNewBanner(prev => ({ ...prev, subtitle: e.target.value }))}
-                placeholder="Subtítulo ou descrição (opcional)"
-                rows={2}
-              />
-            </div>
-
+            {/* Campos secundários */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="new-order">Posição</Label>
+                <Label htmlFor="new-title">Título (Opcional)</Label>
                 <Input
-                  id="new-order"
-                  type="number"
-                  min="1"
-                  value={newBanner.order_position}
-                  onChange={(e) => setNewBanner(prev => ({ ...prev, order_position: parseInt(e.target.value) || 1 }))}
+                  id="new-title"
+                  value={newBanner.title}
+                  onChange={(e) => setNewBanner(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Título do banner"
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -252,39 +277,14 @@ const HomepageBannerManager = () => {
             </div>
 
             <div>
-              <Label>Imagem do Banner</Label>
-              <div className="mt-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
-                  }}
-                  className="hidden"
-                  id="new-banner-upload"
-                />
-                <label
-                  htmlFor="new-banner-upload"
-                  className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  {uploadingFile === 'new' ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4 mr-2" />
-                  )}
-                  Selecionar Imagem
-                </label>
-                {newBanner.image_url && (
-                  <div className="mt-2">
-                    <img 
-                      src={newBanner.image_url} 
-                      alt="Preview" 
-                      className="w-32 h-20 object-cover rounded border"
-                    />
-                  </div>
-                )}
-              </div>
+              <Label htmlFor="new-subtitle">Subtítulo (Opcional)</Label>
+              <Textarea
+                id="new-subtitle"
+                value={newBanner.subtitle}
+                onChange={(e) => setNewBanner(prev => ({ ...prev, subtitle: e.target.value }))}
+                placeholder="Subtítulo ou descrição"
+                rows={2}
+              />
             </div>
 
             <div className="flex gap-2">
@@ -314,54 +314,62 @@ const HomepageBannerManager = () => {
                   <img 
                     src={banner.image_url} 
                     alt={banner.title || 'Banner'} 
-                    className="w-24 h-16 object-cover rounded"
+                    className="w-32 h-20 object-cover rounded"
                   />
                 </div>
                 
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-3">
+                  {/* Link em destaque */}
+                  <div>
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                      <ExternalLink className="h-3 w-3" />
+                      Link de Destino
+                    </Label>
+                    <Input
+                      value={banner.link_url || ''}
+                      onChange={(e) => handleUpdateBanner(banner.id, { link_url: e.target.value })}
+                      placeholder="https://exemplo.com ou /pagina"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {/* Campos secundários em linha */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <Input
                       value={banner.title || ''}
                       onChange={(e) => handleUpdateBanner(banner.id, { title: e.target.value })}
-                      placeholder="Título do banner"
+                      placeholder="Título (opcional)"
                       className="text-sm"
                     />
-                    <Input
-                      value={banner.link_url || ''}
-                      onChange={(e) => handleUpdateBanner(banner.id, { link_url: e.target.value })}
-                      placeholder="Link de destino"
-                      className="text-sm"
-                    />
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={banner.is_active}
+                          onCheckedChange={(checked) => handleUpdateBanner(banner.id, { is_active: checked })}
+                        />
+                        <span className="text-sm text-gray-600">Ativo</span>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Pos:</span>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={banner.order_position}
+                          onChange={(e) => handleUpdateBanner(banner.id, { order_position: parseInt(e.target.value) || 1 })}
+                          className="w-16 h-8 text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                   
                   <Textarea
                     value={banner.subtitle || ''}
                     onChange={(e) => handleUpdateBanner(banner.id, { subtitle: e.target.value })}
-                    placeholder="Subtítulo"
+                    placeholder="Subtítulo (opcional)"
                     rows={1}
                     className="text-sm"
                   />
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={banner.is_active}
-                        onCheckedChange={(checked) => handleUpdateBanner(banner.id, { is_active: checked })}
-                      />
-                      <span className="text-sm text-gray-600">Ativo</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">Posição:</span>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={banner.order_position}
-                        onChange={(e) => handleUpdateBanner(banner.id, { order_position: parseInt(e.target.value) || 1 })}
-                        className="w-16 h-8 text-sm"
-                      />
-                    </div>
-                  </div>
                 </div>
                 
                 <div className="flex-shrink-0 flex gap-2">

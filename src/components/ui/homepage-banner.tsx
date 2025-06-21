@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { HomepageBanner } from '@/hooks/useHomepageBanners';
-import { Button } from '@/components/ui/button';
 
 interface HomepageBannerCarouselProps {
   banners: HomepageBanner[];
@@ -57,49 +56,29 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
 
   const currentBanner = banners[currentIndex];
 
+  const handleBannerClick = () => {
+    if (currentBanner.link_url) {
+      window.open(currentBanner.link_url, '_blank');
+    }
+  };
+
   return (
     <div 
       className={`relative w-full h-full overflow-hidden rounded-2xl ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Banner Image */}
-      <div className="relative w-full h-full">
+      {/* Banner Image - Now clickable */}
+      <div 
+        className={`relative w-full h-full ${currentBanner.link_url ? 'cursor-pointer' : ''}`}
+        onClick={handleBannerClick}
+      >
         <img
           src={currentBanner.image_url}
           alt={currentBanner.title || 'Banner'}
           className="w-full h-full object-cover transition-opacity duration-500"
           loading="lazy"
         />
-        
-        {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/30" />
-        
-        {/* Content Overlay */}
-        {(currentBanner.title || currentBanner.subtitle) && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white p-4 md:p-8">
-              {currentBanner.title && (
-                <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 drop-shadow-lg">
-                  {currentBanner.title}
-                </h2>
-              )}
-              {currentBanner.subtitle && (
-                <p className="text-sm md:text-lg lg:text-xl opacity-90 drop-shadow-lg">
-                  {currentBanner.subtitle}
-                </p>
-              )}
-              {currentBanner.link_url && (
-                <Button 
-                  className="mt-4 md:mt-6 bg-indexa-purple hover:bg-indexa-purple-dark"
-                  onClick={() => window.location.href = currentBanner.link_url!}
-                >
-                  Saiba Mais
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Navigation Arrows */}
