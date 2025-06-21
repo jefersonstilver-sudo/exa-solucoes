@@ -96,9 +96,9 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
       }
 
-      // Buscar vídeos dos pedidos com tipagem explícita
+      // Buscar vídeos dos pedidos
       const pedidoIds = pedidos.map(p => p.id);
-      const { data: rawVideosData, error: videosError } = await supabase
+      const { data: videosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
           id,
@@ -122,30 +122,13 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
         throw videosError;
       }
 
-      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', rawVideosData?.length || 0);
-
-      // Processar dados com verificação de tipos mais segura
-      const videosData = rawVideosData as PedidoVideoQueryResult[] | null;
+      console.log('🎥 [ACTIVE CAMPAIGNS] Vídeos encontrados:', videosData?.length || 0);
 
       const campaignsData: ActiveCampaign[] = pedidos.map(pedido => {
         const client = clients?.users?.find(u => u.id === pedido.client_id);
         
-        // Filtrar vídeos com type assertion segura
-        const pedidoVideos: PedidoVideoQueryResult[] = [];
-        if (videosData && Array.isArray(videosData)) {
-          for (const videoItem of videosData) {
-            // Verificação mais robusta com type assertion
-            if (videoItem && 
-                typeof videoItem === 'object' && 
-                videoItem !== null &&
-                'pedido_id' in videoItem) {
-              const typedVideoItem = videoItem as PedidoVideoQueryResult;
-              if (typedVideoItem.pedido_id === pedido.id) {
-                pedidoVideos.push(typedVideoItem);
-              }
-            }
-          }
-        }
+        // Filtrar vídeos para este pedido específico
+        const pedidoVideos = videosData?.filter(video => video.pedido_id === pedido.id) || [];
 
         return {
           id: pedido.id,
@@ -161,7 +144,7 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
             const videoData = pv.videos;
             
             return {
-              id: pv.video_id,
+              id: pv.video_id || '',
               nome: videoData?.nome || 'Título não definido',
               url: videoData?.url || '',
               approval_status: pv.approval_status || 'pending',
