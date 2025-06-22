@@ -39,19 +39,21 @@ export const useEnhancedAttemptCapture = () => {
       });
 
       // Verificar se já existe tentativa para esta transação
-      const { data: existingAttemptData, error: checkError } = await supabase
-        .from('tentativas_compra' as any)
+      const { data: existingAttempts, error: checkError } = await supabase
+        .from('tentativas_compra')
         .select('id')
         .eq('transaction_id', transactionId)
-        .maybeSingle();
+        .limit(1);
 
       if (checkError) {
         console.error('Error checking existing attempt:', checkError);
       }
 
-      if (existingAttemptData && existingAttemptData.id) {
-        console.log("✅ [EnhancedAttemptCapture] Tentativa já existe:", existingAttemptData.id);
-        return { success: true, tentativaId: existingAttemptData.id };
+      const existingAttempt = existingAttempts && existingAttempts.length > 0 ? existingAttempts[0] : null;
+
+      if (existingAttempt?.id) {
+        console.log("✅ [EnhancedAttemptCapture] Tentativa já existe:", existingAttempt.id);
+        return { success: true, tentativaId: existingAttempt.id };
       }
 
       // Preparar dados dos prédios selecionados - CORREÇÃO: converter para números
@@ -59,7 +61,7 @@ export const useEnhancedAttemptCapture = () => {
 
       // Criar tentativa com preço bloqueado
       const { data: tentativaData, error: insertError } = await supabase
-        .from('tentativas_compra' as any)
+        .from('tentativas_compra')
         .insert({
           id_user: user.id,
           transaction_id: transactionId,
@@ -86,7 +88,7 @@ export const useEnhancedAttemptCapture = () => {
         throw insertError;
       }
 
-      if (tentativaData && tentativaData.id) {
+      if (tentativaData?.id) {
         console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
           tentativaId: tentativaData.id,
           transactionId,
@@ -129,7 +131,7 @@ export const useEnhancedAttemptCapture = () => {
   const getAttemptByTransactionId = async (transactionId: string) => {
     try {
       const { data, error } = await supabase
-        .from('tentativas_compra' as any)
+        .from('tentativas_compra')
         .select('*')
         .eq('transaction_id', transactionId)
         .maybeSingle();
@@ -155,7 +157,7 @@ export const useEnhancedAttemptCapture = () => {
   const checkForDuplicates = async (userId: string, valorTotal: number): Promise<any[]> => {
     try {
       const { data, error } = await supabase
-        .from('tentativas_compra' as any)
+        .from('tentativas_compra')
         .select('*')
         .eq('id_user', userId)
         .eq('valor_total', valorTotal)
@@ -193,7 +195,7 @@ export const useEnhancedAttemptCapture = () => {
     try {
       // Remover tentativas com mais de 2 horas sem pedido correspondente
       const { data: orphanedData, error: selectError } = await supabase
-        .from('tentativas_compra' as any)
+        .from('tentativas_compra')
         .select('id')
         .lt('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
         .is('transaction_id', null); // Tentativas antigas sem transaction_id
@@ -207,7 +209,7 @@ export const useEnhancedAttemptCapture = () => {
       }
 
       const { error: deleteError } = await supabase
-        .from('tentativas_compra' as any)
+        .from('tentativas_compra')
         .delete()
         .in('id', orphanedData.map(o => o?.id).filter(Boolean));
 

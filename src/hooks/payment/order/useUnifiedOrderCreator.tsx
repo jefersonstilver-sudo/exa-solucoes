@@ -52,7 +52,7 @@ export const useUnifiedOrderCreator = () => {
         console.error('Error checking existing order:', checkError);
       }
 
-      if (existingOrderData && existingOrderData.id) {
+      if (existingOrderData?.id) {
         console.log("✅ [UnifiedOrderCreator] Pedido já existe:", existingOrderData.id);
         return { success: true, pedidoId: existingOrderData.id };
       }
@@ -112,7 +112,7 @@ export const useUnifiedOrderCreator = () => {
         throw insertError;
       }
 
-      if (pedidoData && pedidoData.id) {
+      if (pedidoData?.id) {
         console.log("✅ [UnifiedOrderCreator] Pedido criado com sucesso:", {
           pedidoId: pedidoData.id,
           transactionId,
@@ -159,7 +159,7 @@ export const useUnifiedOrderCreator = () => {
       // Buscar preços de ambas as tabelas
       const [pedidoResult, tentativaResult] = await Promise.all([
         supabase.from('pedidos').select('valor_total').eq('id', pedidoId).maybeSingle(),
-        supabase.from('tentativas_compra' as any).select('valor_total').eq('id', tentativaId).maybeSingle()
+        supabase.from('tentativas_compra').select('valor_total').eq('id', tentativaId).maybeSingle()
       ]);
 
       if (pedidoResult.error || tentativaResult.error) {

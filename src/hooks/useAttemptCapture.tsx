@@ -42,27 +42,29 @@ export const useAttemptCapture = () => {
       };
 
       // Verificar se já existe uma tentativa recente do mesmo usuário
-      const { data: existingAttemptData, error: selectError } = await supabase
-        .from('tentativas_compra' as any)
+      const { data: existingAttempts, error: selectError } = await supabase
+        .from('tentativas_compra')
         .select('id')
         .eq('id_user', userId)
         .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString()) // últimos 30 minutos
-        .maybeSingle();
+        .limit(1);
 
       if (selectError) {
         console.error('Error checking existing attempt:', selectError);
       }
 
-      if (existingAttemptData && existingAttemptData.id) {
+      const existingAttempt = existingAttempts && existingAttempts.length > 0 ? existingAttempts[0] : null;
+
+      if (existingAttempt?.id) {
         // Atualizar tentativa existente
         const { data: updateData, error: updateError } = await supabase
-          .from('tentativas_compra' as any)
+          .from('tentativas_compra')
           .update({
             predios_selecionados: attemptData.predios_selecionados,
             valor_total: attemptData.valor_total,
             predio: attemptData.predio
           })
-          .eq('id', existingAttemptData.id)
+          .eq('id', existingAttempt.id)
           .select()
           .single();
 
@@ -71,7 +73,7 @@ export const useAttemptCapture = () => {
       } else {
         // Criar nova tentativa
         const { data: insertData, error: insertError } = await supabase
-          .from('tentativas_compra' as any)
+          .from('tentativas_compra')
           .insert(attemptData)
           .select()
           .single();
@@ -92,7 +94,7 @@ export const useAttemptCapture = () => {
   const clearAttempt = useCallback(async (userId: string) => {
     try {
       await supabase
-        .from('tentativas_compra' as any)
+        .from('tentativas_compra')
         .delete()
         .eq('id_user', userId);
       
