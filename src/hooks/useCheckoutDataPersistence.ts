@@ -38,7 +38,7 @@ export const useCheckoutDataPersistence = () => {
       }
     }
 
-    // CORREÇÃO: Verificar tentativas na tabela pedidos (status='tentativa')
+    // Verificar tentativas na tabela pedidos (status='tentativa')
     const { data: recentAttempts, error: attemptsError } = await supabase
       .from('pedidos')
       .select('*')
@@ -86,7 +86,7 @@ export const useCheckoutDataPersistence = () => {
 
       console.log('🏢 [CHECKOUT_PERSISTENCE] Building IDs extraídos:', buildingIds);
 
-      // CORREÇÃO: Salvar tentativa na tabela pedidos com status='tentativa'
+      // Salvar tentativa na tabela pedidos com status='tentativa'
       const attemptData = {
         client_id: userId,
         valor_total: totalPrice,
@@ -165,9 +165,9 @@ export const useCheckoutDataPersistence = () => {
 
       // Tentar extrair dados do log_pagamento
       let recoveredData = null;
-      if (attempt.log_pagamento) {
+      if (attempt.log_pagamento && typeof attempt.log_pagamento === 'object') {
         try {
-          const logData = attempt.log_pagamento;
+          const logData = attempt.log_pagamento as any;
           recoveredData = {
             panelIds: logData.panel_ids || attempt.lista_paineis || [],
             buildingIds: logData.building_ids || attempt.lista_predios || [],

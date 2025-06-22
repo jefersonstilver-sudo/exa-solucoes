@@ -38,11 +38,12 @@ export const useEnhancedAttemptCapture = () => {
         cartItemsCount: cartItems.length
       });
 
-      // Verificar se já existe tentativa para esta transação
+      // Verificar se já existe tentativa para esta transação na tabela pedidos
       const { data: existingAttempt } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .select('id')
         .eq('transaction_id', transactionId)
+        .eq('status', 'tentativa')
         .single();
 
       if (existingAttempt) {
@@ -50,19 +51,23 @@ export const useEnhancedAttemptCapture = () => {
         return { success: true, tentativaId: existingAttempt.id };
       }
 
-      // Preparar dados dos prédios selecionados - CORREÇÃO: converter para números
-      const prediosSelecionados = cartItems.map(item => parseInt(item.panel.buildings?.id || '0')).filter(id => id > 0);
+      // Preparar dados dos painéis selecionados
+      const paineisSelecionados = cartItems.map(item => item.panel.id).filter(Boolean);
+      const predioIds = cartItems.map(item => item.panel.buildings?.id).filter(Boolean);
 
-      // Criar tentativa com preço bloqueado
+      // Criar tentativa na tabela pedidos com status='tentativa'
       const { data: tentativa, error } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .insert({
-          id_user: user.id,
+          client_id: user.id,
           transaction_id: transactionId,
-          predios_selecionados: prediosSelecionados,
+          lista_paineis: paineisSelecionados,
+          lista_predios: predioIds,
           valor_total: calculatedPrice,
-          price_locked: true,
-          price_calculation_log: {
+          status: 'tentativa',
+          plano_meses: selectedPlan,
+          termos_aceitos: false,
+          log_pagamento: {
             calculated_at: new Date().toISOString(),
             cart_items: cartItems.map(item => ({
               panel_id: item.panel.id,
@@ -72,7 +77,8 @@ export const useEnhancedAttemptCapture = () => {
             })),
             selected_plan: selectedPlan,
             final_price: calculatedPrice,
-            calculation_method: 'enhanced_unified_system'
+            calculation_method: 'enhanced_unified_system',
+            price_locked: true
           }
         })
         .select()
@@ -85,8 +91,7 @@ export const useEnhancedAttemptCapture = () => {
       console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
         tentativaId: tentativa.id,
         transactionId,
-        valorTotal: tentativa.valor_total,
-        priceLocked: tentativa.price_locked
+        valorTotal: tentativa.valor_total
       });
 
       // Log para auditoria
@@ -117,13 +122,14 @@ export const useEnhancedAttemptCapture = () => {
     }
   };
 
-  // Buscar tentativa por transaction_id
+  // Buscar tentativa por transaction_id na tabela pedidos
   const getAttemptByTransactionId = async (transactionId: string) => {
     try {
       const { data, error } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .select('*')
         .eq('transaction_id', transactionId)
+        .eq('status', 'tentativa')
         .single();
 
       if (error) {
@@ -138,14 +144,15 @@ export const useEnhancedAttemptCapture = () => {
     }
   };
 
-  // Verificar duplicações por usuário
+  // Verificar duplicações por usuário na tabela pedidos
   const checkForDuplicates = async (userId: string, valorTotal: number): Promise<any[]> => {
     try {
       const { data, error } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .select('*')
-        .eq('id_user', userId)
+        .eq('client_id', userId)
         .eq('valor_total', valorTotal)
+        .eq('status', 'tentativa')
         .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString()) // Últimas 1 hora
         .order('created_at', { ascending: false });
 
@@ -175,13 +182,14 @@ export const useEnhancedAttemptCapture = () => {
     }
   };
 
-  // Limpar tentativas antigas órfãs
+  // Limpar tentativas antigas órfãs na tabela pedidos
   const cleanupOrphanedAttempts = async (): Promise<number> => {
     try {
       // Remover tentativas com mais de 2 horas sem pedido correspondente
       const { data: orphaned, error: selectError } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .select('id')
+        .eq('status', 'tentativa')
         .lt('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
         .is('transaction_id', null); // Tentativas antigas sem transaction_id
 
@@ -194,7 +202,7 @@ export const useEnhancedAttemptCapture = () => {
       }
 
       const { error: deleteError } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .delete()
         .in('id', orphaned.map(o => o.id));
 
