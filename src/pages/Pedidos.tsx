@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -29,12 +30,33 @@ const Pedidos: React.FC = () => {
 
   const isAdmin = hasRole('admin') || hasRole('super_admin');
 
-  // LOGS DE DEBUG para diagnóstico
-  console.log('📋 Pedidos: Componente renderizado');
+  // LOGS DE DEBUG DETALHADOS
+  console.log('📋 Pedidos: === ESTADO ATUAL ===');
   console.log('📋 Pedidos: Usuário logado:', isLoggedIn);
   console.log('📋 Pedidos: Dados do usuário:', user);
+  console.log('📋 Pedidos: User ID:', user?.id);
   console.log('📋 Pedidos: É admin:', isAdmin);
-  console.log('📋 Pedidos: Pedidos e tentativas carregados:', userOrdersAndAttempts.length);
+  console.log('📋 Pedidos: Loading:', loading);
+  console.log('📋 Pedidos: Total de itens carregados:', userOrdersAndAttempts.length);
+  console.log('📋 Pedidos: Detalhes dos itens:', userOrdersAndAttempts);
+
+  // Log de verificação de autenticação
+  useEffect(() => {
+    console.log('🔐 Pedidos: Verificação de autenticação');
+    console.log('🔐 Pedidos: isLoggedIn:', isLoggedIn);
+    console.log('🔐 Pedidos: user:', user);
+    
+    if (!isLoggedIn) {
+      console.log('⚠️ Pedidos: Usuário não está logado, redirecionando...');
+      navigate('/login');
+    }
+  }, [isLoggedIn, user, navigate]);
+
+  // Se não estiver logado, não renderizar nada (será redirecionado)
+  if (!isLoggedIn || !user) {
+    console.log('❌ Pedidos: Usuário não autenticado');
+    return null;
+  }
 
   // Filtrar pedidos e tentativas
   const filteredItems = userOrdersAndAttempts.filter(item => {
@@ -54,6 +76,8 @@ const Pedidos: React.FC = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  console.log('🔍 Pedidos: Itens após filtros:', filteredItems.length);
+
   // Formatador de status para exibição
   const formatStatus = (item: any) => {
     if (item.type === 'attempt') {
@@ -66,14 +90,14 @@ const Pedidos: React.FC = () => {
     const status = item.status.toLowerCase();
     switch (status) {
       case 'pendente':
-        return { label: 'Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Pagamento Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'pago':
       case 'pago_pendente_video':
-        return { label: 'Pago', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Pago - Aguardando Vídeo', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'video_aprovado':
-        return { label: 'Aprovado', color: 'bg-blue-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Vídeo Aprovado', color: 'bg-blue-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'ativo':
-        return { label: 'Ativo', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Campanha Ativa', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'cancelado':
         return { label: 'Cancelado', color: 'bg-red-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       default:
@@ -215,6 +239,18 @@ const Pedidos: React.FC = () => {
           <p className="text-gray-700 mt-1 font-medium">
             Confira o histórico completo de pedidos finalizados e tentativas de compra
           </p>
+          
+          {/* Debug Info Card - Visível para todos */}
+          <Card className="mt-4 p-4 bg-blue-50 border-blue-200">
+            <h3 className="font-semibold text-blue-800 mb-2">📊 Informações de Debug</h3>
+            <div className="text-sm text-blue-700 space-y-1">
+              <p><strong>Usuário ID:</strong> {user?.id || 'Não disponível'}</p>
+              <p><strong>Email:</strong> {user?.email || 'Não disponível'}</p>
+              <p><strong>Total de pedidos carregados:</strong> {userOrdersAndAttempts.length}</p>
+              <p><strong>Pedidos após filtros:</strong> {filteredItems.length}</p>
+              <p><strong>Status de carregamento:</strong> {loading ? 'Carregando...' : 'Concluído'}</p>
+            </div>
+          </Card>
         </motion.div>
 
         {/* Sistema de Backup Automático e Recovery - Apenas para Admins */}
@@ -263,11 +299,14 @@ const Pedidos: React.FC = () => {
             <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
               <AlertCircle className="h-8 w-8 text-gray-600" />
             </div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">Nenhum pedido encontrado</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900">
+              {userOrdersAndAttempts.length === 0 ? 'Nenhum pedido encontrado' : 'Nenhum resultado para os filtros aplicados'}
+            </h2>
             <p className="text-gray-700 mb-6 font-medium">
-              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
-                ? 'Nenhum pedido corresponde aos filtros aplicados.'
-                : 'Você ainda não realizou nenhum pedido em nossa plataforma.'}
+              {userOrdersAndAttempts.length === 0
+                ? 'Você ainda não realizou nenhum pedido em nossa plataforma.'
+                : 'Tente ajustar os filtros para encontrar seus pedidos.'
+              }
             </p>
             <div className="flex justify-center">
               <Button 

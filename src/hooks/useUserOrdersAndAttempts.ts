@@ -24,6 +24,8 @@ export interface UserCompleteOrder {
   data_inicio?: string;
   data_fim?: string;
   type: 'order';
+  transaction_id?: string;
+  log_pagamento?: any;
 }
 
 export type UserOrderOrAttempt = UserOrderAttempt | UserCompleteOrder;
@@ -34,15 +36,16 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
 
   const fetchUserOrdersAndAttempts = async () => {
     if (!userId) {
+      console.log('❌ useUserOrdersAndAttempts: Nenhum usuário fornecido');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('🔍 Buscando pedidos e tentativas do usuário:', userId);
+      console.log('🔍 useUserOrdersAndAttempts: Buscando pedidos para usuário:', userId);
 
-      // Buscar pedidos completos do usuário primeiro (prioridade)
+      // Buscar pedidos completos do usuário (incluindo TODOS os status)
       const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
         .select('*')
@@ -50,11 +53,12 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         .order('created_at', { ascending: false });
 
       if (ordersError) {
-        console.error('Erro ao buscar pedidos do usuário:', ordersError);
+        console.error('❌ useUserOrdersAndAttempts: Erro ao buscar pedidos:', ordersError);
         throw ordersError;
       }
 
-      console.log('✅ Pedidos do usuário encontrados:', orders?.length || 0);
+      console.log('✅ useUserOrdersAndAttempts: Pedidos encontrados:', orders?.length || 0);
+      console.log('📊 useUserOrdersAndAttempts: Detalhes dos pedidos:', orders);
 
       // Processar pedidos completos
       const processedOrders: UserCompleteOrder[] = (orders || []).map(order => ({
@@ -66,10 +70,12 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         plano_meses: order.plano_meses,
         data_inicio: order.data_inicio,
         data_fim: order.data_fim,
-        type: 'order' as const
+        type: 'order' as const,
+        transaction_id: order.transaction_id,
+        log_pagamento: order.log_pagamento
       }));
 
-      // Buscar tentativas de compra do usuário (sem foreign key problemática)
+      // Buscar tentativas de compra do usuário
       let processedAttempts: UserOrderAttempt[] = [];
       try {
         const { data: attempts, error: attemptsError } = await supabase
@@ -79,9 +85,9 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           .order('created_at', { ascending: false });
 
         if (attemptsError) {
-          console.warn('Erro ao buscar tentativas do usuário (não crítico):', attemptsError);
+          console.warn('⚠️ useUserOrdersAndAttempts: Erro ao buscar tentativas (não crítico):', attemptsError);
         } else {
-          console.log('✅ Tentativas do usuário encontradas:', attempts?.length || 0);
+          console.log('✅ useUserOrdersAndAttempts: Tentativas encontradas:', attempts?.length || 0);
 
           processedAttempts = (attempts || []).map(attempt => ({
             id: attempt.id,
@@ -95,18 +101,20 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           }));
         }
       } catch (error) {
-        console.warn('Erro não crítico ao buscar tentativas do usuário:', error);
-        // Continuar sem tentativas se houver erro
+        console.warn('⚠️ useUserOrdersAndAttempts: Erro não crítico ao buscar tentativas:', error);
       }
 
       // Combinar e ordenar por data
       const combined = [...processedOrders, ...processedAttempts]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+      console.log('📋 useUserOrdersAndAttempts: Total combinado:', combined.length);
+      console.log('🎯 useUserOrdersAndAttempts: Dados finais:', combined);
+
       setUserOrdersAndAttempts(combined);
 
     } catch (error: any) {
-      console.error('💥 Erro ao carregar pedidos e tentativas do usuário:', error);
+      console.error('💥 useUserOrdersAndAttempts: Erro crítico:', error);
       toast.error('Erro ao carregar seus pedidos');
     } finally {
       setLoading(false);
@@ -114,10 +122,11 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
   };
 
   useEffect(() => {
+    console.log('🔄 useUserOrdersAndAttempts: Effect acionado com userId:', userId);
     fetchUserOrdersAndAttempts();
 
     if (userId) {
-      // Configurar escuta em tempo real apenas para pedidos (que funcionam)
+      // Configurar escuta em tempo real apenas para pedidos
       const channel = supabase
         .channel(`user-orders-${userId}`)
         .on('postgres_changes', 
@@ -128,14 +137,14 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
             filter: `client_id=eq.${userId}`
           }, 
           (payload) => {
-            console.log('🔄 Mudança detectada em pedidos do usuário:', payload);
+            console.log('🔄 useUserOrdersAndAttempts: Mudança detectada em tempo real:', payload);
             fetchUserOrdersAndAttempts();
           }
         )
         .subscribe();
 
       return () => {
-        console.log('🧹 Limpando inscrições de tempo real do usuário');
+        console.log('🧹 useUserOrdersAndAttempts: Limpando inscrições');
         supabase.removeChannel(channel);
       };
     }
