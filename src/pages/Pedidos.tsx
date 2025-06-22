@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -15,6 +14,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
+import { AutoPaymentVerifier } from '@/components/admin/AutoPaymentVerifier';
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -215,6 +215,13 @@ const Pedidos: React.FC = () => {
             Confira o histórico completo de pedidos finalizados e tentativas de compra
           </p>
         </motion.div>
+
+        {/* Sistema de Backup Automático - Apenas para Admins */}
+        {isAdmin && (
+          <div className="mb-6">
+            <AutoPaymentVerifier />
+          </div>
+        )}
 
         {/* Filtros */}
         <div className="mb-6 flex flex-col md:flex-row gap-3">
