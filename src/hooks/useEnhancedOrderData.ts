@@ -41,16 +41,17 @@ export const useEnhancedOrderData = (orderId: string, clientId: string) => {
         let originalTentativa = null;
         let isRecovered = false;
 
-        // Se lista_paineis estiver vazia, tentar recuperar da tentativa_compra
+        // Se lista_paineis estiver vazia, tentar recuperar de tentativas (status='tentativa')
         if (!recoveredPanels || recoveredPanels.length === 0) {
-          console.log('⚠️ [ENHANCED_ORDER] Lista vazia, tentando recuperar de tentativas_compra...');
+          console.log('⚠️ [ENHANCED_ORDER] Lista vazia, tentando recuperar de tentativas...');
           
-          // Buscar tentativa original baseada no valor e usuário
+          // Buscar tentativa original baseada no valor e usuário (status='tentativa')
           const { data: tentativaData, error: tentativaError } = await supabase
-            .from('tentativas_compra')
+            .from('pedidos')
             .select('*')
-            .eq('id_user', clientId)
+            .eq('client_id', clientId)
             .eq('valor_total', orderData.valor_total)
+            .eq('status', 'tentativa')
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -58,9 +59,9 @@ export const useEnhancedOrderData = (orderId: string, clientId: string) => {
             originalTentativa = tentativaData[0];
             console.log('✅ [ENHANCED_ORDER] Tentativa encontrada:', originalTentativa);
             
-            if (originalTentativa.predios_selecionados && originalTentativa.predios_selecionados.length > 0) {
-              // Converter números para strings (IDs dos painéis)
-              recoveredPanels = originalTentativa.predios_selecionados.map(String);
+            if (originalTentativa.lista_paineis && originalTentativa.lista_paineis.length > 0) {
+              // Usar lista_paineis da tentativa
+              recoveredPanels = originalTentativa.lista_paineis;
               isRecovered = true;
               console.log('🔄 [ENHANCED_ORDER] Painéis recuperados:', recoveredPanels);
             }

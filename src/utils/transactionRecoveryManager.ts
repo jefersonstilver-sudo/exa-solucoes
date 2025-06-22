@@ -1,5 +1,4 @@
 
-
 // Sistema de Recuperação de Transações Perdidas
 
 import { supabase } from '@/integrations/supabase/client';
@@ -44,12 +43,13 @@ class TransactionRecoveryManager {
 
       const userId = authUser.session.user.id;
 
-      // Buscar tentativas correspondentes
+      // Buscar tentativas correspondentes (status='tentativa' na tabela pedidos)
       const { data: attempts, error: attemptsError } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .select('*')
-        .eq('id_user', userId)
+        .eq('client_id', userId)
         .eq('valor_total', amount)
+        .eq('status', 'tentativa')
         .order('created_at', { ascending: false });
 
       if (attemptsError) {
@@ -61,7 +61,8 @@ class TransactionRecoveryManager {
         .from('pedidos')
         .select('*')
         .eq('client_id', userId)
-        .eq('valor_total', amount);
+        .eq('valor_total', amount)
+        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo']);
 
       if (ordersError) {
         throw ordersError;
@@ -76,18 +77,10 @@ class TransactionRecoveryManager {
         // Recuperar a tentativa como pedido válido
         const attempt = attempts[0];
         
-        // CORREÇÃO: Converter predios_selecionados para string[] e garantir que seja array de strings
-        const listaPaineis = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
-        const listaPredios = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
-        
-        const { data: newOrder, error: createError } = await supabase
+        // Converter tentativa em pedido pago
+        const { data: updatedOrder, error: updateError } = await supabase
           .from('pedidos')
-          .insert({
-            client_id: userId,
-            lista_paineis: listaPaineis,
-            lista_predios: listaPredios,
-            plano_meses: 1,
-            valor_total: amount,
+          .update({
             status: 'pago_pendente_video',
             data_inicio: new Date().toISOString().split('T')[0],
             data_fim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -99,28 +92,22 @@ class TransactionRecoveryManager {
               original_attempt_id: attempt.id,
               recovery_timestamp: new Date().toISOString(),
               recovery_reason: 'Manual recovery of paid transaction'
-            },
-            created_at: attempt.created_at
+            }
           })
+          .eq('id', attempt.id)
           .select()
           .single();
 
-        if (createError) {
-          errors.push(`Erro ao criar pedido: ${createError.message}`);
+        if (updateError) {
+          errors.push(`Erro ao converter tentativa: ${updateError.message}`);
         } else {
-          // Remover tentativa após conversão bem-sucedida
-          await supabase
-            .from('tentativas_compra')
-            .delete()
-            .eq('id', attempt.id);
-
           recoveredCount = 1;
           totalRecovered = amount;
           
           details.push({
             type: 'recovered_attempt',
             originalAttemptId: attempt.id,
-            newOrderId: newOrder.id,
+            newOrderId: updatedOrder.id,
             amount: amount,
             timestamp: new Date().toISOString()
           });
@@ -173,11 +160,12 @@ class TransactionRecoveryManager {
       let recoveredCount = 0;
       let totalRecovered = 0;
 
-      // Buscar tentativas sem pedidos correspondentes
+      // Buscar tentativas sem pedidos correspondentes (status='tentativa')
       const { data: orphanedAttempts, error } = await supabase
-        .from('tentativas_compra')
+        .from('pedidos')
         .select('*')
-        .eq('id_user', userId)
+        .eq('client_id', userId)
+        .eq('status', 'tentativa')
         .gt('valor_total', 0);
 
       if (error) {
@@ -186,29 +174,20 @@ class TransactionRecoveryManager {
 
       if (orphanedAttempts && orphanedAttempts.length > 0) {
         for (const attempt of orphanedAttempts) {
-          // Verificar se já existe pedido para esta tentativa
+          // Verificar se já existe pedido válido para esta tentativa
           const { data: existingOrder } = await supabase
             .from('pedidos')
             .select('id')
             .eq('client_id', userId)
             .eq('valor_total', attempt.valor_total)
-            .eq('created_at', attempt.created_at)
+            .in('status', ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'])
             .single();
 
           if (!existingOrder) {
-            // CORREÇÃO: Converter predios_selecionados para string[] 
-            const listaPaineis = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
-            const listaPredios = attempt.predios_selecionados?.map((id: any) => String(id)) || [];
-            
-            // Criar pedido para tentativa órfã
-            const { data: newOrder, error: createError } = await supabase
+            // Converter tentativa em pedido válido
+            const { data: updatedOrder, error: updateError } = await supabase
               .from('pedidos')
-              .insert({
-                client_id: userId,
-                lista_paineis: listaPaineis,
-                lista_predios: listaPredios,
-                plano_meses: 1,
-                valor_total: attempt.valor_total,
+              .update({
                 status: 'pago_pendente_video',
                 data_inicio: new Date().toISOString().split('T')[0],
                 data_fim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -219,27 +198,22 @@ class TransactionRecoveryManager {
                   auto_recovered: true,
                   original_attempt_id: attempt.id,
                   recovery_timestamp: new Date().toISOString()
-                },
-                created_at: attempt.created_at
+                }
               })
+              .eq('id', attempt.id)
               .select()
               .single();
 
-            if (createError) {
-              errors.push(`Erro ao recuperar tentativa ${attempt.id}: ${createError.message}`);
+            if (updateError) {
+              errors.push(`Erro ao recuperar tentativa ${attempt.id}: ${updateError.message}`);
             } else {
-              await supabase
-                .from('tentativas_compra')
-                .delete()
-                .eq('id', attempt.id);
-
               recoveredCount++;
               totalRecovered += attempt.valor_total;
               
               details.push({
                 type: 'auto_recovered',
                 attemptId: attempt.id,
-                orderId: newOrder.id,
+                orderId: updatedOrder.id,
                 amount: attempt.valor_total
               });
             }
@@ -271,18 +245,18 @@ class TransactionRecoveryManager {
   async monitorRealtimeTransactions(): Promise<void> {
     console.log("👁️ [Recovery] INICIANDO MONITORAMENTO EM TEMPO REAL");
     
-    // Monitorar inserções na tabela de tentativas
+    // Monitorar inserções na tabela de pedidos com status='tentativa'
     supabase
-      .channel('tentativas_monitor')
+      .channel('pedidos_tentativas_monitor')
       .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'tentativas_compra' },
+        { event: 'INSERT', schema: 'public', table: 'pedidos', filter: 'status=eq.tentativa' },
         (payload) => {
           console.log("🔔 [Recovery] NOVA TENTATIVA DETECTADA:", payload.new);
           
           // Verificar se precisa de recuperação imediata
           if (payload.new.valor_total > 0) {
             setTimeout(() => {
-              this.autoRecoverUserTransactions(payload.new.id_user);
+              this.autoRecoverUserTransactions(payload.new.client_id);
             }, 60000); // Esperar 1 minuto antes de tentar recuperar
           }
         }
@@ -303,4 +277,3 @@ class TransactionRecoveryManager {
 }
 
 export const transactionRecoveryManager = TransactionRecoveryManager.getInstance();
-

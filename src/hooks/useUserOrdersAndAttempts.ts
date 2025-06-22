@@ -1,112 +1,77 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 export interface UserOrderItem {
   id: string;
+  type: 'order' | 'attempt';
   created_at: string;
+  status: string;
   valor_total: number;
   lista_paineis: string[];
   plano_meses: number;
   data_inicio?: string;
   data_fim?: string;
-  status: string;
-  transaction_id?: string;
-  log_pagamento?: any;
-  email: string;
+  client_id: string;
+  email?: string;
 }
 
-export const useUserOrdersAndAttempts = (userId?: string) => {
+export const useUserOrdersAndAttempts = (userId: string | undefined) => {
   const [userOrdersAndAttempts, setUserOrdersAndAttempts] = useState<UserOrderItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const fetchUserOrdersAndAttempts = async () => {
-    if (!userId) {
-      console.log('❌ useUserOrdersAndAttempts: Nenhum usuário fornecido');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log('🔍 useUserOrdersAndAttempts: Buscando pedidos para usuário:', userId);
-
-      // Buscar TODOS os pedidos do usuário (incluindo tentativas)
-      const { data: orders, error: ordersError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('client_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (ordersError) {
-        console.error('❌ useUserOrdersAndAttempts: Erro ao buscar pedidos:', ordersError);
-        throw ordersError;
-      }
-
-      console.log('✅ useUserOrdersAndAttempts: Pedidos encontrados:', orders?.length || 0);
-      console.log('📊 useUserOrdersAndAttempts: Detalhes dos pedidos:', orders);
-
-      // Processar todos os pedidos (incluindo tentativas)
-      const processedOrders: UserOrderItem[] = (orders || []).map(order => ({
-        id: order.id,
-        created_at: order.created_at,
-        status: order.status,
-        valor_total: order.valor_total || 0,
-        lista_paineis: order.lista_paineis || [],
-        plano_meses: order.plano_meses,
-        data_inicio: order.data_inicio,
-        data_fim: order.data_fim,
-        transaction_id: order.transaction_id,
-        log_pagamento: order.log_pagamento,
-        email: order.email
-      }));
-
-      console.log('📋 useUserOrdersAndAttempts: Total de itens processados:', processedOrders.length);
-      console.log('🎯 useUserOrdersAndAttempts: Dados finais:', processedOrders);
-
-      setUserOrdersAndAttempts(processedOrders);
-
-    } catch (error: any) {
-      console.error('💥 useUserOrdersAndAttempts: Erro crítico:', error);
-      toast.error('Erro ao carregar seus pedidos');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔄 useUserOrdersAndAttempts: Effect acionado com userId:', userId);
+    const fetchUserOrdersAndAttempts = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log('🔄 Buscando pedidos e tentativas para usuário:', userId);
+        
+        // Buscar todos os pedidos do usuário (incluindo tentativas)
+        const { data: pedidos, error: pedidosError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('client_id', userId)
+          .order('created_at', { ascending: false });
+        
+        if (pedidosError) {
+          console.error('❌ Erro ao buscar pedidos:', pedidosError);
+          throw pedidosError;
+        }
+        
+        console.log('✅ Pedidos encontrados:', pedidos?.length || 0);
+        
+        // Mapear para o formato correto
+        const mappedItems: UserOrderItem[] = (pedidos || []).map(pedido => ({
+          id: pedido.id,
+          type: pedido.status === 'tentativa' ? 'attempt' : 'order',
+          created_at: pedido.created_at,
+          status: pedido.status,
+          valor_total: pedido.valor_total || 0,
+          lista_paineis: pedido.lista_paineis || [],
+          plano_meses: pedido.plano_meses || 1,
+          data_inicio: pedido.data_inicio,
+          data_fim: pedido.data_fim,
+          client_id: pedido.client_id,
+          email: pedido.email
+        }));
+        
+        setUserOrdersAndAttempts(mappedItems);
+        
+      } catch (error: any) {
+        console.error('💥 Erro ao buscar dados do usuário:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchUserOrdersAndAttempts();
-
-    if (userId) {
-      // Configurar escuta em tempo real apenas para pedidos
-      const channel = supabase
-        .channel(`user-orders-${userId}`)
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'pedidos',
-            filter: `client_id=eq.${userId}`
-          }, 
-          (payload) => {
-            console.log('🔄 useUserOrdersAndAttempts: Mudança detectada em tempo real:', payload);
-            fetchUserOrdersAndAttempts();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        console.log('🧹 useUserOrdersAndAttempts: Limpando inscrições');
-        supabase.removeChannel(channel);
-      };
-    }
   }, [userId]);
 
-  return {
-    userOrdersAndAttempts,
-    loading,
-    refetch: fetchUserOrdersAndAttempts
-  };
+  return { userOrdersAndAttempts, loading, error };
 };
