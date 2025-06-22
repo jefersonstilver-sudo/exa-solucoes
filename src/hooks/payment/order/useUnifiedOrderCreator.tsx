@@ -151,7 +151,7 @@ export const useUnifiedOrderCreator = () => {
       // Buscar preços de ambas as tabelas
       const [pedidoResult, tentativaResult] = await Promise.all([
         supabase.from('pedidos').select('valor_total').eq('id', pedidoId).single(),
-        supabase.from('tentativas_compra').select('valor_total').eq('id', tentativaId).single()
+        supabase.from('tentativas_compra' as any).select('valor_total').eq('id', tentativaId).single()
       ]);
 
       if (pedidoResult.error || tentativaResult.error) {
@@ -159,7 +159,7 @@ export const useUnifiedOrderCreator = () => {
       }
 
       const pedidoPrice = pedidoResult.data.valor_total;
-      const tentativaPrice = tentativaResult.data.valor_total;
+      const tentativaPrice = tentativaResult.data?.valor_total;
       const isSync = Math.abs(pedidoPrice - tentativaPrice) < 0.01; // Tolerância de 1 centavo
 
       if (!isSync) {

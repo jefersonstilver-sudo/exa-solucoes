@@ -40,7 +40,7 @@ export const useEnhancedAttemptCapture = () => {
 
       // Verificar se já existe tentativa para esta transação
       const { data: existingAttempt } = await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .select('id')
         .eq('transaction_id', transactionId)
         .single();
@@ -55,7 +55,7 @@ export const useEnhancedAttemptCapture = () => {
 
       // Criar tentativa com preço bloqueado
       const { data: tentativa, error } = await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .insert({
           id_user: user.id,
           transaction_id: transactionId,
@@ -121,7 +121,7 @@ export const useEnhancedAttemptCapture = () => {
   const getAttemptByTransactionId = async (transactionId: string) => {
     try {
       const { data, error } = await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .select('*')
         .eq('transaction_id', transactionId)
         .single();
@@ -142,7 +142,7 @@ export const useEnhancedAttemptCapture = () => {
   const checkForDuplicates = async (userId: string, valorTotal: number): Promise<any[]> => {
     try {
       const { data, error } = await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .select('*')
         .eq('id_user', userId)
         .eq('valor_total', valorTotal)
@@ -180,7 +180,7 @@ export const useEnhancedAttemptCapture = () => {
     try {
       // Remover tentativas com mais de 2 horas sem pedido correspondente
       const { data: orphaned, error: selectError } = await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .select('id')
         .lt('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
         .is('transaction_id', null); // Tentativas antigas sem transaction_id
@@ -194,7 +194,7 @@ export const useEnhancedAttemptCapture = () => {
       }
 
       const { error: deleteError } = await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .delete()
         .in('id', orphaned.map(o => o.id));
 

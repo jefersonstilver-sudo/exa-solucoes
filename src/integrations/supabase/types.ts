@@ -1022,6 +1022,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tentativas_compra: {
+        Row: {
+          created_at: string | null
+          credencial: string | null
+          id: string
+          id_user: string
+          predio: string | null
+          predios_selecionados: number[] | null
+          price_calculation_log: Json | null
+          price_locked: boolean | null
+          transaction_id: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          credencial?: string | null
+          id?: string
+          id_user: string
+          predio?: string | null
+          predios_selecionados?: number[] | null
+          price_calculation_log?: Json | null
+          price_locked?: boolean | null
+          transaction_id?: string | null
+          valor_total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          credencial?: string | null
+          id?: string
+          id_user?: string
+          predio?: string | null
+          predios_selecionados?: number[] | null
+          price_calculation_log?: Json | null
+          price_locked?: boolean | null
+          transaction_id?: string | null
+          valor_total?: number | null
+        }
+        Relationships: []
+      }
       transaction_sessions: {
         Row: {
           calculated_price: number

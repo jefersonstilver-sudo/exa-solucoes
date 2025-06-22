@@ -43,7 +43,7 @@ export const useAttemptCapture = () => {
 
       // Verificar se já existe uma tentativa recente do mesmo usuário
       const { data: existingAttempt } = await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .select('id')
         .eq('id_user', userId)
         .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString()) // últimos 30 minutos
@@ -52,7 +52,7 @@ export const useAttemptCapture = () => {
       if (existingAttempt) {
         // Atualizar tentativa existente
         const { data, error } = await supabase
-          .from('tentativas_compra')
+          .from('tentativas_compra' as any)
           .update({
             predios_selecionados: attemptData.predios_selecionados,
             valor_total: attemptData.valor_total,
@@ -67,7 +67,7 @@ export const useAttemptCapture = () => {
       } else {
         // Criar nova tentativa
         const { data, error } = await supabase
-          .from('tentativas_compra')
+          .from('tentativas_compra' as any)
           .insert(attemptData)
           .select()
           .single();
@@ -88,7 +88,7 @@ export const useAttemptCapture = () => {
   const clearAttempt = useCallback(async (userId: string) => {
     try {
       await supabase
-        .from('tentativas_compra')
+        .from('tentativas_compra' as any)
         .delete()
         .eq('id_user', userId);
       
