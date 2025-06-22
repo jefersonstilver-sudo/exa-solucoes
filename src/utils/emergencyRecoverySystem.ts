@@ -34,13 +34,12 @@ class EmergencyRecoverySystem {
 
       const userId = user.user.id;
 
-      // Buscar tentativa ou pedido de R$ 0,15 na tabela unificada pedidos
+      // Buscar tentativa ou pedido de R$ 0,15
       const { data: attempts, error: attemptError } = await supabase
-        .from('pedidos')
+        .from('tentativas_compra')
         .select('*')
-        .eq('client_id', userId)
+        .eq('id_user', userId)
         .eq('valor_total', 0.15)
-        .eq('status', 'tentativa')
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -54,7 +53,6 @@ class EmergencyRecoverySystem {
         .select('*')
         .eq('client_id', userId)
         .eq('valor_total', 0.15)
-        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'])
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -64,70 +62,46 @@ class EmergencyRecoverySystem {
 
       let newOrderId = null;
 
-      // Se não existe pedido válido, converter tentativa em pedido pago
+      // Se não existe pedido válido, criar um
       if (!existingOrder || existingOrder.length === 0) {
+        const { data: newOrder, error: createError } = await supabase
+          .from('pedidos')
+          .insert({
+            client_id: userId,
+            lista_paineis: ['vale-do-monjolo'], // Prédio Vale do Monjolo
+            lista_predios: ['vale-do-monjolo'],
+            plano_meses: 3,
+            valor_total: 0.15,
+            status: 'pago',
+            data_inicio: new Date().toISOString().split('T')[0],
+            data_fim: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 meses
+            termos_aceitos: true,
+            log_pagamento: {
+              payment_method: 'pix',
+              payment_status: 'approved',
+              emergency_recovery: true,
+              original_amount: 0.15,
+              plan_months: 3,
+              recovery_timestamp: new Date().toISOString(),
+              recovery_reason: 'Manual emergency recovery - correct R$ 0.15 for 3 months Vale do Monjolo'
+            }
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          throw createError;
+        }
+
+        newOrderId = newOrder.id;
+
+        // Remover tentativas após conversão
         if (attempts && attempts.length > 0) {
-          const tentativa = attempts[0];
-          
-          // Converter tentativa em pedido pago
-          const { data: updatedOrder, error: updateError } = await supabase
-            .from('pedidos')
-            .update({
-              status: 'pago',
-              data_inicio: new Date().toISOString().split('T')[0],
-              data_fim: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 meses
-              termos_aceitos: true,
-              log_pagamento: {
-                payment_method: 'pix',
-                payment_status: 'approved',
-                emergency_recovery: true,
-                original_amount: 0.15,
-                plan_months: 3,
-                recovery_timestamp: new Date().toISOString(),
-                recovery_reason: 'Manual emergency recovery - correct R$ 0.15 for 3 months Vale do Monjolo'
-              }
-            })
-            .eq('id', tentativa.id)
-            .select()
-            .single();
-
-          if (updateError) {
-            throw updateError;
-          }
-
-          newOrderId = updatedOrder.id;
-        } else {
-          // Criar novo pedido se não existir tentativa
-          const { data: newOrder, error: createError } = await supabase
-            .from('pedidos')
-            .insert({
-              client_id: userId,
-              lista_paineis: ['vale-do-monjolo'], // Prédio Vale do Monjolo
-              lista_predios: ['vale-do-monjolo'],
-              plano_meses: 3,
-              valor_total: 0.15,
-              status: 'pago',
-              data_inicio: new Date().toISOString().split('T')[0],
-              data_fim: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 meses
-              termos_aceitos: true,
-              log_pagamento: {
-                payment_method: 'pix',
-                payment_status: 'approved',
-                emergency_recovery: true,
-                original_amount: 0.15,
-                plan_months: 3,
-                recovery_timestamp: new Date().toISOString(),
-                recovery_reason: 'Manual emergency recovery - correct R$ 0.15 for 3 months Vale do Monjolo'
-              }
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            throw createError;
-          }
-
-          newOrderId = newOrder.id;
+          await supabase
+            .from('tentativas_compra')
+            .delete()
+            .eq('id_user', userId)
+            .eq('valor_total', 0.15);
         }
 
         // Log da recuperação

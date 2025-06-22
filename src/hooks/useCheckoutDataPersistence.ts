@@ -38,12 +38,11 @@ export const useCheckoutDataPersistence = () => {
       }
     }
 
-    // Verificar tentativas na tabela pedidos (status='tentativa')
+    // Verificar tentativas de compra recentes
     const { data: recentAttempts, error: attemptsError } = await supabase
-      .from('pedidos')
+      .from('tentativas_compra')
       .select('*')
-      .eq('client_id', userId)
-      .eq('status', 'tentativa')
+      .eq('id_user', userId)
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -86,16 +85,12 @@ export const useCheckoutDataPersistence = () => {
 
       console.log('🏢 [CHECKOUT_PERSISTENCE] Building IDs extraídos:', buildingIds);
 
-      // Salvar tentativa na tabela pedidos com status='tentativa'
+      // Salvar tentativa com dados completos
       const attemptData = {
-        client_id: userId,
+        id_user: userId,
         valor_total: totalPrice,
-        lista_paineis: panelIds,
-        lista_predios: buildingIds,
-        status: 'tentativa',
-        plano_meses: 1,
-        termos_aceitos: false,
-        log_pagamento: {
+        predios_selecionados: buildingIds.map(id => Number(id)),
+        credencial: JSON.stringify({
           panel_ids: panelIds,
           building_ids: buildingIds,
           cart_items_backup: cartItems.map(item => ({
@@ -105,15 +100,14 @@ export const useCheckoutDataPersistence = () => {
             duration: item.duration || 30,
             price: item.price || 0
           })),
-          timestamp: new Date().toISOString(),
-          attempt_type: 'checkout_persistence'
-        }
+          timestamp: new Date().toISOString()
+        })
       };
 
       console.log('💾 [CHECKOUT_PERSISTENCE] Dados da tentativa:', attemptData);
 
       const { data: savedAttempt, error: saveError } = await supabase
-        .from('pedidos')
+        .from('tentativas_compra')
         .insert(attemptData)
         .select()
         .single();
@@ -138,10 +132,9 @@ export const useCheckoutDataPersistence = () => {
       console.log('🔄 [CHECKOUT_PERSISTENCE] Tentando recuperar dados da tentativa...');
 
       let query = supabase
-        .from('pedidos')
+        .from('tentativas_compra')
         .select('*')
-        .eq('client_id', userId)
-        .eq('status', 'tentativa')
+        .eq('id_user', userId)
         .order('created_at', { ascending: false });
 
       if (totalPrice) {
@@ -163,26 +156,25 @@ export const useCheckoutDataPersistence = () => {
       const attempt = attempts[0];
       console.log('📋 [CHECKOUT_PERSISTENCE] Tentativa encontrada:', attempt);
 
-      // Tentar extrair dados do log_pagamento
+      // Tentar extrair dados da credencial
       let recoveredData = null;
-      if (attempt.log_pagamento && typeof attempt.log_pagamento === 'object') {
+      if (attempt.credencial) {
         try {
-          const logData = attempt.log_pagamento as any;
+          const credentialData = JSON.parse(attempt.credencial);
           recoveredData = {
-            panelIds: logData.panel_ids || attempt.lista_paineis || [],
-            buildingIds: logData.building_ids || attempt.lista_predios || [],
-            cartItemsBackup: logData.cart_items_backup || []
+            panelIds: credentialData.panel_ids || [],
+            buildingIds: credentialData.building_ids || attempt.predios_selecionados || [],
+            cartItemsBackup: credentialData.cart_items_backup || []
           };
         } catch (parseError) {
-          console.error('❌ [CHECKOUT_PERSISTENCE] Erro ao extrair dados do log:', parseError);
+          console.error('❌ [CHECKOUT_PERSISTENCE] Erro ao parsear credencial:', parseError);
         }
       }
 
       return {
         attempt,
         recoveredData,
-        buildingIds: attempt.lista_predios || [],
-        panelIds: attempt.lista_paineis || [],
+        buildingIds: attempt.predios_selecionados || [],
         totalValue: attempt.valor_total
       };
 

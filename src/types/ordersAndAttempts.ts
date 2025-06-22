@@ -13,7 +13,7 @@ export interface OrderOrAttempt {
   client_email?: string;
   client_name?: string;
   video_status?: string;
-  email?: string;
+  predios_selecionados?: number[];
 }
 
 export interface OrdersStats {

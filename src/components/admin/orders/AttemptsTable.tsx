@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +42,9 @@ const AttemptsTable: React.FC<AttemptsTableProps> = ({ attempts }) => {
   };
 
   const getPanelsCount = (item: OrderOrAttempt) => {
-    // CORREÇÃO: Usar lista_paineis em vez de predios_selecionados
+    if (item.type === 'attempt') {
+      return item.predios_selecionados?.length || 0;
+    }
     return item.lista_paineis?.length || 0;
   };
 

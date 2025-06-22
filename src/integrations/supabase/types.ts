@@ -840,7 +840,6 @@ export type Database = {
           data_fim: string | null
           data_inicio: string | null
           duracao: number | null
-          email: string | null
           id: string
           lista_paineis: string[] | null
           lista_predios: string[] | null
@@ -861,7 +860,6 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string | null
           duracao?: number | null
-          email?: string | null
           id?: string
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
@@ -882,7 +880,6 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string | null
           duracao?: number | null
-          email?: string | null
           id?: string
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
@@ -1019,6 +1016,45 @@ export type Database = {
           responsavel_contato?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      tentativas_compra: {
+        Row: {
+          created_at: string
+          credencial: string | null
+          id: string
+          id_user: string
+          predio: string | null
+          predios_selecionados: number[] | null
+          price_calculation_log: Json | null
+          price_locked: boolean | null
+          transaction_id: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          created_at?: string
+          credencial?: string | null
+          id?: string
+          id_user: string
+          predio?: string | null
+          predios_selecionados?: number[] | null
+          price_calculation_log?: Json | null
+          price_locked?: boolean | null
+          transaction_id?: string | null
+          valor_total?: number | null
+        }
+        Update: {
+          created_at?: string
+          credencial?: string | null
+          id?: string
+          id_user?: string
+          predio?: string | null
+          predios_selecionados?: number[] | null
+          price_calculation_log?: Json | null
+          price_locked?: boolean | null
+          transaction_id?: string | null
+          valor_total?: number | null
         }
         Relationships: []
       }

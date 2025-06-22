@@ -15,7 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
 import { AutoPaymentVerifier } from '@/components/admin/AutoPaymentVerifier';
-import { PaymentRecoveryPanel } from '@/components/admin/PaymentRecoveryPanel';
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,33 +28,12 @@ const Pedidos: React.FC = () => {
 
   const isAdmin = hasRole('admin') || hasRole('super_admin');
 
-  // LOGS DE DEBUG DETALHADOS
-  console.log('📋 Pedidos: === ESTADO ATUAL ===');
+  // LOGS DE DEBUG para diagnóstico
+  console.log('📋 Pedidos: Componente renderizado');
   console.log('📋 Pedidos: Usuário logado:', isLoggedIn);
   console.log('📋 Pedidos: Dados do usuário:', user);
-  console.log('📋 Pedidos: User ID:', user?.id);
   console.log('📋 Pedidos: É admin:', isAdmin);
-  console.log('📋 Pedidos: Loading:', loading);
-  console.log('📋 Pedidos: Total de itens carregados:', userOrdersAndAttempts.length);
-  console.log('📋 Pedidos: Detalhes dos itens:', userOrdersAndAttempts);
-
-  // Log de verificação de autenticação
-  useEffect(() => {
-    console.log('🔐 Pedidos: Verificação de autenticação');
-    console.log('🔐 Pedidos: isLoggedIn:', isLoggedIn);
-    console.log('🔐 Pedidos: user:', user);
-    
-    if (!isLoggedIn) {
-      console.log('⚠️ Pedidos: Usuário não está logado, redirecionando...');
-      navigate('/login');
-    }
-  }, [isLoggedIn, user, navigate]);
-
-  // Se não estiver logado, não renderizar nada (será redirecionado)
-  if (!isLoggedIn || !user) {
-    console.log('❌ Pedidos: Usuário não autenticado');
-    return null;
-  }
+  console.log('📋 Pedidos: Pedidos e tentativas carregados:', userOrdersAndAttempts.length);
 
   // Filtrar pedidos e tentativas
   const filteredItems = userOrdersAndAttempts.filter(item => {
@@ -65,21 +43,19 @@ const Pedidos: React.FC = () => {
     
     const matchesStatus = 
       statusFilter === 'todos' || 
-      item.status.toLowerCase() === statusFilter.toLowerCase();
+      (item.type === 'order' && item.status.toLowerCase() === statusFilter.toLowerCase()) ||
+      (item.type === 'attempt' && statusFilter === 'tentativa');
     
     const matchesType = 
       typeFilter === 'todos' || 
-      (typeFilter === 'order' && item.status !== 'tentativa') ||
-      (typeFilter === 'attempt' && item.status === 'tentativa');
+      item.type === typeFilter;
 
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  console.log('🔍 Pedidos: Itens após filtros:', filteredItems.length);
-
   // Formatador de status para exibição
   const formatStatus = (item: any) => {
-    if (item.status === 'tentativa') {
+    if (item.type === 'attempt') {
       return { 
         label: 'Tentativa Abandonada', 
         color: 'bg-orange-600 text-white text-xs px-2 py-1 font-semibold border-0' 
@@ -89,14 +65,14 @@ const Pedidos: React.FC = () => {
     const status = item.status.toLowerCase();
     switch (status) {
       case 'pendente':
-        return { label: 'Pagamento Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'pago':
       case 'pago_pendente_video':
-        return { label: 'Pago - Aguardando Vídeo', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Pago', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'video_aprovado':
-        return { label: 'Vídeo Aprovado', color: 'bg-blue-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Aprovado', color: 'bg-blue-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'ativo':
-        return { label: 'Campanha Ativa', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
+        return { label: 'Ativo', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       case 'cancelado':
         return { label: 'Cancelado', color: 'bg-red-600 text-white text-xs px-2 py-1 font-semibold border-0' };
       default:
@@ -113,17 +89,16 @@ const Pedidos: React.FC = () => {
   // Renderização de card para visualização mobile com verificador
   const renderMobileCard = (item: any) => {
     const status = formatStatus(item);
-    const paineisList = item.lista_paineis || [];
-    const isPendingPix = item.status === 'pendente';
-    const isAttempt = item.status === 'tentativa';
+    const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
+    const isPendingPix = item.type === 'order' && item.status === 'pendente';
 
     return (
-      <Card key={item.id} className="mb-4 p-4 bg-white border-gray-200">
+      <Card key={`${item.type}-${item.id}`} className="mb-4 p-4 bg-white border-gray-200">
         <div className="flex justify-between items-start mb-2">
           <div className="flex flex-col space-y-2">
             <div className="flex items-center space-x-2">
               <Badge className={status.color}>{status.label}</Badge>
-              {isAttempt && (
+              {item.type === 'attempt' && (
                 <Badge variant="outline" className="border-orange-500 text-orange-700">
                   <AlertTriangle className="h-3 w-3 mr-1" />
                   Tentativa
@@ -132,7 +107,7 @@ const Pedidos: React.FC = () => {
             </div>
             <h3 className="font-semibold text-gray-900">ID: {item.id.substring(0, 8)}...</h3>
           </div>
-          <p className={`text-right font-bold text-lg ${isAttempt ? 'text-orange-600' : 'text-gray-900'}`}>
+          <p className={`text-right font-bold text-lg ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
             R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
           </p>
         </div>
@@ -145,7 +120,7 @@ const Pedidos: React.FC = () => {
           <div>
             <p className="text-gray-700 font-medium">Duração</p>
             <p className="text-gray-900 font-semibold">
-              {item.plano_meses} {item.plano_meses === 1 ? 'mês' : 'meses'}
+              {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
             </p>
           </div>
           <div>
@@ -153,7 +128,7 @@ const Pedidos: React.FC = () => {
             <p className="flex items-center text-gray-900 font-semibold">
               <CalendarClock className="h-3 w-3 mr-1 text-indexa-purple" />
               <span>
-                {item.data_inicio 
+                {item.type === 'order' && item.data_inicio 
                   ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
                   : 'Não definido'
                 }
@@ -180,7 +155,7 @@ const Pedidos: React.FC = () => {
           </div>
         )}
         
-        {!isAttempt ? (
+        {item.type === 'order' ? (
           <Button
             variant="outline"
             size="sm"
@@ -241,11 +216,10 @@ const Pedidos: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Sistema de Backup Automático e Recovery - Apenas para Admins */}
+        {/* Sistema de Backup Automático - Apenas para Admins */}
         {isAdmin && (
-          <div className="mb-6 space-y-4">
+          <div className="mb-6">
             <AutoPaymentVerifier />
-            <PaymentRecoveryPanel />
           </div>
         )}
 
@@ -287,14 +261,11 @@ const Pedidos: React.FC = () => {
             <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
               <AlertCircle className="h-8 w-8 text-gray-600" />
             </div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">
-              {userOrdersAndAttempts.length === 0 ? 'Nenhum pedido encontrado' : 'Nenhum resultado para os filtros aplicados'}
-            </h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900">Nenhum pedido encontrado</h2>
             <p className="text-gray-700 mb-6 font-medium">
-              {userOrdersAndAttempts.length === 0
-                ? 'Você ainda não realizou nenhum pedido em nossa plataforma.'
-                : 'Tente ajustar os filtros para encontrar seus pedidos.'
-              }
+              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
+                ? 'Nenhum pedido corresponde aos filtros aplicados.'
+                : 'Você ainda não realizou nenhum pedido em nossa plataforma.'}
             </p>
             <div className="flex justify-center">
               <Button 
@@ -331,15 +302,14 @@ const Pedidos: React.FC = () => {
                     <TableBody>
                       {filteredItems.map((item) => {
                         const status = formatStatus(item);
-                        const paineisList = item.lista_paineis || [];
-                        const isPendingPix = item.status === 'pendente';
-                        const isAttempt = item.status === 'tentativa';
+                        const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
+                        const isPendingPix = item.type === 'order' && item.status === 'pendente';
                         
                         return (
-                          <React.Fragment key={item.id}>
+                          <React.Fragment key={`${item.type}-${item.id}`}>
                             <TableRow className="border-gray-200 hover:bg-gray-50">
                               <TableCell>
-                                {isAttempt ? (
+                                {item.type === 'attempt' ? (
                                   <Badge variant="outline" className="border-orange-500 text-orange-700">
                                     <AlertTriangle className="h-3 w-3 mr-1" />
                                     Tentativa
@@ -361,17 +331,17 @@ const Pedidos: React.FC = () => {
                                   {status.label}
                                 </Badge>
                               </TableCell>
-                              <TableCell className={`font-bold text-base ${isAttempt ? 'text-orange-600' : 'text-gray-900'}`}>
+                              <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
                                 R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
                               </TableCell>
                               <TableCell className="text-gray-800 font-medium">
-                                {item.plano_meses} {item.plano_meses === 1 ? 'mês' : 'meses'}
+                                {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
                               </TableCell>
                               <TableCell className="whitespace-nowrap">
                                 <div className="flex items-center text-gray-800 font-medium">
                                   <CalendarClock className="h-4 w-4 mr-1 text-indexa-purple" />
                                   <span>
-                                    {item.data_inicio 
+                                    {item.type === 'order' && item.data_inicio 
                                       ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
                                       : 'Não definido'
                                     }
@@ -383,7 +353,7 @@ const Pedidos: React.FC = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-col space-y-2">
-                                  {!isAttempt ? (
+                                  {item.type === 'order' ? (
                                     <Button
                                       variant="outline"
                                       size="sm"

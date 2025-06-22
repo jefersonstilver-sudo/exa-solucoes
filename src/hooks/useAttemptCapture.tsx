@@ -10,13 +10,11 @@ interface CartItem {
 }
 
 interface AttemptData {
-  client_id: string;
-  lista_paineis: string[];
+  id_user: string;
+  predios_selecionados: number[];
   valor_total: number;
-  status: string;
-  plano_meses: number;
-  termos_aceitos: boolean;
-  email?: string;
+  credencial?: string;
+  predio?: string;
 }
 
 export const useAttemptCapture = () => {
@@ -34,32 +32,31 @@ export const useAttemptCapture = () => {
     try {
       setIsCapturing(true);
       
-      // Preparar dados da tentativa como pedido com status 'tentativa'
+      // Preparar dados da tentativa
       const attemptData: AttemptData = {
-        client_id: userId,
-        lista_paineis: cartItems.map(item => item.panel.id),
+        id_user: userId,
+        predios_selecionados: cartItems.map(item => parseInt(item.panel.id)),
         valor_total: totalValue,
-        status: 'tentativa',
-        plano_meses: 1,
-        termos_aceitos: false
+        credencial: 'checkout_web',
+        predio: cartItems.map(item => item.panel.building_id).join(',')
       };
 
       // Verificar se já existe uma tentativa recente do mesmo usuário
       const { data: existingAttempt } = await supabase
-        .from('pedidos')
+        .from('tentativas_compra')
         .select('id')
-        .eq('client_id', userId)
-        .eq('status', 'tentativa')
+        .eq('id_user', userId)
         .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString()) // últimos 30 minutos
         .single();
 
       if (existingAttempt) {
         // Atualizar tentativa existente
         const { data, error } = await supabase
-          .from('pedidos')
+          .from('tentativas_compra')
           .update({
-            lista_paineis: attemptData.lista_paineis,
-            valor_total: attemptData.valor_total
+            predios_selecionados: attemptData.predios_selecionados,
+            valor_total: attemptData.valor_total,
+            predio: attemptData.predio
           })
           .eq('id', existingAttempt.id)
           .select()
@@ -70,7 +67,7 @@ export const useAttemptCapture = () => {
       } else {
         // Criar nova tentativa
         const { data, error } = await supabase
-          .from('pedidos')
+          .from('tentativas_compra')
           .insert(attemptData)
           .select()
           .single();
@@ -91,10 +88,9 @@ export const useAttemptCapture = () => {
   const clearAttempt = useCallback(async (userId: string) => {
     try {
       await supabase
-        .from('pedidos')
+        .from('tentativas_compra')
         .delete()
-        .eq('client_id', userId)
-        .eq('status', 'tentativa');
+        .eq('id_user', userId);
       
       console.log('✅ Tentativa removida após conversão');
     } catch (error) {

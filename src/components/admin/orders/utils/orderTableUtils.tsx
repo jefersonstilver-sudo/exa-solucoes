@@ -106,7 +106,9 @@ export const getClientEmail = (item: OrderOrAttempt) => {
 };
 
 export const getPanelsCount = (item: OrderOrAttempt) => {
-  // CORREÇÃO: Usar lista_paineis em vez de predios_selecionados
+  if (item.type === 'attempt') {
+    return `${item.predios_selecionados?.length || 0} painéis`;
+  }
   return `${item.lista_paineis?.length || 0} painéis`;
 };
 

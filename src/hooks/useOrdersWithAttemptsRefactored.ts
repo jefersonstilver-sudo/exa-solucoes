@@ -5,10 +5,13 @@ import { toast } from 'sonner';
 import { OrderOrAttempt, OrdersStats } from '@/types/ordersAndAttempts';
 import { 
   fetchOrdersData, 
-  enrichOrdersWithEmails 
+  fetchAttemptsData, 
+  enrichOrdersWithEmails, 
+  enrichAttemptsWithEmails 
 } from '@/services/ordersAndAttemptsService';
 import { 
   formatOrdersData, 
+  formatAttemptsData, 
   combineAndSortData, 
   calculateStats 
 } from '@/services/ordersAndAttemptsProcessor';
@@ -28,21 +31,28 @@ export const useOrdersWithAttemptsRefactored = () => {
     try {
       setLoading(true);
       
-      // Buscar todos os pedidos (incluindo tentativas)
-      const pedidos = await fetchOrdersData();
+      // Buscar dados
+      const [pedidos, tentativas] = await Promise.all([
+        fetchOrdersData(),
+        fetchAttemptsData()
+      ]);
       
       // Enriquecer com emails
-      const pedidosComEmails = await enrichOrdersWithEmails(pedidos);
+      const [pedidosComEmails, tentativasComEmails] = await Promise.all([
+        enrichOrdersWithEmails(pedidos),
+        enrichAttemptsWithEmails(tentativas)
+      ]);
       
       // Formatar dados
       const pedidosFormatados = formatOrdersData(pedidosComEmails);
+      const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
       
-      // Ordenar
-      const todosDados = combineAndSortData(pedidosFormatados);
+      // Combinar e ordenar
+      const todosDados = combineAndSortData(pedidosFormatados, tentativasFormatadas);
       setOrdersAndAttempts(todosDados);
       
       // Calcular estatísticas
-      const statsCalculadas = calculateStats(pedidosFormatados);
+      const statsCalculadas = calculateStats(pedidosFormatados, tentativasFormatadas);
       setStats(statsCalculadas);
       
       console.log('📊 Estatísticas finais:', statsCalculadas);
@@ -72,6 +82,17 @@ export const useOrdersWithAttemptsRefactored = () => {
         }, 
         (payload) => {
           console.log('🔄 Mudança detectada em pedidos:', payload);
+          fetchData();
+        }
+      )
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tentativas_compra' 
+        }, 
+        (payload) => {
+          console.log('🔄 Mudança detectada em tentativas:', payload);
           fetchData();
         }
       )

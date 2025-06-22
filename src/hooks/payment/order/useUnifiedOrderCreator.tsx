@@ -148,10 +148,10 @@ export const useUnifiedOrderCreator = () => {
   // Validar sincronização de preços entre tentativa e pedido
   const validatePriceSync = async (pedidoId: string, tentativaId: string): Promise<boolean> => {
     try {
-      // CORREÇÃO: Buscar dados apenas na tabela pedidos (tentativas agora estão lá também)
+      // Buscar preços de ambas as tabelas
       const [pedidoResult, tentativaResult] = await Promise.all([
         supabase.from('pedidos').select('valor_total').eq('id', pedidoId).single(),
-        supabase.from('pedidos').select('valor_total').eq('id', tentativaId).single()
+        supabase.from('tentativas_compra').select('valor_total').eq('id', tentativaId).single()
       ]);
 
       if (pedidoResult.error || tentativaResult.error) {
