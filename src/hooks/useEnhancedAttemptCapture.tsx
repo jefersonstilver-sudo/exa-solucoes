@@ -49,7 +49,7 @@ export const useEnhancedAttemptCapture = () => {
         console.error('Error checking existing attempt:', checkError);
       }
 
-      if (existingAttempt?.id) {
+      if (existingAttempt && existingAttempt.id) {
         console.log("✅ [EnhancedAttemptCapture] Tentativa já existe:", existingAttempt.id);
         return { success: true, tentativaId: existingAttempt.id };
       }
@@ -86,7 +86,7 @@ export const useEnhancedAttemptCapture = () => {
         throw error;
       }
 
-      if (tentativa?.id) {
+      if (tentativa && tentativa.id) {
         console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
           tentativaId: tentativa.id,
           transactionId,

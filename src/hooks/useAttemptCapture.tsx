@@ -53,7 +53,7 @@ export const useAttemptCapture = () => {
         console.error('Error checking existing attempt:', selectError);
       }
 
-      if (existingAttempt?.id) {
+      if (existingAttempt && existingAttempt.id) {
         // Atualizar tentativa existente
         const { data, error } = await supabase
           .from('tentativas_compra' as any)

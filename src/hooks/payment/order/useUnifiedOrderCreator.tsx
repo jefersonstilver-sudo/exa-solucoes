@@ -52,7 +52,7 @@ export const useUnifiedOrderCreator = () => {
         console.error('Error checking existing order:', checkError);
       }
 
-      if (existingOrder?.id) {
+      if (existingOrder && existingOrder.id) {
         console.log("✅ [UnifiedOrderCreator] Pedido já existe:", existingOrder.id);
         return { success: true, pedidoId: existingOrder.id };
       }
@@ -112,7 +112,7 @@ export const useUnifiedOrderCreator = () => {
         throw error;
       }
 
-      if (pedido?.id) {
+      if (pedido && pedido.id) {
         console.log("✅ [UnifiedOrderCreator] Pedido criado com sucesso:", {
           pedidoId: pedido.id,
           transactionId,
