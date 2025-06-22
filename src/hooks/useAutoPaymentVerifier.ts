@@ -38,7 +38,7 @@ export const useAutoPaymentVerifier = () => {
       } else if (result.success) {
         toast.info(`Verificação concluída: ${result.verified_count} pagamentos verificados`);
       } else {
-        toast.error(`Erro na verificação: ${result.error || 'Erro desconhecido'}`);
+        toast.error(`Erro na verificação: ${result.errors?.[0] || 'Erro desconhecido'}`);
       }
 
       return result;
