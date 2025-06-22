@@ -39,13 +39,17 @@ export const useEnhancedAttemptCapture = () => {
       });
 
       // Verificar se já existe tentativa para esta transação
-      const { data: existingAttempt } = await supabase
+      const { data: existingAttempt, error: checkError } = await supabase
         .from('tentativas_compra' as any)
         .select('id')
         .eq('transaction_id', transactionId)
-        .single();
+        .maybeSingle();
 
-      if (existingAttempt) {
+      if (checkError) {
+        console.error('Error checking existing attempt:', checkError);
+      }
+
+      if (existingAttempt?.id) {
         console.log("✅ [EnhancedAttemptCapture] Tentativa já existe:", existingAttempt.id);
         return { success: true, tentativaId: existingAttempt.id };
       }
@@ -82,25 +86,29 @@ export const useEnhancedAttemptCapture = () => {
         throw error;
       }
 
-      console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
-        tentativaId: tentativa.id,
-        transactionId,
-        valorTotal: tentativa.valor_total,
-        priceLocked: tentativa.price_locked
-      });
+      if (tentativa?.id) {
+        console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
+          tentativaId: tentativa.id,
+          transactionId,
+          valorTotal: tentativa.valor_total,
+          priceLocked: tentativa.price_locked
+        });
 
-      // Log para auditoria
-      logSystemEvent('ENHANCED_ATTEMPT_CAPTURED', {
-        tentativaId: tentativa.id,
-        transactionId,
-        userId: user.id,
-        valorTotal: calculatedPrice,
-        selectedPlan,
-        cartItemsCount: cartItems.length,
-        priceLocked: true
-      });
+        // Log para auditoria
+        logSystemEvent('ENHANCED_ATTEMPT_CAPTURED', {
+          tentativaId: tentativa.id,
+          transactionId,
+          userId: user.id,
+          valorTotal: calculatedPrice,
+          selectedPlan,
+          cartItemsCount: cartItems.length,
+          priceLocked: true
+        });
 
-      return { success: true, tentativaId: tentativa.id };
+        return { success: true, tentativaId: tentativa.id };
+      } else {
+        throw new Error('Failed to create attempt - no data returned');
+      }
 
     } catch (error: any) {
       console.error("❌ [EnhancedAttemptCapture] Erro na captura:", error);
@@ -124,9 +132,14 @@ export const useEnhancedAttemptCapture = () => {
         .from('tentativas_compra' as any)
         .select('*')
         .eq('transaction_id', transactionId)
-        .single();
+        .maybeSingle();
 
       if (error) {
+        console.warn("⚠️ [EnhancedAttemptCapture] Error fetching attempt:", error);
+        return null;
+      }
+
+      if (!data) {
         console.warn("⚠️ [EnhancedAttemptCapture] Tentativa não encontrada:", transactionId);
         return null;
       }
@@ -164,7 +177,7 @@ export const useEnhancedAttemptCapture = () => {
           userId,
           valorTotal,
           duplicateCount: data.length,
-          attempts: data.map(d => ({ id: d.id, created_at: d.created_at }))
+          attempts: data.map(d => ({ id: d?.id, created_at: d?.created_at }))
         }, 'WARNING');
       }
 
@@ -196,7 +209,7 @@ export const useEnhancedAttemptCapture = () => {
       const { error: deleteError } = await supabase
         .from('tentativas_compra' as any)
         .delete()
-        .in('id', orphaned.map(o => o.id));
+        .in('id', orphaned.map(o => o?.id).filter(Boolean));
 
       if (deleteError) {
         throw deleteError;

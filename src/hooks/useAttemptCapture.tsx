@@ -42,14 +42,18 @@ export const useAttemptCapture = () => {
       };
 
       // Verificar se já existe uma tentativa recente do mesmo usuário
-      const { data: existingAttempt } = await supabase
+      const { data: existingAttempt, error: selectError } = await supabase
         .from('tentativas_compra' as any)
         .select('id')
         .eq('id_user', userId)
         .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString()) // últimos 30 minutos
-        .single();
+        .maybeSingle();
 
-      if (existingAttempt) {
+      if (selectError) {
+        console.error('Error checking existing attempt:', selectError);
+      }
+
+      if (existingAttempt?.id) {
         // Atualizar tentativa existente
         const { data, error } = await supabase
           .from('tentativas_compra' as any)
@@ -73,7 +77,7 @@ export const useAttemptCapture = () => {
           .single();
 
         if (error) throw error;
-        console.log('✅ Tentativa de compra capturada:', data.id);
+        console.log('✅ Tentativa de compra capturada:', data?.id);
         return data;
       }
     } catch (error: any) {

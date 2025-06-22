@@ -42,13 +42,17 @@ export const useUnifiedOrderCreator = () => {
       });
 
       // CRÍTICO: Verificar se já existe pedido para esta transação
-      const { data: existingOrder } = await supabase
+      const { data: existingOrder, error: checkError } = await supabase
         .from('pedidos')
         .select('id')
         .eq('transaction_id', transactionId)
-        .single();
+        .maybeSingle();
 
-      if (existingOrder) {
+      if (checkError) {
+        console.error('Error checking existing order:', checkError);
+      }
+
+      if (existingOrder?.id) {
         console.log("✅ [UnifiedOrderCreator] Pedido já existe:", existingOrder.id);
         return { success: true, pedidoId: existingOrder.id };
       }
@@ -108,26 +112,30 @@ export const useUnifiedOrderCreator = () => {
         throw error;
       }
 
-      console.log("✅ [UnifiedOrderCreator] Pedido criado com sucesso:", {
-        pedidoId: pedido.id,
-        transactionId,
-        valorTotal: pedido.valor_total,
-        priceSyncVerified: pedido.price_sync_verified
-      });
+      if (pedido?.id) {
+        console.log("✅ [UnifiedOrderCreator] Pedido criado com sucesso:", {
+          pedidoId: pedido.id,
+          transactionId,
+          valorTotal: pedido.valor_total,
+          priceSyncVerified: pedido.price_sync_verified
+        });
 
-      // Log para auditoria
-      logSystemEvent('UNIFIED_ORDER_CREATED', {
-        pedidoId: pedido.id,
-        transactionId,
-        tentativaId,
-        userId: user.id,
-        finalPrice,
-        selectedPlan,
-        cartItemsCount: cartItems.length,
-        priceSyncVerified: true
-      });
+        // Log para auditoria
+        logSystemEvent('UNIFIED_ORDER_CREATED', {
+          pedidoId: pedido.id,
+          transactionId,
+          tentativaId,
+          userId: user.id,
+          finalPrice,
+          selectedPlan,
+          cartItemsCount: cartItems.length,
+          priceSyncVerified: true
+        });
 
-      return { success: true, pedidoId: pedido.id };
+        return { success: true, pedidoId: pedido.id };
+      } else {
+        throw new Error('Failed to create order - no data returned');
+      }
 
     } catch (error: any) {
       console.error("❌ [UnifiedOrderCreator] Erro na criação:", error);
@@ -150,16 +158,21 @@ export const useUnifiedOrderCreator = () => {
     try {
       // Buscar preços de ambas as tabelas
       const [pedidoResult, tentativaResult] = await Promise.all([
-        supabase.from('pedidos').select('valor_total').eq('id', pedidoId).single(),
-        supabase.from('tentativas_compra' as any).select('valor_total').eq('id', tentativaId).single()
+        supabase.from('pedidos').select('valor_total').eq('id', pedidoId).maybeSingle(),
+        supabase.from('tentativas_compra' as any).select('valor_total').eq('id', tentativaId).maybeSingle()
       ]);
 
       if (pedidoResult.error || tentativaResult.error) {
         throw new Error('Erro ao buscar dados para validação');
       }
 
+      if (!pedidoResult.data || !tentativaResult.data) {
+        console.error("❌ [UnifiedOrderCreator] Dados não encontrados para validação");
+        return false;
+      }
+
       const pedidoPrice = pedidoResult.data.valor_total;
-      const tentativaPrice = tentativaResult.data?.valor_total;
+      const tentativaPrice = tentativaResult.data.valor_total;
       const isSync = Math.abs(pedidoPrice - tentativaPrice) < 0.01; // Tolerância de 1 centavo
 
       if (!isSync) {
@@ -194,9 +207,14 @@ export const useUnifiedOrderCreator = () => {
         .from('pedidos')
         .select('*')
         .eq('transaction_id', transactionId)
-        .single();
+        .maybeSingle();
 
       if (error) {
+        console.warn("⚠️ [UnifiedOrderCreator] Error fetching order:", error);
+        return null;
+      }
+
+      if (!data) {
         console.warn("⚠️ [UnifiedOrderCreator] Pedido não encontrado:", transactionId);
         return null;
       }
