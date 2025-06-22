@@ -4,7 +4,7 @@ import { OrderOrAttempt, OrdersStats } from '@/types/ordersAndAttempts';
 export const formatOrdersData = (pedidosComEmails: any[]): OrderOrAttempt[] => {
   return pedidosComEmails.map(pedido => ({
     id: pedido.id,
-    type: 'order' as const,
+    type: pedido.status === 'tentativa' ? 'attempt' : 'order',
     created_at: pedido.created_at,
     status: pedido.status,
     valor_total: pedido.valor_total || 0,
@@ -15,37 +15,26 @@ export const formatOrdersData = (pedidosComEmails: any[]): OrderOrAttempt[] => {
     client_id: pedido.client_id,
     client_email: pedido.client_email,
     client_name: pedido.client_name,
-    video_status: pedido.video_status
+    video_status: pedido.video_status,
+    email: pedido.email
   }));
 };
 
-export const formatAttemptsData = (tentativasComEmails: any[]): OrderOrAttempt[] => {
-  return tentativasComEmails.map(tentativa => ({
-    id: tentativa.id,
-    type: 'attempt' as const,
-    created_at: tentativa.created_at,
-    status: 'tentativa',
-    valor_total: tentativa.valor_total || 0,
-    predios_selecionados: tentativa.predios_selecionados || [],
-    client_email: tentativa.user_email,
-    client_id: tentativa.id_user
-  }));
+export const combineAndSortData = (pedidos: OrderOrAttempt[]): OrderOrAttempt[] => {
+  return pedidos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 };
 
-export const combineAndSortData = (pedidos: OrderOrAttempt[], tentativas: OrderOrAttempt[]): OrderOrAttempt[] => {
-  return [...pedidos, ...tentativas]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-};
-
-export const calculateStats = (pedidos: OrderOrAttempt[], tentativas: OrderOrAttempt[]): OrdersStats => {
-  const totalOrders = pedidos.length;
-  const totalAttempts = tentativas.length;
-  const totalRevenue = pedidos
+export const calculateStats = (pedidos: OrderOrAttempt[]): OrdersStats => {
+  const orders = pedidos.filter(p => p.type === 'order');
+  const attempts = pedidos.filter(p => p.type === 'attempt');
+  
+  const totalOrders = orders.length;
+  const totalAttempts = attempts.length;
+  const totalRevenue = orders
     .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(p.status))
     .reduce((sum, p) => sum + p.valor_total, 0);
-  const abandonedValue = tentativas.reduce((sum, t) => sum + t.valor_total, 0);
+  const abandonedValue = attempts.reduce((sum, t) => sum + t.valor_total, 0);
   
-  // Corrigir fórmula da taxa de conversão: pedidos / tentativas * 100
   const conversionRate = totalAttempts > 0 ? (totalOrders / totalAttempts) * 100 : 0;
   
   return {

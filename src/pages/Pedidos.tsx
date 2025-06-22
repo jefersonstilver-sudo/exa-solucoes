@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -66,12 +65,12 @@ const Pedidos: React.FC = () => {
     
     const matchesStatus = 
       statusFilter === 'todos' || 
-      (item.type === 'order' && item.status.toLowerCase() === statusFilter.toLowerCase()) ||
-      (item.type === 'attempt' && statusFilter === 'tentativa');
+      item.status.toLowerCase() === statusFilter.toLowerCase();
     
     const matchesType = 
       typeFilter === 'todos' || 
-      item.type === typeFilter;
+      (typeFilter === 'order' && item.status !== 'tentativa') ||
+      (typeFilter === 'attempt' && item.status === 'tentativa');
 
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -80,7 +79,7 @@ const Pedidos: React.FC = () => {
 
   // Formatador de status para exibição
   const formatStatus = (item: any) => {
-    if (item.type === 'attempt') {
+    if (item.status === 'tentativa') {
       return { 
         label: 'Tentativa Abandonada', 
         color: 'bg-orange-600 text-white text-xs px-2 py-1 font-semibold border-0' 
@@ -114,16 +113,17 @@ const Pedidos: React.FC = () => {
   // Renderização de card para visualização mobile com verificador
   const renderMobileCard = (item: any) => {
     const status = formatStatus(item);
-    const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
-    const isPendingPix = item.type === 'order' && item.status === 'pendente';
+    const paineisList = item.lista_paineis || [];
+    const isPendingPix = item.status === 'pendente';
+    const isAttempt = item.status === 'tentativa';
 
     return (
-      <Card key={`${item.type}-${item.id}`} className="mb-4 p-4 bg-white border-gray-200">
+      <Card key={item.id} className="mb-4 p-4 bg-white border-gray-200">
         <div className="flex justify-between items-start mb-2">
           <div className="flex flex-col space-y-2">
             <div className="flex items-center space-x-2">
               <Badge className={status.color}>{status.label}</Badge>
-              {item.type === 'attempt' && (
+              {isAttempt && (
                 <Badge variant="outline" className="border-orange-500 text-orange-700">
                   <AlertTriangle className="h-3 w-3 mr-1" />
                   Tentativa
@@ -132,7 +132,7 @@ const Pedidos: React.FC = () => {
             </div>
             <h3 className="font-semibold text-gray-900">ID: {item.id.substring(0, 8)}...</h3>
           </div>
-          <p className={`text-right font-bold text-lg ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
+          <p className={`text-right font-bold text-lg ${isAttempt ? 'text-orange-600' : 'text-gray-900'}`}>
             R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
           </p>
         </div>
@@ -145,7 +145,7 @@ const Pedidos: React.FC = () => {
           <div>
             <p className="text-gray-700 font-medium">Duração</p>
             <p className="text-gray-900 font-semibold">
-              {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
+              {item.plano_meses} {item.plano_meses === 1 ? 'mês' : 'meses'}
             </p>
           </div>
           <div>
@@ -153,7 +153,7 @@ const Pedidos: React.FC = () => {
             <p className="flex items-center text-gray-900 font-semibold">
               <CalendarClock className="h-3 w-3 mr-1 text-indexa-purple" />
               <span>
-                {item.type === 'order' && item.data_inicio 
+                {item.data_inicio 
                   ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
                   : 'Não definido'
                 }
@@ -180,7 +180,7 @@ const Pedidos: React.FC = () => {
           </div>
         )}
         
-        {item.type === 'order' ? (
+        {!isAttempt ? (
           <Button
             variant="outline"
             size="sm"
@@ -239,18 +239,6 @@ const Pedidos: React.FC = () => {
           <p className="text-gray-700 mt-1 font-medium">
             Confira o histórico completo de pedidos finalizados e tentativas de compra
           </p>
-          
-          {/* Debug Info Card - Visível para todos */}
-          <Card className="mt-4 p-4 bg-blue-50 border-blue-200">
-            <h3 className="font-semibold text-blue-800 mb-2">📊 Informações de Debug</h3>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p><strong>Usuário ID:</strong> {user?.id || 'Não disponível'}</p>
-              <p><strong>Email:</strong> {user?.email || 'Não disponível'}</p>
-              <p><strong>Total de pedidos carregados:</strong> {userOrdersAndAttempts.length}</p>
-              <p><strong>Pedidos após filtros:</strong> {filteredItems.length}</p>
-              <p><strong>Status de carregamento:</strong> {loading ? 'Carregando...' : 'Concluído'}</p>
-            </div>
-          </Card>
         </motion.div>
 
         {/* Sistema de Backup Automático e Recovery - Apenas para Admins */}
@@ -343,14 +331,15 @@ const Pedidos: React.FC = () => {
                     <TableBody>
                       {filteredItems.map((item) => {
                         const status = formatStatus(item);
-                        const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
-                        const isPendingPix = item.type === 'order' && item.status === 'pendente';
+                        const paineisList = item.lista_paineis || [];
+                        const isPendingPix = item.status === 'pendente';
+                        const isAttempt = item.status === 'tentativa';
                         
                         return (
-                          <React.Fragment key={`${item.type}-${item.id}`}>
+                          <React.Fragment key={item.id}>
                             <TableRow className="border-gray-200 hover:bg-gray-50">
                               <TableCell>
-                                {item.type === 'attempt' ? (
+                                {isAttempt ? (
                                   <Badge variant="outline" className="border-orange-500 text-orange-700">
                                     <AlertTriangle className="h-3 w-3 mr-1" />
                                     Tentativa
@@ -372,17 +361,17 @@ const Pedidos: React.FC = () => {
                                   {status.label}
                                 </Badge>
                               </TableCell>
-                              <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
+                              <TableCell className={`font-bold text-base ${isAttempt ? 'text-orange-600' : 'text-gray-900'}`}>
                                 R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
                               </TableCell>
                               <TableCell className="text-gray-800 font-medium">
-                                {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
+                                {item.plano_meses} {item.plano_meses === 1 ? 'mês' : 'meses'}
                               </TableCell>
                               <TableCell className="whitespace-nowrap">
                                 <div className="flex items-center text-gray-800 font-medium">
                                   <CalendarClock className="h-4 w-4 mr-1 text-indexa-purple" />
                                   <span>
-                                    {item.type === 'order' && item.data_inicio 
+                                    {item.data_inicio 
                                       ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
                                       : 'Não definido'
                                     }
@@ -394,7 +383,7 @@ const Pedidos: React.FC = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-col space-y-2">
-                                  {item.type === 'order' ? (
+                                  {!isAttempt ? (
                                     <Button
                                       variant="outline"
                                       size="sm"
