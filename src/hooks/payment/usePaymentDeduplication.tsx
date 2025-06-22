@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,16 +50,8 @@ export const usePaymentDeduplication = () => {
         }
       }
 
-      // Also cleanup tentativas_compra that might be orphaned
-      const { error: cleanupError } = await supabase
-        .from('tentativas_compra')
-        .delete()
-        .eq('id_user', userId)
-        .lt('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString()); // Older than 10 minutes
-
-      if (cleanupError) {
-        console.error('Error cleaning up attempts:', cleanupError);
-      }
+      // CORREÇÃO: Não tentar limpar tentativas_compra pois a tabela foi removida
+      console.log('✅ Cleanup de pedidos duplicados concluído');
 
     } catch (error) {
       console.error('Error in cleanup process:', error);
