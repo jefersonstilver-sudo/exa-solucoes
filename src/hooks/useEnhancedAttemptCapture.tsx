@@ -39,7 +39,7 @@ export const useEnhancedAttemptCapture = () => {
       });
 
       // Verificar se já existe tentativa para esta transação
-      const { data: existingAttempt, error: checkError } = await supabase
+      const { data: existingAttemptData, error: checkError } = await supabase
         .from('tentativas_compra' as any)
         .select('id')
         .eq('transaction_id', transactionId)
@@ -49,16 +49,16 @@ export const useEnhancedAttemptCapture = () => {
         console.error('Error checking existing attempt:', checkError);
       }
 
-      if (existingAttempt && existingAttempt.id) {
-        console.log("✅ [EnhancedAttemptCapture] Tentativa já existe:", existingAttempt.id);
-        return { success: true, tentativaId: existingAttempt.id };
+      if (existingAttemptData && existingAttemptData.id) {
+        console.log("✅ [EnhancedAttemptCapture] Tentativa já existe:", existingAttemptData.id);
+        return { success: true, tentativaId: existingAttemptData.id };
       }
 
       // Preparar dados dos prédios selecionados - CORREÇÃO: converter para números
       const prediosSelecionados = cartItems.map(item => parseInt(item.panel.buildings?.id || '0')).filter(id => id > 0);
 
       // Criar tentativa com preço bloqueado
-      const { data: tentativa, error } = await supabase
+      const { data: tentativaData, error: insertError } = await supabase
         .from('tentativas_compra' as any)
         .insert({
           id_user: user.id,
@@ -82,21 +82,21 @@ export const useEnhancedAttemptCapture = () => {
         .select()
         .single();
 
-      if (error) {
-        throw error;
+      if (insertError) {
+        throw insertError;
       }
 
-      if (tentativa && tentativa.id) {
+      if (tentativaData && tentativaData.id) {
         console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
-          tentativaId: tentativa.id,
+          tentativaId: tentativaData.id,
           transactionId,
-          valorTotal: tentativa.valor_total,
-          priceLocked: tentativa.price_locked
+          valorTotal: tentativaData.valor_total,
+          priceLocked: tentativaData.price_locked
         });
 
         // Log para auditoria
         logSystemEvent('ENHANCED_ATTEMPT_CAPTURED', {
-          tentativaId: tentativa.id,
+          tentativaId: tentativaData.id,
           transactionId,
           userId: user.id,
           valorTotal: calculatedPrice,
@@ -105,7 +105,7 @@ export const useEnhancedAttemptCapture = () => {
           priceLocked: true
         });
 
-        return { success: true, tentativaId: tentativa.id };
+        return { success: true, tentativaId: tentativaData.id };
       } else {
         throw new Error('Failed to create attempt - no data returned');
       }
@@ -192,7 +192,7 @@ export const useEnhancedAttemptCapture = () => {
   const cleanupOrphanedAttempts = async (): Promise<number> => {
     try {
       // Remover tentativas com mais de 2 horas sem pedido correspondente
-      const { data: orphaned, error: selectError } = await supabase
+      const { data: orphanedData, error: selectError } = await supabase
         .from('tentativas_compra' as any)
         .select('id')
         .lt('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
@@ -202,21 +202,21 @@ export const useEnhancedAttemptCapture = () => {
         throw selectError;
       }
 
-      if (!orphaned || orphaned.length === 0) {
+      if (!orphanedData || orphanedData.length === 0) {
         return 0;
       }
 
       const { error: deleteError } = await supabase
         .from('tentativas_compra' as any)
         .delete()
-        .in('id', orphaned.map(o => o?.id).filter(Boolean));
+        .in('id', orphanedData.map(o => o?.id).filter(Boolean));
 
       if (deleteError) {
         throw deleteError;
       }
 
-      console.log("🧹 [EnhancedAttemptCapture] Limpeza concluída:", orphaned.length);
-      return orphaned.length;
+      console.log("🧹 [EnhancedAttemptCapture] Limpeza concluída:", orphanedData.length);
+      return orphanedData.length;
 
     } catch (error) {
       console.error("❌ [EnhancedAttemptCapture] Erro na limpeza:", error);

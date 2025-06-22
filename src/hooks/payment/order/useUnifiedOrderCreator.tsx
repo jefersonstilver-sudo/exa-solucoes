@@ -42,7 +42,7 @@ export const useUnifiedOrderCreator = () => {
       });
 
       // CRÍTICO: Verificar se já existe pedido para esta transação
-      const { data: existingOrder, error: checkError } = await supabase
+      const { data: existingOrderData, error: checkError } = await supabase
         .from('pedidos')
         .select('id')
         .eq('transaction_id', transactionId)
@@ -52,9 +52,9 @@ export const useUnifiedOrderCreator = () => {
         console.error('Error checking existing order:', checkError);
       }
 
-      if (existingOrder && existingOrder.id) {
-        console.log("✅ [UnifiedOrderCreator] Pedido já existe:", existingOrder.id);
-        return { success: true, pedidoId: existingOrder.id };
+      if (existingOrderData && existingOrderData.id) {
+        console.log("✅ [UnifiedOrderCreator] Pedido já existe:", existingOrderData.id);
+        return { success: true, pedidoId: existingOrderData.id };
       }
 
       // Preparar dados do pedido
@@ -77,7 +77,7 @@ export const useUnifiedOrderCreator = () => {
       });
 
       // Criar pedido com preço sincronizado
-      const { data: pedido, error } = await supabase
+      const { data: pedidoData, error: insertError } = await supabase
         .from('pedidos')
         .insert({
           client_id: user.id,
@@ -108,21 +108,21 @@ export const useUnifiedOrderCreator = () => {
         .select()
         .single();
 
-      if (error) {
-        throw error;
+      if (insertError) {
+        throw insertError;
       }
 
-      if (pedido && pedido.id) {
+      if (pedidoData && pedidoData.id) {
         console.log("✅ [UnifiedOrderCreator] Pedido criado com sucesso:", {
-          pedidoId: pedido.id,
+          pedidoId: pedidoData.id,
           transactionId,
-          valorTotal: pedido.valor_total,
-          priceSyncVerified: pedido.price_sync_verified
+          valorTotal: pedidoData.valor_total,
+          priceSyncVerified: pedidoData.price_sync_verified
         });
 
         // Log para auditoria
         logSystemEvent('UNIFIED_ORDER_CREATED', {
-          pedidoId: pedido.id,
+          pedidoId: pedidoData.id,
           transactionId,
           tentativaId,
           userId: user.id,
@@ -132,7 +132,7 @@ export const useUnifiedOrderCreator = () => {
           priceSyncVerified: true
         });
 
-        return { success: true, pedidoId: pedido.id };
+        return { success: true, pedidoId: pedidoData.id };
       } else {
         throw new Error('Failed to create order - no data returned');
       }
