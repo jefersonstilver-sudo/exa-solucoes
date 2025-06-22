@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
 import { AutoPaymentVerifier } from '@/components/admin/AutoPaymentVerifier';
+import { PaymentRecoveryPanel } from '@/components/admin/PaymentRecoveryPanel';
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -216,10 +217,11 @@ const Pedidos: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Sistema de Backup Automático - Apenas para Admins */}
+        {/* Sistema de Backup Automático e Recovery - Apenas para Admins */}
         {isAdmin && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-4">
             <AutoPaymentVerifier />
+            <PaymentRecoveryPanel />
           </div>
         )}
 
