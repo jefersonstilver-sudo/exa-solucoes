@@ -4,9 +4,24 @@ import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { getPanelPrice } from '@/utils/checkoutUtils';
+import { loadCartFromStorage, saveCartToStorage, clearCartStorage, LegacyCartItem } from '@/services/cartStorageService';
 
-const CART_KEY = 'simple_cart';
+const convertLegacyToCartItem = (legacyItem: LegacyCartItem): CartItem => {
+  const basePrice = legacyItem.panel.buildings?.preco_base || 200;
+  
+  return {
+    id: `cart_${legacyItem.panel.id}_${Date.now()}`,
+    panel: legacyItem.panel,
+    duration: legacyItem.duration,
+    addedAt: Date.now(),
+    price: basePrice
+  };
+};
+
+const convertCartItemToLegacy = (cartItem: CartItem): LegacyCartItem => ({
+  panel: cartItem.panel,
+  duration: cartItem.duration
+});
 
 export const useSimpleCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -18,13 +33,9 @@ export const useSimpleCart = () => {
   // Load cart on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(CART_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setCartItems(parsed);
-        }
-      }
+      const legacyItems = loadCartFromStorage();
+      const convertedItems = legacyItems.map(convertLegacyToCartItem);
+      setCartItems(convertedItems);
     } catch (error) {
       console.error('Error loading cart:', error);
     } finally {
@@ -34,9 +45,10 @@ export const useSimpleCart = () => {
 
   // Save cart when items change
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && cartItems.length >= 0) {
       try {
-        localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
+        const legacyItems = cartItems.map(convertCartItemToLegacy);
+        saveCartToStorage(legacyItems);
       } catch (error) {
         console.error('Error saving cart:', error);
       }
@@ -53,8 +65,6 @@ export const useSimpleCart = () => {
   }, []);
 
   const addToCart = useCallback((panel: Panel, duration: number = 30) => {
-    console.log('🛒 [useSimpleCart] Adicionando ao carrinho:', { panelId: panel.id, duration });
-    
     setCartItems(prev => {
       const existingIndex = prev.findIndex(item => item.panel?.id === panel.id);
       
@@ -62,10 +72,9 @@ export const useSimpleCart = () => {
         // Update existing item
         const updated = prev.map((item, index) => 
           index === existingIndex 
-            ? { ...item, duration, price: getPanelPrice(panel, duration), addedAt: Date.now() }
+            ? { ...item, duration, addedAt: Date.now() }
             : item
         );
-        console.log('🛒 [useSimpleCart] Item atualizado no carrinho');
         return updated;
       } else {
         // Add new item
@@ -74,17 +83,14 @@ export const useSimpleCart = () => {
           panel,
           duration,
           addedAt: Date.now(),
-          price: getPanelPrice(panel, duration)
+          price: panel.buildings?.preco_base || 200
         };
-        console.log('🛒 [useSimpleCart] Novo item adicionado ao carrinho:', newItem);
         return [...prev, newItem];
       }
     });
 
-    // Trigger animation
     triggerAnimation();
     
-    // Show success toast
     toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
       duration: 2000,
       position: 'top-center'
@@ -99,14 +105,14 @@ export const useSimpleCart = () => {
 
   const clearCart = useCallback(() => {
     setCartItems([]);
-    localStorage.removeItem(CART_KEY);
+    clearCartStorage();
     toast.success('Carrinho limpo');
   }, []);
 
   const updateDuration = useCallback((panelId: string, duration: number) => {
     setCartItems(prev => prev.map(item => 
       item.panel?.id === panelId 
-        ? { ...item, duration, price: getPanelPrice(item.panel, duration) }
+        ? { ...item, duration }
         : item
     ));
   }, []);

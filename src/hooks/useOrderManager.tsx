@@ -28,21 +28,36 @@ export const useOrderManager = () => {
     setIsCreating(true);
     
     try {
+      // Validações essenciais
+      if (!cartItems || cartItems.length === 0) {
+        throw new Error('Carrinho vazio - não é possível criar pedido');
+      }
+
+      if (totalPrice <= 0) {
+        throw new Error('Valor total inválido - não é possível criar pedido');
+      }
+
       // Gerar transaction_id único para rastreamento
       const transactionId = uuidv4();
       
-      // Extrair informações dos prédios/painéis selecionados
-      const listaPaineis = cartItems.map(item => item.panel?.id || item.id).filter(Boolean);
-      const listaPredios = cartItems.map(item => item.panel?.building_id || item.panel?.buildings?.id).filter(Boolean);
+      // CORREÇÃO: Extrair corretamente IDs dos painéis e prédios
+      const listaPaineis = cartItems
+        .map(item => item.panel?.id)
+        .filter(Boolean);
       
-      console.log("🏗️ [OrderManager] Criando pedido pendente:", {
-        clientId,
-        transactionId,
-        totalPrice,
-        selectedPlan,
-        listaPaineis,
-        listaPredios: [...new Set(listaPredios)] // Remove duplicados
-      });
+      const listaPredios = cartItems
+        .map(item => item.panel?.buildings?.id || item.panel?.building_id)
+        .filter(Boolean)
+        .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicados
+      
+      // Validar se conseguimos extrair os dados
+      if (listaPaineis.length === 0) {
+        throw new Error('Não foi possível extrair dados dos painéis');
+      }
+
+      if (listaPredios.length === 0) {
+        throw new Error('Não foi possível extrair dados dos prédios');
+      }
 
       // Calcular datas do período
       const dataInicio = new Date();
@@ -59,7 +74,7 @@ export const useOrderManager = () => {
           plano_meses: selectedPlan,
           status: 'pendente',
           lista_paineis: listaPaineis,
-          lista_predios: [...new Set(listaPredios)],
+          lista_predios: listaPredios,
           data_inicio: dataInicio.toISOString().split('T')[0],
           data_fim: dataFim.toISOString().split('T')[0],
           termos_aceitos: true,
@@ -69,10 +84,15 @@ export const useOrderManager = () => {
             payment_method: 'pix',
             created_at: new Date().toISOString(),
             transaction_id: transactionId,
-            cart_snapshot: cartItems,
-            price_breakdown: {
-              base_price: totalPrice / 0.95, // Preço sem desconto PIX
-              pix_discount: totalPrice * 0.05,
+            cart_snapshot: cartItems.map(item => ({
+              panel_id: item.panel?.id,
+              building_id: item.panel?.buildings?.id || item.panel?.building_id,
+              building_name: item.panel?.buildings?.nome,
+              duration: item.duration
+            })),
+            price_calculation: {
+              plan_months: selectedPlan,
+              panel_count: cartItems.length,
               final_price: totalPrice
             }
           }
@@ -81,20 +101,13 @@ export const useOrderManager = () => {
         .single();
 
       if (error) {
-        console.error("❌ [OrderManager] Erro ao criar pedido:", error);
         throw new Error(`Erro ao criar pedido: ${error.message}`);
       }
-
-      console.log("✅ [OrderManager] Pedido criado com sucesso:", {
-        pedidoId: pedido.id,
-        transactionId: pedido.transaction_id,
-        status: pedido.status
-      });
 
       // Log do evento no sistema
       await supabase.from('log_eventos_sistema').insert({
         tipo_evento: 'PEDIDO_CREATED_FOR_PIX',
-        descricao: `Pedido criado para PIX: ID=${pedido.id}, Transaction=${transactionId}, Valor=${totalPrice}`
+        descricao: `Pedido criado: ID=${pedido.id}, Prédios=${listaPredios.length}, Painéis=${listaPaineis.length}, Valor=${totalPrice}`
       });
 
       return {
@@ -104,8 +117,6 @@ export const useOrderManager = () => {
       };
 
     } catch (error: any) {
-      console.error("❌ [OrderManager] Erro no processo:", error);
-      
       return {
         success: false,
         error: error.message || 'Erro desconhecido ao criar pedido'
@@ -129,14 +140,8 @@ export const useOrderManager = () => {
 
       if (error) throw error;
 
-      console.log("✅ [OrderManager] Status do pedido atualizado:", {
-        pedidoId,
-        newStatus
-      });
-
       return true;
     } catch (error) {
-      console.error("❌ [OrderManager] Erro ao atualizar status:", error);
       return false;
     }
   };

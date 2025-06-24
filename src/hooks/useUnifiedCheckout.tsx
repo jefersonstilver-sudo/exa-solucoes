@@ -1,5 +1,5 @@
 
-// Hook Principal de Checkout Unificado com Transações Únicas
+// Hook Principal de Checkout Unificado - Versão Limpa
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +37,6 @@ export const useUnifiedCheckout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<'session' | 'attempt' | 'order' | 'payment' | 'completed'>('session');
 
-  // Inicializar transação unificada
   const initializeUnifiedCheckout = async (): Promise<{ success: boolean; transactionId?: string; price?: number }> => {
     if (!user?.id) {
       toast.error("Usuário não autenticado");
@@ -58,9 +57,6 @@ export const useUnifiedCheckout = () => {
     setCurrentStep('session');
 
     try {
-      console.log("🚀 [UnifiedCheckout] Inicializando checkout unificado");
-
-      // CORRIGIDO: Cast para PlanKey
       const planKey = selectedPlan as PlanKey;
       
       // Passo 1: Criar sessão de transação única
@@ -69,11 +65,6 @@ export const useUnifiedCheckout = () => {
       if (!sessionResult.success) {
         throw new Error("Falha ao criar sessão de transação");
       }
-
-      console.log("✅ [UnifiedCheckout] Sessão criada:", {
-        transactionId: sessionResult.transactionId,
-        price: sessionResult.price
-      });
 
       setCurrentStep('attempt');
 
@@ -92,8 +83,6 @@ export const useUnifiedCheckout = () => {
       await updateTransactionStatus('tentativa_created', {
         tentativa_id: attemptResult.tentativaId
       });
-
-      console.log("✅ [UnifiedCheckout] Tentativa capturada:", attemptResult.tentativaId);
 
       setCurrentStep('order');
 
@@ -115,8 +104,6 @@ export const useUnifiedCheckout = () => {
         pedido_id: orderResult.pedidoId
       });
 
-      console.log("✅ [UnifiedCheckout] Pedido criado:", orderResult.pedidoId);
-
       // Log final de sucesso
       logSystemEvent('UNIFIED_CHECKOUT_COMPLETED', {
         transactionId: sessionResult.transactionId,
@@ -136,8 +123,6 @@ export const useUnifiedCheckout = () => {
       };
 
     } catch (error: any) {
-      console.error("❌ [UnifiedCheckout] Erro no checkout:", error);
-      
       logSystemEvent('UNIFIED_CHECKOUT_ERROR', {
         error: error.message,
         currentStep,
@@ -153,26 +138,18 @@ export const useUnifiedCheckout = () => {
     }
   };
 
-  // CORREÇÃO: Processar pagamento PIX com integração da edge function
   const processPixPayment = async (pedidoId: string): Promise<boolean> => {
     try {
       setCurrentStep('payment');
       
-      console.log("💳 [UnifiedCheckout] Processando pagamento PIX unificado:", {
-        pedidoId,
-        transactionId: currentTransactionId
-      });
-
       if (!currentTransactionId) {
         throw new Error("Transaction ID não encontrado");
       }
 
-      // Atualizar status para processamento de pagamento
       await updateTransactionStatus('payment_processing', {
         pedido_id: pedidoId
       });
 
-      // CORREÇÃO: Chamar edge function com dados corretos
       const { data, error } = await supabase.functions.invoke('process-pix-payment', {
         body: {
           transactionId: currentTransactionId,
@@ -188,45 +165,31 @@ export const useUnifiedCheckout = () => {
         throw new Error(data.error || 'Falha ao processar pagamento PIX');
       }
 
-      console.log("✅ [UnifiedCheckout] PIX processado com sucesso:", {
-        paymentId: data.pixData.paymentId,
-        amount: data.amount
-      });
-
-      // Limpar carrinho após sucesso
       handleClearCart();
-      
-      // Navegar para página de pagamento PIX
       navigate(`/pix-payment?pedido=${pedidoId}`);
-
       setCurrentStep('completed');
 
       return true;
     } catch (error: any) {
-      console.error("❌ [UnifiedCheckout] Erro no pagamento PIX:", error);
       toast.error(`Erro ao processar pagamento PIX: ${error.message}`);
       return false;
     }
   };
 
-  // Validar integridade antes do pagamento
   const validateBeforePayment = async (expectedPrice: number): Promise<boolean> => {
     if (!currentTransactionId) {
-      console.error("❌ [UnifiedCheckout] Nenhuma transação ativa");
       return false;
     }
 
     return await validateTransactionPrice(expectedPrice);
   };
 
-  // Limpar checkout
   const clearUnifiedCheckout = () => {
     clearCurrentTransaction();
     setCurrentStep('session');
     setIsProcessing(false);
   };
 
-  // Efeito para limpar na desmontagem
   useEffect(() => {
     return () => {
       if (currentStep === 'session') {
@@ -236,19 +199,14 @@ export const useUnifiedCheckout = () => {
   }, []);
 
   return {
-    // Estado
     currentTransactionId,
     sessionPrice,
     isProcessing,
     currentStep,
-
-    // Ações principais
     initializeUnifiedCheckout,
     processPixPayment,
     validateBeforePayment,
     clearUnifiedCheckout,
-
-    // Estado do checkout original
     cartItems,
     selectedPlan,
     couponId
