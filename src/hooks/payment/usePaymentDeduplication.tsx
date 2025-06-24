@@ -53,7 +53,7 @@ export const usePaymentDeduplication = () => {
 
       // Also cleanup tentativas_compra that might be orphaned
       const { error: cleanupError } = await supabase
-        .from('tentativas_compra' as any)
+        .from('tentativas_compra')
         .delete()
         .eq('id_user', userId)
         .lt('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString()); // Older than 10 minutes

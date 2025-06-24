@@ -39,19 +39,13 @@ export const useEnhancedAttemptCapture = () => {
       });
 
       // Verificar se já existe tentativa para esta transação
-      const { data: existingAttempts, error: checkError } = await supabase
+      const { data: existingAttempt } = await supabase
         .from('tentativas_compra')
         .select('id')
         .eq('transaction_id', transactionId)
-        .limit(1);
+        .single();
 
-      if (checkError) {
-        console.error('Error checking existing attempt:', checkError);
-      }
-
-      const existingAttempt = existingAttempts && existingAttempts.length > 0 ? existingAttempts[0] : null;
-
-      if (existingAttempt?.id) {
+      if (existingAttempt) {
         console.log("✅ [EnhancedAttemptCapture] Tentativa já existe:", existingAttempt.id);
         return { success: true, tentativaId: existingAttempt.id };
       }
@@ -60,7 +54,7 @@ export const useEnhancedAttemptCapture = () => {
       const prediosSelecionados = cartItems.map(item => parseInt(item.panel.buildings?.id || '0')).filter(id => id > 0);
 
       // Criar tentativa com preço bloqueado
-      const { data: tentativaData, error: insertError } = await supabase
+      const { data: tentativa, error } = await supabase
         .from('tentativas_compra')
         .insert({
           id_user: user.id,
@@ -84,33 +78,29 @@ export const useEnhancedAttemptCapture = () => {
         .select()
         .single();
 
-      if (insertError) {
-        throw insertError;
+      if (error) {
+        throw error;
       }
 
-      if (tentativaData?.id) {
-        console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
-          tentativaId: tentativaData.id,
-          transactionId,
-          valorTotal: tentativaData.valor_total,
-          priceLocked: tentativaData.price_locked
-        });
+      console.log("✅ [EnhancedAttemptCapture] Tentativa capturada com sucesso:", {
+        tentativaId: tentativa.id,
+        transactionId,
+        valorTotal: tentativa.valor_total,
+        priceLocked: tentativa.price_locked
+      });
 
-        // Log para auditoria
-        logSystemEvent('ENHANCED_ATTEMPT_CAPTURED', {
-          tentativaId: tentativaData.id,
-          transactionId,
-          userId: user.id,
-          valorTotal: calculatedPrice,
-          selectedPlan,
-          cartItemsCount: cartItems.length,
-          priceLocked: true
-        });
+      // Log para auditoria
+      logSystemEvent('ENHANCED_ATTEMPT_CAPTURED', {
+        tentativaId: tentativa.id,
+        transactionId,
+        userId: user.id,
+        valorTotal: calculatedPrice,
+        selectedPlan,
+        cartItemsCount: cartItems.length,
+        priceLocked: true
+      });
 
-        return { success: true, tentativaId: tentativaData.id };
-      } else {
-        throw new Error('Failed to create attempt - no data returned');
-      }
+      return { success: true, tentativaId: tentativa.id };
 
     } catch (error: any) {
       console.error("❌ [EnhancedAttemptCapture] Erro na captura:", error);
@@ -134,14 +124,9 @@ export const useEnhancedAttemptCapture = () => {
         .from('tentativas_compra')
         .select('*')
         .eq('transaction_id', transactionId)
-        .maybeSingle();
+        .single();
 
       if (error) {
-        console.warn("⚠️ [EnhancedAttemptCapture] Error fetching attempt:", error);
-        return null;
-      }
-
-      if (!data) {
         console.warn("⚠️ [EnhancedAttemptCapture] Tentativa não encontrada:", transactionId);
         return null;
       }
@@ -179,7 +164,7 @@ export const useEnhancedAttemptCapture = () => {
           userId,
           valorTotal,
           duplicateCount: data.length,
-          attempts: data.map(d => ({ id: d?.id, created_at: d?.created_at }))
+          attempts: data.map(d => ({ id: d.id, created_at: d.created_at }))
         }, 'WARNING');
       }
 
@@ -194,7 +179,7 @@ export const useEnhancedAttemptCapture = () => {
   const cleanupOrphanedAttempts = async (): Promise<number> => {
     try {
       // Remover tentativas com mais de 2 horas sem pedido correspondente
-      const { data: orphanedData, error: selectError } = await supabase
+      const { data: orphaned, error: selectError } = await supabase
         .from('tentativas_compra')
         .select('id')
         .lt('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
@@ -204,21 +189,21 @@ export const useEnhancedAttemptCapture = () => {
         throw selectError;
       }
 
-      if (!orphanedData || orphanedData.length === 0) {
+      if (!orphaned || orphaned.length === 0) {
         return 0;
       }
 
       const { error: deleteError } = await supabase
         .from('tentativas_compra')
         .delete()
-        .in('id', orphanedData.map(o => o?.id).filter(Boolean));
+        .in('id', orphaned.map(o => o.id));
 
       if (deleteError) {
         throw deleteError;
       }
 
-      console.log("🧹 [EnhancedAttemptCapture] Limpeza concluída:", orphanedData.length);
-      return orphanedData.length;
+      console.log("🧹 [EnhancedAttemptCapture] Limpeza concluída:", orphaned.length);
+      return orphaned.length;
 
     } catch (error) {
       console.error("❌ [EnhancedAttemptCapture] Erro na limpeza:", error);

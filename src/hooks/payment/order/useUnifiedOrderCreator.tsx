@@ -42,19 +42,15 @@ export const useUnifiedOrderCreator = () => {
       });
 
       // CRÍTICO: Verificar se já existe pedido para esta transação
-      const { data: existingOrderData, error: checkError } = await supabase
+      const { data: existingOrder } = await supabase
         .from('pedidos')
         .select('id')
         .eq('transaction_id', transactionId)
-        .maybeSingle();
+        .single();
 
-      if (checkError) {
-        console.error('Error checking existing order:', checkError);
-      }
-
-      if (existingOrderData?.id) {
-        console.log("✅ [UnifiedOrderCreator] Pedido já existe:", existingOrderData.id);
-        return { success: true, pedidoId: existingOrderData.id };
+      if (existingOrder) {
+        console.log("✅ [UnifiedOrderCreator] Pedido já existe:", existingOrder.id);
+        return { success: true, pedidoId: existingOrder.id };
       }
 
       // Preparar dados do pedido
@@ -77,7 +73,7 @@ export const useUnifiedOrderCreator = () => {
       });
 
       // Criar pedido com preço sincronizado
-      const { data: pedidoData, error: insertError } = await supabase
+      const { data: pedido, error } = await supabase
         .from('pedidos')
         .insert({
           client_id: user.id,
@@ -108,34 +104,30 @@ export const useUnifiedOrderCreator = () => {
         .select()
         .single();
 
-      if (insertError) {
-        throw insertError;
+      if (error) {
+        throw error;
       }
 
-      if (pedidoData?.id) {
-        console.log("✅ [UnifiedOrderCreator] Pedido criado com sucesso:", {
-          pedidoId: pedidoData.id,
-          transactionId,
-          valorTotal: pedidoData.valor_total,
-          priceSyncVerified: pedidoData.price_sync_verified
-        });
+      console.log("✅ [UnifiedOrderCreator] Pedido criado com sucesso:", {
+        pedidoId: pedido.id,
+        transactionId,
+        valorTotal: pedido.valor_total,
+        priceSyncVerified: pedido.price_sync_verified
+      });
 
-        // Log para auditoria
-        logSystemEvent('UNIFIED_ORDER_CREATED', {
-          pedidoId: pedidoData.id,
-          transactionId,
-          tentativaId,
-          userId: user.id,
-          finalPrice,
-          selectedPlan,
-          cartItemsCount: cartItems.length,
-          priceSyncVerified: true
-        });
+      // Log para auditoria
+      logSystemEvent('UNIFIED_ORDER_CREATED', {
+        pedidoId: pedido.id,
+        transactionId,
+        tentativaId,
+        userId: user.id,
+        finalPrice,
+        selectedPlan,
+        cartItemsCount: cartItems.length,
+        priceSyncVerified: true
+      });
 
-        return { success: true, pedidoId: pedidoData.id };
-      } else {
-        throw new Error('Failed to create order - no data returned');
-      }
+      return { success: true, pedidoId: pedido.id };
 
     } catch (error: any) {
       console.error("❌ [UnifiedOrderCreator] Erro na criação:", error);
@@ -158,17 +150,12 @@ export const useUnifiedOrderCreator = () => {
     try {
       // Buscar preços de ambas as tabelas
       const [pedidoResult, tentativaResult] = await Promise.all([
-        supabase.from('pedidos').select('valor_total').eq('id', pedidoId).maybeSingle(),
-        supabase.from('tentativas_compra').select('valor_total').eq('id', tentativaId).maybeSingle()
+        supabase.from('pedidos').select('valor_total').eq('id', pedidoId).single(),
+        supabase.from('tentativas_compra').select('valor_total').eq('id', tentativaId).single()
       ]);
 
       if (pedidoResult.error || tentativaResult.error) {
         throw new Error('Erro ao buscar dados para validação');
-      }
-
-      if (!pedidoResult.data || !tentativaResult.data) {
-        console.error("❌ [UnifiedOrderCreator] Dados não encontrados para validação");
-        return false;
       }
 
       const pedidoPrice = pedidoResult.data.valor_total;
@@ -207,14 +194,9 @@ export const useUnifiedOrderCreator = () => {
         .from('pedidos')
         .select('*')
         .eq('transaction_id', transactionId)
-        .maybeSingle();
+        .single();
 
       if (error) {
-        console.warn("⚠️ [UnifiedOrderCreator] Error fetching order:", error);
-        return null;
-      }
-
-      if (!data) {
         console.warn("⚠️ [UnifiedOrderCreator] Pedido não encontrado:", transactionId);
         return null;
       }

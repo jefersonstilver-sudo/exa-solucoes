@@ -42,22 +42,16 @@ export const useAttemptCapture = () => {
       };
 
       // Verificar se já existe uma tentativa recente do mesmo usuário
-      const { data: existingAttempts, error: selectError } = await supabase
+      const { data: existingAttempt } = await supabase
         .from('tentativas_compra')
         .select('id')
         .eq('id_user', userId)
         .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString()) // últimos 30 minutos
-        .limit(1);
+        .single();
 
-      if (selectError) {
-        console.error('Error checking existing attempt:', selectError);
-      }
-
-      const existingAttempt = existingAttempts && existingAttempts.length > 0 ? existingAttempts[0] : null;
-
-      if (existingAttempt?.id) {
+      if (existingAttempt) {
         // Atualizar tentativa existente
-        const { data: updateData, error: updateError } = await supabase
+        const { data, error } = await supabase
           .from('tentativas_compra')
           .update({
             predios_selecionados: attemptData.predios_selecionados,
@@ -68,19 +62,19 @@ export const useAttemptCapture = () => {
           .select()
           .single();
 
-        if (updateError) throw updateError;
-        return updateData;
+        if (error) throw error;
+        return data;
       } else {
         // Criar nova tentativa
-        const { data: insertData, error: insertError } = await supabase
+        const { data, error } = await supabase
           .from('tentativas_compra')
           .insert(attemptData)
           .select()
           .single();
 
-        if (insertError) throw insertError;
-        console.log('✅ Tentativa de compra capturada:', insertData?.id);
-        return insertData;
+        if (error) throw error;
+        console.log('✅ Tentativa de compra capturada:', data.id);
+        return data;
       }
     } catch (error: any) {
       console.error('Erro ao capturar tentativa:', error);
