@@ -1,9 +1,12 @@
+
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
+import { usePixPaymentForOrder } from '@/hooks/usePixPaymentForOrder';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -30,6 +33,16 @@ const AdvertiserOrders = () => {
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  
+  // Hook PIX para pedidos
+  const {
+    isOpen: pixDialogOpen,
+    isProcessing: pixProcessing,
+    pixData,
+    generatePixForOrder,
+    handlePaymentConfirmed,
+    closePixDialog
+  } = usePixPaymentForOrder();
 
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
   if (isMobile) {
@@ -93,11 +106,14 @@ const AdvertiserOrders = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return new Date(dateString).toLocaleDateFormat('pt-BR');
   };
 
   const OrderCard = ({ item }: { item: any }) => {
-    const statusInfo = useOrderStatus(item);
+    const statusInfo = useOrderStatus({ 
+      order: item, 
+      onPixPayment: generatePixForOrder 
+    });
     const StatusIcon = statusInfo.icon;
     const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
 
@@ -171,9 +187,10 @@ const AdvertiserOrders = () => {
                     variant={statusInfo.action.variant}
                     size="sm"
                     onClick={statusInfo.action.onClick}
+                    disabled={pixProcessing}
                     className="mr-2"
                   >
-                    {statusInfo.action.label}
+                    {pixProcessing && statusInfo.action.label === 'Pagar com PIX' ? 'Gerando...' : statusInfo.action.label}
                   </Button>
                 )}
                 
@@ -327,6 +344,19 @@ const AdvertiserOrders = () => {
             <OrderCard key={`${item.type}-${item.id}`} item={item} />
           ))}
         </div>
+      )}
+
+      {/* PIX Dialog */}
+      {pixData && (
+        <PixQrCodeDialog
+          isOpen={pixDialogOpen}
+          onClose={closePixDialog}
+          qrCodeBase64={pixData.qrCodeBase64 || pixData.pix_base64}
+          qrCodeText={pixData.qrCodeText || pixData.pix_url}
+          paymentLink={pixData.paymentLink}
+          pix_url={pixData.pix_url}
+          pix_base64={pixData.pix_base64}
+        />
       )}
     </div>
   );
