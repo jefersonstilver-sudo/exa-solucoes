@@ -1,163 +1,148 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useUserSession } from '@/hooks/useUserSession';
-import { useCartManager } from '@/hooks/useCartManager';
-import { useCouponValidator } from '@/hooks/useCouponValidator';
-import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
-import { calculatePixPrice } from '@/utils/priceCalculator';
 import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, CreditCard, QrCode, ArrowLeft } from 'lucide-react';
+import { useUserSession } from '@/hooks/useUserSession';
+import PaymentGateway from '@/components/checkout/payment/PaymentGateway';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useUserSession();
-  const { cartItems, selectedPlan } = useCartManager();
-  const { couponId, validationResult } = useCouponValidator();
-  const { processPixPayment, isProcessing } = useSimplifiedPixCheckout();
+  const { user, isLoading: isSessionLoading } = useUserSession();
+  const [orderData, setOrderData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Verificar se há dados necessários
-  if (!selectedPlan || cartItems.length === 0) {
+  // Get order ID from URL params
+  const orderId = searchParams.get('pedido') || searchParams.get('order');
+
+  useEffect(() => {
+    if (!isSessionLoading && !user) {
+      toast.error("Você precisa estar logado para continuar");
+      navigate('/login?redirect=/checkout');
+      return;
+    }
+
+    if (user && orderId) {
+      loadOrderData();
+    } else if (user && !orderId) {
+      // If no order ID, redirect to create order or show error
+      toast.error("Pedido não encontrado");
+      navigate('/checkout/resumo');
+    }
+  }, [user, orderId, isSessionLoading, navigate]);
+
+  const loadOrderData = async () => {
+    if (!orderId) return;
+
+    try {
+      setIsLoading(true);
+      console.log("🔍 [Checkout] Carregando dados do pedido:", orderId);
+
+      const { data: pedido, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (error || !pedido) {
+        throw new Error("Pedido não encontrado");
+      }
+
+      console.log("✅ [Checkout] Pedido carregado:", {
+        id: pedido.id,
+        status: pedido.status,
+        valor_total: pedido.valor_total
+      });
+
+      setOrderData(pedido);
+
+      // If already paid, redirect to confirmation
+      if (pedido.status === 'pago' || pedido.status === 'pago_pendente_video') {
+        toast.success("Pedido já foi pago!");
+        navigate(`/pedido-confirmado?id=${pedido.id}`);
+        return;
+      }
+
+    } catch (error: any) {
+      console.error("❌ [Checkout] Erro ao carregar pedido:", error);
+      toast.error(`Erro: ${error.message}`);
+      navigate('/checkout/resumo');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshPaymentStatus = async () => {
+    if (!orderId) return;
+    
+    try {
+      console.log("🔄 [Checkout] Atualizando status do pagamento");
+      
+      const { data: pedido, error } = await supabase
+        .from('pedidos')
+        .select('status, log_pagamento')
+        .eq('id', orderId)
+        .single();
+
+      if (error) throw error;
+
+      if (pedido.status === 'pago' || pedido.status === 'pago_pendente_video') {
+        toast.success("Pagamento confirmado!");
+        navigate(`/pedido-confirmado?id=${orderId}`);
+      }
+
+    } catch (error: any) {
+      console.error("❌ [Checkout] Erro ao atualizar status:", error);
+    }
+  };
+
+  if (isSessionLoading || isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="text-center py-8">
-              <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Carrinho vazio</h2>
-              <p className="text-gray-600 mb-4">Adicione painéis ao carrinho para continuar</p>
-              <Button onClick={() => navigate('/paineis-digitais/loja')}>
-                Ver Painéis Disponíveis
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+          <div className="text-center">
+            <LoadingSpinner />
+            <p className="mt-4 text-gray-600">Carregando dados do pagamento...</p>
+          </div>
         </div>
       </Layout>
     );
   }
 
-  // Calcular preços
-  const couponDiscountPercent = validationResult?.valid ? validationResult?.discountPercent : 0;
-  const finalPrice = calculatePixPrice(selectedPlan, cartItems, couponDiscountPercent);
+  if (!user) {
+    return null; // Will be redirected by the effect above
+  }
 
-  const handlePixPayment = async () => {
-    if (!user?.id) {
-      toast.error("Faça login para continuar");
-      navigate('/login');
-      return;
-    }
-
-    const success = await processPixPayment(couponId, couponDiscountPercent);
-    if (!success) {
-      toast.error("Erro ao processar pagamento. Tente novamente.");
-    }
-  };
+  if (!orderData) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-orange-50">
+          <div className="text-center p-8 bg-white rounded-2xl shadow-2xl">
+            <h2 className="text-2xl font-bold text-red-800 mb-4">Pedido não encontrado</h2>
+            <p className="text-red-600 mb-6">Não foi possível carregar os dados do seu pedido.</p>
+            <button 
+              onClick={() => navigate('/checkout/resumo')}
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Voltar ao Resumo
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate(-1)}
-              className="mr-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <h1 className="text-2xl font-bold">Finalizar Pedido</h1>
-          </div>
-
-          {/* Resumo do Pedido */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Resumo do Pedido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Painéis selecionados:</span>
-                  <span>{cartItems.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Plano:</span>
-                  <span>{selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'}</span>
-                </div>
-                {validationResult?.valid && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Desconto cupom:</span>
-                    <span>-{validationResult.discountPercent}%</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-green-600">
-                  <span>Desconto PIX:</span>
-                  <span>-5%</span>
-                </div>
-                <hr />
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total:</span>
-                  <span>R$ {finalPrice.toFixed(2)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Métodos de Pagamento */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Método de Pagamento</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* PIX */}
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <QrCode className="h-5 w-5 mr-2" />
-                      <span className="font-medium">PIX</span>
-                      <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
-                        5% desconto
-                      </Badge>
-                    </div>
-                    <span className="font-semibold">R$ {finalPrice.toFixed(2)}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Pagamento instantâneo via PIX
-                  </p>
-                  <Button 
-                    onClick={handlePixPayment}
-                    disabled={isProcessing}
-                    className="w-full"
-                  >
-                    {isProcessing ? 'Processando...' : 'Pagar com PIX'}
-                  </Button>
-                </div>
-
-                {/* Cartão (desabilitado temporariamente) */}
-                <div className="border rounded-lg p-4 opacity-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <CreditCard className="h-5 w-5 mr-2" />
-                      <span className="font-medium">Cartão de Crédito</span>
-                    </div>
-                    <span className="text-sm text-gray-500">Em breve</span>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Parcelamento disponível em breve
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <PaymentGateway
+        orderId={orderData.id}
+        totalAmount={orderData.valor_total}
+        onRefreshStatus={refreshPaymentStatus}
+        userId={user.id}
+      />
     </Layout>
   );
 };
