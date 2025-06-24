@@ -4,7 +4,7 @@ import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
 import { findCartItems, saveCartItems, clearAllCarts, CART_STORAGE_KEYS } from '@/utils/cartUtils';
-import { getPanelPrice } from '@/utils/checkoutUtils';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 
 export const useUnifiedCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -26,8 +26,8 @@ export const useUnifiedCart = () => {
         items: result.cartItems.map(item => ({
           id: item.id,
           panelId: item.panel?.id,
-          buildingName: item.panel?.buildings?.nome,
-          price: item.price
+          buildingName: item.panel?.buildings?.nome
+          // REMOVIDO: price - será calculado dinamicamente
         }))
       });
     } else {
@@ -65,8 +65,8 @@ export const useUnifiedCart = () => {
             ? { 
                 ...item, 
                 duration, 
-                price: getPanelPrice(panel, duration), 
                 addedAt: Date.now() 
+                // REMOVIDO: price - será calculado dinamicamente
               }
             : item
         );
@@ -79,8 +79,8 @@ export const useUnifiedCart = () => {
           id: `cart_${panel.id}_${Date.now()}`,
           panel,
           duration,
-          addedAt: Date.now(),
-          price: getPanelPrice(panel, duration)
+          addedAt: Date.now()
+          // REMOVIDO: price - será calculado dinamicamente
         };
         
         toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`);
@@ -111,8 +111,8 @@ export const useUnifiedCart = () => {
       item.panel?.id === panelId 
         ? { 
             ...item, 
-            duration, 
-            price: getPanelPrice(item.panel, duration) 
+            duration
+            // REMOVIDO: price - será calculado dinamicamente
           }
         : item
     ));
@@ -124,13 +124,17 @@ export const useUnifiedCart = () => {
     return cartItems.some(item => item.panel?.id === panelId);
   }, [cartItems]);
 
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+  // CORRIGIDO: Calcular preço total usando calculador centralizado
+  const getTotalPrice = useCallback(() => {
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    return calculatePixPrice(selectedPlan, cartItems, 0);
+  }, [cartItems]);
 
   return {
     cartItems,
     isLoading,
     itemCount: cartItems.length,
-    totalPrice,
+    totalPrice: getTotalPrice(),
     lastUpdateSource,
     isItemInCart,
     addToCart,

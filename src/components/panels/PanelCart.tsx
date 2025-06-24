@@ -4,6 +4,7 @@ import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import ModernCartLayout from '@/components/cart/ModernCartLayout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 
 interface PanelCartProps {
   cartItems: CartItem[];
@@ -24,12 +25,17 @@ const PanelCart: React.FC<PanelCartProps> = ({
 
   const handleCheckout = () => {
     console.log("PanelCart: Iniciando checkout moderno");
+    
+    // CORRIGIDO: Calcular total usando calculador centralizado
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    const total = calculatePixPrice(selectedPlan, cartItems, 0);
+    
     logCheckoutEvent(
       CheckoutEvent.PROCEED_TO_CHECKOUT, 
       LogLevel.INFO, 
       `Iniciando checkout moderno com ${cartItems.length} itens`, 
       { 
-        total: cartItems.reduce((sum, item) => sum + item.price, 0), 
+        total, 
         cartItems: cartItems.length 
       }
     );

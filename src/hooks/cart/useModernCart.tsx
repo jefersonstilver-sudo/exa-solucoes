@@ -5,6 +5,7 @@ import { CartItem } from '@/types/cart';
 import { modernCartService } from '@/services/modernCartService';
 import { useToast } from '@/hooks/use-toast';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 
 export const useModernCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -140,13 +141,19 @@ export const useModernCart = () => {
     return modernCartService.getCartAnalytics();
   }, []);
 
+  // CORRIGIDO: Calcular preço total usando calculador centralizado
+  const getTotalPrice = useCallback(() => {
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    return calculatePixPrice(selectedPlan, cartItems, 0);
+  }, [cartItems]);
+
   return {
     // Estado
     cartItems,
     isLoading,
     isAnimating,
     itemCount: cartItems.length,
-    totalPrice: modernCartService.getTotalPrice(),
+    totalPrice: getTotalPrice(),
     
     // Ações
     addToCart,

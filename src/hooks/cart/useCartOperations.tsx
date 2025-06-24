@@ -1,10 +1,8 @@
-
 import { useToast } from '@/hooks/use-toast';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { Check, Trash2 } from 'lucide-react';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { getPanelPrice } from '@/utils/checkoutUtils';
 
 interface UseCartOperationsProps {
   cartItems: CartItem[];
@@ -30,8 +28,7 @@ export const useCartOperations = ({
       id: generateItemId(panel),
       panel,
       duration,
-      addedAt: Date.now(),
-      price: getPanelPrice(panel, duration)
+      addedAt: Date.now()
     };
   };
 
@@ -52,7 +49,6 @@ export const useCartOperations = ({
             ? {
                 ...item,
                 duration,
-                price: getPanelPrice(panel, duration),
                 addedAt: Date.now()
               }
             : item
@@ -161,8 +157,7 @@ export const useCartOperations = ({
         item.panel.id === panelId 
           ? {
               ...item,
-              duration,
-              price: getPanelPrice(item.panel, duration)
+              duration
             }
           : item
       );

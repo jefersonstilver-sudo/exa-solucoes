@@ -1,9 +1,12 @@
 
 import { useEffect } from 'react';
 import { CartItem } from '@/types/cart';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 
 export const useCartDebug = (cartItems: CartItem[], context: string) => {
   useEffect(() => {
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    
     console.log(`🛒 [${context}] CART DEBUG:`, {
       timestamp: new Date().toISOString(),
       context,
@@ -18,7 +21,8 @@ export const useCartDebug = (cartItems: CartItem[], context: string) => {
         panelId: item.panel?.id,
         buildingName: item.panel?.buildings?.nome,
         duration: item.duration,
-        price: item.price
+        // CORRIGIDO: Calcular preço dinamicamente
+        calculatedPrice: calculatePixPrice(selectedPlan, [item], 0)
       })) || []
     });
   }, [cartItems, context]);

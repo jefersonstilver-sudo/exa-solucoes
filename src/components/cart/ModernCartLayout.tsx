@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/priceUtils';
 import { useSimplifiedCheckout } from '@/hooks/useSimplifiedCheckout';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 
 interface ModernCartLayoutProps {
   cartItems: CartItem[];
@@ -27,7 +28,9 @@ const ModernCartLayout = ({
   const [isClearing, setIsClearing] = useState(false);
   const { proceedToCheckout, isProcessing, canProceed } = useSimplifiedCheckout();
 
-  const totalPrice = cartItems.reduce((sum, item) => sum + (item.price || 0), 0);
+  // CORRIGIDO: Calcular preço total usando o calculador centralizado
+  const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+  const totalPrice = calculatePixPrice(selectedPlan, cartItems, 0);
 
   const handleClearCart = async () => {
     setIsClearing(true);
@@ -105,62 +108,67 @@ const ModernCartLayout = ({
       {/* Cart Items */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <AnimatePresence>
-          {cartItems.map((item) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              className="bg-white border rounded-lg p-4 shadow-sm"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 mb-1">
-                    {item.panel?.buildings?.nome || 'Painel'}
-                  </h4>
-                  <p className="text-sm text-gray-500 mb-2">
-                    {item.panel?.buildings?.endereco || 'Endereço não disponível'}
-                  </p>
+          {cartItems.map((item) => {
+            // CORRIGIDO: Calcular preço individual usando o calculador centralizado
+            const itemPrice = calculatePixPrice(selectedPlan, [item], 0);
+            
+            return (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                className="bg-white border rounded-lg p-4 shadow-sm"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-1">
+                      {item.panel?.buildings?.nome || 'Painel'}
+                    </h4>
+                    <p className="text-sm text-gray-500 mb-2">
+                      {item.panel?.buildings?.endereco || 'Endereço não disponível'}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRemove(item.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onRemove(item.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
 
-              {/* Duration Selector */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onChangeDuration(item.id, Math.max(7, item.duration - 7))}
-                    disabled={item.duration <= 7}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="text-sm font-medium min-w-[60px] text-center">
-                    {item.duration} dias
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onChangeDuration(item.id, Math.min(365, item.duration + 7))}
-                    disabled={item.duration >= 365}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
+                {/* Duration Selector */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onChangeDuration(item.id, Math.max(7, item.duration - 7))}
+                      disabled={item.duration <= 7}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="text-sm font-medium min-w-[60px] text-center">
+                      {item.duration} dias
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onChangeDuration(item.id, Math.min(365, item.duration + 7))}
+                      disabled={item.duration >= 365}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="text-lg font-semibold text-[#3C1361]">
+                    {formatCurrency(itemPrice)}
+                  </div>
                 </div>
-                <div className="text-lg font-semibold text-[#3C1361]">
-                  {formatCurrency(item.price || 0)}
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 

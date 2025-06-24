@@ -1,75 +1,48 @@
 
-import { useState, useEffect } from 'react';
-import { findCartItems } from '@/utils/cartUtils';
+import { useEffect } from 'react';
+import { CartItem } from '@/types/cart';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 
-interface DebugInfo {
-  timestamp: string;
-  cartStatus: {
-    hasItems: boolean;
-    itemCount: number;
-    usedKey: string;
-    totalPrice: number;
-    items: any[];
-  };
-  userStatus: {
-    isAuthenticated: boolean;
-    userId?: string;
-    email?: string;
-  };
-  systemStatus: {
-    selectedPlan?: number;
-    localStorage: Record<string, any>;
-  };
-}
-
-export const usePaymentDebug = (user?: any) => {
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
-  
-  const refreshDebugInfo = () => {
-    const cartResult = findCartItems();
-    const selectedPlan = localStorage.getItem('selectedPlan');
-    
-    const info: DebugInfo = {
-      timestamp: new Date().toISOString(),
-      cartStatus: {
-        hasItems: cartResult.success && cartResult.cartItems.length > 0,
-        itemCount: cartResult.cartItems.length,
-        usedKey: cartResult.usedKey,
-        totalPrice: cartResult.cartItems.reduce((sum, item) => sum + (item.price || 0), 0),
-        items: cartResult.cartItems.map(item => ({
-          id: item.id,
-          panelId: item.panel?.id,
-          buildingName: item.panel?.buildings?.nome,
-          price: item.price,
-          duration: item.duration
-        }))
-      },
-      userStatus: {
-        isAuthenticated: !!user,
-        userId: user?.id,
-        email: user?.email
-      },
-      systemStatus: {
-        selectedPlan: selectedPlan ? parseInt(selectedPlan) : undefined,
-        localStorage: {
-          simple_cart: localStorage.getItem('simple_cart'),
-          indexa_unified_cart: localStorage.getItem('indexa_unified_cart'),
-          panelCart: localStorage.getItem('panelCart'),
-          selectedPlan: selectedPlan
-        }
-      }
-    };
-    
-    setDebugInfo(info);
-    console.log("🔍 [usePaymentDebug] Debug info atualizado:", info);
-  };
-
+export const usePaymentDebug = (cartItems: CartItem[], totalPrice: number, context: string) => {
   useEffect(() => {
-    refreshDebugInfo();
-  }, [user]);
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    
+    console.log(`💳 [${context}] PAYMENT DEBUG:`, {
+      timestamp: new Date().toISOString(),
+      context,
+      totalPrice,
+      cartItemsCount: cartItems?.length || 0,
+      selectedPlan,
+      cartItems: cartItems?.map(item => ({
+        id: item.id,
+        panelId: item.panel?.id,
+        buildingName: item.panel?.buildings?.nome,
+        duration: item.duration,
+        // CORRIGIDO: Calcular preço dinamicamente
+        calculatedPrice: calculatePixPrice(selectedPlan, [item], 0)
+      })) || [],
+      // CORRIGIDO: Calcular total usando calculador centralizado
+      calculatedTotal: calculatePixPrice(selectedPlan, cartItems, 0),
+      localStorage: {
+        selectedPlan: localStorage.getItem('selectedPlan'),
+        panelCart: localStorage.getItem('panelCart'),
+        simple_cart: localStorage.getItem('simple_cart')
+      }
+    });
+  }, [cartItems, totalPrice, context]);
 
-  return {
-    debugInfo,
-    refreshDebugInfo
+  const debugPayment = () => {
+    console.log(`🔍 [${context}] MANUAL PAYMENT DEBUG:`, {
+      timestamp: new Date().toISOString(),
+      context,
+      cartItems,
+      totalPrice,
+      allLocalStorage: Object.keys(localStorage).reduce((acc, key) => {
+        acc[key] = localStorage.getItem(key);
+        return acc;
+      }, {} as Record<string, string | null>)
+    });
   };
+
+  return { debugPayment };
 };

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/formatters';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 
 interface ModernCartSummaryProps {
   cartItems: CartItem[];
@@ -17,7 +18,9 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
   onProceedToCheckout,
   isCheckoutLoading = false
 }) => {
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+  // CORRIGIDO: Calcular preço total usando o calculador centralizado
+  const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+  const totalPrice = calculatePixPrice(selectedPlan, cartItems, 0);
   const itemCount = cartItems.length;
 
   return (
