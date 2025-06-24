@@ -26,7 +26,7 @@ export const calculatePrice = (
   selectedPlan: PlanKey,
   cartItems: CartItem[],
   couponDiscountPercent: number = 0,
-  applyPixDiscount: boolean = true
+  applyPixDiscount: boolean = false
 ): PriceCalculationResult => {
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
     return {
@@ -85,7 +85,7 @@ export const calculatePixPrice = (
   return result.finalPrice;
 };
 
-// Função específica para outros métodos (sem desconto PIX)
+// Função específica para preço regular no carrinho (SEM desconto PIX)
 export const calculateRegularPrice = (
   selectedPlan: PlanKey,
   cartItems: CartItem[],

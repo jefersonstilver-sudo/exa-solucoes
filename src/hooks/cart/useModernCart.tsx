@@ -5,7 +5,7 @@ import { CartItem } from '@/types/cart';
 import { modernCartService } from '@/services/modernCartService';
 import { useToast } from '@/hooks/use-toast';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { calculatePixPrice } from '@/utils/priceCalculator';
+import { calculateRegularPrice } from '@/utils/priceCalculator';
 import { PlanKey } from '@/types/checkout';
 
 export const useModernCart = () => {
@@ -148,10 +148,10 @@ export const useModernCart = () => {
     return modernCartService.getCartAnalytics();
   }, []);
 
-  // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DOS PRÉDIOS
+  // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DOS PRÉDIOS - SEM DESCONTO PIX
   const getTotalPrice = useCallback(() => {
     const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-    return calculatePixPrice(selectedPlan, cartItems, 0);
+    return calculateRegularPrice(selectedPlan, cartItems, 0);
   }, [cartItems]);
 
   return {
