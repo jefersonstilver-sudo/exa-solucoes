@@ -106,7 +106,7 @@ const AdvertiserOrders = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateFormat('pt-BR');
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
   const OrderCard = ({ item }: { item: any }) => {

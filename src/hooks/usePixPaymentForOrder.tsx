@@ -26,16 +26,24 @@ export const usePixPaymentForOrder = () => {
       // Buscar dados do pedido
       const { data: order, error } = await supabase
         .from('pedidos')
-        .select(`
-          *,
-          profiles!pedidos_client_id_fkey(email)
-        `)
+        .select('*')
         .eq('id', orderId)
         .eq('status', 'pendente')
         .single();
 
       if (error || !order) {
         throw new Error('Pedido não encontrado ou não está pendente');
+      }
+
+      // Buscar dados do usuário separadamente
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', order.client_id)
+        .single();
+
+      if (userError) {
+        console.error('Erro ao buscar usuário:', userError);
       }
 
       // Buscar dados dos prédios
@@ -53,8 +61,8 @@ export const usePixPaymentForOrder = () => {
         cliente_id: order.client_id,
         pedido_id: order.id,
         transaction_id: order.transaction_id || '',
-        email: order.profiles?.email || '',
-        nome: order.profiles?.email?.split('@')[0] || 'Cliente',
+        email: userData?.email || '',
+        nome: userData?.email?.split('@')[0] || 'Cliente',
         plano_escolhido: `${order.plano_meses} ${order.plano_meses === 1 ? 'mês' : 'meses'}`,
         periodo_meses: order.plano_meses,
         predios_selecionados: (buildings || []).map(building => ({
