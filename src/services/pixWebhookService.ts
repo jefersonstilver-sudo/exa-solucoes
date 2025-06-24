@@ -1,11 +1,11 @@
 
 import { PixWebhookData, PixWebhookResponse } from '@/types/pixWebhook';
 
-const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
+const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19';
 
 export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWebhookResponse> => {
   const timestamp = new Date().toISOString();
-  console.log("🎯 MAPEAMENTO CORRIGIDO - Enviando dados para webhook N8N:", PIX_WEBHOOK_URL);
+  console.log("🎯 MAPEAMENTO CORRIGIDO - Enviando dados para webhook N8N TESTE:", PIX_WEBHOOK_URL);
   console.log("⏰ TIMESTAMP:", timestamp);
   console.log("📊 Dados do PIX COMPLETOS:", JSON.stringify(data, null, 2));
   
@@ -31,10 +31,10 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       timestamp,
       webhook_version: "2.0",
       source: "indexa-app",
-      environment: "production"
+      environment: "test"
     };
 
-    console.log("🚀 ENVIANDO PAYLOAD COMPLETO PARA N8N:", JSON.stringify(webhookPayload, null, 2));
+    console.log("🚀 ENVIANDO PAYLOAD COMPLETO PARA N8N TESTE:", JSON.stringify(webhookPayload, null, 2));
 
     const response = await fetch(PIX_WEBHOOK_URL, {
       method: 'POST',
@@ -48,7 +48,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       signal: AbortSignal.timeout(30000)
     });
     
-    console.log("📡 RESPOSTA DO N8N WEBHOOK:", {
+    console.log("📡 RESPOSTA DO N8N WEBHOOK TESTE:", {
       status: response.status,
       statusText: response.statusText,
       url: PIX_WEBHOOK_URL,
@@ -154,7 +154,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
     }
     
   } catch (error) {
-    console.error("❌ ERRO COMPLETO NO N8N WEBHOOK:", {
+    console.error("❌ ERRO COMPLETO NO N8N WEBHOOK TESTE:", {
       error: error.message,
       stack: error.stack,
       name: error.name,
