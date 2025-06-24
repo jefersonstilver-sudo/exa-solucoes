@@ -17,6 +17,7 @@ export const usePixPaymentPolling = ({
   pollingInterval = 5000 // 5 segundos
 }: UsePixPaymentPollingProps) => {
   const [isPolling, setIsPolling] = useState(false);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastStatusRef = useRef<string>('');
 
@@ -25,6 +26,7 @@ export const usePixPaymentPolling = ({
 
     try {
       console.log("🔍 [PixPolling] Verificando status do pedido:", pedidoId);
+      setLastChecked(new Date());
 
       const { data: pedido, error } = await supabase
         .from('pedidos')
@@ -169,6 +171,7 @@ export const usePixPaymentPolling = ({
 
   return {
     isPolling,
+    lastChecked,
     startPolling,
     stopPolling,
     checkPaymentStatus
