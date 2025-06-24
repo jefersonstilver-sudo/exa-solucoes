@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Export the interface PixPaymentData with all required properties
 export interface PixPaymentData {
   qrCodeBase64?: string;
   qrCode?: string;
@@ -34,7 +33,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔄 [usePixPayment] MAPEAMENTO CORRIGIDO - Carregando dados PIX:", pedidoId);
+      console.log("🔄 [usePixPayment] Carregando dados PIX para pedido:", pedidoId);
 
       // Buscar pedido diretamente por ID
       const { data: pedido, error: pedidoError } = await supabase
@@ -47,27 +46,25 @@ export const usePixPayment = (pedidoId: string | null) => {
         throw new Error(`Pedido não encontrado: ${pedidoError?.message}`);
       }
 
-      console.log("✅ [usePixPayment] Pedido carregado:", {
+      console.log("✅ [usePixPayment] Pedido encontrado:", {
         id: pedido.id,
         status: pedido.status,
         valor_total: pedido.valor_total,
         hasLogPagamento: !!pedido.log_pagamento
       });
 
-      // CORREÇÃO: Verificar se já tem dados de PIX com múltiplos formatos
+      // Verificar se já tem dados PIX
       const logPagamento = pedido.log_pagamento as any;
       
       if (logPagamento?.pixData || logPagamento?.pix_data) {
         const pixData = logPagamento.pixData || logPagamento.pix_data;
         
-        console.log("✅ [usePixPayment] MAPEAMENTO CORRIGIDO - Dados PIX encontrados:", {
-          hasQrCodeBase64: !!(pixData.qrCodeBase64 || pixData.pix_base64),
-          hasQrCode: !!(pixData.qrCode || pixData.qrCodeText || pixData.pix_url),
-          status: pixData.status,
-          rawPixData: pixData
+        console.log("✅ [usePixPayment] Dados PIX encontrados:", {
+          hasQrCodeBase64: !!pixData.qrCodeBase64,
+          hasQrCode: !!pixData.qrCode,
+          status: pixData.status
         });
         
-        // CORREÇÃO: Mapear corretamente com fallbacks para múltiplos formatos
         setPaymentData({
           qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
           qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
@@ -77,21 +74,16 @@ export const usePixPayment = (pedidoId: string | null) => {
           pedidoId: pedido.id,
           valorTotal: pedido.valor_total
         });
-        
-        console.log("✅ [usePixPayment] Dados PIX mapeados corretamente para o frontend");
       } else {
-        // Se não tem dados PIX, processar com a função REAL
-        console.log("🔄 [usePixPayment] CORREÇÃO - Processando PIX com função real...");
+        // Gerar PIX via edge function
+        console.log("🔄 [usePixPayment] Gerando PIX via edge function...");
         
         const { data, error } = await supabase.functions.invoke('process-payment', {
           body: {
             pedido_id: pedido.id,
             payment_method: 'pix',
             total_amount: pedido.valor_total,
-            cart_items: [],
-            user_id: pedido.client_id,
-            return_url: window.location.origin,
-            payment_key: `pix_${pedido.id}_${Date.now()}`
+            user_email: 'cliente@exemplo.com'
           }
         });
 
@@ -103,7 +95,7 @@ export const usePixPayment = (pedidoId: string | null) => {
           throw new Error(data.error || 'Falha ao processar pagamento PIX');
         }
 
-        console.log("✅ [usePixPayment] PIX processado com função real:", data);
+        console.log("✅ [usePixPayment] PIX gerado com sucesso:", data);
 
         // Buscar pedido atualizado
         const { data: updatedPedido, error: updateError } = await supabase
@@ -117,7 +109,6 @@ export const usePixPayment = (pedidoId: string | null) => {
           const pixData = updatedLogPagamento?.pixData || updatedLogPagamento?.pix_data;
           
           if (pixData) {
-            // CORREÇÃO: Mesmo mapeamento com fallbacks
             setPaymentData({
               qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
               qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
@@ -138,7 +129,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment] MAPEAMENTO CORRIGIDO - Erro:", error);
+      console.error("❌ [usePixPayment] Erro:", error);
       setError(error.message || 'Erro ao carregar pagamento PIX');
       toast.error(`Erro no pagamento PIX: ${error.message}`);
     } finally {
