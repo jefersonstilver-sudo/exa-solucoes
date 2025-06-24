@@ -42,7 +42,7 @@ const Checkout = () => {
   }
 
   // Calcular preços
-  const couponDiscountPercent = validationResult?.isValid && validationResult?.coupon ? validationResult.coupon.desconto_percentual : 0;
+  const couponDiscountPercent = validationResult?.valid ? validationResult?.discountPercent : 0;
   const finalPrice = calculatePixPrice(selectedPlan, cartItems, couponDiscountPercent);
 
   const handlePixPayment = async () => {
@@ -90,10 +90,10 @@ const Checkout = () => {
                   <span>Plano:</span>
                   <span>{selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'}</span>
                 </div>
-                {validationResult?.isValid && validationResult?.coupon && (
+                {validationResult?.valid && (
                   <div className="flex justify-between text-green-600">
                     <span>Desconto cupom:</span>
-                    <span>-{validationResult.coupon.desconto_percentual}%</span>
+                    <span>-{validationResult.discountPercent}%</span>
                   </div>
                 )}
                 <div className="flex justify-between text-green-600">
