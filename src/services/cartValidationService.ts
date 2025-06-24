@@ -29,10 +29,8 @@ export const validateCartForCheckout = (cartItems: CartItem[]): CartValidationRe
 
   // Check localStorage directly
   const localStorageCart = localStorage.getItem(CART_STORAGE_KEY);
-  console.log("Direct localStorage check before checkout:", localStorageCart);
   
   if (!localStorageCart || localStorageCart === '[]') {
-    console.error("CRITICAL ERROR: localStorage empty before checkout");
     logCheckoutEvent(
       CheckoutEvent.EMPTY_CART_ATTEMPT,
       LogLevel.ERROR,
@@ -48,13 +46,11 @@ export const validateCartForCheckout = (cartItems: CartItem[]): CartValidationRe
     try {
       const reloadedCart = loadCartFromStorage();
       if (reloadedCart && reloadedCart.length > 0) {
-        console.log("Emergency recovery: cart recovered from localStorage", reloadedCart);
         return { isValid: true, recoveredItems: reloadedCart };
       } else {
         return { isValid: false, error: "Carrinho vazio" };
       }
     } catch (e) {
-      console.error("Emergency recovery failed", e);
       return { isValid: false, error: "Carrinho vazio" };
     }
   }
@@ -86,20 +82,18 @@ export const saveCartForCheckout = (cartItems: CartItem[]): boolean => {
     duration: item.duration
   }));
   
-  console.log("Saving final cart before checkout:", legacyCartItems);
-  const saveSuccess = saveCartToStorage(legacyCartItems);
-  
-  if (!saveSuccess) {
+  try {
+    saveCartToStorage(legacyCartItems);
+    
+    // Extra verification after saving
+    const verificationCart = localStorage.getItem(CART_STORAGE_KEY);
+    
+    if (!verificationCart || verificationCart === '[]') {
+      throw new Error("Critical failure: cart still empty after save attempt");
+    }
+
+    return true;
+  } catch (error) {
     throw new Error("Failed to save cart to localStorage");
   }
-  
-  // Extra verification after saving
-  const verificationCart = localStorage.getItem(CART_STORAGE_KEY);
-  console.log("Verification after save before checkout:", verificationCart);
-  
-  if (!verificationCart || verificationCart === '[]') {
-    throw new Error("Critical failure: cart still empty after save attempt");
-  }
-
-  return true;
 };
