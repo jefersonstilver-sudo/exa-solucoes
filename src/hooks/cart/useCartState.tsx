@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { loadCartFromStorage, saveCartToStorage } from '@/services/cartStorageService';
-import { getPanelPrice } from '@/utils/checkoutUtils';
 
 // Função pura para conversão
 const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number }): CartItem => {
@@ -11,8 +10,8 @@ const convertLegacyToCartItem = (legacyItem: { panel: Panel; duration: number })
     id: `cart_${legacyItem.panel.id}_${Date.now()}`,
     panel: legacyItem.panel,
     duration: legacyItem.duration,
-    addedAt: Date.now(),
-    price: getPanelPrice(legacyItem.panel, legacyItem.duration)
+    addedAt: Date.now()
+    // REMOVIDO: price - será calculado dinamicamente quando necessário
   };
 };
 

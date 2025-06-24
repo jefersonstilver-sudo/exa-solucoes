@@ -7,14 +7,15 @@ interface CartItemProps {
   item: { panel: Panel; duration: number };
   onRemove: (panelId: string) => void;
   onChangeDuration: (panelId: string, duration: number) => void;
-  calculatePrice: (panel: Panel, duration: number) => number;
+  // CORRIGIDO: Preço calculado externamente, não mais calculado aqui
+  displayPrice?: number;
 }
 
 const CartItem: React.FC<CartItemProps> = ({ 
   item, 
   onRemove, 
   onChangeDuration,
-  calculatePrice 
+  displayPrice
 }) => {
   const panel = item.panel;
   
@@ -66,9 +67,12 @@ const CartItem: React.FC<CartItemProps> = ({
             
             <div className="flex justify-between items-end mt-auto">
               <div>
-                <p className="text-sm font-semibold text-[#1E1B4B]">
-                  {formatCurrency(calculatePrice(panel, item.duration))}
-                </p>
+                {/* CORRIGIDO: Só mostra preço se foi calculado */}
+                {displayPrice !== undefined && (
+                  <p className="text-sm font-semibold text-[#1E1B4B]">
+                    {formatCurrency(displayPrice)}
+                  </p>
+                )}
               </div>
               
               <button 

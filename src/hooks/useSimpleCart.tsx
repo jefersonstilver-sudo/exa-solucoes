@@ -7,14 +7,12 @@ import { useNavigate } from 'react-router-dom';
 import { loadCartFromStorage, saveCartToStorage, clearCartStorage, LegacyCartItem } from '@/services/cartStorageService';
 
 const convertLegacyToCartItem = (legacyItem: LegacyCartItem): CartItem => {
-  const basePrice = legacyItem.panel.buildings?.preco_base || 200;
-  
   return {
     id: `cart_${legacyItem.panel.id}_${Date.now()}`,
     panel: legacyItem.panel,
     duration: legacyItem.duration,
-    addedAt: Date.now(),
-    price: basePrice
+    addedAt: Date.now()
+    // REMOVIDO: price - será calculado dinamicamente
   };
 };
 
@@ -82,8 +80,8 @@ export const useSimpleCart = () => {
           id: `cart_${panel.id}_${Date.now()}`,
           panel,
           duration,
-          addedAt: Date.now(),
-          price: panel.buildings?.preco_base || 200
+          addedAt: Date.now()
+          // REMOVIDO: price - será calculado dinamicamente quando necessário
         };
         return [...prev, newItem];
       }
@@ -133,7 +131,7 @@ export const useSimpleCart = () => {
     isLoading,
     isAnimating,
     itemCount: cartItems.length,
-    totalPrice: cartItems.reduce((sum, item) => sum + item.price, 0),
+    // REMOVIDO: totalPrice calculado aqui - deve ser calculado com plano selecionado
     isItemInCart,
     addToCart,
     removeFromCart,
