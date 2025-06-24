@@ -56,10 +56,12 @@ export const pixDebugUtils = {
       }
 
       if ((webhooks?.length || 0) > 0) {
-        const mercadoPagoWebhooks = webhooks?.filter(w => 
-          w.origem?.includes('mercadopago') || 
-          w.payload?.type === 'payment'
-        ) || [];
+        const mercadoPagoWebhooks = webhooks?.filter(w => {
+          if (!w.payload || typeof w.payload !== 'object') return false;
+          
+          const payload = w.payload as Record<string, any>;
+          return w.origem?.includes('mercadopago') || payload?.type === 'payment';
+        }) || [];
         
         findings.push(`Encontrados ${mercadoPagoWebhooks.length} webhooks do MercadoPago`);
         
@@ -153,7 +155,11 @@ export const pixDebugUtils = {
 
       for (const webhook of webhooks || []) {
         try {
-          const payload = webhook.payload as any;
+          if (!webhook.payload || typeof webhook.payload !== 'object') {
+            continue;
+          }
+
+          const payload = webhook.payload as Record<string, any>;
           const externalRef = payload?.data?.external_reference || payload?.external_reference;
           const amount = payload?.data?.transaction_amount || payload?.transaction_amount;
 
@@ -233,13 +239,18 @@ export const pixDebugUtils = {
         throw webhookError;
       }
 
+      // Garantir que log_pagamento seja um objeto válido antes do spread
+      const currentLog = pedido.log_pagamento && typeof pedido.log_pagamento === 'object' 
+        ? pedido.log_pagamento as Record<string, any>
+        : {};
+
       // Atualizar pedido
       const { error: updateError } = await supabase
         .from('pedidos')
         .update({
           status: 'pago_pendente_video',
           log_pagamento: {
-            ...(pedido.log_pagamento || {}),
+            ...currentLog,
             simulated_payment: true,
             debug_confirmation: true,
             confirmed_at: new Date().toISOString()
