@@ -5,6 +5,7 @@ import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { calculatePixPrice } from '@/utils/priceCalculator';
+import { PlanKey } from '@/types/checkout';
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -51,9 +52,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCartOpen
   });
 
-  // CORRIGIDO: Calcular preço total usando calculador centralizado
+  // CORRIGIDO: Fazer type casting para PlanKey
   const getTotalPrice = () => {
-    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
     return calculatePixPrice(selectedPlan, cartItems, 0);
   };
 

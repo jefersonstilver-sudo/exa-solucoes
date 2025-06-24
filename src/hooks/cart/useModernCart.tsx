@@ -6,6 +6,7 @@ import { modernCartService } from '@/services/modernCartService';
 import { useToast } from '@/hooks/use-toast';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { calculatePixPrice } from '@/utils/priceCalculator';
+import { PlanKey } from '@/types/checkout';
 
 export const useModernCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -141,9 +142,9 @@ export const useModernCart = () => {
     return modernCartService.getCartAnalytics();
   }, []);
 
-  // CORRIGIDO: Calcular preço total usando calculador centralizado
+  // CORRIGIDO: Fazer type casting para PlanKey
   const getTotalPrice = useCallback(() => {
-    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
     return calculatePixPrice(selectedPlan, cartItems, 0);
   }, [cartItems]);
 

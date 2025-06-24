@@ -5,6 +5,7 @@ import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
 import { findCartItems, saveCartItems, clearAllCarts, CART_STORAGE_KEYS } from '@/utils/cartUtils';
 import { calculatePixPrice } from '@/utils/priceCalculator';
+import { PlanKey } from '@/types/checkout';
 
 export const useUnifiedCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -124,9 +125,9 @@ export const useUnifiedCart = () => {
     return cartItems.some(item => item.panel?.id === panelId);
   }, [cartItems]);
 
-  // CORRIGIDO: Calcular preço total usando calculador centralizado
+  // CORRIGIDO: Fazer type casting para PlanKey
   const getTotalPrice = useCallback(() => {
-    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
     return calculatePixPrice(selectedPlan, cartItems, 0);
   }, [cartItems]);
 

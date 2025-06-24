@@ -73,8 +73,8 @@ const PixPaymentButton = ({
         items: cartResult.cartItems.map(item => ({
           id: item.id || item.panel?.id,
           panelId: item.panel?.id,
-          buildingName: item.panel?.buildings?.nome || 'Nome não disponível', // CORRIGIDO
-          price: item.price
+          buildingName: item.panel?.buildings?.nome || 'Nome não disponível'
+          // REMOVIDO: price - não existe mais no CartItem
         }))
       });
 

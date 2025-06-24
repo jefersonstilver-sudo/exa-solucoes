@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/formatters';
 import { calculatePixPrice } from '@/utils/priceCalculator';
+import { PlanKey } from '@/types/checkout';
 
 interface ModernCartSummaryProps {
   cartItems: CartItem[];
@@ -18,8 +19,8 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
   onProceedToCheckout,
   isCheckoutLoading = false
 }) => {
-  // CORRIGIDO: Calcular preço total usando o calculador centralizado
-  const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+  // CORRIGIDO: Fazer type casting para PlanKey
+  const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
   const totalPrice = calculatePixPrice(selectedPlan, cartItems, 0);
   const itemCount = cartItems.length;
 

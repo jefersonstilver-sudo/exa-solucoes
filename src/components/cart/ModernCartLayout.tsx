@@ -7,6 +7,7 @@ import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/priceUtils';
 import { useSimplifiedCheckout } from '@/hooks/useSimplifiedCheckout';
 import { calculatePixPrice } from '@/utils/priceCalculator';
+import { PlanKey } from '@/types/checkout';
 
 interface ModernCartLayoutProps {
   cartItems: CartItem[];
@@ -28,8 +29,8 @@ const ModernCartLayout = ({
   const [isClearing, setIsClearing] = useState(false);
   const { proceedToCheckout, isProcessing, canProceed } = useSimplifiedCheckout();
 
-  // CORRIGIDO: Calcular preço total usando o calculador centralizado
-  const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+  // CORRIGIDO: Fazer type casting para PlanKey
+  const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
   const totalPrice = calculatePixPrice(selectedPlan, cartItems, 0);
 
   const handleClearCart = async () => {
@@ -109,7 +110,7 @@ const ModernCartLayout = ({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <AnimatePresence>
           {cartItems.map((item) => {
-            // CORRIGIDO: Calcular preço individual usando o calculador centralizado
+            // CORRIGIDO: Calcular preço individual usando o calculador centralizado com type casting
             const itemPrice = calculatePixPrice(selectedPlan, [item], 0);
             
             return (

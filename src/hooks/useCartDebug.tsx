@@ -2,10 +2,11 @@
 import { useEffect } from 'react';
 import { CartItem } from '@/types/cart';
 import { calculatePixPrice } from '@/utils/priceCalculator';
+import { PlanKey } from '@/types/checkout';
 
 export const useCartDebug = (cartItems: CartItem[], context: string) => {
   useEffect(() => {
-    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
+    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
     
     console.log(`🛒 [${context}] CART DEBUG:`, {
       timestamp: new Date().toISOString(),
