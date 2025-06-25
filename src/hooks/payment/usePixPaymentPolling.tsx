@@ -14,19 +14,21 @@ export const usePixPaymentPolling = ({
   pedidoId,
   isActive,
   onPaymentApproved,
-  pollingInterval = 5000 // 5 segundos
+  pollingInterval = 10000 // 10 segundos - mais otimizado
 }: UsePixPaymentPollingProps) => {
   const [isPolling, setIsPolling] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastStatusRef = useRef<string>('');
+  const checkCountRef = useRef<number>(0);
 
   const checkPaymentStatus = async () => {
     if (!pedidoId) return;
 
     try {
-      console.log("🔍 [PixPolling] Verificando status do pedido:", pedidoId);
+      console.log(`🔍 [PixPolling-V2] Check #${checkCountRef.current + 1} - Pedido:`, pedidoId);
       setLastChecked(new Date());
+      checkCountRef.current++;
 
       const { data: pedido, error } = await supabase
         .from('pedidos')
@@ -35,91 +37,81 @@ export const usePixPaymentPolling = ({
         .single();
 
       if (error) {
-        console.error("❌ [PixPolling] Erro ao verificar status:", error);
+        console.error("❌ [PixPolling-V2] Erro:", error);
         return;
       }
 
       if (pedido) {
         const currentStatus = pedido.status;
-        const logPagamento = pedido.log_pagamento as any;
-
-        console.log("📊 [PixPolling] Status atual:", {
+        
+        console.log(`📊 [PixPolling-V2] Status:`, {
           status: currentStatus,
-          previousStatus: lastStatusRef.current,
-          hasLogPagamento: !!logPagamento
+          check: checkCountRef.current,
+          changed: lastStatusRef.current !== currentStatus
         });
 
-        // Verificar se o status mudou para aprovado
+        // Verificar pagamento aprovado
         if (currentStatus === 'pago' && lastStatusRef.current !== currentStatus) {
-          console.log("✅ [PixPolling] Pagamento aprovado detectado!");
+          console.log("✅ [PixPolling-V2] PAGAMENTO APROVADO!");
           
           setIsPolling(false);
           onPaymentApproved();
           
-          // Limpar polling
+          // Parar polling
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
-        }
-
-        // Verificar dados PIX no log_pagamento
-        if (logPagamento?.pixData?.status === 'approved' || 
-            logPagamento?.pix_data?.status === 'approved') {
-          console.log("✅ [PixPolling] PIX aprovado via log_pagamento!");
           
-          setIsPolling(false);
-          onPaymentApproved();
-          
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
+          toast.success('🎉 Pagamento aprovado!');
+          return;
         }
 
         lastStatusRef.current = currentStatus;
       }
 
     } catch (error) {
-      console.error("❌ [PixPolling] Erro no polling:", error);
+      console.error("❌ [PixPolling-V2] Erro no polling:", error);
     }
   };
 
   const startPolling = () => {
-    if (!pedidoId || !isActive) return;
+    if (!pedidoId || !isActive || intervalRef.current) return;
 
-    console.log("🚀 [PixPolling] Iniciando polling para pedido:", pedidoId);
+    console.log("🚀 [PixPolling-V2] Iniciando polling otimizado");
     
     setIsPolling(true);
+    checkCountRef.current = 0;
     
     // Verificação inicial
     checkPaymentStatus();
     
-    // Configurar polling periódico
+    // Polling a cada 10 segundos
     intervalRef.current = setInterval(checkPaymentStatus, pollingInterval);
     
-    // Timeout para parar polling após 15 minutos
+    // Auto-stop após 10 minutos (60 checks)
     setTimeout(() => {
       if (intervalRef.current) {
-        console.log("⏰ [PixPolling] Timeout - parando polling");
+        console.log("⏰ [PixPolling-V2] Auto-stop após 10 minutos");
         clearInterval(intervalRef.current);
         intervalRef.current = null;
         setIsPolling(false);
       }
-    }, 15 * 60 * 1000); // 15 minutos
+    }, 10 * 60 * 1000);
   };
 
   const stopPolling = () => {
-    console.log("🛑 [PixPolling] Parando polling");
+    console.log("🛑 [PixPolling-V2] Parando polling");
     
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     setIsPolling(false);
+    checkCountRef.current = 0;
   };
 
-  // Iniciar/parar polling baseado no status ativo
+  // Controle de polling
   useEffect(() => {
     if (isActive && pedidoId) {
       startPolling();
@@ -127,53 +119,15 @@ export const usePixPaymentPolling = ({
       stopPolling();
     }
 
-    // Cleanup ao desmontar componente
-    return () => {
-      stopPolling();
-    };
+    return () => stopPolling();
   }, [isActive, pedidoId]);
-
-  // Realtime subscription como backup
-  useEffect(() => {
-    if (!pedidoId || !isActive) return;
-
-    console.log("📡 [PixPolling] Configurando realtime subscription");
-
-    const subscription = supabase
-      .channel(`pedido-${pedidoId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'pedidos',
-          filter: `id=eq.${pedidoId}`
-        },
-        (payload) => {
-          console.log("📡 [PixPolling] Realtime update recebido:", payload.new);
-          
-          const newStatus = (payload.new as any)?.status;
-          
-          if (newStatus === 'pago') {
-            console.log("✅ [PixPolling] Pagamento aprovado via realtime!");
-            toast.success('🎉 Pagamento aprovado via realtime!');
-            onPaymentApproved();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log("🔌 [PixPolling] Removendo realtime subscription");
-      supabase.removeChannel(subscription);
-    };
-  }, [pedidoId, isActive, onPaymentApproved]);
 
   return {
     isPolling,
     lastChecked,
     startPolling,
     stopPolling,
-    checkPaymentStatus
+    checkPaymentStatus,
+    checkCount: checkCountRef.current
   };
 };
