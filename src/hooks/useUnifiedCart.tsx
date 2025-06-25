@@ -4,7 +4,7 @@ import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
 import { findCartItems, saveCartItems, clearAllCarts, CART_STORAGE_KEYS } from '@/utils/cartUtils';
-import { calculatePixPrice } from '@/utils/priceCalculator';
+import { calculateRegularPrice } from '@/utils/priceCalculator';
 import { PlanKey } from '@/types/checkout';
 
 export const useUnifiedCart = () => {
@@ -128,10 +128,10 @@ export const useUnifiedCart = () => {
     return cartItems.some(item => item.panel?.id === panelId);
   }, [cartItems]);
 
-  // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DOS PRÉDIOS
+  // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DOS PRÉDIOS - SEM DESCONTO PIX
   const getTotalPrice = useCallback(() => {
     const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-    return calculatePixPrice(selectedPlan, cartItems, 0);
+    return calculateRegularPrice(selectedPlan, cartItems, 0);
   }, [cartItems]);
 
   return {

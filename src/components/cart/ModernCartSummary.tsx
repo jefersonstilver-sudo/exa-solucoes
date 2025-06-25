@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/formatters';
-import { calculatePixPrice } from '@/utils/priceCalculator';
+import { calculateRegularPrice } from '@/utils/priceCalculator';
 import { PlanKey } from '@/types/checkout';
 
 interface ModernCartSummaryProps {
@@ -19,9 +19,9 @@ const ModernCartSummary: React.FC<ModernCartSummaryProps> = ({
   onProceedToCheckout,
   isCheckoutLoading = false
 }) => {
-  // CORRIGIDO: Fazer type casting para PlanKey
+  // CORRIGIDO: Usar preço regular (sem desconto PIX) para exibição no carrinho
   const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-  const totalPrice = calculatePixPrice(selectedPlan, cartItems, 0);
+  const totalPrice = calculateRegularPrice(selectedPlan, cartItems, 0);
   const itemCount = cartItems.length;
 
   return (
