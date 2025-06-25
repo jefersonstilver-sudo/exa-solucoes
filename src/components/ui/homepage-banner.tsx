@@ -17,6 +17,12 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  console.log('🎨 [HomepageBanner] Renderizando com:', {
+    bannersCount: banners?.length || 0,
+    currentIndex,
+    isAutoPlaying
+  });
+
   const nextSlide = useCallback(() => {
     if (banners.length === 0 || isTransitioning) return;
     
@@ -50,11 +56,19 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
   const handleMouseLeave = () => setIsAutoPlaying(true);
 
   if (banners.length === 0) {
+    console.log('🎨 [HomepageBanner] Nenhum banner, mostrando placeholder');
     return (
-      <div className={`relative w-full h-full bg-gradient-to-r from-indexa-purple/20 to-purple-600/20 rounded-2xl border-2 border-dashed border-white/30 flex items-center justify-center ${className}`}>
-        <div className="text-center text-white">
-          <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-4">Banner Rotativo</h2>
-          <p className="text-sm md:text-lg opacity-80">Configure banners no painel administrativo</p>
+      <div className={`relative w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl border-2 border-dashed border-white/30 flex items-center justify-center ${className}`}>
+        <div className="text-center text-white p-8">
+          <div className="mb-4">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+              </svg>
+            </div>
+          </div>
+          <h2 className="text-xl md:text-2xl font-bold mb-2">Bem-vindo à Indexa</h2>
+          <p className="text-sm md:text-base opacity-90">Soluções completas em marketing digital</p>
         </div>
       </div>
     );
@@ -68,9 +82,15 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
     }
   };
 
+  console.log('🎨 [HomepageBanner] Banner atual:', {
+    id: currentBanner?.id,
+    title: currentBanner?.title,
+    hasImage: !!currentBanner?.image_url
+  });
+
   return (
     <div 
-      className={`relative w-full h-full overflow-hidden rounded-2xl ${className}`}
+      className={`relative w-full h-full overflow-hidden rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -94,17 +114,30 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
           >
             <img
               src={banner.image_url}
-              alt={banner.title || 'Banner'}
-              className="w-full h-full object-cover sm:object-contain lg:object-cover"
+              alt={banner.title || 'Banner da Indexa'}
+              className="w-full h-full object-cover"
               style={{
                 objectPosition: 'center'
               }}
               loading={index === 0 ? "eager" : "lazy"}
+              onError={(e) => {
+                console.log('❌ [HomepageBanner] Erro ao carregar imagem:', banner.image_url);
+                // Fallback para imagem quebrada
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80';
+              }}
             />
-            {/* Background gradient para mobile quando usar object-contain */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indexa-purple/10 via-transparent to-purple-600/10 pointer-events-none sm:block lg:hidden" />
-            {/* Subtle overlay for better dot visibility */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+            {/* Overlay sutil para melhor legibilidade */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+            
+            {/* Título do banner se disponível */}
+            {banner.title && (
+              <div className="absolute bottom-6 left-6 right-6 text-white">
+                <h3 className="text-xl md:text-2xl font-bold mb-2">{banner.title}</h3>
+                {banner.subtitle && (
+                  <p className="text-sm md:text-base opacity-90">{banner.subtitle}</p>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -22,14 +22,19 @@ const Index = () => {
   const { banners, isLoading: bannersLoading } = useHomepageBanners();
 
   useEffect(() => {
+    console.log('🏠 [Index] Componente Index montado');
+    
     const fetchConfigs = async () => {
       try {
+        console.log('📊 [Index] Buscando configurações da homepage...');
+        
         const { data, error } = await supabase
           .from('homepage_config')
           .select('*')
           .order('service_type');
 
         if (error) {
+          console.log('⚠️ [Index] Erro ao buscar configs, usando fallback:', error);
           setConfigs([
             {
               id: '1',
@@ -57,45 +62,72 @@ const Index = () => {
             }
           ]);
         } else {
+          console.log('✅ [Index] Configs carregadas:', data?.length || 0);
           setConfigs(data || []);
         }
       } catch (error) {
-        // Silent error handling for performance
+        console.error('❌ [Index] Erro crítico ao carregar configs:', error);
+        // Set fallback configs mesmo em caso de erro crítico
+        setConfigs([
+          {
+            id: '1',
+            service_type: 'marketing',
+            title: 'Marketing Digital',
+            image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80',
+            href: '/marketing',
+            updated_at: new Date().toISOString()
+          }
+        ]);
       } finally {
         setIsLoading(false);
+        console.log('🏁 [Index] Carregamento finalizado');
       }
     };
 
     fetchConfigs();
   }, []);
 
+  useEffect(() => {
+    console.log('🎨 [Index] Status dos banners:', {
+      bannersLoading,
+      bannersCount: banners?.length || 0,
+      banners: banners?.map(b => ({ id: b.id, title: b.title })) || []
+    });
+  }, [banners, bannersLoading]);
+
+  console.log('🔄 [Index] Renderizando - Loading:', { isLoading, bannersLoading });
+
   if (isLoading || bannersLoading) {
     return (
       <Layout>
-        <section className="py-16 px-4 min-h-screen flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-indexa-purple" />
+        <section className="py-16 px-4 min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+            <p className="text-gray-700 font-medium">Carregando página inicial...</p>
+          </div>
         </section>
       </Layout>
     );
   }
+
+  console.log('🎯 [Index] Renderizando página completa');
 
   return (
     <Layout>
       <section 
         className="py-4 md:py-16 px-4 relative min-h-screen flex items-center pt-20 lg:pt-16" 
         style={{
-          backgroundImage: "url('https://cdn.pixabay.com/photo/2015/05/04/20/03/purple-wallpaper-752886_1280.jpg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          minHeight: "100vh"
         }}
       >
-        <div className="absolute inset-0 bg-black/20"></div>
+        {/* Overlay escuro para melhor contraste */}
+        <div className="absolute inset-0 bg-black/30"></div>
         
         <div className="max-w-7xl mx-auto relative z-10 w-full">
           {/* Mobile: Banner no topo + Cards empilhados verticalmente */}
-          <div className="lg:hidden space-y-4">
-            {/* Banner no mobile - aumentando altura significativamente */}
+          <div className="lg:hidden space-y-6">
+            {/* Banner no mobile */}
             <div className="h-[300px] sm:h-[350px] md:h-[400px]">
               <HomepageBannerCarousel 
                 banners={banners} 
@@ -104,14 +136,14 @@ const Index = () => {
             </div>
             
             {/* Cards empilhados no mobile */}
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-4">
               {configs.map((config) => (
                 <ServiceCard
                   key={config.id}
                   title={config.title}
                   backgroundImage={config.image_url}
                   href={config.href}
-                  className="h-[180px]"
+                  className="h-[180px] shadow-lg"
                 />
               ))}
             </div>
@@ -123,7 +155,7 @@ const Index = () => {
             <div className="lg:col-span-8">
               <HomepageBannerCarousel 
                 banners={banners} 
-                className="w-full h-full"
+                className="w-full h-full shadow-2xl"
               />
             </div>
 
@@ -135,7 +167,7 @@ const Index = () => {
                   title={config.title}
                   backgroundImage={config.image_url}
                   href={config.href}
-                  className="h-[150px] flex-1"
+                  className="h-[150px] flex-1 shadow-xl"
                 />
               ))}
             </div>

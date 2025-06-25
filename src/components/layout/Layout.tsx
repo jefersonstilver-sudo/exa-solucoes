@@ -23,8 +23,10 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
     itemCount
   } = useCart();
 
+  console.log('🏗️ [Layout] Renderizando layout');
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 mobile-scroll-fix">
+    <div className="min-h-screen flex flex-col bg-white mobile-scroll-fix">
       <Header 
         cartItemsCount={itemCount}
         cartAnimation={false}
