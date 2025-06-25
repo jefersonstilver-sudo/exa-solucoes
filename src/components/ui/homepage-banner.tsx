@@ -9,17 +9,19 @@ interface HomepageBannerCarouselProps {
 }
 
 export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
-  banners,
+  banners = [],
   className = '',
   autoPlayInterval = 5000,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  console.log('🎨 [HomepageBanner] Renderizando com:', {
-    bannersCount: banners?.length || 0,
+  console.log('🎨 [HomepageBanner] Renderizando:', {
+    bannersCount: banners.length,
     currentIndex,
-    isAutoPlaying
+    isAutoPlaying,
+    imageLoaded
   });
 
   const nextSlide = useCallback(() => {
@@ -32,7 +34,7 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
     setCurrentIndex(index);
   };
 
-  // Auto-play functionality
+  // Auto-play funcional
   useEffect(() => {
     if (!isAutoPlaying || banners.length <= 1) return;
 
@@ -40,13 +42,12 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
     return () => clearInterval(interval);
   }, [nextSlide, autoPlayInterval, isAutoPlaying, banners.length]);
 
-  // Pause/resume on hover
+  // Controles de hover
   const handleMouseEnter = () => setIsAutoPlaying(false);
   const handleMouseLeave = () => setIsAutoPlaying(true);
 
-  // Fallback quando não há banners
+  // Placeholder quando não há banners ou estão carregando
   if (!banners || banners.length === 0) {
-    console.log('🎨 [HomepageBanner] Nenhum banner, mostrando placeholder');
     return (
       <div className={`relative w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center ${className}`}>
         <div className="text-center text-white p-8">
@@ -93,16 +94,17 @@ export const HomepageBannerCarousel: React.FC<HomepageBannerCarouselProps> = ({
               alt={banner.title || 'Banner da Indexa'}
               className="w-full h-full object-cover"
               loading={index === 0 ? "eager" : "lazy"}
+              onLoad={() => setImageLoaded(true)}
               onError={(e) => {
                 console.log('❌ [HomepageBanner] Erro ao carregar imagem:', banner.image_url);
                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80';
               }}
             />
             
-            {/* Overlay para melhor legibilidade */}
+            {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
             
-            {/* Título do banner */}
+            {/* Título */}
             {banner.title && (
               <div className="absolute bottom-6 left-6 right-6 text-white">
                 <h3 className="text-xl md:text-2xl font-bold mb-2">{banner.title}</h3>
