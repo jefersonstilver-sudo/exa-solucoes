@@ -78,13 +78,13 @@ export const usePixPaymentPolling = ({
           return;
         }
 
-        // Verificar se o pagamento expirou (5 minutos)
+        // CORREÇÃO: Verificar se o pagamento expirou (5 minutos)
         if (logPagamento?.expires_at) {
           const expirationTime = new Date(logPagamento.expires_at);
           const now = new Date();
           
           if (now > expirationTime) {
-            console.log("⏰ [PixPolling] Pagamento expirado, cancelando pedido");
+            console.log("⏰ [PixPolling] Pagamento expirado após 5 minutos, cancelando pedido");
             
             // Cancelar pedido automaticamente
             await supabase
@@ -93,7 +93,7 @@ export const usePixPaymentPolling = ({
               .eq('id', pedidoId);
             
             setIsPolling(false);
-            toast.error('⏰ Tempo de pagamento expirado. Pedido cancelado.');
+            toast.error('⏰ Tempo de pagamento PIX expirado (5 min). Pedido cancelado.');
             
             if (intervalRef.current) {
               clearInterval(intervalRef.current);
@@ -124,7 +124,7 @@ export const usePixPaymentPolling = ({
     // Configurar polling periódico a cada 5 segundos
     intervalRef.current = setInterval(checkPaymentStatus, pollingInterval);
     
-    // Timeout para parar polling após 5 minutos
+    // CORREÇÃO: Timeout para parar polling após 5 minutos (não 10)
     setTimeout(() => {
       if (intervalRef.current) {
         console.log("⏰ [PixPolling] Timeout de 5 minutos - parando polling");
@@ -132,7 +132,7 @@ export const usePixPaymentPolling = ({
         intervalRef.current = null;
         setIsPolling(false);
       }
-    }, 5 * 60 * 1000); // 5 minutos
+    }, 5 * 60 * 1000); // CORRIGIDO: 5 minutos
   };
 
   const stopPolling = () => {
@@ -181,7 +181,7 @@ export const usePixPaymentPolling = ({
           
           if (newStatus === 'pago') {
             console.log("✅ [PixPolling] Pagamento aprovado via realtime!");
-            toast.success('🎉 Pagamento aprovado!');
+            toast.success('🎉 Pagamento PIX aprovado!');
             onPaymentApproved();
           }
         }

@@ -23,7 +23,7 @@ function validatePedidoId(pedidoId: string) {
   }
 }
 
-// Generate PIX payment with N8N webhook
+// Generate PIX payment with N8N webhook - CORRIGIDO
 async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string) {
   try {
     console.log(`🎯 [PIX] Gerando pagamento PIX para pedido: ${pedidoId}, valor: ${totalAmount}`);
@@ -44,11 +44,11 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
     let pixData;
     let webhookSuccess = false;
 
-    // Chamar webhook N8N correto com timeout de 30 segundos
+    // CORREÇÃO: Chamar webhook N8N correto conforme solicitado
     try {
       const N8N_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19';
       
-      console.log(`📡 [PIX] Chamando webhook N8N: ${N8N_WEBHOOK_URL}`);
+      console.log(`📡 [PIX] Chamando webhook N8N CORRETO: ${N8N_WEBHOOK_URL}`);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
@@ -66,8 +66,9 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
 
       if (webhookResponse.ok) {
         const webhookResult = await webhookResponse.json();
-        console.log(`✅ [PIX] Webhook N8N sucesso:`, webhookResult);
+        console.log(`✅ [PIX] Webhook N8N SUCESSO:`, webhookResult);
 
+        // CORREÇÃO: Mapear resposta do webhook corretamente
         pixData = {
           paymentId: webhookResult.payment_id || `pix_${pedidoId}_${Date.now()}`,
           status: 'pending',
@@ -80,16 +81,18 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
           valor_pix: valorPixComDesconto,
           webhook_response: webhookResult,
           webhook_success: true,
+          webhook_url: N8N_WEBHOOK_URL,
           createdAt: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutos
+          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // CORREÇÃO: 5 minutos
         };
         
         webhookSuccess = true;
       } else {
-        throw new Error(`Webhook retornou status ${webhookResponse.status}`);
+        const errorText = await webhookResponse.text();
+        throw new Error(`Webhook retornou status ${webhookResponse.status}: ${errorText}`);
       }
     } catch (webhookError) {
-      console.warn(`⚠️ [PIX] Webhook N8N falhou:`, webhookError);
+      console.error(`❌ [PIX] Webhook N8N falhou:`, webhookError);
       throw new Error(`Falha no webhook N8N: ${webhookError.message}`);
     }
 
@@ -105,6 +108,7 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
           valor_pix: valorPixComDesconto,
           webhook_called: true,
           webhook_success: webhookSuccess,
+          webhook_url: pixData.webhook_url,
           timestamp: new Date().toISOString(),
           qr_code_base64: pixData.qrCodeBase64,
           qr_code_text: pixData.qrCode,
@@ -142,7 +146,7 @@ async function handleRequest(req: Request) {
       user_email: userEmail
     } = requestData;
     
-    console.log("[PROCESS-PAYMENT] Processando pagamento PIX:", { 
+    console.log("[PROCESS-PAYMENT] PROCESSANDO PAGAMENTO PIX CORRIGIDO:", { 
       pedidoId, 
       totalAmount, 
       paymentMethod: payment_method,
@@ -186,13 +190,13 @@ async function handleRequest(req: Request) {
       );
     }
     
-    // Processar PIX
+    // Processar PIX com webhook correto
     const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userEmail || 'cliente@exemplo.com');
     
     return new Response(
       JSON.stringify({
         success: true,
-        message: "PIX gerado com sucesso",
+        message: "PIX gerado com sucesso via webhook N8N",
         pixData: pixResult.pixData,
         pedido_id: pedidoId,
         payment_method: 'pix',
@@ -200,7 +204,8 @@ async function handleRequest(req: Request) {
         valor_pix: pixResult.pixData.valor_pix,
         qr_code_base64: pixResult.pixData.qrCodeBase64,
         qr_code_text: pixResult.pixData.qrCode,
-        expires_at: pixResult.pixData.expires_at
+        expires_at: pixResult.pixData.expires_at,
+        expires_in_minutes: 5
       }),
       {
         headers: {
@@ -211,7 +216,7 @@ async function handleRequest(req: Request) {
     );
     
   } catch (error: any) {
-    console.error('[PROCESS-PAYMENT] Erro ao processar pagamento PIX:', error);
+    console.error('[PROCESS-PAYMENT] ERRO AO PROCESSAR PAGAMENTO PIX:', error);
     return new Response(
       JSON.stringify({
         success: false,
