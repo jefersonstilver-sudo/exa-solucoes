@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Clock, RefreshCw, Copy, AlertTriangle, ArrowLeft, CreditCard } from 'lucide-react';
+import { CheckCircle, Clock, RefreshCw, Copy, AlertTriangle, ArrowLeft, CreditCard, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
@@ -20,12 +20,14 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
   const [qrExpired, setQrExpired] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [paymentApproved, setPaymentApproved] = useState(false);
 
   // Configurar polling automático
   const { isPolling } = usePixPaymentPolling({
     pedidoId: paymentData?.pedidoId || null,
-    isActive: paymentData?.status === 'pending',
+    isActive: !paymentApproved && paymentData?.status === 'pending',
     onPaymentApproved: () => {
+      setPaymentApproved(true);
       toast.success('🎉 Pagamento aprovado!', {
         description: 'Redirecionando para confirmação...',
         duration: 3000
@@ -38,7 +40,7 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
 
   // Timer countdown
   useEffect(() => {
-    if (paymentData?.status !== 'pending') return;
+    if (paymentData?.status !== 'pending' || paymentApproved) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -51,7 +53,7 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [paymentData?.status]);
+  }, [paymentData?.status, paymentApproved]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -103,12 +105,12 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      {/* Header com Timeline Melhorada */}
+      {/* Header Premium com Timeline */}
       <div className="bg-white shadow-sm border-b border-gray-100">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-2 md:space-x-4">
-              {/* Etapa 1 - Carrinho */}
+              {/* Etapa 1 - Carrinho ✓ */}
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg">
                   ✓
@@ -117,7 +119,7 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
               </div>
               <div className="w-8 md:w-12 h-0.5 bg-green-500"></div>
               
-              {/* Etapa 2 - Plano */}
+              {/* Etapa 2 - Plano ✓ */}
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg">
                   ✓
@@ -149,8 +151,10 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          {/* Layout Premium - Grid Responsivo */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Coluna Esquerda - QR Code e Timer */}
+            
+            {/* Coluna Esquerda - QR Code e Controles */}
             <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
               <div className="text-center">
                 <motion.div
@@ -158,16 +162,17 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                   animate={{ opacity: 1, y: 0 }}
                   className="mb-6"
                 >
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    💳 Pagamento via PIX
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center">
+                    <QrCode className="h-8 w-8 mr-3 text-blue-500" />
+                    Pagamento via PIX
                   </h1>
                   <p className="text-gray-600 text-lg">
-                    Escaneie o QR Code com seu app bancário ou use o código copia e cola
+                    Escaneie o QR Code ou use o código copia e cola
                   </p>
                 </motion.div>
 
                 <AnimatePresence mode="wait">
-                  {paymentData.status === 'approved' ? (
+                  {paymentApproved || paymentData.status === 'approved' ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -216,25 +221,25 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                       animate={{ opacity: 1, y: 0 }}
                       className="space-y-8"
                     >
-                      {/* QR Code */}
+                      {/* QR Code Premium */}
                       {paymentData.qrCodeBase64 ? (
                         <div className="relative">
                           <div 
-                            className="bg-gradient-to-br from-blue-50 to-green-50 p-6 rounded-2xl border-2 border-blue-200 inline-block cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                            className="bg-gradient-to-br from-blue-50 to-green-50 p-8 rounded-3xl border-2 border-blue-200 inline-block cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105"
                             onClick={() => setShowQRModal(true)}
                           >
                             <img
                               src={`data:image/png;base64,${paymentData.qrCodeBase64}`}
                               alt="QR Code PIX"
-                              className="w-72 h-72 mx-auto rounded-xl"
+                              className="w-80 h-80 mx-auto rounded-2xl shadow-lg"
                             />
                           </div>
-                          <p className="text-sm text-blue-600 mt-2 font-medium">
-                            Clique no QR Code para ampliar
+                          <p className="text-sm text-blue-600 mt-3 font-medium">
+                            📱 Clique no QR Code para ampliar
                           </p>
                         </div>
                       ) : (
-                        <div className="w-72 h-72 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl border-2 border-gray-300 flex items-center justify-center mx-auto">
+                        <div className="w-80 h-80 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl border-2 border-gray-300 flex items-center justify-center mx-auto">
                           <div className="text-center text-gray-500">
                             <RefreshCw className="h-12 w-12 mx-auto mb-4 animate-spin" />
                             <p className="text-lg font-medium">Gerando QR Code...</p>
@@ -243,28 +248,28 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                         </div>
                       )}
 
-                      {/* Timer Visual Melhorado */}
-                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+                      {/* Timer Visual Premium */}
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-3xl p-6 border border-blue-200">
                         <div className="flex items-center justify-center space-x-3 mb-4">
                           <Clock className="h-6 w-6 text-blue-600" />
-                          <span className="text-2xl font-bold text-blue-800">
+                          <span className="text-3xl font-bold text-blue-800">
                             ⏰ {formatTime(timeLeft)}
                           </span>
                         </div>
-                        <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden">
+                        <div className="w-full bg-blue-200 rounded-full h-4 overflow-hidden">
                           <motion.div
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full"
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full"
                             initial={{ width: "100%" }}
                             animate={{ width: `${(timeLeft / 600) * 100}%` }}
                             transition={{ duration: 1 }}
                           />
                         </div>
-                        <p className="text-center text-blue-700 text-sm mt-2 font-medium">
+                        <p className="text-center text-blue-700 text-sm mt-3 font-medium">
                           Tempo restante para pagamento
                         </p>
                       </div>
 
-                      {/* Status de Monitoramento */}
+                      {/* Status Premium */}
                       <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-4 border border-green-200">
                         <div className="flex items-center justify-center space-x-3">
                           <motion.div 
@@ -283,9 +288,9 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
               </div>
             </div>
 
-            {/* Coluna Direita - Informações e Ações */}
+            {/* Coluna Direita - Informações e Ações Premium */}
             <div className="space-y-6">
-              {/* Resumo do Pedido - Melhorado */}
+              {/* Resumo Premium */}
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -318,7 +323,7 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                 </div>
               </motion.div>
 
-              {/* Código PIX Copia e Cola - Melhorado */}
+              {/* Código Copia e Cola Premium */}
               {paymentData.qrCode && (
                 <motion.div 
                   initial={{ opacity: 0, x: 20 }}
@@ -345,7 +350,7 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                 </motion.div>
               )}
 
-              {/* Botão Já Paguei - DESTAQUE MÁXIMO */}
+              {/* Botão "Já Paguei" - DESTAQUE MÁXIMO */}
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -374,49 +379,12 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                   💡 O pagamento será confirmado automaticamente em alguns segundos
                 </p>
               </motion.div>
-
-              {/* Instruções - Melhoradas */}
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100"
-              >
-                <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                  📖 Como realizar o pagamento
-                </h3>
-                <div className="space-y-4">
-                  {[
-                    { step: "1", text: "Abra o app do seu banco ou carteira digital", icon: "📱" },
-                    { step: "2", text: "Escaneie o QR Code ou cole o código PIX", icon: "📷" },
-                    { step: "3", text: "Confirme os dados e finalize o pagamento", icon: "✅" },
-                    { step: "4", text: "Aprovação automática em segundos!", icon: "🚀" }
-                  ].map((instruction, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      className="flex items-start space-x-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border border-blue-100"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold">
-                        {instruction.step}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-gray-700 font-medium">
-                          {instruction.icon} {instruction.text}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modal QR Code Ampliado */}
+      {/* Modal QR Code Ampliado Premium */}
       <AnimatePresence>
         {showQRModal && paymentData.qrCodeBase64 && (
           <motion.div

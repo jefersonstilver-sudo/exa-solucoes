@@ -10,20 +10,22 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const { isLoggedIn, user, isLoading } = useUserSession();
-  const [hasValidatedCart, setHasValidatedCart] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const {
     cartItems,
+    selectedPlan,
     calculateTotalPrice,
     couponValid,
     couponDiscount
   } = useCheckout();
 
-  // CORREÇÃO: Verificação de autenticação melhorada
+  // Verificação de autenticação
   useEffect(() => {
     if (isLoading) return;
     
@@ -34,24 +36,13 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // CORREÇÃO: Validação do carrinho menos agressiva
+  // Validação do carrinho
   useEffect(() => {
-    if (isLoading || !isLoggedIn || hasValidatedCart) return;
+    if (isLoading || !isLoggedIn) return;
     
-    // Dar tempo para o carrinho carregar
-    const validateCartTimer = setTimeout(() => {
-      console.log('[CheckoutSummary] VALIDAÇÃO CORRIGIDA - Verificando carrinho:', {
-        cartItemsLength: cartItems?.length || 0,
-        cartItems: cartItems?.map(item => ({
-          panelId: item.panel?.id,
-          buildingName: item.panel?.buildings?.nome
-        })) || [],
-        timestamp: new Date().toISOString()
-      });
-      
-      // CORREÇÃO: Apenas mostrar aviso, não redirecionar automaticamente
+    const validateTimer = setTimeout(() => {
       if (!cartItems || cartItems.length === 0) {
-        console.log('[CheckoutSummary] Carrinho vazio detectado - mostrando aviso');
+        console.log('[CheckoutSummary] Carrinho vazio detectado');
         toast.error("Seu carrinho está vazio. Adicione painéis para continuar.", {
           duration: 5000,
           action: {
@@ -60,12 +51,10 @@ const CheckoutSummary = () => {
           }
         });
       }
-      
-      setHasValidatedCart(true);
-    }, 1500); // 1.5 segundos para carregar
+    }, 1500);
 
-    return () => clearTimeout(validateCartTimer);
-  }, [isLoggedIn, cartItems, navigate, isLoading, hasValidatedCart]);
+    return () => clearTimeout(validateTimer);
+  }, [isLoggedIn, cartItems, navigate, isLoading]);
 
   const totalPrice = calculateTotalPrice();
 
@@ -73,17 +62,10 @@ const CheckoutSummary = () => {
     navigate('/checkout/cupom');
   };
 
-  // CORREÇÃO: Função de navegação para pagamento melhorada
-  const handleNext = () => {
-    console.log('[CheckoutSummary] BOTÃO IR PARA PAGAMENTO CLICADO - CORRIGIDO:', {
-      cartItemsCount: cartItems?.length || 0,
-      totalPrice,
-      couponValid,
-      couponDiscount,
-      timestamp: new Date().toISOString()
-    });
+  // CORREÇÃO CRÍTICA: Criar pedido ANTES de ir para PIX
+  const handleNext = async () => {
+    console.log('[CheckoutSummary] NAVEGAÇÃO CORRIGIDA - Criando pedido primeiro');
 
-    // Validações básicas
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
@@ -95,14 +77,71 @@ const CheckoutSummary = () => {
       return;
     }
 
-    // CORREÇÃO: Navegar diretamente para a página de checkout PIX
-    console.log('[CheckoutSummary] NAVEGANDO PARA CHECKOUT PIX - /checkout');
+    if (!user?.id) {
+      toast.error("Usuário não autenticado");
+      return;
+    }
+
+    setIsProcessing(true);
     
-    // Adicionar feedback visual
-    toast.success("Redirecionando para pagamento...", { duration: 2000 });
-    
-    // Navegar para a página de checkout que já está preparada para PIX
-    navigate('/checkout');
+    try {
+      console.log("🔄 [CheckoutSummary] Criando pedido primeiro...", {
+        cartItemsCount: cartItems.length,
+        totalPrice,
+        selectedPlan,
+        userId: user.id
+      });
+
+      // Preparar dados do pedido
+      const painelIds = cartItems.map(item => item.panel.id);
+      const predioIds = cartItems.map(item => item.panel.buildings?.id).filter(Boolean);
+
+      // Calcular datas
+      const dataInicio = new Date().toISOString().split('T')[0];
+      const dataFim = new Date(Date.now() + (selectedPlan || 1) * 30 * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0];
+
+      // Criar pedido
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .insert({
+          client_id: user.id,
+          lista_paineis: painelIds,
+          lista_predios: predioIds,
+          plano_meses: selectedPlan || 1,
+          valor_total: totalPrice,
+          status: 'pendente',
+          data_inicio: dataInicio,
+          data_fim: dataFim,
+          termos_aceitos: true,
+          log_pagamento: {
+            created_via: 'checkout_summary',
+            cart_items_count: cartItems.length,
+            selected_plan: selectedPlan,
+            total_price: totalPrice,
+            created_at: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+
+      if (pedidoError) {
+        throw pedidoError;
+      }
+
+      console.log("✅ [CheckoutSummary] Pedido criado:", pedido.id);
+
+      // Agora navegar para o PIX com o ID do pedido
+      navigate(`/pix-payment?pedido=${pedido.id}`);
+      
+      toast.success("Pedido criado! Redirecionando para pagamento PIX...", { duration: 2000 });
+
+    } catch (error: any) {
+      console.error("❌ [CheckoutSummary] Erro ao criar pedido:", error);
+      toast.error(`Erro ao criar pedido: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isLoading) {
@@ -155,6 +194,7 @@ const CheckoutSummary = () => {
             <Button
               variant="outline"
               onClick={handleBack}
+              disabled={isProcessing}
               className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -163,11 +203,20 @@ const CheckoutSummary = () => {
 
             <Button
               onClick={handleNext}
-              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
+              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0 || isProcessing}
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
-              <span>Ir para Pagamento PIX</span>
-              <ArrowRight className="h-4 w-4" />
+              {isProcessing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Criando Pedido...</span>
+                </>
+              ) : (
+                <>
+                  <span>Ir para Pagamento PIX</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </motion.div>
         </div>
