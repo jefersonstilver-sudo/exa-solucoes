@@ -49,18 +49,18 @@ export const usePixPaymentPolling = ({
           hasLogPagamento: !!logPagamento
         });
 
-        // Verificar se o status mudou para aprovado
+        // Verificar se o pagamento foi aprovado
         if (currentStatus === 'pago' && lastStatusRef.current !== currentStatus) {
           console.log("✅ [PixPolling] Pagamento aprovado detectado!");
           
           setIsPolling(false);
           onPaymentApproved();
           
-          // Limpar polling
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
+          return;
         }
 
         // Verificar dados PIX no log_pagamento
@@ -74,6 +74,32 @@ export const usePixPaymentPolling = ({
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
+          }
+          return;
+        }
+
+        // Verificar se o pagamento expirou (5 minutos)
+        if (logPagamento?.expires_at) {
+          const expirationTime = new Date(logPagamento.expires_at);
+          const now = new Date();
+          
+          if (now > expirationTime) {
+            console.log("⏰ [PixPolling] Pagamento expirado, cancelando pedido");
+            
+            // Cancelar pedido automaticamente
+            await supabase
+              .from('pedidos')
+              .update({ status: 'cancelado_expirado' })
+              .eq('id', pedidoId);
+            
+            setIsPolling(false);
+            toast.error('⏰ Tempo de pagamento expirado. Pedido cancelado.');
+            
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+            return;
           }
         }
 
@@ -95,18 +121,18 @@ export const usePixPaymentPolling = ({
     // Verificação inicial
     checkPaymentStatus();
     
-    // Configurar polling periódico
+    // Configurar polling periódico a cada 5 segundos
     intervalRef.current = setInterval(checkPaymentStatus, pollingInterval);
     
-    // Timeout para parar polling após 15 minutos
+    // Timeout para parar polling após 5 minutos
     setTimeout(() => {
       if (intervalRef.current) {
-        console.log("⏰ [PixPolling] Timeout - parando polling");
+        console.log("⏰ [PixPolling] Timeout de 5 minutos - parando polling");
         clearInterval(intervalRef.current);
         intervalRef.current = null;
         setIsPolling(false);
       }
-    }, 15 * 60 * 1000); // 15 minutos
+    }, 5 * 60 * 1000); // 5 minutos
   };
 
   const stopPolling = () => {
@@ -127,13 +153,12 @@ export const usePixPaymentPolling = ({
       stopPolling();
     }
 
-    // Cleanup ao desmontar componente
     return () => {
       stopPolling();
     };
   }, [isActive, pedidoId]);
 
-  // Realtime subscription como backup
+  // Realtime subscription para detecção instantânea
   useEffect(() => {
     if (!pedidoId || !isActive) return;
 
@@ -156,7 +181,7 @@ export const usePixPaymentPolling = ({
           
           if (newStatus === 'pago') {
             console.log("✅ [PixPolling] Pagamento aprovado via realtime!");
-            toast.success('🎉 Pagamento aprovado via realtime!');
+            toast.success('🎉 Pagamento aprovado!');
             onPaymentApproved();
           }
         }

@@ -13,7 +13,7 @@ interface PixPaymentTimerProps {
 }
 
 const PixPaymentTimer = ({
-  initialSeconds,
+  initialSeconds = 300, // 5 minutos por padrão
   onExpire,
   onRefresh,
   isActive,
@@ -38,8 +38,8 @@ const PixPaymentTimer = ({
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           setIsExpired(true);
-          toast.warning("QR Code expirado", {
-            description: "Gere um novo QR code para continuar"
+          toast.warning("⏰ Tempo de pagamento expirado", {
+            description: "O pedido foi cancelado automaticamente"
           });
           onExpire();
           return 0;
@@ -61,17 +61,18 @@ const PixPaymentTimer = ({
   if (!isActive) return null;
   
   return (
-    <div className="flex flex-col items-center space-y-3 p-4 bg-gray-50 rounded-lg">
+    <div className="flex flex-col items-center space-y-3 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
       <div className="flex items-center space-x-2">
-        <Clock className="h-4 w-4 text-gray-500" />
-        <span className="text-sm text-gray-600">
-          {isExpired ? "QR Code expirado" : "QR Code válido por:"}
+        <Clock className="h-5 w-5 text-blue-600" />
+        <span className="text-sm text-blue-700 font-medium">
+          {isExpired ? "⏰ Tempo expirado" : "⏰ Tempo restante:"}
         </span>
       </div>
       
       {!isExpired ? (
-        <div className={`text-2xl font-mono font-bold ${
-          secondsLeft <= 60 ? 'text-red-500' : 'text-gray-700'
+        <div className={`text-3xl font-mono font-bold ${
+          secondsLeft <= 60 ? 'text-red-500 animate-pulse' : 
+          secondsLeft <= 120 ? 'text-orange-500' : 'text-blue-700'
         }`}>
           {formatTime(secondsLeft)}
         </div>
@@ -79,7 +80,7 @@ const PixPaymentTimer = ({
         <Button
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
+          className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold"
         >
           {isRefreshing ? (
             <>
@@ -89,24 +90,32 @@ const PixPaymentTimer = ({
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Gerar novo QR Code
+              🔄 Gerar Novo QR Code
             </>
           )}
         </Button>
       )}
       
-      {/* Barra de progresso */}
+      {/* Barra de progresso visual */}
       {!isExpired && (
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden">
           <div
-            className={`h-2 rounded-full transition-all duration-1000 ${
-              secondsLeft <= 60 ? 'bg-red-500' : 'bg-blue-500'
+            className={`h-3 rounded-full transition-all duration-1000 ${
+              secondsLeft <= 60 ? 'bg-red-500' : 
+              secondsLeft <= 120 ? 'bg-orange-500' : 
+              'bg-gradient-to-r from-blue-500 to-green-500'
             }`}
             style={{
               width: `${(secondsLeft / initialSeconds) * 100}%`
             }}
           />
         </div>
+      )}
+      
+      {secondsLeft <= 60 && !isExpired && (
+        <p className="text-xs text-red-700 text-center font-medium animate-pulse">
+          ⚠️ Últimos momentos para pagamento!
+        </p>
       )}
     </div>
   );

@@ -23,15 +23,7 @@ function validatePedidoId(pedidoId: string) {
   }
 }
 
-// Generate realistic PIX QR Code (Base64 encoded placeholder)
-function generatePixQRCode(pedidoId: string, valor: number): string {
-  // This is a placeholder base64 for a simple QR code image
-  // In production, you would generate a real QR code image
-  const qrCodeBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
-  return qrCodeBase64;
-}
-
-// Generate PIX payment with N8N webhook or fallback
+// Generate PIX payment with N8N webhook
 async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string) {
   try {
     console.log(`🎯 [PIX] Gerando pagamento PIX para pedido: ${pedidoId}, valor: ${totalAmount}`);
@@ -52,19 +44,25 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
     let pixData;
     let webhookSuccess = false;
 
-    // Tentar chamar webhook N8N primeiro
+    // Chamar webhook N8N correto com timeout de 30 segundos
     try {
-      const N8N_WEBHOOK_URL = 'https://indexamidia.app.n8n.cloud/webhook/pix-payment-generator';
+      const N8N_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19';
       
-      console.log(`📡 [PIX] Tentando webhook N8N: ${N8N_WEBHOOK_URL}`);
+      console.log(`📡 [PIX] Chamando webhook N8N: ${N8N_WEBHOOK_URL}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
       
       const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(pixPaymentData)
+        body: JSON.stringify(pixPaymentData),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (webhookResponse.ok) {
         const webhookResult = await webhookResponse.json();
@@ -73,60 +71,41 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
         pixData = {
           paymentId: webhookResult.payment_id || `pix_${pedidoId}_${Date.now()}`,
           status: 'pending',
-          qrCode: webhookResult.qr_code_text || webhookResult.pix_copia_cola || `00020126580014BR.GOV.BCB.PIX0136${pedidoId}520400005303986540${valorPixComDesconto.toFixed(2)}5802BR5925INDEXA MIDIA LTDA6009SAO PAULO61080540090062070503***6304`,
-          qrCodeBase64: webhookResult.qr_code_base64 || generatePixQRCode(pedidoId, valorPixComDesconto),
-          qrCodeText: webhookResult.qr_code_text || webhookResult.pix_copia_cola || `PIX Copia e Cola - Valor: R$ ${valorPixComDesconto.toFixed(2)}`,
-          pix_url: webhookResult.qr_code_text || webhookResult.pix_copia_cola || '',
-          pix_base64: webhookResult.qr_code_base64 || generatePixQRCode(pedidoId, valorPixComDesconto),
+          qrCode: webhookResult.pix_url || webhookResult.qr_code_text || webhookResult.pix_copia_cola,
+          qrCodeBase64: webhookResult.pix_base64 || webhookResult.qr_code_base64,
+          qrCodeText: webhookResult.pix_url || webhookResult.qr_code_text || webhookResult.pix_copia_cola,
+          pix_url: webhookResult.pix_url || webhookResult.qr_code_text || webhookResult.pix_copia_cola,
+          pix_base64: webhookResult.pix_base64 || webhookResult.qr_code_base64,
           valor_original: totalAmount,
           valor_pix: valorPixComDesconto,
           webhook_response: webhookResult,
           webhook_success: true,
           createdAt: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutos
+          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutos
         };
         
         webhookSuccess = true;
+      } else {
+        throw new Error(`Webhook retornou status ${webhookResponse.status}`);
       }
     } catch (webhookError) {
       console.warn(`⚠️ [PIX] Webhook N8N falhou:`, webhookError);
+      throw new Error(`Falha no webhook N8N: ${webhookError.message}`);
     }
 
-    // Fallback: gerar dados PIX simulados se o webhook falhar
-    if (!webhookSuccess) {
-      console.log(`🔄 [PIX] Usando modo fallback para pedido ${pedidoId}`);
-      
-      pixData = {
-        paymentId: `fallback_pix_${pedidoId}_${Date.now()}`,
-        status: 'pending',
-        qrCode: `00020126580014BR.GOV.BCB.PIX0136${pedidoId}520400005303986540${valorPixComDesconto.toFixed(2)}5802BR5925INDEXA MIDIA LTDA6009SAO PAULO61080540090062070503***6304ABCD`,
-        qrCodeBase64: generatePixQRCode(pedidoId, valorPixComDesconto),
-        qrCodeText: `PIX Copia e Cola - Valor: R$ ${valorPixComDesconto.toFixed(2)} - Pedido: ${pedidoId}`,
-        pix_url: `00020126580014BR.GOV.BCB.PIX0136${pedidoId}520400005303986540${valorPixComDesconto.toFixed(2)}5802BR5925INDEXA MIDIA LTDA6009SAO PAULO61080540090062070503***6304ABCD`,
-        pix_base64: generatePixQRCode(pedidoId, valorPixComDesconto),
-        valor_original: totalAmount,
-        valor_pix: valorPixComDesconto,
-        fallback_mode: true,
-        webhook_success: false,
-        createdAt: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
-      };
-    }
-
-    // Salvar dados PIX no pedido - SEMPRE salvar dados completos
+    // Salvar dados PIX no pedido
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
         log_pagamento: {
           pixData: pixData,
-          pix_data: pixData, // Duplicar para compatibilidade
+          pix_data: pixData,
           payment_method: 'pix',
           total_amount: totalAmount,
           valor_pix: valorPixComDesconto,
           webhook_called: true,
           webhook_success: webhookSuccess,
           timestamp: new Date().toISOString(),
-          // Dados essenciais duplicados para fácil acesso
           qr_code_base64: pixData.qrCodeBase64,
           qr_code_text: pixData.qrCode,
           payment_id: pixData.paymentId,
@@ -140,13 +119,7 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       throw new Error(`Erro ao salvar dados PIX: ${updateError.message}`);
     }
 
-    console.log(`✅ [PIX] Dados PIX salvos com sucesso no pedido ${pedidoId}:`, {
-      paymentId: pixData.paymentId,
-      hasQrCode: !!pixData.qrCode,
-      hasQrCodeBase64: !!pixData.qrCodeBase64,
-      valorPix: pixData.valor_pix,
-      webhookSuccess
-    });
+    console.log(`✅ [PIX] Dados PIX salvos com sucesso no pedido ${pedidoId}`);
 
     return { success: true, pixData };
 
@@ -226,7 +199,8 @@ async function handleRequest(req: Request) {
         valor_original: totalAmount,
         valor_pix: pixResult.pixData.valor_pix,
         qr_code_base64: pixResult.pixData.qrCodeBase64,
-        qr_code_text: pixResult.pixData.qrCode
+        qr_code_text: pixResult.pixData.qrCode,
+        expires_at: pixResult.pixData.expires_at
       }),
       {
         headers: {
