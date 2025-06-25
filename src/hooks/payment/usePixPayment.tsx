@@ -11,6 +11,16 @@ export interface PixPaymentData {
   createdAt?: string;
   pedidoId?: string;
   valorTotal?: number;
+  pedidoData?: {
+    id: string;
+    valor_total: number;
+    plano_meses: number;
+    lista_paineis: string[];
+    lista_predios: string[];
+    data_inicio: string;
+    data_fim: string;
+    created_at: string;
+  };
 }
 
 export const usePixPayment = (pedidoId: string | null) => {
@@ -33,9 +43,9 @@ export const usePixPayment = (pedidoId: string | null) => {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔄 [usePixPayment-FIXED] Carregando dados PIX para pedido:", pedidoId);
+      console.log("🔄 [usePixPayment-COMPLETE] Carregando dados COMPLETOS para pedido:", pedidoId);
 
-      // Buscar pedido diretamente por ID
+      // Buscar pedido completo por ID
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
@@ -46,10 +56,11 @@ export const usePixPayment = (pedidoId: string | null) => {
         throw new Error(`Pedido não encontrado: ${pedidoError?.message}`);
       }
 
-      console.log("✅ [usePixPayment-FIXED] Pedido encontrado:", {
+      console.log("✅ [usePixPayment-COMPLETE] Pedido encontrado:", {
         id: pedido.id,
         status: pedido.status,
         valor_total: pedido.valor_total,
+        plano_meses: pedido.plano_meses,
         hasLogPagamento: !!pedido.log_pagamento
       });
 
@@ -59,11 +70,12 @@ export const usePixPayment = (pedidoId: string | null) => {
       if (logPagamento?.pixData || logPagamento?.pix_data) {
         const pixData = logPagamento.pixData || logPagamento.pix_data;
         
-        console.log("✅ [usePixPayment-FIXED] Dados PIX encontrados no log:", {
+        console.log("✅ [usePixPayment-COMPLETE] Dados PIX encontrados:", {
           hasQrCodeBase64: !!pixData.qrCodeBase64,
           hasQrCode: !!pixData.qrCode,
           status: pixData.status,
-          paymentId: pixData.paymentId
+          paymentId: pixData.paymentId,
+          realVersion: pixData.real_qr_generated
         });
         
         setPaymentData({
@@ -73,13 +85,23 @@ export const usePixPayment = (pedidoId: string | null) => {
           status: pixData.status === 'approved' ? 'approved' : 'pending',
           createdAt: pedido.created_at,
           pedidoId: pedido.id,
-          valorTotal: pedido.valor_total
+          valorTotal: pedido.valor_total,
+          pedidoData: {
+            id: pedido.id,
+            valor_total: pedido.valor_total,
+            plano_meses: pedido.plano_meses,
+            lista_paineis: pedido.lista_paineis || [],
+            lista_predios: pedido.lista_predios || [],
+            data_inicio: pedido.data_inicio,
+            data_fim: pedido.data_fim,
+            created_at: pedido.created_at
+          }
         });
         
         toast.success("✅ Dados PIX carregados com sucesso!");
       } else {
         // PIX ainda não foi gerado - chamar edge function
-        console.log("🔄 [usePixPayment-FIXED] PIX não encontrado, gerando via edge function...");
+        console.log("🔄 [usePixPayment-COMPLETE] PIX não encontrado, gerando via edge function...");
         
         const { data, error } = await supabase.functions.invoke('process-payment', {
           body: {
@@ -98,7 +120,7 @@ export const usePixPayment = (pedidoId: string | null) => {
           throw new Error(data.error || 'Falha ao processar pagamento PIX');
         }
 
-        console.log("✅ [usePixPayment-FIXED] PIX gerado via edge function:", data);
+        console.log("✅ [usePixPayment-COMPLETE] PIX gerado via edge function:", data);
 
         // Buscar pedido atualizado com os novos dados PIX
         const { data: updatedPedido, error: updateError } = await supabase
@@ -119,10 +141,20 @@ export const usePixPayment = (pedidoId: string | null) => {
               status: 'pending',
               createdAt: updatedPedido.created_at,
               pedidoId: updatedPedido.id,
-              valorTotal: updatedPedido.valor_total
+              valorTotal: updatedPedido.valor_total,
+              pedidoData: {
+                id: updatedPedido.id,
+                valor_total: updatedPedido.valor_total,
+                plano_meses: updatedPedido.plano_meses,
+                lista_paineis: updatedPedido.lista_paineis || [],
+                lista_predios: updatedPedido.lista_predios || [],
+                data_inicio: updatedPedido.data_inicio,
+                data_fim: updatedPedido.data_fim,
+                created_at: updatedPedido.created_at
+              }
             });
             
-            toast.success("🎉 QR Code PIX gerado com sucesso!");
+            toast.success("🎉 QR Code PIX REAL gerado com sucesso!");
           } else {
             throw new Error("Falha ao gerar dados PIX completos");
           }
@@ -132,7 +164,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment-FIXED] Erro:", error);
+      console.error("❌ [usePixPayment-COMPLETE] Erro:", error);
       setError(error.message || 'Erro ao carregar pagamento PIX');
       toast.error(`Erro no pagamento PIX: ${error.message}`);
     } finally {
@@ -144,7 +176,7 @@ export const usePixPayment = (pedidoId: string | null) => {
     if (!pedidoId) return;
     
     try {
-      console.log("🔄 [usePixPayment-FIXED] Atualizando status do pagamento");
+      console.log("🔄 [usePixPayment-COMPLETE] Atualizando status do pagamento");
       
       const { data: pedido, error } = await supabase
         .from('pedidos')
@@ -165,7 +197,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment-FIXED] Erro ao atualizar status:", error);
+      console.error("❌ [usePixPayment-COMPLETE] Erro ao atualizar status:", error);
     }
   };
 

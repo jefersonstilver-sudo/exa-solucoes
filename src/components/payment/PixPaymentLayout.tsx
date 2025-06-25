@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { usePixPaymentPolling } from '@/hooks/payment/usePixPaymentPolling';
 import { PixPaymentData } from '@/hooks/payment/usePixPayment';
+import OrderSummaryComplete from './OrderSummaryComplete';
 
 interface PixPaymentLayoutProps {
   paymentData: PixPaymentData | null;
@@ -221,7 +222,7 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                       animate={{ opacity: 1, y: 0 }}
                       className="space-y-8"
                     >
-                      {/* QR Code Premium */}
+                      {/* QR Code Premium - CORRIGIDO */}
                       {paymentData.qrCodeBase64 ? (
                         <div className="relative">
                           <div 
@@ -229,9 +230,17 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
                             onClick={() => setShowQRModal(true)}
                           >
                             <img
-                              src={`data:image/png;base64,${paymentData.qrCodeBase64}`}
+                              src={paymentData.qrCodeBase64.startsWith('data:') 
+                                ? paymentData.qrCodeBase64 
+                                : `data:image/png;base64,${paymentData.qrCodeBase64}`
+                              }
                               alt="QR Code PIX"
                               className="w-80 h-80 mx-auto rounded-2xl shadow-lg"
+                              onError={(e) => {
+                                console.error('Erro ao carregar QR Code:', e);
+                                toast.error('Erro ao carregar QR Code. Tentando recarregar...');
+                                handleRefresh();
+                              }}
                             />
                           </div>
                           <p className="text-sm text-blue-600 mt-3 font-medium">
@@ -288,40 +297,12 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
               </div>
             </div>
 
-            {/* Coluna Direita - Informações e Ações Premium */}
+            {/* Coluna Direita - Resumo Completo e Ações */}
             <div className="space-y-6">
-              {/* Resumo Premium */}
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100"
-              >
-                <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                  📋 Resumo do Pedido
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                    <span className="text-gray-600 font-medium">Valor Original:</span>
-                    <span className="text-xl font-bold text-gray-800">
-                      {formatCurrency(paymentData.valorTotal || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                    <span className="text-green-600 font-medium">💰 Desconto PIX (5%):</span>
-                    <span className="text-xl font-bold text-green-600">
-                      -{formatCurrency((paymentData.valorTotal || 0) * 0.05)}
-                    </span>
-                  </div>
-                  <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-green-800 font-bold text-lg">💳 Valor Final:</span>
-                      <span className="text-3xl font-bold text-green-600">
-                        {formatCurrency((paymentData.valorTotal || 0) * 0.95)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+              {/* Resumo Completo do Pedido */}
+              {paymentData.pedidoData && (
+                <OrderSummaryComplete pedidoData={paymentData.pedidoData} />
+              )}
 
               {/* Código Copia e Cola Premium */}
               {paymentData.qrCode && (
@@ -406,7 +387,10 @@ const PixPaymentLayout = ({ paymentData, onRefreshStatus }: PixPaymentLayoutProp
               </h3>
               <div className="bg-gradient-to-br from-blue-50 to-green-50 p-6 rounded-2xl border-2 border-blue-200 mb-6">
                 <img
-                  src={`data:image/png;base64,${paymentData.qrCodeBase64}`}
+                  src={paymentData.qrCodeBase64.startsWith('data:') 
+                    ? paymentData.qrCodeBase64 
+                    : `data:image/png;base64,${paymentData.qrCodeBase64}`
+                  }
                   alt="QR Code PIX Ampliado"
                   className="w-full max-w-sm mx-auto rounded-xl"
                 />

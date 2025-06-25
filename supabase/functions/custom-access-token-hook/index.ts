@@ -32,7 +32,7 @@ interface SupabaseAuthHookPayload {
 }
 
 Deno.serve(async (req) => {
-  console.log('🔐 AUTH HOOK: Processing request');
+  console.log('🔐 [AUTH-HOOK-FIXED] Processing request - VERSÃO CORRIGIDA');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
   try {
     if (req.method !== 'POST') {
-      console.error('❌ Method not allowed:', req.method);
+      console.error('❌ [AUTH-HOOK-FIXED] Method not allowed:', req.method);
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 405,
@@ -51,10 +51,13 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ Missing environment variables');
-      return new Response(JSON.stringify({ error: 'Missing environment variables' }), {
+      console.error('❌ [AUTH-HOOK-FIXED] Missing environment variables');
+      return new Response(JSON.stringify({ 
+        claims: { user_role: 'client' },
+        error: 'Missing env vars but allowing login'
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 200,
       });
     }
 
@@ -63,52 +66,58 @@ Deno.serve(async (req) => {
     let payload: SupabaseAuthHookPayload;
     try {
       const rawPayload = await req.text();
-      console.log('📦 Processing auth payload');
+      console.log('📦 [AUTH-HOOK-FIXED] Processing auth payload');
       payload = JSON.parse(rawPayload);
       
       if (!payload || !payload.user_id || !payload.claims) {
-        console.error('❌ Invalid payload structure');
+        console.error('❌ [AUTH-HOOK-FIXED] Invalid payload structure');
         // Return the original payload to not break auth flow
-        return new Response(JSON.stringify(payload || {}), {
+        return new Response(JSON.stringify(payload || { claims: { user_role: 'client' } }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
       }
     } catch (parseError) {
-      console.error('❌ JSON parse error:', parseError);
-      // Return empty claims to not break auth flow
-      return new Response(JSON.stringify({ claims: {} }), {
+      console.error('❌ [AUTH-HOOK-FIXED] JSON parse error:', parseError);
+      // Return minimal valid claims to not break auth flow
+      return new Response(JSON.stringify({ claims: { user_role: 'client' } }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
     
-    console.log('✅ Auth payload validated for user:', payload.claims.email);
+    console.log('✅ [AUTH-HOOK-FIXED] Auth payload validated for user:', payload.claims.email);
 
-    // Try to get role from database
+    // Try to get role from database with timeout
     try {
-      const { data: userData, error } = await supabase
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database timeout')), 3000)
+      );
+      
+      const dbPromise = supabase
         .from('users')
         .select('role, email')
         .eq('id', payload.user_id)
         .single();
 
+      const { data: userData, error } = await Promise.race([dbPromise, timeoutPromise]) as any;
+
       if (error) {
-        console.warn('⚠️ Error fetching user role, using default:', error.message);
+        console.warn('⚠️ [AUTH-HOOK-FIXED] Error fetching user role, using default:', error.message);
         payload.claims.user_role = 'client';
       } else if (userData?.role) {
         payload.claims.user_role = userData.role;
-        console.log('✅ Role retrieved from database:', userData.role);
+        console.log('✅ [AUTH-HOOK-FIXED] Role retrieved from database:', userData.role);
       } else {
-        console.warn('⚠️ No role found, using default');
+        console.warn('⚠️ [AUTH-HOOK-FIXED] No role found, using default');
         payload.claims.user_role = 'client';
       }
     } catch (dbError) {
-      console.warn('⚠️ Database error, using default role:', dbError);
+      console.warn('⚠️ [AUTH-HOOK-FIXED] Database error, using default role:', dbError);
       payload.claims.user_role = 'client';
     }
 
-    console.log('🎯 JWT generated successfully:', {
+    console.log('🎯 [AUTH-HOOK-FIXED] JWT generated successfully:', {
       user_role: payload.claims.user_role,
       email: payload.claims.email,
       user_id: payload.user_id
@@ -120,12 +129,13 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('💥 Critical auth error:', error);
+    console.error('💥 [AUTH-HOOK-FIXED] Critical auth error:', error);
     
     // IMPORTANT: Never break the auth flow, return minimal valid response
     return new Response(JSON.stringify({ 
       claims: { user_role: 'client' },
-      error: 'Auth hook error but login allowed'
+      error: 'Auth hook error but login allowed',
+      fixed_version: true
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200, // Always return 200 to not break auth
