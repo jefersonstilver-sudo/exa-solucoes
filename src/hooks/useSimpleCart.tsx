@@ -12,7 +12,7 @@ const convertLegacyToCartItem = (legacyItem: LegacyCartItem): CartItem => {
     panel: legacyItem.panel,
     duration: legacyItem.duration,
     addedAt: Date.now()
-    // REMOVIDO: price - será calculado dinamicamente
+    // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DO PRÉDIO
   };
 };
 
@@ -34,6 +34,15 @@ export const useSimpleCart = () => {
       const legacyItems = loadCartFromStorage();
       const convertedItems = legacyItems.map(convertLegacyToCartItem);
       setCartItems(convertedItems);
+      
+      console.log("🛒 [useSimpleCart] Carrinho carregado:", {
+        itemCount: convertedItems.length,
+        items: convertedItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel.buildings?.nome,
+          basePrice: item.panel.buildings?.preco_base // PREÇO REAL DO PRÉDIO
+        }))
+      });
     } catch (error) {
       console.error('Error loading cart:', error);
     } finally {
@@ -63,6 +72,15 @@ export const useSimpleCart = () => {
   }, []);
 
   const addToCart = useCallback((panel: Panel, duration: number = 30) => {
+    const basePrice = panel.buildings?.preco_base || 280;
+    
+    console.log("➕ [useSimpleCart] Adicionando ao carrinho:", {
+      panelId: panel.id,
+      buildingName: panel.buildings?.nome,
+      basePrice, // PREÇO REAL DO PRÉDIO
+      duration
+    });
+
     setCartItems(prev => {
       const existingIndex = prev.findIndex(item => item.panel?.id === panel.id);
       
@@ -81,7 +99,7 @@ export const useSimpleCart = () => {
           panel,
           duration,
           addedAt: Date.now()
-          // REMOVIDO: price - será calculado dinamicamente quando necessário
+          // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base
         };
         return [...prev, newItem];
       }
@@ -89,7 +107,7 @@ export const useSimpleCart = () => {
 
     triggerAnimation();
     
-    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
+    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho! (R$ ${basePrice}/mês)`, {
       duration: 2000,
       position: 'top-center'
     });
@@ -131,7 +149,7 @@ export const useSimpleCart = () => {
     isLoading,
     isAnimating,
     itemCount: cartItems.length,
-    // REMOVIDO: totalPrice calculado aqui - deve ser calculado com plano selecionado
+    // PREÇO CALCULADO DINAMICAMENTE NO COMPONENTE QUE USA
     isItemInCart,
     addToCart,
     removeFromCart,

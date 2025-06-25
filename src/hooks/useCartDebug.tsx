@@ -22,7 +22,8 @@ export const useCartDebug = (cartItems: CartItem[], context: string) => {
         panelId: item.panel?.id,
         buildingName: item.panel?.buildings?.nome,
         duration: item.duration,
-        // CORRIGIDO: Calcular preço dinamicamente
+        basePrice: item.panel?.buildings?.preco_base, // PREÇO REAL DO PRÉDIO
+        // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base
         calculatedPrice: calculatePixPrice(selectedPlan, [item], 0)
       })) || []
     });
