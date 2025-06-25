@@ -1,159 +1,219 @@
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import PaymentMethods from './PaymentMethods';
-import { formatCurrency } from '@/utils/formatters';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
+import { ClientOnly } from '@/components/ui/client-only';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { PixPaymentData } from '@/hooks/payment/usePixPayment';
+import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDebugService';
+import { handleMercadoPagoRedirect } from '@/services/mercadoPagoService';
+import PaymentMethodSelector from './PaymentMethodSelector';
+import PixPaymentDetails from './PixPaymentDetails';
+import CreditCardPayment from './CreditCardPayment';
+import PixPaymentDebugger from './PixPaymentDebugger';
+import PixPaymentButton from '../navigation/PixPaymentButton';
 
 interface PaymentGatewayProps {
   orderId: string;
   totalAmount: number;
   preferenceId?: string;
-  pixData?: any;
-  onRefreshStatus: () => Promise<void>;
+  pixData?: {
+    qrCodeBase64: string;
+    qrCode: string;
+    paymentId: string;
+    status: string;
+  };
+  onRefreshStatus?: () => Promise<void>;
   userId?: string;
 }
 
-const PaymentGateway = ({ 
-  orderId, 
-  totalAmount, 
-  preferenceId, 
-  pixData, 
+const PaymentGateway = ({
+  orderId,
+  totalAmount,
+  preferenceId,
+  pixData,
   onRefreshStatus,
-  userId 
+  userId
 }: PaymentGatewayProps) => {
   const navigate = useNavigate();
-  const [selectedMethod, setSelectedMethod] = useState<string>('pix');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Force PIX as the only available method
+  const [paymentMethod, setPaymentMethod] = useState<string>(
+    localStorage.getItem('preferred_payment_method') || 'pix'
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+  // Log de montagem do componente
   useEffect(() => {
-    console.log("[PaymentGateway] Initializing with PIX as default method");
-    setSelectedMethod('pix');
-  }, []);
-
-  // Auto-redirect to PIX payment if PIX data exists
-  useEffect(() => {
-    if (pixData && pixData.qrCodeBase64) {
-      console.log("[PaymentGateway] PIX data found, redirecting to PIX payment page");
-      navigate(`/pix-payment?pedido=${orderId}`);
-    }
-  }, [pixData, orderId, navigate]);
-
-  const handlePaymentMethodChange = (method: string) => {
-    if (method !== 'pix') {
-      toast.info("Apenas pagamento PIX está disponível no momento");
-      return;
-    }
-    setSelectedMethod(method);
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      `PaymentGateway SISTEMA RESTAURADO - inicializado`,
+      { 
+        orderId, 
+        paymentMethod,
+        hasPix: !!pixData,
+        hasPreference: !!preferenceId,
+        hasUserId: !!userId,
+        sistemaRestaurado: true
+      }
+    );
+    
+    // Salva preferência de método de pagamento
+    localStorage.setItem('preferred_payment_method', paymentMethod);
+    
+    return () => {
+      logCheckoutEvent(
+        CheckoutEvent.DEBUG_EVENT,
+        LogLevel.INFO,
+        `PaymentGateway desmontado`,
+        { orderId }
+      );
+    };
+  }, [orderId, paymentMethod, pixData, preferenceId, userId]);
+  
+  // Voltar para o checkout
+  const handleBack = () => {
+    navigate('/checkout');
   };
-
+  
+  // Atualizar método de pagamento
+  const handlePaymentMethodChange = (method: string) => {
+    setPaymentMethod(method);
+    localStorage.setItem('preferred_payment_method', method);
+    
+    // Log para eventos
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      `Método de pagamento alterado para: ${method}`,
+      { orderId, method }
+    );
+  };
+  
+  // SISTEMA RESTAURADO: Usar PixPaymentButton que abre popup
+  const handlePixPayment = () => {
+    console.log("🎯 PaymentGateway: SISTEMA RESTAURADO - Usando PixPaymentButton com popup");
+    // O PixPaymentButton vai lidar com a abertura do popup
+  };
+  
+  // Prosseguir com cartão de crédito
+  const handleCreditCardPayment = async () => {
+    setIsLoading(true);
+    
+    try {
+      if (preferenceId) {
+        toast.info("Redirecionando para o MercadoPago...");
+        handleMercadoPagoRedirect(preferenceId, paymentMethod);
+      } else {
+        toast.error("Configuração de pagamento inválida");
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error("[PaymentGateway] Erro ao processar cartão:", error);
+      toast.error("Erro ao processar pagamento");
+      setIsLoading(false);
+    }
+  };
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header com Timeline */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">✓</div>
-                <span className="ml-2 text-sm text-gray-600">Carrinho</span>
+    <ClientOnly>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            className="flex items-center text-gray-600"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Voltar para checkout
+          </Button>
+        </div>
+        
+        <h1 className="text-2xl font-bold mb-6 text-center">Pagamento</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          {/* Seletor de método de pagamento (coluna lateral) */}
+          <div className="md:col-span-2">
+            <PaymentMethodSelector 
+              selectedMethod={paymentMethod}
+              setSelectedMethod={handlePaymentMethodChange}
+              totalAmount={totalAmount}
+            />
+          </div>
+          
+          {/* Conteúdo do pagamento (coluna principal) */}
+          <div className="md:col-span-3 bg-white rounded-lg shadow-sm p-6 border">
+            {paymentMethod === 'pix' && pixData ? (
+              <PixPaymentDetails
+                qrCodeBase64={pixData.qrCodeBase64}
+                qrCodeText={pixData.qrCode}
+                status={pixData.status}
+                paymentId={pixData.paymentId}
+                onRefreshStatus={onRefreshStatus || (() => Promise.resolve())}
+                userId={userId}
+              />
+            ) : paymentMethod === 'credit_card' ? (
+              <CreditCardPayment
+                preferenceId={preferenceId || ''}
+                totalAmount={totalAmount}
+                isLoading={isLoading}
+              />
+            ) : (
+              <div className="text-center py-10">
+                <h3 className="text-lg font-semibold mb-4">
+                  {paymentMethod === 'pix' ? 'Pagamento PIX' : 'Selecione um método de pagamento'}
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  {paymentMethod === 'pix' 
+                    ? 'Clique no botão abaixo para gerar seu QR Code PIX'
+                    : 'Selecione um método de pagamento para continuar'
+                  }
+                </p>
               </div>
-              <div className="w-12 h-0.5 bg-green-500"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">✓</div>
-                <span className="ml-2 text-sm text-gray-600">Plano</span>
-              </div>
-              <div className="w-12 h-0.5 bg-green-500"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
-                <span className="ml-2 text-sm font-semibold text-blue-600">Pagamento</span>
-              </div>
-              <div className="w-12 h-0.5 bg-gray-300"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-sm font-bold">4</div>
-                <span className="ml-2 text-sm text-gray-400">Confirmação</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
-
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100"
-          >
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                💳 Finalizar Pagamento
-              </h1>
-              <p className="text-gray-600 text-lg">
-                Escolha sua forma de pagamento preferida
-              </p>
-              <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200">
-                <p className="text-2xl font-bold text-green-600">
-                  Total: {formatCurrency(totalAmount * 0.95)} 
-                  <span className="text-sm font-normal text-gray-600 ml-2">(com 5% desconto PIX)</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Payment Methods */}
-            <PaymentMethods
-              selectedMethod={selectedMethod}
-              setSelectedMethod={handlePaymentMethodChange}
+        
+        {/* SISTEMA RESTAURADO: Botões de pagamento */}
+        <div className="mt-8 text-center space-y-4">
+          {paymentMethod === 'pix' && !pixData && (
+            <PixPaymentButton
+              onClick={handlePixPayment}
+              isDisabled={false}
+              isLoading={isLoading}
               totalPrice={totalAmount}
-              pedidoId={orderId}
             />
-
-            {/* Action Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between">
-              <Button
-                onClick={() => navigate('/checkout/resumo')}
-                variant="outline"
-                className="px-8 py-3 text-gray-600 border-gray-300 hover:bg-gray-50"
-              >
-                ← Voltar ao Resumo
-              </Button>
-
-              <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                <p className="text-green-800 font-medium text-center">
-                  ✅ PIX será processado automaticamente ao selecionar
-                </p>
-              </div>
-            </div>
-
-            {/* Security Info */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="flex items-center justify-center space-x-6 text-sm text-gray-500">
-                <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
-                  <span>Conexão Segura</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Dados Protegidos</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Pagamento Instantâneo</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          )}
+          
+          {paymentMethod === 'credit_card' && !preferenceId && (
+            <Button 
+              onClick={handleCreditCardPayment} 
+              disabled={isLoading}
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isLoading ? "Processando..." : `Pagar com Cartão R$ ${totalAmount.toFixed(2)}`}
+            </Button>
+          )}
         </div>
+        
+        {/* Debugger para ambos os métodos de pagamento */}
+        {orderId && (
+          <PixPaymentDebugger 
+            paymentData={pixData ? {
+              ...pixData,
+              pedidoId: orderId,
+              valorTotal: totalAmount
+            } : null} 
+            error={null}
+            isLoading={isLoading}
+            pedidoId={orderId}
+            onRefresh={onRefreshStatus || (() => Promise.resolve())}
+          />
+        )}
       </div>
-    </div>
+    </ClientOnly>
   );
 };
 

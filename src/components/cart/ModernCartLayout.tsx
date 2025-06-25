@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
+import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/priceUtils';
 import { useSimplifiedCheckout } from '@/hooks/useSimplifiedCheckout';
-import { calculateRegularPrice } from '@/utils/priceCalculator';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 import { PlanKey } from '@/types/checkout';
 
 interface ModernCartLayoutProps {
@@ -29,9 +29,9 @@ const ModernCartLayout = ({
   const [isClearing, setIsClearing] = useState(false);
   const { proceedToCheckout, isProcessing, canProceed } = useSimplifiedCheckout();
 
-  // CORRIGIDO: Usar preço regular (sem desconto PIX) para exibição no carrinho
+  // CORRIGIDO: Fazer type casting para PlanKey
   const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-  const totalPrice = calculateRegularPrice(selectedPlan, cartItems, 0);
+  const totalPrice = calculatePixPrice(selectedPlan, cartItems, 0);
 
   const handleClearCart = async () => {
     setIsClearing(true);
@@ -110,8 +110,8 @@ const ModernCartLayout = ({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <AnimatePresence>
           {cartItems.map((item) => {
-            // CORRIGIDO: Calcular preço individual usando preço regular (sem PIX)
-            const itemPrice = calculateRegularPrice(selectedPlan, [item], 0);
+            // CORRIGIDO: Calcular preço individual usando o calculador centralizado com type casting
+            const itemPrice = calculatePixPrice(selectedPlan, [item], 0);
             
             return (
               <motion.div
@@ -129,9 +129,6 @@ const ModernCartLayout = ({
                     <p className="text-sm text-gray-500 mb-2">
                       {item.panel?.buildings?.endereco || 'Endereço não disponível'}
                     </p>
-                    <div className="text-lg font-semibold text-[#3C1361]">
-                      {formatCurrency(itemPrice)}
-                    </div>
                   </div>
                   <Button
                     variant="ghost"
@@ -141,6 +138,34 @@ const ModernCartLayout = ({
                   >
                     <X className="h-4 w-4" />
                   </Button>
+                </div>
+
+                {/* Duration Selector */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onChangeDuration(item.id, Math.max(7, item.duration - 7))}
+                      disabled={item.duration <= 7}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="text-sm font-medium min-w-[60px] text-center">
+                      {item.duration} dias
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onChangeDuration(item.id, Math.min(365, item.duration + 7))}
+                      disabled={item.duration >= 365}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="text-lg font-semibold text-[#3C1361]">
+                    {formatCurrency(itemPrice)}
+                  </div>
                 </div>
               </motion.div>
             );

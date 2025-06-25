@@ -38,7 +38,7 @@ const PixPaymentRealtimeWrapper = (props: PixPaymentRealtimeWrapperProps) => {
     pedidoId: props.pedidoId,
     isActive: !paymentApproved && props.status !== 'approved',
     onPaymentApproved: handlePaymentApproved,
-    pollingInterval: 5000 // Verificar a cada 5 segundos
+    intervalMs: 5000 // Verificar a cada 5 segundos
   });
 
   // Se o pagamento foi aprovado, mostrar animação de sucesso

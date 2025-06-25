@@ -1,15 +1,15 @@
 
-// Sistema Centralizado de Cálculo de Preços - Baseado nos Preços Reais dos Prédios
+// Sistema Centralizado de Cálculo de Preços - Função Única para Todo o Sistema
 
 import { CartItem } from '@/types/cart';
 import { PlanKey } from '@/types/checkout';
 
-// DESCONTOS POR PLANO - aplicados sobre o preço base real
-const PLAN_DISCOUNTS: Record<PlanKey, number> = {
-  1: 0,      // 0% desconto - preço base integral
-  3: 0.20,   // 20% desconto
-  6: 0.30,   // 30% desconto
-  12: 0.375  // 37.5% desconto
+// PREÇOS BASE FIXOS - ÚNICA FONTE DA VERDADE
+const PLAN_PRICES: Record<PlanKey, number> = {
+  1: 200,   // R$ 200/mês
+  3: 160,   // R$ 160/mês (20% desconto)
+  6: 140,   // R$ 140/mês (30% desconto)
+  12: 125   // R$ 125/mês (37.5% desconto)
 };
 
 // PIX tem 5% de desconto sobre o total
@@ -26,7 +26,7 @@ export const calculatePrice = (
   selectedPlan: PlanKey,
   cartItems: CartItem[],
   couponDiscountPercent: number = 0,
-  applyPixDiscount: boolean = false
+  applyPixDiscount: boolean = true
 ): PriceCalculationResult => {
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
     return {
@@ -37,23 +37,12 @@ export const calculatePrice = (
     };
   }
 
-  // Cálculo baseado no preço real de cada prédio
-  let subtotal = 0;
+  // Cálculo base: quantidade de painéis × preço do plano × duração do plano
+  const pricePerMonth = PLAN_PRICES[selectedPlan];
+  const panelCount = cartItems.length;
   const planMonths = selectedPlan;
-  const planDiscount = PLAN_DISCOUNTS[selectedPlan];
-
-  cartItems.forEach(item => {
-    // Usar o preço base real do prédio
-    const basePrice = item.panel?.buildings?.preco_base || 280; // fallback para R$ 280
-    
-    // Aplicar desconto do plano
-    const discountedMonthlyPrice = basePrice * (1 - planDiscount);
-    
-    // Multiplicar pelos meses do plano
-    const itemTotal = discountedMonthlyPrice * planMonths;
-    
-    subtotal += itemTotal;
-  });
+  
+  const subtotal = panelCount * pricePerMonth * planMonths;
   
   // Aplicar desconto de cupom se houver
   let afterCoupon = subtotal;
@@ -65,7 +54,7 @@ export const calculatePrice = (
   const pixDiscount = applyPixDiscount ? afterCoupon * PIX_DISCOUNT_RATE : 0;
   const finalPrice = afterCoupon - pixDiscount;
   
-  const calculation = `${cartItems.length} painéis com desconto ${planDiscount * 100}% do plano × ${planMonths} meses${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
+  const calculation = `${panelCount} painéis × R$ ${pricePerMonth}/mês × ${planMonths} meses = R$ ${subtotal.toFixed(2)}${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
   
   return {
     subtotal: Math.round(subtotal * 100) / 100,
@@ -85,7 +74,7 @@ export const calculatePixPrice = (
   return result.finalPrice;
 };
 
-// Função específica para preço regular no carrinho (SEM desconto PIX)
+// Função específica para outros métodos (sem desconto PIX)
 export const calculateRegularPrice = (
   selectedPlan: PlanKey,
   cartItems: CartItem[],
@@ -97,16 +86,5 @@ export const calculateRegularPrice = (
 
 // Validar se o preço está correto
 export const validatePrice = (price: number): boolean => {
-  return price > 0 && price >= 0.01; // Preço mínimo de R$ 0,01
-};
-
-// Função para calcular preço individual de um item
-export const calculateItemPrice = (
-  selectedPlan: PlanKey,
-  cartItem: CartItem,
-  couponDiscountPercent: number = 0,
-  applyPixDiscount: boolean = false
-): number => {
-  const result = calculatePrice(selectedPlan, [cartItem], couponDiscountPercent, applyPixDiscount);
-  return result.finalPrice;
+  return price > 0 && price >= 10; // Preço mínimo de R$ 10
 };

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Export the interface PixPaymentData with all required properties
 export interface PixPaymentData {
   qrCodeBase64?: string;
   qrCode?: string;
@@ -11,16 +12,6 @@ export interface PixPaymentData {
   createdAt?: string;
   pedidoId?: string;
   valorTotal?: number;
-  pedidoData?: {
-    id: string;
-    valor_total: number;
-    plano_meses: number;
-    lista_paineis: string[];
-    lista_predios: string[];
-    data_inicio: string;
-    data_fim: string;
-    created_at: string;
-  };
 }
 
 export const usePixPayment = (pedidoId: string | null) => {
@@ -43,9 +34,9 @@ export const usePixPayment = (pedidoId: string | null) => {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔄 [usePixPayment-COMPLETE] Carregando dados COMPLETOS para pedido:", pedidoId);
+      console.log("🔄 [usePixPayment] MAPEAMENTO CORRIGIDO - Carregando dados PIX:", pedidoId);
 
-      // Buscar pedido completo por ID
+      // Buscar pedido diretamente por ID
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .select('*')
@@ -56,59 +47,51 @@ export const usePixPayment = (pedidoId: string | null) => {
         throw new Error(`Pedido não encontrado: ${pedidoError?.message}`);
       }
 
-      console.log("✅ [usePixPayment-COMPLETE] Pedido encontrado:", {
+      console.log("✅ [usePixPayment] Pedido carregado:", {
         id: pedido.id,
         status: pedido.status,
         valor_total: pedido.valor_total,
-        plano_meses: pedido.plano_meses,
         hasLogPagamento: !!pedido.log_pagamento
       });
 
-      // Verificar se já tem dados PIX salvos
+      // CORREÇÃO: Verificar se já tem dados de PIX com múltiplos formatos
       const logPagamento = pedido.log_pagamento as any;
       
       if (logPagamento?.pixData || logPagamento?.pix_data) {
         const pixData = logPagamento.pixData || logPagamento.pix_data;
         
-        console.log("✅ [usePixPayment-COMPLETE] Dados PIX encontrados:", {
-          hasQrCodeBase64: !!pixData.qrCodeBase64,
-          hasQrCode: !!pixData.qrCode,
+        console.log("✅ [usePixPayment] MAPEAMENTO CORRIGIDO - Dados PIX encontrados:", {
+          hasQrCodeBase64: !!(pixData.qrCodeBase64 || pixData.pix_base64),
+          hasQrCode: !!(pixData.qrCode || pixData.qrCodeText || pixData.pix_url),
           status: pixData.status,
-          paymentId: pixData.paymentId,
-          realVersion: pixData.real_qr_generated
+          rawPixData: pixData
         });
         
+        // CORREÇÃO: Mapear corretamente com fallbacks para múltiplos formatos
         setPaymentData({
           qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
           qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
           paymentId: pixData.paymentId || pixData.id,
-          status: pixData.status === 'approved' ? 'approved' : 'pending',
+          status: pixData.status || pedido.status,
           createdAt: pedido.created_at,
           pedidoId: pedido.id,
-          valorTotal: pedido.valor_total,
-          pedidoData: {
-            id: pedido.id,
-            valor_total: pedido.valor_total,
-            plano_meses: pedido.plano_meses,
-            lista_paineis: pedido.lista_paineis || [],
-            lista_predios: pedido.lista_predios || [],
-            data_inicio: pedido.data_inicio,
-            data_fim: pedido.data_fim,
-            created_at: pedido.created_at
-          }
+          valorTotal: pedido.valor_total
         });
         
-        toast.success("✅ Dados PIX carregados com sucesso!");
+        console.log("✅ [usePixPayment] Dados PIX mapeados corretamente para o frontend");
       } else {
-        // PIX ainda não foi gerado - chamar edge function
-        console.log("🔄 [usePixPayment-COMPLETE] PIX não encontrado, gerando via edge function...");
+        // Se não tem dados PIX, processar com a função REAL
+        console.log("🔄 [usePixPayment] CORREÇÃO - Processando PIX com função real...");
         
         const { data, error } = await supabase.functions.invoke('process-payment', {
           body: {
             pedido_id: pedido.id,
             payment_method: 'pix',
             total_amount: pedido.valor_total,
-            user_email: 'cliente@exemplo.com'
+            cart_items: [],
+            user_id: pedido.client_id,
+            return_url: window.location.origin,
+            payment_key: `pix_${pedido.id}_${Date.now()}`
           }
         });
 
@@ -120,9 +103,9 @@ export const usePixPayment = (pedidoId: string | null) => {
           throw new Error(data.error || 'Falha ao processar pagamento PIX');
         }
 
-        console.log("✅ [usePixPayment-COMPLETE] PIX gerado via edge function:", data);
+        console.log("✅ [usePixPayment] PIX processado com função real:", data);
 
-        // Buscar pedido atualizado com os novos dados PIX
+        // Buscar pedido atualizado
         const { data: updatedPedido, error: updateError } = await supabase
           .from('pedidos')
           .select('*')
@@ -134,29 +117,20 @@ export const usePixPayment = (pedidoId: string | null) => {
           const pixData = updatedLogPagamento?.pixData || updatedLogPagamento?.pix_data;
           
           if (pixData) {
+            // CORREÇÃO: Mesmo mapeamento com fallbacks
             setPaymentData({
               qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
               qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
               paymentId: pixData.paymentId || pixData.id,
-              status: 'pending',
+              status: pixData.status || 'pending',
               createdAt: updatedPedido.created_at,
               pedidoId: updatedPedido.id,
-              valorTotal: updatedPedido.valor_total,
-              pedidoData: {
-                id: updatedPedido.id,
-                valor_total: updatedPedido.valor_total,
-                plano_meses: updatedPedido.plano_meses,
-                lista_paineis: updatedPedido.lista_paineis || [],
-                lista_predios: updatedPedido.lista_predios || [],
-                data_inicio: updatedPedido.data_inicio,
-                data_fim: updatedPedido.data_fim,
-                created_at: updatedPedido.created_at
-              }
+              valorTotal: updatedPedido.valor_total
             });
             
-            toast.success("🎉 QR Code PIX REAL gerado com sucesso!");
+            toast.success("QR Code PIX gerado com sucesso!");
           } else {
-            throw new Error("Falha ao gerar dados PIX completos");
+            throw new Error("Falha ao gerar dados PIX");
           }
         } else {
           throw new Error("Erro ao buscar pedido atualizado");
@@ -164,7 +138,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment-COMPLETE] Erro:", error);
+      console.error("❌ [usePixPayment] MAPEAMENTO CORRIGIDO - Erro:", error);
       setError(error.message || 'Erro ao carregar pagamento PIX');
       toast.error(`Erro no pagamento PIX: ${error.message}`);
     } finally {
@@ -176,7 +150,7 @@ export const usePixPayment = (pedidoId: string | null) => {
     if (!pedidoId) return;
     
     try {
-      console.log("🔄 [usePixPayment-COMPLETE] Atualizando status do pagamento");
+      console.log("🔄 [usePixPayment] Atualizando status do pagamento");
       
       const { data: pedido, error } = await supabase
         .from('pedidos')
@@ -186,18 +160,18 @@ export const usePixPayment = (pedidoId: string | null) => {
 
       if (error) throw error;
 
-      // Atualizar status se mudou para pago
+      // Atualizar status se mudou
       if (pedido.status === 'pago' && paymentData) {
         setPaymentData(prev => ({
           ...prev,
           status: 'approved',
           valorTotal: pedido.valor_total
         }));
-        toast.success("🎉 Pagamento confirmado!");
+        toast.success("Pagamento confirmado!");
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment-COMPLETE] Erro ao atualizar status:", error);
+      console.error("❌ [usePixPayment] Erro ao atualizar status:", error);
     }
   };
 

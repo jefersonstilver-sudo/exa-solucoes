@@ -4,7 +4,7 @@ import { useCartState } from '@/hooks/cart/useCartState';
 import { useCartOperations } from '@/hooks/cart/useCartOperations';
 import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
-import { calculateRegularPrice } from '@/utils/priceCalculator';
+import { calculatePixPrice } from '@/utils/priceCalculator';
 import { PlanKey } from '@/types/checkout';
 
 interface CartContextType {
@@ -52,10 +52,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCartOpen
   });
 
-  // CORRIGIDO: Usar preço regular (sem desconto PIX) para exibição no carrinho
+  // CORRIGIDO: Fazer type casting para PlanKey
   const getTotalPrice = () => {
     const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-    return calculateRegularPrice(selectedPlan, cartItems, 0);
+    return calculatePixPrice(selectedPlan, cartItems, 0);
   };
 
   const contextValue: CartContextType = {
