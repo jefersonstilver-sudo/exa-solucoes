@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Tag, Smartphone, Mail, Gift } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -53,7 +53,7 @@ const CouponStep: React.FC<CouponStepProps> = ({
     >
       <motion.div variants={itemVariants} className="space-y-2">
         <h2 className="text-xl font-semibold flex items-center">
-          <span className="mr-2 text-2xl">🏷️</span>
+          <Tag className="mr-3 h-5 w-5 text-[#3C1361]" />
           Cupom de Desconto
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -78,7 +78,7 @@ const CouponStep: React.FC<CouponStepProps> = ({
           <Button 
             type="submit" 
             disabled={!couponCode || isValidatingCoupon || couponValid}
-            className="min-w-[90px] bg-indexa-purple hover:bg-indexa-purple-dark transition-colors"
+            className="min-w-[90px] bg-[#3C1361] hover:bg-[#3C1361]/90 transition-colors"
           >
             {isValidatingCoupon ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -114,21 +114,21 @@ const CouponStep: React.FC<CouponStepProps> = ({
       </motion.form>
       
       <motion.div variants={itemVariants}>
-        <Card className="overflow-hidden shadow-sm border-none bg-gradient-to-br from-[#1E1B4B]/10 to-[#1E1B4B]/5 rounded-2xl">
+        <Card className="overflow-hidden shadow-sm border-none bg-gradient-to-br from-[#3C1361]/5 to-[#3C1361]/10 rounded-2xl">
           <CardContent className="p-5">
-            <h3 className="text-sm font-medium mb-3">Como conseguir cupons</h3>
+            <h3 className="text-sm font-medium mb-3 text-[#3C1361]">Como conseguir cupons</h3>
             <ul className="space-y-3 text-sm text-gray-600">
               <li className="flex items-start">
-                <span className="mr-2 text-lg">📱</span>
+                <Smartphone className="mr-3 h-4 w-4 text-[#3C1361] flex-shrink-0 mt-0.5" />
                 <span>Siga-nos nas redes sociais para cupons exclusivos</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-lg">📧</span>
+                <Mail className="mr-3 h-4 w-4 text-[#3C1361] flex-shrink-0 mt-0.5" />
                 <span>Inscreva-se em nossa newsletter para receber promoções</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 text-lg">🎁</span>
-                <span>Participe de eventos e campanhas promocionais</span>
+                <Gift className="mr-3 h-4 w-4 text-[#3C1361] flex-shrink-0 mt-0.5" />
+                <span>Participe de eventos e campanias promocionais</span>
               </li>
             </ul>
           </CardContent>

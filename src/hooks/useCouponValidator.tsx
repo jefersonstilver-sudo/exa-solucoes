@@ -21,7 +21,7 @@ export function useCouponValidator() {
   
   const [couponCode, setCouponCode] = useState<string>('');
 
-  // CORREÇÃO: Carregar estado do cupom do localStorage
+  // Carregar estado do cupom do localStorage
   useEffect(() => {
     try {
       const savedCoupon = localStorage.getItem('appliedCoupon');
@@ -34,19 +34,13 @@ export function useCouponValidator() {
           discountPercent: 0
         });
         setCouponCode(parsed.couponCode || '');
-        
-        console.log("🎟️ [CouponValidator] Cupom carregado do localStorage:", {
-          couponCode: parsed.couponCode,
-          discount: parsed.validationResult?.discountPercent,
-          valid: parsed.validationResult?.valid
-        });
       }
     } catch (error) {
-      console.error("❌ [CouponValidator] Erro ao carregar cupom:", error);
+      console.error("Erro ao carregar cupom:", error);
     }
   }, []);
 
-  // CORREÇÃO: Salvar estado do cupom no localStorage
+  // Salvar estado do cupom no localStorage
   const saveCouponState = useCallback((code: string, result: CouponValidationResult) => {
     try {
       const couponState = {
@@ -55,9 +49,8 @@ export function useCouponValidator() {
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('appliedCoupon', JSON.stringify(couponState));
-      console.log("🎟️ [CouponValidator] Estado do cupom salvo:", couponState);
     } catch (error) {
-      console.error("❌ [CouponValidator] Erro ao salvar cupom:", error);
+      console.error("Erro ao salvar cupom:", error);
     }
   }, []);
 
@@ -76,8 +69,6 @@ export function useCouponValidator() {
     setIsValidating(true);
     
     try {
-      console.log("🎟️ [CouponValidator] Validando cupom:", { code, selectedMonths });
-      
       const { data: responseData, error } = await supabase
         .rpc('validate_cupom', { 
           p_codigo: code,
@@ -112,11 +103,9 @@ export function useCouponValidator() {
       setValidationResult(validationResult);
       saveCouponState(code, validationResult);
       
-      console.log("🎟️ [CouponValidator] Resultado da validação:", validationResult);
-      
       return result.valid === true;
     } catch (error) {
-      console.error('❌ [CouponValidator] Erro ao validar cupom:', error);
+      console.error('Erro ao validar cupom:', error);
       
       const errorResult = {
         valid: false,
@@ -136,11 +125,9 @@ export function useCouponValidator() {
 
   const applyCoupon = useCallback((code: string) => {
     setCouponCode(code);
-    console.log("🎟️ [CouponValidator] Aplicando cupom:", code);
   }, []);
 
   const removeCoupon = useCallback(() => {
-    console.log("🎟️ [CouponValidator] Removendo cupom");
     setCouponCode('');
     const emptyResult = {
       valid: false,
@@ -150,12 +137,11 @@ export function useCouponValidator() {
     };
     setValidationResult(emptyResult);
     
-    // CORREÇÃO: Limpar do localStorage
+    // Limpar do localStorage
     try {
       localStorage.removeItem('appliedCoupon');
-      console.log("🎟️ [CouponValidator] Cupom removido do localStorage");
     } catch (error) {
-      console.error("❌ [CouponValidator] Erro ao remover cupom:", error);
+      console.error("Erro ao remover cupom:", error);
     }
   }, []);
 

@@ -1,23 +1,28 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUnifiedCart } from './useUnifiedCart';
+import { useCartManager } from './useCartManager';
 import { useUserSession } from './useUserSession';
+import { useCouponValidator } from './useCouponValidator';
+import { calculateTotalPrice } from '@/utils/checkoutUtils';
 import { toast } from 'sonner';
-import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export const useCheckout = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useUserSession();
-  const unifiedCart = useUnifiedCart(); 
+  const { cartItems, selectedPlan, setSelectedPlan } = useCartManager();
+  const { 
+    couponCode, 
+    setCouponCode, 
+    couponValid, 
+    couponMessage, 
+    isValidating: isValidatingCoupon,
+    validationResult,
+    validateCoupon: validateCouponOriginal,
+    removeCoupon
+  } = useCouponValidator();
   
   // Estados específicos do checkout
-  const [selectedPlan, setSelectedPlan] = useState<number>(1);
-  const [couponCode, setCouponCode] = useState<string>('');
-  const [couponValid, setCouponValid] = useState<boolean>(false);
-  const [couponMessage, setCouponMessage] = useState<string>('');
-  const [couponDiscount, setCouponDiscount] = useState<number>(0); // ADICIONADO
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState<boolean>(false);
   const [isCreatingPayment, setIsCreatingPayment] = useState<boolean>(false);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
 
@@ -30,91 +35,36 @@ export const useCheckout = () => {
         setSelectedPlan(planNumber);
       }
     }
-  }, []);
+  }, [setSelectedPlan]);
 
   // Salvar plano quando mudar
   useEffect(() => {
-    localStorage.setItem('selectedPlan', selectedPlan.toString());
+    if (selectedPlan) {
+      localStorage.setItem('selectedPlan', selectedPlan.toString());
+    }
   }, [selectedPlan]);
 
-  // Calcular preço total
+  // Calcular preço total usando função centralizada
   const calculateTotalPrice = useCallback(() => {
-    const basePrice = unifiedCart.totalPrice;
-    const planMultiplier = selectedPlan;
-    
-    let total = basePrice * planMultiplier;
-    
-    // Aplicar desconto de cupom se válido
-    if (couponValid && couponDiscount > 0) {
-      total = total * (1 - couponDiscount / 100); // CORRIGIDO
+    if (!selectedPlan || !cartItems || cartItems.length === 0) {
+      return 0;
     }
     
-    console.log("💰 [useCheckout] Calculando preço total:", {
-      basePrice,
-      planMultiplier,
-      couponValid,
-      couponDiscount,
-      total,
-      cartItemCount: unifiedCart.cartItems.length
-    });
-    
-    return total;
-  }, [unifiedCart.totalPrice, selectedPlan, couponValid, couponDiscount, unifiedCart.cartItems.length]);
+    const couponDiscountPercent = couponValid && validationResult ? validationResult.discountPercent : 0;
+    return calculateTotalPrice(selectedPlan, cartItems, couponDiscountPercent, couponValid);
+  }, [selectedPlan, cartItems, couponValid, validationResult]);
 
-  // Validar cupom
-  const validateCoupon = useCallback(async (code: string, plan: number) => {
-    setIsValidatingCoupon(true);
-    setCouponMessage('');
-    
-    try {
-      console.log("🏷️ [useCheckout] Validando cupom:", { code, plan });
-      
-      // Simular validação (implementar integração real)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (code.toLowerCase() === 'desconto10') {
-        setCouponValid(true);
-        setCouponDiscount(10); // ADICIONADO
-        setCouponMessage('Cupom aplicado! 10% de desconto');
-        toast.success('Cupom aplicado com sucesso!');
-        
-        logCheckoutEvent(
-          CheckoutEvent.DEBUG_EVENT,
-          LogLevel.SUCCESS,
-          'Cupom válido aplicado',
-          { code, plan }
-        );
-      } else {
-        setCouponValid(false);
-        setCouponDiscount(0); // ADICIONADO 
-        setCouponMessage('Cupom inválido ou expirado');
-        toast.error('Cupom inválido');
-        
-        logCheckoutEvent(
-          CheckoutEvent.DEBUG_EVENT,
-          LogLevel.WARNING,
-          'Cupom inválido tentado',
-          { code, plan }
-        );
-      }
-    } catch (error) {
-      setCouponValid(false);
-      setCouponDiscount(0); // ADICIONADO
-      setCouponMessage('Erro ao validar cupom');
-      toast.error('Erro ao validar cupom');
-      
-      console.error("❌ [useCheckout] Erro ao validar cupom:", error);
-    } finally {
-      setIsValidatingCoupon(false);
-    }
-  }, []);
+  // Wrapper para validação de cupom
+  const validateCoupon = useCallback(async (code: string, planMonths: number) => {
+    return await validateCouponOriginal(code, planMonths);
+  }, [validateCouponOriginal]);
 
   // Navegação entre etapas
   const handleNextStep = useCallback(() => {
     setIsNavigating(true);
     
     // Verificar se há itens no carrinho
-    if (unifiedCart.cartItems.length === 0) {
+    if (cartItems.length === 0) {
       toast.error('Adicione painéis ao carrinho antes de continuar');
       setIsNavigating(false);
       return;
@@ -123,58 +73,50 @@ export const useCheckout = () => {
     // Verificar autenticação
     if (!isLoggedIn) {
       toast.error('Faça login para continuar');
-      navigate('/login?redirect=/checkout/resumo');
+      navigate('/login?redirect=/checkout');
       setIsNavigating(false);
       return;
     }
     
-    console.log("➡️ [useCheckout] Próxima etapa");
     navigate('/checkout');
     setIsNavigating(false);
-  }, [unifiedCart.cartItems.length, isLoggedIn, navigate]);
+  }, [cartItems.length, isLoggedIn, navigate]);
 
   const handlePrevStep = useCallback(() => {
     setIsNavigating(true);
-    console.log("⬅️ [useCheckout] Etapa anterior");
-    navigate('/checkout/cupom');
+    navigate('/selecionar-plano');
     setIsNavigating(false);
   }, [navigate]);
 
   // Estado habilitado para próxima etapa
-  const isNextEnabled = unifiedCart.cartItems.length > 0 && isLoggedIn && !isNavigating;
+  const isNextEnabled = cartItems.length > 0 && isLoggedIn && !isNavigating;
 
   return {
-    // Estados do carrinho (unificado)
-    cartItems: unifiedCart.cartItems,
-    isLoadingCart: unifiedCart.isLoading,
-    totalCartPrice: unifiedCart.totalPrice,
-    
-    // Estados do checkout
+    // Estados do carrinho
+    cartItems,
     selectedPlan,
     setSelectedPlan,
+    
+    // Estados do cupom
     couponCode,
     setCouponCode,
     couponValid,
-    couponDiscount, // ADICIONADO
     couponMessage,
     isValidatingCoupon,
+    validationResult,
+    
+    // Estados do checkout
     isCreatingPayment,
     isNavigating,
     
     // Funções
     calculateTotalPrice,
     validateCoupon,
+    removeCoupon,
     handleNextStep,
     handlePrevStep,
     
     // Estados derivados
-    isNextEnabled,
-    
-    // Métodos do carrinho
-    addToCart: unifiedCart.addToCart,
-    removeFromCart: unifiedCart.removeFromCart,
-    clearCart: unifiedCart.clearCart,
-    updateDuration: unifiedCart.updateDuration,
-    isItemInCart: unifiedCart.isItemInCart
+    isNextEnabled
   };
 };

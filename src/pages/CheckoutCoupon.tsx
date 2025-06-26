@@ -1,5 +1,4 @@
 
-
 import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import CouponStep from '@/components/checkout/CouponStep';
@@ -7,7 +6,6 @@ import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgre
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
 import { useCheckout } from '@/hooks/useCheckout';
 import { formatCurrency } from '@/utils/priceUtils';
-import { logPriceCalculation } from '@/utils/auditLogger';
 
 const CheckoutCoupon = () => {
   const {
@@ -24,69 +22,25 @@ const CheckoutCoupon = () => {
     isNavigating,
     cartItems,
     selectedPlan,
-    calculateTotalPrice // CORREÇÃO: usar função que sempre recalcula
+    calculateTotalPrice
   } = useCheckout();
   
-  // CORREÇÃO: Calcular total em tempo real sempre que cartItems ou selectedPlan mudam
+  // Calcular total em tempo real
   const currentTotal = calculateTotalPrice();
   
-  // Função wrapper para validateCoupon sem parâmetros
+  // Função wrapper para validateCoupon
   const handleValidateCoupon = () => {
     if (couponCode && selectedPlan) {
       validateCoupon(couponCode, selectedPlan);
     }
   };
   
-  // Log detalhado para debug da página de cupons
-  useEffect(() => {
-    console.log("🏷️ [CheckoutCoupon] ESTADO DA PÁGINA:", {
-      cartItemsCount: cartItems.length,
-      selectedPlan,
-      currentTotal,
-      couponValid,
-      couponCode,
-      timestamp: new Date().toISOString(),
-      cartDetails: cartItems.map(item => ({
-        panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
-      }))
-    });
-
-    // Log para auditoria
-    if (cartItems.length > 0) {
-      logPriceCalculation('CheckoutCoupon', {
-        cartItemsCount: cartItems.length,
-        selectedPlan,
-        currentTotal,
-        couponValid,
-        couponCode,
-        cartItems: cartItems.map(item => ({
-          panelId: item.panel.id,
-          buildingName: item.panel.buildings?.nome,
-          preco_base: item.panel.buildings?.preco_base
-        }))
-      });
-    }
-  }, [cartItems, selectedPlan, currentTotal, couponValid, couponCode]);
-
   // Validação de estado crítico
   useEffect(() => {
     if (cartItems.length === 0) {
-      console.warn("⚠️ [CheckoutCoupon] CARRINHO VAZIO na página de cupons!");
+      console.warn("⚠️ Carrinho vazio na página de cupons");
     }
-    
-    if (currentTotal === 0 && cartItems.length > 0) {
-      console.error("❌ [CheckoutCoupon] TOTAL ZERO com carrinho populado!", {
-        cartItemsCount: cartItems.length,
-        selectedPlan,
-        cartItems: cartItems.map(item => ({
-          panelId: item.panel.id,
-          preco_base: item.panel.buildings?.preco_base
-        }))
-      });
-    }
-  }, [cartItems.length, currentTotal, selectedPlan]);
+  }, [cartItems.length]);
 
   return (
     <Layout>
@@ -109,7 +63,7 @@ const CheckoutCoupon = () => {
             />
           </div>
 
-          {/* Summary Card - USANDO VALOR CALCULADO EM TEMPO REAL */}
+          {/* Summary Card */}
           <div className="bg-white rounded-xl shadow-lg border p-6 sm:p-8 mb-6 sm:mb-8">
             <h3 className="text-lg font-semibold mb-4">Resumo do Pedido</h3>
             
@@ -125,16 +79,6 @@ const CheckoutCoupon = () => {
                 <div className="flex justify-between text-green-600">
                   <span>Desconto aplicado:</span>
                   <span className="font-medium">Aplicado com sucesso!</span>
-                </div>
-              )}
-              
-              {/* Debug info para desenvolvimento */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-                  <div>Cart Items: {cartItems.length}</div>
-                  <div>Selected Plan: {selectedPlan}</div>
-                  <div>Current Total: {formatCurrency(currentTotal)}</div>
-                  <div>Coupon Valid: {couponValid ? 'Sim' : 'Não'}</div>
                 </div>
               )}
             </div>
@@ -158,4 +102,3 @@ const CheckoutCoupon = () => {
 };
 
 export default CheckoutCoupon;
-
