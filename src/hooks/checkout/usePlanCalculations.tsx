@@ -1,11 +1,11 @@
 
 import { PlanKey, Plan } from '@/types/checkout';
 import { CartItem } from '@/types/cart';
-import { calculateTotalPrice } from '@/utils/checkoutUtils';
+import { calculatePrice } from '@/utils/priceCalculator';
 import { logPriceCalculation } from '@/utils/auditLogger';
 
 export const usePlanCalculations = () => {
-  // CORREÇÃO: Usar função centralizada baseada no preço do prédio
+  // CORREÇÃO: Usar função centralizada que já multiplica pelos meses
   const calculateEstimatedPrice = (
     selectedPlan: PlanKey | null,
     cartItems: CartItem[],
@@ -19,18 +19,19 @@ export const usePlanCalculations = () => {
       return 0;
     }
     
-    // CORREÇÃO: Usar função centralizada que respeita o preco_base do prédio
-    const result = calculateTotalPrice(selectedPlan, cartItems, 0, false);
+    // CORREÇÃO: Usar função centralizada que respeita o preco_base E multiplica pelos meses
+    const result = calculatePrice(selectedPlan, cartItems, 0, false);
     
-    console.log("💰 [usePlanCalculations] RESULTADO BASEADO NO PREÇO DO PRÉDIO:", {
+    console.log("💰 [usePlanCalculations] RESULTADO BASEADO NO PREÇO DO PRÉDIO MULTIPLICADO POR MESES:", {
       selectedPlan,
       cartItemsLength: cartItems.length,
-      estimatedPrice: result,
+      estimatedPrice: result.subtotal,
+      mesesIncluidos: `Valor já inclui ${selectedPlan} meses`,
       timestamp: new Date().toISOString(),
       cartDetails: cartItems.map(item => ({
         panelId: item.panel.id,
         buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
+        preco_base_mensal: item.panel.buildings?.preco_base
       }))
     });
     
@@ -38,15 +39,15 @@ export const usePlanCalculations = () => {
     logPriceCalculation('usePlanCalculations', {
       selectedPlan,
       cartItemsCount: cartItems.length,
-      estimatedPrice: result,
+      estimatedPrice: result.subtotal,
       cartItems: cartItems.map(item => ({
         panelId: item.panel.id,
         buildingName: item.panel.buildings?.nome,
-        preco_base: item.panel.buildings?.preco_base
+        preco_base_mensal: item.panel.buildings?.preco_base
       }))
     });
     
-    return result;
+    return result.subtotal; // Retorna o subtotal que já inclui a multiplicação pelos meses
   };
 
   return {

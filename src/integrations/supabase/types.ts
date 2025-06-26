@@ -839,7 +839,6 @@ export type Database = {
           cupom_id: string | null
           data_fim: string | null
           data_inicio: string | null
-          duracao: number | null
           email: string | null
           id: string
           lista_paineis: string[] | null
@@ -860,7 +859,6 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
-          duracao?: number | null
           email?: string | null
           id?: string
           lista_paineis?: string[] | null
@@ -881,7 +879,6 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
-          duracao?: number | null
           email?: string | null
           id?: string
           lista_paineis?: string[] | null
@@ -1029,7 +1026,7 @@ export type Database = {
           id: string
           id_user: string
           predio: string | null
-          predios_selecionados: number[] | null
+          predios_selecionados: string[] | null
           price_calculation_log: Json | null
           price_locked: boolean | null
           transaction_id: string | null
@@ -1041,7 +1038,7 @@ export type Database = {
           id?: string
           id_user: string
           predio?: string | null
-          predios_selecionados?: number[] | null
+          predios_selecionados?: string[] | null
           price_calculation_log?: Json | null
           price_locked?: boolean | null
           transaction_id?: string | null
@@ -1053,7 +1050,7 @@ export type Database = {
           id?: string
           id_user?: string
           predio?: string | null
-          predios_selecionados?: number[] | null
+          predios_selecionados?: string[] | null
           price_calculation_log?: Json | null
           price_locked?: boolean | null
           transaction_id?: string | null

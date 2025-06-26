@@ -1,9 +1,10 @@
-// Sistema Centralizado de Cálculo de Preços - CORRIGIDO
+
+// Sistema Centralizado de Cálculo de Preços - CORRIGIDO COM MULTIPLICAÇÃO POR MESES
 
 import { CartItem } from '@/types/cart';
 import { PlanKey } from '@/types/checkout';
 
-// PREÇOS BASE FIXOS - ÚNICA FONTE DA VERDADE
+// PREÇOS BASE FIXOS - ÚNICA FONTE DA VERDADE (valores mensais)
 const PLAN_PRICES: Record<PlanKey, number> = {
   1: 200,   // R$ 200/mês
   3: 160,   // R$ 160/mês (20% desconto)
@@ -36,22 +37,27 @@ export const calculatePrice = (
     };
   }
 
-  // CORREÇÃO CRÍTICA: Cálculo baseado no preço base dos prédios, não multiplicando por meses
-  let subtotal = 0;
+  // CORREÇÃO CRÍTICA: Calcular valor total considerando meses do plano
+  let subtotalMensal = 0;
   
-  // Somar o preço base de cada painel (já é o valor mensal total)
+  // Somar o preço base mensal de cada painel
   cartItems.forEach(item => {
-    const precoBase = item.panel?.buildings?.preco_base || PLAN_PRICES[selectedPlan];
-    subtotal += precoBase;
+    const precoBaseMensal = item.panel?.buildings?.preco_base || PLAN_PRICES[selectedPlan];
+    subtotalMensal += precoBaseMensal;
   });
   
-  console.log('💰 [PriceCalculator] CÁLCULO CORRIGIDO:', {
+  // CORREÇÃO: Multiplicar pelo número de meses do plano
+  const subtotal = subtotalMensal * selectedPlan;
+  
+  console.log('💰 [PriceCalculator] CÁLCULO CORRIGIDO COM MESES:', {
     selectedPlan,
     panelCount: cartItems.length,
-    subtotal,
+    subtotalMensal,
+    mesesPlano: selectedPlan,
+    subtotalTotal: subtotal,
     cartItems: cartItems.map(item => ({
       panelId: item.panel.id,
-      precoBase: item.panel?.buildings?.preco_base || 'usando padrão',
+      precoBaseMensal: item.panel?.buildings?.preco_base || 'usando padrão',
       buildingName: item.panel?.buildings?.nome
     }))
   });
@@ -66,9 +72,11 @@ export const calculatePrice = (
   const pixDiscount = applyPixDiscount ? afterCoupon * PIX_DISCOUNT_RATE : 0;
   const finalPrice = afterCoupon - pixDiscount;
   
-  const calculation = `${cartItems.length} painéis (R$ ${subtotal.toFixed(2)})${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
+  const calculation = `${cartItems.length} painéis × ${selectedPlan} meses (R$ ${subtotal.toFixed(2)})${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
   
-  console.log('💰 [PriceCalculator] RESULTADO FINAL:', {
+  console.log('💰 [PriceCalculator] RESULTADO FINAL COM MESES:', {
+    subtotalMensal,
+    mesesPlano: selectedPlan,
     subtotal,
     couponDiscountPercent,
     afterCoupon,
@@ -92,7 +100,7 @@ export const calculatePixPrice = (
   couponDiscountPercent: number = 0
 ): number => {
   const result = calculatePrice(selectedPlan, cartItems, couponDiscountPercent, true);
-  console.log('💰 [calculatePixPrice] VALOR FINAL PIX:', result.finalPrice);
+  console.log('💰 [calculatePixPrice] VALOR FINAL PIX COM MESES:', result.finalPrice);
   return result.finalPrice;
 };
 

@@ -30,7 +30,7 @@ export const useSimplifiedPixCheckout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const processPixPayment = async (couponId?: string, couponDiscountPercent: number = 0): Promise<PixPaymentResult> => {
-    console.log('[useSimplifiedPixCheckout] INICIANDO PROCESSO PIX:', {
+    console.log('[useSimplifiedPixCheckout] INICIANDO PROCESSO PIX COM CORREÇÃO:', {
       userId: user?.id,
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
@@ -59,17 +59,18 @@ export const useSimplifiedPixCheckout = () => {
     setIsProcessing(true);
 
     try {
-      // CORREÇÃO CRÍTICA: Calcular preço usando função corrigida
+      // CORREÇÃO CRÍTICA: Calcular preço usando função corrigida (já multiplica por meses)
       const finalPrice = calculatePixPrice(selectedPlan, cartItems, couponDiscountPercent);
       
-      console.log('[useSimplifiedPixCheckout] PREÇO CALCULADO CORRIGIDO:', {
+      console.log('[useSimplifiedPixCheckout] PREÇO CALCULADO CORRIGIDO COM MESES:', {
         selectedPlan,
         cartItemsCount: cartItems.length,
         finalPrice,
+        mesesMultiplicados: `Valor já inclui ${selectedPlan} meses`,
         cartItems: cartItems.map(item => ({
           panelId: item.panel.id,
           buildingName: item.panel?.buildings?.nome,
-          precoBase: item.panel?.buildings?.preco_base
+          precoBaseMensal: item.panel?.buildings?.preco_base
         }))
       });
       
@@ -99,7 +100,7 @@ export const useSimplifiedPixCheckout = () => {
 
       console.log('[useSimplifiedPixCheckout] Pedido criado:', orderResult);
 
-      // Preparar dados para webhook PIX com valor correto
+      // Preparar dados para webhook PIX com valor correto MULTIPLICADO POR MESES
       const predioIds = cartItems
         .map(item => item.panel?.buildings?.id || item.panel?.building_id)
         .filter(Boolean)
@@ -119,14 +120,17 @@ export const useSimplifiedPixCheckout = () => {
             item.panel?.buildings?.id === id || item.panel?.building_id === id
           )?.panel?.buildings?.nome || 'Prédio'
         })),
-        valor_total: String(finalPrice.toFixed(2)), // CORREÇÃO: Valor correto formatado
+        valor_total: String(finalPrice.toFixed(2)), // CORREÇÃO: Valor correto JÁ MULTIPLICADO POR MESES
         periodo_exibicao: {
           inicio: new Date().toISOString(),
           fim: new Date(Date.now() + selectedPlan * 30 * 24 * 60 * 60 * 1000).toISOString()
         }
       };
 
-      console.log('[useSimplifiedPixCheckout] WEBHOOK DATA COM VALOR CORRETO:', webhookData);
+      console.log('[useSimplifiedPixCheckout] WEBHOOK DATA COM VALOR CORRIGIDO (MESES INCLUSOS):', {
+        ...webhookData,
+        valorTotalCalculado: `R$ ${finalPrice.toFixed(2)} (já inclui ${selectedPlan} meses)`
+      });
 
       // Enviar para webhook PIX
       const pixResult = await sendPixPaymentWebhook(webhookData);
@@ -140,17 +144,9 @@ export const useSimplifiedPixCheckout = () => {
 
       if (!pixResult.success) {
         console.error('[useSimplifiedPixCheckout] Webhook falhou:', pixResult.error);
-        // MAS AINDA ASSIM VAMOS RETORNAR DADOS DE TESTE PARA O POPUP ABRIR
         return {
-          success: true,
-          pixData: {
-            qrCodeBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-            qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
-            pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
-            pix_base64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-            pedido_id: orderResult.pedidoId,
-            transaction_id: orderResult.transactionId
-          }
+          success: false,
+          error: `Erro no webhook: ${pixResult.error}`
         };
       }
 
@@ -181,15 +177,8 @@ export const useSimplifiedPixCheckout = () => {
       const errorMessage = `Erro no pagamento: ${error.message}`;
       toast.error(errorMessage);
       
-      // RETORNAR DADOS DE TESTE MESMO COM ERRO PARA PERMITIR TESTE DO POPUP
       return {
-        success: true, // FORÇAR SUCCESS PARA TESTE
-        pixData: {
-          qrCodeBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-          qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
-          pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
-          pix_base64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
-        },
+        success: false,
         error: errorMessage
       };
     } finally {
