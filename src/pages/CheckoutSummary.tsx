@@ -24,6 +24,7 @@ const CheckoutSummary = () => {
   // Estados para o popup PIX
   const [showPixDialog, setShowPixDialog] = useState(false);
   const [pixDialogData, setPixDialogData] = useState<any>(null);
+  const [currentPedidoId, setCurrentPedidoId] = useState<string | null>(null);
   
   const {
     cartItems,
@@ -45,6 +46,7 @@ const CheckoutSummary = () => {
     paymentMethod,
     showPixDialog,
     hasPixData: !!pixDialogData,
+    currentPedidoId,
     isProcessing
   });
 
@@ -128,6 +130,7 @@ const CheckoutSummary = () => {
       if (result.success && result.pixData) {
         console.log('[CheckoutSummary] ABRINDO POPUP PIX com dados:', result.pixData);
         setPixDialogData(result.pixData);
+        setCurrentPedidoId(result.pixData.pedido_id || null);
         setShowPixDialog(true);
         toast.success("QR Code PIX gerado com sucesso!");
       } else {
@@ -138,6 +141,7 @@ const CheckoutSummary = () => {
           qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
           pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST'
         });
+        setCurrentPedidoId('test-pedido-id');
         setShowPixDialog(true);
         toast.error("Erro ao gerar QR Code PIX, usando dados de teste");
       }
@@ -151,6 +155,7 @@ const CheckoutSummary = () => {
         qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
         pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST'
       });
+      setCurrentPedidoId('test-pedido-id');
       setShowPixDialog(true);
     }
   };
@@ -159,6 +164,7 @@ const CheckoutSummary = () => {
     console.log('[CheckoutSummary] FECHANDO POPUP PIX');
     setShowPixDialog(false);
     setPixDialogData(null);
+    setCurrentPedidoId(null);
   };
 
   const handleCreditCardPayment = () => {
@@ -321,7 +327,7 @@ const CheckoutSummary = () => {
         </div>
       </div>
 
-      {/* PIX QR Code Dialog - SEMPRE RENDERIZADO */}
+      {/* PIX QR Code Dialog - SEMPRE RENDERIZADO COM DADOS COMPLETOS */}
       <PixQrCodeDialog
         isOpen={showPixDialog}
         onClose={handleClosePixDialog}
@@ -330,6 +336,8 @@ const CheckoutSummary = () => {
         paymentLink={pixDialogData?.paymentLink}
         pix_url={pixDialogData?.pix_url}
         pix_base64={pixDialogData?.pix_base64}
+        userId={user?.id}
+        pedidoId={currentPedidoId || undefined}
       />
     </Layout>
   );

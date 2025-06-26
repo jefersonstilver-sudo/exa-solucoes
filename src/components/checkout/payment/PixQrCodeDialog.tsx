@@ -13,6 +13,7 @@ import { QRCodeDisplay } from '@/components/checkout/payment/QRCodeDisplay';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { clearAllCarts } from '@/utils/cartUtils';
+import { useRealtimePaymentStatus } from '@/hooks/payment/useRealtimePaymentStatus';
 
 interface PixQrCodeDialogProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ interface PixQrCodeDialogProps {
   paymentLink?: string;
   pix_url?: string;
   pix_base64?: string;
+  userId?: string;
+  pedidoId?: string;
 }
 
 const PixQrCodeDialog = ({
@@ -31,7 +34,9 @@ const PixQrCodeDialog = ({
   qrCodeText,
   paymentLink,
   pix_url,
-  pix_base64
+  pix_base64,
+  userId,
+  pedidoId
 }: PixQrCodeDialogProps) => {
   const navigate = useNavigate();
   
@@ -40,12 +45,33 @@ const PixQrCodeDialog = ({
   const finalQrCodeText = pix_url || qrCodeText;
   const isTestMode = finalQrCodeText?.includes('teste') || finalQrCodeBase64?.includes('test');
 
+  // Integração com monitoramento de pagamento em tempo real
+  const { isListening } = useRealtimePaymentStatus({
+    userId,
+    pedidoId,
+    onPaymentApproved: () => {
+      console.log("🎉 [PixQrCodeDialog] Pagamento aprovado automaticamente!");
+      toast.success("🎉 Pagamento aprovado!", {
+        description: "Seu pedido foi confirmado automaticamente!",
+        duration: 3000
+      });
+      
+      // Fechar popup após breve delay para mostrar o sucesso
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
+    }
+  });
+
   console.log("🖼️ [PixQrCodeDialog] SISTEMA UNIFICADO - Dados recebidos:", {
     isOpen,
     hasQrCodeBase64: !!finalQrCodeBase64,
     hasQrCodeText: !!finalQrCodeText,
     hasPaymentLink: !!paymentLink,
     isTestMode,
+    userId,
+    pedidoId,
+    isListening,
     qrTextPreview: finalQrCodeText?.substring(0, 50) + '...'
   });
 
@@ -111,7 +137,7 @@ const PixQrCodeDialog = ({
     console.error("❌ [PixQrCodeDialog] Dados PIX não disponíveis");
     return (
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999]">
           <DialogHeader>
             <DialogTitle className="text-center text-red-600 flex items-center justify-center space-x-2">
               <AlertCircle className="h-5 w-5" />
@@ -143,7 +169,7 @@ const PixQrCodeDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg bg-gradient-to-br from-white via-green-50 to-blue-50 border-2 border-green-200 shadow-2xl">
+      <DialogContent className="sm:max-w-lg bg-gradient-to-br from-white via-green-50 to-blue-50 border-2 border-green-200 shadow-2xl fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="relative">
           <Button
             variant="ghost"
@@ -163,7 +189,14 @@ const PixQrCodeDialog = ({
             <div>
               <div className="text-gray-900">QR Code PIX</div>
               <div className="text-sm font-normal text-green-600">
-                {isTestMode ? "Modo de Teste" : "Pagamento gerado com sucesso!"}
+                {isListening ? (
+                  <>
+                    <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></span>
+                    Aguardando pagamento...
+                  </>
+                ) : (
+                  "Pagamento gerado com sucesso!"
+                )}
               </div>
             </div>
           </DialogTitle>
@@ -175,6 +208,18 @@ const PixQrCodeDialog = ({
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
                 <span className="text-sm text-yellow-800 font-medium">
                   Modo de Teste - QR Code para demonstração
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Indicador de monitoramento ativo */}
+          {isListening && (
+            <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-800 font-medium">
+                  Sistema aguardando confirmação automática do pagamento
                 </span>
               </div>
             </div>
@@ -201,7 +246,7 @@ const PixQrCodeDialog = ({
               <li>Abra o app do seu banco</li>
               <li>Escaneie o QR Code acima</li>
               <li>Confirme o pagamento</li>
-              <li>Clique em "Já Paguei" abaixo</li>
+              <li>{isListening ? "Aguarde a confirmação automática" : "Clique em 'Já Paguei' abaixo"}</li>
             </ol>
           </div>
 
@@ -233,10 +278,10 @@ const PixQrCodeDialog = ({
               size="lg"
             >
               <CheckCircle className="h-7 w-7 mr-3" />
-              Já Paguei
+              {isListening ? "Confirmar Manualmente" : "Já Paguei"}
             </Button>
             <p className="text-xs text-gray-600 text-center mt-3 font-medium">
-              ✅ Clique aqui após realizar o pagamento
+              ✅ {isListening ? "Ou aguarde a confirmação automática" : "Clique aqui após realizar o pagamento"}
             </p>
           </div>
         </div>
