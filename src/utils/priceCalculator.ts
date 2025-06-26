@@ -56,6 +56,19 @@ export const calculatePrice = (
   
   const calculation = `${panelCount} painéis × R$ ${pricePerMonth}/mês × ${planMonths} meses = R$ ${subtotal.toFixed(2)}${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
   
+  console.log('💰 [PriceCalculator] CÁLCULO CENTRALIZADO:', {
+    selectedPlan,
+    panelCount,
+    pricePerMonth,
+    planMonths,
+    subtotal,
+    couponDiscountPercent,
+    afterCoupon,
+    pixDiscount,
+    finalPrice,
+    calculation
+  });
+  
   return {
     subtotal: Math.round(subtotal * 100) / 100,
     pixDiscount: Math.round(pixDiscount * 100) / 100,
@@ -87,4 +100,16 @@ export const calculateRegularPrice = (
 // Validar se o preço está correto
 export const validatePrice = (price: number): boolean => {
   return price > 0 && price >= 10; // Preço mínimo de R$ 10
+};
+
+// NOVA FUNÇÃO: Obter preços dos planos para exibição
+export const getPlanPrices = (): Record<PlanKey, number> => {
+  return { ...PLAN_PRICES };
+};
+
+// NOVA FUNÇÃO: Calcular desconto do plano
+export const calculatePlanDiscount = (planKey: PlanKey): number => {
+  const basePrice = PLAN_PRICES[1]; // Preço base mensal
+  const planPrice = PLAN_PRICES[planKey];
+  return planKey === 1 ? 0 : Math.round(((basePrice - planPrice) / basePrice) * 100);
 };

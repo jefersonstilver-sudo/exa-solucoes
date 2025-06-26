@@ -87,19 +87,21 @@ export const saveCartForCheckout = (cartItems: CartItem[]): boolean => {
   }));
   
   console.log("Saving final cart before checkout:", legacyCartItems);
-  const saveSuccess = saveCartToStorage(legacyCartItems);
   
-  if (!saveSuccess) {
-    throw new Error("Failed to save cart to localStorage");
+  try {
+    saveCartToStorage(legacyCartItems);
+    
+    // Extra verification after saving
+    const verificationCart = localStorage.getItem(CART_STORAGE_KEY);
+    console.log("Verification after save before checkout:", verificationCart);
+    
+    if (!verificationCart || verificationCart === '[]') {
+      throw new Error("Critical failure: cart still empty after save attempt");
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Failed to save cart:", error);
+    return false;
   }
-  
-  // Extra verification after saving
-  const verificationCart = localStorage.getItem(CART_STORAGE_KEY);
-  console.log("Verification after save before checkout:", verificationCart);
-  
-  if (!verificationCart || verificationCart === '[]') {
-    throw new Error("Critical failure: cart still empty after save attempt");
-  }
-
-  return true;
 };

@@ -60,15 +60,26 @@ export const useSimplifiedPixCheckout = () => {
         .filter(Boolean)
         .filter((id, index, arr) => arr.indexOf(id) === index);
 
+      // CORREÇÃO: Mapear corretamente para PixWebhookData com todas propriedades obrigatórias
       const webhookData = {
         cliente_id: user.id,
-        email: user.email || '',
-        nome: user.user_metadata?.full_name || user.email || '',
-        predios_selecionados: predioIds.map(id => ({ id })),
-        valor_total: finalPrice,
-        plano_meses: selectedPlan,
+        pedido_id: orderResult.pedidoId,
         transaction_id: orderResult.transactionId || '',
-        cupom_usado: couponId || null
+        email: user.email || '',
+        nome: user.email || 'Usuário',
+        plano_escolhido: `Plano ${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`,
+        periodo_meses: selectedPlan,
+        predios_selecionados: predioIds.map(id => ({ 
+          id: String(id), 
+          nome: cartItems.find(item => 
+            item.panel?.buildings?.id === id || item.panel?.building_id === id
+          )?.panel?.buildings?.nome || 'Prédio'
+        })),
+        valor_total: String(finalPrice),
+        periodo_exibicao: {
+          inicio: new Date().toISOString(),
+          fim: new Date(Date.now() + selectedPlan * 30 * 24 * 60 * 60 * 1000).toISOString()
+        }
       };
 
       // Enviar para webhook PIX

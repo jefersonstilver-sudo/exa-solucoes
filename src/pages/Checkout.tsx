@@ -18,7 +18,7 @@ const Checkout = () => {
   const [searchParams] = useSearchParams();
   const { user } = useUserSession();
   const { cartItems, selectedPlan } = useCartManager();
-  const { couponId, couponData, isValid: couponValid } = useCouponValidator();
+  const { couponId, validationResult, couponValid } = useCouponValidator();
   const { processPixPayment, isProcessing } = useSimplifiedPixCheckout();
 
   // Verificar se há dados necessários
@@ -42,7 +42,7 @@ const Checkout = () => {
   }
 
   // Calcular preços
-  const couponDiscountPercent = couponValid && couponData ? couponData.desconto_percentual : 0;
+  const couponDiscountPercent = couponValid && validationResult?.coupon ? validationResult.coupon.desconto_percentual : 0;
   const finalPrice = calculatePixPrice(selectedPlan, cartItems, couponDiscountPercent);
 
   const handlePixPayment = async () => {
@@ -90,10 +90,10 @@ const Checkout = () => {
                   <span>Plano:</span>
                   <span>{selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'}</span>
                 </div>
-                {couponValid && couponData && (
+                {couponValid && validationResult?.coupon && (
                   <div className="flex justify-between text-green-600">
                     <span>Desconto cupom:</span>
-                    <span>-{couponData.desconto_percentual}%</span>
+                    <span>-{validationResult.coupon.desconto_percentual}%</span>
                   </div>
                 )}
                 <div className="flex justify-between text-green-600">
