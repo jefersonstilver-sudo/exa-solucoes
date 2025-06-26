@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,16 +18,56 @@ export const useRealtimePaymentStatus = ({
 }: UseRealtimePaymentStatusProps) => {
   const [isListening, setIsListening] = useState(false);
   const navigate = useNavigate();
+  const channelsRef = useRef<any[]>([]);
+  const isListeningRef = useRef(false);
+
+  // Função de callback estabilizada
+  const handlePaymentApproved = useCallback((orderData: any) => {
+    console.log("🎉 REALTIME: Pagamento aprovado detectado!", orderData);
+    
+    logCheckoutEvent(
+      CheckoutEvent.PAYMENT_PROCESSING,
+      LogLevel.INFO,
+      "Pagamento PIX aprovado via Realtime",
+      { 
+        pedidoId: orderData.id,
+        userId,
+        valor: orderData.valor_total
+      }
+    );
+    
+    // Mostrar toast de sucesso
+    toast.success("🎉 Pagamento aprovado!", {
+      description: "Seu pedido foi confirmado com sucesso!",
+      duration: 5000
+    });
+    
+    // Callback personalizado se fornecido
+    if (onPaymentApproved) {
+      onPaymentApproved();
+    }
+    
+    // Redirecionar para página de confirmação após um breve delay
+    setTimeout(() => {
+      navigate(`/pedido-confirmado?id=${orderData.id}`);
+    }, 2000);
+  }, [navigate, onPaymentApproved, userId]);
 
   useEffect(() => {
-    if (!userId || isListening) return;
+    // Evitar múltiplas execuções
+    if (!userId || isListeningRef.current) {
+      return;
+    }
 
     console.log("🔄 REALTIME: Iniciando monitoramento de pagamento para usuário:", userId);
+    
+    // Marcar como listening
+    isListeningRef.current = true;
     setIsListening(true);
 
     // Canal para monitorar inserções na tabela pedidos
     const pedidosChannel = supabase
-      .channel('payment-status-updates')
+      .channel(`payment-status-updates-${userId}`)
       .on(
         'postgres_changes',
         {
@@ -43,44 +83,17 @@ export const useRealtimePaymentStatus = ({
           
           // Verificar se é um pagamento aprovado
           if (newOrder?.log_pagamento?.payment_status === 'approved') {
-            console.log("✅ REALTIME: Pagamento aprovado detectado!");
-            
-            logCheckoutEvent(
-              CheckoutEvent.PAYMENT_PROCESSING,
-              LogLevel.INFO,
-              "Pagamento PIX aprovado via Realtime",
-              { 
-                pedidoId: newOrder.id,
-                userId,
-                valor: newOrder.valor_total
-              }
-            );
-            
-            // Mostrar toast de sucesso
-            toast.success("🎉 Pagamento aprovado!", {
-              description: "Seu pedido foi confirmado com sucesso!",
-              duration: 5000
-            });
-            
-            // Callback personalizado se fornecido
-            if (onPaymentApproved) {
-              onPaymentApproved();
-            }
-            
-            // Redirecionar para página de confirmação após um breve delay
-            setTimeout(() => {
-              navigate(`/pedido-confirmado?id=${newOrder.id}`);
-            }, 2000);
+            handlePaymentApproved(newOrder);
           }
         }
       )
       .subscribe((status) => {
-        console.log("📡 REALTIME: Status da conexão:", status);
+        console.log("📡 REALTIME: Status da conexão pedidos:", status);
       });
 
     // Canal para monitorar atualizações em pedidos existentes
     const updatesChannel = supabase
-      .channel('payment-updates')
+      .channel(`payment-updates-${userId}`)
       .on(
         'postgres_changes',
         {
@@ -113,14 +126,24 @@ export const useRealtimePaymentStatus = ({
       )
       .subscribe();
 
+    // Armazenar referências dos canais
+    channelsRef.current = [pedidosChannel, updatesChannel];
+
     // Cleanup na desmontagem
     return () => {
       console.log("🛑 REALTIME: Desconectando canais de pagamento");
-      supabase.removeChannel(pedidosChannel);
-      supabase.removeChannel(updatesChannel);
+      
+      // Remover todos os canais
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      
+      // Reset dos refs
+      channelsRef.current = [];
+      isListeningRef.current = false;
       setIsListening(false);
     };
-  }, [userId, isListening, navigate, onPaymentApproved]);
+  }, [userId, handlePaymentApproved]); // Apenas userId e handlePaymentApproved como dependências
 
   return {
     isListening
