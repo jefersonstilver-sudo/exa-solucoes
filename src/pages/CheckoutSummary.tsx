@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import OrderSummaryCard from '@/components/checkout/summary/OrderSummaryCard';
 import PaymentMethodSelector from '@/components/checkout/summary/PaymentMethodSelector';
 import PricingBreakdown from '@/components/checkout/summary/PricingBreakdown';
 import PixPaymentButton from '@/components/checkout/summary/PixPaymentButton';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -20,6 +20,10 @@ const CheckoutSummary = () => {
   const { isLoggedIn, user, isLoading } = useUserSession();
   const [hasValidatedCart, setHasValidatedCart] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
+  
+  // Estados para o popup PIX
+  const [showPixDialog, setShowPixDialog] = useState(false);
+  const [pixDialogData, setPixDialogData] = useState<any>(null);
   
   const {
     cartItems,
@@ -38,7 +42,9 @@ const CheckoutSummary = () => {
     selectedPlan,
     couponValid,
     couponDiscount,
-    paymentMethod
+    paymentMethod,
+    showPixDialog,
+    hasPixData: !!pixDialogData
   });
 
   // Verificação de autenticação melhorada
@@ -105,14 +111,29 @@ const CheckoutSummary = () => {
       webhookUrl: 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19'
     });
 
-    const success = await processPixPayment(
-      couponValid ? undefined : undefined, 
-      couponDiscount || 0
-    );
+    try {
+      const result = await processPixPayment(
+        couponValid ? undefined : undefined, 
+        couponDiscount || 0
+      );
 
-    if (success) {
-      toast.success("Redirecionando para pagamento PIX...");
+      if (result.success && result.pixData) {
+        console.log('[CheckoutSummary] Dados PIX recebidos:', result.pixData);
+        setPixDialogData(result.pixData);
+        setShowPixDialog(true);
+        toast.success("QR Code PIX gerado com sucesso!");
+      } else {
+        toast.error("Erro ao gerar QR Code PIX");
+      }
+    } catch (error: any) {
+      console.error('[CheckoutSummary] Erro no pagamento PIX:', error);
+      toast.error(`Erro no pagamento: ${error.message}`);
     }
+  };
+
+  const handleClosePixDialog = () => {
+    setShowPixDialog(false);
+    setPixDialogData(null);
   };
 
   const handleCreditCardPayment = () => {
@@ -276,6 +297,17 @@ const CheckoutSummary = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* PIX QR Code Dialog */}
+      <PixQrCodeDialog
+        isOpen={showPixDialog}
+        onClose={handleClosePixDialog}
+        qrCodeBase64={pixDialogData?.qrCodeBase64 || pixDialogData?.pix_base64}
+        qrCodeText={pixDialogData?.qrCodeText || pixDialogData?.pix_url}
+        paymentLink={pixDialogData?.paymentLink}
+        pix_url={pixDialogData?.pix_url}
+        pix_base64={pixDialogData?.pix_base64}
+      />
     </Layout>
   );
 };

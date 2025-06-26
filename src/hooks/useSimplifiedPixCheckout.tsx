@@ -8,6 +8,20 @@ import { calculatePixPrice } from '@/utils/priceCalculator';
 import { sendPixPaymentWebhook } from '@/services/pixWebhookService';
 import { toast } from 'sonner';
 
+interface PixPaymentResult {
+  success: boolean;
+  pixData?: {
+    qrCodeBase64?: string;
+    qrCodeText?: string;
+    pix_base64?: string;
+    pix_url?: string;
+    paymentLink?: string;
+    pedido_id?: string;
+    transaction_id?: string;
+  };
+  error?: string;
+}
+
 export const useSimplifiedPixCheckout = () => {
   const navigate = useNavigate();
   const { user } = useUserSession();
@@ -15,20 +29,20 @@ export const useSimplifiedPixCheckout = () => {
   const { createPendingOrder } = useOrderManager();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const processPixPayment = async (couponId?: string, couponDiscountPercent: number = 0) => {
+  const processPixPayment = async (couponId?: string, couponDiscountPercent: number = 0): Promise<PixPaymentResult> => {
     if (!user?.id) {
       toast.error("Usuário não autenticado");
-      return false;
+      return { success: false, error: "Usuário não autenticado" };
     }
 
     if (!selectedPlan) {
       toast.error("Plano não selecionado");
-      return false;
+      return { success: false, error: "Plano não selecionado" };
     }
 
     if (cartItems.length === 0) {
       toast.error("Carrinho vazio");
-      return false;
+      return { success: false, error: "Carrinho vazio" };
     }
 
     setIsProcessing(true);
@@ -40,6 +54,13 @@ export const useSimplifiedPixCheckout = () => {
       if (finalPrice <= 0) {
         throw new Error("Preço calculado inválido");
       }
+
+      console.log('[useSimplifiedPixCheckout] Criando pedido:', {
+        clientId: user.id,
+        cartItemsCount: cartItems.length,
+        selectedPlan,
+        finalPrice
+      });
 
       // Criar pedido pendente
       const orderResult = await createPendingOrder({
@@ -82,6 +103,8 @@ export const useSimplifiedPixCheckout = () => {
         }
       };
 
+      console.log('[useSimplifiedPixCheckout] Enviando para webhook PIX:', webhookData);
+
       // Enviar para webhook PIX
       const pixResult = await sendPixPaymentWebhook(webhookData);
 
@@ -89,25 +112,44 @@ export const useSimplifiedPixCheckout = () => {
         throw new Error(pixResult.error || "Erro ao processar PIX");
       }
 
+      console.log('[useSimplifiedPixCheckout] Webhook PIX respondeu:', pixResult);
+
       // Limpar carrinho
       handleClearCart();
       localStorage.removeItem('selectedPlan');
 
-      // Navegar para página de pagamento PIX
-      navigate(`/pix-payment?pedido=${orderResult.pedidoId}`);
-
-      return true;
+      // Retornar dados PIX para o componente pai
+      return {
+        success: true,
+        pixData: {
+          qrCodeBase64: pixResult.qrCodeBase64 || pixResult.pix_base64,
+          qrCodeText: pixResult.qrCodeText || pixResult.pix_url,
+          pix_base64: pixResult.pix_base64,
+          pix_url: pixResult.pix_url,
+          paymentLink: pixResult.paymentLink,
+          pedido_id: pixResult.pedido_id || orderResult.pedidoId,
+          transaction_id: pixResult.transaction_id || orderResult.transactionId
+        }
+      };
 
     } catch (error: any) {
-      toast.error(`Erro no pagamento: ${error.message}`);
-      return false;
+      console.error('[useSimplifiedPixCheckout] Erro no pagamento:', error);
+      const errorMessage = `Erro no pagamento: ${error.message}`;
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Função de fallback para navegar para página PIX (caso necessário)
+  const navigateToPixPayment = (pedidoId: string) => {
+    navigate(`/pix-payment?pedido=${pedidoId}`);
+  };
+
   return {
     processPixPayment,
+    navigateToPixPayment,
     isProcessing,
     canProcess: !!user?.id && !!selectedPlan && cartItems.length > 0
   };
