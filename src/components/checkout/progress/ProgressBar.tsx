@@ -8,13 +8,22 @@ interface ProgressBarProps {
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep }) => {
+  // CORREÇÃO: Cálculo preciso da porcentagem
+  const progressPercentage = ((currentStep + 1) / PROGRESS_STEPS.length) * 100;
+  
+  console.log('[ProgressBar] Debug:', {
+    currentStep,
+    totalSteps: PROGRESS_STEPS.length,
+    progressPercentage: Math.round(progressPercentage)
+  });
+
   return (
     <div className="relative">
       <div className="w-full h-1 md:h-1.5 bg-gray-200 rounded-full overflow-hidden">
         <motion.div 
           className="h-full bg-gradient-to-r from-[#3C1361] to-[#00FFAB] rounded-full"
           initial={{ width: '0%' }}
-          animate={{ width: `${(currentStep / (PROGRESS_STEPS.length - 1)) * 100}%` }}
+          animate={{ width: `${progressPercentage}%` }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
         />
       </div>
@@ -31,7 +40,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep }) => {
         </span>
         <span className="mx-2 text-gray-300 hidden md:inline">•</span>
         <span className="text-xs font-medium text-[#3C1361] hidden md:inline">
-          {Math.round((currentStep / (PROGRESS_STEPS.length - 1)) * 100)}% concluído
+          {Math.round(progressPercentage)}% concluído
         </span>
       </motion.div>
     </div>

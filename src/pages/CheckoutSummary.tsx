@@ -132,6 +132,7 @@ const CheckoutSummary = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8"
           >
+            {/* CORREÇÃO: currentStep=2 para mostrar "Resumo" como etapa atual (3ª de 5) */}
             <UnifiedCheckoutProgress currentStep={2} />
           </motion.div>
 

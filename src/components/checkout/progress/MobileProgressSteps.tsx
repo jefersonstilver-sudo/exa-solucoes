@@ -9,6 +9,12 @@ interface MobileProgressStepsProps {
 }
 
 const MobileProgressSteps: React.FC<MobileProgressStepsProps> = ({ currentStep }) => {
+  console.log('[MobileProgressSteps] Debug:', {
+    currentStep,
+    currentStepName: PROGRESS_STEPS[currentStep]?.name,
+    visibleSteps: PROGRESS_STEPS.filter((_, index) => Math.abs(index - currentStep) <= 1)
+  });
+
   return (
     <div className="flex sm:hidden justify-center items-center mb-2 px-1">
       <div className="flex items-center space-x-1 max-w-full overflow-hidden">
@@ -27,7 +33,7 @@ const MobileProgressSteps: React.FC<MobileProgressStepsProps> = ({ currentStep }
             >
               {/* Connection Line para mobile */}
               {index > 0 && isVisible && (
-                <div className="w-3 h-0.5 mx-1">
+                <div className="w-3 h-0.5 mx-1 relative">
                   <div className="h-full bg-gray-200 rounded-full" />
                   <motion.div 
                     className="absolute h-0.5 bg-gradient-to-r from-[#3C1361] to-[#00FFAB] rounded-full"

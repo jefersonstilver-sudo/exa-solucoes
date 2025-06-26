@@ -9,12 +9,24 @@ interface DesktopProgressStepsProps {
 }
 
 const DesktopProgressSteps: React.FC<DesktopProgressStepsProps> = ({ currentStep }) => {
+  console.log('[DesktopProgressSteps] Debug:', {
+    currentStep,
+    steps: PROGRESS_STEPS.map((step, index) => ({
+      index,
+      name: step.name,
+      isCompleted: currentStep > index,
+      isCurrent: currentStep === index,
+      isPending: currentStep < index
+    }))
+  });
+
   return (
     <div className="hidden sm:flex justify-between items-center mb-3 md:mb-4">
       {PROGRESS_STEPS.map((step, index) => {
         const StepIcon = step.icon;
         const isCompleted = currentStep > index;
         const isCurrent = currentStep === index;
+        const isPending = currentStep < index;
         
         return (
           <div 
