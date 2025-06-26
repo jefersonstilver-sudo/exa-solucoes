@@ -77,7 +77,7 @@ export const useCheckout = () => {
     return await validateCouponOriginal(code, planMonths);
   }, [validateCouponOriginal]);
 
-  // Navegação entre etapas
+  // Navegação entre etapas - CORRIGIDO: redirecionar para /checkout/resumo
   const handleNextStep = useCallback(() => {
     setIsNavigating(true);
     
@@ -91,12 +91,12 @@ export const useCheckout = () => {
     // Verificar autenticação
     if (!isLoggedIn) {
       toast.error('Faça login para continuar');
-      navigate('/login?redirect=/checkout');
+      navigate('/login?redirect=/checkout/resumo');
       setIsNavigating(false);
       return;
     }
     
-    navigate('/checkout');
+    navigate('/checkout/resumo');
     setIsNavigating(false);
   }, [cartItems.length, isLoggedIn, navigate]);
 

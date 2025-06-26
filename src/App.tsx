@@ -1,4 +1,3 @@
-
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -16,7 +15,6 @@ import BuildingStore from './pages/BuildingStore';
 import PlanSelection from './pages/PlanSelection';
 import CheckoutCoupon from './pages/CheckoutCoupon';
 import CheckoutSummary from './pages/CheckoutSummary';
-import Checkout from './pages/Checkout';
 import CheckoutFinish from './pages/CheckoutFinish';
 import Payment from './pages/Payment';
 import PixPayment from './pages/PixPayment';
@@ -78,10 +76,9 @@ function App() {
                     <Route path="/planos" element={<PlanSelection />} />
                     <Route path="/selecionar-plano" element={<PlanSelection />} />
                     
-                    {/* CHECKOUT FLOW CORRIGIDO */}
+                    {/* CHECKOUT FLOW CORRIGIDO - REMOVIDA ROTA /checkout ANTIGA */}
                     <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
                     <Route path="/checkout/resumo" element={<CheckoutSummary />} />
-                    <Route path="/checkout" element={<Checkout />} />
                     <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
                     
                     {/* PAGAMENTO - ROTAS CORRIGIDAS */}
