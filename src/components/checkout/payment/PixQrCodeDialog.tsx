@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, CheckCircle, X, Smartphone, AlertCircle } from 'lucide-react';
+import { Copy, CheckCircle, X, AlertCircle } from 'lucide-react';
 import { QRCodeDisplay } from '@/components/checkout/payment/QRCodeDisplay';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
@@ -137,27 +137,34 @@ const PixQrCodeDialog = ({
     console.error("❌ [PixQrCodeDialog] Dados PIX não disponíveis");
     return (
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999]">
-          <DialogHeader>
-            <DialogTitle className="text-center text-red-600 flex items-center justify-center space-x-2">
-              <AlertCircle className="h-5 w-5" />
-              <span>Erro ao Gerar PIX</span>
+        <DialogContent className="sm:max-w-md fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] border-0 bg-white rounded-3xl shadow-2xl">
+          <DialogHeader className="text-center pb-6">
+            <DialogTitle className="text-2xl font-bold text-red-600 flex items-center justify-center gap-3">
+              <AlertCircle className="h-8 w-8" />
+              Erro ao Gerar PIX
             </DialogTitle>
           </DialogHeader>
-          <div className="text-center py-6 space-y-4">
-            <p className="text-gray-600">
+          <div className="text-center space-y-6">
+            <p className="text-gray-600 text-lg">
               Não foi possível gerar o QR Code PIX no momento.
             </p>
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-700">
+            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200">
+              <p className="text-blue-700 font-medium">
                 Seu pedido foi criado com sucesso! Você pode acompanhar o status na área de pedidos.
               </p>
             </div>
-            <div className="flex flex-col space-y-2">
-              <Button onClick={() => window.location.reload()} variant="outline">
+            <div className="flex flex-col gap-4">
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                className="h-12 rounded-2xl border-2 hover:bg-gray-50 font-semibold"
+              >
                 Tentar Novamente
               </Button>
-              <Button onClick={handleClose} className="bg-blue-600 hover:bg-blue-700">
+              <Button 
+                onClick={handleClose} 
+                className="h-12 bg-blue-600 hover:bg-blue-700 rounded-2xl font-semibold"
+              >
                 Ver Meus Pedidos
               </Button>
             </div>
@@ -169,119 +176,101 @@ const PixQrCodeDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg bg-gradient-to-br from-white via-green-50 to-blue-50 border-2 border-green-200 shadow-2xl fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="relative">
+      <DialogContent className="sm:max-w-md bg-white border-0 rounded-3xl shadow-2xl fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] max-h-[90vh] overflow-y-auto">
+        {/* Header moderno e clean */}
+        <DialogHeader className="relative text-center pb-8">
           <Button
             variant="ghost"
             size="icon"
             onClick={handleClose}
-            className="absolute -right-2 -top-2 h-8 w-8 rounded-full hover:bg-gray-100"
+            className="absolute -right-3 -top-3 h-10 w-10 rounded-full hover:bg-gray-100"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
           
-          <DialogTitle className="text-center text-2xl font-bold flex items-center justify-center gap-3 mb-4 pt-2">
-            <div className="w-16 h-16 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <svg viewBox="0 0 512 512" className="h-8 w-8 text-white" fill="currentColor">
-                <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
-              </svg>
-            </div>
-            <div>
-              <div className="text-gray-900">QR Code PIX</div>
-              <div className="text-sm font-normal text-green-600">
-                {isListening ? (
-                  <>
-                    <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></span>
-                    Aguardando pagamento...
-                  </>
-                ) : (
-                  "Pagamento gerado com sucesso!"
-                )}
-              </div>
-            </div>
+          <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <svg viewBox="0 0 512 512" className="h-10 w-10 text-white" fill="currentColor">
+              <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 294.4C300.7 284.5 300.7 268.5 310.6 258.6L407.7 161.5H392.6C372.6 161.5 353.7 169.3 339.5 183.5L262.5 260.5C257.1 265.9 247.8 265.9 242.4 260.5L165.4 183.5C151.2 169.3 132.3 161.5 112.3 161.5H97.2L194.3 258.6C204.2 268.5 204.2 284.5 194.3 294.4L97.2 391.5H112.3C132.3 391.5 151.2 383.7 165.4 369.5L242.4 292.5z"/>
+            </svg>
+          </div>
+          
+          <DialogTitle className="text-3xl font-bold text-gray-900 mb-2">
+            Pagamento PIX
           </DialogTitle>
           
-          {/* Indicador de modo de teste */}
+          <div className="text-green-600 font-medium text-lg">
+            {isListening ? (
+              <div className="flex items-center justify-center gap-2">
+                <span className="inline-block w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                Aguardando confirmação...
+              </div>
+            ) : (
+              "QR Code gerado com sucesso"
+            )}
+          </div>
+          
+          {/* Indicadores de status limpos */}
           {isTestMode && (
-            <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mb-4">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-4 w-4 text-yellow-600" />
-                <span className="text-sm text-yellow-800 font-medium">
-                  Modo de Teste - QR Code para demonstração
-                </span>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mt-4">
+              <div className="flex items-center justify-center gap-2 text-amber-700">
+                <AlertCircle className="h-5 w-5" />
+                <span className="font-medium">Modo de Teste</span>
               </div>
             </div>
           )}
 
-          {/* Indicador de monitoramento ativo */}
           {isListening && (
-            <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4">
-              <div className="flex items-center space-x-2">
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mt-4">
+              <div className="flex items-center justify-center gap-2 text-green-700">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-green-800 font-medium">
-                  Sistema aguardando confirmação automática do pagamento
-                </span>
+                <span className="font-medium">Monitoramento automático ativo</span>
               </div>
             </div>
           )}
         </DialogHeader>
         
-        <div className="flex flex-col items-center space-y-6 py-4">
-          {/* QR Code Display */}
+        <div className="space-y-8 pb-6">
+          {/* QR Code Display - destaque principal */}
           {finalQrCodeBase64 && (
-            <div className="w-full flex justify-center">
-              <div className="bg-white p-6 rounded-3xl border-2 border-green-200 shadow-xl">
+            <div className="flex justify-center">
+              <div className="bg-white p-8 rounded-3xl border-2 border-gray-100 shadow-xl">
                 <QRCodeDisplay qrCodeBase64={finalQrCodeBase64} />
               </div>
             </div>
           )}
-          
-          {/* Instruções */}
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-2xl border border-blue-200 w-full">
-            <div className="flex items-center space-x-3 mb-3">
-              <Smartphone className="h-6 w-6 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">Como pagar:</h3>
-            </div>
-            <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
-              <li>Abra o app do seu banco</li>
-              <li>Escaneie o QR Code acima</li>
-              <li>Confirme o pagamento</li>
-              <li>{isListening ? "Aguarde a confirmação automática" : "Clique em 'Já Paguei' abaixo"}</li>
-            </ol>
-          </div>
 
-          {/* Código PIX para copiar */}
+          {/* Código PIX para copiar - design moderno */}
           {finalQrCodeText && (
-            <div className="w-full space-y-3">
-              <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 rounded-2xl border border-blue-200">
-                <p className="text-xs text-gray-600 mb-2">Ou copie o código PIX:</p>
-                <div className="text-xs text-gray-700 break-all font-mono bg-white p-3 rounded-xl border border-gray-200 shadow-sm max-h-20 overflow-y-auto">
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                <p className="text-sm font-medium text-gray-700 mb-3">Código PIX:</p>
+                <div className="text-xs text-gray-600 break-all font-mono bg-white p-4 rounded-xl border border-gray-200 max-h-20 overflow-y-auto">
                   {finalQrCodeText}
                 </div>
               </div>
+              
               <Button 
                 onClick={handleCopyQrCode}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-2xl shadow-lg transition-all duration-200 hover:shadow-xl"
-                size="lg"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-lg shadow-lg transition-all duration-200 hover:shadow-xl"
               >
-                <Copy className="h-5 w-5 mr-2" />
+                <Copy className="h-5 w-5 mr-3" />
                 Copiar Código PIX
               </Button>
             </div>
           )}
 
-          {/* Botão "Já Paguei" */}
-          <div className="w-full pt-4 border-t border-green-200">
+          {/* Botão principal - design premium */}
+          <div className="pt-4">
             <Button
               onClick={handlePaymentConfirmed}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-6 text-xl font-bold rounded-2xl shadow-2xl transition-all duration-300 hover:shadow-3xl transform hover:scale-105"
-              size="lg"
+              className="w-full h-16 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-2xl font-bold text-xl shadow-2xl transition-all duration-300 hover:shadow-3xl transform hover:scale-[1.02]"
             >
               <CheckCircle className="h-7 w-7 mr-3" />
-              {isListening ? "Confirmar Manualmente" : "Já Paguei"}
+              {isListening ? "Confirmar Pagamento" : "Já Paguei"}
             </Button>
-            <p className="text-xs text-gray-600 text-center mt-3 font-medium">
-              ✅ {isListening ? "Ou aguarde a confirmação automática" : "Clique aqui após realizar o pagamento"}
+            
+            <p className="text-sm text-gray-500 text-center mt-4 font-medium">
+              {isListening ? "Ou aguarde a confirmação automática" : "Clique após realizar o pagamento"}
             </p>
           </div>
         </div>

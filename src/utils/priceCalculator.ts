@@ -1,5 +1,4 @@
-
-// Sistema Centralizado de Cálculo de Preços - Função Única para Todo o Sistema
+// Sistema Centralizado de Cálculo de Preços - CORRIGIDO
 
 import { CartItem } from '@/types/cart';
 import { PlanKey } from '@/types/checkout';
@@ -37,12 +36,25 @@ export const calculatePrice = (
     };
   }
 
-  // Cálculo base: quantidade de painéis × preço do plano × duração do plano
-  const pricePerMonth = PLAN_PRICES[selectedPlan];
-  const panelCount = cartItems.length;
-  const planMonths = selectedPlan;
+  // CORREÇÃO CRÍTICA: Cálculo baseado no preço base dos prédios, não multiplicando por meses
+  let subtotal = 0;
   
-  const subtotal = panelCount * pricePerMonth * planMonths;
+  // Somar o preço base de cada painel (já é o valor mensal total)
+  cartItems.forEach(item => {
+    const precoBase = item.panel?.buildings?.preco_base || PLAN_PRICES[selectedPlan];
+    subtotal += precoBase;
+  });
+  
+  console.log('💰 [PriceCalculator] CÁLCULO CORRIGIDO:', {
+    selectedPlan,
+    panelCount: cartItems.length,
+    subtotal,
+    cartItems: cartItems.map(item => ({
+      panelId: item.panel.id,
+      precoBase: item.panel?.buildings?.preco_base || 'usando padrão',
+      buildingName: item.panel?.buildings?.nome
+    }))
+  });
   
   // Aplicar desconto de cupom se houver
   let afterCoupon = subtotal;
@@ -54,13 +66,9 @@ export const calculatePrice = (
   const pixDiscount = applyPixDiscount ? afterCoupon * PIX_DISCOUNT_RATE : 0;
   const finalPrice = afterCoupon - pixDiscount;
   
-  const calculation = `${panelCount} painéis × R$ ${pricePerMonth}/mês × ${planMonths} meses = R$ ${subtotal.toFixed(2)}${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
+  const calculation = `${cartItems.length} painéis (R$ ${subtotal.toFixed(2)})${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
   
-  console.log('💰 [PriceCalculator] CÁLCULO CENTRALIZADO:', {
-    selectedPlan,
-    panelCount,
-    pricePerMonth,
-    planMonths,
+  console.log('💰 [PriceCalculator] RESULTADO FINAL:', {
     subtotal,
     couponDiscountPercent,
     afterCoupon,
@@ -84,6 +92,7 @@ export const calculatePixPrice = (
   couponDiscountPercent: number = 0
 ): number => {
   const result = calculatePrice(selectedPlan, cartItems, couponDiscountPercent, true);
+  console.log('💰 [calculatePixPrice] VALOR FINAL PIX:', result.finalPrice);
   return result.finalPrice;
 };
 

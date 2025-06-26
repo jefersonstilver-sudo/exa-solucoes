@@ -59,11 +59,22 @@ export const useSimplifiedPixCheckout = () => {
     setIsProcessing(true);
 
     try {
-      // Calcular preço final usando calculador centralizado
+      // CORREÇÃO CRÍTICA: Calcular preço usando função corrigida
       const finalPrice = calculatePixPrice(selectedPlan, cartItems, couponDiscountPercent);
       
+      console.log('[useSimplifiedPixCheckout] PREÇO CALCULADO CORRIGIDO:', {
+        selectedPlan,
+        cartItemsCount: cartItems.length,
+        finalPrice,
+        cartItems: cartItems.map(item => ({
+          panelId: item.panel.id,
+          buildingName: item.panel?.buildings?.nome,
+          precoBase: item.panel?.buildings?.preco_base
+        }))
+      });
+      
       if (finalPrice <= 0) {
-        throw new Error("Preço calculado inválido");
+        throw new Error("Preço calculado inválido: " + finalPrice);
       }
 
       console.log('[useSimplifiedPixCheckout] Criando pedido:', {
@@ -88,7 +99,7 @@ export const useSimplifiedPixCheckout = () => {
 
       console.log('[useSimplifiedPixCheckout] Pedido criado:', orderResult);
 
-      // Preparar dados para webhook PIX
+      // Preparar dados para webhook PIX com valor correto
       const predioIds = cartItems
         .map(item => item.panel?.buildings?.id || item.panel?.building_id)
         .filter(Boolean)
@@ -108,14 +119,14 @@ export const useSimplifiedPixCheckout = () => {
             item.panel?.buildings?.id === id || item.panel?.building_id === id
           )?.panel?.buildings?.nome || 'Prédio'
         })),
-        valor_total: String(finalPrice),
+        valor_total: String(finalPrice.toFixed(2)), // CORREÇÃO: Valor correto formatado
         periodo_exibicao: {
           inicio: new Date().toISOString(),
           fim: new Date(Date.now() + selectedPlan * 30 * 24 * 60 * 60 * 1000).toISOString()
         }
       };
 
-      console.log('[useSimplifiedPixCheckout] Enviando para webhook PIX:', webhookData);
+      console.log('[useSimplifiedPixCheckout] WEBHOOK DATA COM VALOR CORRETO:', webhookData);
 
       // Enviar para webhook PIX
       const pixResult = await sendPixPaymentWebhook(webhookData);
@@ -193,7 +204,7 @@ export const useSimplifiedPixCheckout = () => {
 
   return {
     processPixPayment,
-    navigateToPixPayment,
+    navigateToPixPayment: (pedidoId: string) => navigate(`/pix-payment?pedido=${pedidoId}`),
     isProcessing,
     canProcess: !!user?.id && !!selectedPlan && cartItems.length > 0
   };
