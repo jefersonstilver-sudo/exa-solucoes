@@ -9,7 +9,7 @@ import PaymentMethodSelector from '@/components/checkout/summary/PaymentMethodSe
 import PricingBreakdown from '@/components/checkout/summary/PricingBreakdown';
 import PixPaymentButton from '@/components/checkout/summary/PixPaymentButton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard } from 'lucide-react';
+import { ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
@@ -30,6 +30,16 @@ const CheckoutSummary = () => {
   } = useCheckout();
 
   const { processPixPayment, isProcessing } = useSimplifiedPixCheckout();
+
+  console.log('[CheckoutSummary] Estado atual:', {
+    isLoggedIn,
+    userId: user?.id,
+    cartItemsCount: cartItems?.length || 0,
+    selectedPlan,
+    couponValid,
+    couponDiscount,
+    paymentMethod
+  });
 
   // Verificação de autenticação melhorada
   useEffect(() => {
@@ -70,8 +80,15 @@ const CheckoutSummary = () => {
     return () => clearTimeout(validateCartTimer);
   }, [isLoggedIn, cartItems, navigate, isLoading, hasValidatedCart, selectedPlan]);
 
-  // Calcular preços
+  // Calcular preços usando função centralizada
   const baseTotal = calculateTotalPrice();
+  console.log('[CheckoutSummary] Preços calculados:', {
+    baseTotal,
+    couponValid,
+    couponDiscount,
+    paymentMethod
+  });
+
   const pixDiscount = 5; // 5% desconto PIX
   const pixTotal = paymentMethod === 'pix' ? baseTotal * (1 - pixDiscount / 100) : baseTotal;
   const finalTotal = paymentMethod === 'pix' ? pixTotal : baseTotal;
@@ -101,7 +118,6 @@ const CheckoutSummary = () => {
   const handleCreditCardPayment = () => {
     console.log('[CheckoutSummary] Iniciando pagamento com cartão');
     toast.info("Redirecionando para pagamento com cartão...");
-    // Implementar integração com gateway de cartão
     navigate('/checkout/payment?method=credit_card');
   };
 
@@ -126,13 +142,12 @@ const CheckoutSummary = () => {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
-          {/* Progress Header */}
+          {/* Progress Header - CORRIGIDO */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8"
           >
-            {/* CORREÇÃO: currentStep=2 para mostrar "Resumo" como etapa atual (3ª de 5) */}
             <UnifiedCheckoutProgress currentStep={2} />
           </motion.div>
 
@@ -207,6 +222,22 @@ const CheckoutSummary = () => {
             className="bg-white rounded-2xl shadow-lg border p-6 sm:p-8"
           >
             <div className="flex flex-col space-y-6">
+              {/* Security Notice */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <div className="font-medium mb-1">Pagamento 100% Seguro</div>
+                    <p className="text-blue-700">
+                      Todos os dados são criptografados e processados com segurança máxima. 
+                      Webhook configurado: <code className="text-xs bg-blue-100 px-1 rounded">
+                        https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19
+                      </code>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Payment Button */}
               {paymentMethod === 'pix' ? (
                 <PixPaymentButton

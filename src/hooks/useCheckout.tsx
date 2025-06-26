@@ -26,6 +26,14 @@ export const useCheckout = () => {
   const [isCreatingPayment, setIsCreatingPayment] = useState<boolean>(false);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
 
+  console.log('[useCheckout] Estado atual:', {
+    cartItemsCount: cartItems?.length || 0,
+    selectedPlan,
+    couponValid,
+    validationResult,
+    couponDiscount: validationResult?.discountPercent || 0
+  });
+
   // Carregar plano salvo
   useEffect(() => {
     const savedPlan = localStorage.getItem('selectedPlan');
@@ -51,7 +59,17 @@ export const useCheckout = () => {
     }
     
     const couponDiscountPercent = couponValid && validationResult ? validationResult.discountPercent : 0;
-    return calculateTotalPrice(selectedPlan, cartItems, couponDiscountPercent, couponValid);
+    const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscountPercent, couponValid);
+    
+    console.log('[useCheckout] Preço calculado:', {
+      selectedPlan,
+      cartItemsCount: cartItems.length,
+      couponDiscountPercent,
+      couponValid,
+      result
+    });
+    
+    return result;
   }, [selectedPlan, cartItems, couponValid, validationResult]);
 
   // Wrapper para validação de cupom
@@ -97,21 +115,21 @@ export const useCheckout = () => {
     selectedPlan,
     setSelectedPlan,
     
-    // Estados do cupom
+    // Estados do cupom - CORRIGIDO
     couponCode,
     setCouponCode,
     couponValid,
     couponMessage,
     isValidatingCoupon,
     validationResult,
-    couponDiscount: validationResult.discountPercent, // CORREÇÃO: Adicionar couponDiscount
+    couponDiscount: validationResult?.discountPercent || 0, // GARANTIR que sempre retorna número
     
     // Estados do checkout
     isCreatingPayment,
     isNavigating,
     
     // Funções
-    calculateTotalPrice: calculateTotalPriceWrapper, // CORREÇÃO: Renomear para evitar conflito
+    calculateTotalPrice: calculateTotalPriceWrapper,
     validateCoupon,
     removeCoupon,
     handleNextStep,
