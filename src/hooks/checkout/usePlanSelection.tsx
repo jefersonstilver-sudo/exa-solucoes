@@ -4,36 +4,36 @@ import { useNavigate } from 'react-router-dom';
 import { useCartManager } from '../useCartManager';
 import { PlanKey, Plan } from '@/types/checkout';
 import { toast } from 'sonner';
-import { calculatePixPrice } from '@/utils/priceCalculator';
+import { calculateTotalPrice } from '@/utils/checkoutUtils';
 
-// Define PLANS com preços corretos
+// Define PLANS com preços corretos - CORREÇÃO: Remover valores fixos
 const PLANS: Record<number, Plan> = {
   1: { 
     id: 1, 
     name: 'Mensal', 
     months: 1, 
-    price: 200,
+    price: 0, // Será calculado dinamicamente
     discount: 0 
   },
   3: { 
     id: 3, 
     name: 'Trimestral', 
     months: 3, 
-    price: 160,
+    price: 0, // Será calculado dinamicamente
     discount: 20 
   },
   6: { 
     id: 6, 
     name: 'Semestral', 
     months: 6, 
-    price: 140,
+    price: 0, // Será calculado dinamicamente
     discount: 30 
   },
   12: { 
     id: 12, 
     name: 'Anual', 
     months: 12, 
-    price: 125,
+    price: 0, // Será calculado dinamicamente
     discount: 37.5 
   }
 };
@@ -44,13 +44,31 @@ export const usePlanSelection = (hasCart: boolean) => {
   
   const [isLoading, setIsLoading] = useState(false);
 
-  // Usar calculador centralizado para preço estimado
+  // CORREÇÃO: Usar calculador baseado no preço do prédio
   const calculateEstimatedPrice = () => {
     if (!selectedPlan || cartItems.length === 0) {
+      console.log("💰 [usePlanSelection] Cálculo cancelado - dados insuficientes:", {
+        selectedPlan,
+        cartItemsLength: cartItems.length
+      });
       return 0;
     }
     
-    return calculatePixPrice(selectedPlan, cartItems, 0);
+    // Usar função do checkoutUtils que respeita o preco_base do prédio
+    const result = calculateTotalPrice(selectedPlan, cartItems, 0, false);
+    
+    console.log("💰 [usePlanSelection] PREÇO CORRIGIDO BASEADO NO PRÉDIO:", {
+      selectedPlan,
+      cartItemsLength: cartItems.length,
+      estimatedPrice: result,
+      cartDetails: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
+      }))
+    });
+    
+    return result;
   };
 
   // Navigate to coupon page

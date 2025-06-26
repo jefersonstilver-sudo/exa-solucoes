@@ -5,7 +5,7 @@ import { calculateTotalPrice } from '@/utils/checkoutUtils';
 import { logPriceCalculation } from '@/utils/auditLogger';
 
 export const usePlanCalculations = () => {
-  // CORREÇÃO: Usar função centralizada para consistência total
+  // CORREÇÃO: Usar função centralizada baseada no preço do prédio
   const calculateEstimatedPrice = (
     selectedPlan: PlanKey | null,
     cartItems: CartItem[],
@@ -19,17 +19,18 @@ export const usePlanCalculations = () => {
       return 0;
     }
     
-    // CORREÇÃO: Usar função centralizada em vez de lógica própria
+    // CORREÇÃO: Usar função centralizada que respeita o preco_base do prédio
     const result = calculateTotalPrice(selectedPlan, cartItems, 0, false);
     
-    console.log("💰 [usePlanCalculations] RESULTADO CORRIGIDO:", {
+    console.log("💰 [usePlanCalculations] RESULTADO BASEADO NO PREÇO DO PRÉDIO:", {
       selectedPlan,
       cartItemsLength: cartItems.length,
       estimatedPrice: result,
       timestamp: new Date().toISOString(),
       cartDetails: cartItems.map(item => ({
         panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
       }))
     });
     
@@ -40,7 +41,8 @@ export const usePlanCalculations = () => {
       estimatedPrice: result,
       cartItems: cartItems.map(item => ({
         panelId: item.panel.id,
-        buildingName: item.panel.buildings?.nome
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
       }))
     });
     
