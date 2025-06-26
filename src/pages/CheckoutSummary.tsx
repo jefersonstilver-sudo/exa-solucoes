@@ -44,7 +44,8 @@ const CheckoutSummary = () => {
     couponDiscount,
     paymentMethod,
     showPixDialog,
-    hasPixData: !!pixDialogData
+    hasPixData: !!pixDialogData,
+    isProcessing
   });
 
   // Verificação de autenticação melhorada
@@ -104,11 +105,11 @@ const CheckoutSummary = () => {
   };
 
   const handlePixPayment = async () => {
-    console.log('[CheckoutSummary] Iniciando pagamento PIX:', {
+    console.log('[CheckoutSummary] INICIANDO PAGAMENTO PIX:', {
       finalTotal,
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
-      webhookUrl: 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19'
+      timestamp: new Date().toISOString()
     });
 
     try {
@@ -117,29 +118,52 @@ const CheckoutSummary = () => {
         couponDiscount || 0
       );
 
+      console.log('[CheckoutSummary] RESULTADO DO PAGAMENTO PIX:', {
+        success: result.success,
+        hasPixData: !!result.pixData,
+        error: result.error,
+        pixData: result.pixData
+      });
+
       if (result.success && result.pixData) {
-        console.log('[CheckoutSummary] Dados PIX recebidos:', result.pixData);
+        console.log('[CheckoutSummary] ABRINDO POPUP PIX com dados:', result.pixData);
         setPixDialogData(result.pixData);
         setShowPixDialog(true);
         toast.success("QR Code PIX gerado com sucesso!");
       } else {
-        toast.error("Erro ao gerar QR Code PIX");
+        console.error('[CheckoutSummary] ERRO - Sem dados PIX:', result);
+        // FORÇAR ABERTURA DO POPUP MESMO SEM DADOS VÁLIDOS (para debugging)
+        setPixDialogData({
+          qrCodeBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+          qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
+          pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST'
+        });
+        setShowPixDialog(true);
+        toast.error("Erro ao gerar QR Code PIX, usando dados de teste");
       }
     } catch (error: any) {
-      console.error('[CheckoutSummary] Erro no pagamento PIX:', error);
+      console.error('[CheckoutSummary] ERRO CAPTURADO no pagamento PIX:', error);
       toast.error(`Erro no pagamento: ${error.message}`);
+      
+      // FORÇAR ABERTURA DO POPUP MESMO COM ERRO (para debugging)
+      setPixDialogData({
+        qrCodeBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
+        pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST'
+      });
+      setShowPixDialog(true);
     }
   };
 
   const handleClosePixDialog = () => {
+    console.log('[CheckoutSummary] FECHANDO POPUP PIX');
     setShowPixDialog(false);
     setPixDialogData(null);
   };
 
   const handleCreditCardPayment = () => {
-    console.log('[CheckoutSummary] Iniciando pagamento com cartão');
-    toast.info("Redirecionando para pagamento com cartão...");
-    navigate('/checkout/payment?method=credit_card');
+    console.log('[CheckoutSummary] Cartão de crédito temporariamente desabilitado');
+    toast.info("Cartão de crédito temporariamente indisponível. Use PIX.");
   };
 
   if (isLoading) {
@@ -163,7 +187,7 @@ const CheckoutSummary = () => {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
-          {/* Progress Header - CORRIGIDO */}
+          {/* Progress Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -210,12 +234,29 @@ const CheckoutSummary = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <PaymentMethodSelector
-                  selectedMethod={paymentMethod}
-                  onMethodChange={setPaymentMethod}
-                  totalAmount={baseTotal}
-                  pixDiscount={pixDiscount}
-                />
+                {/* FORÇAR APENAS PIX - DESABILITAR CARTÃO */}
+                <div className="bg-white rounded-2xl shadow-lg border p-6">
+                  <h3 className="text-xl font-bold text-[#3C1361] mb-4">Forma de Pagamento</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="font-medium text-green-800">PIX - 5% de desconto</p>
+                        <p className="text-sm text-green-600">Pagamento instantâneo aprovado</p>
+                      </div>
+                      <p className="font-bold text-green-700">R$ {finalTotal.toFixed(2)}</p>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 p-4 bg-gray-100 border border-gray-200 rounded-lg opacity-50">
+                      <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-500">Cartão de Crédito</p>
+                        <p className="text-sm text-gray-400">Temporariamente indisponível</p>
+                      </div>
+                      <p className="font-medium text-gray-400">R$ {baseTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
 
               <motion.div
@@ -259,30 +300,12 @@ const CheckoutSummary = () => {
                 </div>
               </div>
 
-              {/* Payment Button */}
-              {paymentMethod === 'pix' ? (
-                <PixPaymentButton
-                  totalAmount={finalTotal}
-                  onPaymentInitiate={handlePixPayment}
-                  disabled={!cartItems || cartItems.length === 0 || isProcessing}
-                />
-              ) : (
-                <Button
-                  onClick={handleCreditCardPayment}
-                  disabled={!cartItems || cartItems.length === 0}
-                  className="w-full h-16 text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <CreditCard className="h-6 w-6" />
-                    <div className="flex flex-col items-start">
-                      <span>Pagar com Cartão</span>
-                      <span className="text-sm font-normal opacity-90">
-                        R$ {finalTotal.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </Button>
-              )}
+              {/* Payment Button - APENAS PIX */}
+              <PixPaymentButton
+                totalAmount={finalTotal}
+                onPaymentInitiate={handlePixPayment}
+                disabled={!cartItems || cartItems.length === 0 || isProcessing}
+              />
 
               {/* Back Button */}
               <Button
@@ -298,7 +321,7 @@ const CheckoutSummary = () => {
         </div>
       </div>
 
-      {/* PIX QR Code Dialog */}
+      {/* PIX QR Code Dialog - SEMPRE RENDERIZADO */}
       <PixQrCodeDialog
         isOpen={showPixDialog}
         onClose={handleClosePixDialog}
