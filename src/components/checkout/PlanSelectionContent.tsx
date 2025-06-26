@@ -5,7 +5,7 @@ import PlanSelector from './PlanSelector';
 import PlanContinueButton from './PlanContinueButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Calculator } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { Plan, PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { formatCurrency } from '@/utils/priceUtils';
@@ -61,7 +61,7 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Cart Summary - usando preço recalculado */}
+      {/* Cart Summary - Professional and Clean */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -89,12 +89,22 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
             </div>
           </div>
           <div className="bg-[#3C1361]/5 rounded-lg p-3">
-            <div className="text-sm text-[#3C1361]/70">Total Estimado</div>
+            <div className="text-sm text-[#3C1361]/70">Total</div>
             <div className="text-xl font-bold text-[#3C1361]">
               {formatCurrency(recalculatedPrice)}
             </div>
           </div>
         </div>
+
+        {/* Continue Button - Integrated into cart summary */}
+        {selectedPlan && panelCount > 0 && (
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <PlanContinueButton 
+              onContinue={onContinue}
+              selectedPlan={selectedPlan}
+            />
+          </div>
+        )}
       </motion.div>
 
       {/* Plan Selector */}
@@ -112,51 +122,6 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
           cartItems={cartItems}
         />
       </motion.div>
-
-      {/* Price Summary Footer - usando preço recalculado */}
-      {selectedPlan && panelCount > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="bg-[#3C1361]/5 border-[#3C1361]/20 shadow-lg">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-[#3C1361]" />
-                  <h3 className="text-lg font-semibold text-gray-900">Resumo do Investimento</h3>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">
-                    {panelCount} {panelCount === 1 ? 'prédio' : 'prédios'} × {selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'}
-                  </span>
-                  <span className="font-medium">{formatCurrency(recalculatedPrice)}</span>
-                </div>
-                
-                <div className="border-t pt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">Total</span>
-                    <span className="text-2xl font-bold text-[#3C1361]">
-                      {formatCurrency(recalculatedPrice)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <PlanContinueButton 
-                  onContinue={onContinue}
-                  selectedPlan={selectedPlan}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
     </div>
   );
 };

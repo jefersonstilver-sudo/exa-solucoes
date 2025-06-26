@@ -62,21 +62,20 @@ const PlanCard: React.FC<PlanCardProps> = ({
     }
   }, [planKey, cartItems]);
   
-  // Definir cores e estilos específicos para cada plano
+  // Definir cores e estilos específicos para cada plano - DESIGN PROFISSIONAL
   const getPlanStyle = () => {
     switch (planKey) {
-      case 1: // Mensal - Tornar menos atrativo
+      case 1: // Mensal - Design neutro
         return {
           border: isSelected ? 'border-gray-400 bg-gray-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50',
           text: 'text-gray-600',
-          header: 'bg-gray-300 text-gray-700',
+          header: 'bg-gray-100 text-gray-700',
           accent: 'text-gray-500',
-          icon: X,
+          icon: CheckCircle,
           iconColor: 'text-gray-400',
-          restrictionBadge: 'bg-red-100 text-red-700',
-          opacity: 'opacity-80'
+          opacity: 'opacity-90'
         };
-      case 3: // Trimestral - Mais Popular
+      case 3: // Trimestral - Destaque profissional
         return {
           border: isSelected ? 'border-green-500 bg-green-50 ring-2 ring-green-200' : 'border-green-400 hover:border-green-500 bg-white hover:bg-green-50',
           text: 'text-green-800',
@@ -84,10 +83,10 @@ const PlanCard: React.FC<PlanCardProps> = ({
           accent: 'text-green-600',
           icon: Star,
           iconColor: 'text-green-500',
-          popularBadge: 'bg-orange-500 text-white animate-pulse',
+          popularBadge: 'bg-green-600 text-white font-semibold',
           glow: 'shadow-lg shadow-green-200'
         };
-      case 6: // Semestral - Recomendado
+      case 6: // Semestral - Design elegante
         return {
           border: isSelected ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-300' : 'border-purple-400 hover:border-purple-500 bg-white hover:bg-purple-50',
           text: 'text-purple-800',
@@ -95,10 +94,10 @@ const PlanCard: React.FC<PlanCardProps> = ({
           accent: 'text-purple-600',
           icon: Crown,
           iconColor: 'text-purple-500',
-          recommendedBadge: 'bg-purple-600 text-white',
+          recommendedBadge: 'bg-purple-600 text-white font-semibold',
           glow: 'shadow-lg shadow-purple-200'
         };
-      case 12: // Anual - Máxima Economia
+      case 12: // Anual - Design premium
         return {
           border: isSelected ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300' : 'border-blue-400 hover:border-blue-500 bg-white hover:bg-blue-50',
           text: 'text-blue-800',
@@ -106,7 +105,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
           accent: 'text-blue-600',
           icon: Zap,
           iconColor: 'text-blue-500',
-          maxEconomyBadge: 'bg-blue-600 text-white',
+          maxEconomyBadge: 'bg-blue-600 text-white font-semibold',
           glow: 'shadow-lg shadow-blue-200'
         };
       default:
@@ -161,7 +160,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
       }}
       transition={{ duration: 0.4 }}
       whileHover={{ 
-        scale: planKey === 1 ? 1 : 1.02, // Mensal não tem hover scale
+        scale: planKey === 1 ? 1 : 1.02,
         boxShadow: planKey === 1 ? 'none' : '0 10px 30px rgba(0, 0, 0, 0.1)' 
       }}
       onHoverStart={() => setIsHovered(true)}
@@ -176,28 +175,28 @@ const PlanCard: React.FC<PlanCardProps> = ({
         `}
         onClick={onSelect}
       >
-        {/* Header Tags Específicos */}
+        {/* Headers Profissionais - SEM EMOJIS */}
         {planKey === 3 && (
           <div className={`${style.header} text-center py-2 text-sm font-bold tracking-wide`}>
-            🔥 MAIS POPULAR 🔥
+            MAIS POPULAR
           </div>
         )}
         
         {planKey === 6 && (
           <div className={`${style.header} text-center py-2 text-sm font-bold tracking-wide`}>
-            ✨ RECOMENDADO ✨
+            RECOMENDADO
           </div>
         )}
         
         {planKey === 12 && (
           <div className={`${style.header} text-center py-2 text-sm font-bold tracking-wide`}>
-            💎 MÁXIMA ECONOMIA 💎
+            MÁXIMA ECONOMIA
           </div>
         )}
 
         {planKey === 1 && (
           <div className={`${style.header} text-center py-1.5 text-xs font-medium`}>
-            Básico
+            Plano Básico
           </div>
         )}
         
@@ -257,7 +256,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
             )}
           </div>
           
-          {/* Features específicas para cada plano */}
+          {/* Features profissionais - SEM EMOJIS */}
           <div className="space-y-2 sm:space-y-3 mt-auto">
             {planKey === 1 && (
               <>
@@ -280,7 +279,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
               <>
                 <div className="flex items-start gap-2">
                   <Video className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-green-700 leading-tight font-medium">🎥 1 vídeo horizontal lettering de 15s por mês</span>
+                  <span className="text-xs sm:text-sm text-green-700 leading-tight font-medium">1 vídeo horizontal lettering de 15s por mês</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
@@ -297,11 +296,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
               <>
                 <div className="flex items-start gap-2">
                   <Video className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-purple-700 leading-tight font-medium">🎥 1 vídeo por mês</span>
+                  <span className="text-xs sm:text-sm text-purple-700 leading-tight font-medium">1 vídeo por mês</span>
                 </div>
                 <div className="flex items-start gap-2 bg-purple-100 p-2 rounded-lg">
                   <Building className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-purple-800 leading-tight font-bold">🎬 1 aluguel GRÁTIS do estúdio avançado Indexa Mídia</span>
+                  <span className="text-xs sm:text-sm text-purple-800 leading-tight font-bold">1 aluguel GRÁTIS do estúdio avançado Indexa Mídia</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
@@ -314,11 +313,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
               <>
                 <div className="flex items-start gap-2">
                   <Video className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-blue-700 leading-tight font-medium">🎥 1 vídeo por mês</span>
+                  <span className="text-xs sm:text-sm text-blue-700 leading-tight font-medium">1 vídeo por mês</span>
                 </div>
                 <div className="flex items-start gap-2 bg-blue-100 p-2 rounded-lg">
                   <Gift className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-blue-800 leading-tight font-bold">🎬 1 vídeo cinematográfico de até 1 minuto GRÁTIS</span>
+                  <span className="text-xs sm:text-sm text-blue-800 leading-tight font-bold">1 vídeo cinematográfico de até 1 minuto GRÁTIS</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
