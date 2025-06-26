@@ -5,8 +5,6 @@ import { CartItem } from '@/types/cart';
 import { modernCartService } from '@/services/modernCartService';
 import { useToast } from '@/hooks/use-toast';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { calculateRegularPrice } from '@/utils/priceCalculator';
-import { PlanKey } from '@/types/checkout';
 
 export const useModernCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -35,7 +33,6 @@ export const useModernCart = () => {
 
   const addToCart = useCallback((panel: Panel, duration: number = 30) => {
     try {
-      const basePrice = panel.buildings?.preco_base || 280;
       const updatedItems = modernCartService.addItem(panel, duration);
       
       triggerAnimation();
@@ -44,17 +41,12 @@ export const useModernCart = () => {
         CheckoutEvent.ADD_TO_CART,
         LogLevel.INFO,
         "Item adicionado ao carrinho moderno",
-        { 
-          panelId: panel.id, 
-          duration, 
-          basePrice, // PREÇO REAL DO PRÉDIO
-          itemCount: updatedItems.length 
-        }
+        { panelId: panel.id, duration, itemCount: updatedItems.length }
       );
 
       toast({
         title: "✅ Painel adicionado",
-        description: `${panel.buildings?.nome || 'Painel'} foi adicionado ao seu carrinho (R$ ${basePrice}/mês)`,
+        description: `${panel.buildings?.nome || 'Painel'} foi adicionado ao seu carrinho`,
       });
 
       return updatedItems;
@@ -148,19 +140,13 @@ export const useModernCart = () => {
     return modernCartService.getCartAnalytics();
   }, []);
 
-  // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DOS PRÉDIOS - SEM DESCONTO PIX
-  const getTotalPrice = useCallback(() => {
-    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-    return calculateRegularPrice(selectedPlan, cartItems, 0);
-  }, [cartItems]);
-
   return {
     // Estado
     cartItems,
     isLoading,
     isAnimating,
     itemCount: cartItems.length,
-    totalPrice: getTotalPrice(),
+    totalPrice: modernCartService.getTotalPrice(),
     
     // Ações
     addToCart,

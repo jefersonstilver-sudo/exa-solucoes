@@ -1,6 +1,7 @@
 
 import { CartItem, CartSyncData } from '@/types/cart';
 import { Panel } from '@/types/panel';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 
 export const MODERN_CART_KEY = 'indexa_modern_cart';
 export const CART_VERSION_KEY = 'indexa_cart_version';
@@ -59,8 +60,8 @@ class ModernCartService {
       id: this.generateItemId(panel),
       panel,
       duration,
-      addedAt: Date.now()
-      // REMOVIDO: price - será calculado dinamicamente quando necessário
+      addedAt: Date.now(),
+      price: getPanelPrice(panel, duration)
     };
   }
 
@@ -85,8 +86,8 @@ class ModernCartService {
                item.panel &&
                item.panel.id &&
                typeof item.duration === 'number' &&
-               typeof item.addedAt === 'number';
-        // REMOVIDO: validação de price
+               typeof item.addedAt === 'number' &&
+               typeof item.price === 'number';
       });
 
       if (validItems.length !== parsedData.items.length) {
@@ -134,8 +135,8 @@ class ModernCartService {
       items[existingIndex] = {
         ...items[existingIndex],
         duration,
+        price: getPanelPrice(panel, duration),
         addedAt: Date.now() // Atualizar timestamp
-        // REMOVIDO: price - não é mais calculado aqui
       };
     } else {
       // Adicionar novo item
@@ -163,8 +164,8 @@ class ModernCartService {
       if (item.panel.id === panelId) {
         return {
           ...item,
-          duration
-          // REMOVIDO: price - não é mais calculado aqui
+          duration,
+          price: getPanelPrice(item.panel, duration)
         };
       }
       return item;
@@ -188,14 +189,16 @@ class ModernCartService {
     return this.loadCart().length;
   }
 
-  // REMOVIDO: getTotalPrice - deve ser calculado externamente com plano selecionado
+  getTotalPrice(): number {
+    return this.loadCart().reduce((total, item) => total + item.price, 0);
+  }
 
   // Debug e analytics
   getCartAnalytics() {
     const items = this.loadCart();
     return {
       itemCount: items.length,
-      // REMOVIDO: totalPrice - deve ser calculado externamente
+      totalPrice: this.getTotalPrice(),
       averageDuration: items.length > 0 ? items.reduce((sum, item) => sum + item.duration, 0) / items.length : 0,
       oldestItem: items.length > 0 ? Math.min(...items.map(item => item.addedAt)) : null,
       version: this.currentVersion

@@ -26,16 +26,7 @@ export interface OrderStatusInfo {
   };
 }
 
-interface UseOrderStatusProps {
-  order: any;
-  onPixPayment?: (orderId: string) => void;
-}
-
-export const useOrderStatus = (orderOrProps: any, onPixPayment?: (orderId: string) => void) => {
-  // Support both old and new API
-  const order = orderOrProps?.order || orderOrProps;
-  const pixPaymentHandler = orderOrProps?.onPixPayment || onPixPayment;
-
+export const useOrderStatus = (order: any) => {
   const statusInfo = useMemo((): OrderStatusInfo => {
     // CORREÇÃO: Verificar se é uma tentativa de compra primeiro
     if (order?.type === 'attempt') {
@@ -74,11 +65,7 @@ export const useOrderStatus = (orderOrProps: any, onPixPayment?: (orderId: strin
             label: 'Pagar com PIX',
             variant: 'default',
             onClick: () => {
-              if (pixPaymentHandler && order?.id) {
-                pixPaymentHandler(order.id);
-              } else {
-                console.log('Abrir PIX para pedido:', order?.id);
-              }
+              console.log('Abrir PIX para pedido:', order.id);
             }
           }
         };
@@ -198,7 +185,7 @@ export const useOrderStatus = (orderOrProps: any, onPixPayment?: (orderId: strin
           icon: AlertTriangle
         };
     }
-  }, [order?.status, order?.videos, order?.id, order?.type, pixPaymentHandler]);
+  }, [order?.status, order?.videos, order?.id, order?.type]);
 
   return statusInfo;
 };

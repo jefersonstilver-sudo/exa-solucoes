@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -6,26 +7,21 @@ import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgre
 import ReviewStep from '@/components/checkout/ReviewStep';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
-import { useOrderManager } from '@/hooks/useOrderManager';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const { isLoggedIn, user, isLoading } = useUserSession();
   const [hasValidatedCart, setHasValidatedCart] = useState(false);
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   
   const {
     cartItems,
     calculateTotalPrice,
     couponValid,
-    couponDiscount,
-    selectedPlan
+    couponDiscount
   } = useCheckout();
-
-  const { createPendingOrder } = useOrderManager();
 
   // CORREÇÃO: Verificação de autenticação melhorada
   useEffect(() => {
@@ -77,31 +73,20 @@ const CheckoutSummary = () => {
     navigate('/checkout/cupom');
   };
 
-  // CORREÇÃO: Função melhorada para criar pedido primeiro
-  const handleCreateOrderAndNavigate = async () => {
-    console.log('[CheckoutSummary] CRIANDO PEDIDO ANTES DE NAVEGAR:', {
+  // CORREÇÃO: Função de navegação para pagamento melhorada
+  const handleNext = () => {
+    console.log('[CheckoutSummary] BOTÃO IR PARA PAGAMENTO CLICADO - CORRIGIDO:', {
       cartItemsCount: cartItems?.length || 0,
       totalPrice,
-      selectedPlan,
-      userId: user?.id,
+      couponValid,
+      couponDiscount,
       timestamp: new Date().toISOString()
     });
 
     // Validações básicas
-    if (!user?.id) {
-      toast.error("Usuário não autenticado");
-      return;
-    }
-
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio. Adicione painéis para continuar.");
       navigate('/paineis-digitais/loja');
-      return;
-    }
-
-    if (!selectedPlan) {
-      toast.error("Plano não selecionado");
-      navigate('/selecionar-plano');
       return;
     }
 
@@ -110,41 +95,14 @@ const CheckoutSummary = () => {
       return;
     }
 
-    setIsCreatingOrder(true);
-
-    try {
-      // Criar pedido pendente primeiro
-      const orderResult = await createPendingOrder({
-        clientId: user.id,
-        cartItems,
-        selectedPlan,
-        totalPrice,
-        couponId: null // Será implementado cupom depois
-      });
-
-      if (!orderResult.success) {
-        throw new Error(orderResult.error || "Erro ao criar pedido");
-      }
-
-      console.log('[CheckoutSummary] PEDIDO CRIADO COM SUCESSO:', {
-        pedidoId: orderResult.pedidoId,
-        transactionId: orderResult.transactionId
-      });
-
-      // Salvar IDs no localStorage para usar na próxima página
-      localStorage.setItem('current_pedido_id', orderResult.pedidoId!);
-      localStorage.setItem('current_transaction_id', orderResult.transactionId!);
-      
-      // Navegar para página de seleção de método de pagamento
-      toast.success("Pedido criado! Escolha o método de pagamento.");
-      navigate('/pagamento');
-
-    } catch (error: any) {
-      console.error('[CheckoutSummary] ERRO AO CRIAR PEDIDO:', error);
-      toast.error(`Erro ao criar pedido: ${error.message}`);
-    } finally {
-      setIsCreatingOrder(false);
-    }
+    // CORREÇÃO: Navegar diretamente para a página de checkout PIX
+    console.log('[CheckoutSummary] NAVEGANDO PARA CHECKOUT PIX - /checkout');
+    
+    // Adicionar feedback visual
+    toast.success("Redirecionando para pagamento...", { duration: 2000 });
+    
+    // Navegar para a página de checkout que já está preparada para PIX
+    navigate('/checkout');
   };
 
   if (isLoading) {
@@ -197,7 +155,6 @@ const CheckoutSummary = () => {
             <Button
               variant="outline"
               onClick={handleBack}
-              disabled={isCreatingOrder}
               className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -205,21 +162,12 @@ const CheckoutSummary = () => {
             </Button>
 
             <Button
-              onClick={handleCreateOrderAndNavigate}
-              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0 || isCreatingOrder}
+              onClick={handleNext}
+              disabled={!isLoggedIn || !cartItems || cartItems.length === 0 || totalPrice <= 0}
               className="flex items-center space-x-2 bg-[#3C1361] hover:bg-[#3C1361]/90 w-full sm:w-auto order-3"
             >
-              {isCreatingOrder ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Criando pedido...</span>
-                </>
-              ) : (
-                <>
-                  <span>Criar Pedido e Pagar</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
+              <span>Ir para Pagamento PIX</span>
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </motion.div>
         </div>

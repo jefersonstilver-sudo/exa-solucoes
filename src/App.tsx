@@ -1,63 +1,193 @@
 
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SimpleCartProvider } from "@/contexts/SimpleCartContext";
-import { AuthProvider } from "@/hooks/useAuth";
-import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import { ClientOnly } from "@/components/ui/client-only";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
-import CheckoutSummary from "./pages/CheckoutSummary";
-import PaymentMethod from "./pages/PaymentMethod";
-import PixPayment from "./pages/PixPayment";
+import { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/hooks/useAuth';
+import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import MinimalLoader from '@/components/ui/MinimalLoader';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
+
+// Importações diretas para páginas críticas
+import Index from './pages/Index';
+import BuildingStore from './pages/BuildingStore';
+import PlanSelection from './pages/PlanSelection';
+import CheckoutCoupon from './pages/CheckoutCoupon';
+import CheckoutSummary from './pages/CheckoutSummary';
+import Checkout from './pages/Checkout';
+import CheckoutFinish from './pages/CheckoutFinish';
+import Payment from './pages/Payment';
+import Confirmacao from './pages/Confirmacao';
+import LoginPage from './pages/LoginPage';
+import Cadastro from './pages/Cadastro';
+import SuperAdminPage from './pages/SuperAdminPage';
+import AdminPage from './pages/AdminPage';
+
+// Lazy load para páginas menos usadas
+const Marketing = lazy(() => import('./pages/Marketing'));
+const Produtora = lazy(() => import('./pages/Produtora'));
+const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
+const SouSindico = lazy(() => import('./pages/SouSindico'));
+const PanelStore = lazy(() => import('./pages/PanelStore'));
+const PainelStore = lazy(() => import('./pages/PainelStore'));
+const EmailSent = lazy(() => import('./pages/EmailSent'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+
+// Lazy load das páginas da área do anunciante
+const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
+const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'));
+const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
+const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
+const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
+const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
+const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-const App = () => {
-  console.log('🚀 [App] Sistema inicializando - Versão de recuperação');
-  
+function App() {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <ClientOnly fallback={
-              <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 flex items-center justify-center">
-                <div className="text-white text-center">
-                  <div className="h-8 w-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p>Sistema carregando...</p>
-                </div>
-              </div>
-            }>
-              <BrowserRouter>
-                <SimpleCartProvider>
-                  <Toaster />
+          <Router>
+            <SimpleCartProvider>
+              <div className="min-h-screen bg-background">
+                <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
+                    {/* Rotas principais */}
                     <Route path="/" element={<Index />} />
-                    <Route path="/login" element={<Login />} />
+                    
+                    {/* CORREÇÃO: Rotas da loja unificadas */}
+                    <Route path="/loja" element={<BuildingStore />} />
+                    <Route path="/paineis-digitais/loja" element={<BuildingStore />} />
+                    <Route path="/building-store" element={<BuildingStore />} />
+                    
+                    <Route path="/plano" element={<PlanSelection />} />
+                    <Route path="/planos" element={<PlanSelection />} />
+                    <Route path="/selecionar-plano" element={<PlanSelection />} />
+                    
+                    {/* CHECKOUT FLOW CORRIGIDO */}
+                    <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
                     <Route path="/checkout/resumo" element={<CheckoutSummary />} />
-                    <Route path="/pagamento" element={<PaymentMethod />} />
-                    <Route path="/pix-payment" element={<PixPayment />} />
-                    <Route path="*" element={<NotFound />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
+                    
+                    {/* PAGAMENTO - ROTAS CORRIGIDAS */}
+                    <Route path="/payment" element={<Payment />} />
+                    
+                    {/* CONFIRMAÇÕES */}
+                    <Route path="/confirmacao" element={<Confirmacao />} />
+                    <Route path="/pedido-confirmado" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <OrderConfirmation />
+                      </Suspense>
+                    } />
+
+                    {/* Rotas com lazy loading */}
+                    <Route path="/marketing" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <Marketing />
+                      </Suspense>
+                    } />
+                    <Route path="/produtora" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <Produtora />
+                      </Suspense>
+                    } />
+                    <Route path="/paineis-publicitarios" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <PaineisPublicitarios />
+                      </Suspense>
+                    } />
+                    <Route path="/sou-sindico" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <SouSindico />
+                      </Suspense>
+                    } />
+                    <Route path="/panel-store" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <PanelStore />
+                      </Suspense>
+                    } />
+                    <Route path="/painel-store" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <PainelStore />
+                      </Suspense>
+                    } />
+                    <Route path="/email-enviado" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <EmailSent />
+                      </Suspense>
+                    } />
+
+                    {/* ÁREA DO ANUNCIANTE */}
+                    <Route path="/anunciante/*" element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<MinimalLoader />}>
+                          <CompleteResponsiveLayout />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }>
+                      <Route index element={
+                        <Suspense fallback={<MinimalLoader />}>
+                          <AdvertiserDashboard />
+                        </Suspense>
+                      } />
+                      <Route path="pedidos" element={
+                        <Suspense fallback={<MinimalLoader />}>
+                          <AdvertiserOrders />
+                        </Suspense>
+                      } />
+                      <Route path="pedido/:id" element={
+                        <Suspense fallback={<MinimalLoader />}>
+                          <OrderDetails />
+                        </Suspense>
+                      } />
+                      <Route path="campanhas" element={
+                        <Suspense fallback={<MinimalLoader />}>
+                          <MyCampaigns />
+                        </Suspense>
+                      } />
+                      <Route path="videos" element={
+                        <Suspense fallback={<MinimalLoader />}>
+                          <MyVideos />
+                        </Suspense>
+                      } />
+                      <Route path="perfil" element={
+                        <Suspense fallback={<MinimalLoader />}>
+                          <AdvertiserSettings />
+                        </Suspense>
+                      } />
+                    </Route>
+
+                    {/* Rotas de autenticação */}
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/cadastro" element={<Cadastro />} />
+
+                    {/* Rotas administrativas */}
+                    <Route path="/super_admin/*" element={<SuperAdminPage />} />
+                    <Route path="/admin/*" element={<AdminPage />} />
                   </Routes>
-                </SimpleCartProvider>
-              </BrowserRouter>
-            </ClientOnly>
-          </TooltipProvider>
+                </Suspense>
+                <Toaster />
+              </div>
+            </SimpleCartProvider>
+          </Router>
         </AuthProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
-};
+}
 
 export default App;

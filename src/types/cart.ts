@@ -6,7 +6,7 @@ export interface CartItem {
   panel: Panel;
   duration: number; // em dias
   addedAt: number; // timestamp
-  // REMOVIDO: price field - agora calculado dinamicamente
+  price: number; // preço calculado
 }
 
 export interface CartState {

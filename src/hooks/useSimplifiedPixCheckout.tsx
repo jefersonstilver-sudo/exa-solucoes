@@ -60,30 +60,15 @@ export const useSimplifiedPixCheckout = () => {
         .filter(Boolean)
         .filter((id, index, arr) => arr.indexOf(id) === index);
 
-      // Calcular período
-      const dataInicio = new Date();
-      const dataFim = new Date();
-      dataFim.setMonth(dataInicio.getMonth() + selectedPlan);
-
       const webhookData = {
         cliente_id: user.id,
-        pedido_id: orderResult.pedidoId,
-        transaction_id: orderResult.transactionId || '',
         email: user.email || '',
-        nome: user.email?.split('@')[0] || 'Cliente',
-        plano_escolhido: `${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`,
-        periodo_meses: selectedPlan,
-        predios_selecionados: predioIds.map(id => ({ 
-          id: String(id),
-          nome: cartItems.find(item => 
-            (item.panel?.buildings?.id || item.panel?.building_id) === id
-          )?.panel?.buildings?.nome || 'Prédio'
-        })),
-        valor_total: String(finalPrice),
-        periodo_exibicao: {
-          inicio: dataInicio.toISOString().split('T')[0],
-          fim: dataFim.toISOString().split('T')[0]
-        }
+        nome: user.user_metadata?.full_name || user.email || '',
+        predios_selecionados: predioIds.map(id => ({ id })),
+        valor_total: finalPrice,
+        plano_meses: selectedPlan,
+        transaction_id: orderResult.transactionId || '',
+        cupom_usado: couponId || null
       };
 
       // Enviar para webhook PIX

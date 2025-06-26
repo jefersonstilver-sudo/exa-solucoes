@@ -10,15 +10,12 @@ interface ModernCartItemProps {
   item: CartItem;
   onRemove: (panelId: string) => void;
   onChangeDuration: (panelId: string, duration: number) => void;
-  // ADICIONADO: Preço deve ser passado de fora, calculado com plano
-  displayPrice?: number;
 }
 
 const ModernCartItem: React.FC<ModernCartItemProps> = ({
   item,
   onRemove,
-  onChangeDuration,
-  displayPrice
+  onChangeDuration
 }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const panel = item.panel;
@@ -57,12 +54,9 @@ const ModernCartItem: React.FC<ModernCartItemProps> = ({
               <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">{formatLocation()}</span>
             </div>
-            {/* CORRIGIDO: Só mostra preço se foi calculado */}
-            {displayPrice !== undefined && (
-              <div className="text-lg font-bold text-[#3C1361] mt-1">
-                {formatCurrency(displayPrice)}
-              </div>
-            )}
+            <div className="text-lg font-bold text-[#3C1361] mt-1">
+              {formatCurrency(item.price)}
+            </div>
           </div>
           
           <Button

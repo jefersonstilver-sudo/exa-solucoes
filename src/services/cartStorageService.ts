@@ -2,7 +2,7 @@
 import { Panel } from '@/types/panel';
 
 // ÚNICA CHAVE DE STORAGE - NÃO DUPLICAR
-export const CART_STORAGE_KEY = 'simple_cart';
+const CART_STORAGE_KEY = 'simple_cart';
 
 export interface LegacyCartItem {
   panel: Panel;

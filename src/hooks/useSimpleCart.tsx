@@ -7,12 +7,14 @@ import { useNavigate } from 'react-router-dom';
 import { loadCartFromStorage, saveCartToStorage, clearCartStorage, LegacyCartItem } from '@/services/cartStorageService';
 
 const convertLegacyToCartItem = (legacyItem: LegacyCartItem): CartItem => {
+  const basePrice = legacyItem.panel.buildings?.preco_base || 200;
+  
   return {
     id: `cart_${legacyItem.panel.id}_${Date.now()}`,
     panel: legacyItem.panel,
     duration: legacyItem.duration,
-    addedAt: Date.now()
-    // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DO PRÉDIO
+    addedAt: Date.now(),
+    price: basePrice
   };
 };
 
@@ -34,15 +36,6 @@ export const useSimpleCart = () => {
       const legacyItems = loadCartFromStorage();
       const convertedItems = legacyItems.map(convertLegacyToCartItem);
       setCartItems(convertedItems);
-      
-      console.log("🛒 [useSimpleCart] Carrinho carregado:", {
-        itemCount: convertedItems.length,
-        items: convertedItems.map(item => ({
-          panelId: item.panel.id,
-          buildingName: item.panel.buildings?.nome,
-          basePrice: item.panel.buildings?.preco_base // PREÇO REAL DO PRÉDIO
-        }))
-      });
     } catch (error) {
       console.error('Error loading cart:', error);
     } finally {
@@ -72,15 +65,6 @@ export const useSimpleCart = () => {
   }, []);
 
   const addToCart = useCallback((panel: Panel, duration: number = 30) => {
-    const basePrice = panel.buildings?.preco_base || 280;
-    
-    console.log("➕ [useSimpleCart] Adicionando ao carrinho:", {
-      panelId: panel.id,
-      buildingName: panel.buildings?.nome,
-      basePrice, // PREÇO REAL DO PRÉDIO
-      duration
-    });
-
     setCartItems(prev => {
       const existingIndex = prev.findIndex(item => item.panel?.id === panel.id);
       
@@ -98,8 +82,8 @@ export const useSimpleCart = () => {
           id: `cart_${panel.id}_${Date.now()}`,
           panel,
           duration,
-          addedAt: Date.now()
-          // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base
+          addedAt: Date.now(),
+          price: panel.buildings?.preco_base || 200
         };
         return [...prev, newItem];
       }
@@ -107,7 +91,7 @@ export const useSimpleCart = () => {
 
     triggerAnimation();
     
-    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho! (R$ ${basePrice}/mês)`, {
+    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
       duration: 2000,
       position: 'top-center'
     });
@@ -149,7 +133,7 @@ export const useSimpleCart = () => {
     isLoading,
     isAnimating,
     itemCount: cartItems.length,
-    // PREÇO CALCULADO DINAMICAMENTE NO COMPONENTE QUE USA
+    totalPrice: cartItems.reduce((sum, item) => sum + item.price, 0),
     isItemInCart,
     addToCart,
     removeFromCart,

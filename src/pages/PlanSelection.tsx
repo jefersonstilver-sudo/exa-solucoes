@@ -96,8 +96,8 @@ const PlanSelection = () => {
         cartDetails: cartItems.map(item => ({
           panelId: item.panel?.id,
           buildingName: item.panel?.buildings?.nome,
-          preco_base: item.panel?.buildings?.preco_base
-          // REMOVIDO: price - será calculado dinamicamente
+          preco_base: item.panel?.buildings?.preco_base,
+          price: item.price
         }))
       });
 
@@ -108,8 +108,8 @@ const PlanSelection = () => {
         cartItems: cartItems.map(item => ({
           panelId: item.panel?.id,
           buildingName: item.panel?.buildings?.nome,
-          preco_base: item.panel?.buildings?.preco_base
-          // REMOVIDO: price - será calculado dinamicamente
+          preco_base: item.panel?.buildings?.preco_base,
+          price: item.price
         }))
       });
     }

@@ -4,8 +4,7 @@ import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
 import { findCartItems, saveCartItems, clearAllCarts, CART_STORAGE_KEYS } from '@/utils/cartUtils';
-import { calculateRegularPrice } from '@/utils/priceCalculator';
-import { PlanKey } from '@/types/checkout';
+import { getPanelPrice } from '@/utils/checkoutUtils';
 
 export const useUnifiedCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -28,7 +27,7 @@ export const useUnifiedCart = () => {
           id: item.id,
           panelId: item.panel?.id,
           buildingName: item.panel?.buildings?.nome,
-          basePrice: item.panel?.buildings?.preco_base // PREÇO REAL DO PRÉDIO
+          price: item.price
         }))
       });
     } else {
@@ -50,12 +49,9 @@ export const useUnifiedCart = () => {
   }, [cartItems, isLoading]);
 
   const addToCart = useCallback((panel: Panel, duration: number = 30) => {
-    const basePrice = panel.buildings?.preco_base || 280;
-    
     console.log("➕ [useUnifiedCart] Adicionando ao carrinho:", {
       panelId: panel.id,
       buildingName: panel.buildings?.nome,
-      basePrice, // PREÇO REAL DO PRÉDIO
       duration
     });
 
@@ -69,13 +65,13 @@ export const useUnifiedCart = () => {
             ? { 
                 ...item, 
                 duration, 
+                price: getPanelPrice(panel, duration), 
                 addedAt: Date.now() 
-                // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base
               }
             : item
         );
         
-        toast.success(`${panel.buildings?.nome || 'Painel'} atualizado no carrinho! (R$ ${basePrice}/mês)`);
+        toast.success(`${panel.buildings?.nome || 'Painel'} atualizado no carrinho!`);
         return updated;
       } else {
         // Adicionar novo item
@@ -83,11 +79,11 @@ export const useUnifiedCart = () => {
           id: `cart_${panel.id}_${Date.now()}`,
           panel,
           duration,
-          addedAt: Date.now()
-          // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base
+          addedAt: Date.now(),
+          price: getPanelPrice(panel, duration)
         };
         
-        toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho! (R$ ${basePrice}/mês)`);
+        toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`);
         return [...prev, newItem];
       }
     });
@@ -115,8 +111,8 @@ export const useUnifiedCart = () => {
       item.panel?.id === panelId 
         ? { 
             ...item, 
-            duration
-            // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base
+            duration, 
+            price: getPanelPrice(item.panel, duration) 
           }
         : item
     ));
@@ -128,17 +124,13 @@ export const useUnifiedCart = () => {
     return cartItems.some(item => item.panel?.id === panelId);
   }, [cartItems]);
 
-  // PREÇO CALCULADO DINAMICAMENTE BASEADO NO preco_base DOS PRÉDIOS - SEM DESCONTO PIX
-  const getTotalPrice = useCallback(() => {
-    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-    return calculateRegularPrice(selectedPlan, cartItems, 0);
-  }, [cartItems]);
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
 
   return {
     cartItems,
     isLoading,
     itemCount: cartItems.length,
-    totalPrice: getTotalPrice(),
+    totalPrice,
     lastUpdateSource,
     isItemInCart,
     addToCart,

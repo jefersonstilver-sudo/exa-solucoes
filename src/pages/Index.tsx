@@ -16,66 +16,51 @@ interface HomepageConfig {
   updated_at: string;
 }
 
-// Configurações padrão garantidas
-const DEFAULT_CONFIGS: HomepageConfig[] = [
-  {
-    id: '1',
-    service_type: 'marketing',
-    title: 'Marketing Digital',
-    image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80',
-    href: '/marketing',
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: '2',  
-    service_type: 'produtora',
-    title: 'Produtora de Vídeos',
-    image_url: 'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80',
-    href: '/produtora',
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: '3',
-    service_type: 'paineis',
-    title: 'Painéis Publicitários',
-    image_url: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80',
-    href: '/paineis-digitais/loja',
-    updated_at: new Date().toISOString()
-  }
-];
-
 const Index = () => {
-  const [configs, setConfigs] = useState<HomepageConfig[]>(DEFAULT_CONFIGS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [configs, setConfigs] = useState<HomepageConfig[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { banners, isLoading: bannersLoading } = useHomepageBanners();
-
-  console.log('🏠 [Index] SISTEMA RECUPERADO - Página renderizando', {
-    configsCount: configs.length,
-    bannersCount: banners?.length || 0,
-    isLoading,
-    bannersLoading
-  });
 
   useEffect(() => {
     const fetchConfigs = async () => {
       try {
-        setIsLoading(true);
-        console.log('📊 [Index] Buscando configurações...');
-        
         const { data, error } = await supabase
           .from('homepage_config')
           .select('*')
           .order('service_type');
 
-        if (data && data.length > 0) {
-          setConfigs(data);
-          console.log('✅ [Index] Configs carregadas:', data.length);
+        if (error) {
+          setConfigs([
+            {
+              id: '1',
+              service_type: 'marketing',
+              title: 'Marketing',
+              image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80',
+              href: '/marketing',
+              updated_at: new Date().toISOString()
+            },
+            {
+              id: '2',
+              service_type: 'produtora',
+              title: 'Produtora',
+              image_url: 'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80',
+              href: '/produtora',
+              updated_at: new Date().toISOString()
+            },
+            {
+              id: '3',
+              service_type: 'paineis',
+              title: 'Painéis Publicitários',
+              image_url: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80',
+              href: '/paineis-digitais/loja',
+              updated_at: new Date().toISOString()
+            }
+          ]);
         } else {
-          console.log('📋 [Index] Usando configs padrão');
+          setConfigs(data || []);
         }
-        
       } catch (error) {
-        console.error('❌ [Index] Erro ao carregar configs:', error);
+        // Silent error handling for performance
       } finally {
         setIsLoading(false);
       }
@@ -84,61 +69,65 @@ const Index = () => {
     fetchConfigs();
   }, []);
 
+  if (isLoading || bannersLoading) {
+    return (
+      <Layout>
+        <section className="py-16 px-4 min-h-screen flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-indexa-purple" />
+        </section>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <section className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 pt-20 relative">
-        <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
-          
-          {/* Status de recuperação */}
-          <div className="text-center text-white mb-6">
-            <div className="bg-green-500/20 backdrop-blur-sm rounded-lg p-3 inline-block">
-              <p className="text-sm font-medium">✅ Sistema Recuperado com Sucesso</p>
-            </div>
-          </div>
-          
-          {/* Loading state */}
-          {(isLoading || bannersLoading) && (
-            <div className="text-center text-white mb-8">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-              <p className="text-sm">Carregando conteúdo...</p>
-            </div>
-          )}
-          
-          {/* Layout Mobile */}
-          <div className="lg:hidden space-y-6">
-            {/* Banner Mobile */}
-            <div className="h-[300px] sm:h-[350px] md:h-[400px] bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden">
+      <section 
+        className="py-4 md:py-16 px-4 relative min-h-screen flex items-center pt-20 lg:pt-16" 
+        style={{
+          backgroundImage: "url('https://cdn.pixabay.com/photo/2015/05/04/20/03/purple-wallpaper-752886_1280.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }}
+      >
+        <div className="absolute inset-0 bg-black/20"></div>
+        
+        <div className="max-w-7xl mx-auto relative z-10 w-full">
+          {/* Mobile: Banner no topo + Cards empilhados verticalmente */}
+          <div className="lg:hidden space-y-4">
+            {/* Banner no mobile - aumentando altura significativamente */}
+            <div className="h-[300px] sm:h-[350px] md:h-[400px]">
               <HomepageBannerCarousel 
-                banners={banners || []} 
+                banners={banners} 
                 className="w-full h-full"
               />
             </div>
             
-            {/* Cards Mobile */}
-            <div className="grid grid-cols-1 gap-4">
+            {/* Cards empilhados no mobile */}
+            <div className="grid grid-cols-1 gap-3">
               {configs.map((config) => (
                 <ServiceCard
                   key={config.id}
                   title={config.title}
                   backgroundImage={config.image_url}
                   href={config.href}
-                  className="h-[180px] shadow-xl"
+                  className="h-[180px]"
                 />
               ))}
             </div>
           </div>
 
-          {/* Layout Desktop */}
+          {/* Desktop: Banner central + Cards na lateral direita */}
           <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8 lg:h-[480px]">
-            {/* Banner Desktop */}
-            <div className="lg:col-span-8 bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden">
+            {/* Área central para banner - 8 colunas */}
+            <div className="lg:col-span-8">
               <HomepageBannerCarousel 
-                banners={banners || []} 
+                banners={banners} 
                 className="w-full h-full"
               />
             </div>
 
-            {/* Cards Desktop */}
+            {/* Cards empilhados na lateral direita - 4 colunas */}
             <div className="lg:col-span-4 flex flex-col gap-4">
               {configs.map((config) => (
                 <ServiceCard
@@ -146,7 +135,7 @@ const Index = () => {
                   title={config.title}
                   backgroundImage={config.image_url}
                   href={config.href}
-                  className="h-[150px] flex-1 shadow-xl"
+                  className="h-[150px] flex-1"
                 />
               ))}
             </div>

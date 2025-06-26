@@ -4,8 +4,6 @@ import { Panel } from '@/types/panel';
 import { CartItem } from '@/types/cart';
 import ModernCartLayout from '@/components/cart/ModernCartLayout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
-import { calculatePixPrice } from '@/utils/priceCalculator';
-import { PlanKey } from '@/types/checkout';
 
 interface PanelCartProps {
   cartItems: CartItem[];
@@ -26,17 +24,12 @@ const PanelCart: React.FC<PanelCartProps> = ({
 
   const handleCheckout = () => {
     console.log("PanelCart: Iniciando checkout moderno");
-    
-    // CORRIGIDO: Fazer type casting para PlanKey
-    const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1') as PlanKey;
-    const total = calculatePixPrice(selectedPlan, cartItems, 0);
-    
     logCheckoutEvent(
       CheckoutEvent.PROCEED_TO_CHECKOUT, 
       LogLevel.INFO, 
       `Iniciando checkout moderno com ${cartItems.length} itens`, 
       { 
-        total, 
+        total: cartItems.reduce((sum, item) => sum + item.price, 0), 
         cartItems: cartItems.length 
       }
     );

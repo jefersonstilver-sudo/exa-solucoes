@@ -2,17 +2,35 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
+// Import the MercadoPago SDK
+import * as MercadoPago from "https://esm.sh/mercadopago@1.5.16";
+
 // Configure CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to handle CORS preflight requests
+function handleCorsPreflightRequest() {
+  return new Response(null, { headers: corsHeaders });
+}
+
 // Create a Supabase client
 function createSupabaseClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   return createClient(supabaseUrl, supabaseKey);
+}
+
+// Configure MercadoPago
+function configureMercadoPago() {
+  const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
+  MercadoPago.configure({
+    access_token: MP_ACCESS_TOKEN,
+    sandbox: true
+  });
+  return MP_ACCESS_TOKEN;
 }
 
 // Validate pedidoId (must be a valid UUID)
@@ -23,189 +41,361 @@ function validatePedidoId(pedidoId: string) {
   }
 }
 
-// Generate PIX payment with N8N webhook - CORRIGIDO
+// CRITICAL: Check for duplicate processing
+async function checkDuplicateProcessing(supabase: any, paymentKey: string, pedidoId: string) {
+  console.log(`[ANTI-DUPLICATE] Checking for duplicate processing: ${paymentKey}`);
+  
+  // Check if this payment key was already processed
+  const { data: existingPayment, error } = await supabase
+    .from('pedidos')
+    .select('id, log_pagamento')
+    .eq('id', pedidoId)
+    .single();
+    
+  if (error) {
+    throw new Error(`Erro ao verificar pedido: ${error.message}`);
+  }
+  
+  if (existingPayment?.log_pagamento?.payment_preference_id || existingPayment?.log_pagamento?.pixData) {
+    console.log(`[ANTI-DUPLICATE] Payment already processed for pedido: ${pedidoId}`);
+    throw new Error('Pagamento já foi processado para este pedido');
+  }
+  
+  return true;
+}
+
+// Generate PIX payment with MercadoPago
 async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string) {
   try {
     console.log(`🎯 [PIX] Gerando pagamento PIX para pedido: ${pedidoId}, valor: ${totalAmount}`);
     
-    // Valor final com desconto PIX (5%)
-    const valorPixComDesconto = totalAmount * 0.95;
-    
-    // Preparar dados para o webhook N8N
-    const pixPaymentData = {
-      pedido_id: pedidoId,
-      valor: valorPixComDesconto,
-      valor_original: totalAmount,
-      email: userEmail,
-      timestamp: new Date().toISOString(),
-      webhook_source: 'supabase_edge_function'
+    // Create PIX payment preference
+    const preference = {
+      items: [{
+        id: `campaign_${pedidoId}`,
+        title: `Campanha publicitária digital`,
+        quantity: 1,
+        unit_price: totalAmount,
+        currency_id: 'BRL',
+        description: `Veiculação publicitária`,
+        category_id: "digital_goods"
+      }],
+      payer: {
+        email: userEmail || 'cliente@exemplo.com'
+      },
+      payment_methods: {
+        excluded_payment_types: [
+          { id: "credit_card" },
+          { id: "debit_card" },
+          { id: "ticket" }
+        ],
+        installments: 1
+      },
+      external_reference: pedidoId,
+      metadata: {
+        pedido_id: pedidoId,
+        payment_method: 'pix',
+        total_amount: totalAmount
+      }
     };
 
-    let pixData;
-    let webhookSuccess = false;
-
-    // CORREÇÃO: Chamar webhook N8N correto conforme solicitado
-    try {
-      const N8N_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19';
-      
-      console.log(`📡 [PIX] Chamando webhook N8N CORRETO: ${N8N_WEBHOOK_URL}`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
-      
-      const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(pixPaymentData),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (webhookResponse.ok) {
-        const webhookResult = await webhookResponse.json();
-        console.log(`✅ [PIX] Webhook N8N SUCESSO:`, webhookResult);
-
-        // CORREÇÃO: Mapear resposta do webhook corretamente
-        pixData = {
-          paymentId: webhookResult.payment_id || `pix_${pedidoId}_${Date.now()}`,
-          status: 'pending',
-          qrCode: webhookResult.pix_url || webhookResult.qr_code_text || webhookResult.pix_copia_cola,
-          qrCodeBase64: webhookResult.pix_base64 || webhookResult.qr_code_base64,
-          qrCodeText: webhookResult.pix_url || webhookResult.qr_code_text || webhookResult.pix_copia_cola,
-          pix_url: webhookResult.pix_url || webhookResult.qr_code_text || webhookResult.pix_copia_cola,
-          pix_base64: webhookResult.pix_base64 || webhookResult.qr_code_base64,
-          valor_original: totalAmount,
-          valor_pix: valorPixComDesconto,
-          webhook_response: webhookResult,
-          webhook_success: true,
-          webhook_url: N8N_WEBHOOK_URL,
-          createdAt: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // CORREÇÃO: 5 minutos
-        };
-        
-        webhookSuccess = true;
-      } else {
-        const errorText = await webhookResponse.text();
-        throw new Error(`Webhook retornou status ${webhookResponse.status}: ${errorText}`);
+    // Create preference in MercadoPago
+    const response = await MercadoPago.preferences.create(preference);
+    const preferenceId = response.body.id;
+    
+    console.log(`✅ [PIX] Preferência criada: ${preferenceId}`);
+    
+    // Create payment specifically for PIX
+    const payment = {
+      transaction_amount: totalAmount,
+      description: `Campanha publicitária digital - Pedido ${pedidoId}`,
+      payment_method_id: 'pix',
+      payer: {
+        email: userEmail || 'cliente@exemplo.com'
+      },
+      external_reference: pedidoId,
+      metadata: {
+        pedido_id: pedidoId
       }
-    } catch (webhookError) {
-      console.error(`❌ [PIX] Webhook N8N falhou:`, webhookError);
-      throw new Error(`Falha no webhook N8N: ${webhookError.message}`);
-    }
+    };
 
-    // Salvar dados PIX no pedido
+    const paymentResponse = await MercadoPago.payment.create(payment);
+    const paymentData = paymentResponse.body;
+    
+    console.log(`✅ [PIX] Pagamento PIX criado:`, {
+      id: paymentData.id,
+      status: paymentData.status,
+      hasQrCode: !!paymentData.point_of_interaction?.transaction_data?.qr_code_base64
+    });
+
+    // CORREÇÃO: Mapear corretamente os dados PIX para o formato esperado pelo frontend
+    const pixData = {
+      paymentId: paymentData.id.toString(),
+      status: paymentData.status,
+      qrCode: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      qrCodeBase64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
+      qrCodeText: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      pix_url: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      pix_base64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
+      preferenceId: preferenceId,
+      createdAt: new Date().toISOString()
+    };
+
+    // Update order with PIX data - ESTRUTURA CORRIGIDA
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
         log_pagamento: {
           pixData: pixData,
-          pix_data: pixData,
+          pix_data: pixData, // Adicionar também no formato alternativo
           payment_method: 'pix',
           total_amount: totalAmount,
-          valor_pix: valorPixComDesconto,
-          webhook_called: true,
-          webhook_success: webhookSuccess,
-          webhook_url: pixData.webhook_url,
-          timestamp: new Date().toISOString(),
-          qr_code_base64: pixData.qrCodeBase64,
-          qr_code_text: pixData.qrCode,
-          payment_id: pixData.paymentId,
-          expires_at: pixData.expires_at
+          timestamp: new Date().toISOString()
         }
       })
       .eq('id', pedidoId);
 
     if (updateError) {
-      console.error(`❌ [PIX] Erro ao salvar dados PIX:`, updateError);
       throw new Error(`Erro ao salvar dados PIX: ${updateError.message}`);
     }
 
-    console.log(`✅ [PIX] Dados PIX salvos com sucesso no pedido ${pedidoId}`);
+    console.log(`✅ [PIX] Dados PIX salvos com mapeamento correto:`, {
+      qrCodeBase64: !!pixData.qrCodeBase64,
+      qrCode: !!pixData.qrCode,
+      paymentId: pixData.paymentId
+    });
 
     return { success: true, pixData };
 
   } catch (error: any) {
-    console.error(`❌ [PIX] Erro crítico ao gerar PIX:`, error);
-    throw error;
+    console.error(`❌ [PIX] Erro ao gerar PIX:`, error);
+    throw new Error(`Falha ao gerar PIX: ${error.message}`);
   }
 }
 
 // Main handler function
 async function handleRequest(req: Request) {
   try {
+    // Create Supabase client
     const supabase = createSupabaseClient();
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     
+    // Configure MercadoPago
+    const MP_ACCESS_TOKEN = configureMercadoPago();
+    
+    // Get request data
     const requestData = await req.json();
     const { 
       pedido_id: pedidoId, 
       total_amount: totalAmount,
-      payment_method = 'pix',
-      user_email: userEmail
+      cart_items: cartItems, 
+      user_id: userId, 
+      return_url: returnUrl, 
+      payment_method = 'credit_card',
+      payment_key,
+      idempotency_key,
+      anti_duplicate_controls
     } = requestData;
     
-    console.log("[PROCESS-PAYMENT] PROCESSANDO PAGAMENTO PIX CORRIGIDO:", { 
+    console.log("[PAYMENT-REAL] SISTEMA CORRIGIDO - Dados recebidos:", { 
       pedidoId, 
       totalAmount, 
-      paymentMethod: payment_method,
-      userEmail
+      userId, 
+      paymentMethod: payment_method, 
+      cartItemsCount: cartItems?.length,
+      paymentKey,
+      antiDuplicateControls: anti_duplicate_controls
     });
     
-    // Validações
-    validatePedidoId(pedidoId);
-    
+    // CRITICAL: Validate total amount is correct and not divided
     if (!totalAmount || totalAmount <= 0) {
       throw new Error(`Valor total inválido: ${totalAmount}`);
     }
-
-    if (payment_method !== 'pix') {
-      throw new Error(`Método de pagamento inválido: ${payment_method}. Apenas PIX está disponível.`);
+    
+    // CRITICAL: Check for duplicate processing
+    if (payment_key) {
+      await checkDuplicateProcessing(supabase, payment_key, pedidoId);
     }
     
-    // Verificar se o pedido existe
-    const { data: existingPedido, error: pedidoError } = await supabase
-      .from('pedidos')
-      .select('id, status, valor_total')
-      .eq('id', pedidoId)
+    // Validate pedidoId
+    validatePedidoId(pedidoId);
+    
+    // Fetch user data
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', userId)
       .single();
-
-    if (pedidoError || !existingPedido) {
-      throw new Error(`Pedido não encontrado: ${pedidoId}`);
+      
+    if (userError) {
+      throw new Error(`Erro ao buscar dados do usuário: ${userError.message}`);
     }
 
-    if (existingPedido.status === 'pago' || existingPedido.status === 'pago_pendente_video') {
-      console.log(`⚠️ [PIX] Pedido ${pedidoId} já foi pago`);
+    // CORREÇÃO ESPECÍFICA PARA PIX
+    if (payment_method === 'pix') {
+      console.log("🎯 [PAYMENT-REAL] Processando PIX com integração real");
+      const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userData?.email);
+      
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Pedido já foi pago",
+          pixData: pixResult.pixData,
           pedido_id: pedidoId,
-          status: existingPedido.status
+          payment_method: 'pix'
         }),
         {
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
         }
       );
     }
     
-    // Processar PIX com webhook correto
-    const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userEmail || 'cliente@exemplo.com');
+    // Validate cart items
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      throw new Error("Nenhum painel válido encontrado no carrinho");
+    }
     
+    // CRITICAL: Use the correct total amount directly, don't calculate from items
+    const correctedTotalAmount = Number(totalAmount.toFixed(2));
+    
+    console.log(`[PAYMENT-REAL] Valor corrigido: ${correctedTotalAmount} (original: ${totalAmount})`);
+    
+    // Prepare MercadoPago items with CORRECT total value
+    const items = [{
+      id: `campaign_${pedidoId}`,
+      title: `Campanha publicitária digital - ${cartItems.length} painéis`,
+      quantity: 1,
+      unit_price: correctedTotalAmount, // Use full amount, not divided
+      currency_id: 'BRL',
+      description: `Veiculação por 30 dias em ${cartItems.length} painel(éis)`,
+      category_id: "digital_goods",
+      picture_url: "https://via.placeholder.com/150"
+    }];
+    
+    // Prepare return URLs
+    const originUrl = returnUrl || 'https://app.indexamidia.com';
+    const returnUrls = {
+      successUrl: `${originUrl}/pedido-confirmado?id=${pedidoId}&status=approved`,
+      failureUrl: `${originUrl}/checkout?error=payment_failed&id=${pedidoId}`,
+      pendingUrl: `${originUrl}/pedido-confirmado?id=${pedidoId}&status=pending`
+    };
+    
+    // Create MercadoPago preference
+    const preference = {
+      items,
+      payer: {
+        email: userData?.email || 'cliente@exemplo.com',
+        name: "Cliente Teste",
+        identification: {
+          type: "CPF",
+          number: "11111111111"
+        }
+      },
+      back_urls: {
+        success: returnUrls.successUrl,
+        failure: returnUrls.failureUrl,
+        pending: returnUrls.pendingUrl
+      },
+      auto_return: "approved",
+      external_reference: pedidoId,
+      notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
+      statement_descriptor: "INDEXA MÍDIA",
+      expires: false,
+      payment_methods: {
+        installments: 12,
+      },
+      metadata: {
+        pedido_id: pedidoId,
+        user_id: userId,
+        payment_method: payment_method,
+        test: true,
+        email: userData?.email,
+        payment_key: payment_key,
+        idempotency_key: idempotency_key,
+        total_amount_check: correctedTotalAmount
+      }
+    };
+    
+    console.log(`[PAYMENT-REAL] Criando preferência com valor: ${correctedTotalAmount}`);
+    
+    // Create preference in MercadoPago or simulate in development
+    let preferenceId = "";
+    let initPoint = "";
+    
+    try {
+      if (!MP_ACCESS_TOKEN) {
+        console.log("No MP_ACCESS_TOKEN found, using test mode");
+        preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+      } else {
+        // Use MercadoPago API
+        console.log("Sending request to MercadoPago API...");
+        const response = await MercadoPago.preferences.create(preference);
+        
+        preferenceId = response.body.id;
+        initPoint = response.body.init_point;
+        
+        // Force test parameter
+        if (initPoint && !initPoint.includes('test=')) {
+          initPoint = `${initPoint}${initPoint.includes('?') ? '&' : '?'}test=true`;
+        }
+        
+        console.log("MercadoPago preference created successfully");
+      }
+    } catch (mpError) {
+      console.error("Error creating MercadoPago preference:", mpError);
+      
+      // Emergency fallback mode
+      preferenceId = `FALLBACK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+      
+      console.log("Using emergency fallback preference");
+    }
+    
+    // CRITICAL: Update order with payment information and correct total
+    const { error: updateError } = await supabase
+      .from('pedidos')
+      .update({
+        log_pagamento: {
+          original_total_amount: totalAmount,
+          corrected_total_amount: correctedTotalAmount,
+          payment_preference_id: preferenceId,
+          payment_init_point: initPoint,
+          payment_status: 'pending',
+          payment_method: payment_method,
+          items_count: cartItems.length,
+          payment_key: payment_key,
+          idempotency_key: idempotency_key,
+          anti_duplicate_processed: true,
+          test: true,
+          timestamp: new Date().toISOString()
+        }
+      })
+      .eq('id', pedidoId);
+      
+    if (updateError) {
+      throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
+    }
+    
+    console.log("[PAYMENT-REAL] Payment preference created and order updated:", {
+      preferenceId,
+      correctedAmount: correctedTotalAmount,
+      paymentMethod: payment_method
+    });
+    
+    // Return preference data
     return new Response(
       JSON.stringify({
         success: true,
-        message: "PIX gerado com sucesso via webhook N8N",
-        pixData: pixResult.pixData,
+        preference_id: preferenceId,
+        init_point: initPoint,
         pedido_id: pedidoId,
-        payment_method: 'pix',
-        valor_original: totalAmount,
-        valor_pix: pixResult.pixData.valor_pix,
-        qr_code_base64: pixResult.pixData.qrCodeBase64,
-        qr_code_text: pixResult.pixData.qrCode,
-        expires_at: pixResult.pixData.expires_at,
-        expires_in_minutes: 5
+        payment_method: payment_method,
+        corrected_total_amount: correctedTotalAmount,
+        anti_duplicate_check: 'passed',
+        test: true
       }),
       {
         headers: {
@@ -215,8 +405,8 @@ async function handleRequest(req: Request) {
       }
     );
     
-  } catch (error: any) {
-    console.error('[PROCESS-PAYMENT] ERRO AO PROCESSAR PAGAMENTO PIX:', error);
+  } catch (error) {
+    console.error('[PAYMENT-REAL] Erro ao processar pagamento:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -235,13 +425,9 @@ async function handleRequest(req: Request) {
   }
 }
 
-// Handle CORS preflight requests
-function handleCorsPreflightRequest() {
-  return new Response(null, { headers: corsHeaders });
-}
-
-// Main serve handler
+// Main handler
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest();
   }
