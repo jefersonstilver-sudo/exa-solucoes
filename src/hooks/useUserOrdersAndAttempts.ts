@@ -7,7 +7,7 @@ export interface UserOrderAttempt {
   id: string;
   created_at: string;
   valor_total: number;
-  predios_selecionados: number[];
+  predios_selecionados: string[]; // CORREÇÃO: Manter como string[] conforme Supabase
   credencial?: string;
   predio?: string;
   type: 'attempt';
@@ -83,11 +83,12 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         } else {
           console.log('✅ Tentativas do usuário encontradas:', attempts?.length || 0);
 
+          // CORREÇÃO: Manter predios_selecionados como string[] conforme vem do Supabase
           processedAttempts = (attempts || []).map(attempt => ({
             id: attempt.id,
             created_at: attempt.created_at,
             valor_total: attempt.valor_total || 0,
-            predios_selecionados: attempt.predios_selecionados || [],
+            predios_selecionados: attempt.predios_selecionados || [], // Já vem como string[] do Supabase
             credencial: attempt.credencial,
             predio: attempt.predio,
             type: 'attempt' as const,

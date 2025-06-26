@@ -85,11 +85,11 @@ export const useCheckoutDataPersistence = () => {
 
       console.log('🏢 [CHECKOUT_PERSISTENCE] Building IDs extraídos:', buildingIds);
 
-      // Salvar tentativa com dados completos
+      // CORREÇÃO: Converter buildingIds para string array conforme esperado pelo Supabase
       const attemptData = {
         id_user: userId,
         valor_total: totalPrice,
-        predios_selecionados: buildingIds.map(id => Number(id)),
+        predios_selecionados: buildingIds.map(id => String(id)), // Converter para string[]
         credencial: JSON.stringify({
           panel_ids: panelIds,
           building_ids: buildingIds,
