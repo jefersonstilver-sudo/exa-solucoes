@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log('🚀 [App] Inicializando aplicação');
+  console.log('🚀 [App] Sistema inicializando - Versão de recuperação');
   
   return (
     <ErrorBoundary>
@@ -35,13 +35,13 @@ const App = () => {
               <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 flex items-center justify-center">
                 <div className="text-white text-center">
                   <div className="h-8 w-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p>Carregando aplicação...</p>
+                  <p>Sistema carregando...</p>
                 </div>
               </div>
             }>
-              <SimpleCartProvider>
-                <Toaster />
-                <BrowserRouter>
+              <BrowserRouter>
+                <SimpleCartProvider>
+                  <Toaster />
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
@@ -50,8 +50,8 @@ const App = () => {
                     <Route path="/pix-payment" element={<PixPayment />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-                </BrowserRouter>
-              </SimpleCartProvider>
+                </SimpleCartProvider>
+              </BrowserRouter>
             </ClientOnly>
           </TooltipProvider>
         </AuthProvider>

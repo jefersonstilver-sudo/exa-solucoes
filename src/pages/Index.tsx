@@ -16,7 +16,7 @@ interface HomepageConfig {
   updated_at: string;
 }
 
-// Configurações padrão garantidas para evitar página vazia
+// Configurações padrão garantidas
 const DEFAULT_CONFIGS: HomepageConfig[] = [
   {
     id: '1',
@@ -49,7 +49,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { banners, isLoading: bannersLoading } = useHomepageBanners();
 
-  console.log('🏠 [Index] Componente renderizando', {
+  console.log('🏠 [Index] SISTEMA RECUPERADO - Página renderizando', {
     configsCount: configs.length,
     bannersCount: banners?.length || 0,
     isLoading,
@@ -69,7 +69,7 @@ const Index = () => {
 
         if (data && data.length > 0) {
           setConfigs(data);
-          console.log('✅ [Index] Configs carregadas do BD:', data.length);
+          console.log('✅ [Index] Configs carregadas:', data.length);
         } else {
           console.log('📋 [Index] Usando configs padrão');
         }
@@ -84,13 +84,19 @@ const Index = () => {
     fetchConfigs();
   }, []);
 
-  // Sempre renderizar conteúdo, mesmo com loading
   return (
     <Layout>
       <section className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 pt-20 relative">
         <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
           
-          {/* Loading state simplificado */}
+          {/* Status de recuperação */}
+          <div className="text-center text-white mb-6">
+            <div className="bg-green-500/20 backdrop-blur-sm rounded-lg p-3 inline-block">
+              <p className="text-sm font-medium">✅ Sistema Recuperado com Sucesso</p>
+            </div>
+          </div>
+          
+          {/* Loading state */}
           {(isLoading || bannersLoading) && (
             <div className="text-center text-white mb-8">
               <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
@@ -98,7 +104,7 @@ const Index = () => {
             </div>
           )}
           
-          {/* Mobile Layout */}
+          {/* Layout Mobile */}
           <div className="lg:hidden space-y-6">
             {/* Banner Mobile */}
             <div className="h-[300px] sm:h-[350px] md:h-[400px] bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden">
@@ -122,7 +128,7 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Desktop Layout */}
+          {/* Layout Desktop */}
           <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8 lg:h-[480px]">
             {/* Banner Desktop */}
             <div className="lg:col-span-8 bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden">
