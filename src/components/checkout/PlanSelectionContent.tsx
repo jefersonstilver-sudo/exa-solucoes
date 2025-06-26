@@ -151,7 +151,6 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
                 <PlanContinueButton 
                   onContinue={onContinue}
                   selectedPlan={selectedPlan}
-                  panelCount={panelCount}
                 />
               </div>
             </CardContent>
