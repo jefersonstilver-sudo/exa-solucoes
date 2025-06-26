@@ -2,7 +2,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import PlanSelection from '@/pages/PlanSelection';
-import Checkout from '@/pages/Checkout';
 import CheckoutCoupon from '@/pages/CheckoutCoupon';
 import CheckoutSummary from '@/pages/CheckoutSummary';
 import CheckoutFinish from '@/pages/CheckoutFinish';
@@ -19,7 +18,6 @@ export const PublicRoutes = () => {
       {/* MEGA CHECKOUT FLOW - Rotas corrigidas */}
       <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
       <Route path="/checkout/resumo" element={<CheckoutSummary />} />
-      <Route path="/checkout" element={<Checkout />} /> {/* SELEÇÃO DE MÉTODO DE PAGAMENTO */}
       <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
       
       {/* Payment processing pages */}
