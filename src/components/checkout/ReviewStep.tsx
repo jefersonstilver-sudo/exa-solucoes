@@ -14,7 +14,7 @@ const ReviewStep = () => {
     cartItems, 
     selectedPlan, 
     couponValid,
-    couponDiscount
+    couponDiscount // CORREÇÃO: Agora disponível no useCheckout
   } = useCheckout();
 
   const formatPanelInfo = (panel: any) => {
@@ -56,31 +56,14 @@ const ReviewStep = () => {
   const selectedMonths = PLANS[planKey].months;
   
   // CORREÇÃO: Cálculo detalhado para exibir desconto aplicado
-  const subtotalMensal = calculateCartSubtotal(cartItems, 1); // Preço mensal sem desconto
-  const subtotalComPlano = calculateCartSubtotal(cartItems, planKey); // CORRIGIDO
-  const subtotalTotal = subtotalMensal * selectedMonths; // Total sem nenhum desconto
-  const subtotalComPlanoTotal = subtotalComPlano * selectedMonths; // Total com desconto do plano
-  const descontoPorPlano = subtotalTotal - subtotalComPlanoTotal; // Desconto aplicado pelo plano
+  const subtotalMensal = calculateCartSubtotal(cartItems, 1);
+  const subtotalComPlano = calculateCartSubtotal(cartItems, planKey);
+  const subtotalTotal = subtotalMensal * selectedMonths;
+  const subtotalComPlanoTotal = subtotalComPlano * selectedMonths;
+  const descontoPorPlano = subtotalTotal - subtotalComPlanoTotal;
   
-  const finalPrice = calculateTotalPrice(planKey, cartItems, couponDiscount, couponValid); // CORRIGIDO
+  const finalPrice = calculateTotalPrice(planKey, cartItems, couponDiscount, couponValid);
   const descontoCupom = couponValid && couponDiscount ? (subtotalComPlanoTotal * couponDiscount) / 100 : 0;
-
-  // Log detalhado para debug
-  console.log("📋 [ReviewStep] CÁLCULO DETALHADO DE PREÇOS:", {
-    component: "ReviewStep",
-    cartItemsCount: cartItems.length,
-    selectedPlan,
-    selectedMonths,
-    subtotalMensal,
-    subtotalComPlano,
-    subtotalTotal,
-    subtotalComPlanoTotal,
-    descontoPorPlano,
-    descontoCupom,
-    finalPrice,
-    planDiscount: `${getPlanDiscount(planKey) * 100}%`, // CORRIGIDO
-    couponDiscount: couponValid ? `${couponDiscount}%` : "Nenhum"
-  });
 
   return (
     <div className="space-y-6">
@@ -175,7 +158,7 @@ const ReviewStep = () => {
                 <div className="flex justify-between text-red-600 text-sm">
                   <span className="flex items-center">
                     <Tag className="h-4 w-4 mr-1" />
-                    Desconto {PLANS[planKey].name} ({getPlanDiscount(planKey) * 100}%) {/* CORRIGIDO */}
+                    Desconto {PLANS[planKey].name} ({getPlanDiscount(planKey) * 100}%)
                   </span>
                   <span className="font-medium line-through">-{formatCurrency(descontoPorPlano)}</span>
                 </div>

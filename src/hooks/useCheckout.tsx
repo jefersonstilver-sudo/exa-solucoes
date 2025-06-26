@@ -32,7 +32,7 @@ export const useCheckout = () => {
     if (savedPlan) {
       const planNumber = parseInt(savedPlan);
       if ([1, 3, 6, 12].includes(planNumber)) {
-        setSelectedPlan(planNumber);
+        setSelectedPlan(planNumber as 1 | 3 | 6 | 12);
       }
     }
   }, [setSelectedPlan]);
@@ -45,7 +45,7 @@ export const useCheckout = () => {
   }, [selectedPlan]);
 
   // Calcular preço total usando função centralizada
-  const calculateTotalPrice = useCallback(() => {
+  const calculateTotalPriceWrapper = useCallback(() => {
     if (!selectedPlan || !cartItems || cartItems.length === 0) {
       return 0;
     }
@@ -104,13 +104,14 @@ export const useCheckout = () => {
     couponMessage,
     isValidatingCoupon,
     validationResult,
+    couponDiscount: validationResult.discountPercent, // CORREÇÃO: Adicionar couponDiscount
     
     // Estados do checkout
     isCreatingPayment,
     isNavigating,
     
     // Funções
-    calculateTotalPrice,
+    calculateTotalPrice: calculateTotalPriceWrapper, // CORREÇÃO: Renomear para evitar conflito
     validateCoupon,
     removeCoupon,
     handleNextStep,
