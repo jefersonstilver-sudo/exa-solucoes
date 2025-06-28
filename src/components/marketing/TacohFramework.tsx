@@ -18,37 +18,37 @@ const TacohFramework: React.FC = () => {
     {
       title: "Técnico",
       description: "Dados, métricas e estudos de caso que demonstram resultados reais",
-      icon: <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-[#3C1361]" />,
+      icon: <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-[#00FFAB]" />,
       piece: 1
     },
     {
       title: "Autoridade",
       description: "Reconhecimentos e posicionamento como referência no mercado",
-      icon: <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-[#3C1361]" />,
+      icon: <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-[#00FFAB]" />,
       piece: 2
     },
     {
       title: "Crescimento",
       description: "Cases reais de evolução e resultados comprovados",
-      icon: <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-[#3C1361]" />,
+      icon: <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-[#00FFAB]" />,
       piece: 3
     },
     {
       title: "Conexão",
       description: "Narrativas com emoção que criam vínculos verdadeiros",
-      icon: <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-[#3C1361]" />,
+      icon: <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-[#00FFAB]" />,
       piece: 4
     },
     {
       title: "Objeção",
       description: "Antecipação de dúvidas e eliminação de barreiras",
-      icon: <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-[#3C1361]" />,
+      icon: <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-[#00FFAB]" />,
       piece: 5
     },
     {
       title: "Relevância",
       description: "Elementos modernos que mantêm sua marca sempre atual",
-      icon: <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-[#3C1361]" />,
+      icon: <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-[#00FFAB]" />,
       piece: 6
     }
   ];
@@ -71,9 +71,9 @@ const TacohFramework: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
           <div className="flex items-center justify-center mb-4 sm:mb-6">
-            <Puzzle className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-[#3C1361] mr-3 sm:mr-4 animate-pulse" />
+            <Puzzle className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-[#00FFAB] mr-3 sm:mr-4 animate-pulse" />
             <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-gray-900">
-              Estratégia como <span className="text-[#3C1361]">Quebra-Cabeça</span>
+              Estratégia como <span className="text-[#00FFAB]">Quebra-Cabeça</span>
             </h2>
           </div>
           <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600 max-w-4xl mx-auto">
@@ -89,7 +89,7 @@ const TacohFramework: React.FC = () => {
               {strategyElements.map((element, index) => (
                 <div
                   key={index}
-                  className={`bg-gradient-to-br from-[#3C1361] to-[#3C1361] rounded-md sm:rounded-lg border border-[#3C1361]/50 flex items-center justify-center transition-all duration-500 transform ${
+                  className={`bg-gradient-to-br from-[#3C1361] to-[#00FFAB] rounded-md sm:rounded-lg border border-[#00FFAB]/50 flex items-center justify-center transition-all duration-500 transform ${
                     animatedPieces.includes(element.piece) 
                       ? 'opacity-100 scale-100 rotate-0' 
                       : 'opacity-30 scale-75 rotate-12'
@@ -111,13 +111,13 @@ const TacohFramework: React.FC = () => {
             <Card 
               key={index} 
               className={`bg-white border-gray-200 text-gray-900 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden group ${
-                animatedPieces.includes(element.piece) ? 'ring-2 ring-[#3C1361]/30' : ''
+                animatedPieces.includes(element.piece) ? 'ring-2 ring-[#00FFAB]/30' : ''
               }`}
             >
               <CardContent className="p-4 sm:p-6 h-full flex flex-col">
                 <div className="flex items-center mb-3 sm:mb-4">
                   {element.icon}
-                  <h5 className="ml-2 sm:ml-3 text-[#3C1361] text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-medium leading-normal">
+                  <h5 className="ml-2 sm:ml-3 text-[#00FFAB] text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-medium leading-normal">
                     {element.title}
                   </h5>
                 </div>
@@ -131,7 +131,7 @@ const TacohFramework: React.FC = () => {
 
         <div className="text-center mt-8 sm:mt-12">
           <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-gray-600">
-            <span className="text-[#3C1361] font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
+            <span className="text-[#00FFAB] font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
           </p>
         </div>
       </div>

@@ -74,7 +74,7 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
       <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
           <h2 className="mb-4 sm:mb-6 text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-gray-900">
-            Ainda tem <span className="text-[#3C1361]">dúvidas?</span> Entendemos.
+            Ainda tem <span className="text-[#00FFAB]">dúvidas?</span> Entendemos.
           </h2>
           <p className="mb-6 sm:mb-8 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600">
             Respondemos as principais objeções de empresários sobre campanhas de marketing estratégico
@@ -95,8 +95,8 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
                   </h6>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4 sm:pb-6">
-                  <div className="pt-3 sm:pt-4 border-t border-[#3C1361]/20">
-                    <h6 className="text-[#3C1361] mb-2 sm:mb-3 text-sm font-medium leading-normal">
+                  <div className="pt-3 sm:pt-4 border-t border-[#00FFAB]/20">
+                    <h6 className="text-[#00FFAB] mb-2 sm:mb-3 text-sm font-medium leading-normal">
                       ✓ Nossa resposta:
                     </h6>
                     <p className="leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-gray-600">
@@ -111,8 +111,8 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
 
         {/* CTA da Seção */}
         <div className="text-center mt-12 sm:mt-16">
-          <div className="bg-gradient-to-r from-gray-50 to-[#3C1361]/10 shadow-lg p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-[#3C1361]/30">
-            <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-[#3C1361] mx-auto mb-3 sm:mb-4" />
+          <div className="bg-gradient-to-r from-gray-50 to-[#00FFAB]/10 shadow-lg p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-[#00FFAB]/30">
+            <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-[#00FFAB] mx-auto mb-3 sm:mb-4" />
             <h3 className="mb-3 sm:mb-4 text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-tight text-center text-gray-900">
               Sua dúvida não está aqui?
             </h3>
