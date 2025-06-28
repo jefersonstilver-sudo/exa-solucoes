@@ -17,7 +17,7 @@ const StudioSection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            🎬 Conteúdos Sensoriais, <span className="text-[#00FFAB]">Gravados em Estúdio Cinematográfico</span>
+            🎬 Conteúdos Sensoriais, <span className="text-[#3C1361]">Gravados em Estúdio Cinematográfico</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
             Utilizamos técnicas de resposta sensorial para criar vídeos que emocionam, prendem atenção e permanecem na memória.
@@ -33,7 +33,7 @@ const StudioSection: React.FC = () => {
           {studioEquipment.map((equipment, index) => (
             <Card key={index} className="bg-white border-gray-200 text-gray-900 hover:scale-105 hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6 text-center">
-                <Camera className="h-8 w-8 text-[#00FFAB] mx-auto mb-4" />
+                <Camera className="h-8 w-8 text-[#3C1361] mx-auto mb-4" />
                 <h3 className="text-lg font-bold mb-2">{equipment.name}</h3>
                 <p className="text-gray-600 text-sm">{equipment.description}</p>
               </CardContent>

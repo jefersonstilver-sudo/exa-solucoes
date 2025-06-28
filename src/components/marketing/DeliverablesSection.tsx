@@ -21,7 +21,7 @@ const DeliverablesSection: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Tudo que sua empresa precisa para <span className="text-[#00FFAB]">uma campanha de verdade</span>
+            Tudo que sua empresa precisa para <span className="text-[#3C1361]">uma campanha de verdade</span>
           </h2>
           <p className="text-xl text-gray-600">
             Entregáveis estratégicos completos
@@ -33,14 +33,14 @@ const DeliverablesSection: React.FC = () => {
             <div className="space-y-4">
               {deliverables.map((item, index) => (
                 <div key={index} className={`flex items-center p-4 rounded-lg ${
-                  item.highlight ? 'bg-[#00FFAB]/10 border border-[#00FFAB]/30' : 'bg-gray-50'
+                  item.highlight ? 'bg-[#3C1361]/10 border border-[#3C1361]/30' : 'bg-gray-50'
                 }`}>
                   <CheckCircle className="h-6 w-6 text-green-400 mr-4 flex-shrink-0" />
-                  <span className={`text-lg ${item.highlight ? 'text-[#00FFAB] font-semibold' : 'text-gray-900'}`}>
+                  <span className={`text-lg ${item.highlight ? 'text-[#3C1361] font-semibold' : 'text-gray-900'}`}>
                     {item.item}
                   </span>
                   {item.highlight && (
-                    <Badge className="ml-auto bg-[#00FFAB] text-[#3C1361]">
+                    <Badge className="ml-auto bg-[#3C1361] text-white">
                       <Gift className="h-3 w-3 mr-1" />
                       Gratuito
                     </Badge>

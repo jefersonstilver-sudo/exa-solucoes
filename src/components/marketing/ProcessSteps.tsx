@@ -15,37 +15,37 @@ const ProcessSteps: React.FC = () => {
       number: "01",
       title: "Reunião estratégica com nossos especialistas",
       description: "Mergulho na cultura, propósito e metas da empresa",
-      icon: <Brain className="h-6 w-6 text-[#00FFAB]" />
+      icon: <Brain className="h-6 w-6 text-[#3C1361]" />
     },
     {
       number: "02", 
       title: "Diagnóstico de posicionamento atual",
       description: "Benchmark, SWOT, análise de canais e presença digital",
-      icon: <Search className="h-6 w-6 text-[#00FFAB]" />
+      icon: <Search className="h-6 w-6 text-[#3C1361]" />
     },
     {
       number: "03",
       title: "Criação da estratégia de campanha", 
       description: "Público-alvo, diferenciação, voz da marca e cronograma",
-      icon: <Target className="h-6 w-6 text-[#00FFAB]" />
+      icon: <Target className="h-6 w-6 text-[#3C1361]" />
     },
     {
       number: "04",
       title: "Identidade visual, slogan e arquitetura da comunicação",
       description: "Construção de marca ou revitalização completa",
-      icon: <Palette className="h-6 w-6 text-[#00FFAB]" />
+      icon: <Palette className="h-6 w-6 text-[#3C1361]" />
     },
     {
       number: "05",
       title: "Produção de criativos integrados à campanha",
       description: "Roteiros, vídeos, trilhas sensoriais, artes e conteúdo escrito",
-      icon: <Camera className="h-6 w-6 text-[#00FFAB]" />
+      icon: <Camera className="h-6 w-6 text-[#3C1361]" />
     },
     {
       number: "06",
       title: "Gestão completa de campanha com performance",
       description: "Tráfego pago, testes A/B, relatórios e otimizações",
-      icon: <Gauge className="h-6 w-6 text-[#00FFAB]" />
+      icon: <Gauge className="h-6 w-6 text-[#3C1361]" />
     }
   ];
 
@@ -54,7 +54,7 @@ const ProcessSteps: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Jornada de Campanha <span className="text-[#00FFAB]">Indexa</span>
+            Jornada de Campanha <span className="text-[#3C1361]">Indexa</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Processo estratégico em 6 etapas para campanhas que geram resultados reais
@@ -64,13 +64,13 @@ const ProcessSteps: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {processSteps.map((step, index) => (
             <div key={index} className="text-center group">
-              <div className="bg-gradient-to-br from-[#3C1361] to-[#00FFAB] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div className="bg-gradient-to-br from-[#3C1361] to-[#3C1361] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                 <span className="text-white font-bold text-xl">{step.number}</span>
               </div>
               <div className="mb-3">
                 {step.icon}
               </div>
-              <h3 className="text-xl font-bold mb-3 text-[#00FFAB]">{step.title}</h3>
+              <h3 className="text-xl font-bold mb-3 text-[#3C1361]">{step.title}</h3>
               <p className="text-gray-600 leading-relaxed">{step.description}</p>
             </div>
           ))}
