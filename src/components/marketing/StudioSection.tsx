@@ -17,7 +17,7 @@ const StudioSection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            🎬 Conteúdos Sensoriais, <span className="text-[#00FFAB]">Gravados em Estúdio Cinematográfico</span>
+            🎬 Conteúdos Sensoriais, <span className="text-[#00B377]">Gravados em Estúdio Cinematográfico</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
             Utilizamos técnicas de resposta sensorial para criar vídeos que emocionam, prendem atenção e permanecem na memória.

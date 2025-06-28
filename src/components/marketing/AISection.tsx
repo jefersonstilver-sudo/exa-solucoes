@@ -15,7 +15,7 @@ const AISection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            🤖 IA + MARKETING: <span className="text-[#00FFAB]">A NOVA ERA É AGORA</span>
+            🤖 IA + MARKETING: <span className="text-[#00B377]">A NOVA ERA É AGORA</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
             Utilizamos inteligência artificial para potencializar todas as fases da campanha:
@@ -33,7 +33,7 @@ const AISection: React.FC = () => {
 
         <div className="bg-[#00FFAB]/10 border border-[#00FFAB]/30 rounded-2xl p-8 text-center">
           <Gift className="h-12 w-12 text-[#00FFAB] mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-[#00FFAB] mb-4">Manual Gratuito Exclusivo</h3>
+          <h3 className="text-2xl font-bold text-[#00B377] mb-4">Manual Gratuito Exclusivo</h3>
           <p className="text-lg text-gray-900 mb-2">
             <strong>"Como usar IA e Apps para vender mais, com menos esforço"</strong>
           </p>

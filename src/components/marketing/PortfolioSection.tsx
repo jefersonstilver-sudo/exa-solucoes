@@ -26,7 +26,7 @@ const PortfolioSection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Portfólio de <span className="text-[#00FFAB]">Campanhas Estratégicas</span>
+            Portfólio de <span className="text-[#00B377]">Campanhas Estratégicas</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8">
             Empresas que já dominam o mercado com nossa metodologia
@@ -41,8 +41,8 @@ const PortfolioSection: React.FC = () => {
                 onClick={() => setSelectedCategory(category)}
                 className={`${
                   selectedCategory === category 
-                    ? 'bg-[#00FFAB] text-[#3C1361] hover:bg-[#00FFAB]/90' 
-                    : 'border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB]/10'
+                    ? 'bg-[#00B377] text-white hover:bg-[#00B377]/90' 
+                    : 'border-[#00B377] text-[#00B377] hover:bg-[#00B377]/10'
                 }`}
               >
                 {category}
@@ -73,8 +73,8 @@ const PortfolioSection: React.FC = () => {
                   </div>
                 </div>
                 <h3 className="text-xl font-bold mb-2">{campanha.titulo}</h3>
-                <p className="text-[#00FFAB] font-semibold mb-2">{campanha.cliente}</p>
-                <Badge variant="outline" className="border-[#00FFAB] text-[#00FFAB] mb-3">
+                <p className="text-[#00B377] font-semibold mb-2">{campanha.cliente}</p>
+                <Badge variant="outline" className="border-[#00B377] text-[#00B377] mb-3">
                   {campanha.categoria}
                 </Badge>
                 {campanha.descricao && (

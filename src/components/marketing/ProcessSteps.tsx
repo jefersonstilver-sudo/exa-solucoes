@@ -54,7 +54,7 @@ const ProcessSteps: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Jornada de Campanha <span className="text-[#00FFAB]">Indexa</span>
+            Jornada de Campanha <span className="text-[#00B377]">Indexa</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Processo estratégico em 6 etapas para campanhas que geram resultados reais
@@ -70,7 +70,7 @@ const ProcessSteps: React.FC = () => {
               <div className="mb-3">
                 {step.icon}
               </div>
-              <h3 className="text-xl font-bold mb-3 text-[#00FFAB]">{step.title}</h3>
+              <h3 className="text-xl font-bold mb-3 text-[#00B377]">{step.title}</h3>
               <p className="text-gray-600 leading-relaxed">{step.description}</p>
             </div>
           ))}

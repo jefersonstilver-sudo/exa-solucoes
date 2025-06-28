@@ -73,7 +73,7 @@ const TacohFramework: React.FC = () => {
           <div className="flex items-center justify-center mb-4 sm:mb-6">
             <Puzzle className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-[#00FFAB] mr-3 sm:mr-4 animate-pulse" />
             <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-gray-900">
-              Estratégia como <span className="text-[#00FFAB]">Quebra-Cabeça</span>
+              Estratégia como <span className="text-[#00B377]">Quebra-Cabeça</span>
             </h2>
           </div>
           <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600 max-w-4xl mx-auto">
@@ -117,7 +117,7 @@ const TacohFramework: React.FC = () => {
               <CardContent className="p-4 sm:p-6 h-full flex flex-col">
                 <div className="flex items-center mb-3 sm:mb-4">
                   {element.icon}
-                  <h5 className="ml-2 sm:ml-3 text-[#00FFAB] text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-medium leading-normal">
+                  <h5 className="ml-2 sm:ml-3 text-[#00B377] text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-medium leading-normal">
                     {element.title}
                   </h5>
                 </div>
@@ -131,7 +131,7 @@ const TacohFramework: React.FC = () => {
 
         <div className="text-center mt-8 sm:mt-12">
           <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-gray-600">
-            <span className="text-[#00FFAB] font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
+            <span className="text-[#00B377] font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
           </p>
         </div>
       </div>

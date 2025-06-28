@@ -20,7 +20,7 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
     {
       id: "obj1",
       objection: "Eu conheço meu público melhor do que qualquer agência",
-      answer: "Exatamente por isso que o nosso processo começa escutando você. Na Indexa, não criamos nada sem absorver primeiro sua visão, suas dores e sua experiência. O que fazemos é transformar esse conhecimento profundo em uma comunicação que toca o público com a linguagem atual."
+      answer: "Exatamente por isso que o nosso processo começaescutando você. Na Indexa, não criamos nada sem absorver primeiro sua visão, suas dores e sua experiência. O que fazemos é transformar esse conhecimento profundo em uma comunicação que toca o público com a linguagem atual."
     },
     {
       id: "obj2",
@@ -74,7 +74,7 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
       <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
           <h2 className="mb-4 sm:mb-6 text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-gray-900">
-            Ainda tem <span className="text-[#00FFAB]">dúvidas?</span> Entendemos.
+            Ainda tem <span className="text-[#00B377]">dúvidas?</span> Entendemos.
           </h2>
           <p className="mb-6 sm:mb-8 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600">
             Respondemos as principais objeções de empresários sobre campanhas de marketing estratégico
@@ -95,8 +95,8 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
                   </h6>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4 sm:pb-6">
-                  <div className="pt-3 sm:pt-4 border-t border-[#00FFAB]/20">
-                    <h6 className="text-[#00FFAB] mb-2 sm:mb-3 text-sm font-medium leading-normal">
+                  <div className="pt-3 sm:pt-4 border-t border-[#00B377]/20">
+                    <h6 className="text-[#00B377] mb-2 sm:mb-3 text-sm font-medium leading-normal">
                       ✓ Nossa resposta:
                     </h6>
                     <p className="leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-gray-600">
