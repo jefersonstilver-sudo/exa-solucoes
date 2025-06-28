@@ -50,13 +50,13 @@ const ProcessSteps: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-b from-black to-[#3C1361]/10">
+    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Jornada de Campanha <span className="text-[#00FFAB]">Indexa</span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Processo estratégico em 6 etapas para campanhas que geram resultados reais
           </p>
         </div>
@@ -71,7 +71,7 @@ const ProcessSteps: React.FC = () => {
                 {step.icon}
               </div>
               <h3 className="text-xl font-bold mb-3 text-[#00FFAB]">{step.title}</h3>
-              <p className="text-gray-300 leading-relaxed">{step.description}</p>
+              <p className="text-gray-600 leading-relaxed">{step.description}</p>
             </div>
           ))}
         </div>

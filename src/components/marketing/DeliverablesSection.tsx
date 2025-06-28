@@ -17,26 +17,26 @@ const DeliverablesSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 bg-black">
+    <section className="py-20 bg-white">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Tudo que sua empresa precisa para <span className="text-[#00FFAB]">uma campanha de verdade</span>
           </h2>
-          <p className="text-xl text-gray-300">
+          <p className="text-xl text-gray-600">
             Entregáveis estratégicos completos
           </p>
         </div>
 
-        <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
+        <Card className="bg-white shadow-lg border border-gray-200">
           <CardContent className="p-8">
             <div className="space-y-4">
               {deliverables.map((item, index) => (
                 <div key={index} className={`flex items-center p-4 rounded-lg ${
-                  item.highlight ? 'bg-[#00FFAB]/20 border border-[#00FFAB]/50' : 'bg-white/5'
+                  item.highlight ? 'bg-[#00FFAB]/10 border border-[#00FFAB]/30' : 'bg-gray-50'
                 }`}>
                   <CheckCircle className="h-6 w-6 text-green-400 mr-4 flex-shrink-0" />
-                  <span className={`text-lg ${item.highlight ? 'text-[#00FFAB] font-semibold' : 'text-white'}`}>
+                  <span className={`text-lg ${item.highlight ? 'text-[#00FFAB] font-semibold' : 'text-gray-900'}`}>
                     {item.item}
                   </span>
                   {item.highlight && (

@@ -22,13 +22,13 @@ const PortfolioSection: React.FC = () => {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-black to-[#3C1361]/10">
+    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Portfólio de <span className="text-[#00FFAB]">Campanhas Estratégicas</span>
           </h2>
-          <p className="text-xl text-gray-300 mb-8">
+          <p className="text-xl text-gray-600 mb-8">
             Empresas que já dominam o mercado com nossa metodologia
           </p>
 
@@ -41,7 +41,7 @@ const PortfolioSection: React.FC = () => {
                 onClick={() => setSelectedCategory(category)}
                 className={`${
                   selectedCategory === category 
-                    ? 'bg-[#00FFAB] text-[#3C1361]' 
+                    ? 'bg-[#00FFAB] text-[#3C1361] hover:bg-[#00FFAB]/90' 
                     : 'border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB]/10'
                 }`}
               >
@@ -53,7 +53,7 @@ const PortfolioSection: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCampanhas.slice(0, 9).map((campanha) => (
-            <Card key={campanha.id} className="bg-white/5 border-white/10 text-white hover:scale-105 transition-all duration-300 group">
+            <Card key={campanha.id} className="bg-white border-gray-200 text-gray-900 hover:scale-105 hover:shadow-lg transition-all duration-300 group">
               <CardContent className="p-6">
                 <div className="aspect-video bg-gradient-to-br from-[#3C1361] to-[#00FFAB] rounded-lg mb-4 flex items-center justify-center relative overflow-hidden">
                   {campanha.url_video ? (
@@ -78,7 +78,7 @@ const PortfolioSection: React.FC = () => {
                   {campanha.categoria}
                 </Badge>
                 {campanha.descricao && (
-                  <p className="text-gray-300 text-sm line-clamp-2">{campanha.descricao}</p>
+                  <p className="text-gray-600 text-sm line-clamp-2">{campanha.descricao}</p>
                 )}
               </CardContent>
             </Card>

@@ -67,16 +67,16 @@ const TacohFramework: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-black">
+    <section className="py-12 sm:py-16 lg:py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
           <div className="flex items-center justify-center mb-4 sm:mb-6">
             <Puzzle className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-[#00FFAB] mr-3 sm:mr-4 animate-pulse" />
-            <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-white">
+            <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-gray-900">
               Estratégia como <span className="text-[#00FFAB]">Quebra-Cabeça</span>
             </h2>
           </div>
-          <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-400 max-w-4xl mx-auto">
+          <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600 max-w-4xl mx-auto">
             Cada campanha é construída considerando todos os elementos estratégicos essenciais. 
             Como um quebra-cabeça, cada peça tem seu lugar e propósito para formar o resultado completo.
           </p>
@@ -110,7 +110,7 @@ const TacohFramework: React.FC = () => {
           {strategyElements.map((element, index) => (
             <Card 
               key={index} 
-              className={`bg-white/5 border-white/10 text-white hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden group ${
+              className={`bg-white border-gray-200 text-gray-900 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden group ${
                 animatedPieces.includes(element.piece) ? 'ring-2 ring-[#00FFAB]/30' : ''
               }`}
             >
@@ -121,7 +121,7 @@ const TacohFramework: React.FC = () => {
                     {element.title}
                   </h5>
                 </div>
-                <p className="flex-1 leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-gray-400">
+                <p className="flex-1 leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-gray-600">
                   {element.description}
                 </p>
               </CardContent>
@@ -130,7 +130,7 @@ const TacohFramework: React.FC = () => {
         </div>
 
         <div className="text-center mt-8 sm:mt-12">
-          <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-gray-400">
+          <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-gray-600">
             <span className="text-[#00FFAB] font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
           </p>
         </div>

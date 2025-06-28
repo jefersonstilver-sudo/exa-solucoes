@@ -16,7 +16,7 @@ import FloatingCTA from '@/components/marketing/FloatingCTA';
 import Layout from '@/components/layout/Layout';
 
 const Marketing = () => {
-  console.log('📄 Marketing: Inicializando página Marketing SEM footer adicional');
+  console.log('📄 Marketing: Inicializando página Marketing com tema claro');
   
   const formRef = useRef<HTMLElement>(null);
 
@@ -27,7 +27,7 @@ const Marketing = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-white text-gray-900">
         <MarketingHero onScrollToForm={scrollToForm} />
         <MarketingMission />
         <MarketingPlanning />
@@ -41,7 +41,6 @@ const Marketing = () => {
         <CTASection />
         <MarketingForm formRef={formRef} />
         <FloatingCTA onScrollToForm={scrollToForm} />
-        {/* REMOVIDO: Qualquer footer adicional - apenas o Layout tem footer */}
       </div>
     </Layout>
   );
