@@ -1,6 +1,6 @@
 import { PixWebhookData, PixWebhookResponse } from '@/types/pixWebhook';
 
-const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook-test/d8e707ae-093a-4e08-9069-8627eb9c1d19';
+const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
 
 export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWebhookResponse> => {
   const timestamp = new Date().toISOString();
