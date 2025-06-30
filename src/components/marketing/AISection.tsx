@@ -15,7 +15,7 @@ const AISection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            🤖 IA + MARKETING: <span className="text-[#00B377]">A NOVA ERA É AGORA</span>
+            IA + MARKETING: <span className="text-[#00B377]">A NOVA ERA É AGORA</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
             Utilizamos inteligência artificial para potencializar todas as fases da campanha:
@@ -38,7 +38,7 @@ const AISection: React.FC = () => {
             <strong>"Como usar IA e Apps para vender mais, com menos esforço"</strong>
           </p>
           <p className="text-gray-600">
-            Entregue ao agendar seu café conosco - especialmente para empresários de Foz do Iguaçu.
+            Entregue ao agendar sua reunião estratégica - especialmente para empresários de Foz do Iguaçu.
           </p>
         </div>
       </div>

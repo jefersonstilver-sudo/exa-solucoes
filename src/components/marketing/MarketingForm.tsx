@@ -51,7 +51,7 @@ const MarketingForm: React.FC<MarketingFormProps> = ({ formRef }) => {
         whatsapp: '',
         objetivo: ''
       });
-      toast.success('Obrigado! Nossa equipe entrará em contato para marcar a conversa estratégica e entregar o manual.');
+      toast.success('Obrigado! Nossa equipe entrará em contato para marcar a reunião estratégica e entregar o manual.');
     } catch (error) {
       console.error('Erro ao enviar formulário:', error);
     } finally {
@@ -64,7 +64,7 @@ const MarketingForm: React.FC<MarketingFormProps> = ({ formRef }) => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Agende uma conversa com <span className="text-[#00FFAB]">nossos especialistas</span>
+            Agende uma reunião estratégica com <span className="text-[#00FFAB]">nossa equipe</span>
           </h2>
           <p className="text-xl text-gray-300 mb-4">
             Ideal para empresas em fase de crescimento ou reposicionamento, e líderes que buscam inovação real com resultado concreto.
@@ -149,9 +149,9 @@ const MarketingForm: React.FC<MarketingFormProps> = ({ formRef }) => {
                 <div className="flex items-start space-x-4">
                   <Gift className="h-8 w-8 text-[#00FFAB] flex-shrink-0 mt-1" />
                   <div>
-                    <h4 className="text-[#00FFAB] font-semibold mb-3 text-lg">🎁 Benefícios ao agendar:</h4>
+                    <h4 className="text-[#00FFAB] font-semibold mb-3 text-lg">Benefícios ao agendar:</h4>
                     <ul className="text-white space-y-2">
-                      <li className="flex items-center"><Eye className="h-4 w-4 mr-3 text-[#00FFAB]" />Diagnóstico inicial gratuito com especialista</li>
+                      <li className="flex items-center"><Eye className="h-4 w-4 mr-3 text-[#00FFAB]" />Diagnóstico inicial gratuito</li>
                       <li className="flex items-center"><BookOpen className="h-4 w-4 mr-3 text-[#00FFAB]" />Manual de Marketing impresso com frameworks, exemplos e planejamento</li>
                       <li className="flex items-center"><Coffee className="h-4 w-4 mr-3 text-[#00FFAB]" />Tour pela sede da Indexa e degustação de ideias criativas</li>
                     </ul>
@@ -172,7 +172,7 @@ const MarketingForm: React.FC<MarketingFormProps> = ({ formRef }) => {
                 ) : (
                   <div className="flex items-center">
                     <Coffee className="w-5 h-5 mr-2" />
-                    Agendar Conversa + Receber Manual Estratégico
+                    Agendar Reunião Estratégica + Receber Manual
                   </div>
                 )}
               </Button>

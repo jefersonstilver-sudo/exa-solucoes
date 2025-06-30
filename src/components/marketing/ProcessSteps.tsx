@@ -13,7 +13,7 @@ const ProcessSteps: React.FC = () => {
   const processSteps = [
     {
       number: "01",
-      title: "Reunião estratégica com nossos especialistas",
+      title: "Reunião estratégica com nossa equipe",
       description: "Mergulho na cultura, propósito e metas da empresa",
       icon: <Brain className="h-6 w-6 text-[#00FFAB]" />
     },

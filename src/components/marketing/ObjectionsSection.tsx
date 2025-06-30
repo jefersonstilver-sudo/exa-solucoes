@@ -20,7 +20,7 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
     {
       id: "obj1",
       objection: "Eu conheço meu público melhor do que qualquer agência",
-      answer: "Exatamente por isso que o nosso processo começaescutando você. Na Indexa, não criamos nada sem absorver primeiro sua visão, suas dores e sua experiência. O que fazemos é transformar esse conhecimento profundo em uma comunicação que toca o público com a linguagem atual."
+      answer: "Exatamente por isso que o nosso processo começa escutando você. Na Indexa, não criamos nada sem absorver primeiro sua visão, suas dores e sua experiência. O que fazemos é transformar esse conhecimento profundo em uma comunicação que toca o público com a linguagem atual."
     },
     {
       id: "obj2",
@@ -117,13 +117,13 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
               Sua dúvida não está aqui?
             </h3>
             <p className="mb-4 sm:mb-6 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600">
-              Agende uma conversa e esclarecemos tudo pessoalmente
+              Agende uma reunião estratégica e esclarecemos tudo pessoalmente
             </p>
             <button
               onClick={onScrollToForm}
               className="bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white hover:scale-105 h-14 px-6 text-base rounded-full font-medium transition-all duration-200 w-full sm:w-auto"
             >
-              Conversar com Especialista
+              Solicitar Diagnóstico Empresarial
             </button>
           </div>
         </div>

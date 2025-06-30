@@ -14,7 +14,7 @@ const MarketingPlanning: React.FC = () => {
             </h2>
           </div>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-            Reunimos nossos especialistas em posicionamento, linguagem e estratégia para entender a fundo sua empresa, seus valores, seus diferenciais e seus objetivos. Nessa imersão criativa e analítica, desenhamos um plano robusto e sob medida que direciona toda a campanha.
+            Reunimos nossa equipe de posicionamento, linguagem e estratégia para entender a fundo sua empresa, seus valores, seus diferenciais e seus objetivos. Nessa imersão criativa e analítica, desenhamos um plano robusto e sob medida que direciona toda a campanha.
           </p>
           <p className="text-2xl text-[#00B377] font-bold mt-6">
             Essa é a base de toda campanha de verdade.
