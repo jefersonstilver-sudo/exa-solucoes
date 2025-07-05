@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Copy, CheckCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Copy, CheckCircle, RefreshCw, CreditCard } from 'lucide-react';
 import { QRCodeDisplay } from './QRCodeDisplay';
 import { toast } from 'sonner';
 import PixCountdownTimer from './PixCountdownTimer';
@@ -25,6 +25,7 @@ interface PixPaymentContentProps {
   isLoading: boolean;
   error: string | null;
   pedidoId?: string | null;
+  isVerifying?: boolean;
 }
 
 const PixPaymentContent = ({
@@ -33,33 +34,11 @@ const PixPaymentContent = ({
   onRefreshStatus,
   isLoading,
   error,
-  pedidoId
+  pedidoId,
+  isVerifying = false
 }: PixPaymentContentProps) => {
   const navigate = useNavigate();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
-
-  // Auto-refresh status every 10 seconds
-  useEffect(() => {
-    if (paymentData.status === 'pending') {
-      const interval = setInterval(async () => {
-        await handleRefreshStatus();
-      }, 10000);
-
-      return () => clearInterval(interval);
-    }
-  }, [paymentData.status]);
-
-  const handleRefreshStatus = async () => {
-    setIsRefreshing(true);
-    try {
-      await onRefreshStatus();
-    } catch (error) {
-      console.error('Error refreshing status:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const handleRegenerateQRCode = async () => {
     if (!pedidoId) return;
@@ -94,9 +73,9 @@ const PixPaymentContent = ({
     }
   };
 
-  const handlePaymentConfirmed = () => {
-    toast.success("Redirecionando para seus pedidos...");
-    navigate('/anunciante/pedidos');
+  const handleManualVerification = async () => {
+    console.log("🔍 [PixPaymentContent] Verificação manual solicitada pelo usuário");
+    await onRefreshStatus();
   };
 
   if (error) {
@@ -160,7 +139,7 @@ const PixPaymentContent = ({
               />
             )}
 
-            {/* QR Code - CORRIGIDO */}
+            {/* QR Code */}
             <div className="flex justify-center">
               <QRCodeDisplay 
                 qrCodeBase64={paymentData.qrCodeBase64} 
@@ -207,26 +186,30 @@ const PixPaymentContent = ({
               </div>
             )}
 
-            {/* Actions */}
+            {/* BOTÃO PRINCIPAL DE VERIFICAÇÃO MANUAL */}
             <div className="space-y-4">
               <Button
-                onClick={handleRefreshStatus}
-                disabled={isRefreshing}
-                variant="outline"
-                className="w-full"
+                onClick={handleManualVerification}
+                disabled={isVerifying}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
               >
-                {isRefreshing ? (
+                {isVerifying ? (
                   <>
-                    <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Verificando pagamento...
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Verificando no MercadoPago...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Verificar Status do Pagamento
+                    <CreditCard className="h-5 w-5 mr-2" />
+                    Confirmar Pagamento
                   </>
                 )}
               </Button>
+
+              <p className="text-xs text-center text-gray-500">
+                Clique após realizar o pagamento PIX para verificarmos automaticamente no MercadoPago
+              </p>
 
               {/* Botão Regenerar QR Code */}
               <Button
@@ -247,15 +230,6 @@ const PixPaymentContent = ({
                   </>
                 )}
               </Button>
-
-              <Button
-                onClick={handlePaymentConfirmed}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                size="lg"
-              >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Já Realizei o Pagamento
-              </Button>
             </div>
 
             {/* Instructions */}
@@ -266,7 +240,7 @@ const PixPaymentContent = ({
                 <li>2. Acesse a área PIX</li>
                 <li>3. Escaneie o QR Code ou cole o código</li>
                 <li>4. Confirme o pagamento</li>
-                <li>5. Aguarde a confirmação automática</li>
+                <li>5. Clique em "Confirmar Pagamento" acima</li>
               </ol>
             </div>
           </div>
