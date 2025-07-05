@@ -18,7 +18,6 @@ export const usePixPayment = (pedidoId: string | null) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<PixPaymentData | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     if (!pedidoId) {
@@ -35,7 +34,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔄 [usePixPayment] Carregando dados PIX:", pedidoId);
+      console.log("🔄 [usePixPayment] MAPEAMENTO CORRIGIDO - Carregando dados PIX:", pedidoId);
 
       // Buscar pedido diretamente por ID
       const { data: pedido, error: pedidoError } = await supabase
@@ -55,20 +54,20 @@ export const usePixPayment = (pedidoId: string | null) => {
         hasLogPagamento: !!pedido.log_pagamento
       });
 
-      // Verificar se já tem dados de PIX com múltiplos formatos
+      // CORREÇÃO: Verificar se já tem dados de PIX com múltiplos formatos
       const logPagamento = pedido.log_pagamento as any;
       
       if (logPagamento?.pixData || logPagamento?.pix_data) {
         const pixData = logPagamento.pixData || logPagamento.pix_data;
         
-        console.log("✅ [usePixPayment] Dados PIX encontrados:", {
+        console.log("✅ [usePixPayment] MAPEAMENTO CORRIGIDO - Dados PIX encontrados:", {
           hasQrCodeBase64: !!(pixData.qrCodeBase64 || pixData.pix_base64),
           hasQrCode: !!(pixData.qrCode || pixData.qrCodeText || pixData.pix_url),
           status: pixData.status,
-          paymentId: pixData.paymentId || pixData.id
+          rawPixData: pixData
         });
         
-        // Mapear corretamente com fallbacks para múltiplos formatos
+        // CORREÇÃO: Mapear corretamente com fallbacks para múltiplos formatos
         setPaymentData({
           qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
           qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
@@ -79,10 +78,10 @@ export const usePixPayment = (pedidoId: string | null) => {
           valorTotal: pedido.valor_total
         });
         
-        console.log("✅ [usePixPayment] Dados PIX mapeados para o frontend");
+        console.log("✅ [usePixPayment] Dados PIX mapeados corretamente para o frontend");
       } else {
         // Se não tem dados PIX, processar com a função REAL
-        console.log("🔄 [usePixPayment] Processando PIX com função real...");
+        console.log("🔄 [usePixPayment] CORREÇÃO - Processando PIX com função real...");
         
         const { data, error } = await supabase.functions.invoke('process-payment', {
           body: {
@@ -118,6 +117,7 @@ export const usePixPayment = (pedidoId: string | null) => {
           const pixData = updatedLogPagamento?.pixData || updatedLogPagamento?.pix_data;
           
           if (pixData) {
+            // CORREÇÃO: Mesmo mapeamento com fallbacks
             setPaymentData({
               qrCodeBase64: pixData.qrCodeBase64 || pixData.pix_base64,
               qrCode: pixData.qrCode || pixData.qrCodeText || pixData.pix_url,
@@ -138,7 +138,7 @@ export const usePixPayment = (pedidoId: string | null) => {
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment] Erro:", error);
+      console.error("❌ [usePixPayment] MAPEAMENTO CORRIGIDO - Erro:", error);
       setError(error.message || 'Erro ao carregar pagamento PIX');
       toast.error(`Erro no pagamento PIX: ${error.message}`);
     } finally {
@@ -149,65 +149,29 @@ export const usePixPayment = (pedidoId: string | null) => {
   const refreshPaymentStatus = async () => {
     if (!pedidoId) return;
     
-    setIsVerifying(true);
-    
     try {
-      console.log("🔍 [usePixPayment] VERIFICAÇÃO MANUAL - Consultando MercadoPago...");
+      console.log("🔄 [usePixPayment] Atualizando status do pagamento");
       
-      // Chamar função edge para verificar no MercadoPago
-      const { data: verificationResult, error: verifyError } = await supabase.functions.invoke('verify-pix-payment', {
-        body: { pedido_id: pedidoId }
-      });
+      const { data: pedido, error } = await supabase
+        .from('pedidos')
+        .select('status, log_pagamento, valor_total')
+        .eq('id', pedidoId)
+        .single();
 
-      if (verifyError) {
-        console.error("❌ [usePixPayment] Erro na verificação:", verifyError);
-        throw new Error(`Erro na verificação: ${verifyError.message}`);
-      }
+      if (error) throw error;
 
-      console.log("📋 [usePixPayment] Resultado da verificação:", verificationResult);
-
-      if (verificationResult.success) {
-        if (verificationResult.payment_approved) {
-          // Pagamento foi aprovado!
-          toast.success("🎉 Pagamento confirmado! Redirecionando...");
-          
-          // Atualizar dados locais
-          setPaymentData(prev => ({
-            ...prev,
-            status: 'approved'
-          }));
-
-          // Aguardar um pouco para o usuário ver a mensagem
-          setTimeout(() => {
-            window.location.href = '/anunciante/pedidos';
-          }, 2000);
-
-        } else if (verificationResult.payment_found) {
-          // Pagamento existe mas ainda não foi aprovado
-          toast.info(`💳 Pagamento encontrado mas ainda ${verificationResult.payment_status}. Tente novamente em alguns minutos.`);
-          
-          // Atualizar status local se mudou
-          if (verificationResult.payment_status !== paymentData?.status) {
-            setPaymentData(prev => ({
-              ...prev,
-              status: verificationResult.payment_status
-            }));
-          }
-        } else {
-          // Pagamento não encontrado
-          toast.warning("⏳ Pagamento ainda não identificado no MercadoPago. Aguarde alguns minutos após realizar o pagamento.");
-        }
-      } else {
-        // Erro na verificação
-        console.error("❌ [usePixPayment] Verificação falhou:", verificationResult.error);
-        toast.error(`Erro na verificação: ${verificationResult.error}`);
+      // Atualizar status se mudou
+      if (pedido.status === 'pago' && paymentData) {
+        setPaymentData(prev => ({
+          ...prev,
+          status: 'approved',
+          valorTotal: pedido.valor_total
+        }));
+        toast.success("Pagamento confirmado!");
       }
 
     } catch (error: any) {
-      console.error("❌ [usePixPayment] Erro ao verificar status:", error);
-      toast.error(`Erro ao verificar pagamento: ${error.message}`);
-    } finally {
-      setIsVerifying(false);
+      console.error("❌ [usePixPayment] Erro ao atualizar status:", error);
     }
   };
 
@@ -215,7 +179,6 @@ export const usePixPayment = (pedidoId: string | null) => {
     isLoading,
     error,
     paymentData,
-    refreshPaymentStatus,
-    isVerifying // Novo estado para o botão de verificação
+    refreshPaymentStatus
   };
 };

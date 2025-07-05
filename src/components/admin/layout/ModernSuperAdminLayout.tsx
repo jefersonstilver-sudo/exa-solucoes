@@ -15,7 +15,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 z-30 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
-        <ModernAdminSidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebarCollapse} />
+        <ModernAdminSidebar isCollapsed={sidebarCollapsed} />
       </div>
 
       {/* Main Content */}

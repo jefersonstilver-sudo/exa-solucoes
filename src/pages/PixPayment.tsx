@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -12,8 +13,7 @@ import {
   Clock, 
   AlertCircle,
   ArrowLeft,
-  RefreshCw,
-  CreditCard
+  RefreshCw
 } from 'lucide-react';
 import { usePixPayment } from '@/hooks/payment/usePixPayment';
 import { formatCurrency } from '@/utils/formatters';
@@ -28,12 +28,12 @@ const PixPayment = () => {
     isLoading,
     error,
     paymentData,
-    refreshPaymentStatus,
-    isVerifying
+    refreshPaymentStatus
   } = usePixPayment(pedidoId);
 
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutos
   const [isExpired, setIsExpired] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Timer para expiração do QR Code 
   useEffect(() => {
@@ -59,10 +59,11 @@ const PixPayment = () => {
     }
   };
 
-  // Função para verificação manual
-  const handleManualVerification = async () => {
-    console.log("🔍 [PixPayment] Verificação manual solicitada");
+  // Função para atualizar status
+  const handleRefreshStatus = async () => {
+    setIsRefreshing(true);
     await refreshPaymentStatus();
+    setIsRefreshing(false);
   };
 
   // Formatador de tempo
@@ -105,7 +106,7 @@ const PixPayment = () => {
                   <Button onClick={() => navigate('/')} variant="outline">
                     Voltar ao Início
                   </Button>
-                  <Button onClick={handleManualVerification}>
+                  <Button onClick={handleRefreshStatus}>
                     Tentar Novamente
                   </Button>
                 </div>
@@ -236,31 +237,6 @@ const PixPayment = () => {
                     </div>
                   )}
 
-                  {/* BOTÃO PRINCIPAL DE VERIFICAÇÃO MANUAL */}
-                  <div className="text-center">
-                    <Button 
-                      onClick={handleManualVerification}
-                      disabled={isVerifying}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      size="lg"
-                    >
-                      {isVerifying ? (
-                        <>
-                          <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Verificando no MercadoPago...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-5 w-5 mr-2" />
-                          Confirmar Pagamento
-                        </>
-                      )}
-                    </Button>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Clique após realizar o pagamento PIX
-                    </p>
-                  </div>
-
                   {/* Instruções */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h3 className="font-semibold text-blue-900 mb-2">Como pagar:</h3>
@@ -268,7 +244,7 @@ const PixPayment = () => {
                       <li>1. Abra o app do seu banco</li>
                       <li>2. Escaneie o QR Code ou cole o código PIX</li>
                       <li>3. Confirme o pagamento</li>
-                      <li>4. Clique em "Confirmar Pagamento" acima</li>
+                      <li>4. O status será atualizado automaticamente</li>
                     </ol>
                   </div>
 
@@ -281,11 +257,29 @@ const PixPayment = () => {
                         <p className="text-gray-600 mb-4">
                           O QR Code PIX expirou. Gere um novo para continuar com o pagamento.
                         </p>
-                        <Button onClick={handleManualVerification} disabled={isVerifying}>
-                          {isVerifying && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
+                        <Button onClick={handleRefreshStatus} disabled={isRefreshing}>
+                          {isRefreshing && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
                           Gerar Novo QR Code
                         </Button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Botão de Atualizar Status */}
+                  {!isExpired && (
+                    <div className="text-center">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleRefreshStatus}
+                        disabled={isRefreshing}
+                      >
+                        {isRefreshing ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Verificar Pagamento
+                      </Button>
                     </div>
                   )}
                 </CardContent>
