@@ -15,6 +15,8 @@ import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
 import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 import LeadsCampanhas from '@/pages/admin/LeadsCampanhas';
+import PaymentFixerPage from '@/pages/admin/PaymentFixerPage';
+import PaymentVerifierPage from '@/pages/admin/PaymentVerifierPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -39,6 +41,10 @@ const SuperAdminRoutes = () => {
       <Route path="cupons" element={<CouponsPage />} />
       <Route path="homepage-config" element={<HomepageImagesPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
+      
+      {/* PAGAMENTOS */}
+      <Route path="payment-fixer" element={<PaymentFixerPage />} />
+      <Route path="payment-verifier" element={<PaymentVerifierPage />} />
       
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />
