@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -32,12 +31,12 @@ const PixPaymentButton = ({
     try {
       setIsLoading(true);
       
-      console.log("🎯 [PixPaymentButton] ✅ CORREÇÃO DEFINITIVA IMPLEMENTADA - Iniciando fluxo PIX");
+      console.log("🎯 [PixPaymentButton] REDIRECIONAMENTO INIT_POINT - Iniciando fluxo PIX");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        "CORREÇÃO DEFINITIVA: Iniciando processamento PIX",
+        "Iniciando fluxo PIX com redirecionamento",
         { totalPrice, timestamp: new Date().toISOString() }
       );
       
@@ -53,18 +52,29 @@ const PixPaymentButton = ({
         throw new Error("Erro ao buscar dados do usuário");
       }
 
-      // PASSO 2: Buscar carrinho
-      console.log("🛒 [PixPaymentButton] Buscando carrinho");
+      // PASSO 2: Buscar carrinho usando sistema unificado
+      console.log("🛒 [PixPaymentButton] Buscando carrinho com sistema unificado");
       const cartResult = findCartItems();
       
       if (!cartResult.success || cartResult.cartItems.length === 0) {
-        console.error("❌ [PixPaymentButton] Carrinho vazio");
+        console.error("❌ [PixPaymentButton] Carrinho vazio - Debug:", {
+          success: cartResult.success,
+          itemCount: cartResult.cartItems.length,
+          usedKey: cartResult.usedKey,
+          allLocalStorageKeys: Object.keys(localStorage)
+        });
         throw new Error("Carrinho vazio. Adicione painéis antes de prosseguir.");
       }
 
       console.log("✅ [PixPaymentButton] Carrinho encontrado:", {
         source: cartResult.usedKey,
-        itemCount: cartResult.cartItems.length
+        itemCount: cartResult.cartItems.length,
+        items: cartResult.cartItems.map(item => ({
+          id: item.id || item.panel?.id,
+          panelId: item.panel?.id,
+          buildingName: item.panel?.buildings?.nome || 'Nome não disponível',
+          price: item.price
+        }))
       });
 
       const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
@@ -86,12 +96,12 @@ const PixPaymentButton = ({
         throw new Error(`Erro ao criar pedido: ${orderResult.error}`);
       }
 
-      console.log("✅ [PixPaymentButton] Pedido criado com sucesso:", {
+      console.log("✅ [PixPaymentButton] Pedido criado:", {
         pedidoId: orderResult.pedidoId,
         transactionId: orderResult.transactionId
       });
 
-      // PASSO 4: Preparar dados para webhook
+      // PASSO 4: Preparar dados para webhook N8N
       const formattedPredios = cartResult.cartItems.map((item: any, index: number) => ({
         id: item.panel?.id || item.id || `panel_${index}`,
         nome: item.panel?.buildings?.nome || `Painel ${index + 1}`,
@@ -122,87 +132,75 @@ const PixPaymentButton = ({
         }
       };
 
-      // PASSO 5: CORREÇÃO DEFINITIVA - Processar webhook PIX
-      console.log("💳 [PixPaymentButton] 🚀 CORREÇÃO DEFINITIVA - Enviando webhook PIX");
+      // PASSO 5: Gerar PIX via N8N com suporte a init_point
+      console.log("💳 [PixPaymentButton] Gerando pagamento PIX via N8N (init_point ou QR Code)");
       toast.info("Processando pagamento PIX...", { duration: 2000 });
       
       const response = await sendPixPaymentWebhook(webhookData);
       
-      console.log("📡 [PixPaymentButton] 🎯 RESPOSTA WEBHOOK RECEBIDA:", JSON.stringify(response, null, 2));
+      console.log("📡 [PixPaymentButton] Resposta do N8N:", response);
       
-      if (!response.success) {
-        throw new Error(response.error || "Falha ao processar pagamento PIX");
-      }
-
-      // CORREÇÃO DEFINITIVA: PRIORIDADE ABSOLUTA PARA INIT_POINT
-      if (response.init_point) {
-        console.log("🚀 [PixPaymentButton] ✅ CORREÇÃO DEFINITIVA - INIT_POINT DETECTADO:", response.init_point);
-        console.log("🔗 [PixPaymentButton] 🎯 EXECUTANDO REDIRECIONAMENTO IMEDIATO AGORA!");
+      if (response.success) {
+        // PRIORIDADE 1: Redirecionar para init_point se disponível
+        if (response.init_point) {
+          console.log("🔗 [PixPaymentButton] INIT_POINT encontrado - redirecionando:", response.init_point);
+          
+          toast.success("Redirecionando para pagamento MercadoPago...", { duration: 3000 });
+          
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_EVENT,
+            LogLevel.SUCCESS,
+            "Redirecionamento para init_point executado",
+            { 
+              pedidoId: orderResult.pedidoId,
+              transactionId: orderResult.transactionId,
+              init_point: response.init_point,
+              cartSource: cartResult.usedKey
+            }
+          );
+          
+          // Redirecionar para MercadoPago
+          setTimeout(() => {
+            window.location.href = response.init_point!;
+          }, 1000);
+          
+          return;
+        }
         
-        toast.success("Redirecionando para MercadoPago...", { duration: 1000 });
-        
-        logCheckoutEvent(
-          CheckoutEvent.PAYMENT_EVENT,
-          LogLevel.SUCCESS,
-          "CORREÇÃO DEFINITIVA: Redirecionamento PIX executado com sucesso",
-          { 
-            pedidoId: orderResult.pedidoId,
-            transactionId: orderResult.transactionId,
-            init_point: response.init_point,
-            correcaoDefinitiva: true
-          }
-        );
-        
-        // REDIRECIONAMENTO IMEDIATO - SAIR IMEDIATAMENTE
-        console.log("⚡ [PixPaymentButton] REDIRECIONAMENTO EXECUTADO - SAINDO DA FUNÇÃO");
-        setTimeout(() => {
-          window.location.href = response.init_point!;
-        }, 500);
-        
-        return; // SAIR IMEDIATAMENTE - NÃO EXECUTAR MAIS NADA
-      }
-      
-      // FALLBACK: Apenas para casos onde realmente não há init_point
-      console.log("📱 [PixPaymentButton] ⚠️ FALLBACK - Sem init_point, verificando dados PIX");
-      
-      const hasPixData = !!(
-        response.qrCodeBase64 || 
-        response.pix_base64 || 
-        response.qrCodeText || 
-        response.pix_url
-      );
-      
-      if (hasPixData) {
-        console.log("✅ [PixPaymentButton] Dados PIX encontrados, mostrando QR Code");
-        
-        setPixData(response);
-        setQrCodeDialogOpen(true);
-        
-        toast.success("QR Code PIX gerado com sucesso!");
-        
-        logCheckoutEvent(
-          CheckoutEvent.PAYMENT_EVENT,
-          LogLevel.SUCCESS,
-          "QR Code PIX gerado como fallback",
-          { 
-            pedidoId: orderResult.pedidoId,
-            transactionId: orderResult.transactionId,
-            hasQrCode: true
-          }
-        );
+        // FALLBACK: QR Code se init_point não estiver disponível
+        if (response.qrCodeBase64 || response.pix_base64) {
+          console.log("📱 [PixPaymentButton] Init_point não disponível, usando QR Code");
+          
+          setPixData(response);
+          setQrCodeDialogOpen(true);
+          
+          toast.success("QR Code PIX gerado com sucesso!");
+          
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_EVENT,
+            LogLevel.SUCCESS,
+            "QR Code PIX gerado como fallback",
+            { 
+              pedidoId: orderResult.pedidoId,
+              transactionId: orderResult.transactionId,
+              hasQrCode: true,
+              cartSource: cartResult.usedKey
+            }
+          );
+        } else {
+          throw new Error("Nenhum método de pagamento disponível na resposta");
+        }
       } else {
-        // ERRO REAL: Nem init_point nem dados PIX
-        console.error("❌ [PixPaymentButton] ERRO: Webhook não retornou dados válidos");
-        throw new Error("Webhook não retornou método de pagamento válido");
+        throw new Error(response.error || "Falha ao processar pagamento PIX");
       }
       
     } catch (error: any) {
-      console.error("❌ [PixPaymentButton] ERRO CAPTURADO:", error);
+      console.error("❌ [PixPaymentButton] Erro no fluxo PIX:", error);
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        "Erro no processamento PIX",
+        "Erro no fluxo PIX com redirecionamento",
         { error: error.message, stack: error.stack }
       );
       
@@ -238,8 +236,8 @@ const PixPaymentButton = ({
         )}
       </Button>
 
-      {/* Popup do QR Code PIX - APENAS para fallback quando NÃO há init_point */}
-      {pixData && qrCodeDialogOpen && !pixData.init_point && (
+      {/* Popup do QR Code PIX - apenas para fallback */}
+      {pixData && (
         <PixQrCodeDialog
           isOpen={qrCodeDialogOpen}
           onClose={() => {
