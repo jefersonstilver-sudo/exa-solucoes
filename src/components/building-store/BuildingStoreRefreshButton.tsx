@@ -2,44 +2,35 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import useBuildingStore from '@/hooks/useBuildingStore';
+import { useSimpleBuildingStore } from '@/hooks/useSimpleBuildingStore';
+import { toast } from 'sonner';
 
-interface BuildingStoreRefreshButtonProps {
-  variant?: 'default' | 'secondary' | 'outline';
-  size?: 'default' | 'sm' | 'lg';
-  showText?: boolean;
-}
-
-const BuildingStoreRefreshButton: React.FC<BuildingStoreRefreshButtonProps> = ({
-  variant = 'outline',
-  size = 'sm',
-  showText = false
-}) => {
-  const { refreshBuildings, isLoading } = useBuildingStore();
+const BuildingStoreRefreshButton = () => {
+  const { forceRefresh, isLoading } = useSimpleBuildingStore();
 
   const handleRefresh = async () => {
-    await refreshBuildings();
+    console.log('🔄 [REFRESH] Forçando atualização dos prédios...');
+    toast.info('Atualizando dados dos prédios...');
+    try {
+      await forceRefresh();
+      toast.success('Dados atualizados com sucesso!');
+    } catch (error) {
+      console.error('❌ [REFRESH] Erro ao atualizar:', error);
+      toast.error('Erro ao atualizar dados');
+    }
   };
 
   return (
-    <div className="hover-scale">
-      <Button
-        onClick={handleRefresh}
-        disabled={isLoading}
-        variant={variant}
-        size={size}
-        className="flex items-center gap-2"
-      >
-        <div className={isLoading ? 'animate-spin' : ''}>
-          <RefreshCw className="h-4 w-4" />
-        </div>
-        {showText && (
-          <span className="hidden sm:inline">
-            {isLoading ? 'Atualizando...' : 'Atualizar'}
-          </span>
-        )}
-      </Button>
-    </div>
+    <Button 
+      onClick={handleRefresh}
+      disabled={isLoading}
+      variant="outline"
+      size="sm"
+      className="gap-2"
+    >
+      <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+      {isLoading ? 'Atualizando...' : 'Atualizar'}
+    </Button>
   );
 };
 
