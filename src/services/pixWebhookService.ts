@@ -98,20 +98,25 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       console.log('[PixWebhookService] Resposta é um array, usando primeiro elemento:', result[0]);
       result = result[0];
     }
+
+    // CORREÇÃO COMPLETA: Logar a resposta completa e mapear corretamente
+    console.log('[PixWebhookService] RESPOSTA COMPLETA DO WEBHOOK:', JSON.stringify(result, null, 2));
     
-    // CORREÇÃO: Mapear o campo correto do webhook N8N
+    // Mapear o campo correto do webhook N8N (com "ço" correto)
     const initPoint = result["init_point_opçoes de pagamento"] || result.init_point;
     
-    console.log('[PixWebhookService] MAPEAMENTO INIT_POINT:', {
-      'init_point_opçoes de pagamento': result["init_point_opções de pagamento"],
-      'init_point': result.init_point,
+    console.log('[PixWebhookService] MAPEAMENTO INIT_POINT CORRIGIDO:', {
+      'campo_webhook_completo': 'init_point_opçoes de pagamento',
+      'valor_encontrado': result["init_point_opçoes de pagamento"],
+      'fallback_init_point': result.init_point,
       'initPoint_mapeado': initPoint,
-      'temInitPoint': !!initPoint
+      'tem_init_point': !!initPoint,
+      'url_redirecionamento': initPoint
     });
     
     // Verificar se tem init_point (prioridade máxima para redirecionamento)
     if (initPoint) {
-      console.log('[PixWebhookService] INIT_POINT encontrado - será usado para redirecionamento:', initPoint);
+      console.log('[PixWebhookService] ✅ INIT_POINT ENCONTRADO - REDIRECIONAMENTO SERÁ EXECUTADO:', initPoint);
       
       return {
         success: true,
