@@ -31,7 +31,6 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
   try {
     console.log('🏢 [SIMPLE SERVICE] === BUSCANDO PRÉDIOS ATIVOS ===');
     
-    // Força uma nova consulta sem cache
     const { data: buildings, error } = await supabase
       .from('buildings')
       .select('*')
@@ -60,11 +59,6 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
         preco_base: building.preco_base,
         quantidade_telas: building.quantidade_telas
       });
-      
-      // Log específico para Rio Negro
-      if (building.nome === 'Rio Negro') {
-        console.log(`🎯 [SIMPLE SERVICE] RIO NEGRO ENCONTRADO - Preço: R$ ${building.preco_base}`);
-      }
     });
 
     // Converter dados do banco para SimpleBuildingStore
@@ -92,12 +86,6 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       padrao_publico: (['alto', 'medio', 'normal'].includes(building.padrao_publico) ? building.padrao_publico : 'normal') as 'alto' | 'medio' | 'normal',
       quantidade_telas: building.quantidade_telas || 1
     }));
-
-    // Log final para verificar os preços processados
-    const rioNegroBuilding = simpleBuildingStores.find(b => b.nome === 'Rio Negro');
-    if (rioNegroBuilding) {
-      console.log(`🎯 [SIMPLE SERVICE] RIO NEGRO PROCESSADO - Preço final: R$ ${rioNegroBuilding.preco_base}`);
-    }
 
     return simpleBuildingStores;
     
