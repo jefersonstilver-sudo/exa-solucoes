@@ -93,13 +93,29 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       throw new Error(`Resposta não é um JSON válido: ${parseError.message}`);
     }
     
+    // Se a resposta for um array, pegar o primeiro elemento
+    if (Array.isArray(result) && result.length > 0) {
+      console.log('[PixWebhookService] Resposta é um array, usando primeiro elemento:', result[0]);
+      result = result[0];
+    }
+    
+    // CORREÇÃO: Mapear o campo correto do webhook N8N
+    const initPoint = result["init_point_opçoes de pagamento"] || result.init_point;
+    
+    console.log('[PixWebhookService] MAPEAMENTO INIT_POINT:', {
+      'init_point_opçoes de pagamento': result["init_point_opções de pagamento"],
+      'init_point': result.init_point,
+      'initPoint_mapeado': initPoint,
+      'temInitPoint': !!initPoint
+    });
+    
     // Verificar se tem init_point (prioridade máxima para redirecionamento)
-    if (result.init_point) {
-      console.log('[PixWebhookService] INIT_POINT encontrado - será usado para redirecionamento:', result.init_point);
+    if (initPoint) {
+      console.log('[PixWebhookService] INIT_POINT encontrado - será usado para redirecionamento:', initPoint);
       
       return {
         success: true,
-        init_point: result.init_point,
+        init_point: initPoint,
         pedido_id: result.pedido_id,
         transaction_id: result.transaction_id || result.id_transacao,
         message: result.message || 'Redirecionando para MercadoPago...',
