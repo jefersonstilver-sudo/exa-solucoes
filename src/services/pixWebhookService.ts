@@ -1,4 +1,3 @@
-
 import { PixWebhookData, PixWebhookResponse } from '@/types/pixWebhook';
 
 const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
@@ -93,21 +92,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       throw new Error(`Resposta não é um JSON válido: ${parseError.message}`);
     }
     
-    // Verificar se tem init_point (prioridade máxima para redirecionamento)
-    if (result.init_point) {
-      console.log('[PixWebhookService] INIT_POINT encontrado - será usado para redirecionamento:', result.init_point);
-      
-      return {
-        success: true,
-        init_point: result.init_point,
-        pedido_id: result.pedido_id,
-        transaction_id: result.transaction_id || result.id_transacao,
-        message: result.message || 'Redirecionando para MercadoPago...',
-        ...result
-      };
-    }
-    
-    // Verificar se tem dados PIX para QR Code (fallback)
+    // Verificar se tem dados PIX
     const hasPixData = !!(
       result.pix_base64 || 
       result.qrCodeBase64 || 
@@ -147,7 +132,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
         throw new Error(`Erro do webhook: ${result.error}`);
       }
       
-      console.warn('[PixWebhookService] Webhook não retornou init_point nem dados PIX, usando fallback');
+      console.warn('[PixWebhookService] Webhook não retornou dados PIX, usando fallback');
       // FALLBACK: Retornar dados de teste
       return {
         success: true,

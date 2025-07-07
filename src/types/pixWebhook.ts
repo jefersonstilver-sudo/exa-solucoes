@@ -29,7 +29,6 @@ export interface PixWebhookResponse {
   paymentLink?: string;
   pix_url?: string;
   pix_base64?: string;
-  init_point?: string;
   pedido_id?: string;
   transaction_id?: string;
   external_reference?: string;
