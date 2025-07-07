@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -31,12 +32,12 @@ const PixPaymentButton = ({
     try {
       setIsLoading(true);
       
-      console.log("🎯 [PixPaymentButton] REDIRECIONAMENTO INIT_POINT - Iniciando fluxo PIX");
+      console.log("🎯 [PixPaymentButton] REDIRECIONAMENTO IMEDIATO - Iniciando fluxo PIX");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        "Iniciando fluxo PIX com redirecionamento",
+        "Iniciando fluxo PIX com redirecionamento direto",
         { totalPrice, timestamp: new Date().toISOString() }
       );
       
@@ -132,8 +133,8 @@ const PixPaymentButton = ({
         }
       };
 
-      // PASSO 5: Gerar PIX via N8N com suporte a init_point
-      console.log("💳 [PixPaymentButton] Gerando pagamento PIX via N8N (init_point ou QR Code)");
+      // PASSO 5: Gerar PIX via N8N - PRIORIDADE PARA REDIRECIONAMENTO
+      console.log("💳 [PixPaymentButton] Gerando pagamento PIX via N8N - PRIORIDADE REDIRECIONAMENTO");
       toast.info("Processando pagamento PIX...", { duration: 2000 });
       
       const response = await sendPixPaymentWebhook(webhookData);
@@ -141,16 +142,16 @@ const PixPaymentButton = ({
       console.log("📡 [PixPaymentButton] Resposta do N8N:", response);
       
       if (response.success) {
-        // PRIORIDADE 1: Redirecionar para init_point se disponível
+        // PRIORIDADE ABSOLUTA: Redirecionar para init_point se disponível
         if (response.init_point) {
-          console.log("🔗 [PixPaymentButton] INIT_POINT encontrado - redirecionando:", response.init_point);
+          console.log("🚀 [PixPaymentButton] REDIRECIONAMENTO IMEDIATO - INIT_POINT ENCONTRADO:", response.init_point);
           
-          toast.success("Redirecionando para pagamento MercadoPago...", { duration: 3000 });
+          toast.success("Redirecionando para pagamento MercadoPago...", { duration: 2000 });
           
           logCheckoutEvent(
             CheckoutEvent.PAYMENT_EVENT,
             LogLevel.SUCCESS,
-            "Redirecionamento para init_point executado",
+            "Redirecionamento imediato para init_point executado",
             { 
               pedidoId: orderResult.pedidoId,
               transactionId: orderResult.transactionId,
@@ -159,17 +160,25 @@ const PixPaymentButton = ({
             }
           );
           
-          // Redirecionar para MercadoPago
+          // REDIRECIONAMENTO IMEDIATO - NÃO ABRIR POPUP
           setTimeout(() => {
+            console.log("🔗 [PixPaymentButton] EXECUTANDO REDIRECIONAMENTO PARA:", response.init_point);
             window.location.href = response.init_point!;
           }, 1000);
           
-          return;
+          return; // IMPORTANTE: Sair da função aqui para não abrir popup
         }
         
-        // FALLBACK: QR Code se init_point não estiver disponível
-        if (response.qrCodeBase64 || response.pix_base64) {
-          console.log("📱 [PixPaymentButton] Init_point não disponível, usando QR Code");
+        // FALLBACK: QR Code apenas se init_point não estiver disponível
+        const hasPixData = !!(
+          response.qrCodeBase64 || 
+          response.pix_base64 || 
+          response.qrCodeText || 
+          response.pix_url
+        );
+        
+        if (hasPixData) {
+          console.log("📱 [PixPaymentButton] Init_point não disponível, usando QR Code como fallback");
           
           setPixData(response);
           setQrCodeDialogOpen(true);
@@ -188,7 +197,8 @@ const PixPaymentButton = ({
             }
           );
         } else {
-          throw new Error("Nenhum método de pagamento disponível na resposta");
+          // Se não tem init_point nem dados PIX, erro real
+          throw new Error("Nenhum método de pagamento disponível na resposta do webhook");
         }
       } else {
         throw new Error(response.error || "Falha ao processar pagamento PIX");
@@ -236,8 +246,8 @@ const PixPaymentButton = ({
         )}
       </Button>
 
-      {/* Popup do QR Code PIX - apenas para fallback */}
-      {pixData && (
+      {/* Popup do QR Code PIX - APENAS para fallback quando não há init_point */}
+      {pixData && qrCodeDialogOpen && (
         <PixQrCodeDialog
           isOpen={qrCodeDialogOpen}
           onClose={() => {
