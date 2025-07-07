@@ -6,7 +6,7 @@ const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e0
 export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWebhookResponse> => {
   const timestamp = new Date().toISOString();
   
-  console.log('[PixWebhookService] Enviando dados para webhook:', {
+  console.log('[PixWebhookService] 🚀 CORREÇÃO DEFINITIVA - Enviando dados para webhook:', {
     url: PIX_WEBHOOK_URL,
     data,
     timestamp
@@ -31,7 +31,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       environment: "production"
     };
 
-    console.log('[PixWebhookService] Payload sendo enviado:', webhookPayload);
+    console.log('[PixWebhookService] 📤 Payload sendo enviado:', webhookPayload);
 
     const response = await fetch(PIX_WEBHOOK_URL, {
       method: 'POST',
@@ -45,7 +45,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       signal: AbortSignal.timeout(30000)
     });
     
-    console.log('[PixWebhookService] Resposta recebida:', {
+    console.log('[PixWebhookService] 📥 Resposta recebida:', {
       status: response.status,
       statusText: response.statusText,
       ok: response.ok
@@ -55,9 +55,9 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       let errorText = '';
       try {
         errorText = await response.text();
-        console.error('[PixWebhookService] Erro do servidor:', errorText);
+        console.error('[PixWebhookService] ❌ Erro do servidor:', errorText);
       } catch (e) {
-        console.error('[PixWebhookService] Erro ao ler resposta de erro:', e);
+        console.error('[PixWebhookService] ❌ Erro ao ler resposta de erro:', e);
       }
       throw new Error(`Webhook falhou: ${response.status} - ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
     }
@@ -65,18 +65,18 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
     let result;
     const responseText = await response.text();
     
-    console.log('[PixWebhookService] Texto da resposta:', responseText);
+    console.log('[PixWebhookService] 📄 Texto da resposta RAW:', responseText);
     
     if (!responseText || responseText.trim() === '') {
-      console.error('[PixWebhookService] Resposta vazia do webhook');
+      console.error('[PixWebhookService] ❌ Resposta vazia do webhook');
       throw new Error("Webhook retornou resposta vazia");
     }
     
     try {
       result = JSON.parse(responseText);
-      console.log('[PixWebhookService] JSON parseado:', result);
+      console.log('[PixWebhookService] 📋 JSON parseado:', result);
     } catch (parseError) {
-      console.error('[PixWebhookService] Erro ao parsear JSON:', parseError);
+      console.error('[PixWebhookService] ❌ Erro ao parsear JSON:', parseError);
       
       if (responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
         throw new Error("Webhook retornou uma página HTML em vez de JSON. Verifique se o webhook está ativo.");
@@ -85,30 +85,29 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       throw new Error(`Resposta não é um JSON válido: ${parseError.message}`);
     }
     
-    // CORREÇÃO CRÍTICA: Tratar resposta como array
+    // CORREÇÃO DEFINITIVA: Tratar resposta como array primeiro
     if (Array.isArray(result) && result.length > 0) {
-      console.log('[PixWebhookService] ✅ RESPOSTA É ARRAY - Usando primeiro elemento:', result[0]);
+      console.log('[PixWebhookService] 🎯 CORREÇÃO DEFINITIVA - Resposta é array, usando primeiro elemento:', result[0]);
       result = result[0];
     }
 
-    console.log('[PixWebhookService] 🎯 RESPOSTA FINAL PROCESSADA:', JSON.stringify(result, null, 2));
+    console.log('[PixWebhookService] 🔍 RESPOSTA FINAL PROCESSADA:', JSON.stringify(result, null, 2));
     
-    // PRIORIDADE ABSOLUTA: Mapear init_point corretamente
+    // CORREÇÃO DEFINITIVA: PRIORIDADE ABSOLUTA PARA INIT_POINT
     const initPoint = result["init_point_opçoes de pagamento"] || result.init_point;
     
-    console.log('[PixWebhookService] 🚀 MAPEAMENTO INIT_POINT DEFINITIVO:', {
+    console.log('[PixWebhookService] 🎯 CORREÇÃO DEFINITIVA - MAPEAMENTO INIT_POINT:', {
       'campo_original': 'init_point_opçoes de pagamento',
       'valor_encontrado': result["init_point_opçoes de pagamento"],
-      'campo_fallback': 'init_point',
+      'campo_fallback': 'init_point', 
       'valor_fallback': result.init_point,
       'init_point_final': initPoint,
-      'tem_init_point': !!initPoint,
-      '🔗_URL_REDIRECIONAMENTO': initPoint
+      'tem_init_point': !!initPoint
     });
     
-    // RETORNO DEFINITIVO: Prioridade absoluta para init_point
+    // RETORNO DEFINITIVO COM PRIORIDADE PARA INIT_POINT
     if (initPoint) {
-      console.log('[PixWebhookService] ✅ INIT_POINT CONFIRMADO - RETORNANDO PARA REDIRECIONAMENTO:', initPoint);
+      console.log('[PixWebhookService] ✅ CORREÇÃO DEFINITIVA - INIT_POINT CONFIRMADO, RETORNANDO PARA REDIRECIONAMENTO:', initPoint);
       
       return {
         success: true,
@@ -131,7 +130,7 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       result.qr_code
     );
     
-    console.log('[PixWebhookService] Verificação de dados PIX como fallback:', {
+    console.log('[PixWebhookService] 📱 Verificação de dados PIX como fallback:', {
       hasPixData,
       pix_base64: !!result.pix_base64,
       qrCodeBase64: !!result.qrCodeBase64,
@@ -152,16 +151,23 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
         ...result
       };
       
-      console.log('[PixWebhookService] Resposta PIX mapeada como fallback:', pixResponse);
+      console.log('[PixWebhookService] 📱 Resposta PIX mapeada como fallback:', pixResponse);
       return pixResponse;
     }
     
-    // Erro se não tem nem init_point nem dados PIX
-    console.error('[PixWebhookService] ❌ ERRO: Webhook não retornou init_point nem dados PIX');
+    // ERRO: Nem init_point nem dados PIX
+    console.error('[PixWebhookService] ❌ ERRO CRÍTICO: Webhook não retornou init_point nem dados PIX válidos');
+    console.error('[PixWebhookService] 🔍 DADOS RECEBIDOS PARA DEBUG:', {
+      result,
+      keys: Object.keys(result || {}),
+      hasInitPoint: !!initPoint,
+      hasPixData
+    });
+    
     throw new Error("Webhook não retornou método de pagamento válido");
     
   } catch (error: any) {
-    console.error('[PixWebhookService] Erro completo:', error);
+    console.error('[PixWebhookService] ❌ ERRO COMPLETO CAPTURADO:', error);
     
     let userMessage = "Erro ao processar pagamento PIX";
     
