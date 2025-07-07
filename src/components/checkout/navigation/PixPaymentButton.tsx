@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -32,12 +31,12 @@ const PixPaymentButton = ({
     try {
       setIsLoading(true);
       
-      console.log("🎯 [PixPaymentButton] SISTEMA UNIFICADO - Iniciando fluxo PIX");
+      console.log("🎯 [PixPaymentButton] REDIRECIONAMENTO INIT_POINT - Iniciando fluxo PIX");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
         LogLevel.INFO,
-        "Iniciando fluxo PIX unificado",
+        "Iniciando fluxo PIX com redirecionamento",
         { totalPrice, timestamp: new Date().toISOString() }
       );
       
@@ -73,7 +72,7 @@ const PixPaymentButton = ({
         items: cartResult.cartItems.map(item => ({
           id: item.id || item.panel?.id,
           panelId: item.panel?.id,
-          buildingName: item.panel?.buildings?.nome || 'Nome não disponível', // CORRIGIDO
+          buildingName: item.panel?.buildings?.nome || 'Nome não disponível',
           price: item.price
         }))
       });
@@ -105,7 +104,7 @@ const PixPaymentButton = ({
       // PASSO 4: Preparar dados para webhook N8N
       const formattedPredios = cartResult.cartItems.map((item: any, index: number) => ({
         id: item.panel?.id || item.id || `panel_${index}`,
-        nome: item.panel?.buildings?.nome || `Painel ${index + 1}`, // CORRIGIDO
+        nome: item.panel?.buildings?.nome || `Painel ${index + 1}`,
         painel_ids: [item.panel?.id || item.id]
       }));
 
@@ -133,48 +132,66 @@ const PixPaymentButton = ({
         }
       };
 
-      // PASSO 5: Gerar PIX via N8N
-      console.log("💳 [PixPaymentButton] Gerando QR Code PIX via N8N");
-      toast.info("Gerando QR Code PIX...", { duration: 2000 });
+      // PASSO 5: Gerar PIX via N8N com suporte a init_point
+      console.log("💳 [PixPaymentButton] Gerando pagamento PIX via N8N (init_point ou QR Code)");
+      toast.info("Processando pagamento PIX...", { duration: 2000 });
       
       const response = await sendPixPaymentWebhook(webhookData);
       
       console.log("📡 [PixPaymentButton] Resposta do N8N:", response);
       
-      if (response.success && (response.qrCodeBase64 || response.pix_base64)) {
-        // QR Code gerado com sucesso
-        setPixData(response);
-        setQrCodeDialogOpen(true);
+      if (response.success) {
+        // PRIORIDADE 1: Redirecionar para init_point se disponível
+        if (response.init_point) {
+          console.log("🔗 [PixPaymentButton] INIT_POINT encontrado - redirecionando:", response.init_point);
+          
+          toast.success("Redirecionando para pagamento MercadoPago...", { duration: 3000 });
+          
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_EVENT,
+            LogLevel.SUCCESS,
+            "Redirecionamento para init_point executado",
+            { 
+              pedidoId: orderResult.pedidoId,
+              transactionId: orderResult.transactionId,
+              init_point: response.init_point,
+              cartSource: cartResult.usedKey
+            }
+          );
+          
+          // Redirecionar para MercadoPago
+          setTimeout(() => {
+            window.location.href = response.init_point!;
+          }, 1000);
+          
+          return;
+        }
         
-        console.log("🎉 [PixPaymentButton] QR Code gerado com sucesso!");
-        toast.success("QR Code PIX gerado com sucesso!");
-        
-        logCheckoutEvent(
-          CheckoutEvent.PAYMENT_EVENT,
-          LogLevel.SUCCESS,
-          "Fluxo PIX unificado executado com sucesso",
-          { 
-            pedidoId: orderResult.pedidoId,
-            transactionId: orderResult.transactionId,
-            hasQrCode: !!(response.qrCodeBase64 || response.pix_base64),
-            cartSource: cartResult.usedKey
-          }
-        );
+        // FALLBACK: QR Code se init_point não estiver disponível
+        if (response.qrCodeBase64 || response.pix_base64) {
+          console.log("📱 [PixPaymentButton] Init_point não disponível, usando QR Code");
+          
+          setPixData(response);
+          setQrCodeDialogOpen(true);
+          
+          toast.success("QR Code PIX gerado com sucesso!");
+          
+          logCheckoutEvent(
+            CheckoutEvent.PAYMENT_EVENT,
+            LogLevel.SUCCESS,
+            "QR Code PIX gerado como fallback",
+            { 
+              pedidoId: orderResult.pedidoId,
+              transactionId: orderResult.transactionId,
+              hasQrCode: true,
+              cartSource: cartResult.usedKey
+            }
+          );
+        } else {
+          throw new Error("Nenhum método de pagamento disponível na resposta");
+        }
       } else {
-        // Fallback com dados de teste se N8N falhar
-        console.warn("⚠️ [PixPaymentButton] N8N não retornou QR Code, usando fallback");
-        
-        const fallbackData: PixWebhookResponse = {
-          success: true,
-          qrCodeBase64: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-          qrCodeText: "00020126830014BR.GOV.BCB.PIX2561qrcode-pix.mercadopago.com/instore/o/v2/teste",
-          message: "QR Code de teste gerado"
-        };
-        
-        setPixData(fallbackData);
-        setQrCodeDialogOpen(true);
-        
-        toast.warning("QR Code de teste gerado (N8N indisponível)");
+        throw new Error(response.error || "Falha ao processar pagamento PIX");
       }
       
     } catch (error: any) {
@@ -183,7 +200,7 @@ const PixPaymentButton = ({
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        "Erro no fluxo PIX unificado",
+        "Erro no fluxo PIX com redirecionamento",
         { error: error.message, stack: error.stack }
       );
       
@@ -205,7 +222,7 @@ const PixPaymentButton = ({
           <div className="flex items-center space-x-2">
             <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             <span>
-              {isCreating ? "Criando pedido..." : "Gerando QR Code PIX..."}
+              {isCreating ? "Criando pedido..." : "Processando pagamento..."}
             </span>
           </div>
         ) : (
@@ -219,12 +236,12 @@ const PixPaymentButton = ({
         )}
       </Button>
 
-      {/* Popup do QR Code PIX com fallback */}
+      {/* Popup do QR Code PIX - apenas para fallback */}
       {pixData && (
         <PixQrCodeDialog
           isOpen={qrCodeDialogOpen}
           onClose={() => {
-            console.log("🔄 [PixPaymentButton] Fechando popup PIX");
+            console.log("🔄 [PixPaymentButton] Fechando popup PIX fallback");
             setQrCodeDialogOpen(false);
             onClick();
           }}
