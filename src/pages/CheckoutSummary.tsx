@@ -8,14 +8,14 @@ import PaymentMethodSelector from '@/components/checkout/summary/PaymentMethodSe
 import PricingBreakdown from '@/components/checkout/summary/PricingBreakdown';
 import PixPaymentButton from '@/components/checkout/summary/PixPaymentButton';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import CreditCardPaymentButton from '@/components/checkout/summary/CreditCardPaymentButton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
-import { toast } from 'sonner';
-import CreditCardPaymentButton from '@/components/checkout/summary/CreditCardPaymentButton';
 import { useCardCheckout } from '@/hooks/useCardCheckout';
+import { toast } from 'sonner';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
@@ -50,7 +50,8 @@ const CheckoutSummary = () => {
     showPixDialog,
     hasPixData: !!pixDialogData,
     currentPedidoId,
-    isProcessing: isPixProcessing
+    isPixProcessing,
+    isCardProcessing
   });
 
   // Verificação de autenticação melhorada
@@ -102,8 +103,8 @@ const CheckoutSummary = () => {
   });
 
   const pixDiscount = 5; // 5% desconto PIX
-  const pixTotal = paymentMethod === 'pix' ? baseTotal * (1 - pixDiscount / 100) : baseTotal;
-  const finalTotal = paymentMethod === 'pix' ? pixTotal : baseTotal;
+  const pixTotal = baseTotal * (1 - pixDiscount / 100);
+  const cardTotal = baseTotal; // Cartão sem desconto
 
   const handleBack = () => {
     navigate('/checkout/cupom');
@@ -111,7 +112,7 @@ const CheckoutSummary = () => {
 
   const handlePixPayment = async () => {
     console.log('[CheckoutSummary] INICIANDO PAGAMENTO PIX:', {
-      finalTotal,
+      pixTotal,
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
       timestamp: new Date().toISOString()
@@ -165,7 +166,7 @@ const CheckoutSummary = () => {
 
   const handleCardPayment = async () => {
     console.log('💳 [CheckoutSummary] INICIANDO PAGAMENTO CARTÃO:', {
-      baseTotal,
+      cardTotal,
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
       timestamp: new Date().toISOString()
@@ -191,11 +192,6 @@ const CheckoutSummary = () => {
     setShowPixDialog(false);
     setPixDialogData(null);
     setCurrentPedidoId(null);
-  };
-
-  const handleCreditCardPayment = () => {
-    console.log('[CheckoutSummary] Cartão de crédito temporariamente desabilitado');
-    toast.info("Cartão de crédito temporariamente indisponível. Use PIX.");
   };
 
   if (isLoading) {
@@ -266,9 +262,9 @@ const CheckoutSummary = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                {/* FORÇAR APENAS PIX - DESABILITAR CARTÃO */}
+                {/* Payment Methods Comparison */}
                 <div className="bg-white rounded-2xl shadow-lg border p-6">
-                  <h3 className="text-xl font-bold text-[#3C1361] mb-4">Forma de Pagamento</h3>
+                  <h3 className="text-xl font-bold text-[#3C1361] mb-4">Formas de Pagamento</h3>
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
                       <div className="w-4 h-4 bg-green-500 rounded-full"></div>
@@ -276,16 +272,16 @@ const CheckoutSummary = () => {
                         <p className="font-medium text-green-800">PIX - 5% de desconto</p>
                         <p className="text-sm text-green-600">Pagamento instantâneo aprovado</p>
                       </div>
-                      <p className="font-bold text-green-700">R$ {finalTotal.toFixed(2)}</p>
+                      <p className="font-bold text-green-700">R$ {pixTotal.toFixed(2)}</p>
                     </div>
                     
-                    <div className="flex items-center space-x-3 p-4 bg-gray-100 border border-gray-200 rounded-lg opacity-50">
-                      <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
+                    <div className="flex items-center space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-500">Cartão de Crédito</p>
-                        <p className="text-sm text-gray-400">Temporariamente indisponível</p>
+                        <p className="font-medium text-blue-800">Cartão de Crédito</p>
+                        <p className="text-sm text-blue-600">Parcelamento em até 12x</p>
                       </div>
-                      <p className="font-medium text-gray-400">R$ {baseTotal.toFixed(2)}</p>
+                      <p className="font-bold text-blue-700">R$ {cardTotal.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
@@ -332,12 +328,22 @@ const CheckoutSummary = () => {
                 </div>
               </div>
 
-              {/* Payment Button - APENAS PIX */}
-              <PixPaymentButton
-                totalAmount={finalTotal}
-                onPaymentInitiate={handlePixPayment}
-                disabled={!cartItems || cartItems.length === 0 || isPixProcessing}
-              />
+              {/* Payment Buttons */}
+              <div className="space-y-4">
+                {/* PIX Payment Button */}
+                <PixPaymentButton
+                  totalAmount={pixTotal}
+                  onPaymentInitiate={handlePixPayment}
+                  disabled={!cartItems || cartItems.length === 0 || isPixProcessing}
+                />
+
+                {/* Credit Card Payment Button */}
+                <CreditCardPaymentButton
+                  totalAmount={cardTotal}
+                  onPaymentInitiate={handleCardPayment}
+                  disabled={!cartItems || cartItems.length === 0 || isCardProcessing}
+                />
+              </div>
 
               {/* Back Button */}
               <Button
