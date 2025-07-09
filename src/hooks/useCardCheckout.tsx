@@ -53,7 +53,7 @@ export const useCardCheckout = () => {
         cliente_id: user.id,
         pedido_id: `card_${Date.now()}_${user.id}`,
         email: user.email || 'email@naoidentificado.com',
-        nome: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Cliente',
+        nome: user.nome || user.name || user.email?.split('@')[0] || 'Cliente',
         plano_escolhido: `${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`,
         periodo_meses: selectedPlan,
         predios_selecionados: prediosSelecionados,
