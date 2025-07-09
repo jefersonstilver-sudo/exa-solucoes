@@ -14,6 +14,8 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
 import { toast } from 'sonner';
+import CreditCardPaymentButton from '@/components/checkout/summary/CreditCardPaymentButton';
+import { useCardCheckout } from '@/hooks/useCardCheckout';
 
 const CheckoutSummary = () => {
   const navigate = useNavigate();
@@ -34,7 +36,8 @@ const CheckoutSummary = () => {
     couponDiscount
   } = useCheckout();
 
-  const { processPixPayment, isProcessing } = useSimplifiedPixCheckout();
+  const { processPixPayment, isProcessing: isPixProcessing } = useSimplifiedPixCheckout();
+  const { processCardPayment, isProcessing: isCardProcessing } = useCardCheckout();
 
   console.log('[CheckoutSummary] Estado atual:', {
     isLoggedIn,
@@ -47,7 +50,7 @@ const CheckoutSummary = () => {
     showPixDialog,
     hasPixData: !!pixDialogData,
     currentPedidoId,
-    isProcessing
+    isProcessing: isPixProcessing
   });
 
   // Verificação de autenticação melhorada
@@ -157,6 +160,29 @@ const CheckoutSummary = () => {
       });
       setCurrentPedidoId('test-pedido-id');
       setShowPixDialog(true);
+    }
+  };
+
+  const handleCardPayment = async () => {
+    console.log('💳 [CheckoutSummary] INICIANDO PAGAMENTO CARTÃO:', {
+      baseTotal,
+      cartItemsCount: cartItems?.length || 0,
+      selectedPlan,
+      timestamp: new Date().toISOString()
+    });
+
+    try {
+      const result = await processCardPayment(couponDiscount || 0);
+      
+      console.log('💳 [CheckoutSummary] RESULTADO DO PAGAMENTO CARTÃO:', result);
+      
+      if (result.redirected) {
+        toast.success("Redirecionando para checkout...");
+      }
+      
+    } catch (error: any) {
+      console.error('💳 [CheckoutSummary] ERRO no pagamento cartão:', error);
+      toast.error(`Erro no pagamento: ${error.message}`);
     }
   };
 
@@ -310,7 +336,7 @@ const CheckoutSummary = () => {
               <PixPaymentButton
                 totalAmount={finalTotal}
                 onPaymentInitiate={handlePixPayment}
-                disabled={!cartItems || cartItems.length === 0 || isProcessing}
+                disabled={!cartItems || cartItems.length === 0 || isPixProcessing}
               />
 
               {/* Back Button */}
