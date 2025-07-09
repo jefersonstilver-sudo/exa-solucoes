@@ -22,6 +22,8 @@ interface CardWebhookResponse {
   success: boolean;
   init_point?: string;
   preference_id?: string;
+  id_transacao?: string;
+  init_point_opcoes_pagamento?: string;
   error?: string;
   message?: string;
 }
@@ -52,13 +54,17 @@ export const sendCardWebhookData = async (data: CardWebhookData): Promise<CardWe
     console.log('🏦 [CardWebhook] Resposta recebida:', {
       success: result.success,
       has_init_point: !!result.init_point,
-      has_preference_id: !!result.preference_id
+      has_preference_id: !!result.preference_id,
+      has_id_transacao: !!result.id_transacao,
+      has_init_point_opcoes_pagamento: !!result.init_point_opcoes_pagamento
     });
 
     return {
       success: true,
       init_point: result.init_point,
       preference_id: result.preference_id,
+      id_transacao: result.id_transacao,
+      init_point_opcoes_pagamento: result.init_point_opcoes_pagamento,
       message: result.message || 'Dados enviados com sucesso'
     };
 

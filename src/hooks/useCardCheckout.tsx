@@ -72,32 +72,42 @@ export const useCardCheckout = () => {
         throw new Error(result.error || 'Falha ao processar pagamento com cartão');
       }
 
-      // Se recebeu init_point, redirecionar
-      if (result.init_point) {
-        console.log('💳 [CardCheckout] Redirecionando para:', result.init_point);
-        window.location.href = result.init_point;
+      console.log('💳 [CardCheckout] Resposta do webhook:', {
+        id_transacao: result.id_transacao,
+        init_point_opcoes_pagamento: result.init_point_opcoes_pagamento,
+        preference_id: result.preference_id
+      });
+
+      // PRIORIDADE 1: Se recebeu init_point_opcoes_pagamento (campo específico do cartão)
+      if (result.init_point_opcoes_pagamento) {
+        console.log('💳 [CardCheckout] Redirecionando para checkout de cartão:', result.init_point_opcoes_pagamento);
+        window.location.href = result.init_point_opcoes_pagamento;
         return {
           success: true,
           redirected: true,
-          init_point: result.init_point
+          init_point_opcoes_pagamento: result.init_point_opcoes_pagamento,
+          id_transacao: result.id_transacao
         };
       }
 
-      // Se recebeu preference_id mas não init_point
+      // PRIORIDADE 2: Se recebeu preference_id, construir URL do MercadoPago
       if (result.preference_id) {
         const mercadoPagoUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${result.preference_id}`;
-        console.log('💳 [CardCheckout] Redirecionando para MercadoPago:', mercadoPagoUrl);
+        console.log('💳 [CardCheckout] Redirecionando para MercadoPago via preference_id:', mercadoPagoUrl);
         window.location.href = mercadoPagoUrl;
         return {
           success: true,
           redirected: true,
-          preference_id: result.preference_id
+          preference_id: result.preference_id,
+          id_transacao: result.id_transacao
         };
       }
 
+      // FALLBACK: Sucesso sem redirecionamento
       return {
         success: true,
-        message: result.message || 'Pagamento processado com sucesso'
+        message: result.message || 'Pagamento processado com sucesso',
+        id_transacao: result.id_transacao
       };
 
     } catch (error: any) {
