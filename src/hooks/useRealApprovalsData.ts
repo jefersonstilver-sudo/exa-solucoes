@@ -22,36 +22,30 @@ export const useRealApprovalsData = () => {
     try {
       setLoading(true);
 
-      // Buscar pedidos pagos que não têm vídeos APROVADOS
-      const { data: paidOrders, error: paidError } = await supabase
+      // Buscar TODOS os pedidos pagos (incluindo todos os status relevantes)
+      const { data: allPaidOrders, error: paidError } = await supabase
         .from('pedidos')
         .select(`
           id,
-          pedido_videos!inner (
+          status,
+          pedido_videos (
             id,
             approval_status
           )
         `)
-        .eq('status', 'pago_pendente_video');
+        .in('status', ['pago', 'pago_pendente_video', 'video_enviado']);
 
       if (paidError) throw paidError;
 
-      // Contar pedidos sem vídeos aprovados
-      const paidWithoutApprovedVideoCount = (paidOrders || []).filter(
-        order => !order.pedido_videos || 
-        !order.pedido_videos.some(video => video.approval_status === 'approved')
-      ).length;
-
-      // Buscar também pedidos que não têm NENHUM vídeo
-      const { data: ordersWithoutVideos, error: noVideoError } = await supabase
-        .from('pedidos')
-        .select('id')
-        .eq('status', 'pago_pendente_video')
-        .not('id', 'in', `(${(paidOrders || []).map(o => `'${o.id}'`).join(',')})`);
-
-      if (noVideoError) throw noVideoError;
-
-      const totalPaidWithoutVideo = paidWithoutApprovedVideoCount + (ordersWithoutVideos?.length || 0);
+      // Contar pedidos SEM vídeos APROVADOS (inclui pedidos sem vídeo + com vídeos pending/rejected)
+      const paidWithoutApprovedVideo = (allPaidOrders || []).filter(order => {
+        // Se não tem vídeos, conta como "aguardando vídeo"
+        if (!order.pedido_videos || order.pedido_videos.length === 0) {
+          return true;
+        }
+        // Se tem vídeos mas nenhum aprovado, conta como "aguardando vídeo"
+        return !order.pedido_videos.some(video => video.approval_status === 'approved');
+      }).length;
 
       // Buscar estatísticas de vídeos em paralelo
       const [pendingResult, approvedResult, rejectedResult] = await Promise.all([
@@ -65,7 +59,7 @@ export const useRealApprovalsData = () => {
       if (rejectedResult.error) throw rejectedResult.error;
 
       const newStats = {
-        paidWithoutVideo: totalPaidWithoutVideo,
+        paidWithoutVideo: paidWithoutApprovedVideo,
         pendingApproval: pendingResult.count || 0,
         approved: approvedResult.count || 0,
         rejected: rejectedResult.count || 0
