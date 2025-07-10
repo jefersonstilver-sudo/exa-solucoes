@@ -194,6 +194,9 @@ const OrderDetails = () => {
         <EnhancedContractStatusCard
           orderId={orderDetails.id}
           orderDetails={orderDetails}
+          videoData={{
+            approvedVideos: videoSlots.filter(slot => slot.approval_status === 'approved').length
+          }}
         />
 
         {/* Status do Contrato */}

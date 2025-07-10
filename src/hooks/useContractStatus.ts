@@ -90,7 +90,7 @@ export const useContractStatus = (orderDetails: {
     }
 
     setContractData(newContractData);
-  }, [orderDetails]);
+  }, [orderDetails, videoData]);
 
   return contractData;
 };
