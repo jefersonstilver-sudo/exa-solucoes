@@ -32,8 +32,54 @@ export const formatAttemptsData = (tentativasComEmails: any[]): OrderOrAttempt[]
   }));
 };
 
+export const filterOrphanedAttempts = (tentativas: OrderOrAttempt[], pedidos: OrderOrAttempt[]): OrderOrAttempt[] => {
+  // Criar mapa de pedidos pagos por client_id e valor para comparação rápida
+  const paidOrdersMap = new Map<string, Set<number>>();
+  
+  pedidos
+    .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(p.status))
+    .forEach(pedido => {
+      const clientId = pedido.client_id;
+      const valor = pedido.valor_total;
+      
+      if (clientId && valor !== undefined) {
+        if (!paidOrdersMap.has(clientId)) {
+          paidOrdersMap.set(clientId, new Set());
+        }
+        paidOrdersMap.get(clientId)!.add(valor);
+      }
+    });
+  
+  // Filtrar tentativas que não têm pedido pago correspondente
+  return tentativas.filter(tentativa => {
+    const clientId = tentativa.client_id;
+    const valor = tentativa.valor_total;
+    
+    if (!clientId || valor === undefined) return true;
+    
+    const clientOrders = paidOrdersMap.get(clientId);
+    if (!clientOrders) return true;
+    
+    // Se existe pedido pago com mesmo valor para mesmo cliente, é tentativa órfã
+    const isOrphaned = clientOrders.has(valor);
+    
+    if (isOrphaned) {
+      console.log(`🚫 Tentativa órfã filtrada: ${tentativa.id} (Cliente: ${tentativa.client_email}, Valor: R$ ${valor})`);
+    }
+    
+    return !isOrphaned;
+  });
+};
+
 export const combineAndSortData = (pedidos: OrderOrAttempt[], tentativas: OrderOrAttempt[]): OrderOrAttempt[] => {
-  return [...pedidos, ...tentativas]
+  // FILTRO EMERGENCIAL: Remover tentativas órfãs antes de combinar
+  const tentativasLegitimas = filterOrphanedAttempts(tentativas, pedidos);
+  
+  console.log(`📊 Tentativas antes da filtragem: ${tentativas.length}`);
+  console.log(`📊 Tentativas após filtragem: ${tentativasLegitimas.length}`);
+  console.log(`🗑️ Tentativas órfãs removidas: ${tentativas.length - tentativasLegitimas.length}`);
+  
+  return [...pedidos, ...tentativasLegitimas]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 };
 
