@@ -34,7 +34,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [rejectionReason, setRejectionReason] = useState<{ [key: string]: string }>({});
   const [actionLoading, setActionLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  
 
   const conarViolations = [
     'Conteúdo inadequado para crianças',
@@ -51,9 +51,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
   const fetchPendingVideos = async () => {
     try {
       setLoadingVideos(true);
-      console.log('🎥 [ALASCA SETE] Buscando vídeos pendentes de aprovação...');
       
-      // CORREÇÃO ALASCA SETE: Query direta mais robusta ao invés da RPC que estava falhando
       const { data: pendingData, error: pendingError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -62,7 +60,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           video_id,
           slot_position,
           created_at,
-          approval_status,
           pedidos!inner (
             id,
             valor_total,
@@ -78,34 +75,25 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         `)
         .eq('approval_status', 'pending');
 
-      if (pendingError) {
-        console.error('❌ [ALASCA SETE] Erro na query direta:', pendingError);
-        throw pendingError;
-      }
-
-      console.log('📊 [ALASCA SETE] Dados brutos encontrados:', pendingData?.length || 0);
-      setDebugInfo({ rawData: pendingData, query: 'direct_query' });
+      if (pendingError) throw pendingError;
 
       if (!pendingData || pendingData.length === 0) {
-        console.log('ℹ️ [ALASCA SETE] Nenhum vídeo pendente encontrado');
         setPendingVideos([]);
         return;
       }
 
-      // Buscar informações dos clientes separadamente
+      // Buscar informações dos clientes
       const clientIds = [...new Set(pendingData.map(pv => pv.pedidos.client_id))];
-      console.log('👥 [ALASCA SETE] Buscando dados de clientes:', clientIds);
-
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, email')
         .in('id', clientIds);
 
       if (usersError) {
-        console.warn('⚠️ [ALASCA SETE] Erro ao buscar usuários (não crítico):', usersError);
+        console.warn('Erro ao buscar usuários:', usersError);
       }
 
-      // Transformar dados para o formato esperado
+      // Transformar dados
       const transformedVideos = pendingData.map(pv => {
         const userData = usersData?.find(u => u.id === pv.pedidos.client_id);
         
@@ -124,15 +112,11 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           video_orientacao: pv.videos.orientacao
         };
       });
-
-      console.log('✅ [ALASCA SETE] Vídeos transformados:', transformedVideos.length);
-      console.log('🎬 [ALASCA SETE] Primeiro vídeo:', transformedVideos[0]);
       
       setPendingVideos(transformedVideos);
     } catch (error) {
-      console.error('💥 [ALASCA SETE] Erro ao carregar vídeos pendentes:', error);
+      console.error('Erro ao carregar vídeos pendentes:', error);
       toast.error('Erro ao carregar vídeos pendentes');
-      setDebugInfo({ error: error.message, query: 'failed' });
     } finally {
       setLoadingVideos(false);
     }
@@ -145,7 +129,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
   const approveVideo = async (videoId: string, clientName: string) => {
     try {
       setActionLoading(true);
-      console.log(`✅ [ALASCA SETE] Aprovando vídeo ${videoId}...`);
       
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.rpc('approve_video', {
@@ -159,7 +142,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       onRefresh();
       fetchPendingVideos();
     } catch (error) {
-      console.error('❌ [ALASCA SETE] Erro ao aprovar vídeo:', error);
+      console.error('Erro ao aprovar vídeo:', error);
       toast.error('Erro ao aprovar vídeo');
     } finally {
       setActionLoading(false);
@@ -175,7 +158,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
     try {
       setActionLoading(true);
-      console.log(`❌ [ALASCA SETE] Rejeitando vídeo ${videoId}...`);
       
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.rpc('reject_video', {
@@ -191,7 +173,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       fetchPendingVideos();
       setRejectionReason(prev => ({ ...prev, [videoId]: '' }));
     } catch (error) {
-      console.error('❌ [ALASCA SETE] Erro ao rejeitar vídeo:', error);
+      console.error('Erro ao rejeitar vídeo:', error);
       toast.error('Erro ao rejeitar vídeo');
     } finally {
       setActionLoading(false);
@@ -210,18 +192,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
   };
 
   const handleDownload = (videoUrl: string, fileName: string) => {
-    console.log('📥 [ALASCA SETE] Tentando download:', { videoUrl, fileName });
     window.open(videoUrl, '_blank');
-  };
-
-  // Comando diagnóstico Alasca sete
-  const runDiagnostico = () => {
-    console.log('🔍 [DIAGNÓSTICO ALASCA SETE]');
-    console.log('Header duplicado: CORRIGIDO ✅');
-    console.log('Query de vídeos pendentes: CORRIGIDO ✅');
-    console.log('Debug info:', debugInfo);
-    console.log('Vídeos carregados:', pendingVideos.length);
-    toast.info(`Diagnóstico Alasca Sete: ${pendingVideos.length} vídeos encontrados`);
   };
 
   if (loadingVideos || loading) {
@@ -241,28 +212,13 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
     <div className="space-y-6">
       <Card className="bg-white border-gray-200">
         <CardHeader className="border-b border-gray-200">
-          <CardTitle className="flex items-center justify-between text-black">
-            <div className="flex items-center">
-              <AlertTriangle className="h-5 w-5 mr-2 text-[#00FFAB]" />
-              Vídeos Aguardando Aprovação
-            </div>
-            <Button 
-              onClick={runDiagnostico}
-              size="sm"
-              variant="outline"
-              className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-black"
-            >
-              Diagnóstico Alasca Sete
-            </Button>
+          <CardTitle className="flex items-center text-black">
+            <AlertTriangle className="h-5 w-5 mr-2 text-[#00FFAB]" />
+            Vídeos Aguardando Aprovação
           </CardTitle>
           <CardDescription className="text-gray-600">
             Analise os vídeos conforme diretrizes CONAR - Conteúdo familiar adequado
           </CardDescription>
-          {debugInfo && (
-            <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-              <strong>Debug Info:</strong> {JSON.stringify(debugInfo, null, 2)}
-            </div>
-          )}
         </CardHeader>
         <CardContent className="p-6">
           {pendingVideos.length === 0 ? (

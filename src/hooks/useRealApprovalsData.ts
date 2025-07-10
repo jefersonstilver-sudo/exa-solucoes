@@ -21,72 +21,50 @@ export const useRealApprovalsData = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      console.log('📊 Buscando estatísticas de aprovação atualizadas...');
 
-      // Buscar pedidos pagos sem vídeo
+      // Buscar pedidos pagos que realmente não têm NENHUM vídeo enviado
       const { data: paidOrders, error: paidError } = await supabase
         .from('pedidos')
-        .select('id')
+        .select(`
+          id,
+          pedido_videos (id)
+        `)
         .eq('status', 'pago_pendente_video');
 
       if (paidError) throw paidError;
 
-      // Filtrar apenas os que realmente não têm vídeos
-      const ordersWithoutVideo = await Promise.all(
-        (paidOrders || []).map(async (order) => {
-          const { data: videos } = await supabase
-            .from('pedido_videos')
-            .select('id')
-            .eq('pedido_id', order.id)
-            .limit(1);
-          
-          return videos?.length === 0 ? order : null;
-        })
-      );
+      // Contar apenas pedidos sem nenhum vídeo
+      const paidWithoutVideoCount = (paidOrders || []).filter(
+        order => !order.pedido_videos || order.pedido_videos.length === 0
+      ).length;
 
-      const paidWithoutVideoCount = ordersWithoutVideo.filter(Boolean).length;
+      // Buscar estatísticas de vídeos em paralelo
+      const [pendingResult, approvedResult, rejectedResult] = await Promise.all([
+        supabase.from('pedido_videos').select('id', { count: 'exact' }).eq('approval_status', 'pending'),
+        supabase.from('pedido_videos').select('id', { count: 'exact' }).eq('approval_status', 'approved'),
+        supabase.from('pedido_videos').select('id', { count: 'exact' }).eq('approval_status', 'rejected')
+      ]);
 
-      // Buscar estatísticas de vídeos
-      const { data: pendingVideos, error: pendingError } = await supabase
-        .from('pedido_videos')
-        .select('id')
-        .eq('approval_status', 'pending');
-
-      if (pendingError) throw pendingError;
-
-      const { data: approvedVideos, error: approvedError } = await supabase
-        .from('pedido_videos')
-        .select('id')
-        .eq('approval_status', 'approved');
-
-      if (approvedError) throw approvedError;
-
-      const { data: rejectedVideos, error: rejectedError } = await supabase
-        .from('pedido_videos')
-        .select('id')
-        .eq('approval_status', 'rejected');
-
-      if (rejectedError) throw rejectedError;
+      if (pendingResult.error) throw pendingResult.error;
+      if (approvedResult.error) throw approvedResult.error;
+      if (rejectedResult.error) throw rejectedResult.error;
 
       const newStats = {
         paidWithoutVideo: paidWithoutVideoCount,
-        pendingApproval: pendingVideos?.length || 0,
-        approved: approvedVideos?.length || 0,
-        rejected: rejectedVideos?.length || 0
+        pendingApproval: pendingResult.count || 0,
+        approved: approvedResult.count || 0,
+        rejected: rejectedResult.count || 0
       };
 
-      console.log('✅ Estatísticas atualizadas:', newStats);
       setStats(newStats);
-
     } catch (error) {
-      console.error('❌ Erro ao buscar estatísticas:', error);
+      console.error('Erro ao buscar estatísticas:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const refetch = () => {
-    console.log('🔄 Refazendo busca de estatísticas...');
     fetchStats();
   };
 
