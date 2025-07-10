@@ -17,7 +17,7 @@ export const useContractStatus = (orderDetails: {
   data_fim?: string;
   status: string;
   plano_meses: number;
-}) => {
+}, videoData?: { approvedVideos: number }) => {
   const [contractData, setContractData] = useState<ContractStatusReturn>({
     isActive: false,
     daysRemaining: 0,
@@ -46,8 +46,8 @@ export const useContractStatus = (orderDetails: {
       hasStarted: false
     };
 
-    // Verificar se o contrato já iniciou (tem datas definidas)
-    const hasStarted = !!(data_inicio && data_fim);
+    // Verificar se o contrato já iniciou (tem datas definidas E vídeo aprovado)
+    const hasStarted = !!(data_inicio && data_fim && videoData?.approvedVideos && videoData.approvedVideos > 0);
     newContractData.hasStarted = hasStarted;
 
     if (hasStarted) {
