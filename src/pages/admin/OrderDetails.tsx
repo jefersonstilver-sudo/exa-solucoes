@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { useParams } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Loader2, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
 import { RealOrderHeader } from '@/components/admin/orders/RealOrderHeader';
 import { RealOrderCustomerCard } from '@/components/admin/orders/RealOrderCustomerCard';
@@ -12,6 +13,7 @@ import { RealOrderVideosCard } from '@/components/admin/orders/RealOrderVideosCa
 
 const OrderDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { loading, orderDetails, orderVideos, panelData } = useRealOrderDetails(id || '');
 
   if (loading) {
@@ -40,6 +42,18 @@ const OrderDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
+        {/* Botão de voltar */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/super_admin/pedidos')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para Lista
+          </Button>
+        </div>
+
         {/* Header com informações principais e export profissional */}
         <RealOrderHeader 
           order={orderDetails} 
