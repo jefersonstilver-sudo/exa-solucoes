@@ -91,8 +91,9 @@ export const calculateStats = (pedidos: OrderOrAttempt[], tentativas: OrderOrAtt
     .reduce((sum, p) => sum + p.valor_total, 0);
   const abandonedValue = tentativas.reduce((sum, t) => sum + t.valor_total, 0);
   
-  // Corrigir fórmula da taxa de conversão: pedidos / tentativas * 100
-  const conversionRate = totalAttempts > 0 ? (totalOrders / totalAttempts) * 100 : 0;
+  // Fórmula corrigida: conversões / total de interações * 100
+  const totalInteractions = totalOrders + totalAttempts;
+  const conversionRate = totalInteractions > 0 ? (totalOrders / totalInteractions) * 100 : 0;
   
   return {
     total_orders: totalOrders,
