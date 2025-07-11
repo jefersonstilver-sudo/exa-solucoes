@@ -51,10 +51,10 @@ const Header: React.FC<HeaderProps> = ({
               Home
             </Link>
             <Link 
-              to="/marketing" 
+              to="/linkae" 
               className="text-white hover:text-[#00FFAB] transition-colors font-medium"
             >
-              Marketing
+              LINKAÊ
             </Link>
             <Link 
               to="/produtora" 
@@ -63,10 +63,10 @@ const Header: React.FC<HeaderProps> = ({
               Produtora
             </Link>
             <Link 
-              to="/paineis-publicitarios" 
+              to="/exa" 
               className="text-white hover:text-[#00FFAB] transition-colors font-medium"
             >
-              Painéis Digitais
+              EXA
             </Link>
             <Link 
               to="/sou-sindico" 
