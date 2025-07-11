@@ -19,10 +19,9 @@ interface OrderData {
 
 interface PanelData {
   id: string;
-  code: string;
-  building_name: string;
-  building_address: string;
-  building_neighborhood: string;
+  nome: string;
+  endereco: string;
+  bairro: string;
 }
 
 interface OrderVideo {
@@ -320,16 +319,16 @@ export class ProfessionalPDFExporter {
         this.yPosition += 10;
       }
       
-      // Painéis Contratados
+      // Locais Contratados
       if (panels.length > 0) {
-        this.drawSection('PAINÉIS CONTRATADOS', '📺');
-        const panelRows = panels.map(panel => [
-          panel.code,
-          panel.building_name,
-          panel.building_address,
-          panel.building_neighborhood
+        this.drawSection('LOCAIS CONTRATADOS', '🏢');
+        const panelRows = panels.map(building => [
+          building.id.substring(0, 8),
+          building.nome,
+          building.endereco,
+          building.bairro
         ]);
-        this.drawTable(['Código', 'Prédio', 'Endereço', 'Bairro'], panelRows);
+        this.drawTable(['ID', 'Nome', 'Endereço', 'Bairro'], panelRows);
       }
       
       // Gestão de Vídeos

@@ -9,6 +9,7 @@ interface OrderWithClient {
   status: string;
   valor_total: number;
   lista_paineis: string[];
+  lista_predios: string[];
   plano_meses: number;
   data_inicio: string;
   data_fim: string;
@@ -40,19 +41,18 @@ interface OrderVideo {
   };
 }
 
-interface PanelData {
+interface BuildingData {
   id: string;
-  code: string;
-  building_name: string;
-  building_address: string;
-  building_neighborhood: string;
+  nome: string;
+  endereco: string;
+  bairro: string;
 }
 
 export const useRealOrderDetails = (orderId: string) => {
   const [loading, setLoading] = useState(true);
   const [orderDetails, setOrderDetails] = useState<OrderWithClient | null>(null);
   const [orderVideos, setOrderVideos] = useState<OrderVideo[]>([]);
-  const [panelData, setPanelData] = useState<PanelData[]>([]);
+  const [buildingData, setBuildingData] = useState<BuildingData[]>([]);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -70,6 +70,7 @@ export const useRealOrderDetails = (orderId: string) => {
             status,
             valor_total,
             lista_paineis,
+            lista_predios,
             plano_meses,
             data_inicio,
             data_fim,
@@ -99,6 +100,7 @@ export const useRealOrderDetails = (orderId: string) => {
           status: order.status,
           valor_total: order.valor_total,
           lista_paineis: order.lista_paineis || [],
+          lista_predios: order.lista_predios || [],
           plano_meses: order.plano_meses,
           data_inicio: order.data_inicio,
           data_fim: order.data_fim,
@@ -158,32 +160,28 @@ export const useRealOrderDetails = (orderId: string) => {
 
         setOrderVideos(formattedVideos);
 
-        // Buscar dados dos painéis
-        if (order.lista_paineis && order.lista_paineis.length > 0) {
-          const { data: panels, error: panelsError } = await supabase
-            .from('painels')
+        // Buscar dados dos prédios
+        if (order.lista_predios && order.lista_predios.length > 0) {
+          const { data: buildings, error: buildingsError } = await supabase
+            .from('buildings')
             .select(`
               id,
-              code,
-              buildings (
-                nome,
-                endereco,
-                bairro
-              )
+              nome,
+              endereco,
+              bairro
             `)
-            .in('id', order.lista_paineis);
+            .in('id', order.lista_predios);
 
-          if (panelsError) throw panelsError;
+          if (buildingsError) throw buildingsError;
 
-          const formattedPanels: PanelData[] = panels?.map(p => ({
-            id: p.id,
-            code: p.code,
-            building_name: p.buildings?.nome || 'N/A',
-            building_address: p.buildings?.endereco || 'N/A',
-            building_neighborhood: p.buildings?.bairro || 'N/A'
+          const formattedBuildings: BuildingData[] = buildings?.map(b => ({
+            id: b.id,
+            nome: b.nome || 'N/A',
+            endereco: b.endereco || 'N/A',
+            bairro: b.bairro || 'N/A'
           })) || [];
 
-          setPanelData(formattedPanels);
+          setBuildingData(formattedBuildings);
         }
 
       } catch (error) {
@@ -201,6 +199,6 @@ export const useRealOrderDetails = (orderId: string) => {
     loading,
     orderDetails,
     orderVideos,
-    panelData
+    panelData: buildingData
   };
 };

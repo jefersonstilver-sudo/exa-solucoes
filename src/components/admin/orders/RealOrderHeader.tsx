@@ -23,10 +23,9 @@ interface RealOrderHeaderProps {
   };
   panels?: Array<{
     id: string;
-    code: string;
-    building_name: string;
-    building_address: string;
-    building_neighborhood: string;
+    nome: string;
+    endereco: string;
+    bairro: string;
   }>;
   videos?: Array<{
     id: string;

@@ -82,12 +82,12 @@ const OrderDetails: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {panelData.map((panel) => (
-                  <div key={panel.id} className="flex justify-between items-center p-3 border rounded">
+                {panelData.map((building) => (
+                  <div key={building.id} className="flex justify-between items-center p-3 border rounded">
                     <div>
-                      <p className="font-medium">{panel.building_name}</p>
-                      <p className="text-sm text-gray-600">{panel.building_address}</p>
-                      <p className="text-xs text-gray-500">Código: {panel.code}</p>
+                      <p className="font-medium">{building.nome}</p>
+                      <p className="text-sm text-gray-600">{building.endereco}</p>
+                      <p className="text-xs text-gray-500">Bairro: {building.bairro}</p>
                     </div>
                   </div>
                 ))}

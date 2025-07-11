@@ -90,13 +90,6 @@ export const RealOrderFinancialCard: React.FC<RealOrderFinancialCardProps> = ({ 
       });
     }
     
-    if (order.compliance_data.pix_bank_info) {
-      pixDetails.push({
-        label: 'Instituição Financeira',
-        value: order.compliance_data.pix_bank_info
-      });
-    }
-    
     return pixDetails;
   };
 
