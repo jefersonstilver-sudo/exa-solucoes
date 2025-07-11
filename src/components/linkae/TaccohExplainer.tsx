@@ -80,7 +80,7 @@ const TaccohExplainer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-slate-700 bg-clip-text text-transparent">
-            Explicando o <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">T.A.C.C.O.H.</span>, passo a passo
+            Explicando o <span className="bg-clip-text text-transparent" style={{ background: 'var(--gradient-linkae-primary)' }}>T.A.C.C.O.H.</span>, passo a passo
           </h2>
           <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
             Cada ingrediente estratégico é cientificamente pensado para resolver um problema específico do seu conteúdo e gerar resultados consistentes.
@@ -178,14 +178,14 @@ const TaccohExplainer: React.FC = () => {
         )}
 
         {/* Bottom CTA */}
-        <div className="text-center mt-16 p-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl text-white">
+        <div className="text-center mt-16 p-8 rounded-3xl text-white" style={{ background: 'var(--gradient-linkae-primary)' }}>
           <h3 className="text-2xl md:text-3xl font-bold mb-4">
             Pronto para aplicar o T.A.C.C.O.H. na sua marca?
           </h3>
           <p className="text-lg mb-6 opacity-90">
             Nossa equipe especializada ajuda você a identificar quais pilares sua marca mais precisa e como aplicá-los estrategicamente.
           </p>
-          <div className="inline-flex items-center gap-2 bg-white text-purple-600 px-8 py-4 rounded-2xl font-semibold hover:shadow-lg transition-all cursor-pointer">
+          <div className="inline-flex items-center gap-2 bg-white px-8 py-4 rounded-2xl font-semibold hover:shadow-lg transition-all cursor-pointer" style={{ color: 'hsl(var(--linkae-pink))' }}>
             <span>Descobrir meu T.A.C.C.O.H. ideal</span>
             <ChevronRight className="h-5 w-5" />
           </div>

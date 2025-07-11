@@ -26,7 +26,7 @@ const Linkae = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-white text-gray-900">
+      <div className="linkae-page min-h-screen bg-white text-gray-900">
         <LinkaeHero onScrollToForm={scrollToForm} />
         <TaccohPuzzleHero />
         <TaccohSolutionSection />

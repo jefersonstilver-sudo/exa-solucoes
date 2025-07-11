@@ -72,6 +72,22 @@ export default {
 					'mint-dark': '#4AD399',
 					'mint-light': '#7EEAC0',
 					white: '#FFFFFF'
+				},
+				// LINKAÊ Brand Colors - Pink/Magenta, Orange, Dark Green
+				linkae: {
+					pink: 'hsl(330, 85%, 55%)',
+					'pink-light': 'hsl(330, 85%, 65%)',
+					'pink-dark': 'hsl(330, 85%, 45%)',
+					orange: 'hsl(25, 95%, 60%)',
+					'orange-light': 'hsl(25, 95%, 70%)',
+					'orange-dark': 'hsl(25, 95%, 50%)',
+					green: 'hsl(160, 40%, 25%)',
+					'green-light': 'hsl(160, 40%, 35%)',
+					'green-dark': 'hsl(160, 40%, 15%)',
+					white: 'hsl(0, 0%, 100%)',
+					'gradient-primary': 'linear-gradient(135deg, hsl(330, 85%, 55%), hsl(25, 95%, 60%))',
+					'gradient-secondary': 'linear-gradient(135deg, hsl(25, 95%, 60%), hsl(160, 40%, 25%))',
+					'gradient-hero': 'linear-gradient(135deg, hsl(160, 40%, 15%), hsl(160, 40%, 25%))'
 				}
 			},
 			borderRadius: {

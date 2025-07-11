@@ -216,7 +216,8 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button 
                     onClick={onScrollToForm}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all inline-flex items-center justify-center gap-2"
+                    className="flex-1 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all inline-flex items-center justify-center gap-2"
+                    style={{ background: 'var(--gradient-linkae-primary)' }}
                   >
                     <span>Solicitar análise completa</span>
                     <ChevronRight className="h-4 w-4" />
@@ -244,7 +245,7 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
-            Qual <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">T.A.C.C.O.H.</span> sua marca precisa?
+            Qual <span className="bg-clip-text text-transparent" style={{ background: 'var(--gradient-linkae-primary)' }}>T.A.C.C.O.H.</span> sua marca precisa?
           </h2>
           <p className="text-lg text-gray-600">
             Responda 3 perguntas rápidas e descubra sua estratégia ideal
@@ -259,8 +260,8 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              className="h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%`, background: 'var(--gradient-linkae-primary)' }}
             ></div>
           </div>
         </div>

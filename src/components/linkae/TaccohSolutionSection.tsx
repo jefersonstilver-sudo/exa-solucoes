@@ -110,7 +110,7 @@ const TaccohSolutionSection: React.FC = () => {
             })}
           </div>
 
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-8 rounded-3xl mb-16">
+          <div className="text-white p-8 rounded-3xl mb-16" style={{ background: 'var(--gradient-linkae-primary)' }}>
             <h3 className="text-2xl md:text-3xl font-bold mb-4">
               E se cada conteúdo tivesse um propósito estratégico?
             </h3>
@@ -201,8 +201,8 @@ const TaccohSolutionSection: React.FC = () => {
                 </div>
               </div>
               
-              <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
-                <p className="text-purple-800 text-sm font-medium">
+              <div className="mt-6 p-4 rounded-xl border" style={{ background: 'linear-gradient(135deg, hsl(var(--linkae-pink) / 0.1), hsl(var(--linkae-orange) / 0.1))', borderColor: 'hsl(var(--linkae-pink) / 0.3)' }}>
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--linkae-green))' }}>
                   Com o T.A.C.C.O.H., a LINKAÊ entrega mais do que vídeo. Ela entrega posicionamento, estratégia e encantamento.
                 </p>
               </div>
