@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import UnifiedLogo from '@/components/layout/UnifiedLogo';
 
 interface AccordionSectionProps {
   title: string;
@@ -118,13 +119,12 @@ const MobileOptimizedFooter = () => {
           {/* Mobile Logo Section */}
           <div className="text-center mb-8 pb-6 border-b border-white/20">
             <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-10 h-10 flex items-center justify-center">
-                <img 
-                  src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc0ODE4MzEwMCwiZXhwIjoxNzc5NzE5MTAwfQ.4zNgnq7JOM1S9kwOx3jhOBRIk0RNwP2hPT4eUfQrUA4"
-                  alt="Indexa Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+              <UnifiedLogo 
+                size="custom"
+                linkTo="/"
+                variant="light"
+                className="w-10 h-10"
+              />
               <span className="text-xl font-bold">INDEXA</span>
             </div>
             <p className="text-white/80 text-sm leading-relaxed px-4">
