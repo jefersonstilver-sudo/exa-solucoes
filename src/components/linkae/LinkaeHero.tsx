@@ -22,12 +22,17 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
       
       {/* Content */}
       <div className="relative z-10 text-center text-white px-4 max-w-6xl mx-auto">
-        <h1 className="text-4xl md:text-7xl font-bold leading-tight mb-8">
-          <span className="block text-[#00FFAB]">LINKAÊ</span>
-          <span className="block text-2xl md:text-4xl font-normal mt-4">
+        <div className="flex flex-col items-center mb-8">
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/logo-linkae-branco.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNTExZDAwOS1hZDAwLTRlZWItYTI3Yi1kYTRlYWEwYzJhZmQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL2xvZ28tbGlua2FlLWJyYW5jby5wbmciLCJpYXQiOjE3NTIxOTY5MzUsImV4cCI6MTc4MzczMjkzNX0.V2OuLQG3PfTnUvmUYMohr8ywxyFWGGQ9UOhqX8mt0G0"
+            alt="LINKAÊ - Social Media que Converte"
+            className="w-64 md:w-80 lg:w-96 h-auto mb-6 animate-fade-in hover:scale-105 transition-all duration-300 drop-shadow-2xl"
+            style={{ filter: 'drop-shadow(0 0 30px rgba(0, 255, 171, 0.3))' }}
+          />
+          <h2 className="text-2xl md:text-4xl font-normal text-white/90">
             Social Media que converte
-          </span>
-        </h1>
+          </h2>
+        </div>
         
         <p className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto opacity-90">
           Criamos conteúdo estratégico para redes sociais que gera engajamento real e resultados mensuráveis para sua marca.
