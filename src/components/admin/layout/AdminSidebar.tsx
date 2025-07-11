@@ -249,7 +249,7 @@ const AdminSidebar = () => {
             size="custom" 
             linkTo="/" 
             variant="light"
-            className="w-20 h-20 drop-shadow-lg"
+            className="w-32 h-32 drop-shadow-lg"
           />
         </div>
         

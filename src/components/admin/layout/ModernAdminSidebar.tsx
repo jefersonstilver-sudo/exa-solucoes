@@ -18,6 +18,7 @@ import {
   Coffee
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import UnifiedLogo from '@/components/layout/UnifiedLogo';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -111,17 +112,23 @@ const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
     <div className="h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">I</span>
-          </div>
-          {!isCollapsed && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">INDEXA</h2>
-              <p className="text-xs text-gray-500">Admin Panel</p>
-            </div>
-          )}
+        <div className={cn(
+          "flex items-center",
+          isCollapsed ? "justify-center" : "justify-center mb-2"
+        )}>
+          <UnifiedLogo 
+            size="custom"
+            linkTo="/"
+            variant="dark"
+            className="w-32 h-32"
+          />
         </div>
+        {!isCollapsed && (
+          <div className="text-center">
+            <h2 className="text-lg font-semibold text-gray-900">INDEXA</h2>
+            <p className="text-xs text-gray-500">Admin Panel</p>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

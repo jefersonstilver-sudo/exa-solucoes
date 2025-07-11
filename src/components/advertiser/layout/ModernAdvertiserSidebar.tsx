@@ -65,7 +65,7 @@ const ModernAdvertiserSidebar = () => {
             size="custom"
             linkTo="/"
             variant="light"
-            className="w-20 h-20"
+            className="w-32 h-32"
           />
         </div>
         
