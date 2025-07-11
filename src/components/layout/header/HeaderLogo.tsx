@@ -5,10 +5,10 @@ import UnifiedLogo from '@/components/layout/UnifiedLogo';
 const HeaderLogo: React.FC = () => {
   return (
     <UnifiedLogo 
-      size="lg" 
+      size="custom" 
       linkTo="/" 
       variant="light"
-      className="py-2"
+      className="w-24 h-24 py-2"
     />
   );
 };
