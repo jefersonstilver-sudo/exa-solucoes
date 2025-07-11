@@ -54,14 +54,6 @@ export const RealOrderFinancialCard: React.FC<RealOrderFinancialCardProps> = ({ 
   const getTransactionDetails = () => {
     const details = [];
     
-    // ID da Transação
-    const transactionId = order.transaction_id || order.log_pagamento?.transaction_id;
-    if (transactionId) {
-      details.push({
-        label: 'ID da Transação',
-        value: transactionId
-      });
-    }
     
     // Dados da transação
     if (order.compliance_data?.date_approved) {

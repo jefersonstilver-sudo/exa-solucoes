@@ -166,14 +166,6 @@ export const RealOrderInfoCard: React.FC<RealOrderInfoCardProps> = ({ order }) =
           </p>
         </div>
         
-        {getPaymentMethod() === 'PIX' && (
-          <div className="space-y-1">
-            <p className="text-sm text-gray-600 font-medium">Instituição Financeira</p>
-            <p className="text-gray-900 text-sm">
-              {getFinancialInstitution()}
-            </p>
-          </div>
-        )}
         
         {payerInfo && (
           <>
