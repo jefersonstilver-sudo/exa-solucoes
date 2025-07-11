@@ -61,29 +61,35 @@ export const useRealOrderDetails = (orderId: string) => {
       try {
         setLoading(true);
 
-        // Usar a função RPC existente que já faz o join com dados do cliente
-        const { data: allOrders, error: ordersError } = await supabase
-          .rpc('get_pedidos_com_clientes');
+        // Buscar pedido diretamente da tabela pedidos com dados do cliente
+        const { data: order, error: ordersError } = await supabase
+          .from('pedidos')
+          .select(`
+            id,
+            created_at,
+            status,
+            valor_total,
+            lista_paineis,
+            plano_meses,
+            data_inicio,
+            data_fim,
+            client_id,
+            compliance_data,
+            log_pagamento,
+            cupom_id,
+            termos_aceitos,
+            users!pedidos_client_id_fkey (
+              email
+            )
+          `)
+          .eq('id', orderId)
+          .single();
         
         if (ordersError) throw ordersError;
-
-        // Encontrar o pedido específico
-        const order = allOrders?.find((o: any) => o.id === orderId);
         
         if (!order) {
           toast.error('Pedido não encontrado');
           return;
-        }
-
-        // Buscar dados adicionais de compliance diretamente
-        const { data: fullOrderData, error: complianceError } = await supabase
-          .from('pedidos')
-          .select('compliance_data, log_pagamento, cupom_id, termos_aceitos')
-          .eq('id', orderId)
-          .single();
-
-        if (complianceError) {
-          console.warn('Erro ao buscar dados de compliance:', complianceError);
         }
 
         // Montar objeto completo do pedido
@@ -97,13 +103,13 @@ export const useRealOrderDetails = (orderId: string) => {
           data_inicio: order.data_inicio,
           data_fim: order.data_fim,
           client_id: order.client_id,
-          client_email: order.client_email,
-          client_name: order.client_name,
-          video_status: order.video_status,
-          log_pagamento: fullOrderData?.log_pagamento,
-          compliance_data: fullOrderData?.compliance_data,
-          cupom_id: fullOrderData?.cupom_id,
-          termos_aceitos: fullOrderData?.termos_aceitos
+          client_email: order.users?.email || 'Email não disponível',
+          client_name: order.users?.email?.split('@')[0] || 'Cliente',
+          video_status: order.status,
+          log_pagamento: order.log_pagamento,
+          compliance_data: order.compliance_data,
+          cupom_id: order.cupom_id,
+          termos_aceitos: order.termos_aceitos
         };
 
         setOrderDetails(orderWithClient);
