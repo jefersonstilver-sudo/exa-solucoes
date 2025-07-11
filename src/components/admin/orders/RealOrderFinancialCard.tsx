@@ -162,30 +162,6 @@ export const RealOrderFinancialCard: React.FC<RealOrderFinancialCardProps> = ({ 
           <p className="text-indexa-purple font-bold text-2xl">{formatCurrency(valorBruto)}</p>
         </div>
         
-        {(order.log_pagamento || order.compliance_data) && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center space-x-2 mb-3">
-              <Receipt className="h-4 w-4 text-blue-600" />
-              <p className="text-sm font-semibold text-blue-900">Informações do Pagamento</p>
-            </div>
-            <div className="space-y-2 text-sm text-blue-800">
-              <div className="flex items-center justify-between">
-                <span>Método:</span>
-                <div className="flex items-center space-x-1">
-                  <CreditCard className="h-3 w-3" />
-                  <span className="font-medium">{getPaymentMethod()}</span>
-                </div>
-              </div>
-              
-              {transactionDetails.map((detail, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span>{detail.label}:</span>
-                  <span className="font-medium text-xs">{detail.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         
         {pixDetails.length > 0 && (
           <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
