@@ -29,11 +29,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
             Home
           </Link>
           <Link 
-            to="/marketing" 
+            to="/linkae" 
             className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
             onClick={onClose}
           >
-            Marketing
+            LINKAÊ
           </Link>
           <Link 
             to="/produtora" 
@@ -50,11 +50,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
             Loja Online
           </Link>
           <Link 
-            to="/paineis-publicitarios" 
+            to="/exa" 
             className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
             onClick={onClose}
           >
-            Painéis
+            EXA
           </Link>
           <Link 
             to="/sou-sindico" 

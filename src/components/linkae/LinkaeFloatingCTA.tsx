@@ -1,0 +1,22 @@
+import React from 'react';
+import { Share2 } from 'lucide-react';
+
+interface LinkaeFloatingCTAProps {
+  onScrollToForm: () => void;
+}
+
+const LinkaeFloatingCTA: React.FC<LinkaeFloatingCTAProps> = ({ onScrollToForm }) => {
+  return (
+    <div className="fixed bottom-4 left-4 right-4 z-50 px-2 md:hidden">
+      <button
+        onClick={onScrollToForm}
+        className="w-full bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white shadow-2xl h-16 px-8 text-lg rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2"
+      >
+        <Share2 className="w-5 h-5 flex-shrink-0" />
+        <span>Estratégia Social</span>
+      </button>
+    </div>
+  );
+};
+
+export default LinkaeFloatingCTA;

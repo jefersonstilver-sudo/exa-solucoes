@@ -26,8 +26,10 @@ import AdminPage from './pages/AdminPage';
 
 // Lazy load para páginas menos usadas
 const Marketing = lazy(() => import('./pages/Marketing'));
+const Linkae = lazy(() => import('./pages/Linkae'));
 const Produtora = lazy(() => import('./pages/Produtora'));
 const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
+const Exa = lazy(() => import('./pages/Exa'));
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
@@ -99,6 +101,11 @@ function App() {
                         <Marketing />
                       </Suspense>
                     } />
+                    <Route path="/linkae" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <Linkae />
+                      </Suspense>
+                    } />
                     <Route path="/produtora" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <Produtora />
@@ -107,6 +114,11 @@ function App() {
                     <Route path="/paineis-publicitarios" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <PaineisPublicitarios />
+                      </Suspense>
+                    } />
+                    <Route path="/exa" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <Exa />
                       </Suspense>
                     } />
                     <Route path="/sou-sindico" element={

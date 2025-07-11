@@ -11,10 +11,10 @@ const DesktopNavigation = () => {
         Home
       </Link>
       <Link 
-        to="/marketing" 
+        to="/linkae" 
         className="text-white hover:text-indexa-mint transition-colors duration-200 font-medium"
       >
-        Marketing
+        LINKAÊ
       </Link>
       <Link 
         to="/produtora" 
@@ -29,10 +29,10 @@ const DesktopNavigation = () => {
         Loja Online
       </Link>
       <Link 
-        to="/paineis-publicitarios" 
+        to="/exa" 
         className="text-white hover:text-indexa-mint transition-colors duration-200 font-medium"
       >
-        Painéis
+        EXA
       </Link>
       <Link 
         to="/sou-sindico" 
