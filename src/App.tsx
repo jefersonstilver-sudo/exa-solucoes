@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
@@ -96,29 +96,24 @@ function App() {
                     } />
 
                     {/* Rotas com lazy loading */}
-                    <Route path="/marketing" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <Marketing />
-                      </Suspense>
-                    } />
+                    {/* REDIRECTS 301 para novas URLs */}
+                    <Route path="/marketing" element={<Navigate to="/linkae" replace />} />
+                    <Route path="/paineis-publicitarios" element={<Navigate to="/exa" replace />} />
+                    
+                    {/* NOVAS ROTAS */}
                     <Route path="/linkae" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <Linkae />
                       </Suspense>
                     } />
-                    <Route path="/produtora" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <Produtora />
-                      </Suspense>
-                    } />
-                    <Route path="/paineis-publicitarios" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <PaineisPublicitarios />
-                      </Suspense>
-                    } />
                     <Route path="/exa" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <Exa />
+                      </Suspense>
+                    } />
+                    <Route path="/produtora" element={
+                      <Suspense fallback={<MinimalLoader />}>
+                        <Produtora />
                       </Suspense>
                     } />
                     <Route path="/sou-sindico" element={

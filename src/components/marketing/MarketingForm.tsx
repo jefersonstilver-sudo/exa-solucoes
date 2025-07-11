@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Coffee, Gift, Eye, BookOpen } from 'lucide-react';
-import { useLeadsCampanhas } from '@/hooks/useLeadsCampanhas';
+import { useLeadsLinkae } from '@/hooks/useLeadsLinkae';
 import { toast } from 'sonner';
 
 interface MarketingFormProps {
@@ -15,7 +15,7 @@ interface MarketingFormProps {
 }
 
 const MarketingForm: React.FC<MarketingFormProps> = ({ formRef }) => {
-  const { createLead } = useLeadsCampanhas();
+  const { createLead } = useLeadsLinkae();
   const [formData, setFormData] = useState({
     nome_completo: '',
     nome_empresa: '',

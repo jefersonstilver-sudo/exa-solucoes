@@ -482,7 +482,46 @@ export type Database = {
         }
         Relationships: []
       }
-      leads_campanhas: {
+      leads_exa: {
+        Row: {
+          cargo: string
+          contato_realizado: boolean
+          created_at: string
+          id: string
+          nome_completo: string
+          nome_empresa: string
+          objetivo: string | null
+          status: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          cargo: string
+          contato_realizado?: boolean
+          created_at?: string
+          id?: string
+          nome_completo: string
+          nome_empresa: string
+          objetivo?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          cargo?: string
+          contato_realizado?: boolean
+          created_at?: string
+          id?: string
+          nome_completo?: string
+          nome_empresa?: string
+          objetivo?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      leads_linkae: {
         Row: {
           cargo: string
           contato_realizado: boolean

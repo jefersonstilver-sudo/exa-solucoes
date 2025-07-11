@@ -17,7 +17,8 @@ import {
   Ticket,
   Bell,
   Megaphone,
-  LogOut
+  LogOut,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -123,12 +124,20 @@ const AdminSidebar = () => {
       permission: 'canViewLeadsProdutora'
     },
     {
-      label: 'Leads de Marketing',
+      label: 'Leads LINKAÊ',
       icon: <Megaphone className="h-5 w-5" />,
-      href: '/super_admin/leads-campanhas',
+      href: '/super_admin/leads-linkae',
       requireSuperAdmin: false,
       section: 'leads',
-      permission: 'canViewLeadsCampanhas'
+      permission: 'canViewLeadsLinkae'
+    },
+    {
+      label: 'Leads EXA',
+      icon: <Zap className="h-5 w-5" />,
+      href: '/super_admin/leads-exa',
+      requireSuperAdmin: false,
+      section: 'leads',
+      permission: 'canViewLeadsExa'
     },
     
     // SISTEMA

@@ -14,7 +14,8 @@ import NotificationsPage from '@/pages/admin/NotificationsPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
 import LeadsProdutora from '@/pages/admin/LeadsProdutora';
-import LeadsCampanhas from '@/pages/admin/LeadsCampanhas';
+import LeadsLinkae from '@/pages/admin/LeadsLinkae';
+import LeadsExa from '@/pages/admin/LeadsExa';
 
 const SuperAdminRoutes = () => {
   return (
@@ -32,7 +33,8 @@ const SuperAdminRoutes = () => {
       {/* LEADS & CLIENTES */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
       <Route path="leads-produtora" element={<LeadsProdutora />} />
-      <Route path="leads-campanhas" element={<LeadsCampanhas />} />
+          <Route path="leads-linkae" element={<LeadsLinkae />} />
+          <Route path="leads-exa" element={<LeadsExa />} />
       
       {/* SISTEMA */}
       <Route path="usuarios" element={<UsersPage />} />

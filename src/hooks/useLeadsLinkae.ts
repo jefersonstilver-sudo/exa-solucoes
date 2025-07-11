@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export interface LeadCampanha {
+export interface LeadLinkae {
   id: string;
   nome_completo: string;
   nome_empresa: string;
@@ -16,8 +15,8 @@ export interface LeadCampanha {
   updated_at: string;
 }
 
-export const useLeadsCampanhas = () => {
-  const [leads, setLeads] = useState<LeadCampanha[]>([]);
+export const useLeadsLinkae = () => {
+  const [leads, setLeads] = useState<LeadLinkae[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,10 +24,10 @@ export const useLeadsCampanhas = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('📊 Leads Campanhas: Buscando dados...');
+      console.log('📊 Leads LINKAÊ: Buscando dados...');
       
       const { data, error } = await supabase
-        .from('leads_campanhas')
+        .from('leads_linkae')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -36,17 +35,17 @@ export const useLeadsCampanhas = () => {
         console.error('❌ Erro ao buscar leads:', error);
         
         // Se a tabela não existir, retornar array vazio
-        if (error.message.includes('relation "leads_campanhas" does not exist')) {
-          console.log('⚠️ Tabela leads_campanhas não existe, usando modo desenvolvimento');
+        if (error.message.includes('relation "leads_linkae" does not exist')) {
+          console.log('⚠️ Tabela leads_linkae não existe, usando modo desenvolvimento');
           setLeads([]);
           setError('Tabela não encontrada - usando modo desenvolvimento');
           return;
         }
         
         setError(error.message);
-        toast.error('Erro ao carregar leads de campanhas');
+        toast.error('Erro ao carregar leads de LINKAÊ');
       } else {
-        console.log('✅ Leads campanhas carregados:', data?.length || 0);
+        console.log('✅ Leads LINKAÊ carregados:', data?.length || 0);
         setLeads(data || []);
       }
     } catch (error: any) {
@@ -63,7 +62,7 @@ export const useLeadsCampanhas = () => {
       console.log('🔄 Marcando lead como contatado:', leadId);
       
       const { error } = await supabase
-        .from('leads_campanhas')
+        .from('leads_linkae')
         .update({ contato_realizado: true })
         .eq('id', leadId);
 
@@ -81,12 +80,12 @@ export const useLeadsCampanhas = () => {
     }
   };
 
-  const createLead = async (leadData: Omit<LeadCampanha, 'id' | 'created_at' | 'updated_at' | 'status' | 'contato_realizado'>) => {
+  const createLead = async (leadData: Omit<LeadLinkae, 'id' | 'created_at' | 'updated_at' | 'status' | 'contato_realizado'>) => {
     try {
-      console.log('🔄 Criando novo lead campanha:', leadData);
+      console.log('🔄 Criando novo lead LINKAÊ:', leadData);
       
       const { data, error } = await supabase
-        .from('leads_campanhas')
+        .from('leads_linkae')
         .insert([leadData])
         .select()
         .single();
@@ -111,17 +110,17 @@ export const useLeadsCampanhas = () => {
 
     // Só configurar realtime se não houver erro de tabela
     if (!error?.includes('não existe')) {
-      console.log('📡 Leads Campanhas: Configurando realtime...');
+      console.log('📡 Leads LINKAÊ: Configurando realtime...');
       const channel = supabase
-        .channel('leads-campanhas-realtime')
+        .channel('leads-linkae-realtime')
         .on('postgres_changes', 
           { 
             event: '*', 
             schema: 'public', 
-            table: 'leads_campanhas' 
+            table: 'leads_linkae' 
           }, 
           (payload) => {
-            console.log('📡 Leads Campanhas: Dados atualizados em tempo real', payload);
+            console.log('📡 Leads LINKAÊ: Dados atualizados em tempo real', payload);
             fetchLeads();
           }
         )

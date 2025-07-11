@@ -1,5 +1,5 @@
 import React, { useState, RefObject } from 'react';
-import { useLeadsCampanhas } from '@/hooks/useLeadsCampanhas';
+import { useLeadsLinkae } from '@/hooks/useLeadsLinkae';
 import { toast } from 'sonner';
 
 interface LinkaeFormProps {
@@ -15,7 +15,7 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
     objetivo: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createLead } = useLeadsCampanhas();
+  const { createLead } = useLeadsLinkae();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
