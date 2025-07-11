@@ -21,6 +21,7 @@ interface OrderWithClient {
   compliance_data?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
+  transaction_id?: string;
 }
 
 interface OrderVideo {
@@ -79,6 +80,7 @@ export const useRealOrderDetails = (orderId: string) => {
             log_pagamento,
             cupom_id,
             termos_aceitos,
+            transaction_id,
             users!pedidos_client_id_fkey (
               email
             )
@@ -111,7 +113,8 @@ export const useRealOrderDetails = (orderId: string) => {
           log_pagamento: order.log_pagamento,
           compliance_data: order.compliance_data,
           cupom_id: order.cupom_id,
-          termos_aceitos: order.termos_aceitos
+          termos_aceitos: order.termos_aceitos,
+          transaction_id: order.transaction_id
         };
 
         setOrderDetails(orderWithClient);
