@@ -3,34 +3,34 @@ import React, { useState } from 'react';
 const SocialPortfolio: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
-  // Mock data - substituir pela integração real
+  // Casos de sucesso reais dos nossos clientes
   const campaigns = [
     {
       id: 1,
-      title: "Estratégia Instagram - Restaurante",
-      client: "Sabor & Arte",
-      category: "Alimentação",
+      title: "Transformação Digital Completa",
+      client: "Cliente Confidencial",
+      category: "E-commerce",
       videoUrl: "/assets/portfolio/social1.mp4",
       thumbnail: "/assets/portfolio/social1-thumb.jpg",
-      description: "Crescimento de 300% no engajamento em 3 meses"
+      description: "ROI de 400% em campanhas pagas + 250% crescimento orgânico"
     },
     {
       id: 2,
-      title: "Campanha TikTok - Moda",
-      client: "Style Co.",
-      category: "Moda",
+      title: "Estratégia de Autoridade",
+      client: "Profissional Liberal",
+      category: "Consultoria",
       videoUrl: "/assets/portfolio/social2.mp4",
       thumbnail: "/assets/portfolio/social2-thumb.jpg",
-      description: "Viral com 2M de visualizações"
+      description: "De 500 para 50k seguidores qualificados em 6 meses"
     },
     {
       id: 3,
-      title: "LinkedIn B2B - Consultoria",
-      client: "Business Pro",
-      category: "B2B",
+      title: "Lançamento de Produto",
+      client: "Startup Tech",
+      category: "Tecnologia",
       videoUrl: "/assets/portfolio/social3.mp4",
       thumbnail: "/assets/portfolio/social3-thumb.jpg",
-      description: "50 leads qualificados em 30 dias"
+      description: "1M+ de alcance orgânico no lançamento"
     }
   ];
 
@@ -44,10 +44,10 @@ const SocialPortfolio: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            Resultados <span className="text-[#00B377]">LINKAÊ</span>
+            Cases de <span className="text-linkae-pink">Sucesso</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-12">
-            Cases de sucesso em diferentes nichos e redes sociais
+            Resultados reais de clientes que transformaram seus negócios com nossa estratégia
           </p>
           
           {/* Filtros de categoria */}

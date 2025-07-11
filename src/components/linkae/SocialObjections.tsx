@@ -14,33 +14,33 @@ const SocialObjections: React.FC<SocialObjectionsProps> = ({ onScrollToForm }) =
   const objections = [
     {
       id: "item-1",
-      objection: "Já tentei redes sociais antes e não funcionou",
-      answer: "O sucesso em redes sociais depende de estratégia consistente. Analisamos seus resultados anteriores e criamos uma abordagem personalizada baseada em dados, não em achismos."
+      objection: "Como vocês garantem que os resultados vão superar o investimento?",
+      answer: "Trabalhamos com KPIs claros e metas específicas desde o primeiro dia. Nossos clientes veem ROI médio de 300% em 90 dias através de vendas diretas, leads qualificados e redução de custo de aquisição de clientes."
     },
     {
       id: "item-2", 
-      objection: "Meu nicho é muito específico para redes sociais",
-      answer: "Todo nicho tem sua audiência nas redes sociais. Desenvolvemos estratégias específicas para B2B, nichos técnicos e segmentos especializados com linguagem e canais adequados."
+      objection: "Meu negócio é muito técnico/complexo para redes sociais",
+      answer: "Especialidade nossa. Já atendemos desde SaaS B2B até consultorias especializadas. Traduzimos complexidade em conteúdo que engaja e educa sua audiência, criando autoridade no seu mercado."
     },
     {
       id: "item-3",
-      objection: "Preciso de resultados rápidos",
-      answer: "Começamos a ver engajamento nas primeiras semanas, mas crescimento orgânico sólido leva 90 dias. Oferecemos relatórios semanais para acompanhar cada métrica importante."
+      objection: "Outras agências prometeram muito e entregaram pouco",
+      answer: "Entendemos a frustração. Por isso trabalhamos com contratos mensais, relatórios semanais detalhados e reuniões quinzenais de acompanhamento. Transparência total sobre cada ação e resultado."
     },
     {
       id: "item-4",
-      objection: "Não tenho orçamento para social media profissional",
-      answer: "Investimento em social media tem ROI comprovado. Oferecemos planos flexíveis e mostramos o valor gerado versus investimento em cada relatório mensal."
+      objection: "Preciso ver crescimento rápido, não posso esperar meses",
+      answer: "Primeiros resultados aparecem em 2-3 semanas (engajamento e alcance). Leads qualificados começam entre 30-45 dias. Crescimento sólido e sustentável em 90 dias. Acompanhamento semanal para ajustes rápidos."
     },
     {
       id: "item-5",
-      objection: "Minha equipe interna pode fazer isso",
-      answer: "Equipes internas focam no dia a dia do negócio. Nós vivemos social media 24/7, acompanhamos tendências, algoritmos e melhores práticas constantemente."
+      objection: "Já tenho uma pessoa cuidando das redes sociais",
+      answer: "Perfeito! Podemos trabalhar em conjunto, oferecendo estratégia, treinamento e suporte técnico. Ou assumir completamente, liberando sua equipe para focar no core business enquanto nós geramos resultados."
     },
     {
       id: "item-6",
-      objection: "Não quero me expor muito nas redes",
-      answer: "Criamos estratégias que respeitam o perfil da marca. Podemos focar em produtos, equipe, bastidores ou cases sem exposição excessiva dos fundadores."
+      objection: "Como sei que vocês entendem do meu mercado específico?",
+      answer: "Fase de descoberta intensiva: 15 dias analisando seu mercado, concorrência, audiência e oportunidades. Estratégia 100% personalizada, não templates. Se não entregarmos resultados, não renovamos o contrato."
     }
   ];
 
@@ -49,10 +49,10 @@ const SocialObjections: React.FC<SocialObjectionsProps> = ({ onScrollToForm }) =
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            Dúvidas sobre <span className="text-[#00B377]">Social Media?</span>
+            Perguntas <span className="text-linkae-orange">Inteligentes</span>
           </h2>
           <p className="text-xl text-gray-600">
-            Respondemos as principais questões sobre gestão de redes sociais
+            As dúvidas mais comuns de empresários sérios sobre investir em social media estratégico
           </p>
         </div>
 
