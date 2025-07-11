@@ -3,18 +3,18 @@ import { Check } from 'lucide-react';
 
 const SocialMediaDeliverables: React.FC = () => {
   const deliverables = [
-    { item: "Estratégia completa personalizada", included: true, highlight: false },
-    { item: "Planejamento editorial estratégico", included: true, highlight: true },
-    { item: "Produção de conteúdo profissional", included: true, highlight: false },
-    { item: "Stories e conteúdo interativo", included: true, highlight: true },
-    { item: "Copywriting que converte", included: true, highlight: false },
-    { item: "Gestão ativa da comunidade", included: true, highlight: true },
-    { item: "Relatórios detalhados de performance", included: true, highlight: false },
-    { item: "Pesquisa e implementação de hashtags", included: true, highlight: false },
-    { item: "Produção de conteúdo visual", included: true, highlight: true },
-    { item: "Vídeos otimizados para cada plataforma", included: true, highlight: false },
-    { item: "Análise competitiva contínua", included: true, highlight: false },
-    { item: "Suporte prioritário direto", included: true, highlight: true }
+    { item: "Estratégia completa para redes sociais", included: true, highlight: false },
+    { item: "Calendário editorial mensal", included: true, highlight: true },
+    { item: "20 posts profissionais por mês", included: true, highlight: false },
+    { item: "Stories diários", included: true, highlight: true },
+    { item: "Copywriting otimizado", included: true, highlight: false },
+    { item: "Gestão de comunidade", included: true, highlight: true },
+    { item: "Relatório mensal de resultados", included: true, highlight: false },
+    { item: "Hashtags estratégicas", included: true, highlight: false },
+    { item: "Shooting mensal de fotos", included: true, highlight: true },
+    { item: "Vídeos para Reels/TikTok", included: true, highlight: false },
+    { item: "Monitoramento de concorrência", included: true, highlight: false },
+    { item: "Suporte via WhatsApp", included: true, highlight: true }
   ];
 
   return (
@@ -22,10 +22,10 @@ const SocialMediaDeliverables: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            Serviços <span className="text-linkae-green">LINKAÊ</span>
+            O que você recebe com a <span className="text-[#00B377]">LINKAÊ</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-            Estratégia completa para dominar suas redes sociais e converter seguidores em clientes
+            Pacote completo de social media para transformar suas redes sociais
           </p>
         </div>
 

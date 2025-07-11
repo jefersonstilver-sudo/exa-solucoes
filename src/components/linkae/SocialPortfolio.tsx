@@ -3,34 +3,34 @@ import React, { useState } from 'react';
 const SocialPortfolio: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
-  // Casos de sucesso reais dos nossos clientes
+  // Mock data - substituir pela integração real
   const campaigns = [
     {
       id: 1,
-      title: "Transformação Digital Completa",
-      client: "Cliente Confidencial",
-      category: "E-commerce",
+      title: "Estratégia Instagram - Restaurante",
+      client: "Sabor & Arte",
+      category: "Alimentação",
       videoUrl: "/assets/portfolio/social1.mp4",
       thumbnail: "/assets/portfolio/social1-thumb.jpg",
-      description: "ROI de 400% em campanhas pagas + 250% crescimento orgânico"
+      description: "Crescimento de 300% no engajamento em 3 meses"
     },
     {
       id: 2,
-      title: "Estratégia de Autoridade",
-      client: "Profissional Liberal",
-      category: "Consultoria",
+      title: "Campanha TikTok - Moda",
+      client: "Style Co.",
+      category: "Moda",
       videoUrl: "/assets/portfolio/social2.mp4",
       thumbnail: "/assets/portfolio/social2-thumb.jpg",
-      description: "De 500 para 50k seguidores qualificados em 6 meses"
+      description: "Viral com 2M de visualizações"
     },
     {
       id: 3,
-      title: "Lançamento de Produto",
-      client: "Startup Tech",
-      category: "Tecnologia",
+      title: "LinkedIn B2B - Consultoria",
+      client: "Business Pro",
+      category: "B2B",
       videoUrl: "/assets/portfolio/social3.mp4",
       thumbnail: "/assets/portfolio/social3-thumb.jpg",
-      description: "1M+ de alcance orgânico no lançamento"
+      description: "50 leads qualificados em 30 dias"
     }
   ];
 
@@ -44,10 +44,10 @@ const SocialPortfolio: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            Cases de <span className="text-linkae-pink">Sucesso</span>
+            Resultados <span className="text-[#00B377]">LINKAÊ</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-12">
-            Resultados reais de clientes que transformaram seus negócios com nossa estratégia
+            Cases de sucesso em diferentes nichos e redes sociais
           </p>
           
           {/* Filtros de categoria */}

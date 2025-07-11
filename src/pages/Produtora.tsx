@@ -4,7 +4,6 @@ import Layout from '@/components/layout/Layout';
 import ProdutoraHeroSection from '@/components/produtora/ProdutoraHeroSection';
 import AboutProdutoraSection from '@/components/produtora/AboutProdutoraSection';
 import EstudioSection from '@/components/produtora/EstudioSection';
-import CreativeStudio from '@/components/linkae/CreativeStudio';
 import ProcessoProducaoSection from '@/components/produtora/ProcessoProducaoSection';
 import PortfolioSection from '@/components/produtora/PortfolioSection';
 import CafeManualSection from '@/components/produtora/CafeManualSection';
@@ -24,9 +23,6 @@ const Produtora = () => {
         
         {/* 3. Nosso Estúdio */}
         <EstudioSection />
-        
-        {/* 3.5. Studio Criativo Completo */}
-        <CreativeStudio />
         
         {/* 4. Como Funciona a Produção */}
         <ProcessoProducaoSection />

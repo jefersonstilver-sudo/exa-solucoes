@@ -7,7 +7,7 @@ interface LinkaeHeroProps {
 
 const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ background: 'var(--gradient-linkae-hero)' }}>
+    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 overflow-hidden">
       {/* Background Video */}
       <video 
         autoPlay 
@@ -27,7 +27,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/logo-linkae-branco.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNTExZDAwOS1hZDAwLTRlZWItYTI3Yi1kYTRlYWEwYzJhZmQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL2xvZ28tbGlua2FlLWJyYW5jby5wbmciLCJpYXQiOjE3NTIxOTY5MzUsImV4cCI6MTc4MzczMjkzNX0.V2OuLQG3PfTnUvmUYMohr8ywxyFWGGQ9UOhqX8mt0G0"
             alt="LINKAÊ - Social Media que Converte"
             className="w-64 md:w-80 lg:w-96 h-auto mb-6 animate-fade-in hover:scale-105 transition-all duration-300 drop-shadow-2xl"
-            style={{ filter: 'drop-shadow(0 0 30px hsl(var(--linkae-pink) / 0.4))' }}
+            style={{ filter: 'drop-shadow(0 0 30px rgba(0, 255, 171, 0.3))' }}
           />
           <h2 className="text-2xl md:text-4xl font-normal text-white/90">
             Social Media que converte
@@ -40,7 +40,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
         
         <button
           onClick={onScrollToForm}
-          className="btn-linkae-primary text-lg flex items-center mx-auto space-x-2"
+          className="bg-gradient-to-r from-[#00FFAB] to-[#00B377] text-white font-semibold px-8 py-4 rounded-full text-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 flex items-center mx-auto space-x-2"
         >
           <Coffee className="w-5 h-5" />
           <span>Conversar sobre Social Media</span>

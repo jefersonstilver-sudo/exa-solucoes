@@ -1,6 +1,11 @@
 import React, { useRef } from 'react';
 import LinkaeHero from '@/components/linkae/LinkaeHero';
 import LinkaeMission from '@/components/linkae/LinkaeMission';
+import LinkaeStrategy from '@/components/linkae/LinkaeStrategy';
+import SocialMediaFramework from '@/components/linkae/SocialMediaFramework';
+import ContentProcess from '@/components/linkae/ContentProcess';
+import CreativeStudio from '@/components/linkae/CreativeStudio';
+import AIContentSection from '@/components/linkae/AIContentSection';
 import SocialMediaDeliverables from '@/components/linkae/SocialMediaDeliverables';
 import SocialPortfolio from '@/components/linkae/SocialPortfolio';
 import SocialObjections from '@/components/linkae/SocialObjections';
@@ -21,9 +26,14 @@ const Linkae = () => {
 
   return (
     <Layout>
-      <div className="linkae-page min-h-screen bg-white text-gray-900">
+      <div className="min-h-screen bg-white text-gray-900">
         <LinkaeHero onScrollToForm={scrollToForm} />
         <LinkaeMission />
+        <LinkaeStrategy />
+        <SocialMediaFramework />
+        <ContentProcess />
+        <CreativeStudio />
+        <AIContentSection />
         <SocialMediaDeliverables />
         <SocialPortfolio />
         <SocialObjections onScrollToForm={scrollToForm} />
