@@ -63,14 +63,14 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Cores específicas do Indexa - updated with more vibrant colors
+				// Cores específicas do Indexa using CSS variables
 				indexa: {
-					purple: '#4A0968',
-					'purple-dark': '#38064F',
-					'purple-light': '#6A1888',
-					mint: '#58E3AB',
-					'mint-dark': '#4AD399',
-					'mint-light': '#7EEAC0',
+					purple: 'hsl(var(--indexa-purple))',
+					'purple-dark': 'hsl(var(--indexa-purple-dark))',
+					'purple-light': 'hsl(var(--indexa-purple-light))',
+					mint: 'hsl(var(--indexa-mint))',
+					'mint-dark': 'hsl(var(--indexa-mint-dark))',
+					'mint-light': 'hsl(var(--indexa-mint-light))',
 					white: '#FFFFFF'
 				}
 			},
