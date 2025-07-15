@@ -43,6 +43,13 @@
     --indexa-purple: 261 83% 21%;
     --indexa-mint: 160 72% 59%;
     --indexa-purple-dark: 261 83% 15%;
+    
+    /* Variáveis LINKAÊ */
+    --linkae-primary: 26 27 92;        /* #1a1b5c */
+    --linkae-secondary: 44 48 148;     /* #2c3094 */
+    --linkae-accent: 77 166 255;       /* #4da6ff */
+    --linkae-cyan: 91 192 235;         /* #5bc0eb */
+    --linkae-white: 255 255 255;       /* #ffffff */
   }
 
   .dark {

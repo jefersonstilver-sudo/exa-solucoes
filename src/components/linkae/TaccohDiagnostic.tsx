@@ -162,7 +162,7 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
     const IconComponent = profile.icon;
 
     return (
-      <section className="py-20 md:py-28 bg-gradient-to-br from-purple-50 to-blue-50">
+    <section className="py-20 md:py-28 bg-gradient-to-br from-linkae-dark-blue/5 to-linkae-royal-blue/10">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
@@ -170,7 +170,7 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
               <span>Diagnóstico concluído</span>
             </div>
             
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-linkae-dark-blue">
               Sua estratégia T.A.C.C.O.H. ideal
             </h2>
           </div>
@@ -240,13 +240,13 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   return (
-    <section className="py-20 md:py-28 bg-gradient-to-br from-purple-50 to-blue-50">
+    <section className="py-20 md:py-28 bg-gradient-to-br from-linkae-dark-blue/5 to-linkae-royal-blue/10">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
-            Qual <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">T.A.C.C.O.H.</span> sua marca precisa?
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-linkae-dark-blue">
+            Qual <span className="bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light bg-clip-text text-transparent">T.A.C.C.O.H.</span> sua marca precisa?
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-linkae-dark-blue/70">
             Responda 3 perguntas rápidas e descubra sua estratégia ideal
           </p>
         </div>
@@ -259,7 +259,7 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -267,7 +267,7 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
 
         {/* Question */}
         <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100">
-          <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-8 text-center">
+          <h3 className="text-xl md:text-2xl font-bold text-linkae-dark-blue mb-8 text-center">
             {question.question}
           </h3>
 
@@ -276,13 +276,13 @@ const TaccohDiagnostic: React.FC<TaccohDiagnosticProps> = ({ onScrollToForm }) =
               <button
                 key={index}
                 onClick={() => handleAnswer(option.value, option.taccoh)}
-                className="w-full p-6 text-left bg-gray-50 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-2xl border border-gray-200 hover:border-purple-300 transition-all duration-300 group"
+                className="w-full p-6 text-left bg-gray-50 hover:bg-gradient-to-r hover:from-linkae-bright-blue/10 hover:to-linkae-cyan-light/10 rounded-2xl border border-gray-200 hover:border-linkae-cyan-light transition-all duration-300 group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-800 font-medium group-hover:text-purple-700">
+                  <span className="text-gray-800 font-medium group-hover:text-linkae-dark-blue">
                     {option.text}
                   </span>
-                  <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                  <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-linkae-bright-blue group-hover:translate-x-1 transition-all" />
                 </div>
               </button>
             ))}

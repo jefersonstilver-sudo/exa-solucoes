@@ -74,13 +74,13 @@ const TaccohCaseStudies: React.FC = () => {
   const currentCase = caseStudies[activeCase];
 
   return (
-    <section className="py-20 md:py-28 bg-gradient-to-br from-slate-50 to-gray-100">
+    <section className="py-20 md:py-28 bg-gradient-to-br from-linkae-dark-blue/5 to-linkae-royal-blue/10">
       <div className="max-w-7xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
-            Cases reais de <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">T.A.C.C.O.H.</span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-linkae-dark-blue">
+            Cases reais de <span className="bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light bg-clip-text text-transparent">T.A.C.C.O.H.</span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl text-linkae-dark-blue/70 max-w-3xl mx-auto">
             Veja como negócios de diferentes nichos aplicaram nossa metodologia e transformaram suas redes sociais em máquinas de vendas.
           </p>
         </div>
@@ -206,14 +206,14 @@ const TaccohCaseStudies: React.FC = () => {
 
         {/* Bottom CTA */}
         <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-8 md:p-12 rounded-3xl text-white">
+          <div className="bg-gradient-to-r from-linkae-dark-blue to-linkae-royal-blue p-8 md:p-12 rounded-3xl text-white">
             <h3 className="text-2xl md:text-3xl font-bold mb-4">
               Seu negócio pode ser o próximo case de sucesso
             </h3>
             <p className="text-lg mb-8 opacity-90 max-w-3xl mx-auto">
               Cada negócio tem sua combinação ideal de T.A.C.C.O.H. Nossa equipe especializada identifica exatamente quais pilares sua marca precisa para gerar resultados similares.
             </p>
-            <button className="bg-white text-purple-600 px-8 py-4 rounded-2xl font-bold hover:shadow-lg transition-all inline-flex items-center gap-3 group">
+            <button className="bg-linkae-cyan-light text-linkae-dark-blue px-8 py-4 rounded-2xl font-bold hover:shadow-lg hover:bg-linkae-bright-blue hover:text-white transition-all inline-flex items-center gap-3 group">
               <span>Descobrir minha estratégia T.A.C.C.O.H.</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </button>

@@ -72,6 +72,16 @@ export default {
 					'mint-dark': '#4AD399',
 					'mint-light': '#7EEAC0',
 					white: '#FFFFFF'
+				},
+				// Novas cores LINKAÊ baseadas na imagem do usuário
+				linkae: {
+					'dark-blue': '#1a1b5c',      // Azul escuro principal
+					'royal-blue': '#2c3094',     // Azul royal médio  
+					'bright-blue': '#4da6ff',    // Azul vibrante
+					'cyan-light': '#5bc0eb',     // Cyan claro para CTAs
+					'white': '#ffffff',          // Branco puro
+					'gradient-start': '#1a1b5c', // Início dos gradientes
+					'gradient-end': '#2837a8'    // Final dos gradientes
 				}
 			},
 			borderRadius: {
@@ -148,6 +158,30 @@ export default {
 					'100%': {
 						transform: 'scale(1)',
 					}
+				},
+				'linkae-glow': {
+					'0%, 100%': { 
+						boxShadow: '0 0 20px rgba(77, 166, 255, 0.3)' 
+					},
+					'50%': { 
+						boxShadow: '0 0 30px rgba(91, 192, 235, 0.5)' 
+					}
+				},
+				'linkae-float': {
+					'0%, 100%': { 
+						transform: 'translateY(0px) scale(1)' 
+					},
+					'50%': { 
+						transform: 'translateY(-10px) scale(1.02)' 
+					}
+				},
+				'linkae-zoom': {
+					'0%': { 
+						transform: 'scale(1)' 
+					},
+					'100%': { 
+						transform: 'scale(1.15)' 
+					}
 				}
 			},
 			animation: {
@@ -157,7 +191,10 @@ export default {
 				'slide-in': 'slide-in 0.5s ease-out',
 				'float': 'float 3s ease-in-out infinite',
 				'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
-				'cart-bubble': 'cart-bubble 0.6s ease-out'
+				'cart-bubble': 'cart-bubble 0.6s ease-out',
+				'linkae-glow': 'linkae-glow 2s ease-in-out infinite',
+				'linkae-float': 'linkae-float 3s ease-in-out infinite',
+				'linkae-zoom': 'linkae-zoom 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
 			}
 		}
 	},

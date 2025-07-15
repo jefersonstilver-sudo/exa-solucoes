@@ -43,10 +43,10 @@ const SocialPortfolio: React.FC = () => {
     <section className="py-20 bg-white">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            Resultados <span className="text-[#00B377]">LINKAÊ</span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-8 text-linkae-dark-blue">
+            Resultados <span className="text-linkae-bright-blue">LINKAÊ</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-12">
+          <p className="text-xl text-linkae-dark-blue/70 max-w-4xl mx-auto mb-12">
             Cases de sucesso em diferentes nichos e redes sociais
           </p>
           
@@ -58,8 +58,8 @@ const SocialPortfolio: React.FC = () => {
                 onClick={() => setSelectedCategory(category)}
                 className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
                   selectedCategory === category
-                    ? 'bg-[#00B377] text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-linkae-bright-blue text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-linkae-bright-blue/10 hover:text-linkae-dark-blue'
                 }`}
               >
                 {category}
@@ -87,16 +87,16 @@ const SocialPortfolio: React.FC = () => {
                   <source src={campaign.videoUrl} type="video/mp4" />
                 </video>
                 <div className="absolute top-4 right-4">
-                  <span className="bg-[#00FFAB] text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  <span className="bg-linkae-cyan-light text-white px-3 py-1 rounded-full text-sm font-semibold">
                     {campaign.category}
                   </span>
                 </div>
               </div>
               
               <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{campaign.title}</h3>
-                <p className="text-[#00B377] font-semibold mb-3">{campaign.client}</p>
-                <p className="text-gray-600 text-sm">{campaign.description}</p>
+                <h3 className="text-xl font-bold text-linkae-dark-blue mb-2">{campaign.title}</h3>
+                <p className="text-linkae-bright-blue font-semibold mb-3">{campaign.client}</p>
+                <p className="text-linkae-dark-blue/70 text-sm">{campaign.description}</p>
               </div>
             </div>
           ))}
