@@ -1,19 +1,34 @@
 
 import React from 'react';
 import Layout from '@/components/layout/Layout';
+import HeroSection from '@/components/produtora/HeroSection';
+import HistorySection from '@/components/produtora/HistorySection';
+import DiferenciaisSection from '@/components/produtora/DiferenciaisSection';
+import PortfolioSection from '@/components/produtora/PortfolioSection';
+import CTASection from '@/components/produtora/CTASection';
+import FooterSection from '@/components/produtora/FooterSection';
 
 const Produtora = () => {
   return (
     <Layout>
-      <div className="min-h-screen bg-white">
-        <div className="container mx-auto px-4 py-16">
-          <h1 className="text-4xl font-bold text-center text-indexa-purple mb-8">
-            Indexa Produtora
-          </h1>
-          <p className="text-center text-gray-600">
-            Página em construção - Nova experiência chegando em breve
-          </p>
-        </div>
+      <div className="relative overflow-x-hidden">
+        {/* Hero Cinematográfico */}
+        <HeroSection />
+        
+        {/* Nossa História */}
+        <HistorySection />
+        
+        {/* Diferenciais Únicos */}
+        <DiferenciaisSection />
+        
+        {/* Portfólio Impactante */}
+        <PortfolioSection />
+        
+        {/* Chamada para Ação */}
+        <CTASection />
+        
+        {/* Footer */}
+        <FooterSection />
       </div>
     </Layout>
   );
