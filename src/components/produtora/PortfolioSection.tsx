@@ -1,9 +1,22 @@
+
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Play } from 'lucide-react';
+
+interface PortfolioItem {
+  id: string;
+  titulo: string;
+  descricao: string;
+  categoria: string;
+  url_video: string;
+  created_at: string;
+}
 
 const PortfolioSection = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<number | null>(null);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -22,144 +35,113 @@ const PortfolioSection = () => {
     return () => observer.disconnect();
   }, []);
 
-  const portfolioItems = [
-    {
-      thumbnail: "https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?q=80&w=600&h=400&auto=format&fit=crop",
-      title: "Empoderando a História de uma Clínica em Foz",
-      description: "Transformamos seus serviços cotidianos em uma narrativa cinematográfica que conectou com pacientes, gerando interesse e lealdade.",
-      videoUrl: "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos%20produtora/portfolio-1.mp4"
-    },
-    {
-      thumbnail: "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?q=80&w=600&h=400&auto=format&fit=crop",
-      title: "Capturando um Lançamento na Fronteira",
-      description: "Usando nosso estúdio avançado e tecnologia de drone, criamos footage que tornou o evento épico, gerando buzz e parcerias.",
-      videoUrl: "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos%20produtora/portfolio-2.mp4"
-    },
-    {
-      thumbnail: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=600&h=400&auto=format&fit=crop",
-      title: "Transformação Corporativa em Cascavel",
-      description: "Um vídeo que resolveu dores de branding, criando laços emocionais que impulsionaram o engajamento.",
-      videoUrl: "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos%20produtora/portfolio-3.mp4"
-    },
-    {
-      thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&h=400&auto=format&fit=crop",
-      title: "Documentário Empresarial Inovador",
-      description: "Uma narrativa que capturou a essência de uma empresa local, criando conexão emocional e aumentando a credibilidade.",
-      videoUrl: "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos%20produtora/portfolio-4.mp4"
-    },
-    {
-      thumbnail: "https://images.unsplash.com/photo-1472396961693-142e6e269027?q=80&w=600&h=400&auto=format&fit=crop",
-      title: "Campanha Publicitária Regional",
-      description: "Storytelling que conectou com a identidade regional, criando impacto emocional e resultados mensuráveis.",
-      videoUrl: "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos%20produtora/portfolio-5.mp4"
-    },
-    {
-      thumbnail: "https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?q=80&w=600&h=400&auto=format&fit=crop",
-      title: "Produção Institucional de Alto Impacto",
-      description: "Vídeo que transformou a percepção da marca, elevando o posicionamento e gerando novos negócios.",
-      videoUrl: "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/videos%20produtora/portfolio-6.mp4"
-    }
-  ];
+  useEffect(() => {
+    fetchPortfolioItems();
+  }, []);
 
-  const closeModal = () => {
-    setSelectedVideo(null);
+  const fetchPortfolioItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('portfolio_produtora')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar portfólio:', error);
+      } else {
+        setPortfolioItems(data || []);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar portfólio:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <section 
+      id="portfolio-section"
       ref={sectionRef}
-      className="min-h-screen bg-gradient-to-b from-white via-purple-50 to-white py-20 px-4"
+      className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-gray-100 to-white"
     >
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className={`text-center mb-16 transition-all duration-800 ease-out ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+      <div className="max-w-6xl mx-auto px-4">
+        <div className={`transform transition-all duration-1000 ${
+          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
-          <h2 className="font-playfair text-3xl lg:text-4xl xl:text-5xl text-purple-900 mb-6 leading-tight">
-            Portfólios que Inspiram Ação
-          </h2>
-          <p className="font-montserrat text-lg lg:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
-            Veja como nosso toque cinematográfico transformou negócios reais – de histórias locais em Foz 
-            a projetos impactantes na fronteira. Esses exemplos mostram o desejo que criamos por mais.
-          </p>
-        </div>
+          {/* Título da seção */}
+          <div className="text-center mb-12 lg:mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-indexa-purple mb-6">
+              Portfólio Cinematográfico
+              <span className="block text-2xl sm:text-3xl lg:text-4xl text-indexa-mint font-light mt-2">
+                Showroom Exclusivo
+              </span>
+            </h2>
+          </div>
 
-        {/* Portfolio Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {portfolioItems.map((item, index) => (
-            <div
-              key={index}
-              className={`group cursor-pointer transition-all duration-800 ease-out ${
-                isVisible 
-                  ? 'opacity-100 translate-y-0' 
-                  : 'opacity-0 translate-y-12'
-              }`}
-              style={{ transitionDelay: `${index * 150}ms` }}
-              onClick={() => setSelectedVideo(index)}
-            >
-              <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-                {/* Video Thumbnail */}
-                <div className="relative aspect-video overflow-hidden">
-                  <img
-                    src={item.thumbnail}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    style={{ filter: 'brightness(0.9) contrast(1.1)' }}
-                  />
-                  
-                  {/* Play Button Overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                    <div className="bg-orange-500 rounded-full p-4 opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300">
-                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                      </svg>
+          {/* Grid de vídeos do portfólio */}
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indexa-mint"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {portfolioItems.map((item, index) => (
+                <div
+                  key={item.id}
+                  className={`group relative bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform ${
+                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                  }`}
+                  style={{ transitionDelay: `${index * 200}ms` }}
+                >
+                  {/* Container do vídeo */}
+                  <div className="relative aspect-[9/16] overflow-hidden">
+                    <video
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                    >
+                      <source src={item.url_video} type="video/mp4" />
+                    </video>
+                    
+                    {/* Overlay com play button */}
+                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                      <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <Play className="w-8 h-8 text-white ml-1" />
+                      </div>
+                    </div>
+                    
+                    {/* Badge da categoria */}
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-indexa-purple text-white px-3 py-1 rounded-full text-sm font-medium">
+                        {item.categoria}
+                      </span>
                     </div>
                   </div>
-                </div>
 
-                {/* Content */}
-                <div className="p-6">
-                  <h3 className="font-montserrat font-bold text-xl text-gray-800 mb-3 group-hover:text-purple-700 transition-colors duration-300">
-                    {item.title}
-                  </h3>
-                  <p className="font-montserrat text-gray-600 leading-relaxed">
-                    {item.description}
-                  </p>
+                  {/* Informações do vídeo */}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-indexa-purple mb-2">{item.titulo}</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">{item.descricao}</p>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          )}
 
-      {/* Video Modal */}
-      {selectedVideo !== null && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4 animate-fade-in">
-          <div className="relative w-full max-w-4xl">
-            {/* Close Button */}
-            <button
-              onClick={closeModal}
-              className="absolute -top-12 right-0 text-white hover:text-orange-400 transition-colors duration-200"
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Video Player */}
-            <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              <video
-                className="w-full h-full"
-                controls
-                autoPlay
-                src={portfolioItems[selectedVideo].videoUrl}
-              >
-                Seu navegador não suporta o elemento de vídeo.
-              </video>
+          {/* CTA final */}
+          <div className="text-center mt-12 lg:mt-16">
+            <div className="inline-flex items-center bg-gradient-to-r from-indexa-purple to-indexa-mint p-1 rounded-2xl">
+              <div className="bg-white px-8 py-4 rounded-xl">
+                <p className="text-lg font-bold text-indexa-purple">
+                  Cada projeto uma <span className="text-indexa-mint">obra cinematográfica</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </section>
   );
 };

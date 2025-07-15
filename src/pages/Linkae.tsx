@@ -1,11 +1,11 @@
 import React, { useRef } from 'react';
 import LinkaeHero from '@/components/linkae/LinkaeHero';
+import TaccohPuzzleHero from '@/components/linkae/TaccohPuzzleHero';
+import TaccohExplainer from '@/components/linkae/TaccohExplainer';
+import TaccohSolutionSection from '@/components/linkae/TaccohSolutionSection';
+import TaccohCaseStudies from '@/components/linkae/TaccohCaseStudies';
+import TaccohDiagnostic from '@/components/linkae/TaccohDiagnostic';
 import LinkaeMission from '@/components/linkae/LinkaeMission';
-import LinkaeStrategy from '@/components/linkae/LinkaeStrategy';
-import SocialMediaFramework from '@/components/linkae/SocialMediaFramework';
-import ContentProcess from '@/components/linkae/ContentProcess';
-import CreativeStudio from '@/components/linkae/CreativeStudio';
-import AIContentSection from '@/components/linkae/AIContentSection';
 import SocialMediaDeliverables from '@/components/linkae/SocialMediaDeliverables';
 import SocialPortfolio from '@/components/linkae/SocialPortfolio';
 import SocialObjections from '@/components/linkae/SocialObjections';
@@ -28,12 +28,12 @@ const Linkae = () => {
     <Layout>
       <div className="min-h-screen bg-white text-gray-900">
         <LinkaeHero onScrollToForm={scrollToForm} />
+        <TaccohPuzzleHero />
+        <TaccohSolutionSection />
+        <TaccohExplainer />
+        <TaccohCaseStudies />
+        <TaccohDiagnostic onScrollToForm={scrollToForm} />
         <LinkaeMission />
-        <LinkaeStrategy />
-        <SocialMediaFramework />
-        <ContentProcess />
-        <CreativeStudio />
-        <AIContentSection />
         <SocialMediaDeliverables />
         <SocialPortfolio />
         <SocialObjections onScrollToForm={scrollToForm} />
