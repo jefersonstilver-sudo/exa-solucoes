@@ -123,7 +123,7 @@ const InfrastructureSection = () => {
             <div className="bg-white rounded-2xl p-8 shadow-enhanced border border-gray-100">
               <div className="flex items-center gap-4 mb-6">
                 <div className="p-4 bg-gradient-to-r from-indexa-purple to-indexa-purple-dark rounded-xl">
-                  <equipment[activeEquipment].icon className="w-8 h-8 text-white" />
+                  {React.createElement(equipment[activeEquipment].icon, { className: "w-8 h-8 text-white" })}
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">
