@@ -1,44 +1,40 @@
 
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import CinematicHeroSection from '@/components/produtora/CinematicHeroSection';
-import SuperStudioInfrastructure from '@/components/produtora/SuperStudioInfrastructure';
-import StudioUsageModalities from '@/components/produtora/StudioUsageModalities';
-import ProductionTypesShowcase from '@/components/produtora/ProductionTypesShowcase';
-import TaccohIntegratedProcess from '@/components/produtora/TaccohIntegratedProcess';
-import PortfolioSection from '@/components/produtora/PortfolioSection';
-import CafeManualSection from '@/components/produtora/CafeManualSection';
-import BriefingFormSection from '@/components/produtora/BriefingFormSection';
+import IndexaProdutoraHero from '@/components/produtora/IndexaProdutoraHero';
+import PremiumServicesSection from '@/components/produtora/PremiumServicesSection';
+import TaccohMethodSection from '@/components/produtora/TaccohMethodSection';
+import PortfolioShowcase from '@/components/produtora/PortfolioShowcase';
+import InfrastructureSection from '@/components/produtora/InfrastructureSection';
+import TestimonialsSection from '@/components/produtora/TestimonialsSection';
+import ContactFormSection from '@/components/produtora/ContactFormSection';
 
 const Produtora = () => {
-  console.log('🎬 Produtora: Página da produtora carregada SEM footer adicional');
+  console.log('🎬 INDEXA PRODUTORA: Página da produtora premium carregada com nova identidade');
 
   return (
     <Layout>
       <div className="relative z-10 overflow-x-hidden w-full">
-        {/* 1. Hero Cinematográfico */}
-        <CinematicHeroSection />
+        {/* 1. Hero Premium - Posicionamento Estratégico */}
+        <IndexaProdutoraHero />
         
-        {/* 2. Super Estúdio Infraestrutura */}
-        <SuperStudioInfrastructure />
+        {/* 2. Nossos Serviços Premium */}
+        <PremiumServicesSection />
         
-        {/* 3. Modalidades de Uso */}
-        <StudioUsageModalities />
+        {/* 3. Método T.A.C.C.O.H. na Produção */}
+        <TaccohMethodSection />
         
-        {/* 4. Tipos de Produção */}
-        <ProductionTypesShowcase />
+        {/* 4. Portfólio de Impacto */}
+        <PortfolioShowcase />
         
-        {/* 5. Processo T.A.C.C.O.H. Integrado */}
-        <TaccohIntegratedProcess />
+        {/* 5. Infraestrutura de Ponta */}
+        <InfrastructureSection />
         
-        {/* 6. Portfólio Cinematográfico */}
-        <PortfolioSection />
+        {/* 6. Depoimentos e Resultados */}
+        <TestimonialsSection />
         
-        {/* 7. Convite ao Café */}
-        <CafeManualSection />
-        
-        {/* 8. Formulário de Orçamento */}
-        <BriefingFormSection />
+        {/* 7. Contato e Agendamento */}
+        <ContactFormSection />
       </div>
     </Layout>
   );
