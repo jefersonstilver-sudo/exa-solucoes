@@ -1,9 +1,11 @@
+
 import React, { useRef } from 'react';
 import LinkaeHero from '@/components/linkae/LinkaeHero';
 import TaccohPuzzleHero from '@/components/linkae/TaccohPuzzleHero';
 import TaccohExplainer from '@/components/linkae/TaccohExplainer';
 import TaccohSolutionSection from '@/components/linkae/TaccohSolutionSection';
 import TaccohCaseStudies from '@/components/linkae/TaccohCaseStudies';
+import BeforeAfterExamples from '@/components/linkae/BeforeAfterExamples';
 import TaccohDiagnostic from '@/components/linkae/TaccohDiagnostic';
 import LinkaeMission from '@/components/linkae/LinkaeMission';
 import SocialMediaDeliverables from '@/components/linkae/SocialMediaDeliverables';
@@ -32,6 +34,7 @@ const Linkae = () => {
         <TaccohSolutionSection />
         <TaccohExplainer />
         <TaccohCaseStudies />
+        <BeforeAfterExamples />
         <TaccohDiagnostic onScrollToForm={scrollToForm} />
         <LinkaeMission />
         <SocialMediaDeliverables />
