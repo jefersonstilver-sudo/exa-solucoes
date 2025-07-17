@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -81,14 +80,17 @@ export default {
 					'cyan-light': '#5bc0eb',     // Cyan claro para CTAs
 					'white': '#ffffff',          // Branco puro
 					'gradient-start': '#1a1b5c', // Início dos gradientes
-					'gradient-end': '#2837a8'    // Final dos gradientes
+					'gradient-end': '#2837a8',   // Final dos gradientes
+					// Novas cores de accent
+					'accent-pink': '#FF8A80',    // Rosa accent
+					'accent-orange': '#F57C00'   // Laranja accent
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)',
-				'2xl': '1rem' // Added 2xl border radius
+				'2xl': '1rem'
 			},
 			boxShadow: {
 				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
@@ -182,6 +184,28 @@ export default {
 					'100%': { 
 						transform: 'scale(1.15)' 
 					}
+				},
+				// Novas animações para acentos coloridos
+				'accent-pulse': {
+					'0%, 100%': { 
+						opacity: '0.6',
+						transform: 'scale(1)' 
+					},
+					'50%': { 
+						opacity: '1',
+						transform: 'scale(1.05)' 
+					}
+				},
+				'gradient-shift': {
+					'0%': { 
+						backgroundPosition: '0% 50%' 
+					},
+					'50%': { 
+						backgroundPosition: '100% 50%' 
+					},
+					'100%': { 
+						backgroundPosition: '0% 50%' 
+					}
 				}
 			},
 			animation: {
@@ -194,7 +218,10 @@ export default {
 				'cart-bubble': 'cart-bubble 0.6s ease-out',
 				'linkae-glow': 'linkae-glow 2s ease-in-out infinite',
 				'linkae-float': 'linkae-float 3s ease-in-out infinite',
-				'linkae-zoom': 'linkae-zoom 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+				'linkae-zoom': 'linkae-zoom 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+				// Novas animações
+				'accent-pulse': 'accent-pulse 3s ease-in-out infinite',
+				'gradient-shift': 'gradient-shift 4s ease-in-out infinite'
 			}
 		}
 	},
