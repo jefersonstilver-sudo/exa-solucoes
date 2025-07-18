@@ -4,7 +4,6 @@ import { Puzzle, Sparkles, TrendingUp, Users, Heart, Zap, ArrowRight, Play, BarC
 
 const TaccohPuzzleHero: React.FC = () => {
   const [animateIn, setAnimateIn] = useState(false);
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [counters, setCounters] = useState({ brands: 0, engagement: 0, cases: 0, roi: 0 });
 
   const taccohData = [
@@ -14,15 +13,12 @@ const TaccohPuzzleHero: React.FC = () => {
       title: 'Técnico', 
       subtitle: 'Demonstre expertise através do processo',
       color: 'from-blue-500 via-blue-600 to-indigo-600',
-      glowColor: 'shadow-blue-500/30',
       icon: Puzzle,
       description: 'Mostre o processo, gere confiança técnica',
-      expandedContent: {
-        example: 'Tutorial step-by-step que gera 300% mais engajamento',
-        case: 'Salão que mostrou técnica de corte: +250% agendamentos',
-        metrics: '+300% engajamento',
-        posts: ['Como fazer X', 'Passo a passo', 'Bastidores do processo']
-      }
+      example: 'Tutorial step-by-step que gera 300% mais engajamento',
+      case: 'Salão que mostrou técnica de corte: +250% agendamentos',
+      metrics: '+300% engajamento',
+      posts: ['Como fazer X', 'Passo a passo', 'Bastidores do processo']
     },
     { 
       id: 'A', 
@@ -30,15 +26,12 @@ const TaccohPuzzleHero: React.FC = () => {
       title: 'Autoridade', 
       subtitle: 'Construa credibilidade com prova social',
       color: 'from-yellow-400 via-orange-400 to-orange-500',
-      glowColor: 'shadow-orange-500/30',
       icon: Trophy,
       description: 'Conquistas, credibilidade, cases',
-      expandedContent: {
-        example: 'Certificações + depoimentos = confiança instantânea',
-        case: 'Dentista que mostrou casos: +400% conversões',
-        metrics: '+400% conversões',
-        posts: ['Certificações', 'Depoimentos', 'Prêmios e conquistas']
-      }
+      example: 'Certificações + depoimentos = confiança instantânea',
+      case: 'Dentista que mostrou casos: +400% conversões',
+      metrics: '+400% conversões',
+      posts: ['Certificações', 'Depoimentos', 'Prêmios e conquistas']
     },
     { 
       id: 'C1', 
@@ -46,15 +39,12 @@ const TaccohPuzzleHero: React.FC = () => {
       title: 'Crescimento', 
       subtitle: 'Ensine para se tornar referência',
       color: 'from-green-400 via-emerald-500 to-emerald-600',
-      glowColor: 'shadow-emerald-500/30',
       icon: TrendingUp,
       description: 'Inspire, ensine, viralize',
-      expandedContent: {
-        example: 'Dicas valiosas que viralizam naturalmente',
-        case: 'Coach que ensinou técnicas: 50k seguidores em 3 meses',
-        metrics: '+340% alcance',
-        posts: ['Dicas valiosas', 'Tutoriais', 'Conteúdo educativo']
-      }
+      example: 'Dicas valiosas que viralizam naturalmente',
+      case: 'Coach que ensinou técnicas: 50k seguidores em 3 meses',
+      metrics: '+340% alcance',
+      posts: ['Dicas valiosas', 'Tutoriais', 'Conteúdo educativo']
     },
     { 
       id: 'C2', 
@@ -62,15 +52,12 @@ const TaccohPuzzleHero: React.FC = () => {
       title: 'Conexão', 
       subtitle: 'Humanize sua marca com storytelling',
       color: 'from-pink-400 via-rose-500 to-rose-600',
-      glowColor: 'shadow-rose-500/30',
       icon: Heart,
       description: 'Histórias reais, emoção, humanidade',
-      expandedContent: {
-        example: 'Histórias pessoais que geram identificação',
-        case: 'Loja que contou origem: +180% vendas orgânicas',
-        metrics: '+180% vendas',
-        posts: ['História pessoal', 'Valores da marca', 'Momentos especiais']
-      }
+      example: 'Histórias pessoais que geram identificação',
+      case: 'Loja que contou origem: +180% vendas orgânicas',
+      metrics: '+180% vendas',
+      posts: ['História pessoal', 'Valores da marca', 'Momentos especiais']
     },
     { 
       id: 'O', 
@@ -78,15 +65,12 @@ const TaccohPuzzleHero: React.FC = () => {
       title: 'Objeção', 
       subtitle: 'Antecipe e resolva dúvidas dos clientes',
       color: 'from-red-500 via-red-600 to-pink-600',
-      glowColor: 'shadow-red-500/30',
       icon: Target,
       description: 'Antecipe e quebra barreiras',
-      expandedContent: {
-        example: "FAQ's transformados em conteúdo persuasivo",
-        case: 'E-commerce que respondeu objeções: +90% conversões',
-        metrics: '+90% conversões',
-        posts: ['FAQ interativo', 'Mitos vs Verdades', 'Esclarecimentos']
-      }
+      example: "FAQ's transformados em conteúdo persuasivo",
+      case: 'E-commerce que respondeu objeções: +90% conversões',
+      metrics: '+90% conversões',
+      posts: ['FAQ interativo', 'Mitos vs Verdades', 'Esclarecimentos']
     },
     { 
       id: 'H', 
@@ -94,15 +78,12 @@ const TaccohPuzzleHero: React.FC = () => {
       title: 'Hype', 
       subtitle: 'Aproveite trends para viralizar',
       color: 'from-orange-400 via-yellow-500 to-yellow-600',
-      glowColor: 'shadow-yellow-500/30',
       icon: Zap,
       description: 'Trends, memes, viral',
-      expandedContent: {
-        example: 'Adapte memes ao seu nicho estrategicamente',
-        case: 'Restaurante que surfou trend: 2M visualizações',
-        metrics: '+2M views',
-        posts: ['Trends adaptados', 'Memes do nicho', 'Conteúdo viral']
-      }
+      example: 'Adapte memes ao seu nicho estrategicamente',
+      case: 'Restaurante que surfou trend: 2M visualizações',
+      metrics: '+2M views',
+      posts: ['Trends adaptados', 'Memes do nicho', 'Conteúdo viral']
     }
   ];
 
@@ -139,23 +120,6 @@ const TaccohPuzzleHero: React.FC = () => {
     };
   }, []);
 
-  const getPositionClasses = (position: string, isExpanded: boolean) => {
-    const baseClasses = `absolute transition-all duration-500 ${isExpanded ? 'z-20' : 'z-10'}`;
-    const size = isExpanded ? 'w-80 h-80' : 'w-32 h-32 md:w-40 md:h-40';
-    
-    switch (position) {
-      case 'top-left': return `${baseClasses} ${size} top-0 left-0`;
-      case 'top-right': return `${baseClasses} ${size} top-0 right-0`;
-      case 'middle-left': return `${baseClasses} ${size} top-1/2 left-0 -translate-y-1/2`;
-      case 'middle-right': return `${baseClasses} ${size} top-1/2 right-0 -translate-y-1/2`;
-      case 'bottom-left': return `${baseClasses} ${size} bottom-0 left-0`;
-      case 'bottom-right': return `${baseClasses} ${size} bottom-0 right-0`;
-      default: return `${baseClasses} ${size}`;
-    }
-  };
-
-  const positions = ['top-left', 'top-right', 'middle-left', 'middle-right', 'bottom-left', 'bottom-right'];
-
   return (
     <section className="relative py-16 md:py-20 overflow-hidden">
       {/* Background Avançado */}
@@ -165,7 +129,6 @@ const TaccohPuzzleHero: React.FC = () => {
         {/* Elementos Geométricos Animados */}
         <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-blue-100/20 to-indigo-200/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-green-100/15 to-emerald-200/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-purple-100/10 to-pink-200/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
         
         {/* Particles */}
         {[...Array(20)].map((_, i) => (
@@ -226,117 +189,74 @@ const TaccohPuzzleHero: React.FC = () => {
           </div>
         </div>
 
-        {/* Puzzle Interativo Revolucionário */}
-        <div className="relative max-w-6xl mx-auto mb-12">
-          <div className="relative h-80 md:h-96 mx-auto" style={{ width: 'min(800px, 90vw)' }}>
+        {/* Cards T.A.C.C.O.H. - Layout Simples em Grid */}
+        <div className="max-w-6xl mx-auto mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {taccohData.map((piece, index) => {
               const IconComponent = piece.icon;
-              const position = positions[index];
-              const isExpanded = expandedCard === piece.id;
               
               return (
-                <div key={piece.id} className="relative">
-                  <div
-                    className={getPositionClasses(position, isExpanded)}
-                    style={{ animationDelay: `${index * 200}ms` }}
-                  >
-                    <div 
-                      className={`w-full h-full bg-gradient-to-br ${piece.color} rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 border-2 border-white/30 backdrop-blur-sm cursor-pointer group ${piece.glowColor} ${isExpanded ? 'scale-105' : 'hover:scale-110'} ${animateIn ? 'animate-fade-in' : 'opacity-0'}`}
-                      onMouseEnter={() => !isExpanded && setExpandedCard(piece.id)}
-                      onMouseLeave={() => setExpandedCard(null)}
-                      onClick={() => setExpandedCard(isExpanded ? null : piece.id)}
-                    >
-                      {!isExpanded ? (
-                        // Card Normal
-                        <div className="flex flex-col items-center justify-center h-full p-6 text-white relative overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          <IconComponent className="h-8 w-8 md:h-12 md:w-12 mb-4 relative z-10" />
-                          <span className="text-4xl md:text-5xl font-bold mb-2 relative z-10">{piece.letter}</span>
-                          <span className="text-sm md:text-base font-semibold text-center relative z-10">{piece.title}</span>
-                          <span className="text-xs md:text-sm text-center opacity-90 mt-1 relative z-10">{piece.subtitle}</span>
-                        </div>
-                      ) : (
-                        // Card Expandido
-                        <div className="p-8 text-white h-full overflow-y-auto">
-                          <div className="flex items-center gap-4 mb-6">
-                            <IconComponent className="h-10 w-10" />
-                            <div>
-                              <h3 className="text-2xl font-bold">{piece.letter} - {piece.title}</h3>
-                              <p className="text-sm opacity-90">{piece.subtitle}</p>
-                            </div>
+                <div
+                  key={piece.id}
+                  className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group ${animateIn ? 'animate-fade-in' : 'opacity-0'}`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Header do Card */}
+                  <div className={`bg-gradient-to-br ${piece.color} p-6 text-white relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    
+                    <div className="flex items-center gap-4 mb-3 relative z-10">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                        <span className="text-2xl font-bold">{piece.letter}</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold">{piece.title}</h3>
+                        <IconComponent className="h-5 w-5 opacity-80" />
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm opacity-90 relative z-10">{piece.subtitle}</p>
+                  </div>
+
+                  {/* Conteúdo do Card */}
+                  <div className="p-6 space-y-4">
+                    {/* Case Real */}
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        Case Real
+                      </h4>
+                      <p className="text-sm text-blue-800 mb-2">{piece.case}</p>
+                      <div className="inline-block bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                        {piece.metrics}
+                      </div>
+                    </div>
+
+                    {/* Exemplo Prático */}
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4" />
+                        Exemplo Prático
+                      </h4>
+                      <p className="text-sm text-green-800">{piece.example}</p>
+                    </div>
+
+                    {/* Tipos de Posts */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Tipos de Posts</h4>
+                      <div className="space-y-2">
+                        {piece.posts.map((post, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                            <span className="text-sm text-gray-700">{post}</span>
                           </div>
-                          
-                          <div className="space-y-4">
-                            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                              <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                <Lightbulb className="h-4 w-4" />
-                                Exemplo Prático
-                              </h4>
-                              <p className="text-sm">{piece.expandedContent.example}</p>
-                            </div>
-                            
-                            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                              <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                <BarChart3 className="h-4 w-4" />
-                                Case Real
-                              </h4>
-                              <p className="text-sm mb-2">{piece.expandedContent.case}</p>
-                              <div className="inline-block bg-green-500/20 text-green-100 px-3 py-1 rounded-full text-xs font-semibold">
-                                {piece.expandedContent.metrics}
-                              </div>
-                            </div>
-                            
-                            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                              <h4 className="font-semibold mb-2">Tipos de Posts</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {piece.expandedContent.posts.map((post, idx) => (
-                                  <span key={idx} className="bg-white/20 px-3 py-1 rounded-full text-xs">
-                                    {post}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })}
-            
-            {/* Elemento Central Melhorado */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm border-4 border-white/30 z-30">
-              <Puzzle className="h-10 w-10 md:h-12 md:w-12 text-white animate-pulse" />
-            </div>
-            
-            {/* Linhas Conectoras Animadas */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-5" opacity="0.3">
-              <defs>
-                <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#3B82F6', stopOpacity: 0.6 }} />
-                  <stop offset="100%" style={{ stopColor: '#8B5CF6', stopOpacity: 0.6 }} />
-                </linearGradient>
-              </defs>
-              {positions.map((_, index) => {
-                if (index < positions.length - 1) {
-                  return (
-                    <line
-                      key={index}
-                      x1={`${20 + (index % 3) * 30}%`}
-                      y1={`${20 + Math.floor(index / 3) * 30}%`}
-                      x2={`${20 + ((index + 1) % 3) * 30}%`}
-                      y2={`${20 + Math.floor((index + 1) / 3) * 30}%`}
-                      stroke="url(#line-gradient)"
-                      strokeWidth="2"
-                      strokeDasharray="5,5"
-                      className="animate-pulse"
-                    />
-                  );
-                }
-                return null;
-              })}
-            </svg>
           </div>
         </div>
 
