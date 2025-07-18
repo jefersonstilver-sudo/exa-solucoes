@@ -157,7 +157,7 @@ const TaccohPuzzleHero: React.FC = () => {
   const positions = ['top-left', 'top-right', 'middle-left', 'middle-right', 'bottom-left', 'bottom-right'];
 
   return (
-    <section className="relative py-32 md:py-40 overflow-hidden">
+    <section className="relative py-16 md:py-20 overflow-hidden">
       {/* Background Avançado */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50"></div>
@@ -184,14 +184,14 @@ const TaccohPuzzleHero: React.FC = () => {
       
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         {/* Header Melhorado */}
-        <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 rounded-full border border-blue-200/50 mb-6 backdrop-blur-sm">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 rounded-full border border-blue-200/50 mb-4 backdrop-blur-sm">
             <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
             <span className="text-sm font-semibold text-blue-700 tracking-wide">MÉTODO EXCLUSIVO</span>
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
           </div>
           
-          <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight">
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
             <span className="block bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-600 bg-clip-text text-transparent">
               Não sabe o que postar?
             </span>
@@ -200,13 +200,13 @@ const TaccohPuzzleHero: React.FC = () => {
             </span>
           </h2>
           
-          <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto mb-12 leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto mb-8 leading-relaxed">
             O método estratégico que <strong className="text-blue-600">grandes marcas</strong> usam para criar 
             conteúdo que <strong className="text-emerald-600">realmente converte</strong>.
           </p>
 
           {/* Estatísticas Impressionantes */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-8">
             <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20">
               <div className="text-3xl font-bold text-blue-600 mb-1">{counters.brands}+</div>
               <div className="text-sm text-gray-600">Marcas atendidas</div>
@@ -227,8 +227,8 @@ const TaccohPuzzleHero: React.FC = () => {
         </div>
 
         {/* Puzzle Interativo Revolucionário */}
-        <div className="relative max-w-6xl mx-auto mb-20">
-          <div className="relative h-96 md:h-[600px] mx-auto" style={{ width: 'min(800px, 90vw)' }}>
+        <div className="relative max-w-6xl mx-auto mb-12">
+          <div className="relative h-80 md:h-96 mx-auto" style={{ width: 'min(800px, 90vw)' }}>
             {taccohData.map((piece, index) => {
               const IconComponent = piece.icon;
               const position = positions[index];
@@ -342,11 +342,11 @@ const TaccohPuzzleHero: React.FC = () => {
 
         {/* Call to Action Poderoso */}
         <div className="text-center">
-          <p className="text-2xl md:text-3xl text-gray-800 mb-8 font-semibold leading-relaxed">
+          <p className="text-2xl md:text-3xl text-gray-800 mb-6 font-semibold leading-relaxed">
             Cada <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent font-bold">T.A.C.C.O.H.</span> é uma peça estratégica que resolve um problema específico do seu conteúdo.
           </p>
           
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
             Com essa metodologia exclusiva, transformamos marcas que "não sabem o que postar" em 
             <strong className="text-emerald-600"> autoridades que geram engajamento e vendas consistentes</strong>.
           </p>
@@ -365,7 +365,7 @@ const TaccohPuzzleHero: React.FC = () => {
           </div>
 
           {/* Urgência */}
-          <div className="mt-8 inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-red-100 px-6 py-3 rounded-full border border-orange-200">
+          <div className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-red-100 px-6 py-3 rounded-full border border-orange-200">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
             <span className="text-sm font-medium text-red-700">Vagas limitadas para consultoria personalizada</span>
           </div>
