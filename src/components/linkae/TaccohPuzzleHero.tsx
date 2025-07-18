@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Puzzle, Sparkles, TrendingUp, Users, Heart, Zap, ArrowRight, Play, BarChart3, Target, Lightbulb, Trophy } from 'lucide-react';
 
@@ -194,8 +195,8 @@ const TaccohPuzzleHero: React.FC = () => {
                   className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group ${animateIn ? 'animate-fade-in' : 'opacity-0'}`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  {/* Header do Card - COR ÚNICA AZUL */}
-                  <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 p-6 text-white relative overflow-hidden">
+                  {/* Header do Card - COR ROXA CORPORATIVA */}
+                  <div className="bg-gradient-to-br from-[#3C1361] to-purple-700 p-6 text-white relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     
                     <div className="flex items-center gap-4 mb-3 relative z-10">
