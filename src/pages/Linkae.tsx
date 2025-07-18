@@ -1,5 +1,7 @@
+
 import React, { useRef } from 'react';
 import LinkaeHero from '@/components/linkae/LinkaeHero';
+import LinkaeSegmentExpertise from '@/components/linkae/LinkaeSegmentExpertise';
 import TaccohPuzzleHero from '@/components/linkae/TaccohPuzzleHero';
 import TaccohExplainer from '@/components/linkae/TaccohExplainer';
 import TaccohSolutionSection from '@/components/linkae/TaccohSolutionSection';
@@ -28,6 +30,7 @@ const Linkae = () => {
     <Layout>
       <div className="min-h-screen bg-white text-gray-900">
         <LinkaeHero onScrollToForm={scrollToForm} />
+        <LinkaeSegmentExpertise />
         <TaccohPuzzleHero />
         <TaccohSolutionSection />
         <TaccohExplainer />
