@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Puzzle, Sparkles, TrendingUp, Users, Heart, Zap, ArrowRight, Play, BarChart3, Target, Lightbulb, Trophy } from 'lucide-react';
 
@@ -12,7 +11,6 @@ const TaccohPuzzleHero: React.FC = () => {
       letter: 'T', 
       title: 'Técnico', 
       subtitle: 'Demonstre expertise através do processo',
-      color: 'from-blue-500 via-blue-600 to-indigo-600',
       icon: Puzzle,
       description: 'Mostre o processo, gere confiança técnica',
       example: 'Tutorial step-by-step que gera 300% mais engajamento',
@@ -25,7 +23,6 @@ const TaccohPuzzleHero: React.FC = () => {
       letter: 'A', 
       title: 'Autoridade', 
       subtitle: 'Construa credibilidade com prova social',
-      color: 'from-yellow-400 via-orange-400 to-orange-500',
       icon: Trophy,
       description: 'Conquistas, credibilidade, cases',
       example: 'Certificações + depoimentos = confiança instantânea',
@@ -38,7 +35,6 @@ const TaccohPuzzleHero: React.FC = () => {
       letter: 'C', 
       title: 'Crescimento', 
       subtitle: 'Ensine para se tornar referência',
-      color: 'from-green-400 via-emerald-500 to-emerald-600',
       icon: TrendingUp,
       description: 'Inspire, ensine, viralize',
       example: 'Dicas valiosas que viralizam naturalmente',
@@ -51,7 +47,6 @@ const TaccohPuzzleHero: React.FC = () => {
       letter: 'C', 
       title: 'Conexão', 
       subtitle: 'Humanize sua marca com storytelling',
-      color: 'from-pink-400 via-rose-500 to-rose-600',
       icon: Heart,
       description: 'Histórias reais, emoção, humanidade',
       example: 'Histórias pessoais que geram identificação',
@@ -64,7 +59,6 @@ const TaccohPuzzleHero: React.FC = () => {
       letter: 'O', 
       title: 'Objeção', 
       subtitle: 'Antecipe e resolva dúvidas dos clientes',
-      color: 'from-red-500 via-red-600 to-pink-600',
       icon: Target,
       description: 'Antecipe e quebra barreiras',
       example: "FAQ's transformados em conteúdo persuasivo",
@@ -77,7 +71,6 @@ const TaccohPuzzleHero: React.FC = () => {
       letter: 'H', 
       title: 'Hype', 
       subtitle: 'Aproveite trends para viralizar',
-      color: 'from-orange-400 via-yellow-500 to-yellow-600',
       icon: Zap,
       description: 'Trends, memes, viral',
       example: 'Adapte memes ao seu nicho estrategicamente',
@@ -201,8 +194,8 @@ const TaccohPuzzleHero: React.FC = () => {
                   className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group ${animateIn ? 'animate-fade-in' : 'opacity-0'}`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  {/* Header do Card */}
-                  <div className={`bg-gradient-to-br ${piece.color} p-6 text-white relative overflow-hidden`}>
+                  {/* Header do Card - COR ÚNICA AZUL */}
+                  <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 p-6 text-white relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     
                     <div className="flex items-center gap-4 mb-3 relative z-10">
