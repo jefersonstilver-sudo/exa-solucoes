@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -72,14 +73,12 @@ export default {
 					'mint-light': '#7EEAC0',
 					white: '#FFFFFF'
 				},
-				// Cores LINKAÊ expandidas com novos acentos
+				// Novas cores LINKAÊ baseadas na imagem do usuário
 				linkae: {
 					'dark-blue': '#1a1b5c',      // Azul escuro principal
 					'royal-blue': '#2c3094',     // Azul royal médio  
 					'bright-blue': '#4da6ff',    // Azul vibrante
 					'cyan-light': '#5bc0eb',     // Cyan claro para CTAs
-					'accent-pink': '#FF8A80',    // Rosa accent (NOVO)
-					'accent-orange': '#F57C00',  // Laranja accent (NOVO)
 					'white': '#ffffff',          // Branco puro
 					'gradient-start': '#1a1b5c', // Início dos gradientes
 					'gradient-end': '#2837a8'    // Final dos gradientes
@@ -89,13 +88,12 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)',
-				'2xl': '1rem'
+				'2xl': '1rem' // Added 2xl border radius
 			},
 			boxShadow: {
 				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
 				'enhanced-hover': '0 20px 35px -5px rgba(74, 9, 104, 0.2), 0 10px 15px -5px rgba(74, 9, 104, 0.15)',
-				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)',
-				'linkae-glow': '0 0 40px rgba(255, 138, 128, 0.3)'
+				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -184,25 +182,6 @@ export default {
 					'100%': { 
 						transform: 'scale(1.15)' 
 					}
-				},
-				'accent-pulse': {
-					'0%, 100%': { 
-						boxShadow: '0 0 20px rgba(255, 138, 128, 0.4)' 
-					},
-					'50%': { 
-						boxShadow: '0 0 40px rgba(245, 124, 0, 0.6)' 
-					}
-				},
-				'gradient-shift': {
-					'0%': { 
-						backgroundPosition: '0% 50%' 
-					},
-					'50%': { 
-						backgroundPosition: '100% 50%' 
-					},
-					'100%': { 
-						backgroundPosition: '0% 50%' 
-					}
 				}
 			},
 			animation: {
@@ -215,9 +194,7 @@ export default {
 				'cart-bubble': 'cart-bubble 0.6s ease-out',
 				'linkae-glow': 'linkae-glow 2s ease-in-out infinite',
 				'linkae-float': 'linkae-float 3s ease-in-out infinite',
-				'linkae-zoom': 'linkae-zoom 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-				'accent-pulse': 'accent-pulse 3s ease-in-out infinite',
-				'gradient-shift': 'gradient-shift 6s ease-in-out infinite'
+				'linkae-zoom': 'linkae-zoom 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
 			}
 		}
 	},
