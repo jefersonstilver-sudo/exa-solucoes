@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, Heart, MessageCircle, Share2, Eye, ChevronLeft, ChevronRight, Star, Award, Clock, DollarSign, Target, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { TrendingUp, Users, Heart, MessageCircle, Share2, Eye, ChevronLeft, ChevronRight, Play, Star, Award, Clock, DollarSign, Target, Zap } from 'lucide-react';
 
 const BeforeAfterShowcase: React.FC = () => {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [animatedNumbers, setAnimatedNumbers] = useState<{ [key: string]: number }>({});
 
   const comparisons = [
     {
@@ -15,8 +16,8 @@ const BeforeAfterShowcase: React.FC = () => {
       investment: 'R$ 2.500',
       revenue: 'R$ 45.000',
       roi: '1.700%',
-      emoji: '🦷',
       before: {
+        image: '🦷',
         title: 'Resultado final sem contexto',
         description: 'Apenas foto do sorriso pronto',
         postText: 'Mais um sorriso perfeito! 😁✨',
@@ -24,6 +25,7 @@ const BeforeAfterShowcase: React.FC = () => {
         problems: ['Sem confiança do paciente', 'Parece caro demais', 'Não entendem o processo', 'Baixa credibilidade técnica']
       },
       after: {
+        image: '🦷',
         title: 'Processo completo (TÉCNICO)',
         description: 'Passo a passo do tratamento',
         postText: 'THREAD: Como transformamos este sorriso em 3 etapas (salvem este post!) 👇',
@@ -41,8 +43,8 @@ const BeforeAfterShowcase: React.FC = () => {
       investment: 'R$ 1.800',
       revenue: 'R$ 28.000',
       roi: '1.456%',
-      emoji: '💪',
       before: {
+        image: '💪',
         title: 'Treino genérico',
         description: 'Exercícios sem explicação',
         postText: 'Treino de hoje! 💪 #fitness #treino',
@@ -50,6 +52,7 @@ const BeforeAfterShowcase: React.FC = () => {
         problems: ['Falta credibilidade', 'Não diferencia da concorrência', 'Pouco engajamento', 'Sem prova social']
       },
       after: {
+        image: '💪',
         title: 'Autoridade + Transformação',
         description: 'Certificações + resultados reais',
         postText: 'Por que 90% falham na dieta? (A verdade que ninguém conta)',
@@ -67,8 +70,8 @@ const BeforeAfterShowcase: React.FC = () => {
       investment: 'R$ 1.200',
       revenue: 'R$ 18.500',
       roi: '1.442%',
-      emoji: '🍝',
       before: {
+        image: '🍝',
         title: 'Foto do prato',
         description: 'Apenas imagem da comida',
         postText: 'Nosso delicioso macarrão! 🍝',
@@ -76,6 +79,7 @@ const BeforeAfterShowcase: React.FC = () => {
         problems: ['Sem diferencial', 'Não gera conexão', 'Esquecível', 'Não conta história']
       },
       after: {
+        image: '🍝',
         title: 'História familiar (CONEXÃO)',
         description: 'Receita da nonna + processo',
         postText: 'Esta receita chegou ao Brasil em 1952 com minha nonna... (história completa nos comentários)',
@@ -93,8 +97,8 @@ const BeforeAfterShowcase: React.FC = () => {
       investment: 'R$ 1.500',
       revenue: 'R$ 22.000',
       roi: '1.367%',
-      emoji: '👗',
       before: {
+        image: '👗',
         title: 'Produto isolado',
         description: 'Foto da roupa sem contexto',
         postText: 'Nova coleção chegando! 👗✨',
@@ -102,6 +106,7 @@ const BeforeAfterShowcase: React.FC = () => {
         problems: ['Sem contexto de uso', 'Não resolve dúvidas', 'Baixa conversão', 'Não inspira']
       },
       after: {
+        image: '👗',
         title: 'Styling completo',
         description: 'Look montado + dicas de uso',
         postText: '3 looks com a mesma peça (você vai se surpreender com o look 2!) 👇',
@@ -117,6 +122,17 @@ const BeforeAfterShowcase: React.FC = () => {
 
   useEffect(() => {
     setIsVisible(true);
+    // Animate numbers when component mounts
+    const timer = setTimeout(() => {
+      setAnimatedNumbers({
+        likes: currentComparison.after.metrics.likes,
+        comments: currentComparison.after.metrics.comments,
+        views: currentComparison.after.metrics.views,
+        reach: currentComparison.after.metrics.reach
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [activeSlide]);
 
   const nextSlide = () => {
@@ -150,118 +166,86 @@ const BeforeAfterShowcase: React.FC = () => {
     return <span>{displayValue.toLocaleString()}</span>;
   };
 
-  const ComparisonCard = ({ type, data, emoji }: { type: 'before' | 'after'; data: any; emoji: string }) => (
-    <div className={`relative group h-full`}>
-      <div className={`relative h-full p-8 rounded-3xl backdrop-blur-sm border transition-all duration-700 hover:scale-105 ${
-        type === 'before' 
-          ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20' 
-          : 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20'
-      }`}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className={`px-4 py-2 rounded-full text-white text-sm font-semibold ${
-            type === 'before' ? 'bg-red-500' : 'bg-green-500'
-          }`}>
-            {type === 'before' ? '❌ ANTES' : '✅ DEPOIS'}
+  const PhoneMockup = ({ type, data, metrics, postText }: { type: 'before' | 'after'; data: any; metrics: any; postText: string }) => (
+    <div className={`relative mx-auto transform transition-all duration-700 hover:scale-105 ${type === 'before' ? 'hover:rotate-1' : 'hover:-rotate-1'}`}>
+      {/* Phone Frame */}
+      <div className="relative w-72 h-[600px] bg-black rounded-[3rem] p-2 shadow-2xl">
+        {/* Screen */}
+        <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden relative">
+          {/* Status Bar */}
+          <div className="bg-white px-6 py-3 flex justify-between items-center text-black text-sm font-medium">
+            <span>9:41</span>
+            <span>📶 📶 📶 🔋</span>
           </div>
-          <div className="text-6xl opacity-20 group-hover:opacity-40 transition-opacity">
-            {emoji}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="space-y-6">
-          <div>
-            <h3 className={`text-2xl font-bold mb-2 ${
-              type === 'before' ? 'text-red-300' : 'text-green-300'
-            }`}>
-              {data.title}
-            </h3>
-            <p className="text-white/80 text-lg">{data.description}</p>
-          </div>
-
-          {/* Post Preview */}
-          <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm border border-white/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full flex items-center justify-center">
+          
+          {/* Instagram Header */}
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm">🏢</span>
               </div>
-              <span className="font-semibold text-white">{currentComparison.niche}</span>
+              <span className="font-semibold text-gray-900">{currentComparison.niche}</span>
             </div>
-            <p className="text-white/90 text-sm leading-relaxed">
-              {data.postText}
-            </p>
+            <div className="text-gray-400">•••</div>
           </div>
 
-          {/* Metrics */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className={`text-3xl font-bold mb-1 ${
-                type === 'before' ? 'text-red-400' : 'text-green-400'
-              }`}>
-                {type === 'after' ? <AnimatedNumber value={data.metrics.likes} /> : data.metrics.likes}
-              </div>
-              <div className="text-white/60 text-sm flex items-center justify-center gap-1">
-                <Heart className="h-4 w-4" />
-                Curtidas
-              </div>
-            </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold mb-1 ${
-                type === 'before' ? 'text-red-400' : 'text-green-400'
-              }`}>
-                {type === 'after' ? <AnimatedNumber value={data.metrics.comments} /> : data.metrics.comments}
-              </div>
-              <div className="text-white/60 text-sm flex items-center justify-center gap-1">
-                <MessageCircle className="h-4 w-4" />
-                Comentários
-              </div>
-            </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold mb-1 ${
-                type === 'before' ? 'text-red-400' : 'text-green-400'
-              }`}>
-                {type === 'after' ? <AnimatedNumber value={data.metrics.views} /> : data.metrics.views}
-              </div>
-              <div className="text-white/60 text-sm flex items-center justify-center gap-1">
-                <Eye className="h-4 w-4" />
-                Visualizações
-              </div>
-            </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold mb-1 ${
-                type === 'before' ? 'text-red-400' : 'text-green-400'
-              }`}>
-                {type === 'after' ? <AnimatedNumber value={data.metrics.reach} /> : data.metrics.reach}
-              </div>
-              <div className="text-white/60 text-sm flex items-center justify-center gap-1">
-                <Users className="h-4 w-4" />
-                Alcance
-              </div>
-            </div>
+          {/* Post Image */}
+          <div className={`w-full h-64 flex items-center justify-center text-8xl ${type === 'before' ? 'bg-gray-100' : 'bg-gradient-to-br from-green-50 to-blue-50'}`}>
+            {data.image}
           </div>
 
-          {/* Problems/Benefits */}
-          <div className="space-y-3">
-            <h4 className={`text-lg font-semibold ${
-              type === 'before' ? 'text-red-300' : 'text-green-300'
-            }`}>
-              {type === 'before' ? 'Problemas Identificados' : 'Resultados Alcançados'}
-            </h4>
-            <div className="space-y-2">
-              {(type === 'before' ? data.problems : data.benefits).map((item: string, index: number) => (
-                <div key={index} className="flex items-start gap-3">
-                  {type === 'before' ? (
-                    <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
-                  ) : (
-                    <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
-                  )}
-                  <span className="text-white/80 text-sm">{item}</span>
+          {/* Post Engagement */}
+          <div className="px-4 py-3 bg-white">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex gap-4">
+                <div className="flex items-center gap-1">
+                  <Heart className={`h-6 w-6 ${type === 'after' ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
+                  <MessageCircle className="h-6 w-6 text-gray-400" />
+                  <Share2 className="h-6 w-6 text-gray-400" />
                 </div>
-              ))}
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <div className="font-semibold text-gray-900">
+                {type === 'after' ? <AnimatedNumber value={metrics.likes} /> : metrics.likes} curtidas
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold">{currentComparison.niche}</span> {postText}
+              </div>
+              <div className="text-xs text-gray-400">
+                Ver todos os {type === 'after' ? <AnimatedNumber value={metrics.comments} /> : metrics.comments} comentários
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics Overlay */}
+          <div className="absolute bottom-20 left-0 right-0 px-4">
+            <div className={`bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg border ${type === 'after' ? 'border-green-200' : 'border-red-200'}`}>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="text-center">
+                  <div className={`font-bold ${type === 'after' ? 'text-green-600' : 'text-red-500'}`}>
+                    {type === 'after' ? <AnimatedNumber value={metrics.views} /> : metrics.views}
+                  </div>
+                  <div className="text-gray-500">Visualizações</div>
+                </div>
+                <div className="text-center">
+                  <div className={`font-bold ${type === 'after' ? 'text-green-600' : 'text-red-500'}`}>
+                    {type === 'after' ? <AnimatedNumber value={metrics.reach} /> : metrics.reach}
+                  </div>
+                  <div className="text-gray-500">Alcance</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Floating Badge */}
+      <div className={`absolute -top-4 -right-4 px-3 py-1 rounded-full text-white text-xs font-semibold shadow-lg ${
+        type === 'before' ? 'bg-red-500' : 'bg-green-500'
+      }`}>
+        {type === 'before' ? 'ANTES' : 'DEPOIS'}
       </div>
     </div>
   );
@@ -350,18 +334,55 @@ const BeforeAfterShowcase: React.FC = () => {
           </button>
         </div>
 
-        {/* Comparison Cards */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-16">
-          <ComparisonCard 
-            type="before" 
-            data={currentComparison.before} 
-            emoji={currentComparison.emoji}
-          />
-          <ComparisonCard 
-            type="after" 
-            data={currentComparison.after} 
-            emoji={currentComparison.emoji}
-          />
+        {/* Phone Mockups Comparison */}
+        <div className="grid lg:grid-cols-2 gap-16 mb-16">
+          {/* ANTES */}
+          <div className="text-center">
+            <PhoneMockup 
+              type="before" 
+              data={currentComparison.before} 
+              metrics={currentComparison.before.metrics}
+              postText={currentComparison.before.postText}
+            />
+            
+            <div className="mt-8 space-y-4">
+              <h3 className="text-2xl font-bold text-white mb-4">❌ Problemas Identificados</h3>
+              <div className="bg-red-500/10 backdrop-blur-sm rounded-xl p-6 border border-red-500/20">
+                <div className="space-y-3">
+                  {currentComparison.before.problems.map((problem, index) => (
+                    <div key={index} className="flex items-center gap-3 text-red-300">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span>{problem}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DEPOIS */}
+          <div className="text-center">
+            <PhoneMockup 
+              type="after" 
+              data={currentComparison.after} 
+              metrics={currentComparison.after.metrics}
+              postText={currentComparison.after.postText}
+            />
+            
+            <div className="mt-8 space-y-4">
+              <h3 className="text-2xl font-bold text-white mb-4">✅ Resultados Alcançados</h3>
+              <div className="bg-green-500/10 backdrop-blur-sm rounded-xl p-6 border border-green-500/20">
+                <div className="space-y-3">
+                  {currentComparison.after.benefits.map((benefit, index) => (
+                    <div key={index} className="flex items-center gap-3 text-green-300">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Impact Metrics */}
