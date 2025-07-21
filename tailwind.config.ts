@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -72,7 +73,7 @@ export default {
 					'mint-light': '#7EEAC0',
 					white: '#FFFFFF'
 				},
-				// Cores LINKAÊ - Updated with new pink and orange colors
+				// Novas cores LINKAÊ baseadas na imagem do usuário
 				linkae: {
 					'dark-blue': '#1a1b5c',      // Azul escuro principal
 					'royal-blue': '#2c3094',     // Azul royal médio  
@@ -80,18 +81,14 @@ export default {
 					'cyan-light': '#5bc0eb',     // Cyan claro para CTAs
 					'white': '#ffffff',          // Branco puro
 					'gradient-start': '#1a1b5c', // Início dos gradientes
-					'gradient-end': '#2837a8',   // Final dos gradientes
-					'pink': '#FF8A80',           // Rosa para destaques
-					'orange': '#F57C00',         // Laranja para destaques
-					'pink-light': '#FFB3B0',     // Rosa claro
-					'orange-light': '#FF9800'    // Laranja claro
+					'gradient-end': '#2837a8'    // Final dos gradientes
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)',
-				'2xl': '1rem'
+				'2xl': '1rem' // Added 2xl border radius
 			},
 			boxShadow: {
 				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
