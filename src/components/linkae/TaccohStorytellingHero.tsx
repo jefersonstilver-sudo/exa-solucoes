@@ -1,220 +1,265 @@
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, TrendingUp, Users, Heart, Zap, Target, Trophy, Lightbulb } from 'lucide-react';
+import { Sparkles, ArrowRight, Heart, Target, Zap, MapPin, Store, Utensils, Stethoscope, Dumbbell, Calendar, ShoppingBag } from 'lucide-react';
 
 const TaccohStorytellingHero: React.FC = () => {
   const [animateIn, setAnimateIn] = useState(false);
-  const [counters, setCounters] = useState({ brands: 0, engagement: 0, cases: 0, roi: 0 });
+  const [activeBlock, setActiveBlock] = useState(0);
 
-  const taccohStories = [
-    { 
-      id: 'T', 
-      letter: 'T', 
-      title: 'Técnico', 
-      subtitle: 'Demonstre expertise através do processo',
-      icon: Trophy,
-      story: 'Uma clínica odontológica mostrava apenas resultados finais. Quando começaram a mostrar cada etapa do tratamento, os pacientes passaram a entender o valor e a agendar 250% mais consultas.',
-      example: 'Passo a passo do procedimento + explicação técnica = confiança instantânea',
-      metrics: '+250% agendamentos'
+  const storyBlocks = [
+    {
+      id: 'conexoes',
+      title: 'Criando Conexões',
+      subtitle: 'Quando a criatividade encontra a comunidade',
+      description: 'Transformamos bloqueios criativos em conexões autênticas que engajam e vendem',
+      cases: [
+        {
+          icon: Store,
+          location: 'Foz do Iguaçu',
+          business: 'Loja Local',
+          problem: 'Falta de criatividade para posts',
+          solution: 'Posts que engajam a comunidade local',
+          result: '+340% engajamento regional',
+          color: 'from-pink-500 to-rose-400'
+        },
+        {
+          icon: Utensils,
+          location: 'Centro-Oeste',
+          business: 'Restaurante',
+          problem: 'Não saber o que postar',
+          solution: 'Conteúdos que geram fome emocional',
+          result: '+180% reservas online',
+          color: 'from-orange-500 to-amber-400'
+        }
+      ]
     },
-    { 
-      id: 'A', 
-      letter: 'A', 
-      title: 'Autoridade', 
-      subtitle: 'Construa credibilidade com prova social',
-      icon: Target,
-      story: 'Um personal trainer compartilhava apenas treinos. Ao mostrar suas certificações e transformações dos alunos, virou referência no nicho e multiplicou sua receita.',
-      example: 'Certificações + antes/depois + depoimentos = autoridade reconhecida',
-      metrics: '+400% conversões'
+    {
+      id: 'objecoes',
+      title: 'Transformando Objeções',
+      subtitle: 'Quando dúvidas se tornam oportunidades',
+      description: 'Antecipamos questionamentos e criamos conteúdos que educam e convertem',
+      cases: [
+        {
+          icon: Stethoscope,
+          location: 'Região Sul',
+          business: 'Clínica Médica',
+          problem: 'Pacientes com muitas dúvidas',
+          solution: 'Posts educativos que respondem e convertem',
+          result: '+250% agendamentos',
+          color: 'from-blue-500 to-cyan-400'
+        },
+        {
+          icon: Dumbbell,
+          location: 'Grande Curitiba',
+          business: 'Academia',
+          problem: 'Inseguranças dos alunos',
+          solution: 'Narrativas motivacionais que superam medos',
+          result: '+320% matrículas',
+          color: 'from-emerald-500 to-green-400'
+        }
+      ]
     },
-    { 
-      id: 'C1', 
-      letter: 'C', 
-      title: 'Crescimento', 
-      subtitle: 'Ensine para se tornar referência',
-      icon: TrendingUp,
-      story: 'Uma arquiteta compartilhava apenas projetos prontos. Quando começou a ensinar conceitos de design, seus seguidores viraram clientes fiéis.',
-      example: 'Dicas valiosas + educação = seguidores que viram clientes',
-      metrics: '+340% alcance'
-    },
-    { 
-      id: 'C2', 
-      letter: 'C', 
-      title: 'Conexão', 
-      subtitle: 'Humanize sua marca com storytelling',
-      icon: Heart,
-      story: 'Um restaurante familiar contou a história de suas receitas tradicionais. A conexão emocional trouxe mais clientes do que qualquer promoção.',
-      example: 'História real + valores familiares = conexão emocional forte',
-      metrics: '+180% vendas'
-    },
-    { 
-      id: 'O', 
-      letter: 'O', 
-      title: 'Objeção', 
-      subtitle: 'Antecipe e resolva dúvidas dos clientes',
-      icon: Lightbulb,
-      story: 'Uma loja online respondia às mesmas dúvidas no direct. Ao criar conteúdo antecipando essas objeções, as vendas dispararam.',
-      example: 'FAQ estratégico + quebra de objeções = vendas facilitadas',
-      metrics: '+90% conversões'
-    },
-    { 
-      id: 'H', 
-      letter: 'H', 
-      title: 'Hype', 
-      subtitle: 'Aproveite trends para viralizar',
-      icon: Zap,
-      story: 'Uma cafeteria adaptou um meme viral ao seu contexto. O post teve 2 milhões de visualizações e filas na porta.',
-      example: 'Trend adaptado + timing perfeito = viralização orgânica',
-      metrics: '+2M views'
+    {
+      id: 'hype',
+      title: 'Gerando Hype',
+      subtitle: 'Quando o buzz se torna resultado',
+      description: 'Criamos campanhas que viralizam e inspiram ação imediata',
+      cases: [
+        {
+          icon: Calendar,
+          location: 'Paraguai',
+          business: 'Evento Internacional',
+          problem: 'Baixa visibilidade regional',
+          solution: 'Campanhas que aumentam o buzz',
+          result: '+500% participantes',
+          color: 'from-purple-500 to-violet-400'
+        },
+        {
+          icon: ShoppingBag,
+          location: 'E-commerce',
+          business: 'Loja Online',
+          problem: 'Sem ideias para posts',
+          solution: 'Posts visuais que vendem e inspiram',
+          result: '+280% conversões',
+          color: 'from-indigo-500 to-blue-400'
+        }
+      ]
     }
   ];
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimateIn(true), 300);
-    
-    // Animação dos contadores
-    const targetCounters = { brands: 500, engagement: 340, cases: 150, roi: 280 };
-    const duration = 2000;
-    const steps = 60;
-    const stepDuration = duration / steps;
-    
-    let step = 0;
-    const counterInterval = setInterval(() => {
-      step++;
-      const progress = step / steps;
-      
-      setCounters({
-        brands: Math.floor(targetCounters.brands * progress),
-        engagement: Math.floor(targetCounters.engagement * progress),
-        cases: Math.floor(targetCounters.cases * progress),
-        roi: Math.floor(targetCounters.roi * progress)
-      });
-      
-      if (step >= steps) {
-        clearInterval(counterInterval);
-        setCounters(targetCounters);
-      }
-    }, stepDuration);
-    
-    return () => {
-      clearTimeout(timer);
-      clearInterval(counterInterval);
-    };
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveBlock((prev) => (prev + 1) % storyBlocks.length);
+    }, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <section className="relative min-h-[80vh] py-16 overflow-hidden">
-      {/* Background */}
+      {/* Dynamic Background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50"></div>
-        <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-blue-100/20 to-indigo-200/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-green-100/15 to-emerald-200/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-linkae-pink/20 to-linkae-orange/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-blue-100/20 to-linkae-cyan-light/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
       
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 rounded-full border border-blue-200/50 mb-6 backdrop-blur-sm">
-            <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
-            <span className="text-sm font-semibold text-blue-700 tracking-wide">STORYTELLING ESTRATÉGICO</span>
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-linkae-pink/10 to-linkae-orange/10 px-6 py-3 rounded-full border border-linkae-pink/20 mb-6 backdrop-blur-sm">
+            <Sparkles className="h-5 w-5 text-linkae-pink animate-pulse" />
+            <span className="text-sm font-semibold text-linkae-dark-blue tracking-wide">STORYTELLING ESTRATÉGICO</span>
           </div>
           
           <h2 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            <span className="block bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-600 bg-clip-text text-transparent">
-              Histórias que
+            <span className="block bg-gradient-to-r from-linkae-dark-blue via-linkae-royal-blue to-linkae-bright-blue bg-clip-text text-transparent">
+              Estratégias que
             </span>
-            <span className="block mt-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Geram Resultados
+            <span className="block mt-2 bg-gradient-to-r from-linkae-pink via-linkae-orange to-linkae-bright-blue bg-clip-text text-transparent">
+              Conectam e Transformam
             </span>
           </h2>
           
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto mb-8 leading-relaxed">
-            Cada letra do <strong className="text-blue-600">T.A.C.C.O.H.</strong> conta uma história real de transformação. 
-            Veja como diferentes negócios aplicaram nossa metodologia.
+            Cada negócio tem suas dores únicas. Nossas soluções criam <strong className="text-linkae-pink">conexões autênticas</strong> e 
+            superam <strong className="text-linkae-orange">objeções específicas</strong>.
           </p>
+        </div>
 
-          {/* Estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12">
-            <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20">
-              <div className="text-3xl font-bold text-blue-600 mb-1">{counters.brands}+</div>
-              <div className="text-sm text-gray-600">Marcas transformadas</div>
-            </div>
-            <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20">
-              <div className="text-3xl font-bold text-emerald-600 mb-1">{counters.engagement}%</div>
-              <div className="text-sm text-gray-600">Mais engajamento</div>
-            </div>
-            <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20">
-              <div className="text-3xl font-bold text-orange-600 mb-1">{counters.cases}+</div>
-              <div className="text-sm text-gray-600">Cases de sucesso</div>
-            </div>
-            <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20">
-              <div className="text-3xl font-bold text-purple-600 mb-1">{counters.roi}%</div>
-              <div className="text-sm text-gray-600">ROI médio</div>
-            </div>
+        {/* Story Blocks Navigation */}
+        <div className="flex justify-center mb-12">
+          <div className="flex gap-4 bg-white/60 backdrop-blur-sm rounded-2xl p-2 border border-white/20">
+            {storyBlocks.map((block, index) => (
+              <button
+                key={block.id}
+                onClick={() => setActiveBlock(index)}
+                className={`px-6 py-3 rounded-xl transition-all duration-300 ${
+                  activeBlock === index 
+                    ? 'bg-gradient-to-r from-linkae-pink to-linkae-orange text-white shadow-lg' 
+                    : 'text-gray-600 hover:bg-white/50'
+                }`}
+              >
+                <span className="font-semibold text-sm">{block.title}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Stories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {taccohStories.map((story, index) => {
-            const IconComponent = story.icon;
-            
-            return (
-              <div
-                key={story.id}
-                className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group ${animateIn ? 'animate-fade-in' : 'opacity-0'}`}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {/* Header */}
-                <div className="bg-gradient-to-br from-[#3C1361] to-purple-700 p-6 text-white relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  
-                  <div className="flex items-center gap-4 mb-3 relative z-10">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                      <span className="text-2xl font-bold">{story.letter}</span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{story.title}</h3>
-                      <IconComponent className="h-5 w-5 opacity-80" />
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm opacity-90 relative z-10">{story.subtitle}</p>
-                </div>
-
-                {/* Story Content */}
-                <div className="p-6">
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">História Real</h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">{story.story}</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-blue-800 font-medium">{story.example}</p>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Resultado obtido</span>
-                    <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                      {story.metrics}
-                    </span>
-                  </div>
-                </div>
+        {/* Active Story Block */}
+        <div className="relative">
+          {storyBlocks.map((block, blockIndex) => (
+            <div
+              key={block.id}
+              className={`transition-all duration-700 ${
+                activeBlock === blockIndex 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-8 absolute inset-0 pointer-events-none'
+              }`}
+            >
+              {/* Block Header */}
+              <div className="text-center mb-12">
+                <h3 className="text-3xl md:text-4xl font-bold text-linkae-dark-blue mb-4">
+                  {block.title}
+                </h3>
+                <p className="text-lg text-linkae-royal-blue mb-2 font-medium">
+                  {block.subtitle}
+                </p>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  {block.description}
+                </p>
               </div>
-            );
-          })}
+
+              {/* Cases Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                {block.cases.map((case_, caseIndex) => {
+                  const IconComponent = case_.icon;
+                  
+                  return (
+                    <div
+                      key={caseIndex}
+                      className={`group bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 ${animateIn ? 'animate-fade-in' : 'opacity-0'}`}
+                      style={{ animationDelay: `${caseIndex * 200}ms` }}
+                    >
+                      {/* Case Header */}
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className={`w-16 h-16 bg-gradient-to-br ${case_.color} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                          <IconComponent className="h-8 w-8 text-white" />
+                        </div>
+                        
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-gray-500 font-medium">{case_.location}</span>
+                          </div>
+                          <h4 className="text-xl font-bold text-linkae-dark-blue">
+                            {case_.business}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* Problem & Solution */}
+                      <div className="space-y-4 mb-6">
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
+                            <div>
+                              <p className="text-sm font-medium text-red-700 mb-1">Desafio</p>
+                              <p className="text-red-600">{case_.problem}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                            <div>
+                              <p className="text-sm font-medium text-green-700 mb-1">Solução</p>
+                              <p className="text-green-600">{case_.solution}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Result */}
+                      <div className="flex items-center justify-between">
+                        <div className={`bg-gradient-to-r ${case_.color} text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg`}>
+                          {case_.result}
+                        </div>
+                        
+                        <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-linkae-bright-blue group-hover:translate-x-1 transition-all duration-300" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Bottom Message */}
         <div className="text-center mt-16">
-          <p className="text-2xl md:text-3xl text-gray-800 mb-4 font-semibold">
-            Cada história é uma <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">estratégia testada</span>
-          </p>
-          
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            O T.A.C.C.O.H. não é teoria. São <strong className="text-emerald-600">casos reais</strong> que 
-            transformaram negócios através de storytelling estratégico.
-          </p>
+          <div className="bg-gradient-to-r from-linkae-pink/10 to-linkae-orange/10 rounded-2xl p-8 backdrop-blur-sm border border-white/30">
+            <p className="text-2xl md:text-3xl text-linkae-dark-blue mb-4 font-bold">
+              Cada história é uma <span className="bg-gradient-to-r from-linkae-pink to-linkae-orange bg-clip-text text-transparent">estratégia testada</span>
+            </p>
+            
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
+              Não trabalhamos com fórmulas genéricas. Cada caso é único, cada solução é <strong className="text-linkae-orange">personalizada</strong> para 
+              gerar resultados <strong className="text-linkae-pink">mensuráveis</strong>.
+            </p>
+            
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-500">
+              <span className="bg-white/50 px-3 py-1 rounded-full">• Casos reais</span>
+              <span className="bg-white/50 px-3 py-1 rounded-full">• Resultados comprovados</span>
+              <span className="bg-white/50 px-3 py-1 rounded-full">• Metodologia própria</span>
+              <span className="bg-white/50 px-3 py-1 rounded-full">• ROI garantido</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
