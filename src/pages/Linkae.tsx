@@ -4,13 +4,12 @@ import LinkaeHero from '@/components/linkae/LinkaeHero';
 import TaccohStorytellingHero from '@/components/linkae/TaccohStorytellingHero';
 import BeforeAfterShowcase from '@/components/linkae/BeforeAfterShowcase';
 import LinkaeAdvantagesGrid from '@/components/linkae/LinkaeAdvantagesGrid';
-import TaccohCaseStudies from '@/components/linkae/TaccohCaseStudies';
 import FinalCTASection from '@/components/linkae/FinalCTASection';
 import LinkaeForm from '@/components/linkae/LinkaeForm';
 import Layout from '@/components/layout/Layout';
 
 const Linkae = () => {
-  console.log('📱 LINKAÊ: Inicializando página simplificada com 6 seções essenciais');
+  console.log('📱 LINKAÊ: Inicializando página simplificada com 5 seções essenciais');
   
   const formRef = useRef<HTMLElement>(null);
 
@@ -34,10 +33,7 @@ const Linkae = () => {
         {/* 4. Diferenciais (Grid com Ícones) */}
         <LinkaeAdvantagesGrid />
         
-        {/* 5. Casos Reais (Prova Social por Segmento) */}
-        <TaccohCaseStudies />
-        
-        {/* 6. CTA Final (Chamada para Ação) */}
+        {/* 5. CTA Final (Chamada para Ação) */}
         <FinalCTASection onScrollToForm={scrollToForm} />
         
         {/* Formulário */}
