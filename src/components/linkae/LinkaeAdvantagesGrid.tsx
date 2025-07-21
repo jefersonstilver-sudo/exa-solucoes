@@ -1,144 +1,116 @@
 
 import React from 'react';
-import { 
-  Calendar, 
-  PenTool, 
-  BarChart3, 
-  MessageCircle, 
-  ClipboardCheck, 
-  Headphones,
-  Target,
-  Users
-} from 'lucide-react';
+import { Calendar, BarChart3, CheckCircle } from 'lucide-react';
 
 const LinkaeAdvantagesGrid: React.FC = () => {
-  const advantages = [
-    {
-      id: 1,
-      icon: Target,
-      title: 'Planejamento Estratégico',
-      description: 'Estratégia personalizada baseada no seu nicho e objetivos',
-      color: 'from-blue-500 to-indigo-600'
-    },
-    {
-      id: 2,
-      icon: Calendar,
-      title: 'Calendário Editorial',
-      description: 'Cronograma completo com todos os posts e stories planejados',
-      color: 'from-green-500 to-emerald-600'
-    },
-    {
-      id: 3,
-      icon: PenTool,
-      title: 'Criação de Conteúdo',
-      description: 'Posts, stories e reels profissionais que convertem',
-      color: 'from-purple-500 to-pink-600'
-    },
-    {
-      id: 4,
-      icon: BarChart3,
-      title: 'Relatórios Mensais',
-      description: 'Métricas detalhadas e insights para otimização contínua',
-      color: 'from-orange-500 to-red-600'
-    },
-    {
-      id: 5,
-      icon: ClipboardCheck,
-      title: 'Diagnóstico Gratuito',
-      description: 'Análise completa do seu perfil e identificação de oportunidades',
-      color: 'from-cyan-500 to-blue-600'
-    },
-    {
-      id: 6,
-      icon: Headphones,
-      title: 'Suporte WhatsApp',
-      description: 'Atendimento personalizado e suporte em tempo real',
-      color: 'from-teal-500 to-green-600'
-    },
-    {
-      id: 7,
-      icon: Users,
-      title: 'Gestão de Comunidade',
-      description: 'Interação ativa com seguidores e construção de relacionamento',
-      color: 'from-indigo-500 to-purple-600'
-    },
-    {
-      id: 8,
-      icon: MessageCircle,
-      title: 'Copywriting Otimizado',
-      description: 'Textos persuasivos que geram engajamento e conversões',
-      color: 'from-rose-500 to-pink-600'
-    }
+  const planningFeatures = [
+    'Calendário editorial mensal completo',
+    'Conteúdos específicos para seu nicho',
+    'Posts que conectam com sua audiência',
+    'Estratégia semanal pré-definida'
+  ];
+
+  const analyticsFeatures = [
+    'Taxa de conversão de seguidores em clientes',
+    'Análise de engajamento qualitativo',
+    'ROI mensal detalhado',
+    'Insights acionáveis para crescimento'
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-linkae-dark-blue/5 to-linkae-royal-blue/10">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-linkae-dark-blue">
-            Por que escolher a <span className="text-linkae-bright-blue">LINKAÊ</span>?
+    <section className="h-[60vh] bg-gradient-to-br from-linkae-dark-blue/5 to-linkae-royal-blue/10">
+      <div className="max-w-7xl mx-auto px-4 h-full flex flex-col">
+        {/* Header - 15vh */}
+        <div className="text-center pt-8 pb-6 flex-none">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-linkae-dark-blue">
+            Nossos <span className="text-linkae-bright-blue">Diferenciais</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Oferecemos uma solução completa para transformar suas redes sociais em uma máquina de vendas
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Solucionamos as duas maiores dores dos empreendedores nas redes sociais
           </p>
         </div>
 
-        {/* Grid of Advantages */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {advantages.map((advantage) => {
-            const IconComponent = advantage.icon;
-            
-            return (
-              <div
-                key={advantage.id}
-                className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden hover:transform hover:scale-105"
-              >
-                {/* Icon Header */}
-                <div className={`bg-gradient-to-r ${advantage.color} p-8 text-white text-center relative overflow-hidden`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                      <IconComponent className="h-8 w-8" />
-                    </div>
-                    <h3 className="text-xl font-bold">{advantage.title}</h3>
-                  </div>
+        {/* Main Cards - 35vh */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+          {/* Planejamento Card */}
+          <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden hover:transform hover:scale-[1.02] h-full">
+            {/* Header com gradiente azul */}
+            <div className="bg-gradient-to-r from-linkae-bright-blue to-linkae-royal-blue p-6 text-white text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                  <Calendar className="h-8 w-8" />
                 </div>
-
-                {/* Content */}
-                <div className="p-6">
-                  <p className="text-gray-600 text-center leading-relaxed">
-                    {advantage.description}
-                  </p>
-                </div>
+                <h3 className="text-xl font-bold mb-2">Nunca mais fique sem saber o que postar</h3>
+                <p className="text-sm opacity-90">Planejamento personalizado que resolve a dor nº1 dos empreendedores</p>
               </div>
-            );
-          })}
+            </div>
+
+            {/* Content */}
+            <div className="p-6 flex-1">
+              <div className="space-y-4">
+                {planningFeatures.map((feature, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-sm leading-relaxed">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                <p className="text-blue-700 font-semibold text-sm text-center">
+                  30 posts prontos por mês • Nunca mais bloquear criativo
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Relatórios Card */}
+          <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden hover:transform hover:scale-[1.02] h-full">
+            {/* Header com gradiente verde */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                  <BarChart3 className="h-8 w-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Meça conexões reais, não apenas números</h3>
+                <p className="text-sm opacity-90">Relatórios analíticos que mostram o impacto das suas conexões</p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 flex-1">
+              <div className="space-y-4">
+                {analyticsFeatures.map((feature, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <BarChart3 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-sm leading-relaxed">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 bg-green-50 rounded-xl">
+                <p className="text-green-700 font-semibold text-sm text-center">
+                  ROI tracking completo • Decisões baseadas em dados
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Bottom Message */}
-        <div className="text-center mt-16">
-          <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 max-w-4xl mx-auto">
-            <h3 className="text-3xl font-bold text-linkae-dark-blue mb-6">
-              Tudo isso em um só lugar
-            </h3>
-            <p className="text-lg text-gray-600 mb-8">
-              Não é apenas gestão de redes sociais. É uma <strong className="text-linkae-bright-blue">parceria estratégica</strong> para 
-              fazer seu negócio crescer através do poder das redes sociais.
+        {/* CTA Footer - 10vh */}
+        <div className="text-center flex-none pb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 max-w-2xl mx-auto">
+            <p className="text-gray-600 mb-4">
+              Quer ver como funciona na prática?
             </p>
-            
-            <div className="flex flex-wrap justify-center gap-4">
-              <div className="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full">
-                <span className="text-green-500">✓</span>
-                <span className="font-semibold">Sem contratos longos</span>
+            <div className="flex flex-wrap justify-center gap-3">
+              <div className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm">
+                <Calendar className="h-4 w-4" />
+                <span className="font-semibold">Calendário de exemplo</span>
               </div>
-              <div className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full">
-                <span className="text-blue-500">✓</span>
-                <span className="font-semibold">Resultados em 30 dias</span>
-              </div>
-              <div className="flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full">
-                <span className="text-purple-500">✓</span>
-                <span className="font-semibold">Suporte personalizado</span>
+              <div className="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm">
+                <BarChart3 className="h-4 w-4" />
+                <span className="font-semibold">Relatório modelo</span>
               </div>
             </div>
           </div>
