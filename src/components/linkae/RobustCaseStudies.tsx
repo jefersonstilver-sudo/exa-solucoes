@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
-import { Filter, TrendingUp, Users, DollarSign, ArrowRight } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, ArrowRight } from 'lucide-react';
 import CaseStudyCard from './CaseStudyCard';
 
 const RobustCaseStudies: React.FC = () => {
   const [activeCase, setActiveCase] = useState(0);
-  const [selectedFilter, setSelectedFilter] = useState('all');
 
   const caseStudies = [
     {
@@ -184,22 +183,6 @@ const RobustCaseStudies: React.FC = () => {
     }
   ];
 
-  const industries = [
-    { id: 'all', name: 'Todos os Setores', count: caseStudies.length },
-    { id: 'ecommerce', name: 'E-commerce', count: 1 },
-    { id: 'saude', name: 'Saúde', count: 1 },
-    { id: 'gastronomia', name: 'Gastronomia', count: 1 },
-    { id: 'consultoria', name: 'Consultoria', count: 1 },
-    { id: 'eventos', name: 'Eventos', count: 1 },
-    { id: 'saas', name: 'SaaS', count: 1 }
-  ];
-
-  const filteredCases = selectedFilter === 'all' 
-    ? caseStudies 
-    : caseStudies.filter(study => 
-        study.client.industry.toLowerCase().includes(selectedFilter.toLowerCase())
-      );
-
   return (
     <section className="py-16 md:py-24 bg-gradient-to-br from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,35 +191,14 @@ const RobustCaseStudies: React.FC = () => {
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-linkae-dark-blue">
             Casos <span className="bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light bg-clip-text text-transparent">Reais</span> de Sucesso
           </h2>
-          <p className="text-lg md:text-xl text-linkae-dark-blue/70 max-w-4xl mx-auto mb-8">
+          <p className="text-lg md:text-xl text-linkae-dark-blue/70 max-w-4xl mx-auto">
             Resultados verificados e auditados de clientes reais que transformaram seus negócios com nossa metodologia T.A.C.C.O.H.
           </p>
-          
-          {/* Filter Buttons */}
-          <div className="flex flex-wrap justify-center gap-3 mb-8">
-            {industries.map((industry) => (
-              <button
-                key={industry.id}
-                onClick={() => setSelectedFilter(industry.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium ${
-                  selectedFilter === industry.id
-                    ? 'bg-linkae-bright-blue text-white shadow-lg'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-linkae-bright-blue hover:text-linkae-bright-blue'
-                }`}
-              >
-                <Filter className="h-4 w-4" />
-                <span>{industry.name}</span>
-                <span className="bg-black/10 px-2 py-0.5 rounded-full text-xs">
-                  {industry.count}
-                </span>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Cases Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {filteredCases.map((caseStudy, index) => (
+          {caseStudies.map((caseStudy, index) => (
             <div key={caseStudy.id} className="min-h-[600px]">
               <CaseStudyCard
                 caseData={caseStudy}
