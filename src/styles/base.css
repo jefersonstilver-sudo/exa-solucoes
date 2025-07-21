@@ -17,7 +17,7 @@
   }
 }
 
-/* Optimized custom properties - Removed unused variables */
+/* Optimized custom properties - Added Linkae dynamic colors */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -44,12 +44,19 @@
     --indexa-mint: 160 72% 59%;
     --indexa-purple-dark: 261 83% 15%;
     
-    /* Variáveis LINKAÊ */
+    /* Variáveis LINKAÊ com novos acentos */
     --linkae-primary: 26 27 92;        /* #1a1b5c */
     --linkae-secondary: 44 48 148;     /* #2c3094 */
     --linkae-accent: 77 166 255;       /* #4da6ff */
     --linkae-cyan: 91 192 235;         /* #5bc0eb */
     --linkae-white: 255 255 255;       /* #ffffff */
+    --linkae-pink: 255 138 128;        /* #FF8A80 */
+    --linkae-orange: 245 124 0;        /* #F57C00 */
+    
+    /* Gradientes dinâmicos */
+    --linkae-gradient-primary: linear-gradient(135deg, #FF8A80 0%, #F57C00 50%, #4da6ff 100%);
+    --linkae-gradient-secondary: linear-gradient(135deg, #1a1b5c 0%, #2c3094 50%, #4da6ff 100%);
+    --linkae-gradient-accent: linear-gradient(135deg, #F57C00 0%, #FF8A80 100%);
   }
 
   .dark {

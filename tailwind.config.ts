@@ -73,7 +73,7 @@ export default {
 					'mint-light': '#7EEAC0',
 					white: '#FFFFFF'
 				},
-				// Novas cores LINKAÊ baseadas na imagem do usuário
+				// Cores LINKAÊ com novos acentos vibrantes
 				linkae: {
 					'dark-blue': '#1a1b5c',      // Azul escuro principal
 					'royal-blue': '#2c3094',     // Azul royal médio  
@@ -81,7 +81,9 @@ export default {
 					'cyan-light': '#5bc0eb',     // Cyan claro para CTAs
 					'white': '#ffffff',          // Branco puro
 					'gradient-start': '#1a1b5c', // Início dos gradientes
-					'gradient-end': '#2837a8'    // Final dos gradientes
+					'gradient-end': '#2837a8',   // Final dos gradientes
+					'pink': '#FF8A80',           // Rosa vibrante para acentos
+					'orange': '#F57C00'          // Laranja energia para CTAs
 				}
 			},
 			borderRadius: {
@@ -93,7 +95,9 @@ export default {
 			boxShadow: {
 				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
 				'enhanced-hover': '0 20px 35px -5px rgba(74, 9, 104, 0.2), 0 10px 15px -5px rgba(74, 9, 104, 0.15)',
-				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)'
+				'card-hover': '0 20px 30px -10px rgba(0, 0, 0, 0.15)',
+				'glow-pink': '0 0 20px rgba(255, 138, 128, 0.4)',
+				'glow-orange': '0 0 20px rgba(245, 124, 0, 0.4)'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -182,6 +186,33 @@ export default {
 					'100%': { 
 						transform: 'scale(1.15)' 
 					}
+				},
+				'network-float': {
+					'0%, 100%': { 
+						transform: 'translateY(0px) translateX(0px)' 
+					},
+					'33%': { 
+						transform: 'translateY(-20px) translateX(10px)' 
+					},
+					'66%': { 
+						transform: 'translateY(-10px) translateX(-10px)' 
+					}
+				},
+				'particle-drift': {
+					'0%': { 
+						transform: 'translateX(0px) translateY(0px)' 
+					},
+					'100%': { 
+						transform: 'translateX(100px) translateY(-100px)' 
+					}
+				},
+				'glow-pulse': {
+					'0%, 100%': { 
+						boxShadow: '0 0 20px rgba(255, 138, 128, 0.4)' 
+					},
+					'50%': { 
+						boxShadow: '0 0 40px rgba(245, 124, 0, 0.6)' 
+					}
 				}
 			},
 			animation: {
@@ -194,7 +225,10 @@ export default {
 				'cart-bubble': 'cart-bubble 0.6s ease-out',
 				'linkae-glow': 'linkae-glow 2s ease-in-out infinite',
 				'linkae-float': 'linkae-float 3s ease-in-out infinite',
-				'linkae-zoom': 'linkae-zoom 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+				'linkae-zoom': 'linkae-zoom 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+				'network-float': 'network-float 6s ease-in-out infinite',
+				'particle-drift': 'particle-drift 10s linear infinite',
+				'glow-pulse': 'glow-pulse 3s ease-in-out infinite'
 			}
 		}
 	},
