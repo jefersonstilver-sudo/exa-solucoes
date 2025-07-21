@@ -7,105 +7,117 @@ const BeforeAfterShowcase: React.FC = () => {
   const examples = [
     {
       id: 1,
-      type: 'Loja Física',
+      type: 'Loja de Moda',
+      category: 'Varejo',
       location: 'Foz do Iguaçu',
-      icon: '🏪',
-      before: {
-        title: 'Posts genéricos sem personalidade',
-        metrics: { engagement: 12, reach: 156, conversion: 0.5 }
-      },
-      after: {
-        title: 'Conexões que vendem para a comunidade local',
-        metrics: { engagement: 89, reach: 2890, conversion: 4.2 }
-      },
-      phrase: 'De posts sem criatividade para conexões que vendem',
-      improvement: '+340%',
-      accentColor: 'from-blue-500 to-cyan-500'
+      icon: 'Store',
+      phrase: 'Conexão local que converte',
+      growth: '+240% Vendas',
+      metrics: {
+        primary: {
+          label: 'ROI',
+          value: '3.2x'
+        },
+        secondary: {
+          label: 'Timeline',
+          value: '3 meses'
+        }
+      }
     },
     {
       id: 2,
-      type: 'Clínica Médica',
+      type: 'Clínica Odontológica',
+      category: 'Saúde',
       location: 'Especializada',
-      icon: '⚕️',
-      before: {
-        title: 'Resultados sem explicação',
-        metrics: { engagement: 23, reach: 234, conversion: 1.2 }
-      },
-      after: {
-        title: 'Transparência que gera confiança',
-        metrics: { engagement: 234, reach: 4567, conversion: 8.9 }
-      },
-      phrase: 'De desconfiança para autoridade reconhecida',
-      improvement: '+520%',
-      accentColor: 'from-green-500 to-emerald-500'
+      icon: 'Stethoscope',
+      phrase: 'Autoridade que gera confiança',
+      growth: '+180% Consultas',
+      metrics: {
+        primary: {
+          label: 'Leads',
+          value: '156/mês'
+        },
+        secondary: {
+          label: 'Conversão',
+          value: '28%'
+        }
+      }
     },
     {
       id: 3,
-      type: 'Evento',
+      type: 'Festival Cultural',
+      category: 'Evento',
       location: 'Paraguai',
-      icon: '🎉',
-      before: {
-        title: 'Divulgação básica',
-        metrics: { engagement: 34, reach: 189, conversion: 0.8 }
-      },
-      after: {
-        title: 'Campanhas que geram buzz e antecipação',
-        metrics: { engagement: 456, reach: 8934, conversion: 12.3 }
-      },
-      phrase: 'De divulgação comum para buzz viral',
-      improvement: '+780%',
-      accentColor: 'from-purple-500 to-pink-500'
+      icon: 'Calendar',
+      phrase: 'Buzz que antecipa resultados',
+      growth: '+320% Ingressos',
+      metrics: {
+        primary: {
+          label: 'Vendas',
+          value: 'R$ 85k'
+        },
+        secondary: {
+          label: 'Alcance',
+          value: '45k'
+        }
+      }
     },
     {
       id: 4,
-      type: 'Restaurante',
-      location: 'Gourmet',
-      icon: '🍽️',
-      before: {
-        title: 'Fotos simples da comida',
-        metrics: { engagement: 45, reach: 345, conversion: 1.5 }
-      },
-      after: {
-        title: 'Conteúdos que geram fome emocional',
-        metrics: { engagement: 567, reach: 5678, conversion: 9.2 }
-      },
-      phrase: 'De fotos básicas para fome emocional',
-      improvement: '+280%',
-      accentColor: 'from-orange-500 to-red-500'
+      type: 'Bistrô Gourmet',
+      category: 'Gastronomia',
+      location: 'Centro',
+      icon: 'ChefHat',
+      phrase: 'Narrativa que desperta desejo',
+      growth: '+150% Reservas',
+      metrics: {
+        primary: {
+          label: 'Bookings',
+          value: '89/sem'
+        },
+        secondary: {
+          label: 'Ticket Médio',
+          value: 'R$ 78'
+        }
+      }
     },
     {
       id: 5,
-      type: 'Academia',
-      location: 'Personal Training',
-      icon: '💪',
-      before: {
-        title: 'Exercícios sem contexto',
-        metrics: { engagement: 28, reach: 278, conversion: 1.1 }
-      },
-      after: {
-        title: 'Narrativas que superam inseguranças',
-        metrics: { engagement: 389, reach: 4234, conversion: 7.8 }
-      },
-      phrase: 'De insegurança para motivação real',
-      improvement: '+390%',
-      accentColor: 'from-yellow-500 to-orange-500'
+      type: 'Studio Pilates',
+      category: 'Fitness',
+      location: 'Zona Sul',
+      icon: 'Dumbbell',
+      phrase: 'Motivação que supera barreiras',
+      growth: '+200% Alunos',
+      metrics: {
+        primary: {
+          label: 'Matrículas',
+          value: '124/mês'
+        },
+        secondary: {
+          label: 'Retenção',
+          value: '87%'
+        }
+      }
     },
     {
       id: 6,
-      type: 'Loja Online',
-      location: 'E-commerce',
-      icon: '🛒',
-      before: {
-        title: 'Produtos sem contexto',
-        metrics: { engagement: 19, reach: 156, conversion: 0.7 }
-      },
-      after: {
-        title: 'Posts visuais que inspiram compras',
-        metrics: { engagement: 298, reach: 3456, conversion: 6.4 }
-      },
-      phrase: 'De produtos esquecidos para compras inspiradas',
-      improvement: '+190%',
-      accentColor: 'from-indigo-500 to-blue-500'
+      type: 'Loja Decoração',
+      category: 'E-commerce',
+      location: 'Online',
+      icon: 'ShoppingBag',
+      phrase: 'Visual que inspira compra',
+      growth: '+190% Pedidos',
+      metrics: {
+        primary: {
+          label: 'Vendas',
+          value: 'R$ 52k'
+        },
+        secondary: {
+          label: 'CAC',
+          value: 'R$ 23'
+        }
+      }
     }
   ];
 
@@ -115,15 +127,15 @@ const BeforeAfterShowcase: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
-            Exemplos <span className="bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light bg-clip-text text-transparent">Reais</span>
+            Casos <span className="bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light bg-clip-text text-transparent">Reais</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Veja como transformamos diferentes tipos de negócios com estratégias específicas
+            Transformações comprovadas em diferentes setores com estratégias específicas
           </p>
         </div>
 
         {/* Grid of Examples */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-[60vh] overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-h-[60vh] overflow-y-auto pr-2">
           {examples.map((example) => (
             <ExampleCard key={example.id} example={example} />
           ))}
@@ -131,14 +143,14 @@ const BeforeAfterShowcase: React.FC = () => {
 
         {/* Bottom Stats */}
         <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light px-8 py-4 rounded-full text-white">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light px-8 py-4 rounded-full text-white shadow-lg">
             <TrendingUp className="h-6 w-6" />
-            <span className="text-lg font-semibold">6 tipos de negócios</span>
-            <span className="text-2xl font-bold">+400%</span>
-            <span className="text-lg font-semibold">melhoria média</span>
+            <span className="text-lg font-semibold">6 setores</span>
+            <span className="text-2xl font-bold">+215%</span>
+            <span className="text-lg font-semibold">crescimento médio</span>
           </div>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto mt-6">
-            Cada negócio tem suas particularidades. Nossas estratégias são <strong className="text-linkae-bright-blue">personalizadas</strong> para seu setor específico.
+            Cada setor tem suas particularidades. Nossas estratégias são <strong className="text-linkae-bright-blue">personalizadas</strong> para resultados específicos.
           </p>
         </div>
       </div>
