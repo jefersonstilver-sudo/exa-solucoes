@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { TrendingUp, Users, DollarSign, ArrowRight } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, ArrowRight, ShoppingBag, Sparkles, UtensilsCrossed, Briefcase, Calendar, Cloud, Trophy } from 'lucide-react';
 import CaseStudyCard from './CaseStudyCard';
 
 const RobustCaseStudies: React.FC = () => {
@@ -13,7 +13,7 @@ const RobustCaseStudies: React.FC = () => {
         name: 'Boutique Elegance',
         industry: 'E-commerce Moda',
         location: 'São Paulo',
-        avatar: '👗'
+        avatar: 'ShoppingBag'
       },
       period: 'Mar - Jun 2024',
       challenge: 'Concorrência acirrada com grandes marketplaces e baixa conversão orgânica',
@@ -42,7 +42,7 @@ const RobustCaseStudies: React.FC = () => {
         name: 'Clínica Renova',
         industry: 'Estética & Saúde',
         location: 'Rio de Janeiro',
-        avatar: '✨'
+        avatar: 'Sparkles'
       },
       period: 'Jan - Abr 2024',
       challenge: 'Baixa credibilidade online e dificuldade em justificar preços premium',
@@ -71,7 +71,7 @@ const RobustCaseStudies: React.FC = () => {
         name: 'Osteria Famiglia',
         industry: 'Gastronomia',
         location: 'Curitiba',
-        avatar: '🍝'
+        avatar: 'UtensilsCrossed'
       },
       period: 'Fev - Mai 2024',
       challenge: 'Restaurante familiar competindo com grandes redes e franquias',
@@ -100,7 +100,7 @@ const RobustCaseStudies: React.FC = () => {
         name: 'InnovaConsult',
         industry: 'Consultoria B2B',
         location: 'Porto Alegre',
-        avatar: '💼'
+        avatar: 'Briefcase'
       },
       period: 'Out 2023 - Fev 2024',
       challenge: 'Dificuldade em comunicar valor e fechar contratos de alto ticket',
@@ -129,7 +129,7 @@ const RobustCaseStudies: React.FC = () => {
         name: 'TechSummit 2024',
         industry: 'Eventos',
         location: 'Belo Horizonte',
-        avatar: '🎪'
+        avatar: 'Calendar'
       },
       period: 'Dez 2023 - Mar 2024',
       challenge: 'Vender 8.500 ingressos para evento de nicho em mercado saturado',
@@ -158,7 +158,7 @@ const RobustCaseStudies: React.FC = () => {
         name: 'CloudFlow SaaS',
         industry: 'Software B2B',
         location: 'Florianópolis',
-        avatar: '☁️'
+        avatar: 'Cloud'
       },
       period: 'Nov 2023 - Abr 2024',
       challenge: 'Explicar produto complexo e construir pipeline de vendas qualificado',
@@ -183,6 +183,18 @@ const RobustCaseStudies: React.FC = () => {
     }
   ];
 
+  const getIconComponent = (iconName: string) => {
+    const icons = {
+      ShoppingBag,
+      Sparkles,
+      UtensilsCrossed,
+      Briefcase,
+      Calendar,
+      Cloud
+    };
+    return icons[iconName as keyof typeof icons] || ShoppingBag;
+  };
+
   return (
     <section className="py-16 md:py-24 bg-gradient-to-br from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -204,6 +216,7 @@ const RobustCaseStudies: React.FC = () => {
                 caseData={caseStudy}
                 isActive={activeCase === index}
                 onClick={() => setActiveCase(index)}
+                getIconComponent={getIconComponent}
               />
             </div>
           ))}
@@ -238,7 +251,7 @@ const RobustCaseStudies: React.FC = () => {
             
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
               <div className="flex items-center justify-center mb-3">
-                <span className="text-2xl">🏆</span>
+                <Trophy className="h-8 w-8 text-yellow-500" />
               </div>
               <div className="text-3xl font-bold text-linkae-dark-blue mb-2">100%</div>
               <div className="text-sm text-gray-600">Taxa de Sucesso</div>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { TrendingUp, Users, DollarSign, Clock, Award, Quote } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Clock, Award, Quote, AlertTriangle } from 'lucide-react';
 
 interface CaseStudyData {
   id: number;
@@ -36,9 +36,12 @@ interface CaseStudyCardProps {
   caseData: CaseStudyData;
   isActive?: boolean;
   onClick?: () => void;
+  getIconComponent: (iconName: string) => React.ComponentType<any>;
 }
 
-const CaseStudyCard: React.FC<CaseStudyCardProps> = ({ caseData, isActive, onClick }) => {
+const CaseStudyCard: React.FC<CaseStudyCardProps> = ({ caseData, isActive, onClick, getIconComponent }) => {
+  const IconComponent = getIconComponent(caseData.client.avatar);
+
   return (
     <div 
       className={`relative bg-white rounded-3xl shadow-lg border-2 transition-all duration-500 cursor-pointer group hover:shadow-2xl hover:scale-105 ${
@@ -51,8 +54,8 @@ const CaseStudyCard: React.FC<CaseStudyCardProps> = ({ caseData, isActive, onCli
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="relative z-10">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl">
-              {caseData.client.avatar}
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+              <IconComponent className="h-8 w-8 text-white" />
             </div>
             <div>
               <h3 className="text-xl font-bold">{caseData.client.name}</h3>
@@ -80,7 +83,8 @@ const CaseStudyCard: React.FC<CaseStudyCardProps> = ({ caseData, isActive, onCli
         {/* Desafio */}
         <div className="mb-6">
           <h4 className="text-sm font-bold text-red-600 mb-2 flex items-center gap-2">
-            🚫 Desafio
+            <AlertTriangle className="h-4 w-4" />
+            Desafio
           </h4>
           <p className="text-gray-700 text-sm bg-red-50 p-3 rounded-xl border border-red-100">
             {caseData.challenge}
