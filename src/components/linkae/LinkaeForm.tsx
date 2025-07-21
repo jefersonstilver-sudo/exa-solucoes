@@ -1,3 +1,4 @@
+
 import React, { useState, RefObject } from 'react';
 import { useLeadsLinkae } from '@/hooks/useLeadsLinkae';
 import { toast } from 'sonner';
@@ -58,54 +59,54 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
   };
 
   return (
-    <section ref={formRef} className="py-20 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+    <section ref={formRef} className="py-12 md:py-16 lg:py-20 bg-gradient-to-b from-white to-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Informações da reunião */}
-          <div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8">
+          <div className="order-2 lg:order-1">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 md:mb-8">
               Agende sua <span className="text-[#00B377]">Estratégia Social</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
               Uma conversa de 30 minutos pode transformar completamente sua presença digital
             </p>
             
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div className="flex items-start space-x-4">
                 <div className="w-8 h-8 bg-[#00FFAB] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold">1</span>
+                  <span className="text-white font-bold text-sm">1</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Análise da sua presença atual</h3>
-                  <p className="text-gray-600">Avaliamos suas redes sociais e identificamos oportunidades</p>
+                  <h3 className="font-semibold text-gray-900 mb-1 text-base md:text-lg">Análise da sua presença atual</h3>
+                  <p className="text-gray-600 text-sm md:text-base">Avaliamos suas redes sociais e identificamos oportunidades</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-4">
                 <div className="w-8 h-8 bg-[#00FFAB] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold">2</span>
+                  <span className="text-white font-bold text-sm">2</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Estratégia personalizada</h3>
-                  <p className="text-gray-600">Criamos um plano específico para seu nicho e objetivos</p>
+                  <h3 className="font-semibold text-gray-900 mb-1 text-base md:text-lg">Estratégia personalizada</h3>
+                  <p className="text-gray-600 text-sm md:text-base">Criamos um plano específico para seu nicho e objetivos</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-4">
                 <div className="w-8 h-8 bg-[#00FFAB] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold">3</span>
+                  <span className="text-white font-bold text-sm">3</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Manual exclusivo de social media</h3>
-                  <p className="text-gray-600">Receba nosso guia com 50+ ideias de posts que convertem</p>
+                  <h3 className="font-semibold text-gray-900 mb-1 text-base md:text-lg">Manual exclusivo de social media</h3>
+                  <p className="text-gray-600 text-sm md:text-base">Receba nosso guia com 50+ ideias de posts que convertem</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Formulário */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="order-1 lg:order-2 bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nome completo *
@@ -114,7 +115,7 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
                   type="text"
                   value={formData.nomeCompleto}
                   onChange={(e) => handleInputChange('nomeCompleto', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent text-sm md:text-base"
                   placeholder="Seu nome completo"
                   required
                 />
@@ -128,7 +129,7 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
                   type="text"
                   value={formData.nomeEmpresa}
                   onChange={(e) => handleInputChange('nomeEmpresa', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent text-sm md:text-base"
                   placeholder="Nome da sua empresa"
                   required
                 />
@@ -142,7 +143,7 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
                   type="text"
                   value={formData.cargo}
                   onChange={(e) => handleInputChange('cargo', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent text-sm md:text-base"
                   placeholder="Seu cargo na empresa"
                   required
                 />
@@ -156,7 +157,7 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
                   type="tel"
                   value={formData.whatsapp}
                   onChange={(e) => handleInputChange('whatsapp', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent text-sm md:text-base"
                   placeholder="(11) 99999-9999"
                   required
                 />
@@ -169,7 +170,7 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
                 <textarea
                   value={formData.objetivo}
                   onChange={(e) => handleInputChange('objetivo', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent h-24 resize-none"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B377] focus:border-transparent h-20 md:h-24 resize-none text-sm md:text-base"
                   placeholder="Ex: Aumentar vendas, fortalecer marca, gerar leads..."
                 />
               </div>
@@ -177,7 +178,7 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-[#00FFAB] to-[#00B377] text-white font-semibold py-4 px-6 rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-[#00FFAB] to-[#00B377] text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
               >
                 {isSubmitting ? 'Enviando...' : 'Agendar Estratégia Gratuita'}
               </button>

@@ -8,9 +8,9 @@ interface LinkaeHeroProps {
 
 const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-linkae-dark-blue via-linkae-royal-blue to-linkae-bright-blue">
-      {/* Animated Network Background */}
-      <div className="absolute inset-0 z-0">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-linkae-dark-blue via-linkae-royal-blue to-linkae-bright-blue">
+      {/* Animated Network Background - Hidden on mobile */}
+      <div className="absolute inset-0 z-0 hidden md:block">
         {/* Floating Social Icons */}
         <div className="absolute top-20 left-20 text-linkae-pink/30 animate-network-float">
           <Instagram className="w-8 h-8" />
@@ -86,17 +86,17 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center text-white px-4 max-w-6xl mx-auto">
-        <div className="flex flex-col items-center mb-8">
+      <div className="relative z-10 text-center text-white px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="flex flex-col items-center mb-6 md:mb-8">
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/logo-linkae-branco.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wNTExZDAwOS1hZDAwLTRlZWItYTI3Yi1kYTRlYWEwYzJhZmQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL2xvZ28tbGlua2FlLWJyYW5jby5wbmciLCJpYXQiOjE3NTIxOTY5MzUsImV4cCI6MTc4MzczMjkzNX0.V2OuLQG3PfTnUvmUYMohr8ywxyFWGGQ9UOhqX8mt0G0"
             alt="LINKAÊ by Indexa"
-            className="w-72 md:w-96 lg:w-[480px] h-auto mb-6 animate-fade-in hover:scale-105 transition-all duration-500 drop-shadow-2xl"
+            className="w-48 sm:w-64 md:w-80 lg:w-96 h-auto mb-4 md:mb-6 animate-fade-in hover:scale-105 transition-all duration-500 drop-shadow-2xl"
             style={{ filter: 'drop-shadow(0 0 30px rgba(255, 138, 128, 0.3))' }}
           />
         </div>
         
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight animate-slide-in">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 md:mb-6 leading-tight animate-slide-in">
           <span className="bg-gradient-to-r from-white via-linkae-pink to-linkae-orange bg-clip-text text-transparent">
             Conecte Sua Marca com
           </span>
@@ -106,21 +106,21 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
           </span>
         </h1>
         
-        <p className="text-xl md:text-2xl mb-10 max-w-5xl mx-auto opacity-90 leading-relaxed animate-fade-in" style={{animationDelay: '0.5s'}}>
+        <p className="text-lg sm:text-xl md:text-2xl mb-8 md:mb-10 max-w-5xl mx-auto opacity-90 leading-relaxed animate-fade-in" style={{animationDelay: '0.5s'}}>
           <span className="text-white">Linkae by Indexa</span> <span className="text-linkae-pink font-medium">transforma desafios digitais em oportunidades</span>, 
           criando posts que <span className="text-linkae-orange font-medium">conectam emocionalmente</span> e <span className="text-linkae-pink font-medium">impulsionam crescimento</span>.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-in" style={{animationDelay: '1s'}}>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-in mb-8 md:mb-12" style={{animationDelay: '1s'}}>
           <button
             onClick={onScrollToForm}
-            className="group relative bg-gradient-to-r from-linkae-orange to-linkae-pink text-white font-bold px-10 py-5 rounded-full text-lg transition-all duration-300 hover:scale-105 hover:shadow-glow-orange flex items-center space-x-3 animate-glow-pulse"
+            className="group relative bg-gradient-to-r from-linkae-orange to-linkae-pink text-white font-bold px-6 sm:px-8 md:px-10 py-4 md:py-5 rounded-full text-base md:text-lg transition-all duration-300 hover:scale-105 hover:shadow-glow-orange flex items-center space-x-3 animate-glow-pulse w-full sm:w-auto"
           >
-            <Coffee className="w-6 h-6 group-hover:animate-bounce" />
+            <Coffee className="w-5 h-5 md:w-6 md:h-6 group-hover:animate-bounce" />
             <span>Transformar Minha Presença Digital</span>
           </button>
           
-          <div className="flex items-center space-x-4 text-white/80 text-sm">
+          <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 text-white/80 text-sm">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-linkae-pink rounded-full animate-pulse"></div>
               <span>Estratégias Personalizadas</span>
@@ -133,17 +133,17 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
         </div>
 
         {/* Trust Indicators */}
-        <div className="mt-12 flex flex-wrap justify-center items-center gap-8 text-white/70 text-sm animate-fade-in" style={{animationDelay: '1.5s'}}>
+        <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 sm:gap-8 text-white/70 text-sm animate-fade-in" style={{animationDelay: '1.5s'}}>
           <div className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-linkae-pink" />
+            <Users className="w-4 h-4 md:w-5 md:h-5 text-linkae-pink" />
             <span>+500 Marcas Conectadas</span>
           </div>
           <div className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5 text-linkae-orange" />
+            <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-linkae-orange" />
             <span>Crescimento Médio de 300%</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Heart className="w-5 h-5 text-linkae-pink" />
+            <Heart className="w-4 h-4 md:w-5 md:h-5 text-linkae-pink" />
             <span>Engajamento Autêntico</span>
           </div>
         </div>

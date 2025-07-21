@@ -122,34 +122,36 @@ const BeforeAfterShowcase: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-4">
+    <section className="py-12 md:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6 text-gray-900">
             Casos <span className="bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light bg-clip-text text-transparent">Reais</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
             Transformações comprovadas em diferentes setores com estratégias específicas
           </p>
         </div>
 
         {/* Grid of Examples */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-h-[60vh] overflow-y-auto pr-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {examples.map((example) => (
-            <ExampleCard key={example.id} example={example} />
+            <div key={example.id} className="min-h-[320px]">
+              <ExampleCard example={example} />
+            </div>
           ))}
         </div>
 
         {/* Bottom Stats */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light px-8 py-4 rounded-full text-white shadow-lg">
-            <TrendingUp className="h-6 w-6" />
-            <span className="text-lg font-semibold">6 setores</span>
-            <span className="text-2xl font-bold">+215%</span>
-            <span className="text-lg font-semibold">crescimento médio</span>
+        <div className="mt-12 md:mt-16 text-center">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-linkae-bright-blue to-linkae-cyan-light px-6 md:px-8 py-3 md:py-4 rounded-full text-white shadow-lg">
+            <TrendingUp className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="text-base md:text-lg font-semibold">6 setores</span>
+            <span className="text-xl md:text-2xl font-bold">+215%</span>
+            <span className="text-base md:text-lg font-semibold">crescimento médio</span>
           </div>
-          <p className="text-xl text-gray-600 max-w-4xl mx-auto mt-6">
+          <p className="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto mt-4 md:mt-6">
             Cada setor tem suas particularidades. Nossas estratégias são <strong className="text-linkae-bright-blue">personalizadas</strong> para resultados específicos.
           </p>
         </div>
