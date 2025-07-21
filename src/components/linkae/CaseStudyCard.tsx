@@ -49,8 +49,8 @@ const CaseStudyCard: React.FC<CaseStudyCardProps> = ({ caseData, isActive, onCli
       }`}
       onClick={onClick}
     >
-      {/* Header com Cliente */}
-      <div className={`bg-gradient-to-r ${caseData.color} p-6 rounded-t-3xl text-white relative overflow-hidden`}>
+      {/* Header com Cliente - Usando gradiente neutro */}
+      <div className="bg-gradient-to-r from-linkae-dark-blue to-linkae-royal-blue p-6 rounded-t-3xl text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="relative z-10">
           <div className="flex items-center gap-4 mb-4">
@@ -110,38 +110,38 @@ const CaseStudyCard: React.FC<CaseStudyCardProps> = ({ caseData, isActive, onCli
           </div>
         </div>
 
-        {/* Resultados em Grid */}
+        {/* Resultados em Grid - Cores neutras */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-blue-600" />
-              <span className="text-xs font-medium text-blue-800">ROI</span>
+              <span className="text-xs font-medium text-gray-700">ROI</span>
             </div>
-            <div className="text-xl font-bold text-blue-900">{caseData.results.roi}</div>
+            <div className="text-xl font-bold text-gray-900">{caseData.results.roi}</div>
           </div>
           
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <Users className="h-4 w-4 text-green-600" />
-              <span className="text-xs font-medium text-green-800">Conversão</span>
+              <span className="text-xs font-medium text-gray-700">Conversão</span>
             </div>
-            <div className="text-xl font-bold text-green-900">{caseData.results.conversion}</div>
+            <div className="text-xl font-bold text-gray-900">{caseData.results.conversion}</div>
           </div>
           
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="h-4 w-4 text-purple-600" />
-              <span className="text-xs font-medium text-purple-800">Receita</span>
+              <span className="text-xs font-medium text-gray-700">Receita</span>
             </div>
-            <div className="text-xl font-bold text-purple-900">{caseData.results.revenue}</div>
+            <div className="text-xl font-bold text-gray-900">{caseData.results.revenue}</div>
           </div>
           
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-xl border border-orange-200">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div className="flex items-center gap-2 mb-1">
               <Award className="h-4 w-4 text-orange-600" />
-              <span className="text-xs font-medium text-orange-800">Prazo</span>
+              <span className="text-xs font-medium text-gray-700">Prazo</span>
             </div>
-            <div className="text-xl font-bold text-orange-900">{caseData.results.timeline}</div>
+            <div className="text-xl font-bold text-gray-900">{caseData.results.timeline}</div>
           </div>
         </div>
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TrendingUp, Users, DollarSign, ArrowRight, ShoppingBag, Sparkles, UtensilsCrossed, Briefcase, Calendar, Cloud, Trophy } from 'lucide-react';
 import CaseStudyCard from './CaseStudyCard';
@@ -34,7 +33,7 @@ const RobustCaseStudies: React.FC = () => {
         after: 'R$ 180k',
         growth: '+1.100%'
       },
-      color: 'from-pink-500 to-rose-600'
+      color: 'from-slate-700 to-slate-800'
     },
     {
       id: 2,
@@ -63,7 +62,7 @@ const RobustCaseStudies: React.FC = () => {
         after: '156 pac.',
         growth: '+578%'
       },
-      color: 'from-blue-500 to-indigo-600'
+      color: 'from-slate-700 to-slate-800'
     },
     {
       id: 3,
@@ -92,7 +91,7 @@ const RobustCaseStudies: React.FC = () => {
         after: '95%',
         growth: '+138%'
       },
-      color: 'from-orange-500 to-red-500'
+      color: 'from-slate-700 to-slate-800'
     },
     {
       id: 4,
@@ -121,7 +120,7 @@ const RobustCaseStudies: React.FC = () => {
         after: 'R$ 420k',
         growth: '+833%'
       },
-      color: 'from-purple-500 to-indigo-600'
+      color: 'from-slate-700 to-slate-800'
     },
     {
       id: 5,
@@ -150,7 +149,7 @@ const RobustCaseStudies: React.FC = () => {
         after: '8.500 vendas',
         growth: '+∞'
       },
-      color: 'from-green-500 to-emerald-600'
+      color: 'from-slate-700 to-slate-800'
     },
     {
       id: 6,
@@ -179,7 +178,7 @@ const RobustCaseStudies: React.FC = () => {
         after: 'R$ 867k',
         growth: '+381%'
       },
-      color: 'from-cyan-500 to-blue-600'
+      color: 'from-slate-700 to-slate-800'
     }
   ];
 
