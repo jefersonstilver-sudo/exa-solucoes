@@ -22,6 +22,7 @@ import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSe
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 import { CampaignScheduler } from '@/components/campaign/CampaignScheduler';
 import { CampaignList } from '@/components/campaign/CampaignList';
+import { useUnifiedCampaigns } from '@/hooks/useUnifiedCampaigns';
 
 interface OrderDetails {
   id: string;
@@ -58,6 +59,9 @@ const OrderDetails = () => {
     loading: enhancedLoading, 
     error: enhancedError 
   } = useEnhancedOrderData(id || '', userProfile?.id || '');
+
+  // Hook para refresh de campanhas
+  const { refetch: refetchCampaigns } = useUnifiedCampaigns();
 
   const {
     videoSlots,
@@ -283,9 +287,9 @@ const OrderDetails = () => {
                   pedidoId={orderDetails.id}
                   approvedVideos={videoSlots.filter(slot => slot.approval_status === 'approved')}
                   onCampaignCreated={() => {
-                    // Optionally refresh data or show success message
-                    console.log('Campaign created successfully');
+                    console.log('Campaign created successfully - refreshing campaigns list');
                   }}
+                  onRefreshCampaigns={refetchCampaigns}
                 />
               </div>
             )}

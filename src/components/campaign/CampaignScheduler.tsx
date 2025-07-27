@@ -14,12 +14,14 @@ interface CampaignSchedulerProps {
   pedidoId: string;
   approvedVideos: VideoSlot[];
   onCampaignCreated?: () => void;
+  onRefreshCampaigns?: () => void;
 }
 
 export const CampaignScheduler = ({ 
   pedidoId, 
   approvedVideos, 
-  onCampaignCreated 
+  onCampaignCreated,
+  onRefreshCampaigns
 }: CampaignSchedulerProps) => {
   const [campaignName, setCampaignName] = useState('');
   const [campaignDescription, setCampaignDescription] = useState('');
@@ -65,6 +67,8 @@ export const CampaignScheduler = ({
     const campaignId = await createCampaign(campaignData);
     
     if (campaignId) {
+      console.log('✅ [CAMPAIGN SCHEDULER] Campaign created successfully:', campaignId);
+      
       // Reset form
       setCampaignName('');
       setCampaignDescription('');
@@ -72,6 +76,8 @@ export const CampaignScheduler = ({
       setEndDate('');
       setVideoSchedules([]);
       
+      // Refresh campaigns list immediately
+      onRefreshCampaigns?.();
       onCampaignCreated?.();
     }
 

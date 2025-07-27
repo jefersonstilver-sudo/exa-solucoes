@@ -46,8 +46,12 @@ export const useUnifiedCampaigns = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchAllCampaigns = async () => {
-    if (!userProfile?.id) return;
+    if (!userProfile?.id) {
+      console.log('🔍 [CAMPAIGNS] No userProfile.id found');
+      return;
+    }
 
+    console.log('🔍 [CAMPAIGNS] Fetching campaigns for user:', userProfile.id);
     setLoading(true);
     setError(null);
 
@@ -73,6 +77,7 @@ export const useUnifiedCampaigns = () => {
         .order('created_at', { ascending: false });
 
       if (advancedError) throw advancedError;
+      console.log('🔍 [CAMPAIGNS] Advanced campaigns found:', advancedCampaigns?.length || 0);
 
       // Buscar campanhas legadas com vídeos
       const { data: legacyCampaigns, error: legacyError } = await supabase
@@ -92,6 +97,7 @@ export const useUnifiedCampaigns = () => {
         .order('created_at', { ascending: false });
 
       if (legacyError) throw legacyError;
+      console.log('🔍 [CAMPAIGNS] Legacy campaigns found:', legacyCampaigns?.length || 0);
 
       // Converter campanhas avançadas
       const unifiedAdvanced: UnifiedCampaign[] = (advancedCampaigns || []).map((campaign: any) => {
@@ -132,6 +138,8 @@ export const useUnifiedCampaigns = () => {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
+      console.log('🔍 [CAMPAIGNS] Total unified campaigns:', allCampaigns.length);
+      console.log('🔍 [CAMPAIGNS] Campaigns data:', allCampaigns);
       setCampaigns(allCampaigns);
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar campanhas');
@@ -142,6 +150,19 @@ export const useUnifiedCampaigns = () => {
 
   useEffect(() => {
     fetchAllCampaigns();
+  }, [userProfile?.id]);
+
+  // Auto-refresh when page becomes visible (user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && userProfile?.id) {
+        console.log('🔄 [CAMPAIGNS] Page visible - auto-refreshing campaigns');
+        fetchAllCampaigns();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [userProfile?.id]);
 
   return {
