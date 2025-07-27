@@ -1,80 +1,21 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileMyCampaigns from './MobileMyCampaigns';
 
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-
-interface Campaign {
-  id: string;
-  painel_id: string;
-  data_inicio: string;
-  data_fim: string;
-  status: string;
-  obs?: string;
-  created_at: string;
-  video_id: string;
-}
+import { useUnifiedCampaigns } from '@/hooks/useUnifiedCampaigns';
+import { UnifiedCampaignList } from '@/components/campaign/UnifiedCampaignList';
 
 const MyCampaigns = () => {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    loadCampaigns();
-  }, [userProfile]);
-
-  const loadCampaigns = async () => {
-    if (!userProfile?.id) return;
-
-    try {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from('campanhas')
-        .select('*')
-        .eq('client_id', userProfile.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setCampaigns(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar campanhas:', error);
-      toast.error('Erro ao carregar campanhas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ativo':
-        return <Badge className="bg-green-100 text-green-800">Ativa</Badge>;
-      case 'pendente':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
-      case 'finalizado':
-        return <Badge className="bg-blue-100 text-blue-800">Finalizada</Badge>;
-      case 'cancelado':
-        return <Badge className="bg-red-100 text-red-800">Cancelada</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
+  const { campaigns, loading, refetch } = useUnifiedCampaigns();
 
   const handleCreateCampaign = async () => {
     if (!userProfile?.id) return;
@@ -85,19 +26,19 @@ const MyCampaigns = () => {
         .from('pedidos')
         .select(`
           *,
-          videos_pedido!inner(
+          pedido_videos!inner(
             id,
-            status
+            approval_status
           )
         `)
         .eq('client_id', userProfile.id)
-        .eq('videos_pedido.status', 'aprovado');
+        .eq('pedido_videos.approval_status', 'approved');
 
       if (error) throw error;
 
       // Filtrar pedidos que realmente têm vídeos aprovados
       const pedidosComVideosAprovados = pedidos?.filter(pedido => 
-        pedido.videos_pedido && pedido.videos_pedido.length > 0
+        pedido.pedido_videos && pedido.pedido_videos.length > 0
       ) || [];
 
       if (pedidosComVideosAprovados.length === 0) {
@@ -138,36 +79,8 @@ const MyCampaigns = () => {
     }
   };
 
-  const handleEditCampaign = (campaignId: string) => {
-    navigate(`/anunciante/campanhas/${campaignId}`);
-  };
-
-  const handleDeleteCampaign = async (campaignId: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('campanhas')
-        .delete()
-        .eq('id', campaignId);
-
-      if (error) throw error;
-
-      toast.success('Campanha excluída com sucesso');
-      loadCampaigns();
-    } catch (error) {
-      console.error('Erro ao excluir campanha:', error);
-      toast.error('Erro ao excluir campanha');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
-        <p className="ml-2 text-lg">Carregando campanhas...</p>
-      </div>
-    );
+  if (isMobile) {
+    return <MobileMyCampaigns />;
   }
 
   return (
@@ -184,79 +97,12 @@ const MyCampaigns = () => {
         </Button>
       </div>
 
-      {/* Campanhas */}
-      {campaigns.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campaigns.map((campaign) => (
-            <Card key={campaign.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    Campanha #{campaign.id.substring(0, 8)}
-                  </CardTitle>
-                  {getStatusBadge(campaign.status)}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {formatDate(campaign.data_inicio)} - {formatDate(campaign.data_fim)}
-                </div>
-                
-                <div className="flex items-center text-sm text-gray-600">
-                  <Monitor className="h-4 w-4 mr-2" />
-                  Painel: {campaign.painel_id.substring(0, 8)}...
-                </div>
-
-                {campaign.obs && (
-                  <p className="text-sm text-gray-600">{campaign.obs}</p>
-                )}
-
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleEditCampaign(campaign.id)}
-                    className="flex-1"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDeleteCampaign(campaign.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
-              <Play className="h-8 w-8 text-gray-500" />
-            </div>
-            <h3 className="text-xl font-medium mb-2">Nenhuma campanha encontrada</h3>
-            <p className="text-gray-500 mb-6">
-              Você ainda não criou nenhuma campanha. Comece criando sua primeira campanha para seus painéis.
-            </p>
-            <div className="flex justify-center space-x-4">
-              <Button onClick={handleCreateCampaign} className="bg-indexa-purple hover:bg-indexa-purple/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Primeira Campanha
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/paineis-digitais/loja')}>
-                Comprar Painéis
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Lista Unificada de Campanhas */}
+      <UnifiedCampaignList 
+        campaigns={campaigns} 
+        loading={loading} 
+        onRefetch={refetch} 
+      />
     </div>
   );
 };
