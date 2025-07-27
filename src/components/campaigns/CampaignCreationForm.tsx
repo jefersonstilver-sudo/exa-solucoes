@@ -395,6 +395,25 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             />
           )}
 
+          {/* Debug de campos obrigatórios */}
+          {(!formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate || !formData.startTime || !formData.endTime || videoSchedules.length === 0) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+              <h4 className="font-medium text-amber-800 flex items-center gap-2">
+                ⚠️ Campos obrigatórios pendentes:
+              </h4>
+              <ul className="text-sm text-amber-700 space-y-1">
+                {!formData.name && <li>• Nome da campanha</li>}
+                {!formData.orderId && <li>• Pedido pago</li>}
+                {!formData.panelId && <li>• Painel selecionado</li>}
+                {!formData.startDate && <li>• Data de início</li>}
+                {!formData.endDate && <li>• Data de fim</li>}
+                {!formData.startTime && <li>• Horário de início</li>}
+                {!formData.endTime && <li>• Horário de fim</li>}
+                {videoSchedules.length === 0 && <li>• Pelo menos um vídeo agendado</li>}
+              </ul>
+            </div>
+          )}
+
           {/* Botões de ação */}
           <div className="flex gap-4 pt-6">
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
@@ -403,10 +422,11 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             <Button 
               type="submit" 
               disabled={loading || !formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate || !formData.startTime || !formData.endTime || videoSchedules.length === 0}
-              className="flex-1"
+              className="flex-1 bg-primary hover:bg-primary/90"
+              size="lg"
             >
               {loading ? (
-                <>Criando...</>
+                <>Criando Campanha...</>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
