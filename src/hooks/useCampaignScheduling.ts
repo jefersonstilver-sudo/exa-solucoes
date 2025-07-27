@@ -16,6 +16,7 @@ export const useCampaignScheduling = (pedidoId: string) => {
   const fetchCampaigns = async () => {
     if (!pedidoId) return;
     
+    console.log('🔄 [CAMPAIGN_SCHEDULING] Buscando campanhas para pedido:', pedidoId);
     setLoading(true);
     setError(null);
 
@@ -27,8 +28,10 @@ export const useCampaignScheduling = (pedidoId: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('✅ [CAMPAIGN_SCHEDULING] Campanhas encontradas:', data?.length || 0, data);
       setCampaigns((data || []) as CampaignAdvanced[]);
     } catch (err: any) {
+      console.error('❌ [CAMPAIGN_SCHEDULING] Erro ao carregar campanhas:', err);
       setError(err.message || 'Erro ao carregar campanhas');
     } finally {
       setLoading(false);
@@ -51,7 +54,7 @@ export const useCampaignScheduling = (pedidoId: string) => {
           description: campaignData.description,
           start_date: campaignData.start_date,
           end_date: campaignData.end_date,
-          status: 'draft'
+          status: campaignData.status || 'active'
         })
         .select()
         .single();
@@ -89,12 +92,29 @@ export const useCampaignScheduling = (pedidoId: string) => {
         }
       }
 
+      console.log('✅ [CAMPAIGN_SCHEDULING] Campanha criada com sucesso:', campaign.id, campaign.status);
+      
       toast({
         title: "Campanha criada com sucesso!",
-        description: "Sua campanha foi configurada e está pronta para ativação.",
+        description: "Sua campanha está ativa e será exibida em breve.",
       });
 
-      await fetchCampaigns();
+      // Disparar evento customizado para notificar outros hooks
+      window.dispatchEvent(new CustomEvent('campaignCreated', { 
+        detail: { campaignId: campaign.id, userId: user.id }
+      }));
+
+      // Aguardar um pouco e fazer múltiplos refreshes para garantir sincronização
+      setTimeout(async () => {
+        await fetchCampaigns();
+        console.log('🔄 [CAMPAIGN_SCHEDULING] Primeiro refresh após criação');
+      }, 500);
+      
+      setTimeout(async () => {
+        await fetchCampaigns();
+        console.log('🔄 [CAMPAIGN_SCHEDULING] Segundo refresh após criação');
+      }, 1500);
+
       return campaign.id;
     } catch (err: any) {
       const message = err.message || 'Erro ao criar campanha';
@@ -160,6 +180,28 @@ export const useCampaignScheduling = (pedidoId: string) => {
 
   useEffect(() => {
     fetchCampaigns();
+    
+    // Setup real-time subscription for campaigns
+    const channel = supabase
+      .channel('campaigns_advanced_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaigns_advanced',
+          filter: `pedido_id=eq.${pedidoId}`
+        },
+        (payload) => {
+          console.log('🔔 [CAMPAIGN_SCHEDULING] Real-time update:', payload);
+          fetchCampaigns();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [pedidoId]);
 
   return {

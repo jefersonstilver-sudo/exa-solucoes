@@ -48,16 +48,17 @@ export const useUnifiedCampaigns = () => {
 
   const fetchAllCampaigns = async () => {
     if (!userProfile?.id) {
-      console.log('🔍 [CAMPAIGNS] No userProfile.id found');
+      console.log('❌ [UNIFIED_CAMPAIGNS] userProfile.id não encontrado:', userProfile);
       return;
     }
 
-    console.log('🔍 [CAMPAIGNS] Fetching campaigns for user:', userProfile.id);
+    console.log('🔄 [UNIFIED_CAMPAIGNS] Iniciando busca de campanhas para usuário:', userProfile.id);
+    console.log('🔄 [UNIFIED_CAMPAIGNS] UserProfile completo:', userProfile);
     setLoading(true);
     setError(null);
 
     try {
-      console.log('🔍 [CAMPAIGNS] Starting to fetch campaigns...');
+      console.log('🔍 [UNIFIED_CAMPAIGNS] Starting to fetch campaigns...');
       
       // Buscar campanhas avançadas com vídeos (incluindo todas, mesmo drafts)
       const { data: advancedCampaigns, error: advancedError } = await supabase
@@ -80,9 +81,12 @@ export const useUnifiedCampaigns = () => {
         .order('created_at', { ascending: false });
 
       if (advancedError) {
-        console.error('❌ [CAMPAIGNS] Advanced campaigns error:', advancedError);
+        console.error('❌ [UNIFIED_CAMPAIGNS] Erro ao buscar campanhas avançadas:', advancedError);
         throw advancedError;
       }
+
+      console.log('✅ [UNIFIED_CAMPAIGNS] Campanhas avançadas encontradas:', advancedCampaigns?.length || 0);
+      console.log('📊 [UNIFIED_CAMPAIGNS] Dados das campanhas avançadas:', advancedCampaigns);
       console.log('🔍 [CAMPAIGNS] Advanced campaigns found:', advancedCampaigns?.length || 0);
       console.log('🔍 [CAMPAIGNS] Advanced campaigns data:', advancedCampaigns);
 
@@ -220,16 +224,28 @@ export const useUnifiedCampaigns = () => {
           }, 500);
           
           setTimeout(() => {
-            console.log('🔄 [CAMPAIGNS] Executing second refresh from real-time');
+            console.log('🔄 [UNIFIED_CAMPAIGNS] Segundo refresh em tempo real');  
             fetchAllCampaigns();
-          }, 2000);
+          }, 1500);
         }
       )
       .subscribe();
 
+    // Listener para evento customizado de criação de campanha
+    const handleCampaignCreated = (event: CustomEvent) => {
+      console.log('🔔 [UNIFIED_CAMPAIGNS] Evento de campanha criada recebido:', event.detail);
+      setTimeout(() => {
+        console.log('🔄 [UNIFIED_CAMPAIGNS] Refresh por evento customizado');
+        fetchAllCampaigns();
+      }, 1000);
+    };
+
+    window.addEventListener('campaignCreated', handleCampaignCreated as EventListener);
+
     return () => {
-      console.log('🔄 [CAMPAIGNS] Cleaning up subscription');
+      console.log('🔄 [UNIFIED_CAMPAIGNS] Cleaning up subscription and event listener');
       supabase.removeChannel(channel);
+      window.removeEventListener('campaignCreated', handleCampaignCreated as EventListener);
     };
   }, [userProfile?.id]);
 
