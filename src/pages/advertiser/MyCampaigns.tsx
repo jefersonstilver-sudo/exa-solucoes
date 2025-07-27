@@ -76,31 +76,62 @@ const MyCampaigns = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const handleCreateCampaign = () => {
-    // Verificar se o usuário tem pedidos pagos primeiro
-    checkPaidOrders();
-  };
-
-  const checkPaidOrders = async () => {
+  const handleCreateCampaign = async () => {
     if (!userProfile?.id) return;
 
     try {
+      // Buscar pedidos com vídeos aprovados
       const { data: pedidos, error } = await supabase
         .from('pedidos')
-        .select('*')
+        .select(`
+          *,
+          videos_pedido!inner(
+            id,
+            status
+          )
+        `)
         .eq('client_id', userProfile.id)
-        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
+        .eq('videos_pedido.status', 'aprovado');
 
       if (error) throw error;
 
-      if (!pedidos || pedidos.length === 0) {
-        toast.error('Você precisa ter pelo menos um pedido pago para criar uma campanha');
-        navigate('/paineis-digitais/loja');
+      // Filtrar pedidos que realmente têm vídeos aprovados
+      const pedidosComVideosAprovados = pedidos?.filter(pedido => 
+        pedido.videos_pedido && pedido.videos_pedido.length > 0
+      ) || [];
+
+      if (pedidosComVideosAprovados.length === 0) {
+        // Verificar se tem pedidos pagos mas sem vídeos aprovados
+        const { data: pedidosPagos, error: errorPagos } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('client_id', userProfile.id)
+          .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
+
+        if (errorPagos) throw errorPagos;
+
+        if (!pedidosPagos || pedidosPagos.length === 0) {
+          toast.error('Você precisa ter pelo menos um pedido pago para criar uma campanha');
+          navigate('/paineis-digitais/loja');
+          return;
+        } else {
+          toast.error('Você precisa ter vídeos aprovados para criar uma campanha. Faça upload dos seus vídeos primeiro.');
+          navigate('/anunciante/pedidos');
+          return;
+        }
+      }
+
+      // Se tem apenas um pedido com vídeos aprovados, redireciona diretamente
+      if (pedidosComVideosAprovados.length === 1) {
+        navigate(`/anunciante/pedido/${pedidosComVideosAprovados[0].id}`);
         return;
       }
 
-      // Se tem pedidos pagos, pode criar campanha
-      toast.info('Funcionalidade de criação de campanha em desenvolvimento');
+      // Se tem múltiplos pedidos, mostra seletor (implementação futura)
+      // Por enquanto, redireciona para o primeiro
+      navigate(`/anunciante/pedido/${pedidosComVideosAprovados[0].id}`);
+      toast.info('Você será redirecionado para criar uma campanha');
+
     } catch (error) {
       console.error('Erro ao verificar pedidos:', error);
       toast.error('Erro ao verificar pedidos');
