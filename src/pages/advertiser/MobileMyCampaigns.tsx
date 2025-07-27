@@ -101,7 +101,8 @@ const MobileMyCampaigns = () => {
         return;
       }
 
-      toast.info('Funcionalidade de criação de campanha em desenvolvimento');
+      // Navigate to desktop version for campaign creation
+      navigate('/anunciante/campanhas');
     } catch (error) {
       console.error('Erro ao verificar pedidos:', error);
       toast.error('Erro ao verificar pedidos');

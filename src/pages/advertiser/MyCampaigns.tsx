@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import CampaignCreationForm from '@/components/campaigns/CampaignCreationForm';
 
 interface Campaign {
   id: string;
@@ -76,6 +77,8 @@ const MyCampaigns = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
   const handleCreateCampaign = () => {
     // Verificar se o usuário tem pedidos pagos primeiro
     checkPaidOrders();
@@ -100,11 +103,16 @@ const MyCampaigns = () => {
       }
 
       // Se tem pedidos pagos, pode criar campanha
-      toast.info('Funcionalidade de criação de campanha em desenvolvimento');
+      setShowCreateForm(true);
     } catch (error) {
       console.error('Erro ao verificar pedidos:', error);
       toast.error('Erro ao verificar pedidos');
     }
+  };
+
+  const handleCampaignCreated = () => {
+    setShowCreateForm(false);
+    loadCampaigns(); // Reload campaigns to show the new one
   };
 
   const handleEditCampaign = (campaignId: string) => {
@@ -135,6 +143,17 @@ const MyCampaigns = () => {
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
         <p className="ml-2 text-lg">Carregando campanhas...</p>
+      </div>
+    );
+  }
+
+  if (showCreateForm) {
+    return (
+      <div className="space-y-6">
+        <CampaignCreationForm 
+          onCancel={() => setShowCreateForm(false)}
+          onSuccess={handleCampaignCreated}
+        />
       </div>
     );
   }
