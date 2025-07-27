@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Building, Video, Monitor, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,7 +70,9 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     orderId: '',
     panelId: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    startTime: '08:00',
+    endTime: '22:00'
   });
   const [paidOrders, setPaidOrders] = useState<PaidOrder[]>([]);
   const [availablePanels, setAvailablePanels] = useState<Panel[]>([]);
@@ -157,8 +160,14 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate) {
+    if (!formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate || !formData.startTime || !formData.endTime) {
       toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    // Validar horários
+    if (formData.startTime >= formData.endTime) {
+      toast.error('O horário de início deve ser anterior ao horário de fim');
       return;
     }
 
@@ -174,6 +183,8 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
       panelId: formData.panelId,
       startDate: formData.startDate,
       endDate: formData.endDate,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
       videoSchedules
     });
 
@@ -303,7 +314,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : "Selecione a data"}
+                    {startDate ? format(startDate, "PPP", { locale: ptBR }) : "Selecione a data"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -333,7 +344,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : "Selecione a data"}
+                    {endDate ? format(endDate, "PPP", { locale: ptBR }) : "Selecione a data"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -353,6 +364,28 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             </div>
           </div>
 
+          {/* Horários Gerais da Campanha */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startTime">Horário de Início da Campanha *</Label>
+              <Input
+                id="startTime"
+                type="time"
+                value={formData.startTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endTime">Horário de Fim da Campanha *</Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+              />
+            </div>
+          </div>
+
           {/* Seção de Agendamento de Vídeos */}
           {approvedVideos.length > 0 && (
             <VideoSchedulingSection
@@ -369,7 +402,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={loading || !formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate || videoSchedules.length === 0}
+              disabled={loading || !formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate || !formData.startTime || !formData.endTime || videoSchedules.length === 0}
               className="flex-1"
             >
               {loading ? (

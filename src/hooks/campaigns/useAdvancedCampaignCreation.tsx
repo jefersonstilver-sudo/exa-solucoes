@@ -24,6 +24,8 @@ interface CreateAdvancedCampaignData {
   panelId: string;
   startDate: string;
   endDate: string;
+  startTime: string;
+  endTime: string;
   videoSchedules: VideoSchedule[];
 }
 

@@ -27,13 +27,13 @@ interface VideoSchedulingSectionProps {
 }
 
 const DAYS_OF_WEEK = [
-  { value: 0, label: 'Dom' },
-  { value: 1, label: 'Seg' },
-  { value: 2, label: 'Ter' },
-  { value: 3, label: 'Qua' },
-  { value: 4, label: 'Qui' },
-  { value: 5, label: 'Sex' },
-  { value: 6, label: 'Sáb' }
+  { value: 0, label: 'Dom', fullName: 'Domingo' },
+  { value: 1, label: 'Seg', fullName: 'Segunda-feira' },
+  { value: 2, label: 'Ter', fullName: 'Terça-feira' },
+  { value: 3, label: 'Qua', fullName: 'Quarta-feira' },
+  { value: 4, label: 'Qui', fullName: 'Quinta-feira' },
+  { value: 5, label: 'Sex', fullName: 'Sexta-feira' },
+  { value: 6, label: 'Sáb', fullName: 'Sábado' }
 ];
 
 export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
@@ -191,18 +191,22 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                     {/* Dias da semana */}
                     <div>
                       <Label className="text-sm">Dias da Semana</Label>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex flex-wrap gap-2 mt-2">
                         {DAYS_OF_WEEK.map((day) => (
                           <Badge
                             key={day.value}
                             variant={rule.daysOfWeek.includes(day.value) ? "default" : "outline"}
-                            className="cursor-pointer"
+                            className="cursor-pointer select-none hover:opacity-80 transition-opacity"
                             onClick={() => toggleDay(scheduleIndex, ruleIndex, day.value)}
+                            title={day.fullName}
                           >
                             {day.label}
                           </Badge>
                         ))}
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Clique nos dias para selecionar/deselecionar
+                      </p>
                     </div>
 
                     {/* Horários */}
@@ -262,11 +266,35 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
           ))}
         </div>
 
+        {/* Resumo visual dos agendamentos */}
+        {videoSchedules.length > 0 && (
+          <Card className="bg-muted/30">
+            <CardHeader>
+              <CardTitle className="text-sm">Resumo dos Agendamentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {videoSchedules.map((schedule, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-background rounded border">
+                    <span className="font-medium">{getVideoName(schedule.videoId)}</span>
+                    <div className="text-xs text-muted-foreground">
+                      {schedule.scheduleRules.length} regra(s) de horário
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {videoSchedules.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Nenhum vídeo agendado ainda.</p>
             <p className="text-sm">Selecione um vídeo aprovado e adicione regras de horário.</p>
+            <p className="text-xs mt-2">
+              Ex: Configure um vídeo de segunda a quarta e outro de quarta a domingo
+            </p>
           </div>
         )}
       </CardContent>
