@@ -41,7 +41,6 @@ const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDash
 const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'));
 const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
 const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
-const CampaignAdvancedDetails = lazy(() => import('./pages/advertiser/CampaignAdvancedDetails'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
 const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
 const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
@@ -164,11 +163,6 @@ function App() {
                       <Route path="campanhas" element={
                         <Suspense fallback={<MinimalLoader />}>
                           <MyCampaigns />
-                        </Suspense>
-                      } />
-                      <Route path="campanhas/:id" element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <CampaignAdvancedDetails />
                         </Suspense>
                       } />
                       <Route path="videos" element={

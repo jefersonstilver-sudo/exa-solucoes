@@ -26,7 +26,6 @@ export interface UnifiedCampaign {
   pedido_id?: string;
   painel_id?: string;
   video_id?: string;
-  video_schedules?: any[];
 }
 
 export const useUnifiedCampaigns = () => {
@@ -42,23 +41,10 @@ export const useUnifiedCampaigns = () => {
     setError(null);
 
     try {
-      // Buscar campanhas avançadas com agendamentos
+      // Buscar campanhas avançadas
       const { data: advancedCampaigns, error: advancedError } = await supabase
         .from('campaigns_advanced')
-        .select(`
-          *,
-          campaign_video_schedules (
-            *,
-            campaign_schedule_rules (*),
-            videos (
-              id,
-              nome,
-              url,
-              duracao,
-              orientacao
-            )
-          )
-        `)
+        .select('*')
         .eq('client_id', userProfile.id)
         .order('created_at', { ascending: false });
 
@@ -83,12 +69,7 @@ export const useUnifiedCampaigns = () => {
         end_date: campaign.end_date,
         created_at: campaign.created_at,
         description: campaign.description,
-        pedido_id: campaign.pedido_id,
-        video_schedules: campaign.campaign_video_schedules?.map((schedule: any) => ({
-          ...schedule,
-          video_data: schedule.videos,
-          schedule_rules: schedule.campaign_schedule_rules
-        })) || []
+        pedido_id: campaign.pedido_id
       }));
 
       // Converter campanhas legadas
