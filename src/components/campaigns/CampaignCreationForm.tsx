@@ -1,20 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Monitor, Save, X } from 'lucide-react';
+import { useAdvancedCampaignCreation, VideoSchedule } from '@/hooks/campaigns/useAdvancedCampaignCreation';
+import { VideoSchedulingSection } from './VideoSchedulingSection';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Building, Video, Monitor, Save, X } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 
 interface Panel {
   id: string;
   code: string;
-  building_id: string;
   status: string;
+  buildings: {
+    id: string;
+    nome: string;
+    endereco: string;
+    bairro: string;
+  };
+}
+
+interface VideoItem {
+  id: string;
+  video_id: string;
+  videos: {
+    id: string;
+    nome: string;
+    url: string;
+    duracao: number;
+    orientacao: string;
+  };
 }
 
 interface PaidOrder {
@@ -22,6 +44,7 @@ interface PaidOrder {
   lista_paineis: string[];
   data_inicio: string;
   data_fim: string;
+  valor_total: number;
 }
 
 interface CampaignCreationFormProps {
@@ -29,152 +52,214 @@ interface CampaignCreationFormProps {
   onSuccess: () => void;
 }
 
-const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({ onCancel, onSuccess }) => {
-  const { userProfile } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [paidOrders, setPaidOrders] = useState<PaidOrder[]>([]);
-  const [availablePanels, setAvailablePanels] = useState<Panel[]>([]);
+export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
+  onCancel,
+  onSuccess
+}) => {
+  const { 
+    createAdvancedCampaign, 
+    getApprovedVideos, 
+    getPedidoPanels, 
+    loading 
+  } = useAdvancedCampaignCreation();
   
   const [formData, setFormData] = useState({
-    nome: '',
-    descricao: '',
-    pedido_id: '',
-    painel_id: '',
-    data_inicio: '',
-    data_fim: '',
+    name: '',
+    description: '',
+    orderId: '',
+    panelId: '',
+    startDate: '',
+    endDate: ''
   });
+  const [paidOrders, setPaidOrders] = useState<PaidOrder[]>([]);
+  const [availablePanels, setAvailablePanels] = useState<Panel[]>([]);
+  const [approvedVideos, setApprovedVideos] = useState<VideoItem[]>([]);
+  const [videoSchedules, setVideoSchedules] = useState<VideoSchedule[]>([]);
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   useEffect(() => {
     loadPaidOrders();
-  }, [userProfile]);
+  }, []);
 
   const loadPaidOrders = async () => {
-    if (!userProfile?.id) return;
-
     try {
-      const { data: pedidos, error } = await supabase
-        .from('pedidos')
-        .select('id, lista_paineis, data_inicio, data_fim')
-        .eq('client_id', userProfile.id)
-        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
-
-      if (error) throw error;
-      setPaidOrders(pedidos || []);
-    } catch (error) {
+      const { hasOrders, orders } = await checkPaidOrders();
+      if (hasOrders) {
+        setPaidOrders(orders);
+      }
+    } catch (error: any) {
       console.error('Erro ao carregar pedidos:', error);
-      toast.error('Erro ao carregar pedidos');
+      toast.error('Erro ao carregar pedidos pagos');
     }
   };
 
-  const loadPanelsForOrder = async (orderId: string) => {
-    const order = paidOrders.find(o => o.id === orderId);
-    if (!order?.lista_paineis) return;
-
+  const checkPaidOrders = async () => {
     try {
-      const { data: panels, error } = await supabase
-        .from('painels')
-        .select('id, code, building_id, status')
-        .in('id', order.lista_paineis);
+      const { data: pedidos, error } = await supabase
+        .from('pedidos')
+        .select('id, lista_paineis, data_inicio, data_fim, valor_total')
+        .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
 
       if (error) throw error;
-      setAvailablePanels(panels || []);
-      
-      // Auto-fill dates from the order
-      setFormData(prev => ({
-        ...prev,
-        data_inicio: order.data_inicio,
-        data_fim: order.data_fim
-      }));
-    } catch (error) {
-      console.error('Erro ao carregar painéis:', error);
-      toast.error('Erro ao carregar painéis');
+
+      return {
+        hasOrders: pedidos && pedidos.length > 0,
+        orders: pedidos || []
+      };
+    } catch (error: any) {
+      console.error('Erro ao verificar pedidos:', error);
+      toast.error('Erro ao verificar pedidos');
+      return { hasOrders: false, orders: [] };
+    }
+  };
+
+  const loadOrderData = async (orderId: string) => {
+    if (!orderId) return;
+
+    try {
+      // Carregar painéis e vídeos em paralelo
+      const [panels, videos] = await Promise.all([
+        getPedidoPanels(orderId),
+        getApprovedVideos(orderId)
+      ]);
+
+      setAvailablePanels(panels);
+      setApprovedVideos(videos);
+
+      // Resetar agendamentos quando trocar de pedido
+      setVideoSchedules([]);
+    } catch (error: any) {
+      console.error('Erro ao carregar dados do pedido:', error);
+      toast.error('Erro ao carregar dados do pedido');
     }
   };
 
   const handleOrderChange = (orderId: string) => {
-    setFormData(prev => ({ ...prev, pedido_id: orderId, painel_id: '' }));
-    loadPanelsForOrder(orderId);
+    setFormData(prev => ({ ...prev, orderId, panelId: '' }));
+    loadOrderData(orderId);
+    
+    // Auto-preencher datas baseadas no pedido
+    const selectedOrder = paidOrders.find(order => order.id === orderId);
+    if (selectedOrder) {
+      const start = new Date(selectedOrder.data_inicio);
+      const end = new Date(selectedOrder.data_fim);
+      setStartDate(start);
+      setEndDate(end);
+      setFormData(prev => ({
+        ...prev,
+        startDate: format(start, 'yyyy-MM-dd'),
+        endDate: format(end, 'yyyy-MM-dd')
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.pedido_id || !formData.painel_id) {
-      toast.error('Selecione um pedido e painel');
+
+    if (!formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate) {
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    setLoading(true);
+    if (videoSchedules.length === 0) {
+      toast.error('Adicione pelo menos um vídeo à campanha');
+      return;
+    }
 
-    try {
-      const campaignData = {
-        client_id: userProfile?.id,
-        painel_id: formData.painel_id,
-        video_id: 'default_video_id', // Placeholder until video upload is implemented
-        data_inicio: formData.data_inicio,
-        data_fim: formData.data_fim,
-        status: 'ativa',
-        obs: formData.descricao || null
-      };
+    const result = await createAdvancedCampaign({
+      name: formData.name,
+      description: formData.description,
+      pedidoId: formData.orderId,
+      panelId: formData.panelId,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      videoSchedules
+    });
 
-      const { error } = await supabase
-        .from('campanhas')
-        .insert(campaignData);
-
-      if (error) throw error;
-
-      toast.success('Campanha criada com sucesso!');
-      onSuccess();
-    } catch (error: any) {
-      console.error('Erro ao criar campanha:', error);
-      toast.error('Erro ao criar campanha: ' + error.message);
-    } finally {
-      setLoading(false);
+    if (result.success) {
+      onSuccess?.();
     }
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Monitor className="h-5 w-5" />
-            Nova Campanha
+            Nova Campanha Avançada
           </CardTitle>
           <Button variant="ghost" size="icon" onClick={onCancel}>
             <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Nome da Campanha */}
           <div className="space-y-2">
-            <Label htmlFor="pedido">Pedido Pago</Label>
-            <Select value={formData.pedido_id} onValueChange={handleOrderChange}>
+            <Label htmlFor="name">Nome da Campanha *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Ex: Campanha Black Friday 2024"
+            />
+          </div>
+
+          {/* Descrição */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Descreva os objetivos e detalhes da campanha..."
+              rows={3}
+            />
+          </div>
+
+          {/* Seleção do Pedido */}
+          <div className="space-y-2">
+            <Label htmlFor="order">Pedido Pago *</Label>
+            <Select value={formData.orderId} onValueChange={handleOrderChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione um pedido pago" />
+                <SelectValue placeholder="Selecione um pedido pago..." />
               </SelectTrigger>
               <SelectContent>
                 {paidOrders.map((order) => (
                   <SelectItem key={order.id} value={order.id}>
-                    Pedido {order.id.substring(0, 8)}... - {order.lista_paineis?.length || 0} painéis
+                    Pedido {order.id.slice(0, 8)}... - R$ {order.valor_total} - {order.lista_paineis?.length || 0} painéis
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Seleção do Painel com informações do prédio */}
           {availablePanels.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="painel">Painel</Label>
-              <Select value={formData.painel_id} onValueChange={(value) => setFormData(prev => ({ ...prev, painel_id: value }))}>
+              <Label htmlFor="panel">Painel e Localização *</Label>
+              <Select 
+                value={formData.panelId} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, panelId: value }))}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um painel" />
+                  <SelectValue placeholder="Selecione um painel..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availablePanels.map((panel) => (
                     <SelectItem key={panel.id} value={panel.id}>
-                      {panel.code} - Status: {panel.status}
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4" />
+                        <div>
+                          <div className="font-medium">{panel.buildings.nome}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {panel.buildings.endereco}, {panel.buildings.bairro} - Painel {panel.code}
+                          </div>
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -182,47 +267,109 @@ const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({ onCancel, o
             </div>
           )}
 
+          {/* Vídeos aprovados disponíveis */}
+          {approvedVideos.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Video className="h-4 w-4" />
+                Vídeos Aprovados Disponíveis
+              </Label>
+              <div className="grid grid-cols-1 gap-2 p-4 border rounded-lg bg-muted/50">
+                {approvedVideos.map((video) => (
+                  <div key={video.videos.id} className="flex items-center justify-between p-2 bg-background rounded border">
+                    <div>
+                      <div className="font-medium">{video.videos.nome}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {video.videos.duracao}s • {video.videos.orientacao}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Datas da campanha */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="data_inicio">Data de Início</Label>
-              <Input
-                id="data_inicio"
-                type="date"
-                value={formData.data_inicio}
-                onChange={(e) => setFormData(prev => ({ ...prev, data_inicio: e.target.value }))}
-                required
-              />
+              <Label>Data de Início *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "PPP") : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      setStartDate(date);
+                      if (date) {
+                        setFormData(prev => ({ ...prev, startDate: format(date, 'yyyy-MM-dd') }));
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="data_fim">Data de Fim</Label>
-              <Input
-                id="data_fim"
-                type="date"
-                value={formData.data_fim}
-                onChange={(e) => setFormData(prev => ({ ...prev, data_fim: e.target.value }))}
-                required
-              />
+              <Label>Data de Fim *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "PPP") : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      setEndDate(date);
+                      if (date) {
+                        setFormData(prev => ({ ...prev, endDate: format(date, 'yyyy-MM-dd') }));
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="descricao">Observações (opcional)</Label>
-            <Textarea
-              id="descricao"
-              placeholder="Adicione observações sobre a campanha..."
-              value={formData.descricao}
-              onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-              rows={3}
+          {/* Seção de Agendamento de Vídeos */}
+          {approvedVideos.length > 0 && (
+            <VideoSchedulingSection
+              approvedVideos={approvedVideos}
+              videoSchedules={videoSchedules}
+              onSchedulesChange={setVideoSchedules}
             />
-          </div>
+          )}
 
-          <div className="flex gap-4">
+          {/* Botões de ação */}
+          <div className="flex gap-4 pt-6">
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
               Cancelar
             </Button>
             <Button 
               type="submit" 
-              disabled={loading || !formData.pedido_id || !formData.painel_id}
+              disabled={loading || !formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate || videoSchedules.length === 0}
               className="flex-1"
             >
               {loading ? (
