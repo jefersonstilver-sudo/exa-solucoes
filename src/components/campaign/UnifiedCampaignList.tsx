@@ -18,6 +18,7 @@ import { UnifiedCampaign } from '@/hooks/useUnifiedCampaigns';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { VideoPreview } from './VideoPreview';
 
 interface UnifiedCampaignListProps {
   campaigns: UnifiedCampaign[];
@@ -187,6 +188,42 @@ export const UnifiedCampaignList = ({ campaigns, loading, onRefetch }: UnifiedCa
 
               {campaign.description && (
                 <p className="text-sm text-gray-600 line-clamp-2">{campaign.description}</p>
+              )}
+
+              {/* Video Preview Section */}
+              {campaign.type === 'advanced' && campaign.videos && campaign.videos.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">
+                      {campaign.videos.length === 1 ? 'Vídeo' : `${campaign.videos.length} Vídeos`}
+                    </span>
+                  </div>
+                  <VideoPreview 
+                    video={campaign.videos[0]} 
+                    className="w-full"
+                    showDetails={true}
+                  />
+                  {campaign.videos.length > 1 && (
+                    <p className="text-xs text-gray-500">
+                      +{campaign.videos.length - 1} vídeo{campaign.videos.length - 1 > 1 ? 's' : ''} adicional{campaign.videos.length - 1 > 1 ? 'is' : ''}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {campaign.type === 'legacy' && campaign.video && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Vídeo</span>
+                  </div>
+                  <VideoPreview 
+                    video={campaign.video} 
+                    className="w-full"
+                    showDetails={true}
+                  />
+                </div>
               )}
 
               <div className="flex flex-wrap gap-2 pt-4 border-t">

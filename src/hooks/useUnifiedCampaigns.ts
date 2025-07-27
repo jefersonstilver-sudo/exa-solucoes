@@ -14,6 +14,15 @@ interface OldCampaign {
   video_id: string;
 }
 
+export interface VideoInfo {
+  id: string;
+  nome: string;
+  url: string;
+  duracao?: number;
+  orientacao?: string;
+  formato?: string;
+}
+
 export interface UnifiedCampaign {
   id: string;
   name: string;
@@ -26,6 +35,8 @@ export interface UnifiedCampaign {
   pedido_id?: string;
   painel_id?: string;
   video_id?: string;
+  videos?: VideoInfo[]; // Para campanhas avançadas
+  video?: VideoInfo;    // Para campanhas legadas
 }
 
 export const useUnifiedCampaigns = () => {
@@ -41,39 +52,68 @@ export const useUnifiedCampaigns = () => {
     setError(null);
 
     try {
-      // Buscar campanhas avançadas
+      // Buscar campanhas avançadas com vídeos
       const { data: advancedCampaigns, error: advancedError } = await supabase
         .from('campaigns_advanced')
-        .select('*')
+        .select(`
+          *,
+          campaign_video_schedules (
+            video_id,
+            videos (
+              id,
+              nome,
+              url,
+              duracao,
+              orientacao,
+              formato
+            )
+          )
+        `)
         .eq('client_id', userProfile.id)
         .order('created_at', { ascending: false });
 
       if (advancedError) throw advancedError;
 
-      // Buscar campanhas legadas
+      // Buscar campanhas legadas com vídeos
       const { data: legacyCampaigns, error: legacyError } = await supabase
         .from('campanhas')
-        .select('*')
+        .select(`
+          *,
+          videos (
+            id,
+            nome,
+            url,
+            duracao,
+            orientacao,
+            formato
+          )
+        `)
         .eq('client_id', userProfile.id)
         .order('created_at', { ascending: false });
 
       if (legacyError) throw legacyError;
 
       // Converter campanhas avançadas
-      const unifiedAdvanced: UnifiedCampaign[] = (advancedCampaigns || []).map((campaign: any) => ({
-        id: campaign.id,
-        name: campaign.name,
-        type: 'advanced' as const,
-        status: campaign.status,
-        start_date: campaign.start_date,
-        end_date: campaign.end_date,
-        created_at: campaign.created_at,
-        description: campaign.description,
-        pedido_id: campaign.pedido_id
-      }));
+      const unifiedAdvanced: UnifiedCampaign[] = (advancedCampaigns || []).map((campaign: any) => {
+        // Extrair vídeos dos agendamentos
+        const videos = campaign.campaign_video_schedules?.map((schedule: any) => schedule.videos).filter(Boolean) || [];
+        
+        return {
+          id: campaign.id,
+          name: campaign.name,
+          type: 'advanced' as const,
+          status: campaign.status,
+          start_date: campaign.start_date,
+          end_date: campaign.end_date,
+          created_at: campaign.created_at,
+          description: campaign.description,
+          pedido_id: campaign.pedido_id,
+          videos: videos
+        };
+      });
 
       // Converter campanhas legadas
-      const unifiedLegacy: UnifiedCampaign[] = (legacyCampaigns || []).map((campaign: OldCampaign) => ({
+      const unifiedLegacy: UnifiedCampaign[] = (legacyCampaigns || []).map((campaign: any) => ({
         id: campaign.id,
         name: `Campanha ${campaign.id.substring(0, 8)}`,
         type: 'legacy' as const,
@@ -83,7 +123,8 @@ export const useUnifiedCampaigns = () => {
         created_at: campaign.created_at,
         description: campaign.obs,
         painel_id: campaign.painel_id,
-        video_id: campaign.video_id
+        video_id: campaign.video_id,
+        video: campaign.videos || null
       }));
 
       // Combinar e ordenar por data de criação
