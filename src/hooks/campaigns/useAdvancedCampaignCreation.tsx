@@ -154,9 +154,13 @@ export const useAdvancedCampaignCreation = () => {
       if (pedidoError) throw pedidoError;
 
       if (!pedido?.lista_paineis || pedido.lista_paineis.length === 0) {
+        console.warn('📋 Pedido não tem painéis na lista_paineis');
         return [];
       }
 
+      console.log('🔍 Painéis do pedido na lista_paineis:', pedido.lista_paineis);
+
+      // Buscar apenas painéis que realmente existem e estão online
       const { data: panels, error: panelsError } = await supabase
         .from('painels')
         .select(`
@@ -174,7 +178,25 @@ export const useAdvancedCampaignCreation = () => {
         .eq('status', 'online');
 
       if (panelsError) throw panelsError;
-      return panels || [];
+
+      const foundPanels = panels || [];
+      console.log('🔍 Painéis encontrados na base de dados:', foundPanels);
+      
+      // Verificar se algum painel da lista não foi encontrado
+      const foundPanelIds = foundPanels.map(p => p.id);
+      const missingPanels = pedido.lista_paineis.filter(id => !foundPanelIds.includes(id));
+      
+      if (missingPanels.length > 0) {
+        console.warn('⚠️ Painéis referenciados mas não encontrados:', missingPanels);
+        toast.error(`Alguns painéis do pedido não estão disponíveis. Contacte o suporte.`);
+      }
+
+      if (foundPanels.length === 0) {
+        console.warn('⚠️ Nenhum painel válido encontrado para este pedido');
+        toast.error('Este pedido não tem painéis válidos disponíveis.');
+      }
+
+      return foundPanels;
     } catch (error: any) {
       console.error('Erro ao buscar painéis do pedido:', error);
       toast.error('Erro ao buscar painéis');

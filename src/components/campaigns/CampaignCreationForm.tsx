@@ -127,8 +127,15 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
         getApprovedVideos(orderId)
       ]);
 
+      console.log('📦 Dados carregados - Painéis:', panels.length, 'Vídeos:', videos.length);
+
       setAvailablePanels(panels);
       setApprovedVideos(videos);
+
+      // Resetar dados do form quando não há painéis válidos
+      if (panels.length === 0) {
+        setFormData(prev => ({ ...prev, panelId: '' }));
+      }
 
       // Resetar agendamentos quando trocar de pedido
       setVideoSchedules([]);
@@ -292,9 +299,9 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
           </div>
 
           {/* Seleção do Painel com informações do prédio */}
-          {availablePanels.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="panel">Painel e Localização *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="panel">Painel e Localização *</Label>
+            {availablePanels.length > 0 ? (
               <Select 
                 value={formData.panelId} 
                 onValueChange={(value) => setFormData(prev => ({ ...prev, panelId: value }))}
@@ -318,8 +325,22 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
+            ) : formData.orderId ? (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive">
+                  ⚠️ Este pedido não possui painéis válidos disponíveis. 
+                  Os painéis podem ter sido removidos ou estar offline. 
+                  Entre em contato com o suporte.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3 bg-muted border rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Selecione um pedido primeiro para ver os painéis disponíveis
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Vídeos aprovados disponíveis */}
           {approvedVideos.length > 0 && (
