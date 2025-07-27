@@ -158,14 +158,30 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
   };
 
   const isFormValid = () => {
-    return formData.name.trim() !== '' &&
-           formData.orderId.trim() !== '' &&
-           formData.panelId.trim() !== '' &&
-           formData.startDate.trim() !== '' &&
-           formData.endDate.trim() !== '' &&
-           formData.startTime.trim() !== '' &&
-           formData.endTime.trim() !== '' &&
-           videoSchedules.length > 0;
+    // Debug temporário para identificar problema
+    console.log('=== DEBUG VALIDAÇÃO ===');
+    console.log('Nome:', formData.name.trim() !== '', formData.name);
+    console.log('Pedido ID:', formData.orderId.trim() !== '', formData.orderId);
+    console.log('Painel ID:', formData.panelId.trim() !== '', formData.panelId);
+    console.log('Data início:', formData.startDate.trim() !== '', formData.startDate);
+    console.log('Data fim:', formData.endDate.trim() !== '', formData.endDate);
+    console.log('Hora início:', formData.startTime.trim() !== '', formData.startTime);
+    console.log('Hora fim:', formData.endTime.trim() !== '', formData.endTime);
+    console.log('Video schedules:', videoSchedules.length > 0, videoSchedules.length, videoSchedules);
+    
+    const isValid = formData.name.trim() !== '' &&
+                   formData.orderId.trim() !== '' &&
+                   formData.panelId.trim() !== '' &&
+                   formData.startDate.trim() !== '' &&
+                   formData.endDate.trim() !== '' &&
+                   formData.startTime.trim() !== '' &&
+                   formData.endTime.trim() !== '' &&
+                   videoSchedules.length > 0;
+    
+    console.log('Formulário válido:', isValid);
+    console.log('====================');
+    
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
