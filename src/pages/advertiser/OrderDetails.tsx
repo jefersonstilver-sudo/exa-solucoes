@@ -20,6 +20,8 @@ import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
+import { CampaignScheduler } from '@/components/campaign/CampaignScheduler';
+import { CampaignList } from '@/components/campaign/CampaignList';
 
 interface OrderDetails {
   id: string;
@@ -250,17 +252,44 @@ const OrderDetails = () => {
             </div>
           </div>
         ) : (
-          <VideoManagementCard
-            orderStatus={orderDetails.status}
-            videoSlots={videoSlots}
-            uploading={uploading}
-            uploadProgress={uploadProgress}
-            onUpload={handleVideoUpload}
-            onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
-            onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
-            onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
-            onDownload={handleVideoDownload}
-          />
+          <>
+            <VideoManagementCard
+              orderStatus={orderDetails.status}
+              videoSlots={videoSlots}
+              uploading={uploading}
+              uploadProgress={uploadProgress}
+              onUpload={handleVideoUpload}
+              onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
+              onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
+              onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
+              onDownload={handleVideoDownload}
+            />
+            
+            {/* Campaign List - Show existing campaigns */}
+            <div className="mt-8">
+              <CampaignList
+                pedidoId={orderDetails.id}
+                onCampaignSelect={(campaignId) => {
+                  console.log('Selected campaign:', campaignId);
+                  // Could navigate to campaign details or show modal
+                }}
+              />
+            </div>
+
+            {/* Campaign Scheduler - Show only if there are approved videos */}
+            {videoSlots.some(slot => slot.approval_status === 'approved') && (
+              <div className="mt-8">
+                <CampaignScheduler
+                  pedidoId={orderDetails.id}
+                  approvedVideos={videoSlots.filter(slot => slot.approval_status === 'approved')}
+                  onCampaignCreated={() => {
+                    // Optionally refresh data or show success message
+                    console.log('Campaign created successfully');
+                  }}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -160,6 +160,124 @@ export type Database = {
           status?: string
           venue_type?: string | null
           visualizacoes_mes?: number | null
+        }
+        Relationships: []
+      }
+      campaign_schedule_rules: {
+        Row: {
+          campaign_video_schedule_id: string
+          created_at: string
+          days_of_week: number[]
+          end_time: string
+          id: string
+          is_active: boolean
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_video_schedule_id: string
+          created_at?: string
+          days_of_week: number[]
+          end_time: string
+          id?: string
+          is_active?: boolean
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_video_schedule_id?: string
+          created_at?: string
+          days_of_week?: number[]
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_schedule_rules_campaign_video_schedule_id_fkey"
+            columns: ["campaign_video_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_video_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_video_schedules: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          priority: number
+          slot_position: number
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          priority?: number
+          slot_position: number
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          priority?: number
+          slot_position?: number
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_video_schedules_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns_advanced"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns_advanced: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          name: string
+          pedido_id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          name: string
+          pedido_id: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          pedido_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
