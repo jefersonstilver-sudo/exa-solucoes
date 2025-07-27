@@ -44,6 +44,7 @@ export const useUnifiedCampaigns = () => {
   const [campaigns, setCampaigns] = useState<UnifiedCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
 
   const fetchAllCampaigns = async () => {
     if (!userProfile?.id) {
@@ -140,6 +141,16 @@ export const useUnifiedCampaigns = () => {
 
       console.log('🔍 [CAMPAIGNS] Total unified campaigns:', allCampaigns.length);
       console.log('🔍 [CAMPAIGNS] Campaigns data:', allCampaigns);
+      
+      // Verificar se há uma nova campanha criada recentemente
+      if (allCampaigns.length > 0) {
+        const newest = allCampaigns[0];
+        if (lastCreatedId !== newest.id) {
+          setLastCreatedId(newest.id);
+          console.log('🆕 [CAMPAIGNS] New campaign detected:', newest.name);
+        }
+      }
+      
       setCampaigns(allCampaigns);
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar campanhas');
@@ -165,10 +176,43 @@ export const useUnifiedCampaigns = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [userProfile?.id]);
 
+  // Real-time subscription para campanhas avançadas
+  useEffect(() => {
+    if (!userProfile?.id) return;
+
+    console.log('🔄 [CAMPAIGNS] Setting up real-time subscription');
+    
+    const channel = supabase
+      .channel('campaigns-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaigns_advanced',
+          filter: `client_id=eq.${userProfile.id}`
+        },
+        (payload) => {
+          console.log('🔄 [CAMPAIGNS] Real-time update received:', payload);
+          // Aguardar um pequeno delay para garantir consistência
+          setTimeout(() => {
+            fetchAllCampaigns();
+          }, 1000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔄 [CAMPAIGNS] Cleaning up subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.id]);
+
   return {
     campaigns,
     loading,
     error,
-    refetch: fetchAllCampaigns
+    refetch: fetchAllCampaigns,
+    lastCreatedId
   };
 };

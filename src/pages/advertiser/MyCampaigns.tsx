@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileMyCampaigns from './MobileMyCampaigns';
 
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedCampaigns } from '@/hooks/useUnifiedCampaigns';
@@ -15,7 +15,8 @@ const MyCampaigns = () => {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { campaigns, loading, refetch } = useUnifiedCampaigns();
+  const { campaigns, loading, refetch, lastCreatedId } = useUnifiedCampaigns();
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const handleCreateCampaign = async () => {
     if (!userProfile?.id) return;
@@ -79,6 +80,18 @@ const MyCampaigns = () => {
     }
   };
 
+  const handleManualRefresh = async () => {
+    setIsManualRefreshing(true);
+    try {
+      await refetch();
+      toast.success('Lista de campanhas atualizada!');
+    } catch (error) {
+      toast.error('Erro ao atualizar a lista');
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
+
   if (isMobile) {
     return <MobileMyCampaigns />;
   }
@@ -91,10 +104,21 @@ const MyCampaigns = () => {
           <h1 className="text-3xl font-bold text-gray-900">Minhas Campanhas</h1>
           <p className="text-gray-600 mt-1">Gerencie todas as suas campanhas de publicidade</p>
         </div>
-        <Button onClick={handleCreateCampaign} className="bg-indexa-purple hover:bg-indexa-purple/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Campanha
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleManualRefresh}
+            disabled={isManualRefreshing}
+            className="min-w-[120px]"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isManualRefreshing ? 'animate-spin' : ''}`} />
+            {isManualRefreshing ? 'Atualizando...' : 'Atualizar'}
+          </Button>
+          <Button onClick={handleCreateCampaign} className="bg-indexa-purple hover:bg-indexa-purple/90">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Campanha
+          </Button>
+        </div>
       </div>
 
       {/* Lista Unificada de Campanhas */}

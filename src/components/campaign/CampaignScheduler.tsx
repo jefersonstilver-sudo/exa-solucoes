@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Video } from "lucide-react";
+import { Calendar, Clock, Video, CheckCircle } from "lucide-react";
 import { VideoScheduleManager } from "./VideoScheduleManager";
 import { useCampaignScheduling } from "@/hooks/useCampaignScheduling";
 import { VideoSlot } from "@/types/videoManagement";
 import { CampaignInput, VideoScheduleInput } from "@/types/campaignScheduling";
+import { toast } from "sonner";
 
 interface CampaignSchedulerProps {
   pedidoId: string;
@@ -29,6 +30,7 @@ export const CampaignScheduler = ({
   const [endDate, setEndDate] = useState('');
   const [videoSchedules, setVideoSchedules] = useState<VideoScheduleInput[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { createCampaign } = useCampaignScheduling(pedidoId);
 
@@ -69,6 +71,33 @@ export const CampaignScheduler = ({
     if (campaignId) {
       console.log('✅ [CAMPAIGN SCHEDULER] Campaign created successfully:', campaignId);
       
+      // Mostrar feedback de sucesso
+      toast.success('Campanha criada com sucesso!', {
+        description: 'Aguarde enquanto atualizamos a lista de campanhas...'
+      });
+
+      // Aguardar um pequeno delay para garantir que o banco processou
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refresh campaigns list e aguardar conclusão
+      if (onRefreshCampaigns) {
+        setIsRefreshing(true);
+        try {
+          await onRefreshCampaigns();
+          console.log('✅ [CAMPAIGN SCHEDULER] Campaigns list refreshed successfully');
+        } catch (error) {
+          console.error('❌ [CAMPAIGN SCHEDULER] Failed to refresh campaigns:', error);
+          // Retry uma vez
+          try {
+            await onRefreshCampaigns();
+          } catch (retryError) {
+            console.error('❌ [CAMPAIGN SCHEDULER] Retry failed:', retryError);
+          }
+        } finally {
+          setIsRefreshing(false);
+        }
+      }
+      
       // Reset form
       setCampaignName('');
       setCampaignDescription('');
@@ -76,8 +105,6 @@ export const CampaignScheduler = ({
       setEndDate('');
       setVideoSchedules([]);
       
-      // Refresh campaigns list immediately
-      onRefreshCampaigns?.();
       onCampaignCreated?.();
     }
 
@@ -188,7 +215,7 @@ export const CampaignScheduler = ({
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={!isFormValid || isSubmitting}
+              disabled={!isFormValid || isSubmitting || isRefreshing}
               className="min-w-[200px]"
             >
               {isSubmitting ? (
@@ -196,8 +223,16 @@ export const CampaignScheduler = ({
                   <Clock className="h-4 w-4 mr-2 animate-spin" />
                   Criando Campanha...
                 </>
+              ) : isRefreshing ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  Atualizando Lista...
+                </>
               ) : (
-                'Criar Campanha'
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Criar Campanha
+                </>
               )}
             </Button>
           </div>
