@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,8 +12,11 @@ import {
   Clock,
   Zap,
   Monitor,
-  Video
+  Video,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import { CampaignScheduleDetails } from './CampaignScheduleDetails';
 import { UnifiedCampaign } from '@/hooks/useUnifiedCampaigns';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +30,7 @@ interface UnifiedCampaignListProps {
 
 export const UnifiedCampaignList = ({ campaigns, loading, onRefetch }: UnifiedCampaignListProps) => {
   const navigate = useNavigate();
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
 
   const getStatusBadge = (status: string, type: 'advanced' | 'legacy') => {
     const statusMap: Record<string, { label: string; className: string }> = {
@@ -125,6 +129,16 @@ export const UnifiedCampaignList = ({ campaigns, loading, onRefetch }: UnifiedCa
     }
   };
 
+  const toggleExpanded = (campaignId: string) => {
+    const newExpanded = new Set(expandedCampaigns);
+    if (newExpanded.has(campaignId)) {
+      newExpanded.delete(campaignId);
+    } else {
+      newExpanded.add(campaignId);
+    }
+    setExpandedCampaigns(newExpanded);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -187,6 +201,32 @@ export const UnifiedCampaignList = ({ campaigns, loading, onRefetch }: UnifiedCa
 
               {campaign.description && (
                 <p className="text-sm text-gray-600 line-clamp-2">{campaign.description}</p>
+              )}
+
+              {/* Scheduling details for advanced campaigns */}
+              {campaign.type === 'advanced' && campaign.video_schedules && campaign.video_schedules.length > 0 && (
+                <div className="pt-3 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-sm text-gray-700">Agendamento</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleExpanded(campaign.id)}
+                      className="h-auto p-1"
+                    >
+                      {expandedCampaigns.has(campaign.id) ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  
+                  <CampaignScheduleDetails 
+                    campaign={campaign as any}
+                    isExpanded={expandedCampaigns.has(campaign.id)}
+                  />
+                </div>
               )}
 
               <div className="flex flex-wrap gap-2 pt-4 border-t">
