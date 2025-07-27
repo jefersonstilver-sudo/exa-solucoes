@@ -167,7 +167,25 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     const hasEndTime = formData.endTime.trim() !== '';
     const hasScheduledVideos = videoSchedules.length > 0;
     
-    return hasName && hasOrder && hasPanel && hasStartDate && hasEndDate && hasStartTime && hasEndTime && hasScheduledVideos;
+    // Debug logs temporários
+    console.log('🔍 DEBUG: FormData completo:', formData);
+    console.log('🔍 DEBUG: availablePanels:', availablePanels);
+    console.log('🔍 DEBUG: videoSchedules:', videoSchedules);
+    console.log('🔍 DEBUG: Validação individual:', {
+      hasName,
+      hasOrder,
+      hasPanel,
+      hasStartDate,
+      hasEndDate,
+      hasStartTime,
+      hasEndTime,
+      hasScheduledVideos
+    });
+    
+    const isValid = hasName && hasOrder && hasPanel && hasStartDate && hasEndDate && hasStartTime && hasEndTime && hasScheduledVideos;
+    console.log('🔍 DEBUG: Form isValid:', isValid);
+    
+    return isValid;
   };
 
   const getValidationMessage = () => {
