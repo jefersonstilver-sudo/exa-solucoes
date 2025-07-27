@@ -1,15 +1,21 @@
-
 import React, { useRef } from 'react';
 import LinkaeHero from '@/components/linkae/LinkaeHero';
-import TaccohStorytellingHero from '@/components/linkae/TaccohStorytellingHero';
-import RobustCaseStudies from '@/components/linkae/RobustCaseStudies';
-import LinkaeAdvantagesGrid from '@/components/linkae/LinkaeAdvantagesGrid';
-import FinalCTASection from '@/components/linkae/FinalCTASection';
+import TaccohPuzzleHero from '@/components/linkae/TaccohPuzzleHero';
+import TaccohExplainer from '@/components/linkae/TaccohExplainer';
+import TaccohSolutionSection from '@/components/linkae/TaccohSolutionSection';
+import TaccohCaseStudies from '@/components/linkae/TaccohCaseStudies';
+import TaccohDiagnostic from '@/components/linkae/TaccohDiagnostic';
+import LinkaeMission from '@/components/linkae/LinkaeMission';
+import SocialMediaDeliverables from '@/components/linkae/SocialMediaDeliverables';
+import SocialPortfolio from '@/components/linkae/SocialPortfolio';
+import SocialObjections from '@/components/linkae/SocialObjections';
+import LinkaeCTASection from '@/components/linkae/LinkaeCTASection';
 import LinkaeForm from '@/components/linkae/LinkaeForm';
+import LinkaeFloatingCTA from '@/components/linkae/LinkaeFloatingCTA';
 import Layout from '@/components/layout/Layout';
 
 const Linkae = () => {
-  console.log('📱 LINKAÊ: Inicializando página com nova seção de casos robustos');
+  console.log('📱 LINKAÊ: Inicializando página Social Media com tema claro');
   
   const formRef = useRef<HTMLElement>(null);
 
@@ -21,23 +27,19 @@ const Linkae = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-white text-gray-900">
-        {/* 1. Hero Section */}
         <LinkaeHero onScrollToForm={scrollToForm} />
-        
-        {/* 2. Storytelling Integrado com TACCOH */}
-        <TaccohStorytellingHero />
-        
-        {/* 3. Casos Reais Robustos (Nova Seção) */}
-        <RobustCaseStudies />
-        
-        {/* 4. Diferenciais */}
-        <LinkaeAdvantagesGrid />
-        
-        {/* 5. CTA Final */}
-        <FinalCTASection onScrollToForm={scrollToForm} />
-        
-        {/* Formulário */}
+        <TaccohPuzzleHero />
+        <TaccohSolutionSection />
+        <TaccohExplainer />
+        <TaccohCaseStudies />
+        <TaccohDiagnostic onScrollToForm={scrollToForm} />
+        <LinkaeMission />
+        <SocialMediaDeliverables />
+        <SocialPortfolio />
+        <SocialObjections onScrollToForm={scrollToForm} />
+        <LinkaeCTASection />
         <LinkaeForm formRef={formRef} />
+        <LinkaeFloatingCTA onScrollToForm={scrollToForm} />
       </div>
     </Layout>
   );

@@ -20,8 +20,6 @@ import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
-import { CampaignNavigationCard } from '@/components/order/CampaignNavigationCard';
-import { useUnifiedCampaigns } from '@/hooks/useUnifiedCampaigns';
 
 interface OrderDetails {
   id: string;
@@ -58,9 +56,6 @@ const OrderDetails = () => {
     loading: enhancedLoading, 
     error: enhancedError 
   } = useEnhancedOrderData(id || '', userProfile?.id || '');
-
-  // Hook para refresh de campanhas
-  const { refetch: refetchCampaigns } = useUnifiedCampaigns();
 
   const {
     videoSlots,
@@ -255,24 +250,17 @@ const OrderDetails = () => {
             </div>
           </div>
         ) : (
-          <>
-            <VideoManagementCard
-              orderStatus={orderDetails.status}
-              videoSlots={videoSlots}
-              uploading={uploading}
-              uploadProgress={uploadProgress}
-              onUpload={handleVideoUpload}
-              onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
-              onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
-              onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
-              onDownload={handleVideoDownload}
-            />
-            
-            {/* Campaign Navigation - Redirect to main campaigns page */}
-            <div className="mt-8">
-              <CampaignNavigationCard orderStatus={orderDetails.status} />
-            </div>
-          </>
+          <VideoManagementCard
+            orderStatus={orderDetails.status}
+            videoSlots={videoSlots}
+            uploading={uploading}
+            uploadProgress={uploadProgress}
+            onUpload={handleVideoUpload}
+            onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
+            onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
+            onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
+            onDownload={handleVideoDownload}
+          />
         )}
       </div>
 
