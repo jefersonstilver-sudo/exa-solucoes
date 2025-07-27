@@ -49,11 +49,12 @@ export const useUnifiedCampaigns = () => {
   const fetchAllCampaigns = async () => {
     if (!userProfile?.id) {
       console.log('❌ [UNIFIED_CAMPAIGNS] userProfile.id não encontrado:', userProfile);
+      setLoading(false);
       return;
     }
 
     console.log('🔄 [UNIFIED_CAMPAIGNS] Iniciando busca de campanhas para usuário:', userProfile.id);
-    console.log('🔄 [UNIFIED_CAMPAIGNS] UserProfile completo:', userProfile);
+    console.log('📍 [UNIFIED_CAMPAIGNS] Timestamp da busca:', new Date().toISOString());
     setLoading(true);
     setError(null);
 
@@ -87,8 +88,6 @@ export const useUnifiedCampaigns = () => {
 
       console.log('✅ [UNIFIED_CAMPAIGNS] Campanhas avançadas encontradas:', advancedCampaigns?.length || 0);
       console.log('📊 [UNIFIED_CAMPAIGNS] Dados das campanhas avançadas:', advancedCampaigns);
-      console.log('🔍 [CAMPAIGNS] Advanced campaigns found:', advancedCampaigns?.length || 0);
-      console.log('🔍 [CAMPAIGNS] Advanced campaigns data:', advancedCampaigns);
 
       // Buscar campanhas legadas com vídeos
       const { data: legacyCampaigns, error: legacyError } = await supabase
@@ -107,8 +106,13 @@ export const useUnifiedCampaigns = () => {
         .eq('client_id', userProfile.id)
         .order('created_at', { ascending: false });
 
-      if (legacyError) throw legacyError;
-      console.log('🔍 [CAMPAIGNS] Legacy campaigns found:', legacyCampaigns?.length || 0);
+      if (legacyError) {
+        console.error('❌ [UNIFIED_CAMPAIGNS] Erro ao buscar campanhas legadas:', legacyError);
+        throw legacyError;
+      }
+
+      console.log('✅ [UNIFIED_CAMPAIGNS] Campanhas legadas encontradas:', legacyCampaigns?.length || 0);
+      console.log('📊 [UNIFIED_CAMPAIGNS] Dados das campanhas legadas:', legacyCampaigns);
 
       // Converter campanhas avançadas
       const unifiedAdvanced: UnifiedCampaign[] = (advancedCampaigns || []).map((campaign: any) => {
@@ -156,35 +160,41 @@ export const useUnifiedCampaigns = () => {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      console.log('🔍 [CAMPAIGNS] Total unified campaigns:', allCampaigns.length);
-      console.log('🔍 [CAMPAIGNS] Campaigns data:', allCampaigns);
+      console.log('🎯 [UNIFIED_CAMPAIGNS] Total de campanhas unificadas:', allCampaigns.length);
+      console.log('📊 [UNIFIED_CAMPAIGNS] Campanhas finais:', allCampaigns);
       
-      // Verificar se há uma nova campanha criada recentemente
-      if (allCampaigns.length > 0) {
-        const newest = allCampaigns[0];
-        if (lastCreatedId !== newest.id) {
-          setLastCreatedId(newest.id);
-          console.log('🆕 [CAMPAIGNS] New campaign detected:', newest.name);
-        }
+      // Find the most recently created campaign ID
+      const mostRecent = allCampaigns.length > 0 ? allCampaigns[0]?.id : null;
+      if (mostRecent && mostRecent !== lastCreatedId) {
+        console.log('🆕 [UNIFIED_CAMPAIGNS] Nova campanha mais recente detectada:', mostRecent);
+        setLastCreatedId(mostRecent);
       }
-      
+
       setCampaigns(allCampaigns);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar campanhas');
+      console.log('✅ [UNIFIED_CAMPAIGNS] Campanhas definidas no state com sucesso');
+    } catch (error) {
+      console.error('❌ [UNIFIED_CAMPAIGNS] Erro na busca de campanhas:', error);
+      setError(error instanceof Error ? error.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
+      console.log('🏁 [UNIFIED_CAMPAIGNS] Busca finalizada');
     }
   };
 
   useEffect(() => {
-    fetchAllCampaigns();
+    console.log('🔄 [UNIFIED_CAMPAIGNS] useEffect executado - userProfile.id:', userProfile?.id);
+    if (userProfile?.id) {
+      fetchAllCampaigns();
+    } else {
+      console.log('⏳ [UNIFIED_CAMPAIGNS] Aguardando userProfile.id...');
+    }
   }, [userProfile?.id]);
 
   // Auto-refresh when page becomes visible (user navigates back)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && userProfile?.id) {
-        console.log('🔄 [CAMPAIGNS] Page visible - auto-refreshing campaigns');
+        console.log('🔄 [UNIFIED_CAMPAIGNS] Page visible - auto-refreshing campaigns');
         fetchAllCampaigns();
       }
     };

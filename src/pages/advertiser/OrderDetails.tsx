@@ -20,8 +20,7 @@ import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
-import { CampaignScheduler } from '@/components/campaign/CampaignScheduler';
-import { CampaignList } from '@/components/campaign/CampaignList';
+import { CampaignNavigationCard } from '@/components/order/CampaignNavigationCard';
 import { useUnifiedCampaigns } from '@/hooks/useUnifiedCampaigns';
 
 interface OrderDetails {
@@ -269,30 +268,10 @@ const OrderDetails = () => {
               onDownload={handleVideoDownload}
             />
             
-            {/* Campaign List - Show existing campaigns */}
+            {/* Campaign Navigation - Redirect to main campaigns page */}
             <div className="mt-8">
-              <CampaignList
-                pedidoId={orderDetails.id}
-                onCampaignSelect={(campaignId) => {
-                  console.log('Selected campaign:', campaignId);
-                  // Could navigate to campaign details or show modal
-                }}
-              />
+              <CampaignNavigationCard orderStatus={orderDetails.status} />
             </div>
-
-            {/* Campaign Scheduler - Show only if there are approved videos */}
-            {videoSlots.some(slot => slot.approval_status === 'approved') && (
-              <div className="mt-8">
-                <CampaignScheduler
-                  pedidoId={orderDetails.id}
-                  approvedVideos={videoSlots.filter(slot => slot.approval_status === 'approved')}
-                  onCampaignCreated={() => {
-                    console.log('Campaign created successfully - refreshing campaigns list');
-                  }}
-                  onRefreshCampaigns={refetchCampaigns}
-                />
-              </div>
-            )}
           </>
         )}
       </div>

@@ -7,6 +7,7 @@ import { useVideoManagement } from '@/hooks/useVideoManagement';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
+import { CampaignNavigationCard } from '@/components/order/CampaignNavigationCard';
 import { Loader2, Package, AlertTriangle } from 'lucide-react';
 
 const OrderDetails: React.FC = () => {
@@ -108,6 +109,9 @@ const OrderDetails: React.FC = () => {
           onSelectForDisplay={videoManagement.handleSelectForDisplay}
           onDownload={videoManagement.handleDownload}
         />
+
+        {/* Navegação para campanhas */}
+        <CampaignNavigationCard orderStatus={orderDetails.status} />
       </div>
     </Layout>
   );
