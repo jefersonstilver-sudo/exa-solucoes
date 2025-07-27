@@ -395,21 +395,6 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             />
           )}
 
-          {/* Debug de validação */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-xs text-muted-foreground space-y-1 p-3 bg-muted/50 rounded">
-              <p>Debug - Campos obrigatórios:</p>
-              <p>Nome: {formData.name ? '✅' : '❌'}</p>
-              <p>Pedido: {formData.orderId ? '✅' : '❌'}</p>
-              <p>Painel: {formData.panelId ? '✅' : '❌'}</p>
-              <p>Data início: {formData.startDate ? '✅' : '❌'}</p>
-              <p>Data fim: {formData.endDate ? '✅' : '❌'}</p>
-              <p>Horário início: {formData.startTime ? '✅' : '❌'}</p>
-              <p>Horário fim: {formData.endTime ? '✅' : '❌'}</p>
-              <p>Vídeos agendados: {videoSchedules.length > 0 ? '✅' : '❌'}</p>
-            </div>
-          )}
-
           {/* Botões de ação */}
           <div className="flex gap-4 pt-6">
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
@@ -418,8 +403,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             <Button 
               type="submit" 
               disabled={loading || !formData.name || !formData.orderId || !formData.panelId || !formData.startDate || !formData.endDate || !formData.startTime || !formData.endTime || videoSchedules.length === 0}
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-              size="lg"
+              className="flex-1"
             >
               {loading ? (
                 <>Criando...</>
