@@ -63,7 +63,8 @@ export const CampaignScheduler = ({
       description: campaignDescription,
       start_date: startDate,
       end_date: endDate,
-      video_schedules: videoSchedules
+      video_schedules: videoSchedules,
+      status: 'active' // Criar campanha como ativa automaticamente
     };
 
     const campaignId = await createCampaign(campaignData);
@@ -76,22 +77,44 @@ export const CampaignScheduler = ({
         description: 'Aguarde enquanto atualizamos a lista de campanhas...'
       });
 
-      // Aguardar um pequeno delay para garantir que o banco processou
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Aguardar delay maior para garantir que o banco processou completamente
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Refresh campaigns list e aguardar conclusão
       if (onRefreshCampaigns) {
         setIsRefreshing(true);
         try {
+          // Forçar um refresh mais robusto
           await onRefreshCampaigns();
           console.log('✅ [CAMPAIGN SCHEDULER] Campaigns list refreshed successfully');
+          
+          // Aguardar mais um pouco e tentar novamente
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await onRefreshCampaigns();
+          
+          toast.success('Lista de campanhas atualizada!', {
+            description: 'Sua nova campanha está visível na lista.'
+          });
         } catch (error) {
           console.error('❌ [CAMPAIGN SCHEDULER] Failed to refresh campaigns:', error);
-          // Retry uma vez
-          try {
-            await onRefreshCampaigns();
-          } catch (retryError) {
-            console.error('❌ [CAMPAIGN SCHEDULER] Retry failed:', retryError);
+          // Retry até 3 vezes
+          let retryCount = 0;
+          while (retryCount < 3) {
+            try {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              await onRefreshCampaigns();
+              console.log(`✅ [CAMPAIGN SCHEDULER] Retry ${retryCount + 1} successful`);
+              break;
+            } catch (retryError) {
+              retryCount++;
+              console.error(`❌ [CAMPAIGN SCHEDULER] Retry ${retryCount} failed:`, retryError);
+            }
+          }
+          
+          if (retryCount >= 3) {
+            toast.error('Falha ao atualizar lista', {
+              description: 'Use o botão "Atualizar" para ver sua campanha.'
+            });
           }
         } finally {
           setIsRefreshing(false);

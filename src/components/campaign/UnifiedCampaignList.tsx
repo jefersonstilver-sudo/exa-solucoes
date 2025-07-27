@@ -32,19 +32,19 @@ export const UnifiedCampaignList = ({ campaigns, loading, onRefetch }: UnifiedCa
   const getStatusBadge = (status: string, type: 'advanced' | 'legacy') => {
     const statusMap: Record<string, { label: string; className: string }> = {
       // Status das campanhas avançadas
-      draft: { label: 'Rascunho', className: 'bg-gray-100 text-gray-800' },
-      active: { label: 'Ativa', className: 'bg-green-100 text-green-800' },
-      paused: { label: 'Pausada', className: 'bg-yellow-100 text-yellow-800' },
-      completed: { label: 'Concluída', className: 'bg-blue-100 text-blue-800' },
-      cancelled: { label: 'Cancelada', className: 'bg-red-100 text-red-800' },
+      draft: { label: 'Rascunho', className: 'bg-orange-100 text-orange-800 border border-orange-200' },
+      active: { label: 'Ativa', className: 'bg-green-100 text-green-800 border border-green-200' },
+      paused: { label: 'Pausada', className: 'bg-yellow-100 text-yellow-800 border border-yellow-200' },
+      completed: { label: 'Concluída', className: 'bg-blue-100 text-blue-800 border border-blue-200' },
+      cancelled: { label: 'Cancelada', className: 'bg-red-100 text-red-800 border border-red-200' },
       // Status das campanhas legadas
-      ativo: { label: 'Ativa', className: 'bg-green-100 text-green-800' },
-      pendente: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800' },
-      finalizado: { label: 'Finalizada', className: 'bg-blue-100 text-blue-800' },
-      cancelado: { label: 'Cancelada', className: 'bg-red-100 text-red-800' },
+      ativo: { label: 'Ativa', className: 'bg-green-100 text-green-800 border border-green-200' },
+      pendente: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800 border border-yellow-200' },
+      finalizado: { label: 'Finalizada', className: 'bg-blue-100 text-blue-800 border border-blue-200' },
+      cancelado: { label: 'Cancelada', className: 'bg-red-100 text-red-800 border border-red-200' },
     };
 
-    const config = statusMap[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    const config = statusMap[status] || { label: status, className: 'bg-gray-100 text-gray-800 border border-gray-200' };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
@@ -248,6 +248,11 @@ export const UnifiedCampaignList = ({ campaigns, loading, onRefetch }: UnifiedCa
                       <>
                         <Pause className="h-4 w-4 mr-1" />
                         Pausar
+                      </>
+                    ) : campaign.status === 'draft' ? (
+                      <>
+                        <Play className="h-4 w-4 mr-1" />
+                        Ativar
                       </>
                     ) : (
                       <>

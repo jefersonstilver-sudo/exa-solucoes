@@ -60,6 +60,7 @@ export interface CampaignInput {
   start_date: string;
   end_date: string;
   video_schedules: VideoScheduleInput[];
+  status?: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
 }
 
 export const DAYS_OF_WEEK = [

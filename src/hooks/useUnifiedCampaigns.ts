@@ -57,7 +57,9 @@ export const useUnifiedCampaigns = () => {
     setError(null);
 
     try {
-      // Buscar campanhas avançadas com vídeos
+      console.log('🔍 [CAMPAIGNS] Starting to fetch campaigns...');
+      
+      // Buscar campanhas avançadas com vídeos (incluindo todas, mesmo drafts)
       const { data: advancedCampaigns, error: advancedError } = await supabase
         .from('campaigns_advanced')
         .select(`
@@ -77,8 +79,12 @@ export const useUnifiedCampaigns = () => {
         .eq('client_id', userProfile.id)
         .order('created_at', { ascending: false });
 
-      if (advancedError) throw advancedError;
+      if (advancedError) {
+        console.error('❌ [CAMPAIGNS] Advanced campaigns error:', advancedError);
+        throw advancedError;
+      }
       console.log('🔍 [CAMPAIGNS] Advanced campaigns found:', advancedCampaigns?.length || 0);
+      console.log('🔍 [CAMPAIGNS] Advanced campaigns data:', advancedCampaigns);
 
       // Buscar campanhas legadas com vídeos
       const { data: legacyCampaigns, error: legacyError } = await supabase
@@ -104,6 +110,13 @@ export const useUnifiedCampaigns = () => {
       const unifiedAdvanced: UnifiedCampaign[] = (advancedCampaigns || []).map((campaign: any) => {
         // Extrair vídeos dos agendamentos
         const videos = campaign.campaign_video_schedules?.map((schedule: any) => schedule.videos).filter(Boolean) || [];
+        
+        console.log(`🔍 [CAMPAIGNS] Processing advanced campaign ${campaign.id}:`, {
+          name: campaign.name,
+          status: campaign.status,
+          videosCount: videos.length,
+          schedules: campaign.campaign_video_schedules?.length || 0
+        });
         
         return {
           id: campaign.id,
@@ -194,10 +207,22 @@ export const useUnifiedCampaigns = () => {
         },
         (payload) => {
           console.log('🔄 [CAMPAIGNS] Real-time update received:', payload);
-          // Aguardar um pequeno delay para garantir consistência
+          console.log('🔄 [CAMPAIGNS] Payload details:', {
+            eventType: payload.eventType,
+            new: payload.new,
+            old: payload.old
+          });
+          
+          // Aguardar delay e fazer múltiplos refreshes para garantir sincronização
           setTimeout(() => {
+            console.log('🔄 [CAMPAIGNS] Executing first refresh from real-time');
             fetchAllCampaigns();
-          }, 1000);
+          }, 500);
+          
+          setTimeout(() => {
+            console.log('🔄 [CAMPAIGNS] Executing second refresh from real-time');
+            fetchAllCampaigns();
+          }, 2000);
         }
       )
       .subscribe();
