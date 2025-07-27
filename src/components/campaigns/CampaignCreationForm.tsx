@@ -165,9 +165,9 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     const hasEndDate = formData.endDate.trim() !== '';
     const hasStartTime = formData.startTime.trim() !== '';
     const hasEndTime = formData.endTime.trim() !== '';
-    const hasVideos = approvedVideos.length > 0;
+    const hasScheduledVideos = videoSchedules.length > 0;
     
-    return hasName && hasOrder && hasPanel && hasStartDate && hasEndDate && hasStartTime && hasEndTime && hasVideos;
+    return hasName && hasOrder && hasPanel && hasStartDate && hasEndDate && hasStartTime && hasEndTime && hasScheduledVideos;
   };
 
   const getValidationMessage = () => {
@@ -178,7 +178,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     if (!formData.endDate.trim()) return "Selecione a data de fim";
     if (!formData.startTime.trim()) return "Defina o horário de início";
     if (!formData.endTime.trim()) return "Defina o horário de fim";
-    if (approvedVideos.length === 0) return "Não há vídeos aprovados disponíveis";
+    if (videoSchedules.length === 0) return "Adicione pelo menos um vídeo ao agendamento";
     return "";
   };
 
