@@ -158,30 +158,28 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
   };
 
   const isFormValid = () => {
-    // Debug temporário para identificar problema
-    console.log('=== DEBUG VALIDAÇÃO ===');
-    console.log('Nome:', formData.name.trim() !== '', formData.name);
-    console.log('Pedido ID:', formData.orderId.trim() !== '', formData.orderId);
-    console.log('Painel ID:', formData.panelId.trim() !== '', formData.panelId);
-    console.log('Data início:', formData.startDate.trim() !== '', formData.startDate);
-    console.log('Data fim:', formData.endDate.trim() !== '', formData.endDate);
-    console.log('Hora início:', formData.startTime.trim() !== '', formData.startTime);
-    console.log('Hora fim:', formData.endTime.trim() !== '', formData.endTime);
-    console.log('Video schedules:', videoSchedules.length > 0, videoSchedules.length, videoSchedules);
+    const hasName = formData.name.trim() !== '';
+    const hasOrder = formData.orderId.trim() !== '';
+    const hasPanel = formData.panelId.trim() !== '';
+    const hasStartDate = formData.startDate.trim() !== '';
+    const hasEndDate = formData.endDate.trim() !== '';
+    const hasStartTime = formData.startTime.trim() !== '';
+    const hasEndTime = formData.endTime.trim() !== '';
+    const hasVideos = approvedVideos.length > 0;
     
-    const isValid = formData.name.trim() !== '' &&
-                   formData.orderId.trim() !== '' &&
-                   formData.panelId.trim() !== '' &&
-                   formData.startDate.trim() !== '' &&
-                   formData.endDate.trim() !== '' &&
-                   formData.startTime.trim() !== '' &&
-                   formData.endTime.trim() !== '' &&
-                   videoSchedules.length > 0;
-    
-    console.log('Formulário válido:', isValid);
-    console.log('====================');
-    
-    return isValid;
+    return hasName && hasOrder && hasPanel && hasStartDate && hasEndDate && hasStartTime && hasEndTime && hasVideos;
+  };
+
+  const getValidationMessage = () => {
+    if (!formData.name.trim()) return "Nome da campanha é obrigatório";
+    if (!formData.orderId.trim()) return "Selecione um pedido pago";
+    if (!formData.panelId.trim()) return "Selecione um painel";
+    if (!formData.startDate.trim()) return "Selecione a data de início";
+    if (!formData.endDate.trim()) return "Selecione a data de fim";
+    if (!formData.startTime.trim()) return "Defina o horário de início";
+    if (!formData.endTime.trim()) return "Defina o horário de fim";
+    if (approvedVideos.length === 0) return "Não há vídeos aprovados disponíveis";
+    return "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -420,6 +418,15 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               videoSchedules={videoSchedules}
               onSchedulesChange={setVideoSchedules}
             />
+          )}
+
+          {/* Mensagem de validação */}
+          {!isFormValid() && (
+            <div className="p-3 bg-muted border rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                {getValidationMessage()}
+              </p>
+            </div>
           )}
 
           {/* Botões de ação */}
