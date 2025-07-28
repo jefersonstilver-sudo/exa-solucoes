@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useEmailConfirmation } from '@/hooks/useEmailConfirmation';
 
 export default function Confirmacao() {
+  console.log('🚀 [CONFIRMACAO] Componente Confirmacao renderizado!');
   const navigate = useNavigate();
   const location = useLocation();
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'already-confirmed' | 'expired'>('loading');

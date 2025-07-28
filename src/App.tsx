@@ -92,7 +92,12 @@ function App() {
                     <Route path="/pix-payment" element={<PixPayment />} />
                     
                     {/* CONFIRMAÇÕES */}
-                    <Route path="/confirmacao" element={<Confirmacao />} />
+                    <Route path="/confirmacao" element={
+                      (() => {
+                        console.log('🔍 [ROUTER] Rota /confirmacao foi ativada!');
+                        return <Confirmacao />;
+                      })()
+                    } />
                     <Route path="/pedido-confirmado" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <OrderConfirmation />
