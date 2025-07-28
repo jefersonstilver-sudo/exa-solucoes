@@ -112,13 +112,21 @@ const AdvertiserDashboard = () => {
 
       if (pedidosError) throw pedidosError;
 
-      // Buscar campanhas do usuário
+      // Buscar campanhas legacy
       const { data: campanhas, error: campanhasError } = await supabase
         .from('campanhas')
         .select('*')
         .eq('client_id', userProfile.id);
 
       if (campanhasError) throw campanhasError;
+
+      // Buscar campanhas avançadas (novas)
+      const { data: campanhasAdvanced, error: campanhasAdvancedError } = await supabase
+        .from('campaigns_advanced')
+        .select('*')
+        .eq('client_id', userProfile.id);
+
+      if (campanhasAdvancedError) throw campanhasAdvancedError;
 
       // Buscar vídeos do usuário
       const { data: videos, error: videosError } = await supabase
@@ -131,7 +139,12 @@ const AdvertiserDashboard = () => {
       // Calcular estatísticas
       const pedidosPagos = pedidos?.filter(p => p.status === 'pago' || p.status === 'pago_pendente_video' || p.status === 'video_aprovado') || [];
       const pedidosPendentes = pedidos?.filter(p => p.status === 'pendente') || [];
-      const campanhasAtivas = campanhas?.filter(c => c.status === 'ativo') || [];
+      
+      // Combinar campanhas legacy e avançadas ativas
+      const campanhasLegacyAtivas = campanhas?.filter(c => c.status === 'ativo') || [];
+      const campanhasAdvancedAtivas = campanhasAdvanced?.filter(c => c.status === 'active') || [];
+      const totalCampanhasAtivas = campanhasLegacyAtivas.length + campanhasAdvancedAtivas.length;
+      
       const videosEnviados = videos?.length || 0;
       
       // Calcular próximos vencimentos (próximos 30 dias)
@@ -149,7 +162,7 @@ const AdvertiserDashboard = () => {
       setStats({
         totalPedidos: pedidos?.length || 0,
         valorTotalGasto,
-        campanhasAtivas: campanhasAtivas.length,
+        campanhasAtivas: totalCampanhasAtivas,
         videosEnviados,
         pedidosPendentes: pedidosPendentes.length,
         pedidosPagos: pedidosPagos.length,
