@@ -61,12 +61,10 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
       if (isAdvanced) {
         if (formData.name) updates.name = formData.name;
         if (formData.description) updates.description = formData.description;
-        if (formData.status) updates.status = formData.status;
         if (formData.start_date) updates.start_date = formData.start_date;
         if (formData.end_date) updates.end_date = formData.end_date;
       } else {
         if (formData.description) updates.obs = formData.description;
-        if (formData.status) updates.status = formData.status;
         if (formData.start_date) updates.data_inicio = formData.start_date;
         if (formData.end_date) updates.data_fim = formData.end_date;
       }
@@ -123,22 +121,22 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
             />
           </div>
 
+          {/* Status é controlado automaticamente pelo scheduler */}
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Ativar</SelectItem>
-                <SelectItem value="paused">Pausar</SelectItem>
-                <SelectItem value="completed">Finalizar</SelectItem>
-                <SelectItem value="cancelled">Cancelar</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Status da Campanha</Label>
+            <div className="p-3 bg-muted rounded-md">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  Status Atual: <span className="capitalize">{campaign.status}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Controlado automaticamente
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                O status é definido automaticamente baseado nas datas e horários configurados.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

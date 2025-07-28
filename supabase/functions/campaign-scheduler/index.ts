@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
               activationReason = `Normal time range: ${rule.start_time}-${rule.end_time} (with tolerance)`
               console.log(`[SCHEDULER]     ✅ Active - ${activationReason}`)
               break
-            } else if (today < startDate) {
+            } else if (currentTime < rule.start_time) {
               // Está no dia correto mas antes do horário de início = scheduled
               shouldBeScheduled = true
               activationReason = `Scheduled for later today: ${rule.start_time}-${rule.end_time}`
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
               activationReason = `Cross-midnight range: ${rule.start_time}-${rule.end_time} (with tolerance)`
               console.log(`[SCHEDULER]     ✅ Active - ${activationReason}`)
               break
-            } else if (today < startDate) {
+            } else if (currentTime < rule.start_time) {
               // Está no dia correto mas antes do horário de início
               shouldBeScheduled = true
               activationReason = `Scheduled for later today: ${rule.start_time}-${rule.end_time} (cross-midnight)`

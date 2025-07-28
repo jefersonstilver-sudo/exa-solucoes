@@ -181,7 +181,13 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
         if (insertError) throw insertError;
       }
 
-      toast.success('Horários salvos com sucesso!');
+      // Resetar o status da campanha para permitir que o scheduler controle automaticamente
+      await supabase
+        .from('campaigns_advanced')
+        .update({ status: 'scheduled' }) // Definir como scheduled para que o scheduler calcule o status correto
+        .eq('id', campaignId);
+
+      toast.success('Horários salvos com sucesso! O status será recalculado automaticamente.');
       onScheduleUpdate?.();
     } catch (error: any) {
       console.error('Erro ao salvar horários:', error);
