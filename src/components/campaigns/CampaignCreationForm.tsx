@@ -471,28 +471,11 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                 sideOffset={8}
               >
                 {availablePanels.map((panel) => (
-                  <SelectItem key={panel.id} value={panel.id} className="min-h-[100px] sm:min-h-[90px] p-0">
-                    <div className="w-full p-4 sm:p-6 space-y-3 sm:space-y-4">
-                      {/* Header com código do painel */}
-                      <div className="flex items-center gap-2 pb-3 border-b-2 border-border/60">
-                        <Monitor className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                        <span className="font-semibold text-sm sm:text-base text-foreground">
-                          {panel.code}
-                        </span>
-                      </div>
-                      
-                      {/* Informações do prédio organizadas */}
-                      <div className="space-y-2 sm:space-y-3">
-                        <div className="text-xs sm:text-sm font-medium text-foreground">
-                          {panel.buildings.nome}
-                        </div>
-                        <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                          {panel.buildings.endereco}
-                        </div>
-                        <div className="text-xs sm:text-sm text-muted-foreground font-medium">
-                          {panel.buildings.bairro}
-                        </div>
-                      </div>
+                  <SelectItem key={panel.id} value={panel.id} className="py-2">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{panel.code}</span>
+                      <span className="text-muted-foreground">- {panel.buildings.nome}</span>
                     </div>
                   </SelectItem>
                 ))}
