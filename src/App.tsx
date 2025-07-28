@@ -21,6 +21,8 @@ import PixPayment from './pages/PixPayment';
 import Confirmacao from './pages/Confirmacao';
 import LoginPage from './pages/LoginPage';
 import Cadastro from './pages/Cadastro';
+import TermosUso from './pages/TermosUso';
+import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 
@@ -186,6 +188,8 @@ function App() {
                     {/* Rotas de autenticação */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/cadastro" element={<Cadastro />} />
+                    <Route path="/termos-uso" element={<TermosUso />} />
+                    <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
 
                     {/* Rotas administrativas */}
                     <Route path="/super_admin/*" element={<SuperAdminPage />} />

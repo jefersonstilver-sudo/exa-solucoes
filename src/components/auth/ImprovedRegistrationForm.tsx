@@ -7,6 +7,7 @@ import { Mail, Key, UserCheck, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DocumentInput from './DocumentInput';
 import { PasswordInput } from '@/components/ui/password-input';
+import TermsCheckbox from './TermsCheckbox';
 
 interface ImprovedRegistrationFormProps {
   name: string;
@@ -15,6 +16,8 @@ interface ImprovedRegistrationFormProps {
   confirmPassword: string;
   document: string;
   documentType: 'cpf' | 'cnpj';
+  acceptedTerms: boolean;
+  acceptedPrivacy: boolean;
   isLoading: boolean;
   onNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
@@ -22,6 +25,8 @@ interface ImprovedRegistrationFormProps {
   onConfirmPasswordChange: (value: string) => void;
   onDocumentTypeChange: (type: 'cpf' | 'cnpj') => void;
   onDocumentChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onTermsChange: (checked: boolean) => void;
+  onPrivacyChange: (checked: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -32,6 +37,8 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
   confirmPassword,
   document,
   documentType,
+  acceptedTerms,
+  acceptedPrivacy,
   isLoading,
   onNameChange,
   onEmailChange,
@@ -39,6 +46,8 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
   onConfirmPasswordChange,
   onDocumentTypeChange,
   onDocumentChange,
+  onTermsChange,
+  onPrivacyChange,
   onSubmit
 }) => {
   return (
@@ -111,6 +120,14 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
         onDocumentChange={onDocumentChange}
       />
       
+      <TermsCheckbox
+        acceptedTerms={acceptedTerms}
+        acceptedPrivacy={acceptedPrivacy}
+        onTermsChange={onTermsChange}
+        onPrivacyChange={onPrivacyChange}
+        className="pt-2"
+      />
+      
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -119,7 +136,7 @@ const ImprovedRegistrationForm: React.FC<ImprovedRegistrationFormProps> = ({
         <Button 
           type="submit" 
           className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-all duration-200 h-11"
-          disabled={isLoading}
+          disabled={isLoading || !acceptedTerms || !acceptedPrivacy}
         >
           {isLoading ? (
             <>

@@ -14,6 +14,8 @@ interface RegistrationContainerProps {
   confirmPassword: string;
   document: string;
   documentType: 'cpf' | 'cnpj';
+  acceptedTerms: boolean;
+  acceptedPrivacy: boolean;
   isLoading: boolean;
   error: string | null;
   redirectPath: string;
@@ -23,6 +25,8 @@ interface RegistrationContainerProps {
   onConfirmPasswordChange: (value: string) => void;
   onDocumentTypeChange: (type: 'cpf' | 'cnpj') => void;
   onDocumentChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onTermsChange: (checked: boolean) => void;
+  onPrivacyChange: (checked: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -33,6 +37,8 @@ const RegistrationContainer: React.FC<RegistrationContainerProps> = ({
   confirmPassword,
   document,
   documentType,
+  acceptedTerms,
+  acceptedPrivacy,
   isLoading,
   error,
   redirectPath,
@@ -42,6 +48,8 @@ const RegistrationContainer: React.FC<RegistrationContainerProps> = ({
   onConfirmPasswordChange,
   onDocumentTypeChange,
   onDocumentChange,
+  onTermsChange,
+  onPrivacyChange,
   onSubmit
 }) => {
   return (
@@ -64,6 +72,8 @@ const RegistrationContainer: React.FC<RegistrationContainerProps> = ({
               confirmPassword={confirmPassword}
               document={document}
               documentType={documentType}
+              acceptedTerms={acceptedTerms}
+              acceptedPrivacy={acceptedPrivacy}
               isLoading={isLoading}
               onNameChange={onNameChange}
               onEmailChange={onEmailChange}
@@ -71,6 +81,8 @@ const RegistrationContainer: React.FC<RegistrationContainerProps> = ({
               onConfirmPasswordChange={onConfirmPasswordChange}
               onDocumentTypeChange={onDocumentTypeChange}
               onDocumentChange={onDocumentChange}
+              onTermsChange={onTermsChange}
+              onPrivacyChange={onPrivacyChange}
               onSubmit={onSubmit}
             />
           </CardContent>

@@ -18,6 +18,8 @@ export default function Cadastro() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [document, setDocument] = useState('');
   const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>('cpf');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -54,6 +56,11 @@ export default function Cadastro() {
         return;
       }
       
+      if (!acceptedTerms || !acceptedPrivacy) {
+        setError("É obrigatório aceitar os Termos de Uso e a Política de Privacidade.");
+        return;
+      }
+      
       setIsLoading(true);
       setError(null);
       
@@ -67,7 +74,11 @@ export default function Cadastro() {
           data: {
             name,
             document_type: documentType,
-            document: document.replace(/\D/g, '')
+            document: document.replace(/\D/g, ''),
+            terms_accepted: true,
+            privacy_accepted: true,
+            terms_accepted_at: new Date().toISOString(),
+            privacy_accepted_at: new Date().toISOString()
           },
           emailRedirectTo: `${window.location.origin}/confirmacao?redirect=${encodeURIComponent(redirectPath)}`
         }
@@ -136,6 +147,8 @@ export default function Cadastro() {
                   confirmPassword={confirmPassword}
                   document={document}
                   documentType={documentType}
+                  acceptedTerms={acceptedTerms}
+                  acceptedPrivacy={acceptedPrivacy}
                   isLoading={isLoading}
                   onNameChange={setName}
                   onEmailChange={setEmail}
@@ -143,6 +156,8 @@ export default function Cadastro() {
                   onConfirmPasswordChange={setConfirmPassword}
                   onDocumentTypeChange={setDocumentType}
                   onDocumentChange={handleChangeDocument}
+                  onTermsChange={setAcceptedTerms}
+                  onPrivacyChange={setAcceptedPrivacy}
                   onSubmit={handleSignUp}
                 />
               </CardContent>

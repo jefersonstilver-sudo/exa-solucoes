@@ -1269,20 +1269,29 @@ export type Database = {
         Row: {
           data_criacao: string | null
           email: string
+          email_verified_at: string | null
           id: string
+          privacy_accepted_at: string | null
           role: string
+          terms_accepted_at: string | null
         }
         Insert: {
           data_criacao?: string | null
           email: string
+          email_verified_at?: string | null
           id: string
+          privacy_accepted_at?: string | null
           role: string
+          terms_accepted_at?: string | null
         }
         Update: {
           data_criacao?: string | null
           email?: string
+          email_verified_at?: string | null
           id?: string
+          privacy_accepted_at?: string | null
           role?: string
+          terms_accepted_at?: string | null
         }
         Relationships: []
       }
