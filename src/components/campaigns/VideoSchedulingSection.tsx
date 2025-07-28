@@ -273,31 +273,13 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
               <CardTitle className="text-sm">Resumo dos Agendamentos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-2 text-sm">
                 {videoSchedules.map((schedule, index) => (
-                  <div key={index} className="p-3 bg-background rounded border">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium">{getVideoName(schedule.videoId)}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {schedule.scheduleRules.length} regra(s)
-                      </Badge>
+                  <div key={index} className="flex justify-between items-center p-2 bg-background rounded border">
+                    <span className="font-medium">{getVideoName(schedule.videoId)}</span>
+                    <div className="text-xs text-muted-foreground">
+                      {schedule.scheduleRules.length} regra(s) de horário
                     </div>
-                    {schedule.scheduleRules.map((rule, ruleIndex) => {
-                      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-                      const selectedDays = rule.daysOfWeek?.map(day => dayNames[day]).join(', ') || 'Nenhum dia';
-                      return (
-                        <div key={ruleIndex} className="text-xs text-muted-foreground mb-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={rule.isActive ? "default" : "secondary"} className="text-xs px-1 py-0">
-                              {rule.isActive ? "Ativa" : "Inativa"}
-                            </Badge>
-                            <span>{selectedDays}</span>
-                            <span>•</span>
-                            <span>{rule.startTime} - {rule.endTime}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
                 ))}
               </div>
