@@ -285,7 +285,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-[98vw] sm:max-w-2xl lg:max-w-4xl mx-auto">
+    <Card className="w-full max-w-[98vw] sm:max-w-2xl lg:max-w-4xl mx-auto overflow-hidden">
       <CardHeader className="p-3 sm:p-6">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
@@ -297,7 +297,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 sm:space-y-6 p-3 sm:p-6">
+      <CardContent className="relative space-y-3 sm:space-y-6 p-3 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6">
           {/* Nome da Campanha */}
           <div className="space-y-1 sm:space-y-2">
@@ -334,10 +334,16 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Selecione um pedido pago..." />
               </SelectTrigger>
-                <SelectContent className="max-w-[95vw] z-50">
+                <SelectContent 
+                  className="max-w-[98vw] z-[60]" 
+                  position="popper"
+                  side="bottom"
+                  align="start"
+                  sideOffset={5}
+                >
                 {paidOrders.map((order) => (
                   <SelectItem key={order.id} value={order.id} className="min-h-[85px] sm:min-h-[75px] p-0">
-                    <div className="w-full p-4 sm:p-5 space-y-3 sm:space-y-2">
+                    <div className="w-full p-3 sm:p-4 space-y-2 overflow-hidden">
                       {order.buildings && order.buildings.length > 0 ? (
                         <>
                           {/* Nome do prédio com separador */}
@@ -399,10 +405,16 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                 <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Selecione um painel..." />
                 </SelectTrigger>
-              <SelectContent className="max-w-[95vw] z-50">
+              <SelectContent 
+                className="max-w-[98vw] z-[55]" 
+                position="popper"
+                side="bottom"
+                align="start"
+                sideOffset={5}
+              >
                 {availablePanels.map((panel) => (
                   <SelectItem key={panel.id} value={panel.id} className="min-h-[80px] sm:min-h-[70px] p-0">
-                    <div className="w-full p-4 sm:p-5 space-y-3 sm:space-y-2">
+                    <div className="w-full p-3 sm:p-4 space-y-2 overflow-hidden">
                       {/* Código do painel com destaque */}
                       <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                         <Monitor className="h-4 w-4 text-primary flex-shrink-0" />
