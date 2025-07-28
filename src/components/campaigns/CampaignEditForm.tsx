@@ -363,26 +363,27 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="flex-shrink-0 pb-4">
-          <DialogTitle>Editar Campanha</DialogTitle>
+      <DialogContent className="max-w-[98vw] sm:max-w-3xl lg:max-w-4xl max-h-[95vh] p-3 sm:p-6 overflow-y-auto">
+        <DialogHeader className="flex-shrink-0 pb-2 sm:pb-4">
+          <DialogTitle className="text-lg sm:text-xl">Editar Campanha</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 flex-1 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6 flex-1 overflow-y-auto">
           {isAdvanced && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome da Campanha</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="name" className="text-sm">Nome da Campanha</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Digite o nome da campanha"
+                className="text-sm"
               />
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="description">
+          <div className="space-y-1 sm:space-y-2">
+            <Label htmlFor="description" className="text-sm">
               {isAdvanced ? 'Descrição' : 'Observações'}
             </Label>
             <Textarea
@@ -391,15 +392,16 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder={isAdvanced ? 'Descrição da campanha' : 'Observações sobre a campanha'}
               rows={3}
+              className="text-sm resize-none"
             />
           </div>
 
           {/* Status é controlado automaticamente pelo scheduler */}
-          <div className="space-y-2">
-            <Label>Status da Campanha</Label>
-            <div className="p-3 bg-muted rounded-md">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
+          <div className="space-y-1 sm:space-y-2">
+            <Label className="text-sm">Status da Campanha</Label>
+            <div className="p-2 sm:p-3 bg-muted rounded-md">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <span className="text-xs sm:text-sm font-medium">
                   Status Atual: <span className="capitalize">{campaign.status}</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -412,24 +414,26 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Data de Início</Label>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="start_date" className="text-sm">Data de Início</Label>
               <Input
                 id="start_date"
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                className="text-sm"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="end_date">Data de Fim</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="end_date" className="text-sm">Data de Fim</Label>
               <Input
                 id="end_date"
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                className="text-sm"
               />
             </div>
           </div>
@@ -448,18 +452,22 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
             </>
           )}
 
-          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 flex-shrink-0 border-t bg-background mt-6">
+          <div className="flex flex-col gap-2 pt-3 sm:flex-row sm:gap-3 sm:pt-4 border-t">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading || isSubmitting}
-              className="w-full sm:w-auto"
+              disabled={isSubmitting}
+              className="flex-1 sm:flex-none order-2 sm:order-1"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+            <Button
+              type="submit"
+              disabled={loading || isSubmitting}
+              className="flex-1 sm:flex-none order-1 sm:order-2"
+            >
+              {loading ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </div>
         </form>

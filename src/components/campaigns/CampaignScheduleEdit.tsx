@@ -217,56 +217,57 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="pb-3 sm:pb-6">
+        <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center">
-            <Clock className="h-5 w-5 mr-2" />
-            Horários de Veiculação
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            <span className="text-sm sm:text-base">Horários de Veiculação</span>
           </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={addSchedule}
-            className="flex items-center"
+            className="flex items-center text-xs sm:text-sm"
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             Adicionar Horário
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
         {schedules.map((schedule, index) => (
-          <div key={index} className="border rounded-lg p-4 space-y-4">
+          <div key={index} className="border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium">Horário {index + 1}</h4>
+              <h4 className="text-sm sm:text-base font-medium">Horário {index + 1}</h4>
               {schedules.length > 1 && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => removeSchedule(index)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 p-1 h-8 w-8"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               )}
             </div>
 
             {/* Dias da Semana */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">Dias da Semana</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-2">
+              <Label className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 block">Dias da Semana</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {DAYS_OF_WEEK.map(day => (
-                  <div key={day.value} className="flex items-center space-x-2 py-1">
+                  <div key={day.value} className="flex items-center space-x-1 sm:space-x-2 py-1">
                     <Checkbox
                       id={`day-${index}-${day.value}`}
                       checked={schedule.days_of_week.includes(day.value)}
                       onCheckedChange={() => toggleDay(index, day.value)}
+                      className="h-3 w-3 sm:h-4 sm:w-4"
                     />
                     <Label 
                       htmlFor={`day-${index}-${day.value}`}
-                      className="text-sm cursor-pointer leading-tight"
+                      className="text-xs sm:text-sm cursor-pointer leading-tight"
                     >
                       {day.label}
                     </Label>
@@ -276,9 +277,9 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
             </div>
 
             {/* Horários */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <div>
-                <Label htmlFor={`start-${index}`} className="text-sm font-medium mb-1 block">
+                <Label htmlFor={`start-${index}`} className="text-xs sm:text-sm font-medium mb-1 block">
                   Horário de Início
                 </Label>
                 <Input
@@ -286,10 +287,11 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
                   type="time"
                   value={schedule.start_time}
                   onChange={(e) => updateSchedule(index, 'start_time', e.target.value)}
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor={`end-${index}`} className="text-sm font-medium mb-1 block">
+                <Label htmlFor={`end-${index}`} className="text-xs sm:text-sm font-medium mb-1 block">
                   Horário de Fim
                 </Label>
                 <Input
@@ -297,6 +299,7 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
                   type="time"
                   value={schedule.end_time}
                   onChange={(e) => updateSchedule(index, 'end_time', e.target.value)}
+                  className="text-sm"
                 />
               </div>
             </div>
@@ -307,16 +310,21 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
                 id={`active-${index}`}
                 checked={schedule.is_active}
                 onCheckedChange={(checked) => updateSchedule(index, 'is_active', checked)}
+                className="h-3 w-3 sm:h-4 sm:w-4"
               />
-              <Label htmlFor={`active-${index}`} className="text-sm cursor-pointer">
+              <Label htmlFor={`active-${index}`} className="text-xs sm:text-sm cursor-pointer">
                 Horário ativo
               </Label>
             </div>
           </div>
         ))}
 
-        <div className="flex justify-end">
-          <Button onClick={saveSchedules} disabled={loading}>
+        <div className="flex justify-end pt-2">
+          <Button 
+            onClick={saveSchedules} 
+            disabled={loading}
+            className="w-full sm:w-auto text-sm"
+          >
             {loading ? 'Salvando...' : 'Salvar Horários'}
           </Button>
         </div>
