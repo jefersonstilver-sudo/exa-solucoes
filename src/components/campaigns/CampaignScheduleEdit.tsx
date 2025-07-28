@@ -224,6 +224,7 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
             Horários de Veiculação
           </div>
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={addSchedule}
@@ -241,6 +242,7 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
               <h4 className="font-medium">Horário {index + 1}</h4>
               {schedules.length > 1 && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => removeSchedule(index)}
