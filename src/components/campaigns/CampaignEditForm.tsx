@@ -52,7 +52,24 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     end_date: campaign.end_date || campaign.data_fim || ''
   });
 
-  // 🔧 CORREÇÃO CRÍTICA: Sincronizar formData com formatação correta de datas
+  // 🔧 CORREÇÃO CRÍTICA: Normalizar datas para formato YYYY-MM-DD consistente
+  const normalizeDateFormat = (dateString: string) => {
+    if (!dateString) return '';
+    
+    // Se já está no formato correto, retornar
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString.trim())) {
+      return dateString.trim();
+    }
+    
+    // Extrair de ISO string se necessário
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0].trim();
+    }
+    
+    return dateString.trim();
+  };
+
+  // Sincronizar formData com campaign data
   useEffect(() => {
     console.log('🔄 [CAMPAIGN EDIT] === SINCRONIZAÇÃO DE DADOS ===');
     console.log('🔄 [CAMPAIGN EDIT] Campaign recebida:', campaign);
@@ -60,34 +77,28 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     const startDate = campaign.start_date || campaign.data_inicio || '';
     const endDate = campaign.end_date || campaign.data_fim || '';
     
-    console.log('📅 [CAMPAIGN EDIT] Datas antes da formatação:', {
-      start_date: campaign.start_date,
-      data_inicio: campaign.data_inicio,
-      end_date: campaign.end_date,
-      data_fim: campaign.data_fim,
-      startDate_selected: startDate,
-      endDate_selected: endDate
-    });
+    // Normalizar datas para comparação consistente
+    const normalizedStartDate = normalizeDateFormat(startDate);
+    const normalizedEndDate = normalizeDateFormat(endDate);
     
-    const formattedStartDate = formatDateForInput(startDate);
-    const formattedEndDate = formatDateForInput(endDate);
-    
-    console.log('📅 [CAMPAIGN EDIT] Datas após formatação:', {
-      formattedStartDate,
-      formattedEndDate
+    console.log('📅 [CAMPAIGN EDIT] Datas normalizadas:', {
+      original_start: startDate,
+      normalized_start: normalizedStartDate,
+      original_end: endDate,
+      normalized_end: normalizedEndDate
     });
     
     const newFormData = {
       name: campaign.name || '',
       description: campaign.description || campaign.obs || '',
       status: campaign.status || '',
-      start_date: formattedStartDate,
-      end_date: formattedEndDate
+      start_date: normalizedStartDate,
+      end_date: normalizedEndDate
     };
     
     console.log('📝 [CAMPAIGN EDIT] FormData atualizado:', newFormData);
     setFormData(newFormData);
-  }, [campaign, open]); // Incluir 'open' para resetar quando o modal abrir
+  }, [campaign, open]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -172,7 +183,7 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           return;
         }
 
-        // Verificar mudanças nos campos
+        // Verificar mudanças nos campos com normalização de datas
         if (formData.name.trim() !== (campaign.name || '')) {
           updates.name = formData.name.trim();
           hasChanges = true;
@@ -185,36 +196,51 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           console.log('📝 [CAMPAIGN EDIT] Descrição alterada');
         }
         
-        if (formData.start_date.trim() !== (campaign.start_date || '')) {
-          updates.start_date = formData.start_date.trim();
+        // 🔧 CORREÇÃO CRÍTICA: Normalizar datas antes da comparação
+        const originalStartDate = normalizeDateFormat(campaign.start_date || '');
+        const formStartDate = normalizeDateFormat(formData.start_date || '');
+        
+        if (formStartDate !== originalStartDate) {
+          updates.start_date = formStartDate;
           hasChanges = true;
-          console.log('📅 [CAMPAIGN EDIT] Start date alterada:', campaign.start_date, '->', updates.start_date);
+          console.log('📅 [CAMPAIGN EDIT] Start date alterada:', originalStartDate, '->', formStartDate);
         }
         
-        if (formData.end_date.trim() !== (campaign.end_date || '')) {
-          updates.end_date = formData.end_date.trim();
+        const originalEndDate = normalizeDateFormat(campaign.end_date || '');
+        const formEndDate = normalizeDateFormat(formData.end_date || '');
+        
+        if (formEndDate !== originalEndDate) {
+          updates.end_date = formEndDate;
           hasChanges = true;
-          console.log('📅 [CAMPAIGN EDIT] End date alterada:', campaign.end_date, '->', updates.end_date);
+          console.log('📅 [CAMPAIGN EDIT] End date alterada:', originalEndDate, '->', formEndDate);
         }
         
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha AVANÇADA:', JSON.stringify(updates, null, 2));
       } else {
-        // Campanha legacy - usar campos antigos
+        // Campanha legacy - usar campos antigos com normalização
         if ((formData.description?.trim() || '') !== (campaign.obs || '')) {
           updates.obs = formData.description?.trim() || '';
           hasChanges = true;
+          console.log('📝 [CAMPAIGN EDIT] Obs alterada');
         }
         
-        if (formData.start_date?.trim() && formData.start_date.trim() !== (campaign.data_inicio || '')) {
-          updates.data_inicio = formData.start_date.trim();
+        // 🔧 CORREÇÃO CRÍTICA: Normalizar datas legacy antes da comparação
+        const originalDataInicio = normalizeDateFormat(campaign.data_inicio || '');
+        const formDataInicio = normalizeDateFormat(formData.start_date || '');
+        
+        if (formDataInicio && formDataInicio !== originalDataInicio) {
+          updates.data_inicio = formDataInicio;
           hasChanges = true;
-          console.log('📅 [CAMPAIGN EDIT] Data inicio alterada:', campaign.data_inicio, '->', updates.data_inicio);
+          console.log('📅 [CAMPAIGN EDIT] Data inicio alterada:', originalDataInicio, '->', formDataInicio);
         }
         
-        if (formData.end_date?.trim() && formData.end_date.trim() !== (campaign.data_fim || '')) {
-          updates.data_fim = formData.end_date.trim();
+        const originalDataFim = normalizeDateFormat(campaign.data_fim || '');
+        const formDataFim = normalizeDateFormat(formData.end_date || '');
+        
+        if (formDataFim && formDataFim !== originalDataFim) {
+          updates.data_fim = formDataFim;
           hasChanges = true;
-          console.log('📅 [CAMPAIGN EDIT] Data fim alterada:', campaign.data_fim, '->', updates.data_fim);
+          console.log('📅 [CAMPAIGN EDIT] Data fim alterada:', originalDataFim, '->', formDataFim);
         }
         
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha LEGACY:', JSON.stringify(updates, null, 2));
@@ -368,7 +394,7 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
               <Input
                 id="start_date"
                 type="date"
-                value={formatDateForInput(formData.start_date)}
+                value={formData.start_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
               />
             </div>
@@ -378,7 +404,7 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
               <Input
                 id="end_date"
                 type="date"
-                value={formatDateForInput(formData.end_date)}
+                value={formData.end_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
               />
             </div>
