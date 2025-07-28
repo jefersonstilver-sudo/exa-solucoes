@@ -7,6 +7,14 @@ export interface VideoSchedule {
   videoId: string;
   slotPosition: number;
   priority: number;
+  scheduleRules: ScheduleRule[];
+}
+
+export interface ScheduleRule {
+  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc.
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  isActive: boolean;
 }
 
 interface CreateAdvancedCampaignData {
@@ -64,6 +72,30 @@ export const useAdvancedCampaignCreation = () => {
           .single();
 
         if (scheduleError) throw scheduleError;
+
+        // 3. Criar regras de horários - usar regras específicas ou globais da campanha
+        const rules = videoSchedule.scheduleRules.length > 0 
+          ? videoSchedule.scheduleRules 
+          : [{
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Todos os dias
+              startTime: campaignData.startTime,
+              endTime: campaignData.endTime,
+              isActive: true
+            }];
+
+        for (const rule of rules) {
+          const { error: ruleError } = await supabase
+            .from('campaign_schedule_rules')
+            .insert({
+              campaign_video_schedule_id: schedule.id,
+              days_of_week: rule.daysOfWeek,
+              start_time: rule.startTime,
+              end_time: rule.endTime,
+              is_active: rule.isActive
+            });
+
+          if (ruleError) throw ruleError;
+        }
       }
 
       // Não criar campanha duplicada - apenas campanhas avançadas
