@@ -35,12 +35,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Converter para horário brasileiro (UTC-3)
     const now = new Date()
-    const currentTime = now.toTimeString().slice(0, 5) // HH:MM format
-    const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, etc.
-    const currentDate = now.toISOString().split('T')[0] // YYYY-MM-DD
+    const brazilTime = new Date(now.getTime() - (3 * 60 * 60 * 1000)) // UTC-3
+    const currentTime = brazilTime.toTimeString().slice(0, 5) // HH:MM format
+    const currentDay = brazilTime.getDay() // 0 = Sunday, 1 = Monday, etc.
+    const currentDate = brazilTime.toISOString().split('T')[0] // YYYY-MM-DD
 
-    console.log(`[SCHEDULER] Running at ${now.toISOString()}, current time: ${currentTime}, current day: ${currentDay}`)
+    console.log(`[SCHEDULER] Running at ${now.toISOString()} (UTC)`)
+    console.log(`[SCHEDULER] Brazil time: ${brazilTime.toISOString()}, current time: ${currentTime}, current day: ${currentDay}`)
 
     // Buscar todas as campanhas que podem precisar de mudança de status
     const { data: campaigns, error: campaignsError } = await supabase
