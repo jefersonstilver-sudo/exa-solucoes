@@ -383,10 +383,10 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             </Select>
           </div>
 
-          {/* Separador Visual */}
-          <div className="border-t pt-4 mt-6 sm:pt-6 sm:mt-8">
+          {/* Separador Visual Robusto */}
+          <div className="border-t-2 border-border/50 bg-border/20 pt-6 mt-8 sm:pt-8 sm:mt-12 rounded-t-lg">
             {/* Seleção do Painel com informações do prédio */}
-            <div className="space-y-1 sm:space-y-2">
+            <div className="space-y-1 sm:space-y-2 bg-muted/30 p-4 rounded-lg">
             <Label htmlFor="panel" className="text-xs sm:text-sm flex items-center gap-1">
               <Monitor className="h-3 w-3" />
               Painel e Localização *
