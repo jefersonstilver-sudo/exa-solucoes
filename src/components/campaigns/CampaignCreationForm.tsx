@@ -347,7 +347,19 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             </Label>
             <Select value={formData.orderId} onValueChange={handleOrderChange}>
               <SelectTrigger className="text-xs sm:text-sm">
-                <SelectValue placeholder="Selecione um pedido pago..." />
+                <SelectValue placeholder="Selecione um pedido pago...">
+                  {formData.orderId && (
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4 text-primary" />
+                        <span className="font-medium">{formData.orderBuildingName}</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        R$ {formData.orderValue}
+                      </Badge>
+                    </div>
+                  )}
+                </SelectValue>
               </SelectTrigger>
                 <SelectContent 
                   className="max-w-[98vw] z-[60]" 
