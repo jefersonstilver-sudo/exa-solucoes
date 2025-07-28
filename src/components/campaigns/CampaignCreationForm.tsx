@@ -466,7 +466,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
 
             {/* Campos preenchidos automaticamente */}
             {formData.panelId && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 p-3 bg-muted/20 rounded-lg border">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4 p-3 bg-muted/20 rounded-lg border">
                 <div className="space-y-1 sm:space-y-2">
                   <Label className="text-xs sm:text-sm text-muted-foreground">
                     Código do Painel Selecionado
