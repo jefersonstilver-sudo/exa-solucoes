@@ -131,7 +131,7 @@ const MobileCampaignCard = ({
               variant="outline" 
               size="sm"
               onClick={() => onEdit(campaign.id)}
-              className="flex-1 h-9"
+              className="flex-1 h-9 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
             >
               <Edit className="h-3 w-3 mr-1" />
               Editar

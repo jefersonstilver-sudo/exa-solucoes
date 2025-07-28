@@ -423,7 +423,7 @@ const MyCampaigns = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => handleEditCampaign(campaign.id)}
-                    className="flex-1"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Editar
