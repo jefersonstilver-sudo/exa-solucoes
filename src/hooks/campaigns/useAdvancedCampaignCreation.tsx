@@ -73,8 +73,17 @@ export const useAdvancedCampaignCreation = () => {
 
         if (scheduleError) throw scheduleError;
 
-        // 3. Criar regras de horários
-        for (const rule of videoSchedule.scheduleRules) {
+        // 3. Criar regras de horários - usar regras específicas ou globais da campanha
+        const rules = videoSchedule.scheduleRules.length > 0 
+          ? videoSchedule.scheduleRules 
+          : [{
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Todos os dias
+              startTime: campaignData.startTime,
+              endTime: campaignData.endTime,
+              isActive: true
+            }];
+
+        for (const rule of rules) {
           const { error: ruleError } = await supabase
             .from('campaign_schedule_rules')
             .insert({

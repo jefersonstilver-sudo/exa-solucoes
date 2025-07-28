@@ -86,6 +86,11 @@ const MyCampaigns = () => {
         const firstSchedule = campaign.campaign_video_schedules?.[0];
         const firstRule = firstSchedule?.campaign_schedule_rules?.find(rule => rule.is_active);
         
+        // Se não há regras específicas, significa que usa horários globais da campanha
+        // Para campanhas existentes, mostrar que tem horários padrão
+        const hasScheduleRules = firstRule != null;
+        const defaultTime = hasScheduleRules ? null : "Todo o dia";
+        
         return {
           id: campaign.id,
           painel_id: 'painel-advanced',
@@ -96,8 +101,8 @@ const MyCampaigns = () => {
           created_at: campaign.created_at,
           video_id: 'advanced-video',
           name: campaign.name,
-          start_time: firstRule?.start_time,
-          end_time: firstRule?.end_time,
+          start_time: firstRule?.start_time || defaultTime,
+          end_time: firstRule?.end_time || defaultTime,
           is_advanced: true
         } as Campaign;
       }) || [];
