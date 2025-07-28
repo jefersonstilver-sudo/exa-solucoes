@@ -35,13 +35,18 @@ const MobileCampaignCard = ({
 }: MobileCampaignCardProps) => {
   const getStatusBadge = (status: string) => {
     const variants = {
-      ativo: { bg: 'bg-green-100', text: 'text-green-800', label: 'Ativa' },
-      pendente: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pendente' },
-      finalizado: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Finalizada' },
-      cancelado: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelada' }
+      ativo: { bg: 'bg-green-500', text: 'text-white', label: 'Ativa' },
+      active: { bg: 'bg-green-500', text: 'text-white', label: 'Ativa' },
+      pausado: { bg: 'bg-red-500', text: 'text-white', label: 'Pausada' },
+      paused: { bg: 'bg-red-500', text: 'text-white', label: 'Pausada' },
+      agendado: { bg: 'bg-yellow-500', text: 'text-white', label: 'Agendada' },
+      scheduled: { bg: 'bg-yellow-500', text: 'text-white', label: 'Agendada' },
+      pendente: { bg: 'bg-blue-500', text: 'text-white', label: 'Pendente' },
+      finalizado: { bg: 'bg-blue-500', text: 'text-white', label: 'Finalizada' },
+      cancelado: { bg: 'bg-blue-500', text: 'text-white', label: 'Cancelada' }
     };
     
-    const variant = variants[status as keyof typeof variants] || variants.pendente;
+    const variant = variants[status as keyof typeof variants] || { bg: 'bg-blue-500', text: 'text-white', label: status };
     
     return (
       <Badge className={cn(variant.bg, variant.text, 'font-medium')}>

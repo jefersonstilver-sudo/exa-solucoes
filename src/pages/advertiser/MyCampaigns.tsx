@@ -126,29 +126,29 @@ const MyCampaigns = () => {
     switch (status) {
       case 'ativo':
       case 'active':
-        return <Badge className="bg-green-100 text-green-800">Ativa</Badge>;
+        return <Badge className="bg-green-500 text-white">Ativa</Badge>;
       case 'agendado':
       case 'scheduled':
-        return <Badge className="bg-blue-100 text-blue-800">Agendada</Badge>;
+        return <Badge className="bg-yellow-500 text-white">Agendada</Badge>;
       case 'pausado':
       case 'paused':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pausada</Badge>;
+        return <Badge className="bg-red-500 text-white">Pausada</Badge>;
       case 'pendente':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+        return <Badge className="bg-blue-500 text-white">Pendente</Badge>;
       case 'finalizado':
       case 'completed':
-        return <Badge className="bg-blue-100 text-blue-800">Finalizada</Badge>;
+        return <Badge className="bg-blue-500 text-white">Finalizada</Badge>;
       case 'expirado':
       case 'expired':
-        return <Badge className="bg-gray-100 text-gray-800">Expirada</Badge>;
+        return <Badge className="bg-blue-500 text-white">Expirada</Badge>;
       case 'cancelado':
       case 'cancelled':
-        return <Badge className="bg-red-100 text-red-800">Cancelada</Badge>;
+        return <Badge className="bg-blue-500 text-white">Cancelada</Badge>;
       case 'rascunho':
       case 'draft':
-        return <Badge className="bg-gray-100 text-gray-800">Rascunho</Badge>;
+        return <Badge className="bg-blue-500 text-white">Rascunho</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+        return <Badge className="bg-blue-500 text-white">{status}</Badge>;
     }
   };
 
