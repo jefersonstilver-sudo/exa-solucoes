@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2, Clock } from 'lucide-react';
+import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import CampaignCreationForm from '@/components/campaigns/CampaignCreationForm';
@@ -257,32 +257,6 @@ const MyCampaigns = () => {
     navigate(`/anunciante/campanhas/${campaignId}`);
   };
 
-  const handleForceSchedulerRun = async () => {
-    try {
-      toast.info('Forçando atualização do scheduler...');
-      
-      // Chamar a edge function do scheduler
-      const { data, error } = await supabase.functions.invoke('campaign-scheduler');
-      
-      if (error) {
-        console.error('Erro ao executar scheduler:', error);
-        toast.error('Erro ao executar scheduler: ' + error.message);
-        return;
-      }
-      
-      console.log('Resultado do scheduler:', data);
-      toast.success(`Scheduler executado! ${data.campaigns_processed} campanhas processadas.`);
-      
-      // Recarregar campanhas após o scheduler
-      setTimeout(() => {
-        loadCampaigns();
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Erro ao chamar scheduler:', error);
-      toast.error('Erro ao executar scheduler manual');
-    }
-  };
 
   const handleDeleteCampaign = async (campaignId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
@@ -383,14 +357,6 @@ const MyCampaigns = () => {
             <Monitor className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
-          <Button 
-            onClick={handleForceSchedulerRun}
-            variant="outline"
-            className="flex items-center text-orange-600 border-orange-600 hover:bg-orange-50"
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Forçar Atualização
-          </Button>
           <Button onClick={handleCreateCampaign} className="bg-indexa-purple hover:bg-indexa-purple/90">
             <Plus className="h-4 w-4 mr-2" />
             Nova Campanha
@@ -417,12 +383,12 @@ const MyCampaigns = () => {
                   {formatDate(campaign.data_inicio)} - {formatDate(campaign.data_fim)}
                 </div>
                 
-                {campaign.start_time && campaign.end_time && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock className="h-4 w-4 mr-2" />
-                    {formatTime(campaign.start_time)} - {formatTime(campaign.end_time)}
-                  </div>
-                )}
+                 {campaign.start_time && campaign.end_time && (
+                   <div className="flex items-center text-sm text-gray-600">
+                     <Calendar className="h-4 w-4 mr-2" />
+                     {formatTime(campaign.start_time)} - {formatTime(campaign.end_time)}
+                   </div>
+                 )}
                 
                 <div className="flex items-center text-sm text-gray-600">
                   <Monitor className="h-4 w-4 mr-2" />
