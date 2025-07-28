@@ -412,6 +412,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                 </span>
               </div>
               
+              {/* Informações básicas do local */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <div className="text-xs text-muted-foreground">Nome do Edifício</div>
@@ -421,16 +422,20 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                   <div className="text-xs text-muted-foreground">Bairro</div>
                   <div className="text-sm font-medium">{formData.orderBuildingNeighborhood}</div>
                 </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">Endereço</div>
-                  <div className="text-sm">{formData.orderBuildingAddress}</div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">Valor Total</div>
-                  <Badge variant="secondary" className="text-sm font-medium">
-                    R$ {formData.orderValue}
-                  </Badge>
-                </div>
+              </div>
+
+              {/* Endereço completo */}
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Endereço</div>
+                <div className="text-sm">{formData.orderBuildingAddress}</div>
+              </div>
+
+              {/* Valor total com destaque */}
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="text-xs text-muted-foreground">Valor Total</span>
+                <Badge variant="secondary" className="text-sm font-medium">
+                  R$ {formData.orderValue}
+                </Badge>
               </div>
             </div>
           )}
@@ -505,6 +510,7 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                   </span>
                 </div>
                 
+                {/* Informações básicas do painel */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <div className="text-xs text-muted-foreground">Código do Painel</div>
@@ -514,14 +520,18 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                     <div className="text-xs text-muted-foreground">Nome do Edifício</div>
                     <div className="text-sm font-medium">{formData.buildingName}</div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">Bairro</div>
-                    <div className="text-sm font-medium">{formData.panelBuildingNeighborhood}</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">Endereço</div>
-                    <div className="text-sm">{formData.panelBuildingAddress}</div>
-                  </div>
+                </div>
+
+                {/* Bairro */}
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Bairro</div>
+                  <div className="text-sm font-medium">{formData.panelBuildingNeighborhood}</div>
+                </div>
+
+                {/* Endereço completo */}
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Endereço</div>
+                  <div className="text-sm">{formData.panelBuildingAddress}</div>
                 </div>
               </div>
             )}
