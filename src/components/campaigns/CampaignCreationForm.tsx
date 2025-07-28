@@ -83,6 +83,9 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     startTime: '08:00',
     endTime: '22:00'
   });
+  
+  // Controle para evitar carregamentos excessivos
+  const [isFormLoading, setIsFormLoading] = useState(false);
   const [paidOrders, setPaidOrders] = useState<PaidOrder[]>([]);
   const [availablePanels, setAvailablePanels] = useState<Panel[]>([]);
   const [approvedVideos, setApprovedVideos] = useState<VideoItem[]>([]);
@@ -152,8 +155,9 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
   };
 
   const loadOrderData = async (orderId: string) => {
-    if (!orderId) return;
+    if (!orderId || isFormLoading) return;
 
+    setIsFormLoading(true);
     try {
       // Carregar painéis e vídeos em paralelo
       const [panels, videos] = await Promise.all([
@@ -176,6 +180,8 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     } catch (error: any) {
       console.error('Erro ao carregar dados do pedido:', error);
       toast.error('Erro ao carregar dados do pedido');
+    } finally {
+      setIsFormLoading(false);
     }
   };
 

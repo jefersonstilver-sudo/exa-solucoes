@@ -54,16 +54,50 @@ const MobileMyCampaigns = () => {
     }
   }, [setupSwipeHandlers, navigate]);
 
+  // Controle de carregamento para evitar múltiplas chamadas
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [lastLoadTime, setLastLoadTime] = useState(0);
+
   useEffect(() => {
-    loadCampaigns();
+    if (userProfile?.id && !isLoadingData) {
+      loadCampaigns();
+    }
   }, [userProfile]);
+
+  // Auto refresh com menor frequência
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      // Evitar atualizações se a última foi há menos de 4 minutos
+      if (userProfile?.id && now - lastLoadTime > 240000 && !isLoadingData) {
+        loadCampaigns();
+      }
+    }, 300000); // 5 minutos
+
+    return () => clearInterval(interval);
+  }, [userProfile, lastLoadTime, isLoadingData]);
 
   const loadCampaigns = async () => {
     if (!userProfile?.id) return;
 
-    try {
-      setLoading(true);
+    // Evitar múltiplas chamadas simultâneas
+    if (isLoadingData) {
+      console.log('⏳ Carregamento já em andamento, ignorando chamada');
+      return;
+    }
 
+    // Implementar debounce básico
+    const now = Date.now();
+    if (now - lastLoadTime < 2000) {
+      console.log('⚡ Chamada muito frequente, ignorando');
+      return;
+    }
+
+    setIsLoadingData(true);
+    setLoading(true);
+    setLastLoadTime(now);
+
+    try {
       const { data, error } = await supabase
         .from('campanhas')
         .select('*')
@@ -78,6 +112,7 @@ const MobileMyCampaigns = () => {
       toast.error('Erro ao carregar campanhas');
     } finally {
       setLoading(false);
+      setIsLoadingData(false);
     }
   };
 

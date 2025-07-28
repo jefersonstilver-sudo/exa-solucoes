@@ -33,47 +33,61 @@ const MyCampaigns = () => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  
+  // Controle de carregamento para evitar múltiplas chamadas
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [lastLoadTime, setLastLoadTime] = useState(0);
+  
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    loadCampaigns();
+    if (userProfile?.id && !isLoadingData) {
+      loadCampaigns();
+    }
   }, [userProfile]);
 
-  // Atualizar dados automaticamente
+  // Configurar atualizações automáticas com menor frequência
   useEffect(() => {
-    const handleFocus = () => {
-      console.log('Página ganhou foco - recarregando campanhas');
-      loadCampaigns();
-    };
+    if (!userProfile?.id) return;
 
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('Página ficou visível - recarregando campanhas');
+    // Atualizar a cada 5 minutos (reduzido de 30 segundos)
+    const interval = setInterval(() => {
+      const now = Date.now();
+      // Evitar atualizações se a última foi há menos de 4 minutos
+      if (now - lastLoadTime > 240000 && !isLoadingData) {
+        console.log('🔄 Auto-refresh campaigns (5min interval)');
         loadCampaigns();
       }
-    };
-
-    // Polling automático a cada 30 segundos
-    const interval = setInterval(() => {
-      console.log('Atualização automática - recarregando campanhas');
-      loadCampaigns();
-    }, 30000);
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    }, 300000);
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(interval);
     };
-  }, []);
+  }, [userProfile, lastLoadTime, isLoadingData]);
 
   const loadCampaigns = async () => {
     if (!userProfile?.id) return;
 
+    // Evitar múltiplas chamadas simultâneas
+    if (isLoadingData) {
+      console.log('⏳ Carregamento já em andamento, ignorando chamada');
+      return;
+    }
+
+    // Implementar debounce básico - evitar chamadas muito frequentes
+    const now = Date.now();
+    if (now - lastLoadTime < 2000) {
+      console.log('⚡ Chamada muito frequente, ignorando');
+      return;
+    }
+
+    console.log('🔄 Iniciando carregamento de campanhas...');
+    setIsLoadingData(true);
+    setLoading(true);
+    setLastLoadTime(now);
+
     try {
-      setLoading(true);
 
       // Buscar campanhas legacy
       const { data: legacyCampaigns, error: legacyError } = await supabase
@@ -149,6 +163,7 @@ const MyCampaigns = () => {
       toast.error('Erro ao carregar campanhas');
     } finally {
       setLoading(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -215,7 +230,6 @@ const MyCampaigns = () => {
     return timeString.substring(0, 5); // Formato HH:MM
   };
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const handleCreateCampaign = () => {
     // Verificar se o usuário tem pedidos pagos primeiro
@@ -250,7 +264,12 @@ const MyCampaigns = () => {
 
   const handleCampaignCreated = () => {
     setShowCreateForm(false);
-    loadCampaigns(); // Reload campaigns to show the new one
+    // Aguardar um pouco antes de recarregar para evitar conflitos
+    setTimeout(() => {
+      if (!isLoadingData) {
+        loadCampaigns();
+      }
+    }, 1000);
   };
 
   const handleEditCampaign = (campaignId: string) => {
