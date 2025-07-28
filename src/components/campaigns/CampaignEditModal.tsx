@@ -35,18 +35,25 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
   campaign,
   onSuccess
 }) => {
-  // 🔧 CORREÇÃO 6: Função de atualização com logs detalhados
   const handleUpdate = async (updates: Partial<CampaignData>) => {
     try {
       console.log('📝 [CAMPAIGN EDIT MODAL] Iniciando atualização:', {
         campaignId: campaign.id,
         isAdvanced: campaign.is_advanced,
-        updates
+        updates,
+        originalCampaign: campaign
       });
 
       // Determinar a tabela correta
       const tableName = campaign.is_advanced ? 'campaigns_advanced' : 'campanhas';
       console.log('🎯 [CAMPAIGN EDIT MODAL] Usando tabela:', tableName);
+
+      // Log da query que será executada
+      console.log('🔍 [CAMPAIGN EDIT MODAL] Query details:', {
+        table: tableName,
+        id: campaign.id,
+        updateData: updates
+      });
 
       const { data, error } = await supabase
         .from(tableName)
@@ -56,12 +63,35 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         .single();
 
       if (error) {
-        console.error('❌ [CAMPAIGN EDIT MODAL] Erro na atualização:', error);
+        console.error('❌ [CAMPAIGN EDIT MODAL] Erro Supabase:', {
+          error: error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         toast.error('Erro ao atualizar campanha: ' + error.message);
         return false;
       }
 
-      console.log('✅ [CAMPAIGN EDIT MODAL] Campanha atualizada com sucesso:', data);
+      console.log('✅ [CAMPAIGN EDIT MODAL] Resposta Supabase:', {
+        data: data,
+        updateApplied: true,
+        originalData: campaign,
+        newData: data
+      });
+      
+      // Verificar se os dados foram realmente atualizados
+      if (data && updates.start_date) {
+        const dataTyped = data as any; // Type assertion para acessar propriedades dinâmicas
+        console.log('📅 [CAMPAIGN EDIT MODAL] Verificação de datas:', {
+          sent_start_date: updates.start_date,
+          received_start_date: dataTyped.start_date || dataTyped.data_inicio,
+          sent_end_date: updates.end_date,
+          received_end_date: dataTyped.end_date || dataTyped.data_fim,
+          datesMatch: (dataTyped.start_date || dataTyped.data_inicio) === updates.start_date
+        });
+      }
       
       // Chamar onSuccess imediatamente para atualizar a UI
       onSuccess();
