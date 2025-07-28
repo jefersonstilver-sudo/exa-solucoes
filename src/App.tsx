@@ -82,6 +82,10 @@ function App() {
                     <Route path="/planos" element={<PlanSelection />} />
                     <Route path="/selecionar-plano" element={<PlanSelection />} />
                     
+                    {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
+                    <Route path="/confirmacao" element={<Confirmacao />} />
+                    <Route path="/confirmacao/*" element={<Confirmacao />} />
+                    
                     {/* CHECKOUT FLOW CORRIGIDO - REMOVIDA ROTA /checkout ANTIGA */}
                     <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
                     <Route path="/checkout/resumo" element={<CheckoutSummary />} />
@@ -90,14 +94,6 @@ function App() {
                     {/* PAGAMENTO - ROTAS CORRIGIDAS */}
                     <Route path="/payment" element={<Payment />} />
                     <Route path="/pix-payment" element={<PixPayment />} />
-                    
-                    {/* CONFIRMAÇÕES */}
-                    <Route path="/confirmacao" element={
-                      (() => {
-                        console.log('🔍 [ROUTER] Rota /confirmacao foi ativada!');
-                        return <Confirmacao />;
-                      })()
-                    } />
                     <Route path="/pedido-confirmado" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <OrderConfirmation />
