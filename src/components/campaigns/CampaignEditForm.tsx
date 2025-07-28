@@ -89,8 +89,17 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     setFormData(newFormData);
   }, [campaign, open]); // Incluir 'open' para resetar quando o modal abrir
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) {
+      console.log('⚠️ [CAMPAIGN EDIT] Submit já em andamento, ignorando...');
+      return;
+    }
+    
+    setIsSubmitting(true);
     setLoading(true);
 
     console.log('📝 [CAMPAIGN EDIT] === INÍCIO DO SUBMIT ===');
@@ -99,23 +108,38 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     console.log('🔧 [CAMPAIGN EDIT] Modo avançado:', isAdvanced);
 
     try {
-      // Validação de datas mais robusta
+      // Validação rigorosa de datas com logs detalhados
       if (formData.start_date && formData.end_date) {
-        const startDate = new Date(formData.start_date);
-        const endDate = new Date(formData.end_date);
+        // Validar formato primeiro
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(formData.start_date)) {
+          console.error('❌ [CAMPAIGN EDIT] Formato de start_date inválido:', formData.start_date);
+          toast.error('Formato da data de início inválido (esperado: YYYY-MM-DD)');
+          return;
+        }
         
-        console.log('📅 [CAMPAIGN EDIT] Validando datas:', {
+        if (!dateRegex.test(formData.end_date)) {
+          console.error('❌ [CAMPAIGN EDIT] Formato de end_date inválido:', formData.end_date);
+          toast.error('Formato da data de fim inválido (esperado: YYYY-MM-DD)');
+          return;
+        }
+        
+        // Validar se as datas são válidas usando UTC
+        const startDate = new Date(formData.start_date + 'T00:00:00.000Z');
+        const endDate = new Date(formData.end_date + 'T00:00:00.000Z');
+        
+        console.log('📅 [CAMPAIGN EDIT] Validando datas com UTC:', {
           start_date_input: formData.start_date,
           end_date_input: formData.end_date,
-          start_date_parsed: startDate.toISOString(),
-          end_date_parsed: endDate.toISOString(),
+          start_date_utc: startDate.toISOString(),
+          end_date_utc: endDate.toISOString(),
           start_valid: !isNaN(startDate.getTime()),
           end_valid: !isNaN(endDate.getTime())
         });
 
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           console.error('❌ [CAMPAIGN EDIT] Datas inválidas detectadas');
-          toast.error('Formato de data inválido');
+          toast.error('Uma ou mais datas são inválidas');
           return;
         }
 
@@ -126,18 +150,9 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
         }
       }
 
-      // 🔧 DEBUG CRÍTICO: Verificar dados antes da atualização
-      console.log('📋 [CAMPAIGN EDIT] FormData ANTES da preparação:', {
-        name: formData.name,
-        description: formData.description,
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        start_date_type: typeof formData.start_date,
-        end_date_type: typeof formData.end_date
-      });
-
-      // 🔧 CORREÇÃO CRÍTICA: Preparar dados para atualização
+      // Verificar mudanças antes de atualizar
       const updates: Partial<CampaignData> = {};
+      let hasChanges = false;
 
       if (isAdvanced) {
         // Campanha avançada - VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS
@@ -157,29 +172,58 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           return;
         }
 
-        // ✅ CORREÇÃO: Dados diretos do input (já estão em YYYY-MM-DD)
-        updates.name = formData.name.trim();
-        updates.description = formData.description?.trim() || '';
-        updates.start_date = formData.start_date.trim(); // Input já está em YYYY-MM-DD
-        updates.end_date = formData.end_date.trim(); // Input já está em YYYY-MM-DD
+        // Verificar mudanças nos campos
+        if (formData.name.trim() !== (campaign.name || '')) {
+          updates.name = formData.name.trim();
+          hasChanges = true;
+          console.log('📝 [CAMPAIGN EDIT] Nome alterado:', campaign.name, '->', updates.name);
+        }
+        
+        if ((formData.description?.trim() || '') !== (campaign.description || '')) {
+          updates.description = formData.description?.trim() || '';
+          hasChanges = true;
+          console.log('📝 [CAMPAIGN EDIT] Descrição alterada');
+        }
+        
+        if (formData.start_date.trim() !== (campaign.start_date || '')) {
+          updates.start_date = formData.start_date.trim();
+          hasChanges = true;
+          console.log('📅 [CAMPAIGN EDIT] Start date alterada:', campaign.start_date, '->', updates.start_date);
+        }
+        
+        if (formData.end_date.trim() !== (campaign.end_date || '')) {
+          updates.end_date = formData.end_date.trim();
+          hasChanges = true;
+          console.log('📅 [CAMPAIGN EDIT] End date alterada:', campaign.end_date, '->', updates.end_date);
+        }
         
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha AVANÇADA:', JSON.stringify(updates, null, 2));
-        console.log('📝 [CAMPAIGN EDIT] Formato das datas:', {
-          start_date_format: updates.start_date,
-          end_date_format: updates.end_date,
-          start_date_regex_test: /^\d{4}-\d{2}-\d{2}$/.test(updates.start_date || ''),
-          end_date_regex_test: /^\d{4}-\d{2}-\d{2}$/.test(updates.end_date || '')
-        });
       } else {
         // Campanha legacy - usar campos antigos
-        updates.obs = formData.description;
-        if (formData.start_date?.trim()) {
+        if ((formData.description?.trim() || '') !== (campaign.obs || '')) {
+          updates.obs = formData.description?.trim() || '';
+          hasChanges = true;
+        }
+        
+        if (formData.start_date?.trim() && formData.start_date.trim() !== (campaign.data_inicio || '')) {
           updates.data_inicio = formData.start_date.trim();
+          hasChanges = true;
+          console.log('📅 [CAMPAIGN EDIT] Data inicio alterada:', campaign.data_inicio, '->', updates.data_inicio);
         }
-        if (formData.end_date?.trim()) {
+        
+        if (formData.end_date?.trim() && formData.end_date.trim() !== (campaign.data_fim || '')) {
           updates.data_fim = formData.end_date.trim();
+          hasChanges = true;
+          console.log('📅 [CAMPAIGN EDIT] Data fim alterada:', campaign.data_fim, '->', updates.data_fim);
         }
+        
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha LEGACY:', JSON.stringify(updates, null, 2));
+      }
+      
+      if (!hasChanges) {
+        console.log('⚠️ [CAMPAIGN EDIT] Nenhuma alteração detectada');
+        toast.info('Nenhuma alteração foi detectada');
+        return;
       }
 
       console.log('📤 [CAMPAIGN EDIT] === ENVIANDO PARA SUPABASE ===');
@@ -201,12 +245,13 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
       console.error('💥 [CAMPAIGN EDIT] Erro inesperado no submit:', error);
       toast.error('Erro inesperado ao salvar. Tente novamente.');
     } finally {
+      setIsSubmitting(false);
       setLoading(false);
       console.log('📝 [CAMPAIGN EDIT] === FIM DO SUBMIT ===');
     }
   };
 
-  // 🔧 CORREÇÃO CRÍTICA: Formatação de data melhorada
+  // 🔧 CORREÇÃO CRÍTICA: Formatação de data melhorada com validação UTC
   const formatDateForInput = (dateString: string) => {
     if (!dateString) {
       console.log('🔴 [DATE FORMAT] Data vazia recebida');
@@ -216,10 +261,14 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     console.log('📅 [DATE FORMAT] Input recebido:', dateString, 'Tipo:', typeof dateString);
     
     try {
-      // Se já está no formato YYYY-MM-DD, usar diretamente
+      // Se já está no formato YYYY-MM-DD, validar e usar diretamente
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        console.log('✅ [DATE FORMAT] Data já no formato correto:', dateString);
-        return dateString;
+        // Validar se é uma data válida
+        const testDate = new Date(dateString + 'T00:00:00.000Z');
+        if (!isNaN(testDate.getTime())) {
+          console.log('✅ [DATE FORMAT] Data válida no formato correto:', dateString);
+          return dateString;
+        }
       }
       
       // Se for uma data completa ISO, extrair apenas a parte da data
@@ -229,15 +278,19 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
         return formattedDate;
       }
       
-      // Tentar parse e formatar
-      const date = new Date(dateString);
+      // Tentar parse com UTC para evitar problemas de timezone
+      const date = new Date(dateString + 'T00:00:00.000Z');
       if (!isNaN(date.getTime())) {
-        const formatted = date.toISOString().split('T')[0];
-        console.log('✅ [DATE FORMAT] Data formatada via Date:', formatted);
+        // Usar UTC para evitar mudanças de timezone
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const formatted = `${year}-${month}-${day}`;
+        console.log('✅ [DATE FORMAT] Data formatada com UTC:', dateString, '->', formatted);
         return formatted;
       }
       
-      console.log('⚠️ [DATE FORMAT] Usando valor original:', dateString);
+      console.log('⚠️ [DATE FORMAT] Usando valor original (não pôde formatar):', dateString);
       return dateString;
     } catch (error) {
       console.error('❌ [DATE FORMAT] Erro ao formatar:', error);
@@ -337,12 +390,12 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={loading || isSubmitting}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
+            <Button type="submit" disabled={loading || isSubmitting}>
+              {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </div>
         </form>
