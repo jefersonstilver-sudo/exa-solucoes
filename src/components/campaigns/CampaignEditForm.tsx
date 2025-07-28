@@ -196,23 +196,51 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           console.log('📝 [CAMPAIGN EDIT] Descrição alterada');
         }
         
-        // 🔧 CORREÇÃO CRÍTICA: Normalizar datas antes da comparação
+        // 🔧 CORREÇÃO CRÍTICA: Normalizar datas antes da comparação com logs detalhados
         const originalStartDate = normalizeDateFormat(campaign.start_date || '');
         const formStartDate = normalizeDateFormat(formData.start_date || '');
+        
+        console.log('🔍 [CAMPAIGN EDIT] Comparação Start Date DETALHADA:', {
+          campaign_start_date: campaign.start_date,
+          formData_start_date: formData.start_date,
+          original_normalized: originalStartDate,
+          form_normalized: formStartDate,
+          are_equal: formStartDate === originalStartDate
+        });
         
         if (formStartDate !== originalStartDate) {
           updates.start_date = formStartDate;
           hasChanges = true;
-          console.log('📅 [CAMPAIGN EDIT] Start date alterada:', originalStartDate, '->', formStartDate);
+          console.log('✅ [CAMPAIGN EDIT] Start date SERÁ ALTERADA:', originalStartDate, '->', formStartDate);
+        } else {
+          console.log('🔄 [CAMPAIGN EDIT] Start date NÃO será alterada (valores iguais)');
         }
         
         const originalEndDate = normalizeDateFormat(campaign.end_date || '');
         const formEndDate = normalizeDateFormat(formData.end_date || '');
         
+        console.log('🔍 [CAMPAIGN EDIT] Comparação End Date DETALHADA:', {
+          campaign_end_date: campaign.end_date,
+          formData_end_date: formData.end_date,
+          original_normalized: originalEndDate,
+          form_normalized: formEndDate,
+          are_equal: formEndDate === originalEndDate
+        });
+        
         if (formEndDate !== originalEndDate) {
           updates.end_date = formEndDate;
           hasChanges = true;
-          console.log('📅 [CAMPAIGN EDIT] End date alterada:', originalEndDate, '->', formEndDate);
+          console.log('✅ [CAMPAIGN EDIT] End date SERÁ ALTERADA:', originalEndDate, '->', formEndDate);
+        } else {
+          console.log('🔄 [CAMPAIGN EDIT] End date NÃO será alterada (valores iguais)');
+        }
+        
+        // 🆘 MODO BYPASS: Se as datas foram fornecidas, force a atualização
+        if (formData.start_date && formData.end_date && !hasChanges) {
+          console.log('🆘 [CAMPAIGN EDIT] BYPASS ATIVADO: Forçando atualização das datas');
+          updates.start_date = formStartDate;
+          updates.end_date = formEndDate;
+          hasChanges = true;
         }
         
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha AVANÇADA:', JSON.stringify(updates, null, 2));
