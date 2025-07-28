@@ -63,10 +63,8 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
 
       console.log('✅ [CAMPAIGN EDIT MODAL] Campanha atualizada com sucesso:', data);
       
-      // Aguardar um pouco e forçar refresh da lista
-      setTimeout(() => {
-        onSuccess();
-      }, 300);
+      // Chamar onSuccess imediatamente para atualizar a UI
+      onSuccess();
 
       return true;
     } catch (error) {

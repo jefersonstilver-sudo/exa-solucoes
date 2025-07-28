@@ -107,18 +107,6 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
       if (success) {
         console.log('✅ [CAMPAIGN EDIT] Atualização bem-sucedida!');
         toast.success('Campanha atualizada com sucesso!');
-        
-        // 🔧 CORREÇÃO 3: Resetar formData após sucesso para forçar refresh
-        setTimeout(() => {
-          setFormData({
-            name: campaign.name || '',
-            description: campaign.description || campaign.obs || '',
-            status: campaign.status || '',
-            start_date: campaign.start_date || campaign.data_inicio || '',
-            end_date: campaign.end_date || campaign.data_fim || ''
-          });
-        }, 100);
-        
         onOpenChange(false);
       } else {
         console.error('❌ [CAMPAIGN EDIT] Falha na atualização');
