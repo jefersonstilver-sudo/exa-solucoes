@@ -181,8 +181,11 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
         if (insertError) throw insertError;
       }
 
-      // Remover atualização automática do status para evitar conflitos com CampaignEditForm
-      // O status da campanha será controlado apenas pelo formulário principal
+      // Resetar o status da campanha para permitir que o scheduler controle automaticamente
+      await supabase
+        .from('campaigns_advanced')
+        .update({ status: 'scheduled' }) // Definir como scheduled para que o scheduler calcule o status correto
+        .eq('id', campaignId);
 
       toast.success('Horários salvos com sucesso! O status será recalculado automaticamente.');
       onScheduleUpdate?.();

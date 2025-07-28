@@ -264,10 +264,15 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
             </div>
           </div>
 
-          {/* Horários de Veiculação */}
-          {isAdvanced && (
+          {/* Horários de Veiculação - TEMPORARIAMENTE DESABILITADO PARA TESTE */}
+          {false && isAdvanced && (
             <>
               <Separator />
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  🔧 CampaignScheduleEdit temporariamente desabilitado para teste de isolamento
+                </p>
+              </div>
               <CampaignScheduleEdit
                 campaignId={campaign.id}
                 isAdvanced={isAdvanced}
