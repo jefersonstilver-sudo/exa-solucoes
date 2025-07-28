@@ -93,8 +93,13 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         });
       }
       
-      // Chamar onSuccess imediatamente para atualizar a UI
-      onSuccess();
+      console.log('🔄 [CAMPAIGN EDIT MODAL] Chamando onSuccess para recarregar lista...');
+      
+      // ✅ CORREÇÃO CRÍTICA: Aguardar um pouco antes de chamar onSuccess
+      setTimeout(() => {
+        onSuccess();
+        console.log('✅ [CAMPAIGN EDIT MODAL] onSuccess executado - lista deve ser recarregada');
+      }, 100);
 
       return true;
     } catch (error) {

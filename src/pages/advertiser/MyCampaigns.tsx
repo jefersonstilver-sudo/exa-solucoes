@@ -357,12 +357,12 @@ const MyCampaigns = () => {
     setShowEditModal(false);
     setSelectedCampaign(null);
     
-    // Forçar reload dos dados
-    setTimeout(() => {
-      if (!isLoadingData) {
-        loadCampaigns();
-      }
-    }, 500);
+    // ✅ CORREÇÃO CRÍTICA: Forçar reload imediato dos dados
+    console.log('🔄 [MY CAMPAIGNS] Forçando reload das campanhas...');
+    setIsLoadingData(true);
+    loadCampaigns().finally(() => {
+      console.log('✅ [MY CAMPAIGNS] Campanhas recarregadas com sucesso');
+    });
   };
 
   // 🔧 CORREÇÃO 4: Função para atualizar campanha com refresh forçado
