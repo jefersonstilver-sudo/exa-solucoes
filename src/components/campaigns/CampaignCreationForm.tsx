@@ -336,22 +336,25 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               </SelectTrigger>
               <SelectContent className="max-w-none z-50">
                 {paidOrders.map((order) => (
-                  <SelectItem key={order.id} value={order.id} className="min-h-[70px] p-3">
-                    <div className="flex flex-col gap-2 w-full">
+                  <SelectItem key={order.id} value={order.id} className="min-h-[90px] p-4">
+                    <div className="w-full space-y-3">
                       {order.buildings && order.buildings.length > 0 ? (
-                        <>
-                          <div className="flex items-center gap-2">
+                        <div className="border rounded-lg p-3 bg-muted/30">
+                          {/* Cabeçalho com nome do prédio */}
+                          <div className="flex items-center gap-2 mb-2">
                             <Building className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="font-semibold text-sm">
-                              {order.buildings[0].nome}
-                            </span>
+                            <span className="font-semibold text-sm">{order.buildings[0].nome}</span>
                           </div>
-                          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                            <span className="leading-tight">
+                          
+                          {/* Endereço em linha separada */}
+                          <div className="flex items-start gap-2 mb-2">
+                            <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground leading-tight">
                               {order.buildings[0].endereco}
                             </span>
                           </div>
+                          
+                          {/* Bairro e valor em linha separada */}
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">
                               {order.buildings[0].bairro}
@@ -360,15 +363,17 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                               R$ {order.valor_total?.toFixed(2) || '0.00'}
                             </Badge>
                           </div>
-                        </>
+                        </div>
                       ) : (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            Pedido #{order.id.substring(0, 8)}
-                          </span>
-                          <Badge variant="secondary" className="text-xs font-medium">
-                            R$ {order.valor_total?.toFixed(2) || '0.00'}
-                          </Badge>
+                        <div className="border rounded-lg p-3 bg-muted/30">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              Pedido #{order.id.substring(0, 8)}
+                            </span>
+                            <Badge variant="secondary" className="text-xs font-medium">
+                              R$ {order.valor_total?.toFixed(2) || '0.00'}
+                            </Badge>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -394,20 +399,26 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                 </SelectTrigger>
                 <SelectContent className="max-w-[90vw]">
                   {availablePanels.map((panel) => (
-                    <SelectItem key={panel.id} value={panel.id} className="p-2">
-                      <div className="flex flex-col gap-1 w-full">
-                        <div className="font-medium text-xs sm:text-sm flex items-center gap-1">
-                          <Building className="h-3 w-3" />
-                          {panel.buildings.nome}
+                    <SelectItem key={panel.id} value={panel.id} className="min-h-[80px] p-3">
+                      <div className="w-full space-y-2">
+                        {/* Foco no painel primeiro */}
+                        <div className="flex items-center gap-2 font-medium text-sm">
+                          <Monitor className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span>Painel {panel.code}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {panel.buildings.endereco}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {panel.buildings.bairro}
-                        </div>
-                        <div className="text-xs font-medium text-primary">
-                          Painel {panel.code}
+                        
+                        {/* Informações do prédio de forma mais compacta */}
+                        <div className="pl-6 space-y-1">
+                          <div className="flex items-center gap-2 text-xs font-medium">
+                            <Building className="h-3 w-3" />
+                            {panel.buildings.nome}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {panel.buildings.endereco}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {panel.buildings.bairro}
+                          </div>
                         </div>
                       </div>
                     </SelectItem>
