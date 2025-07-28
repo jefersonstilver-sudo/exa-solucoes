@@ -196,7 +196,7 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           console.log('📝 [CAMPAIGN EDIT] Descrição alterada');
         }
         
-        // 🔧 CORREÇÃO CRÍTICA: Normalizar datas antes da comparação com logs detalhados
+        // 🔧 CORREÇÃO CRÍTICA: Sempre incluir datas quando fornecidas, melhorando detecção
         const originalStartDate = normalizeDateFormat(campaign.start_date || '');
         const formStartDate = normalizeDateFormat(formData.start_date || '');
         
@@ -205,15 +205,17 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           formData_start_date: formData.start_date,
           original_normalized: originalStartDate,
           form_normalized: formStartDate,
-          are_equal: formStartDate === originalStartDate
+          are_equal: formStartDate === originalStartDate,
+          will_include: formStartDate && (formStartDate !== originalStartDate || !originalStartDate)
         });
         
-        if (formStartDate !== originalStartDate) {
+        // ✅ CORREÇÃO: Incluir start_date se foi fornecida E é diferente OU se não existe no banco
+        if (formStartDate && (formStartDate !== originalStartDate || !originalStartDate)) {
           updates.start_date = formStartDate;
           hasChanges = true;
-          console.log('✅ [CAMPAIGN EDIT] Start date SERÁ ALTERADA:', originalStartDate, '->', formStartDate);
+          console.log('✅ [CAMPAIGN EDIT] Start date INCLUÍDA NO UPDATE:', originalStartDate, '->', formStartDate);
         } else {
-          console.log('🔄 [CAMPAIGN EDIT] Start date NÃO será alterada (valores iguais)');
+          console.log('🔄 [CAMPAIGN EDIT] Start date mantida:', originalStartDate);
         }
         
         const originalEndDate = normalizeDateFormat(campaign.end_date || '');
@@ -224,23 +226,17 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           formData_end_date: formData.end_date,
           original_normalized: originalEndDate,
           form_normalized: formEndDate,
-          are_equal: formEndDate === originalEndDate
+          are_equal: formEndDate === originalEndDate,
+          will_include: formEndDate && (formEndDate !== originalEndDate || !originalEndDate)
         });
         
-        if (formEndDate !== originalEndDate) {
+        // ✅ CORREÇÃO: Incluir end_date se foi fornecida E é diferente OU se não existe no banco
+        if (formEndDate && (formEndDate !== originalEndDate || !originalEndDate)) {
           updates.end_date = formEndDate;
           hasChanges = true;
-          console.log('✅ [CAMPAIGN EDIT] End date SERÁ ALTERADA:', originalEndDate, '->', formEndDate);
+          console.log('✅ [CAMPAIGN EDIT] End date INCLUÍDA NO UPDATE:', originalEndDate, '->', formEndDate);
         } else {
-          console.log('🔄 [CAMPAIGN EDIT] End date NÃO será alterada (valores iguais)');
-        }
-        
-        // 🆘 MODO BYPASS: Se as datas foram fornecidas, force a atualização
-        if (formData.start_date && formData.end_date && !hasChanges) {
-          console.log('🆘 [CAMPAIGN EDIT] BYPASS ATIVADO: Forçando atualização das datas');
-          updates.start_date = formStartDate;
-          updates.end_date = formEndDate;
-          hasChanges = true;
+          console.log('🔄 [CAMPAIGN EDIT] End date mantida:', originalEndDate);
         }
         
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha AVANÇADA:', JSON.stringify(updates, null, 2));
