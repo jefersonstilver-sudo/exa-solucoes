@@ -203,6 +203,33 @@ export const useCampaignDetails = (campaignId: string | undefined) => {
       console.log('🔄 [USE CAMPAIGN DETAILS] Updates:', updates);
       console.log('🔄 [USE CAMPAIGN DETAILS] Campaign atual:', details.campaign);
       
+      // 🔍 VERIFICAÇÃO CRÍTICA: Debug de autenticação e permissões
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('❌ [USE CAMPAIGN DETAILS] Erro de autenticação:', authError);
+        throw new Error('Erro de autenticação');
+      }
+      
+      console.log('👤 [USE CAMPAIGN DETAILS] Usuário autenticado:', {
+        userId: user?.id,
+        email: user?.email,
+        campaignClientId: details.campaign.client_id,
+        userMatchesClient: user?.id === details.campaign.client_id
+      });
+      
+      // Verificar role do usuário na tabela users
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user?.id)
+        .single();
+      
+      if (userError) {
+        console.error('❌ [USE CAMPAIGN DETAILS] Erro ao buscar role:', userError);
+      } else {
+        console.log('🔑 [USE CAMPAIGN DETAILS] Role do usuário:', userData?.role);
+      }
+      
       const table = details.isAdvanced ? 'campaigns_advanced' : 'campanhas';
       console.log('🔄 [USE CAMPAIGN DETAILS] Tabela:', table);
       
