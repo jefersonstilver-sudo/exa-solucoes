@@ -147,7 +147,7 @@ export const useAdvancedCampaignCreation = () => {
     try {
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
-        .select('lista_paineis')
+        .select('lista_paineis, lista_predios')
         .eq('id', pedidoId)
         .single();
 
@@ -160,8 +160,8 @@ export const useAdvancedCampaignCreation = () => {
 
       console.log('🔍 Painéis do pedido na lista_paineis:', pedido.lista_paineis);
 
-      // Buscar apenas painéis que realmente existem e estão online
-      const { data: panels, error: panelsError } = await supabase
+      // Primeiro, tentar buscar por IDs de painéis diretamente
+      const { data: directPanels, error: directPanelsError } = await supabase
         .from('painels')
         .select(`
           id,
@@ -177,19 +177,41 @@ export const useAdvancedCampaignCreation = () => {
         .in('id', pedido.lista_paineis)
         .eq('status', 'online');
 
-      if (panelsError) throw panelsError;
+      if (directPanelsError) throw directPanelsError;
 
-      const foundPanels = panels || [];
-      console.log('🔍 Painéis encontrados na base de dados:', foundPanels);
+      let foundPanels = directPanels || [];
       
-      // Verificar se algum painel da lista não foi encontrado
-      const foundPanelIds = foundPanels.map(p => p.id);
-      const missingPanels = pedido.lista_paineis.filter(id => !foundPanelIds.includes(id));
-      
-      if (missingPanels.length > 0) {
-        console.warn('⚠️ Painéis referenciados mas não encontrados:', missingPanels);
-        toast.error(`Alguns painéis do pedido não estão disponíveis. Contacte o suporte.`);
+      // Se não encontrou painéis, pode ser que lista_paineis contenha building_ids
+      if (foundPanels.length === 0) {
+        console.log('🔄 Painéis não encontrados por ID, tentando buscar por building_id...');
+        
+        const { data: panelsByBuilding, error: buildingPanelsError } = await supabase
+          .from('painels')
+          .select(`
+            id,
+            code,
+            status,
+            buildings (
+              id,
+              nome,
+              endereco,
+              bairro
+            )
+          `)
+          .in('building_id', pedido.lista_paineis)
+          .eq('status', 'online');
+
+        if (buildingPanelsError) throw buildingPanelsError;
+        
+        foundPanels = panelsByBuilding || [];
+        
+        if (foundPanels.length > 0) {
+          console.log('✅ Painéis encontrados por building_id:', foundPanels.length);
+          toast.info(`Encontrados ${foundPanels.length} painéis para este pedido`);
+        }
       }
+
+      console.log('🔍 Painéis encontrados na base de dados:', foundPanels);
 
       if (foundPanels.length === 0) {
         console.warn('⚠️ Nenhum painel válido encontrado para este pedido');

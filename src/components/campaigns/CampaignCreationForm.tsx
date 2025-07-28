@@ -43,9 +43,18 @@ interface VideoItem {
 interface PaidOrder {
   id: string;
   lista_paineis: string[];
+  lista_predios: string[];
   data_inicio: string;
   data_fim: string;
   valor_total: number;
+  buildings?: {
+    id: string;
+    nome: string;
+    endereco: string;
+    bairro: string;
+    numero_unidades: number;
+    publico_estimado: number;
+  }[];
 }
 
 interface CampaignCreationFormProps {
@@ -101,14 +110,39 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     try {
       const { data: pedidos, error } = await supabase
         .from('pedidos')
-        .select('id, lista_paineis, data_inicio, data_fim, valor_total')
+        .select(`
+          id,
+          lista_paineis,
+          lista_predios,
+          data_inicio,
+          data_fim,
+          valor_total
+        `)
         .in('status', ['pago', 'pago_pendente_video', 'video_aprovado']);
 
       if (error) throw error;
 
+      // Enriquecer com informações dos prédios
+      const enrichedOrders = await Promise.all(
+        (pedidos || []).map(async (order) => {
+          if (order.lista_predios && order.lista_predios.length > 0) {
+            const { data: buildings } = await supabase
+              .from('buildings')
+              .select('id, nome, endereco, bairro, numero_unidades, publico_estimado')
+              .in('id', order.lista_predios);
+            
+            return {
+              ...order,
+              buildings: buildings || []
+            };
+          }
+          return order;
+        })
+      );
+
       return {
-        hasOrders: pedidos && pedidos.length > 0,
-        orders: pedidos || []
+        hasOrders: enrichedOrders && enrichedOrders.length > 0,
+        orders: enrichedOrders || []
       };
     } catch (error: any) {
       console.error('Erro ao verificar pedidos:', error);
@@ -291,7 +325,11 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               <SelectContent>
                 {paidOrders.map((order) => (
                   <SelectItem key={order.id} value={order.id}>
-                    Pedido {order.id.slice(0, 8)}... - R$ {order.valor_total} - {order.lista_paineis?.length || 0} painéis
+                    {order.buildings && order.buildings.length > 0 ? (
+                      `${order.buildings[0].nome} - ${order.buildings[0].endereco.split(',')[0]} - R$ ${order.valor_total?.toFixed(2) || '0.00'}`
+                    ) : (
+                      `Pedido ${order.id.slice(0, 8)}... - R$ ${order.valor_total?.toFixed(2) || '0.00'} - ${order.lista_paineis?.length || 0} painéis`
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
