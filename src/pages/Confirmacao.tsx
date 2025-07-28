@@ -36,10 +36,19 @@ export default function Confirmacao() {
           search: url.search,
           hash: url.hash,
           hostname: url.hostname,
-          host: url.host
+          host: url.host,
+          isValidRoute: url.pathname === '/confirmacao'
         };
         setDebugInfo(debugData);
         console.log('🔍 [CONFIRMACAO] Debug URL:', debugData);
+        
+        // CORREÇÃO: Verificar se estamos na rota correta
+        if (url.pathname !== '/confirmacao') {
+          console.error('❌ [CONFIRMACAO] Rota incorreta:', url.pathname);
+          setStatus('error');
+          setMessage(`Página não encontrada. Rota atual: ${url.pathname}. Esperado: /confirmacao`);
+          return;
+        }
         
         // Verificar se há erro nos parâmetros da URL
         const error = url.searchParams.get('error') || url.hash.match(/error=([^&]+)/)?.[1];

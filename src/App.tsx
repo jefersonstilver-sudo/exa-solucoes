@@ -23,6 +23,7 @@ import LoginPage from './pages/LoginPage';
 import Cadastro from './pages/Cadastro';
 import TermosUso from './pages/TermosUso';
 import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
+import NaoEncontrado from './pages/NaoEncontrado';
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 
@@ -194,6 +195,9 @@ function App() {
                     {/* Rotas administrativas */}
                     <Route path="/super_admin/*" element={<SuperAdminPage />} />
                     <Route path="/admin/*" element={<AdminPage />} />
+                    
+                    {/* Rota catch-all para páginas não encontradas */}
+                    <Route path="*" element={<NaoEncontrado />} />
                   </Routes>
                 </Suspense>
                 <Toaster />

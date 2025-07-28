@@ -58,13 +58,13 @@ export class LinkGenerator {
       console.log(`🔧 [LINK-GENERATOR] Usando estratégia: ${linkType}`);
       
       // Tentar gerar link com o tipo principal
-      const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
-        type: linkType,
-        email: email,
-        options: {
-          redirectTo: 'https://indexamidia.com/confirmacao'
-        }
-      });
+        const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
+          type: linkType,
+          email: email,
+          options: {
+            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
+          }
+        });
 
       if (!error && data.properties?.action_link) {
         console.log(`✅ [LINK-GENERATOR] Link ${linkType} gerado com sucesso`);
@@ -82,7 +82,7 @@ export class LinkGenerator {
           type: 'signup',
           email: email,
           options: {
-            redirectTo: 'https://indexamidia.com/confirmacao'
+            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
           }
         });
         
@@ -96,7 +96,7 @@ export class LinkGenerator {
           type: 'recovery',
           email: email,
           options: {
-            redirectTo: 'https://indexamidia.com/confirmacao'
+            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
           }
         });
         
@@ -121,7 +121,7 @@ export class LinkGenerator {
           type: 'recovery',
           email: email,
           options: {
-            redirectTo: 'https://indexamidia.com/confirmacao'
+            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
           }
         });
         

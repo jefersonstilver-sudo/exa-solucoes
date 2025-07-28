@@ -137,9 +137,15 @@ serve(async (req: Request) => {
 
       console.log('📧 [UNIFIED-EMAIL] Enviando confirmação inicial para:', user.email);
 
-      const redirectUrl = encodeURIComponent(`${baseUrl}/confirmacao`);
-      const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${redirectUrl}`;
+      // CORREÇÃO: Construir URL de confirmação correta
+      const appUrl = 'https://loving-bough-1xb6c3h.lovableproject.com';
+      const redirectUrl = `${appUrl}/confirmacao`;
+      console.log('🔗 [UNIFIED-EMAIL] Redirect URL construída:', redirectUrl);
+      
+      const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
       const validatedUrl = URLValidator.validateAndCorrectUrl(confirmationUrl);
+      
+      console.log('🔗 [UNIFIED-EMAIL] URL final de confirmação:', validatedUrl);
 
       const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
 
