@@ -128,12 +128,64 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
 
     setLoading(true);
     try {
-      // Para simplicidade, vamos mostrar uma mensagem de que a funcionalidade está em desenvolvimento
-      toast.info('Funcionalidade de edição de horários em desenvolvimento');
+      // Primeiro, buscar ou criar um video schedule para esta campanha
+      let { data: videoSchedules, error: scheduleError } = await supabase
+        .from('campaign_video_schedules')
+        .select('id')
+        .eq('campaign_id', campaignId);
+
+      if (scheduleError) throw scheduleError;
+
+      let videoScheduleId: string;
+
+      if (!videoSchedules || videoSchedules.length === 0) {
+        // Criar um novo video schedule se não existir
+        const { data: newSchedule, error: createError } = await supabase
+          .from('campaign_video_schedules')
+          .insert({
+            campaign_id: campaignId,
+            video_id: null, // Pode ser null para schedules de horário
+            slot_position: 1
+          })
+          .select('id')
+          .single();
+
+        if (createError) throw createError;
+        videoScheduleId = newSchedule.id;
+      } else {
+        videoScheduleId = videoSchedules[0].id;
+      }
+
+      // Deletar regras antigas
+      const { error: deleteError } = await supabase
+        .from('campaign_schedule_rules')
+        .delete()
+        .eq('campaign_video_schedule_id', videoScheduleId);
+
+      if (deleteError) throw deleteError;
+
+      // Inserir novas regras
+      const newRules = schedules.map(schedule => ({
+        campaign_video_schedule_id: videoScheduleId,
+        days_of_week: schedule.days_of_week,
+        start_time: schedule.start_time,
+        end_time: schedule.end_time,
+        is_active: schedule.is_active
+      }));
+
+      if (newRules.length > 0) {
+        const { error: insertError } = await supabase
+          .from('campaign_schedule_rules')
+          .insert(newRules);
+
+        if (insertError) throw insertError;
+      }
+
+      toast.success('Horários salvos com sucesso!');
       onScheduleUpdate?.();
     } catch (error: any) {
       console.error('Erro ao salvar horários:', error);
-      toast.error('Erro ao salvar horários');
+      toast.error('Erro ao salvar horários: ' + error.message);
     } finally {
       setLoading(false);
     }
