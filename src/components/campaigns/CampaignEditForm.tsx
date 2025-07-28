@@ -101,21 +101,44 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
         }
       }
 
-      // Preparar dados para atualização
+      // 🔧 CORREÇÃO CRÍTICA: Preparar dados para atualização
       const updates: Partial<CampaignData> = {};
 
       if (isAdvanced) {
-        // Campanha avançada
-        updates.name = formData.name;
-        updates.description = formData.description;
-        updates.start_date = formData.start_date || null;
-        updates.end_date = formData.end_date || null;
+        // Campanha avançada - VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS
+        if (!formData.name?.trim()) {
+          console.error('❌ [CAMPAIGN EDIT] Campo obrigatório: nome da campanha');
+          toast.error('Nome da campanha é obrigatório');
+          return;
+        }
+        if (!formData.start_date?.trim()) {
+          console.error('❌ [CAMPAIGN EDIT] Campo obrigatório: data de início');
+          toast.error('Data de início é obrigatória');
+          return;
+        }
+        if (!formData.end_date?.trim()) {
+          console.error('❌ [CAMPAIGN EDIT] Campo obrigatório: data de fim');
+          toast.error('Data de fim é obrigatória');
+          return;
+        }
+
+        updates.name = formData.name.trim();
+        updates.description = formData.description.trim();
+        // ✅ CORREÇÃO: Só incluir datas se tiverem valores válidos
+        updates.start_date = formData.start_date.trim();
+        updates.end_date = formData.end_date.trim();
+        
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha AVANÇADA:', updates);
       } else {
         // Campanha legacy - usar campos antigos
         updates.obs = formData.description;
-        updates.data_inicio = formData.start_date || null;
-        updates.data_fim = formData.end_date || null;
+        // ✅ CORREÇÃO: Só incluir datas se tiverem valores válidos
+        if (formData.start_date?.trim()) {
+          updates.data_inicio = formData.start_date.trim();
+        }
+        if (formData.end_date?.trim()) {
+          updates.data_fim = formData.end_date.trim();
+        }
         console.log('🚀 [CAMPAIGN EDIT] Updates para campanha LEGACY:', updates);
       }
 
