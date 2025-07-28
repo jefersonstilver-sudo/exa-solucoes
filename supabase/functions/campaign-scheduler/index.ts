@@ -124,13 +124,27 @@ Deno.serve(async (req) => {
 
       // Verificar regras de horário com logs detalhados
       let shouldBeActive = false
-      let shouldBeScheduled = false
+      let hasActiveScheduleToday = false
+      let hasActiveScheduleFuture = false
       let activationReason = ''
+      let nextActivationInfo = ''
       
       console.log(`[SCHEDULER] Evaluating campaign ${typedCampaign.id}:`)
       console.log(`[SCHEDULER]   Current: ${currentDate} ${currentTime} (Day ${currentDay})`)
       console.log(`[SCHEDULER]   Period: ${typedCampaign.start_date} to ${typedCampaign.end_date}`)
       console.log(`[SCHEDULER]   Status: ${typedCampaign.status}`)
+      
+      // Conversão para minutos para comparação simples
+      const timeToMinutes = (timeStr: string): number => {
+        const cleanTime = timeStr.replace(/:00$/, '')
+        if (!/^\d{2}:\d{2}$/.test(cleanTime)) {
+          return 0 // Fallback para 00:00
+        }
+        const [hours, minutes] = cleanTime.split(':').map(Number)
+        return hours * 60 + minutes
+      }
+      
+      const currentMinutes = timeToMinutes(currentTime)
       
       for (const schedule of typedCampaign.campaign_video_schedules) {
         for (const rule of schedule.campaign_schedule_rules) {
@@ -141,88 +155,71 @@ Deno.serve(async (req) => {
             continue
           }
           
-          // Verificar se hoje está nos dias da semana da regra
-          if (!rule.days_of_week.includes(currentDay)) {
-            console.log(`[SCHEDULER]     ❌ Wrong day: current=${currentDay}, allowed=[${rule.days_of_week.join(',')}]`)
-            continue
-          }
+          const startMinutes = timeToMinutes(rule.start_time)
+          const endMinutes = timeToMinutes(rule.end_time)
           
-          console.log(`[SCHEDULER]     ✅ Day matches: ${currentDay}`)
-          
-          // Comparação simples de tempo HH:MM (sem Date objects complexos)
-          const normalizeTime = (timeStr: string): string => {
-            // Remove segundos se existir (HH:MM:SS -> HH:MM)
-            const cleanTime = timeStr.replace(/:00$/, '')
-            // Garantir formato HH:MM
-            if (!/^\d{2}:\d{2}$/.test(cleanTime)) {
-              console.log(`[SCHEDULER]     ⚠️ Invalid time format: ${timeStr}, using 00:00`)
-              return '00:00'
-            }
-            return cleanTime
-          }
-          
-          const currentHM = normalizeTime(currentTime)
-          const startHM = normalizeTime(rule.start_time)
-          const endHM = normalizeTime(rule.end_time)
-          
-          console.log(`[SCHEDULER]     🕐 Comparando horários: atual=${currentHM}, início=${startHM}, fim=${endHM}`)
-          
-          // Conversão para minutos para comparação simples
-          const timeToMinutes = (timeStr: string): number => {
-            const [hours, minutes] = timeStr.split(':').map(Number)
-            return hours * 60 + minutes
-          }
-          
-          const currentMinutes = timeToMinutes(currentHM)
-          const startMinutes = timeToMinutes(startHM)
-          const endMinutes = timeToMinutes(endHM)
-          
-          console.log(`[SCHEDULER]     📊 Minutos: atual=${currentMinutes}, início=${startMinutes}, fim=${endMinutes}`)
-          
-          // Comparação simples de minutos (mais confiável que Date objects)
-          let isInTimeRange = false
-          
-          if (startMinutes <= endMinutes) {
-            // Horário normal no mesmo dia (ex: 09:00-17:00)
-            isInTimeRange = currentMinutes >= startMinutes && currentMinutes <= endMinutes
-            console.log(`[SCHEDULER]     📅 Normal range: ${isInTimeRange ? 'DENTRO' : 'FORA'} do intervalo ${startHM}-${endHM}`)
-          } else {
-            // Horário que cruza meia-noite (ex: 22:00-02:00)
-            isInTimeRange = currentMinutes >= startMinutes || currentMinutes <= endMinutes
-            console.log(`[SCHEDULER]     🌙 Cross-midnight range: ${isInTimeRange ? 'DENTRO' : 'FORA'} do intervalo ${startHM}-${endHM}`)
-          }
-          
-          if (isInTimeRange) {
-            shouldBeActive = true
-            activationReason = `Time match: ${startHM}-${endHM} (current: ${currentHM})`
-            console.log(`[SCHEDULER]     ✅ ACTIVE - ${activationReason}`)
-            break
-          } else if (currentMinutes < startMinutes) {
-            // Ainda não chegou o horário (apenas para horários normais)
+          // Verificar se a regra é para hoje
+          if (rule.days_of_week.includes(currentDay)) {
+            console.log(`[SCHEDULER]     ✅ Today matches: ${currentDay}`)
+            
+            let isInTimeRange = false
+            
             if (startMinutes <= endMinutes) {
-              shouldBeScheduled = true
-              activationReason = `Scheduled for later today: ${startHM}-${endHM}`
-              console.log(`[SCHEDULER]     📅 SCHEDULED - ${activationReason}`)
+              // Horário normal no mesmo dia
+              isInTimeRange = currentMinutes >= startMinutes && currentMinutes <= endMinutes
+              console.log(`[SCHEDULER]     📅 Normal range: ${isInTimeRange ? 'ATIVO' : 'FORA'} do intervalo ${rule.start_time}-${rule.end_time}`)
+              
+              // Se não está ativo agora, mas ainda há tempo hoje
+              if (!isInTimeRange && currentMinutes < startMinutes) {
+                hasActiveScheduleToday = true
+                nextActivationInfo = `Próxima ativação hoje às ${rule.start_time}`
+                console.log(`[SCHEDULER]     📅 AGENDADO para hoje às ${rule.start_time}`)
+              }
+            } else {
+              // Horário que cruza meia-noite
+              isInTimeRange = currentMinutes >= startMinutes || currentMinutes <= endMinutes
+              console.log(`[SCHEDULER]     🌙 Cross-midnight range: ${isInTimeRange ? 'ATIVO' : 'FORA'} do intervalo ${rule.start_time}-${rule.end_time}`)
+            }
+            
+            if (isInTimeRange) {
+              shouldBeActive = true
+              activationReason = `Ativo no horário: ${rule.start_time}-${rule.end_time}`
+              console.log(`[SCHEDULER]     ✅ ATIVO - ${activationReason}`)
+              break
             }
           } else {
-            console.log(`[SCHEDULER]     ❌ FORA do horário: ${currentHM} não está em ${startHM}-${endHM}`)
+            // Verificar se há dias futuros programados
+            const futureDays = rule.days_of_week.filter(day => day > currentDay || (day < currentDay && day >= 0))
+            if (futureDays.length > 0) {
+              hasActiveScheduleFuture = true
+              const nextDay = Math.min(...futureDays.filter(day => day > currentDay))
+              const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+              if (nextDay !== Infinity) {
+                nextActivationInfo = `Próxima ativação: ${dayNames[nextDay]} às ${rule.start_time}`
+              } else {
+                const earliestDay = Math.min(...rule.days_of_week)
+                nextActivationInfo = `Próxima ativação: ${dayNames[earliestDay]} às ${rule.start_time}`
+              }
+              console.log(`[SCHEDULER]     📅 AGENDADO para próximos dias: [${futureDays.join(',')}]`)
+            } else {
+              console.log(`[SCHEDULER]     ❌ Dia atual (${currentDay}) não está programado: [${rule.days_of_week.join(',')}]`)
+            }
           }
         }
         if (shouldBeActive) break
-        // Continue procurando outras regras para scheduled se não estiver ativo
       }
       
-      // Determinar status final baseado na prioridade: active > scheduled > paused
+      // Determinar status final com lógica melhorada
       let newStatus: string
       if (shouldBeActive) {
         newStatus = 'active'
-        console.log(`[SCHEDULER] Final decision: ACTIVE - ${activationReason}`)
-      } else if (shouldBeScheduled) {
+        console.log(`[SCHEDULER] Final decision: ATIVO - ${activationReason}`)
+      } else if (hasActiveScheduleToday || hasActiveScheduleFuture) {
         newStatus = 'scheduled'
-        console.log(`[SCHEDULER] Final decision: SCHEDULED - ${activationReason}`)
+        console.log(`[SCHEDULER] Final decision: AGENDADO - ${nextActivationInfo}`)
       } else {
         newStatus = 'paused'
-        console.log(`[SCHEDULER] Final decision: PAUSED - No matching rules for current time`)
+        console.log(`[SCHEDULER] Final decision: PAUSADO - Nenhuma programação ativa encontrada`)
       }
       
       if (typedCampaign.status !== newStatus) {
