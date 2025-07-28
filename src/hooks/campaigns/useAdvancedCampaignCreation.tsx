@@ -89,20 +89,7 @@ export const useAdvancedCampaignCreation = () => {
         }
       }
 
-      // 4. Criar campanha tradicional para compatibilidade
-      const { error: legacyCampaignError } = await supabase
-        .from('campanhas')
-        .insert({
-          client_id: userProfile.id,
-          painel_id: campaignData.panelId,
-          video_id: campaignData.videoSchedules[0]?.videoId || 'default_video_id',
-          data_inicio: campaignData.startDate,
-          data_fim: campaignData.endDate,
-          status: 'ativa',
-          obs: `Campanha avançada: ${campaignData.name}`
-        });
-
-      if (legacyCampaignError) throw legacyCampaignError;
+      // Não criar campanha duplicada - apenas campanhas avançadas
 
       toast.success('Campanha criada com sucesso!');
       return { success: true, data: campaign };
