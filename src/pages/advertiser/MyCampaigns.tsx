@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import CampaignCreationForm from '@/components/campaigns/CampaignCreationForm';
@@ -20,8 +20,12 @@ interface Campaign {
   data_fim: string;
   status: string;
   obs?: string;
-  created_at: string;
-  video_id: string;
+  created_at?: string;
+  video_id?: string;
+  name?: string;
+  start_time?: string;
+  end_time?: string;
+  is_advanced?: boolean;
 }
 
 const MyCampaigns = () => {
@@ -41,15 +45,70 @@ const MyCampaigns = () => {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      // Buscar campanhas legacy
+      const { data: legacyCampaigns, error: legacyError } = await supabase
         .from('campanhas')
         .select('*')
         .eq('client_id', userProfile.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (legacyError) throw legacyError;
 
-      setCampaigns(data || []);
+      // Buscar campanhas avançadas com horários
+      const { data: advancedCampaignsData, error: advancedError } = await supabase
+        .from('campaigns_advanced')
+        .select(`
+          id,
+          name,
+          start_date,
+          end_date,
+          status,
+          description,
+          created_at,
+          campaign_video_schedules(
+            id,
+            campaign_schedule_rules(
+              start_time,
+              end_time,
+              days_of_week,
+              is_active
+            )
+          )
+        `)
+        .eq('client_id', userProfile.id)
+        .order('created_at', { ascending: false });
+
+      if (advancedError) throw advancedError;
+
+      // Converter campanhas avançadas para o formato legacy
+      const advancedCampaigns = advancedCampaignsData?.map(campaign => {
+        // Pegar o primeiro horário ativo das regras
+        const firstSchedule = campaign.campaign_video_schedules?.[0];
+        const firstRule = firstSchedule?.campaign_schedule_rules?.find(rule => rule.is_active);
+        
+        return {
+          id: campaign.id,
+          painel_id: 'painel-advanced',
+          data_inicio: campaign.start_date,
+          data_fim: campaign.end_date,
+          status: campaign.status === 'active' ? 'ativa' : campaign.status,
+          obs: campaign.description || `Campanha avançada: ${campaign.name}`,
+          created_at: campaign.created_at,
+          video_id: 'advanced-video',
+          name: campaign.name,
+          start_time: firstRule?.start_time,
+          end_time: firstRule?.end_time,
+          is_advanced: true
+        } as Campaign;
+      }) || [];
+
+      // Combinar ambas as listas
+      const allCampaigns = [
+        ...(legacyCampaigns || []).map(c => ({ ...c, is_advanced: false })),
+        ...advancedCampaigns
+      ].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+      setCampaigns(allCampaigns);
     } catch (error) {
       console.error('Erro ao carregar campanhas:', error);
       toast.error('Erro ao carregar campanhas');
@@ -74,7 +133,18 @@ const MyCampaigns = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    // Garantir que a data seja tratada como local (sem conversão de timezone)
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return '';
+    return timeString.substring(0, 5); // Formato HH:MM
   };
 
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -191,9 +261,16 @@ const MyCampaigns = () => {
                   {formatDate(campaign.data_inicio)} - {formatDate(campaign.data_fim)}
                 </div>
                 
+                {campaign.start_time && campaign.end_time && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="h-4 w-4 mr-2" />
+                    {formatTime(campaign.start_time)} - {formatTime(campaign.end_time)}
+                  </div>
+                )}
+                
                 <div className="flex items-center text-sm text-gray-600">
                   <Monitor className="h-4 w-4 mr-2" />
-                  Painel: {campaign.painel_id.substring(0, 8)}...
+                  {campaign.is_advanced ? 'Campanha Avançada' : `Painel: ${campaign.painel_id.substring(0, 8)}...`}
                 </div>
 
                 {campaign.obs && (
