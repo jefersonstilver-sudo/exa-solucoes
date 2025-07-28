@@ -47,10 +47,28 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       const normalizeDate = (date: string | undefined) => {
         if (!date) return '';
         const cleaned = date.trim();
+        
         // Se já está no formato YYYY-MM-DD, retorna como está
         if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
           return cleaned;
         }
+        
+        // Se está no formato DD/MM/YYYY, converte para YYYY-MM-DD
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(cleaned)) {
+          const [day, month, year] = cleaned.split('/');
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+        
+        // Para outros formatos, tenta criar uma data e extrair no formato correto
+        try {
+          const dateObj = new Date(cleaned);
+          if (!isNaN(dateObj.getTime())) {
+            return dateObj.toISOString().split('T')[0];
+          }
+        } catch (e) {
+          console.warn('Formato de data não reconhecido:', cleaned);
+        }
+        
         return cleaned;
       };
 
@@ -87,7 +105,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       // Preparar dados para update apenas com campos que mudaram
       const updateData: any = {};
       
-      if (hasStartChange && formStart) {
+      if (hasStartChange) {
         if (isAdvanced) {
           updateData.start_date = formStart;
         } else {
@@ -95,7 +113,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         }
       }
       
-      if (hasEndChange && formEnd) {
+      if (hasEndChange) {
         if (isAdvanced) {
           updateData.end_date = formEnd;
         } else {
