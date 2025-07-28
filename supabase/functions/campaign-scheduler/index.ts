@@ -149,82 +149,63 @@ Deno.serve(async (req) => {
           
           console.log(`[SCHEDULER]     ✅ Day matches: ${currentDay}`)
           
-          // Criar objetos Date para comparação mais precisa com tolerância
-          // Validar e normalizar os tempos antes de criar objetos Date
-          const validateTimeString = (timeStr: string): string => {
+          // Comparação simples de tempo HH:MM (sem Date objects complexos)
+          const normalizeTime = (timeStr: string): string => {
+            // Remove segundos se existir (HH:MM:SS -> HH:MM)
+            const cleanTime = timeStr.replace(/:00$/, '')
             // Garantir formato HH:MM
-            if (!/^\d{2}:\d{2}$/.test(timeStr)) {
+            if (!/^\d{2}:\d{2}$/.test(cleanTime)) {
               console.log(`[SCHEDULER]     ⚠️ Invalid time format: ${timeStr}, using 00:00`)
               return '00:00'
             }
-            return timeStr
+            return cleanTime
           }
           
-          const validCurrentTime = validateTimeString(currentTime)
-          const validStartTime = validateTimeString(rule.start_time)
-          const validEndTime = validateTimeString(rule.end_time)
+          const currentHM = normalizeTime(currentTime)
+          const startHM = normalizeTime(rule.start_time)
+          const endHM = normalizeTime(rule.end_time)
           
-          // Usar formato ISO mais robusto
-          let today: Date
-          let startDate: Date
-          let endDate: Date
+          console.log(`[SCHEDULER]     🕐 Comparando horários: atual=${currentHM}, início=${startHM}, fim=${endHM}`)
           
-          try {
-            today = new Date(`${currentDate}T${validCurrentTime}:00.000Z`)
-            startDate = new Date(`${currentDate}T${validStartTime}:00.000Z`)
-            endDate = new Date(`${currentDate}T${validEndTime}:00.000Z`)
-            
-            // Verificar se as datas são válidas
-            if (isNaN(today.getTime()) || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-              throw new Error('Invalid date created')
-            }
-          } catch (dateError) {
-            console.log(`[SCHEDULER]     ❌ Date creation error: ${dateError.message}`)
-            console.log(`[SCHEDULER]     Inputs: date=${currentDate}, current=${validCurrentTime}, start=${validStartTime}, end=${validEndTime}`)
-            continue // Skip this rule if date creation fails
+          // Conversão para minutos para comparação simples
+          const timeToMinutes = (timeStr: string): number => {
+            const [hours, minutes] = timeStr.split(':').map(Number)
+            return hours * 60 + minutes
           }
           
-          // Adicionar tolerância de 60 segundos para ativação (mais ampla)
-          const tolerance = 60 * 1000 // 60 segundos em ms
-          const adjustedStart = new Date(startDate.getTime() - tolerance)
-          const adjustedEnd = new Date(endDate.getTime() + tolerance)
+          const currentMinutes = timeToMinutes(currentHM)
+          const startMinutes = timeToMinutes(startHM)
+          const endMinutes = timeToMinutes(endHM)
           
-          console.log(`[SCHEDULER]     Time comparison: current=${today.toISOString()}, start=${adjustedStart.toISOString()}, end=${adjustedEnd.toISOString()}`)
+          console.log(`[SCHEDULER]     📊 Minutos: atual=${currentMinutes}, início=${startMinutes}, fim=${endMinutes}`)
           
-          // Lidar com horários que passam da meia-noite
-          if (rule.start_time <= rule.end_time) {
-            // Horário normal (ex: 09:00 - 17:00)
-            if (today >= adjustedStart && today <= adjustedEnd) {
-              shouldBeActive = true
-              activationReason = `Normal time range: ${rule.start_time}-${rule.end_time} (with tolerance)`
-              console.log(`[SCHEDULER]     ✅ Active - ${activationReason}`)
-              break
-            } else if (currentTime < rule.start_time) {
-              // Está no dia correto mas antes do horário de início = scheduled
+          // Comparação simples de minutos (mais confiável que Date objects)
+          let isInTimeRange = false
+          
+          if (startMinutes <= endMinutes) {
+            // Horário normal no mesmo dia (ex: 09:00-17:00)
+            isInTimeRange = currentMinutes >= startMinutes && currentMinutes <= endMinutes
+            console.log(`[SCHEDULER]     📅 Normal range: ${isInTimeRange ? 'DENTRO' : 'FORA'} do intervalo ${startHM}-${endHM}`)
+          } else {
+            // Horário que cruza meia-noite (ex: 22:00-02:00)
+            isInTimeRange = currentMinutes >= startMinutes || currentMinutes <= endMinutes
+            console.log(`[SCHEDULER]     🌙 Cross-midnight range: ${isInTimeRange ? 'DENTRO' : 'FORA'} do intervalo ${startHM}-${endHM}`)
+          }
+          
+          if (isInTimeRange) {
+            shouldBeActive = true
+            activationReason = `Time match: ${startHM}-${endHM} (current: ${currentHM})`
+            console.log(`[SCHEDULER]     ✅ ACTIVE - ${activationReason}`)
+            break
+          } else if (currentMinutes < startMinutes) {
+            // Ainda não chegou o horário (apenas para horários normais)
+            if (startMinutes <= endMinutes) {
               shouldBeScheduled = true
-              activationReason = `Scheduled for later today: ${rule.start_time}-${rule.end_time}`
-              console.log(`[SCHEDULER]     📅 Scheduled - ${activationReason}`)
-            } else {
-              console.log(`[SCHEDULER]     ❌ Outside time range: ${currentTime} not in ${rule.start_time}-${rule.end_time}`)
+              activationReason = `Scheduled for later today: ${startHM}-${endHM}`
+              console.log(`[SCHEDULER]     📅 SCHEDULED - ${activationReason}`)
             }
           } else {
-            // Horário que passa da meia-noite (ex: 22:00 - 02:00)
-            const nextDayEnd = new Date(endDate.getTime() + 24 * 60 * 60 * 1000)
-            const adjustedNextDayEnd = new Date(nextDayEnd.getTime() + tolerance)
-            
-            if (today >= adjustedStart || today <= adjustedNextDayEnd) {
-              shouldBeActive = true
-              activationReason = `Cross-midnight range: ${rule.start_time}-${rule.end_time} (with tolerance)`
-              console.log(`[SCHEDULER]     ✅ Active - ${activationReason}`)
-              break
-            } else if (currentTime < rule.start_time) {
-              // Está no dia correto mas antes do horário de início
-              shouldBeScheduled = true
-              activationReason = `Scheduled for later today: ${rule.start_time}-${rule.end_time} (cross-midnight)`
-              console.log(`[SCHEDULER]     📅 Scheduled - ${activationReason}`)
-            } else {
-              console.log(`[SCHEDULER]     ❌ Outside cross-midnight range: ${currentTime} not in ${rule.start_time}-${rule.end_time}`)
-            }
+            console.log(`[SCHEDULER]     ❌ FORA do horário: ${currentHM} não está em ${startHM}-${endHM}`)
           }
         }
         if (shouldBeActive) break
