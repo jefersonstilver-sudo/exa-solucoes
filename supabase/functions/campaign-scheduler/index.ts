@@ -54,15 +54,13 @@ Deno.serve(async (req) => {
       day: '2-digit'
     })
     
-    const brazilWeekdayFormatter = new Intl.DateTimeFormat('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      weekday: 'numeric'
-    })
+    // Usar getDay() diretamente para obter o dia da semana
+    const brazilDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
     
     // Criar objeto Date no horário brasileiro
     const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
     const currentTime = brazilFormatter.format(now).slice(0, 5) // HH:MM format
-    const currentDay = parseInt(brazilWeekdayFormatter.format(now)) % 7 // Converter para 0=Sunday
+    const currentDay = brazilDate.getDay() // 0=Sunday, 1=Monday, etc.
     const currentDate = brazilDateFormatter.format(now).split('/').reverse().join('-') // YYYY-MM-DD
 
     console.log(`[SCHEDULER] Running at ${now.toISOString()} (UTC)`)

@@ -39,28 +39,35 @@ const MyCampaigns = () => {
     loadCampaigns();
   }, [userProfile]);
 
-  // Atualizar dados quando a página ganha foco (usuário retorna da edição)
+  // Atualizar dados automaticamente
   useEffect(() => {
     const handleFocus = () => {
+      console.log('Página ganhou foco - recarregando campanhas');
       loadCampaigns();
     };
 
-    window.addEventListener('focus', handleFocus);
-    
-    // Também escutar por mudanças na visibilidade da página
     const handleVisibilityChange = () => {
       if (!document.hidden) {
+        console.log('Página ficou visível - recarregando campanhas');
         loadCampaigns();
       }
     };
 
+    // Polling automático a cada 30 segundos
+    const interval = setInterval(() => {
+      console.log('Atualização automática - recarregando campanhas');
+      loadCampaigns();
+    }, 30000);
+
+    window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
     };
-  }, [userProfile]);
+  }, []);
 
   const loadCampaigns = async () => {
     if (!userProfile?.id) return;
@@ -145,7 +152,25 @@ const MyCampaigns = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (campaign: Campaign) => {
+    const status = campaign.status;
+    
+    // Verificar se deveria estar pausada baseado no horário atual (apenas para campanhas com horário definido)
+    if (campaign.start_time && campaign.end_time && (status === 'ativo' || status === 'active')) {
+      const now = new Date();
+      const currentTime = now.toTimeString().substring(0, 5); // HH:MM
+      
+      // Se tem horário definido e está fora do horário, mostrar indicador
+      if (currentTime < campaign.start_time || currentTime > campaign.end_time) {
+        return (
+          <div className="flex flex-col space-y-1">
+            <Badge className="bg-orange-500 text-white">Ativa (Fora do horário)</Badge>
+            <span className="text-xs text-gray-500">Horário: {formatTime(campaign.start_time)} - {formatTime(campaign.end_time)}</span>
+          </div>
+        );
+      }
+    }
+
     switch (status) {
       case 'ativo':
       case 'active':
@@ -230,6 +255,33 @@ const MyCampaigns = () => {
 
   const handleEditCampaign = (campaignId: string) => {
     navigate(`/anunciante/campanhas/${campaignId}`);
+  };
+
+  const handleForceSchedulerRun = async () => {
+    try {
+      toast.info('Forçando atualização do scheduler...');
+      
+      // Chamar a edge function do scheduler
+      const { data, error } = await supabase.functions.invoke('campaign-scheduler');
+      
+      if (error) {
+        console.error('Erro ao executar scheduler:', error);
+        toast.error('Erro ao executar scheduler: ' + error.message);
+        return;
+      }
+      
+      console.log('Resultado do scheduler:', data);
+      toast.success(`Scheduler executado! ${data.campaigns_processed} campanhas processadas.`);
+      
+      // Recarregar campanhas após o scheduler
+      setTimeout(() => {
+        loadCampaigns();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Erro ao chamar scheduler:', error);
+      toast.error('Erro ao executar scheduler manual');
+    }
   };
 
   const handleDeleteCampaign = async (campaignId: string) => {
@@ -322,10 +374,28 @@ const MyCampaigns = () => {
           <h1 className="text-3xl font-bold text-gray-900">Minhas Campanhas</h1>
           <p className="text-gray-600 mt-1">Gerencie todas as suas campanhas de publicidade</p>
         </div>
-        <Button onClick={handleCreateCampaign} className="bg-indexa-purple hover:bg-indexa-purple/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Campanha
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            onClick={loadCampaigns} 
+            variant="outline"
+            className="flex items-center"
+          >
+            <Monitor className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+          <Button 
+            onClick={handleForceSchedulerRun}
+            variant="outline"
+            className="flex items-center text-orange-600 border-orange-600 hover:bg-orange-50"
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Forçar Atualização
+          </Button>
+          <Button onClick={handleCreateCampaign} className="bg-indexa-purple hover:bg-indexa-purple/90">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Campanha
+          </Button>
+        </div>
       </div>
 
       {/* Campanhas */}
@@ -338,7 +408,7 @@ const MyCampaigns = () => {
                   <CardTitle className="text-lg">
                     Campanha #{campaign.id.substring(0, 8)}
                   </CardTitle>
-                  {getStatusBadge(campaign.status)}
+                  {getStatusBadge(campaign)}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
