@@ -150,14 +150,18 @@ Deno.serve(async (req) => {
           console.log(`[SCHEDULER]     ✅ Day matches: ${currentDay}`)
           
           // Criar objetos Date para comparação mais precisa com tolerância
-          const today = new Date(`${currentDate}T${currentTime}:00`)
+          // Usar o horário brasileiro real com segundos para máxima precisão
+          const brazilTimeStr = brazilTime.toISOString().split('T')[1].substring(0, 8) // HH:MM:SS
+          const today = new Date(`${currentDate}T${brazilTimeStr}`)
           const startDate = new Date(`${currentDate}T${rule.start_time}:00`)
           const endDate = new Date(`${currentDate}T${rule.end_time}:00`)
           
-          // Adicionar tolerância de 30 segundos para ativação
-          const tolerance = 30 * 1000 // 30 segundos em ms
+          // Adicionar tolerância de 60 segundos para ativação (mais ampla)
+          const tolerance = 60 * 1000 // 60 segundos em ms
           const adjustedStart = new Date(startDate.getTime() - tolerance)
           const adjustedEnd = new Date(endDate.getTime() + tolerance)
+          
+          console.log(`[SCHEDULER]     Time comparison: current=${today.toISOString()}, start=${adjustedStart.toISOString()}, end=${adjustedEnd.toISOString()}`)
           
           // Lidar com horários que passam da meia-noite
           if (rule.start_time <= rule.end_time) {
