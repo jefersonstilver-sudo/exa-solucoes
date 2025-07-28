@@ -199,25 +199,34 @@ export const useCampaignDetails = (campaignId: string | undefined) => {
     if (!details.campaign) return false;
 
     try {
-      const table = details.isAdvanced ? 'campaigns_advanced' : 'campanhas';
+      console.log('🔄 [USE CAMPAIGN DETAILS] === INICIANDO UPDATE ===');
+      console.log('🔄 [USE CAMPAIGN DETAILS] Updates:', updates);
+      console.log('🔄 [USE CAMPAIGN DETAILS] Campaign atual:', details.campaign);
       
-      const { error } = await supabase
+      const table = details.isAdvanced ? 'campaigns_advanced' : 'campanhas';
+      console.log('🔄 [USE CAMPAIGN DETAILS] Tabela:', table);
+      
+      const { error, data } = await supabase
         .from(table)
         .update(updates)
-        .eq('id', details.campaign.id);
+        .eq('id', details.campaign.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [USE CAMPAIGN DETAILS] Erro no update:', error);
+        throw error;
+      }
 
-      // Atualizar estado local
-      setDetails(prev => ({
-        ...prev,
-        campaign: prev.campaign ? { ...prev.campaign, ...updates } : null
-      }));
+      console.log('✅ [USE CAMPAIGN DETAILS] Update bem-sucedido:', data);
+
+      // 🔧 CORREÇÃO CRÍTICA: Forçar reload completo dos dados em vez de update local
+      console.log('🔄 [USE CAMPAIGN DETAILS] Forçando reload completo...');
+      await loadCampaignDetails();
 
       toast.success('Campanha atualizada com sucesso!');
       return true;
     } catch (error: any) {
-      console.error('Erro ao atualizar campanha:', error);
+      console.error('💥 [USE CAMPAIGN DETAILS] Erro ao atualizar:', error);
       toast.error('Erro ao atualizar campanha');
       return false;
     }

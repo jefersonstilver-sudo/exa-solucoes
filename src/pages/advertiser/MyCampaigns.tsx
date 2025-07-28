@@ -353,15 +353,20 @@ const MyCampaigns = () => {
   };
 
   const handleEditSuccess = () => {
-    console.log('✅ [MY CAMPAIGNS] Edição bem-sucedida, fechando modal e recarregando...');
+    console.log('✅ [MY CAMPAIGNS] === EDIÇÃO BEM-SUCEDIDA ===');
     setShowEditModal(false);
     setSelectedCampaign(null);
     
-    // ✅ CORREÇÃO CRÍTICA: Forçar reload imediato dos dados
-    console.log('🔄 [MY CAMPAIGNS] Forçando reload das campanhas...');
-    setIsLoadingData(true);
-    loadCampaigns().finally(() => {
-      console.log('✅ [MY CAMPAIGNS] Campanhas recarregadas com sucesso');
+    // 🔧 CORREÇÃO CRÍTICA: Forçar reload imediato sem debounce
+    console.log('🔄 [MY CAMPAIGNS] Forçando reload IMEDIATO...');
+    setIsLoadingData(false); // Reset flag primeiro
+    setLastLoadTime(0); // Reset timestamp para bypass do debounce
+    
+    // Forçar reload imediato
+    loadCampaigns().then(() => {
+      console.log('✅ [MY CAMPAIGNS] Campanhas recarregadas - SUCESSO TOTAL');
+    }).catch((error) => {
+      console.error('❌ [MY CAMPAIGNS] Erro no reload:', error);
     });
   };
 
