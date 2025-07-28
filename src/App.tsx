@@ -43,6 +43,7 @@ const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
 const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
 const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
+const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
 const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
 const queryClient = new QueryClient({
@@ -163,6 +164,11 @@ function App() {
                       <Route path="campanhas" element={
                         <Suspense fallback={<MinimalLoader />}>
                           <MyCampaigns />
+                        </Suspense>
+                      } />
+                      <Route path="campanhas/:id" element={
+                        <Suspense fallback={<MinimalLoader />}>
+                          <CampaignDetails />
                         </Suspense>
                       } />
                       <Route path="videos" element={
