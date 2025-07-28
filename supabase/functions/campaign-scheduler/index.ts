@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
 
     let activatedCount = 0
     let pausedCount = 0
+    let scheduledCount = 0
     let expiredCount = 0
 
     for (const campaign of campaigns || []) {
@@ -123,6 +124,7 @@ Deno.serve(async (req) => {
 
       // Verificar regras de horário com logs detalhados
       let shouldBeActive = false
+      let shouldBeScheduled = false
       let activationReason = ''
       
       console.log(`[SCHEDULER] Evaluating campaign ${typedCampaign.id}:`)
@@ -165,6 +167,11 @@ Deno.serve(async (req) => {
               activationReason = `Normal time range: ${rule.start_time}-${rule.end_time} (with tolerance)`
               console.log(`[SCHEDULER]     ✅ Active - ${activationReason}`)
               break
+            } else if (today < startDate) {
+              // Está no dia correto mas antes do horário de início = scheduled
+              shouldBeScheduled = true
+              activationReason = `Scheduled for later today: ${rule.start_time}-${rule.end_time}`
+              console.log(`[SCHEDULER]     📅 Scheduled - ${activationReason}`)
             } else {
               console.log(`[SCHEDULER]     ❌ Outside time range: ${currentTime} not in ${rule.start_time}-${rule.end_time}`)
             }
@@ -178,18 +185,32 @@ Deno.serve(async (req) => {
               activationReason = `Cross-midnight range: ${rule.start_time}-${rule.end_time} (with tolerance)`
               console.log(`[SCHEDULER]     ✅ Active - ${activationReason}`)
               break
+            } else if (today < startDate) {
+              // Está no dia correto mas antes do horário de início
+              shouldBeScheduled = true
+              activationReason = `Scheduled for later today: ${rule.start_time}-${rule.end_time} (cross-midnight)`
+              console.log(`[SCHEDULER]     📅 Scheduled - ${activationReason}`)
             } else {
               console.log(`[SCHEDULER]     ❌ Outside cross-midnight range: ${currentTime} not in ${rule.start_time}-${rule.end_time}`)
             }
           }
         }
         if (shouldBeActive) break
+        // Continue procurando outras regras para scheduled se não estiver ativo
       }
       
-      console.log(`[SCHEDULER] Final decision: shouldBeActive=${shouldBeActive}${activationReason ? ` (${activationReason})` : ''}`)
-
-      // Atualizar status se necessário
-      const newStatus = shouldBeActive ? 'active' : 'paused'
+      // Determinar status final baseado na prioridade: active > scheduled > paused
+      let newStatus: string
+      if (shouldBeActive) {
+        newStatus = 'active'
+        console.log(`[SCHEDULER] Final decision: ACTIVE - ${activationReason}`)
+      } else if (shouldBeScheduled) {
+        newStatus = 'scheduled'
+        console.log(`[SCHEDULER] Final decision: SCHEDULED - ${activationReason}`)
+      } else {
+        newStatus = 'paused'
+        console.log(`[SCHEDULER] Final decision: PAUSED - No matching rules for current time`)
+      }
       
       if (typedCampaign.status !== newStatus) {
         const { error: updateError } = await supabase
@@ -204,6 +225,8 @@ Deno.serve(async (req) => {
           
           if (newStatus === 'active') {
             activatedCount++
+          } else if (newStatus === 'scheduled') {
+            scheduledCount++
           } else {
             pausedCount++
           }
@@ -224,6 +247,7 @@ Deno.serve(async (req) => {
       timestamp: now.toISOString(),
       campaigns_processed: campaigns?.length || 0,
       campaigns_activated: activatedCount,
+      campaigns_scheduled: scheduledCount,
       campaigns_paused: pausedCount,
       campaigns_expired: expiredCount,
       current_time: currentTime,
