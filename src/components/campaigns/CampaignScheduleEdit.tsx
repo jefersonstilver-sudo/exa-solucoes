@@ -256,9 +256,9 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
             {/* Dias da Semana */}
             <div>
               <Label className="text-sm font-medium mb-2 block">Dias da Semana</Label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-2">
                 {DAYS_OF_WEEK.map(day => (
-                  <div key={day.value} className="flex items-center space-x-2">
+                  <div key={day.value} className="flex items-center space-x-2 py-1">
                     <Checkbox
                       id={`day-${index}-${day.value}`}
                       checked={schedule.days_of_week.includes(day.value)}
@@ -266,7 +266,7 @@ const CampaignScheduleEdit: React.FC<CampaignScheduleEditProps> = ({
                     />
                     <Label 
                       htmlFor={`day-${index}-${day.value}`}
-                      className="text-sm cursor-pointer"
+                      className="text-sm cursor-pointer leading-tight"
                     >
                       {day.label}
                     </Label>
