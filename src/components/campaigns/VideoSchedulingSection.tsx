@@ -107,23 +107,23 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
+      <CardHeader className="p-3 sm:p-6">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
           Agendamento de Vídeos
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-3 sm:space-y-6 p-3 sm:p-6">
         {/* Seleção de vídeo */}
-        <div className="space-y-4">
-          <div className="flex gap-4">
+        <div className="space-y-2 sm:space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
             <div className="flex-1">
-              <Label htmlFor="video-select">Selecionar Vídeo Aprovado</Label>
+              <Label htmlFor="video-select" className="text-xs sm:text-sm">Selecionar Vídeo Aprovado</Label>
               <select
                 id="video-select"
                 value={selectedVideoId}
                 onChange={(e) => setSelectedVideoId(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background"
+                className="w-full p-2 border rounded-md bg-background text-xs sm:text-sm"
               >
                 <option value="">Selecione um vídeo...</option>
                 {approvedVideos.map((video) => (
@@ -137,25 +137,25 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
               type="button"
               onClick={addVideoSchedule} 
               disabled={!selectedVideoId}
-              className="self-end"
+              className="self-end w-full sm:w-auto"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">Adicionar</span>
             </Button>
           </div>
         </div>
 
         {/* Lista de vídeos agendados */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {videoSchedules.map((schedule, scheduleIndex) => (
             <Card key={scheduleIndex} className="border-l-4 border-l-primary">
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-2 sm:pb-4 p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Play className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Play className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                     <div>
-                      <h4 className="font-medium">{getVideoName(schedule.videoId)}</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h4 className="font-medium text-xs sm:text-sm">{getVideoName(schedule.videoId)}</h4>
+                      <p className="text-xs text-muted-foreground">
                         Slot {schedule.slotPosition} • Prioridade {schedule.priority}
                       </p>
                     </div>
@@ -165,19 +165,19 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => removeVideoSchedule(scheduleIndex)}
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive h-8 w-8"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0">
                 {/* Regras de horário */}
                 {schedule.scheduleRules.map((rule, ruleIndex) => (
-                  <div key={ruleIndex} className="p-4 border rounded-lg space-y-4">
+                  <div key={ruleIndex} className="p-2 sm:p-4 border rounded-lg space-y-2 sm:space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                      <Label className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                         Regra de Horário {ruleIndex + 1}
                       </Label>
                       <Button
@@ -185,21 +185,21 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => removeScheduleRule(scheduleIndex, ruleIndex)}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive h-6 w-6 sm:h-8 sm:w-8"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
                       </Button>
                     </div>
 
                     {/* Dias da semana */}
                     <div>
-                      <Label className="text-sm">Dias da Semana</Label>
-                      <div className="flex flex-wrap gap-2 mt-2">
+                      <Label className="text-xs sm:text-sm">Dias da Semana</Label>
+                      <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-1 sm:gap-2 mt-1 sm:mt-2">
                         {DAYS_OF_WEEK.map((day) => (
                           <Badge
                             key={day.value}
                             variant={rule.daysOfWeek.includes(day.value) ? "default" : "outline"}
-                            className="cursor-pointer select-none hover:opacity-80 transition-opacity"
+                            className="cursor-pointer select-none hover:opacity-80 transition-opacity text-xs p-1 sm:p-2"
                             onClick={() => toggleDay(scheduleIndex, ruleIndex, day.value)}
                             title={day.fullName}
                           >
@@ -208,14 +208,14 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Clique nos dias para selecionar/deselecionar
+                        Toque nos dias para selecionar/deselecionar
                       </p>
                     </div>
 
                     {/* Horários */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                       <div>
-                        <Label htmlFor={`start-time-${scheduleIndex}-${ruleIndex}`}>
+                        <Label htmlFor={`start-time-${scheduleIndex}-${ruleIndex}`} className="text-xs sm:text-sm">
                           Horário de Início
                         </Label>
                         <Input
@@ -223,10 +223,11 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                           type="time"
                           value={rule.startTime}
                           onChange={(e) => updateScheduleRule(scheduleIndex, ruleIndex, 'startTime', e.target.value)}
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`end-time-${scheduleIndex}-${ruleIndex}`}>
+                        <Label htmlFor={`end-time-${scheduleIndex}-${ruleIndex}`} className="text-xs sm:text-sm">
                           Horário de Fim
                         </Label>
                         <Input
@@ -234,6 +235,7 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                           type="time"
                           value={rule.endTime}
                           onChange={(e) => updateScheduleRule(scheduleIndex, ruleIndex, 'endTime', e.target.value)}
+                          className="text-sm"
                         />
                       </div>
                     </div>
@@ -247,7 +249,7 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                           updateScheduleRule(scheduleIndex, ruleIndex, 'isActive', checked)
                         }
                       />
-                      <Label htmlFor={`active-${scheduleIndex}-${ruleIndex}`}>
+                      <Label htmlFor={`active-${scheduleIndex}-${ruleIndex}`} className="text-xs sm:text-sm">
                         Regra ativa
                       </Label>
                     </div>
@@ -262,8 +264,8 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                   onClick={() => addScheduleRule(scheduleIndex)}
                   className="w-full"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Regra de Horário
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="text-xs sm:text-sm">Adicionar Regra de Horário</span>
                 </Button>
               </CardContent>
             </Card>

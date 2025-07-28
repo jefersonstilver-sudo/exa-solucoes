@@ -284,58 +284,81 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
+    <Card className="w-full max-w-[98vw] sm:max-w-2xl lg:max-w-4xl mx-auto">
+      <CardHeader className="p-3 sm:p-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <Monitor className="h-4 w-4 sm:h-5 sm:w-5" />
             Nova Campanha Avançada
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={onCancel} className="h-8 w-8 sm:h-10 sm:w-10">
+            <X className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <CardContent className="space-y-3 sm:space-y-6 p-3 sm:p-6">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6">
           {/* Nome da Campanha */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome da Campanha *</Label>
+          <div className="space-y-1 sm:space-y-2">
+            <Label htmlFor="name" className="text-xs sm:text-sm">Nome da Campanha *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Ex: Campanha Black Friday 2024"
+              className="text-sm"
             />
           </div>
 
           {/* Descrição */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+          <div className="space-y-1 sm:space-y-2">
+            <Label htmlFor="description" className="text-xs sm:text-sm">Descrição</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Descreva os objetivos e detalhes da campanha..."
-              rows={3}
+              rows={2}
+              className="text-sm resize-none"
             />
           </div>
 
           {/* Seleção do Pedido */}
-          <div className="space-y-2">
-            <Label htmlFor="order">Pedido Pago *</Label>
+          <div className="space-y-1 sm:space-y-2">
+            <Label htmlFor="order" className="text-xs sm:text-sm flex items-center gap-1">
+              <Building className="h-3 w-3" />
+              Pedido Pago *
+            </Label>
             <Select value={formData.orderId} onValueChange={handleOrderChange}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Selecione um pedido pago..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[90vw]">
                 {paidOrders.map((order) => (
-                  <SelectItem key={order.id} value={order.id}>
-                    {order.buildings && order.buildings.length > 0 ? (
-                      `${order.buildings[0].nome} - ${order.buildings[0].endereco.split(',')[0]} - R$ ${order.valor_total?.toFixed(2) || '0.00'}`
-                    ) : (
-                      `Pedido ${order.id.slice(0, 8)}... - R$ ${order.valor_total?.toFixed(2) || '0.00'} - ${order.lista_paineis?.length || 0} painéis`
-                    )}
+                  <SelectItem key={order.id} value={order.id} className="p-2">
+                    <div className="flex flex-col gap-1 w-full">
+                      {order.buildings && order.buildings.length > 0 ? (
+                        <>
+                          <div className="font-medium text-xs sm:text-sm">{order.buildings[0].nome}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {order.buildings[0].endereco.split(',')[0]}
+                          </div>
+                          <div className="text-xs font-medium text-primary">
+                            R$ {order.valor_total?.toFixed(2) || '0.00'}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="font-medium text-xs sm:text-sm">Pedido {order.id.slice(0, 8)}...</div>
+                          <div className="text-xs text-muted-foreground">
+                            {order.lista_paineis?.length || 0} painéis
+                          </div>
+                          <div className="text-xs font-medium text-primary">
+                            R$ {order.valor_total?.toFixed(2) || '0.00'}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -343,26 +366,35 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
           </div>
 
           {/* Seleção do Painel com informações do prédio */}
-          <div className="space-y-2">
-            <Label htmlFor="panel">Painel e Localização *</Label>
+          <div className="space-y-1 sm:space-y-2">
+            <Label htmlFor="panel" className="text-xs sm:text-sm flex items-center gap-1">
+              <Monitor className="h-3 w-3" />
+              Painel e Localização *
+            </Label>
             {availablePanels.length > 0 ? (
               <Select 
                 value={formData.panelId} 
                 onValueChange={(value) => setFormData(prev => ({ ...prev, panelId: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Selecione um painel..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-[90vw]">
                   {availablePanels.map((panel) => (
-                    <SelectItem key={panel.id} value={panel.id}>
-                      <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4" />
-                        <div>
-                          <div className="font-medium">{panel.buildings.nome}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {panel.buildings.endereco}, {panel.buildings.bairro} - Painel {panel.code}
-                          </div>
+                    <SelectItem key={panel.id} value={panel.id} className="p-2">
+                      <div className="flex flex-col gap-1 w-full">
+                        <div className="font-medium text-xs sm:text-sm flex items-center gap-1">
+                          <Building className="h-3 w-3" />
+                          {panel.buildings.nome}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {panel.buildings.endereco}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {panel.buildings.bairro}
+                        </div>
+                        <div className="text-xs font-medium text-primary">
+                          Painel {panel.code}
                         </div>
                       </div>
                     </SelectItem>
@@ -388,19 +420,17 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
 
           {/* Vídeos aprovados disponíveis */}
           {approvedVideos.length > 0 && (
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Video className="h-4 w-4" />
+            <div className="space-y-1 sm:space-y-2">
+              <Label className="flex items-center gap-1 text-xs sm:text-sm">
+                <Video className="h-3 w-3 sm:h-4 sm:w-4" />
                 Vídeos Aprovados Disponíveis
               </Label>
-              <div className="grid grid-cols-1 gap-2 p-4 border rounded-lg bg-muted/50">
+              <div className="space-y-2 p-2 sm:p-4 border rounded-lg bg-muted/50">
                 {approvedVideos.map((video) => (
-                  <div key={video.videos.id} className="flex items-center justify-between p-2 bg-background rounded border">
-                    <div>
-                      <div className="font-medium">{video.videos.nome}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {video.videos.duracao}s • {video.videos.orientacao}
-                      </div>
+                  <div key={video.videos.id} className="p-2 bg-background rounded border">
+                    <div className="font-medium text-xs sm:text-sm">{video.videos.nome}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {video.videos.duracao}s • {video.videos.orientacao}
                     </div>
                   </div>
                 ))}
@@ -409,9 +439,9 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
           )}
 
           {/* Datas da campanha */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Data de Início *</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">Data de Início *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -440,8 +470,8 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-2">
-              <Label>Data de Fim *</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">Data de Fim *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -473,23 +503,25 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
           </div>
 
           {/* Horários Gerais da Campanha */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startTime">Horário de Início da Campanha *</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="startTime" className="text-xs sm:text-sm">Horário de Início da Campanha *</Label>
               <Input
                 id="startTime"
                 type="time"
                 value={formData.startTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                className="text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endTime">Horário de Fim da Campanha *</Label>
+            <div className="space-y-1 sm:space-y-2">
+              <Label htmlFor="endTime" className="text-xs sm:text-sm">Horário de Fim da Campanha *</Label>
               <Input
                 id="endTime"
                 type="time"
                 value={formData.endTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                className="text-sm"
               />
             </div>
           </div>
@@ -513,23 +545,25 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
           )}
 
           {/* Botões de ação */}
-          <div className="flex gap-4 pt-6">
-            <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-3 sm:pt-4">
+            <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
-              disabled={loading || !isFormValid()}
-              className="flex-1"
-              size="lg"
+            <Button
+              type="submit"
+              disabled={!isFormValid() || loading}
+              className="w-full sm:w-auto sm:min-w-[120px]"
             >
               {loading ? (
-                <>Criando Campanha...</>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs sm:text-sm">Criando...</span>
+                </div>
               ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Criar Campanha
-                </>
+                <div className="flex items-center gap-2">
+                  <Save className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">Criar Campanha</span>
+                </div>
               )}
             </Button>
           </div>
