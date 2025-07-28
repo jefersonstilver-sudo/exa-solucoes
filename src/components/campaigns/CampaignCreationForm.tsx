@@ -81,6 +81,10 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     panelId: '',
     panelCode: '',
     buildingName: '',
+    orderBuildingName: '',
+    orderBuildingAddress: '',
+    orderBuildingNeighborhood: '',
+    orderValue: '',
     startDate: '',
     endDate: '',
     startTime: '08:00',
@@ -192,17 +196,24 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     setFormData(prev => ({ ...prev, orderId, panelId: '' }));
     loadOrderData(orderId);
     
-    // Auto-preencher datas baseadas no pedido
+    // Auto-preencher datas e informações do pedido
     const selectedOrder = paidOrders.find(order => order.id === orderId);
     if (selectedOrder) {
       const start = new Date(selectedOrder.data_inicio);
       const end = new Date(selectedOrder.data_fim);
       setStartDate(start);
       setEndDate(end);
+      
+      // Capturar informações do prédio associado ao pedido
+      const building = selectedOrder.buildings?.[0];
       setFormData(prev => ({
         ...prev,
         startDate: format(start, 'yyyy-MM-dd'),
-        endDate: format(end, 'yyyy-MM-dd')
+        endDate: format(end, 'yyyy-MM-dd'),
+        orderBuildingName: building?.nome || '',
+        orderBuildingAddress: building?.endereco || '',
+        orderBuildingNeighborhood: building?.bairro || '',
+        orderValue: selectedOrder.valor_total?.toFixed(2) || '0.00'
       }));
     }
   };
@@ -388,6 +399,41 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Informações do pedido selecionado */}
+          {formData.orderId && formData.orderBuildingName && (
+            <div className="mt-4 p-3 bg-muted/20 rounded-lg border space-y-3">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Building className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  Informações do Pedido Selecionado
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Nome do Edifício</div>
+                  <div className="text-sm font-medium">{formData.orderBuildingName}</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Bairro</div>
+                  <div className="text-sm font-medium">{formData.orderBuildingNeighborhood}</div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Endereço</div>
+                <div className="text-sm">{formData.orderBuildingAddress}</div>
+              </div>
+              
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="text-xs text-muted-foreground">Valor Total</span>
+                <Badge variant="secondary" className="text-sm font-medium">
+                  R$ {formData.orderValue}
+                </Badge>
+              </div>
+            </div>
+          )}
 
           {/* Separador Visual Robusto */}
           <div className="border-t-2 border-border/50 bg-border/20 pt-6 mt-8 sm:pt-8 sm:mt-12 rounded-t-lg">
