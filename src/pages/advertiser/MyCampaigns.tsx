@@ -12,20 +12,27 @@ import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2 } from 'lucide-rea
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import CampaignCreationForm from '@/components/campaigns/CampaignCreationForm';
+import CampaignEditModal from '@/components/campaigns/CampaignEditModal';
 
 interface Campaign {
   id: string;
+  client_id: string;
   painel_id: string;
   data_inicio: string;
   data_fim: string;
   status: string;
+  created_at: string;
   obs?: string;
-  created_at?: string;
   video_id?: string;
   name?: string;
   start_time?: string;
   end_time?: string;
   is_advanced?: boolean;
+  start_date?: string;
+  end_date?: string;
+  description?: string;
+  pedido_id?: string;
+  updated_at?: string;
 }
 
 const MyCampaigns = () => {
@@ -38,6 +45,10 @@ const MyCampaigns = () => {
   // Controle de carregamento para evitar múltiplas chamadas
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState(0);
+  
+  // Estado para modal de edição
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   
   const isMobile = useIsMobile();
 
@@ -137,25 +148,36 @@ const MyCampaigns = () => {
         
         return {
           id: campaign.id,
+          client_id: userProfile.id,
           painel_id: 'painel-advanced',
           data_inicio: campaign.start_date,
           data_fim: campaign.end_date,
           status: campaign.status === 'active' ? 'ativa' : campaign.status,
           obs: campaign.description || `Campanha avançada: ${campaign.name}`,
-          created_at: campaign.created_at,
+          created_at: campaign.created_at || new Date().toISOString(),
           video_id: 'advanced-video',
           name: campaign.name,
           start_time: firstRule?.start_time || defaultTime,
           end_time: firstRule?.end_time || defaultTime,
-          is_advanced: true
+          is_advanced: true,
+          start_date: campaign.start_date,
+          end_date: campaign.end_date,
+          description: campaign.description
         } as Campaign;
       }) || [];
 
       // Combinar ambas as listas
       const allCampaigns = [
-        ...(legacyCampaigns || []).map(c => ({ ...c, is_advanced: false })),
+        ...(legacyCampaigns || []).map(c => ({ 
+          ...c, 
+          is_advanced: false,
+          start_date: c.data_inicio,
+          end_date: c.data_fim,
+          description: c.obs,
+          created_at: c.created_at || new Date().toISOString()
+        })),
         ...advancedCampaigns
-      ].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setCampaigns(allCampaigns);
     } catch (error) {
@@ -272,8 +294,67 @@ const MyCampaigns = () => {
     }, 1000);
   };
 
-  const handleEditCampaign = (campaignId: string) => {
-    navigate(`/anunciante/campanhas/${campaignId}`);
+  const handleEditCampaign = (campaign: Campaign) => {
+    console.log('📝 [MY CAMPAIGNS] Abrindo modal de edição para campanha:', campaign);
+    setSelectedCampaign(campaign);
+    setShowEditModal(true);
+  };
+
+  const handleEditSuccess = () => {
+    console.log('✅ [MY CAMPAIGNS] Edição bem-sucedida, fechando modal e recarregando...');
+    setShowEditModal(false);
+    setSelectedCampaign(null);
+    
+    // Forçar reload dos dados
+    setTimeout(() => {
+      if (!isLoadingData) {
+        loadCampaigns();
+      }
+    }, 500);
+  };
+
+  // 🔧 CORREÇÃO 4: Função para atualizar campanha com refresh forçado
+  const handleCampaignUpdate = async (campaignId: string, updates: any) => {
+    try {
+      console.log('📝 [MY CAMPAIGNS] Atualizando campanha:', campaignId, updates);
+      
+      const campaign = campaigns.find(c => c.id === campaignId);
+      if (!campaign) {
+        toast.error('Campanha não encontrada');
+        return false;
+      }
+
+      // Determinar a tabela correta
+      const tableName = campaign.is_advanced ? 'campaigns_advanced' : 'campanhas';
+      console.log('🎯 [MY CAMPAIGNS] Usando tabela:', tableName);
+
+      const { error } = await supabase
+        .from(tableName)
+        .update(updates)
+        .eq('id', campaignId);
+
+      if (error) {
+        console.error('❌ [MY CAMPAIGNS] Erro na atualização:', error);
+        toast.error('Erro ao atualizar campanha');
+        return false;
+      }
+
+      console.log('✅ [MY CAMPAIGNS] Campanha atualizada com sucesso!');
+      
+      // 🔧 CORREÇÃO 5: Forçar reload dos dados após atualização
+      setTimeout(() => {
+        console.log('🔄 [MY CAMPAIGNS] Forçando reload após atualização...');
+        if (!isLoadingData) {
+          loadCampaigns();
+        }
+      }, 500);
+
+      return true;
+    } catch (error) {
+      console.error('💥 [MY CAMPAIGNS] Erro inesperado:', error);
+      toast.error('Erro inesperado ao atualizar campanha');
+      return false;
+    }
   };
 
 
@@ -422,7 +503,7 @@ const MyCampaigns = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => handleEditCampaign(campaign.id)}
+                    onClick={() => handleEditCampaign(campaign)}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
                   >
                     <Edit className="h-4 w-4 mr-1" />
@@ -462,6 +543,16 @@ const MyCampaigns = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal de Edição */}
+      {selectedCampaign && (
+        <CampaignEditModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          campaign={selectedCampaign}
+          onSuccess={handleEditSuccess}
+        />
       )}
     </div>
   );

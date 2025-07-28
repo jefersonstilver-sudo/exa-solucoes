@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import CampaignScheduleEdit from './CampaignScheduleEdit';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface CampaignData {
   id: string;
@@ -51,28 +52,81 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     end_date: campaign.end_date || campaign.data_fim || ''
   });
 
+  // 🔧 CORREÇÃO 1: Sincronizar formData com mudanças na campanha
+  useEffect(() => {
+    console.log('🔄 [CAMPAIGN EDIT] Sincronizando formData com nova campanha:', campaign);
+    setFormData({
+      name: campaign.name || '',
+      description: campaign.description || campaign.obs || '',
+      status: campaign.status || '',
+      start_date: campaign.start_date || campaign.data_inicio || '',
+      end_date: campaign.end_date || campaign.data_fim || ''
+    });
+  }, [campaign, open]); // Incluir 'open' para resetar quando o modal abrir
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      console.log('📝 [CAMPAIGN EDIT] Dados do formulário antes do submit:', formData);
+      console.log('🎯 [CAMPAIGN EDIT] Campanha atual:', campaign);
+      console.log('🔧 [CAMPAIGN EDIT] Modo avançado:', isAdvanced);
+
       const updates: Partial<CampaignData> = {};
 
       if (isAdvanced) {
-        if (formData.name) updates.name = formData.name;
-        if (formData.description) updates.description = formData.description;
-        if (formData.start_date) updates.start_date = formData.start_date;
-        if (formData.end_date) updates.end_date = formData.end_date;
+        // Campanha avançada - sempre enviar as datas, mesmo se não mudaram
+        updates.name = formData.name;
+        updates.description = formData.description;
+        updates.start_date = formData.start_date;
+        updates.end_date = formData.end_date;
+        console.log('🚀 [CAMPAIGN EDIT] Updates para campanha avançada:', updates);
       } else {
-        if (formData.description) updates.obs = formData.description;
-        if (formData.start_date) updates.data_inicio = formData.start_date;
-        if (formData.end_date) updates.data_fim = formData.end_date;
+        // Campanha legacy - sempre enviar as datas, mesmo se não mudaram
+        updates.obs = formData.description;
+        updates.data_inicio = formData.start_date;
+        updates.data_fim = formData.end_date;
+        console.log('🚀 [CAMPAIGN EDIT] Updates para campanha legacy:', updates);
       }
 
-      const success = await onUpdate(updates);
-      if (success) {
-        onOpenChange(false);
+      // 🔧 CORREÇÃO 2: Validação básica das datas
+      if (updates.start_date && updates.end_date) {
+        const startDate = new Date(updates.start_date);
+        const endDate = new Date(updates.end_date);
+        
+        if (endDate < startDate) {
+          toast.error('Data de fim não pode ser anterior à data de início');
+          return;
+        }
       }
+
+      console.log('📤 [CAMPAIGN EDIT] Enviando updates:', updates);
+      const success = await onUpdate(updates);
+      
+      if (success) {
+        console.log('✅ [CAMPAIGN EDIT] Atualização bem-sucedida!');
+        toast.success('Campanha atualizada com sucesso!');
+        
+        // 🔧 CORREÇÃO 3: Resetar formData após sucesso para forçar refresh
+        setTimeout(() => {
+          setFormData({
+            name: campaign.name || '',
+            description: campaign.description || campaign.obs || '',
+            status: campaign.status || '',
+            start_date: campaign.start_date || campaign.data_inicio || '',
+            end_date: campaign.end_date || campaign.data_fim || ''
+          });
+        }, 100);
+        
+        onOpenChange(false);
+      } else {
+        console.error('❌ [CAMPAIGN EDIT] Falha na atualização');
+        toast.error('Erro ao atualizar campanha. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('💥 [CAMPAIGN EDIT] Erro no submit:', error);
+      toast.error('Erro inesperado ao salvar. Tente novamente.');
     } finally {
       setLoading(false);
     }
