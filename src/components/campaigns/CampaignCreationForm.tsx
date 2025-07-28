@@ -334,10 +334,10 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Selecione um pedido pago..." />
               </SelectTrigger>
-                <SelectContent className="max-w-none z-50">
+                <SelectContent className="max-w-[95vw] z-50">
                 {paidOrders.map((order) => (
-                  <SelectItem key={order.id} value={order.id} className="min-h-[85px] sm:min-h-[75px] p-4 sm:p-5">
-                    <div className="w-full space-y-3 sm:space-y-2">
+                  <SelectItem key={order.id} value={order.id} className="min-h-[85px] sm:min-h-[75px] p-0">
+                    <div className="w-full p-4 sm:p-5 space-y-3 sm:space-y-2">
                       {order.buildings && order.buildings.length > 0 ? (
                         <>
                           {/* Nome do prédio com separador */}
@@ -348,16 +348,16 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                             </span>
                           </div>
                           
-                          {/* Endereço com melhor espaçamento */}
-                          <div className="flex items-start gap-2 pl-2">
+                          {/* Endereço */}
+                          <div className="flex items-start gap-2">
                             <MapPin className="h-3 w-3 mt-1 text-muted-foreground flex-shrink-0" />
                             <span className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                               {order.buildings[0].endereco}
                             </span>
                           </div>
                           
-                          {/* Bairro e valor com separação clara */}
-                          <div className="flex items-center justify-between pl-2 pt-2 border-t border-border/30">
+                          {/* Bairro e valor */}
+                          <div className="flex items-center justify-between pt-2 border-t border-border/30">
                             <span className="text-xs sm:text-sm text-muted-foreground font-medium">
                               {order.buildings[0].bairro}
                             </span>
@@ -397,33 +397,33 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                 <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Selecione um painel..." />
                 </SelectTrigger>
-                <SelectContent className="max-w-[90vw]">
-                  {availablePanels.map((panel) => (
-                    <SelectItem key={panel.id} value={panel.id} className="min-h-[80px] sm:min-h-[70px] p-4 sm:p-5">
-                      <div className="w-full space-y-3 sm:space-y-2">
-                        {/* Código do painel com destaque */}
-                        <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                          <Monitor className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span className="font-semibold text-sm sm:text-base text-foreground">
-                            {panel.code}
-                          </span>
+              <SelectContent className="max-w-[95vw] z-50">
+                {availablePanels.map((panel) => (
+                  <SelectItem key={panel.id} value={panel.id} className="min-h-[80px] sm:min-h-[70px] p-0">
+                    <div className="w-full p-4 sm:p-5 space-y-3 sm:space-y-2">
+                      {/* Código do painel com destaque */}
+                      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                        <Monitor className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="font-semibold text-sm sm:text-base text-foreground">
+                          {panel.code}
+                        </span>
+                      </div>
+                      
+                      {/* Informações do prédio */}
+                      <div className="space-y-2 sm:space-y-1">
+                        <div className="text-xs sm:text-sm font-medium text-foreground">
+                          {panel.buildings.nome}
                         </div>
-                        
-                        {/* Informações do prédio organizadas */}
-                        <div className="pl-2 space-y-2 sm:space-y-1">
-                          <div className="text-xs sm:text-sm font-medium text-foreground">
-                            {panel.buildings.nome}
-                          </div>
-                          <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                            {panel.buildings.endereco}
-                          </div>
-                          <div className="text-xs sm:text-sm text-muted-foreground">
-                            {panel.buildings.bairro}
-                          </div>
+                        <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                          {panel.buildings.endereco}
+                        </div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">
+                          {panel.buildings.bairro}
                         </div>
                       </div>
-                    </SelectItem>
-                  ))}
+                    </div>
+                  </SelectItem>
+                ))}
                 </SelectContent>
               </Select>
             ) : formData.orderId ? (
