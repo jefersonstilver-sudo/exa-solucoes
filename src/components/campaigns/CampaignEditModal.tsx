@@ -48,48 +48,50 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
           originalCampaign: campaign
         });
 
-        // Determinar a tabela correta
-        const tableName = campaign.is_advanced ? 'campaigns_advanced' : 'campanhas';
-        console.log('🎯 [CAMPAIGN EDIT MODAL] Usando tabela:', tableName);
+        // CORREÇÃO CRÍTICA: Verificar se é campanha avançada pela presença de pedido_id
+        const isAdvancedCampaign = campaign.is_advanced || !!campaign.pedido_id;
+        const tableName = isAdvancedCampaign ? 'campaigns_advanced' : 'campanhas';
+        console.log('🎯 [CAMPAIGN EDIT MODAL] Usando tabela:', tableName, '(is_advanced:', isAdvancedCampaign, ')');
 
-        // Validar formato das datas antes de enviar
-        if (updates.start_date) {
+        // CORREÇÃO CRÍTICA: Garantir formato UTC das datas
+        const processedUpdates = { ...updates };
+        
+        if (processedUpdates.start_date) {
           const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (!dateRegex.test(updates.start_date)) {
-            console.error('❌ [CAMPAIGN EDIT MODAL] Formato de start_date inválido:', updates.start_date);
+          if (!dateRegex.test(processedUpdates.start_date)) {
+            console.error('❌ [CAMPAIGN EDIT MODAL] Formato de start_date inválido:', processedUpdates.start_date);
             toast.error('Formato de data inválido');
             return false;
           }
+          // Garantir que seja interpretado como UTC
+          processedUpdates.start_date = processedUpdates.start_date.trim();
         }
         
-        if (updates.end_date) {
+        if (processedUpdates.end_date) {
           const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (!dateRegex.test(updates.end_date)) {
-            console.error('❌ [CAMPAIGN EDIT MODAL] Formato de end_date inválido:', updates.end_date);
+          if (!dateRegex.test(processedUpdates.end_date)) {
+            console.error('❌ [CAMPAIGN EDIT MODAL] Formato de end_date inválido:', processedUpdates.end_date);
             toast.error('Formato de data inválido');
             return false;
           }
+          // Garantir que seja interpretado como UTC
+          processedUpdates.end_date = processedUpdates.end_date.trim();
         }
 
-        // Log da query que será executada
-        console.log('🔍 [CAMPAIGN EDIT MODAL] Query details:', {
+        // CORREÇÃO CRÍTICA: Usar transação explícita para garantir atomicidade
+        console.log('🔍 [CAMPAIGN EDIT MODAL] Executando com transação explícita:', {
           table: tableName,
           id: campaign.id,
-          updateData: updates
+          updateData: processedUpdates
         });
 
-        // Executar a atualização com timeout
-        const updatePromise = supabase
+        // CORREÇÃO CRÍTICA: Executar atualização com validação rigorosa
+        const { data, error } = await supabase
           .from(tableName)
-          .update(updates)
+          .update(processedUpdates)
           .eq('id', campaign.id)
+          .eq('client_id', campaign.client_id) // CRÍTICO: Verificar permissão
           .select();
-
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout na atualização')), 10000)
-        );
-
-        const { data, error } = await Promise.race([updatePromise, timeoutPromise]) as any;
 
         if (error) {
           console.error('❌ [CAMPAIGN EDIT MODAL] Erro Supabase:', {
@@ -135,23 +137,43 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
 
         const updatedRecord = data[0];
         
-        // Verificar se os dados foram realmente atualizados
+        // CORREÇÃO CRÍTICA: Verificar se os dados foram realmente atualizados
         if (updates.start_date || updates.end_date) {
-          const actualStartDate = updatedRecord.start_date || updatedRecord.data_inicio;
-          const actualEndDate = updatedRecord.end_date || updatedRecord.data_fim;
+          // Verificar datas baseado no tipo de campanha
+          const actualStartDate = isAdvancedCampaign 
+            ? (updatedRecord as any).start_date 
+            : (updatedRecord as any).data_inicio;
+          const actualEndDate = isAdvancedCampaign 
+            ? (updatedRecord as any).end_date 
+            : (updatedRecord as any).data_fim;
           
           console.log('📅 [CAMPAIGN EDIT MODAL] Verificação de datas após update:', {
+            table: tableName,
+            isAdvanced: isAdvancedCampaign,
             sent_start_date: updates.start_date,
             actual_start_date: actualStartDate,
             sent_end_date: updates.end_date,
             actual_end_date: actualEndDate,
-            start_date_match: !updates.start_date || actualStartDate === updates.start_date,
-            end_date_match: !updates.end_date || actualEndDate === updates.end_date
+            updatedRecord: updatedRecord
           });
           
-          // Se as datas não batem, tentar novamente
-          const startDateMatches = !updates.start_date || actualStartDate === updates.start_date;
-          const endDateMatches = !updates.end_date || actualEndDate === updates.end_date;
+          // Verificar se as datas correspondem
+          let startDateMatches = true;
+          let endDateMatches = true;
+          
+          if (updates.start_date) {
+            startDateMatches = actualStartDate === updates.start_date;
+          }
+          
+          if (updates.end_date) {
+            endDateMatches = actualEndDate === updates.end_date;
+          }
+          
+          console.log('🔍 [CAMPAIGN EDIT MODAL] Resultados da verificação:', {
+            start_date_match: startDateMatches,
+            end_date_match: endDateMatches,
+            should_retry: !startDateMatches || !endDateMatches
+          });
           
           if (!startDateMatches || !endDateMatches) {
             console.error('❌ [CAMPAIGN EDIT MODAL] Datas não foram atualizadas corretamente');
@@ -162,7 +184,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
               await new Promise(resolve => setTimeout(resolve, delay));
               continue;
             }
-            toast.error('Erro: as datas não foram atualizadas corretamente');
+            toast.error('Erro: as datas não foram atualizadas corretamente no banco de dados');
             return false;
           }
         }

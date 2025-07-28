@@ -251,7 +251,7 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     }
   };
 
-  // 🔧 CORREÇÃO CRÍTICA: Formatação de data melhorada com validação UTC
+  // 🔧 CORREÇÃO CRÍTICA: Formatação de data otimizada para garantir persistência
   const formatDateForInput = (dateString: string) => {
     if (!dateString) {
       console.log('🔴 [DATE FORMAT] Data vazia recebida');
@@ -261,40 +261,53 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
     console.log('📅 [DATE FORMAT] Input recebido:', dateString, 'Tipo:', typeof dateString);
     
     try {
-      // Se já está no formato YYYY-MM-DD, validar e usar diretamente
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        // Validar se é uma data válida
-        const testDate = new Date(dateString + 'T00:00:00.000Z');
+      // PRIORIDADE 1: Se já está no formato YYYY-MM-DD, validar e usar
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString.trim())) {
+        const testDate = new Date(dateString.trim() + 'T00:00:00.000Z');
         if (!isNaN(testDate.getTime())) {
-          console.log('✅ [DATE FORMAT] Data válida no formato correto:', dateString);
-          return dateString;
+          console.log('✅ [DATE FORMAT] Data válida mantida:', dateString.trim());
+          return dateString.trim();
         }
       }
       
-      // Se for uma data completa ISO, extrair apenas a parte da data
+      // PRIORIDADE 2: Extrair data de ISO string
       if (dateString.includes('T')) {
-        const formattedDate = dateString.split('T')[0];
-        console.log('✅ [DATE FORMAT] Data extraída do ISO:', formattedDate);
-        return formattedDate;
+        const extractedDate = dateString.split('T')[0].trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(extractedDate)) {
+          console.log('✅ [DATE FORMAT] Data extraída de ISO:', extractedDate);
+          return extractedDate;
+        }
       }
       
-      // Tentar parse com UTC para evitar problemas de timezone
-      const date = new Date(dateString + 'T00:00:00.000Z');
-      if (!isNaN(date.getTime())) {
-        // Usar UTC para evitar mudanças de timezone
-        const year = date.getUTCFullYear();
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(date.getUTCDate()).padStart(2, '0');
+      // PRIORIDADE 3: Parse e formatação com UTC rigoroso
+      let parsedDate;
+      
+      // Tentar diferentes formatos de entrada
+      if (dateString.includes('-')) {
+        parsedDate = new Date(dateString.trim() + 'T00:00:00.000Z');
+      } else {
+        parsedDate = new Date(dateString.trim());
+      }
+      
+      if (!isNaN(parsedDate.getTime())) {
+        const year = parsedDate.getUTCFullYear();
+        const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(parsedDate.getUTCDate()).padStart(2, '0');
         const formatted = `${year}-${month}-${day}`;
-        console.log('✅ [DATE FORMAT] Data formatada com UTC:', dateString, '->', formatted);
-        return formatted;
+        
+        // Validação dupla para garantir que a data formatada é válida
+        const validation = new Date(formatted + 'T00:00:00.000Z');
+        if (!isNaN(validation.getTime())) {
+          console.log('✅ [DATE FORMAT] Data formatada e validada:', dateString, '->', formatted);
+          return formatted;
+        }
       }
       
-      console.log('⚠️ [DATE FORMAT] Usando valor original (não pôde formatar):', dateString);
-      return dateString;
+      console.warn('⚠️ [DATE FORMAT] Falha na formatação, retornando valor original:', dateString);
+      return dateString.trim();
     } catch (error) {
-      console.error('❌ [DATE FORMAT] Erro ao formatar:', error);
-      return dateString;
+      console.error('❌ [DATE FORMAT] Erro crítico na formatação:', error);
+      return dateString.trim();
     }
   };
 
