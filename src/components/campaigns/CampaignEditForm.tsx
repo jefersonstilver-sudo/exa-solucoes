@@ -101,6 +101,16 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
         }
       }
 
+      // 🔧 DEBUG CRÍTICO: Verificar dados antes da atualização
+      console.log('📋 [CAMPAIGN EDIT] FormData ANTES da preparação:', {
+        name: formData.name,
+        description: formData.description,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        start_date_type: typeof formData.start_date,
+        end_date_type: typeof formData.end_date
+      });
+
       // 🔧 CORREÇÃO CRÍTICA: Preparar dados para atualização
       const updates: Partial<CampaignData> = {};
 
@@ -122,24 +132,29 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
           return;
         }
 
+        // ✅ CORREÇÃO: Dados diretos do input (já estão em YYYY-MM-DD)
         updates.name = formData.name.trim();
-        updates.description = formData.description.trim();
-        // ✅ CORREÇÃO: Só incluir datas se tiverem valores válidos
-        updates.start_date = formData.start_date.trim();
-        updates.end_date = formData.end_date.trim();
+        updates.description = formData.description?.trim() || '';
+        updates.start_date = formData.start_date.trim(); // Input já está em YYYY-MM-DD
+        updates.end_date = formData.end_date.trim(); // Input já está em YYYY-MM-DD
         
-        console.log('🚀 [CAMPAIGN EDIT] Updates para campanha AVANÇADA:', updates);
+        console.log('🚀 [CAMPAIGN EDIT] Updates para campanha AVANÇADA:', JSON.stringify(updates, null, 2));
+        console.log('📝 [CAMPAIGN EDIT] Formato das datas:', {
+          start_date_format: updates.start_date,
+          end_date_format: updates.end_date,
+          start_date_regex_test: /^\d{4}-\d{2}-\d{2}$/.test(updates.start_date || ''),
+          end_date_regex_test: /^\d{4}-\d{2}-\d{2}$/.test(updates.end_date || '')
+        });
       } else {
         // Campanha legacy - usar campos antigos
         updates.obs = formData.description;
-        // ✅ CORREÇÃO: Só incluir datas se tiverem valores válidos
         if (formData.start_date?.trim()) {
           updates.data_inicio = formData.start_date.trim();
         }
         if (formData.end_date?.trim()) {
           updates.data_fim = formData.end_date.trim();
         }
-        console.log('🚀 [CAMPAIGN EDIT] Updates para campanha LEGACY:', updates);
+        console.log('🚀 [CAMPAIGN EDIT] Updates para campanha LEGACY:', JSON.stringify(updates, null, 2));
       }
 
       console.log('📤 [CAMPAIGN EDIT] === ENVIANDO PARA SUPABASE ===');
@@ -249,10 +264,15 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
             </div>
           </div>
 
-          {/* Horários de Veiculação */}
-          {isAdvanced && (
+          {/* Horários de Veiculação - TEMPORARIAMENTE DESABILITADO PARA TESTE */}
+          {false && isAdvanced && (
             <>
               <Separator />
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  🔧 CampaignScheduleEdit temporariamente desabilitado para teste de isolamento
+                </p>
+              </div>
               <CampaignScheduleEdit
                 campaignId={campaign.id}
                 isAdvanced={isAdvanced}
