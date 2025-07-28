@@ -133,11 +133,10 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Ativa</SelectItem>
-                <SelectItem value="paused">Pausada</SelectItem>
-                <SelectItem value="scheduled">Agendada</SelectItem>
-                <SelectItem value="completed">Finalizada</SelectItem>
-                <SelectItem value="cancelled">Cancelada</SelectItem>
+                <SelectItem value="active">Ativar</SelectItem>
+                <SelectItem value="paused">Pausar</SelectItem>
+                <SelectItem value="completed">Finalizar</SelectItem>
+                <SelectItem value="cancelled">Cancelar</SelectItem>
               </SelectContent>
             </Select>
           </div>
