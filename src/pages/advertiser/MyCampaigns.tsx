@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2, Eye } from 'lucide-react';
+import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2, Eye, Building } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import CampaignCreationForm from '@/components/campaigns/CampaignCreationForm';
@@ -33,6 +33,8 @@ interface Campaign {
   description?: string;
   pedido_id?: string;
   updated_at?: string;
+  buildings_names?: string[];
+  days_of_week?: number[];
 }
 
 const MyCampaigns = () => {
@@ -120,6 +122,7 @@ const MyCampaigns = () => {
           status,
           description,
           created_at,
+          pedido_id,
           campaign_video_schedules(
             id,
             campaign_schedule_rules(
@@ -135,6 +138,31 @@ const MyCampaigns = () => {
 
       if (advancedError) throw advancedError;
 
+      // Buscar dados dos pedidos para obter lista de prédios
+      const pedidoIds = advancedCampaignsData?.map(c => c.pedido_id).filter(Boolean) || [];
+      let pedidosData: any[] = [];
+      let buildingsData: any[] = [];
+
+      if (pedidoIds.length > 0) {
+        const { data: pedidos } = await supabase
+          .from('pedidos')
+          .select('id, lista_predios')
+          .in('id', pedidoIds);
+        
+        pedidosData = pedidos || [];
+
+        // Buscar dados dos prédios
+        const buildingIds = pedidosData.flatMap(p => p.lista_predios || []);
+        if (buildingIds.length > 0) {
+          const { data: buildings } = await supabase
+            .from('buildings')
+            .select('id, nome')
+            .in('id', buildingIds);
+          
+          buildingsData = buildings || [];
+        }
+      }
+
       // Converter campanhas avançadas para o formato legacy
       const advancedCampaigns = advancedCampaignsData?.map(campaign => {
         // Pegar o primeiro horário ativo das regras
@@ -145,6 +173,17 @@ const MyCampaigns = () => {
         // Para campanhas existentes, mostrar que tem horários padrão
         const hasScheduleRules = firstRule != null;
         const defaultTime = hasScheduleRules ? null : "Todo o dia";
+
+        // Buscar dados do pedido desta campanha
+        const pedido = pedidosData.find(p => p.id === campaign.pedido_id);
+        const campaignBuildingIds = pedido?.lista_predios || [];
+        const campaignBuildings = buildingsData.filter(b => campaignBuildingIds.includes(b.id));
+
+        // Pegar todos os dias da semana das regras ativas
+        const allDays = campaign.campaign_video_schedules?.flatMap(schedule => 
+          schedule.campaign_schedule_rules?.filter(rule => rule.is_active)?.flatMap(rule => rule.days_of_week) || []
+        ) || [];
+        const uniqueDays = [...new Set(allDays)];
         
         return {
           id: campaign.id,
@@ -162,7 +201,10 @@ const MyCampaigns = () => {
           is_advanced: true,
           start_date: campaign.start_date,
           end_date: campaign.end_date,
-          description: campaign.description
+          description: campaign.description,
+          pedido_id: campaign.pedido_id,
+          buildings_names: campaignBuildings.map(b => b.nome),
+          days_of_week: uniqueDays
         } as Campaign;
       }) || [];
 
@@ -250,6 +292,12 @@ const MyCampaigns = () => {
   const formatTime = (timeString?: string) => {
     if (!timeString) return '';
     return timeString.substring(0, 5); // Formato HH:MM
+  };
+
+  const formatDaysOfWeek = (days: number[]): string => {
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    if (!days || days.length === 0) return '';
+    return days.sort().map(day => dayNames[day]).join(', ');
   };
 
 
@@ -493,6 +541,20 @@ const MyCampaigns = () => {
                      {formatTime(campaign.start_time)} - {formatTime(campaign.end_time)}
                    </div>
                  )}
+
+                {campaign.buildings_names && campaign.buildings_names.length > 0 && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Building className="h-4 w-4 mr-2" />
+                    {campaign.buildings_names.join(', ')}
+                  </div>
+                )}
+
+                {campaign.days_of_week && campaign.days_of_week.length > 0 && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {formatDaysOfWeek(campaign.days_of_week)}
+                  </div>
+                )}
                 
                 <div className="flex items-center text-sm text-gray-600">
                   <Monitor className="h-4 w-4 mr-2" />
