@@ -23,7 +23,7 @@ const MobileFloatingActionButton = ({
   const baseClasses = cn(
     'fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-40',
     'hover:shadow-xl transition-all duration-300',
-    variant === 'primary' ? 'bg-indexa-purple hover:bg-indexa-purple/90' : 'bg-white hover:bg-gray-50',
+    variant === 'primary' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-white hover:bg-gray-50',
     className
   );
 
