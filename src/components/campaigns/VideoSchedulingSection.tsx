@@ -134,6 +134,7 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
               </select>
             </div>
             <Button 
+              type="button"
               onClick={addVideoSchedule} 
               disabled={!selectedVideoId}
               className="self-end"
@@ -160,6 +161,7 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                     </div>
                   </div>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => removeVideoSchedule(scheduleIndex)}
@@ -179,6 +181,7 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
                         Regra de Horário {ruleIndex + 1}
                       </Label>
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => removeScheduleRule(scheduleIndex, ruleIndex)}
@@ -253,6 +256,7 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
 
                 {/* Botão para adicionar regra */}
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => addScheduleRule(scheduleIndex)}
