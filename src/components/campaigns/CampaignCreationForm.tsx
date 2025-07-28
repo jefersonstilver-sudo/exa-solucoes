@@ -79,6 +79,8 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     description: '',
     orderId: '',
     panelId: '',
+    panelCode: '',
+    buildingName: '',
     startDate: '',
     endDate: '',
     startTime: '08:00',
@@ -398,7 +400,15 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
             {availablePanels.length > 0 ? (
               <Select 
                 value={formData.panelId} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, panelId: value }))}
+                onValueChange={(value) => {
+                  const selectedPanel = availablePanels.find(panel => panel.id === value);
+                  setFormData(prev => ({
+                    ...prev,
+                    panelId: value,
+                    panelCode: selectedPanel?.code || '',
+                    buildingName: selectedPanel?.buildings.nome || ''
+                  }));
+                }}
               >
                 <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Selecione um painel..." />
@@ -451,6 +461,32 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                 <p className="text-sm text-muted-foreground">
                   Selecione um pedido primeiro para ver os painéis disponíveis
                 </p>
+              </div>
+            )}
+
+            {/* Campos preenchidos automaticamente */}
+            {formData.panelId && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 p-3 bg-muted/20 rounded-lg border">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm text-muted-foreground">
+                    Código do Painel Selecionado
+                  </Label>
+                  <Input
+                    value={formData.panelCode}
+                    readOnly
+                    className="bg-background font-mono text-xs sm:text-sm"
+                  />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm text-muted-foreground">
+                    Nome do Edifício
+                  </Label>
+                  <Input
+                    value={formData.buildingName}
+                    readOnly
+                    className="bg-background text-xs sm:text-sm"
+                  />
+                </div>
               </div>
             )}
             </div>
