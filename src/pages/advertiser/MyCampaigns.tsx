@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Play, Plus, Calendar, Monitor, Edit, Trash2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import CampaignCreationForm from '@/components/campaigns/CampaignCreationForm';
@@ -294,6 +294,10 @@ const MyCampaigns = () => {
     }, 1000);
   };
 
+  const handleViewCampaign = (campaignId: string) => {
+    navigate(`/anunciante/campanhas/${campaignId}`);
+  };
+
   const handleEditCampaign = (campaign: Campaign) => {
     console.log('📝 [MY CAMPAIGNS] Abrindo modal de edição para campanha:', campaign);
     setSelectedCampaign(campaign);
@@ -500,6 +504,15 @@ const MyCampaigns = () => {
                 )}
 
                 <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleViewCampaign(campaign.id)}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white border-green-600"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Ver
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
