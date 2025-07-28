@@ -150,10 +150,39 @@ Deno.serve(async (req) => {
           console.log(`[SCHEDULER]     ✅ Day matches: ${currentDay}`)
           
           // Criar objetos Date para comparação mais precisa com tolerância
-          // Usar o currentTime que já está correto e adicionar segundos
-          const today = new Date(`${currentDate}T${currentTime}:00`)
-          const startDate = new Date(`${currentDate}T${rule.start_time}:00`)
-          const endDate = new Date(`${currentDate}T${rule.end_time}:00`)
+          // Validar e normalizar os tempos antes de criar objetos Date
+          const validateTimeString = (timeStr: string): string => {
+            // Garantir formato HH:MM
+            if (!/^\d{2}:\d{2}$/.test(timeStr)) {
+              console.log(`[SCHEDULER]     ⚠️ Invalid time format: ${timeStr}, using 00:00`)
+              return '00:00'
+            }
+            return timeStr
+          }
+          
+          const validCurrentTime = validateTimeString(currentTime)
+          const validStartTime = validateTimeString(rule.start_time)
+          const validEndTime = validateTimeString(rule.end_time)
+          
+          // Usar formato ISO mais robusto
+          let today: Date
+          let startDate: Date
+          let endDate: Date
+          
+          try {
+            today = new Date(`${currentDate}T${validCurrentTime}:00.000Z`)
+            startDate = new Date(`${currentDate}T${validStartTime}:00.000Z`)
+            endDate = new Date(`${currentDate}T${validEndTime}:00.000Z`)
+            
+            // Verificar se as datas são válidas
+            if (isNaN(today.getTime()) || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+              throw new Error('Invalid date created')
+            }
+          } catch (dateError) {
+            console.log(`[SCHEDULER]     ❌ Date creation error: ${dateError.message}`)
+            console.log(`[SCHEDULER]     Inputs: date=${currentDate}, current=${validCurrentTime}, start=${validStartTime}, end=${validEndTime}`)
+            continue // Skip this rule if date creation fails
+          }
           
           // Adicionar tolerância de 60 segundos para ativação (mais ampla)
           const tolerance = 60 * 1000 // 60 segundos em ms
