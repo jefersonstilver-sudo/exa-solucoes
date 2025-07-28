@@ -81,6 +81,8 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
     panelId: '',
     panelCode: '',
     buildingName: '',
+    panelBuildingAddress: '',
+    panelBuildingNeighborhood: '',
     orderBuildingName: '',
     orderBuildingAddress: '',
     orderBuildingNeighborhood: '',
@@ -452,7 +454,9 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                     ...prev,
                     panelId: value,
                     panelCode: selectedPanel?.code || '',
-                    buildingName: selectedPanel?.buildings.nome || ''
+                    buildingName: selectedPanel?.buildings.nome || '',
+                    panelBuildingAddress: selectedPanel?.buildings.endereco || '',
+                    panelBuildingNeighborhood: selectedPanel?.buildings.bairro || ''
                   }));
                 }}
               >
@@ -510,28 +514,35 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               </div>
             )}
 
-            {/* Campos preenchidos automaticamente */}
-            {formData.panelId && (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4 p-3 bg-muted/20 rounded-lg border">
-                <div className="space-y-1 sm:space-y-2">
-                  <Label className="text-xs sm:text-sm text-muted-foreground">
-                    Código do Painel Selecionado
-                  </Label>
-                  <Input
-                    value={formData.panelCode}
-                    readOnly
-                    className="bg-background font-mono text-xs sm:text-sm"
-                  />
+            {/* Informações do painel selecionado */}
+            {formData.panelId && formData.panelCode && (
+              <div className="mt-4 p-3 bg-muted/20 rounded-lg border space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Monitor className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">
+                    Informações do Painel Selecionado
+                  </span>
                 </div>
-                <div className="space-y-1 sm:space-y-2">
-                  <Label className="text-xs sm:text-sm text-muted-foreground">
-                    Nome do Edifício
-                  </Label>
-                  <Input
-                    value={formData.buildingName}
-                    readOnly
-                    className="bg-background text-xs sm:text-sm"
-                  />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">Código do Painel</div>
+                    <div className="text-sm font-mono font-medium">{formData.panelCode}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">Nome do Edifício</div>
+                    <div className="text-sm font-medium">{formData.buildingName}</div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Bairro</div>
+                  <div className="text-sm font-medium">{formData.panelBuildingNeighborhood}</div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Endereço</div>
+                  <div className="text-sm">{formData.panelBuildingAddress}</div>
                 </div>
               </div>
             )}
