@@ -342,42 +342,40 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                   sideOffset={5}
                 >
                 {paidOrders.map((order) => (
-                  <SelectItem key={order.id} value={order.id} className="min-h-[85px] sm:min-h-[75px] p-0">
-                    <div className="w-full p-3 sm:p-4 space-y-2 overflow-hidden">
+                  <SelectItem key={order.id} value={order.id} className="min-h-[100px] sm:min-h-[90px] p-0">
+                    <div className="w-full p-4 sm:p-6 space-y-3 sm:space-y-4">
                       {order.buildings && order.buildings.length > 0 ? (
                         <>
-                          {/* Nome do prédio com separador */}
-                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                            <Building className="h-4 w-4 text-primary flex-shrink-0" />
+                          {/* Header com nome do prédio */}
+                          <div className="flex items-center gap-2 pb-3 border-b-2 border-border/60">
+                            <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                             <span className="font-semibold text-sm sm:text-base text-foreground">
                               {order.buildings[0].nome}
                             </span>
                           </div>
                           
-                          {/* Endereço */}
-                          <div className="flex items-start gap-2">
-                            <MapPin className="h-3 w-3 mt-1 text-muted-foreground flex-shrink-0" />
+                          {/* Endereço com melhor espaçamento */}
+                          <div className="flex items-start gap-3 py-1">
+                            <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                             <span className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                               {order.buildings[0].endereco}
                             </span>
                           </div>
                           
-                          {/* Bairro e valor */}
-                          <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                          {/* Footer com bairro e valor */}
+                          <div className="flex items-center justify-between pt-3 border-t border-border/40">
                             <span className="text-xs sm:text-sm text-muted-foreground font-medium">
                               {order.buildings[0].bairro}
                             </span>
-                            <Badge variant="secondary" className="text-xs font-medium">
+                            <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2 py-1">
                               R$ {order.valor_total?.toFixed(2) || '0.00'}
                             </Badge>
                           </div>
                         </>
                       ) : (
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            Pedido #{order.id.substring(0, 8)}
-                          </span>
-                          <Badge variant="secondary" className="text-xs font-medium">
+                          <span className="text-sm sm:text-base text-foreground">Pedido {order.id}</span>
+                          <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2 py-1">
                             R$ {order.valor_total?.toFixed(2) || '0.00'}
                           </Badge>
                         </div>
@@ -406,32 +404,32 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
                   <SelectValue placeholder="Selecione um painel..." />
                 </SelectTrigger>
               <SelectContent 
-                className="max-w-[98vw] z-[55]" 
+                className="max-w-[96vw] z-[55] max-h-[60vh] overflow-y-auto" 
                 position="popper"
                 side="bottom"
                 align="start"
-                sideOffset={5}
+                sideOffset={8}
               >
                 {availablePanels.map((panel) => (
-                  <SelectItem key={panel.id} value={panel.id} className="min-h-[80px] sm:min-h-[70px] p-0">
-                    <div className="w-full p-3 sm:p-4 space-y-2 overflow-hidden">
-                      {/* Código do painel com destaque */}
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                        <Monitor className="h-4 w-4 text-primary flex-shrink-0" />
+                  <SelectItem key={panel.id} value={panel.id} className="min-h-[100px] sm:min-h-[90px] p-0">
+                    <div className="w-full p-4 sm:p-6 space-y-3 sm:space-y-4">
+                      {/* Header com código do painel */}
+                      <div className="flex items-center gap-2 pb-3 border-b-2 border-border/60">
+                        <Monitor className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                         <span className="font-semibold text-sm sm:text-base text-foreground">
                           {panel.code}
                         </span>
                       </div>
                       
-                      {/* Informações do prédio */}
-                      <div className="space-y-2 sm:space-y-1">
+                      {/* Informações do prédio organizadas */}
+                      <div className="space-y-2 sm:space-y-3">
                         <div className="text-xs sm:text-sm font-medium text-foreground">
                           {panel.buildings.nome}
                         </div>
                         <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                           {panel.buildings.endereco}
                         </div>
-                        <div className="text-xs sm:text-sm text-muted-foreground">
+                        <div className="text-xs sm:text-sm text-muted-foreground font-medium">
                           {panel.buildings.bairro}
                         </div>
                       </div>
