@@ -111,6 +111,9 @@ const MyCampaigns = () => {
           created_at,
           campaign_video_schedules(
             id,
+            video_id,
+            slot_position,
+            priority,
             campaign_schedule_rules(
               start_time,
               end_time,
@@ -126,14 +129,26 @@ const MyCampaigns = () => {
 
       // Converter campanhas avançadas para o formato legacy
       const advancedCampaigns = advancedCampaignsData?.map(campaign => {
-        // Pegar o primeiro horário ativo das regras
-        const firstSchedule = campaign.campaign_video_schedules?.[0];
-        const firstRule = firstSchedule?.campaign_schedule_rules?.find(rule => rule.is_active);
+        // Pegar todas as regras de horário da campanha
+        const allRules = campaign.campaign_video_schedules?.flatMap(schedule => 
+          schedule.campaign_schedule_rules || []
+        ) || [];
         
-        // Se não há regras específicas, significa que usa horários globais da campanha
-        // Para campanhas existentes, mostrar que tem horários padrão
-        const hasScheduleRules = firstRule != null;
-        const defaultTime = hasScheduleRules ? null : "Todo o dia";
+        const activeRules = allRules.filter(rule => rule.is_active);
+        const firstActiveRule = activeRules[0];
+        
+        // Criar descrição detalhada das regras
+        let scheduleDescription = '';
+        if (activeRules.length > 0) {
+          const ruleSummaries = activeRules.map(rule => {
+            const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const selectedDays = rule.days_of_week?.map(day => dayNames[day]).join(', ') || 'Todos os dias';
+            return `${selectedDays}: ${rule.start_time}-${rule.end_time}`;
+          });
+          scheduleDescription = ruleSummaries.join(' | ');
+        } else {
+          scheduleDescription = 'Nenhuma regra de horário configurada';
+        }
         
         return {
           id: campaign.id,
@@ -141,13 +156,14 @@ const MyCampaigns = () => {
           data_inicio: campaign.start_date,
           data_fim: campaign.end_date,
           status: campaign.status === 'active' ? 'ativa' : campaign.status,
-          obs: campaign.description || `Campanha avançada: ${campaign.name}`,
+          obs: `${campaign.description || campaign.name} • ${scheduleDescription}`,
           created_at: campaign.created_at,
           video_id: 'advanced-video',
           name: campaign.name,
-          start_time: firstRule?.start_time || defaultTime,
-          end_time: firstRule?.end_time || defaultTime,
-          is_advanced: true
+          start_time: firstActiveRule?.start_time || null,
+          end_time: firstActiveRule?.end_time || null,
+          is_advanced: true,
+          schedule_rules_count: activeRules.length
         } as Campaign;
       }) || [];
 
