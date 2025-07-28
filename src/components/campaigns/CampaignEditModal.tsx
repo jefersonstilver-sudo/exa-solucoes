@@ -43,47 +43,70 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       const isAdvanced = campaign.is_advanced || !!campaign.pedido_id;
       const tableName = isAdvanced ? 'campaigns_advanced' : 'campanhas';
       
-      // Normalizar datas
-      const normalizeDate = (date: string) => {
+      // Normalizar datas para formato YYYY-MM-DD
+      const normalizeDate = (date: string | undefined) => {
         if (!date) return '';
-        return date.trim();
+        const cleaned = date.trim();
+        // Se já está no formato YYYY-MM-DD, retorna como está
+        if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
+          return cleaned;
+        }
+        return cleaned;
       };
 
-      // Verificar mudanças reais
-      const formStart = normalizeDate(updates.start_date || '');
-      const formEnd = normalizeDate(updates.end_date || '');
-      const campaignStart = normalizeDate(campaign.start_date || campaign.data_inicio || '');
-      const campaignEnd = normalizeDate(campaign.end_date || campaign.data_fim || '');
+      // Obter valores normalizados
+      const formStart = normalizeDate(updates.start_date);
+      const formEnd = normalizeDate(updates.end_date);
+      const campaignStart = normalizeDate(campaign.start_date || campaign.data_inicio);
+      const campaignEnd = normalizeDate(campaign.end_date || campaign.data_fim);
 
-      const hasStartChange = formStart && formStart !== campaignStart;
-      const hasEndChange = formEnd && formEnd !== campaignEnd;
-      const hasNameChange = updates.name && updates.name !== campaign.name;
+      // Detectar mudanças de forma mais robusta
+      const hasStartChange = formStart !== campaignStart;
+      const hasEndChange = formEnd !== campaignEnd;
+      const hasNameChange = updates.name !== undefined && updates.name !== campaign.name;
       const hasDescChange = updates.description !== undefined && updates.description !== (campaign.description || campaign.obs);
 
-      console.log('🔍 [UPDATE] Análise de mudanças:', {
-        dates: { formStart, campaignStart, formEnd, campaignEnd },
+      console.log('🔍 [UPDATE] Detecção de mudanças:', {
+        dates: { 
+          formStart, 
+          campaignStart, 
+          formEnd, 
+          campaignEnd,
+          startChanged: hasStartChange,
+          endChanged: hasEndChange
+        },
         changes: { start: hasStartChange, end: hasEndChange, name: hasNameChange, desc: hasDescChange }
       });
 
+      // Se não há mudanças reais, retornar sucesso
       if (!hasStartChange && !hasEndChange && !hasNameChange && !hasDescChange) {
         toast.success('Nenhuma alteração detectada');
         return true;
       }
 
-      // Preparar dados para update
+      // Preparar dados para update apenas com campos que mudaram
       const updateData: any = {};
       
-      if (hasStartChange || hasEndChange) {
+      if (hasStartChange && formStart) {
         if (isAdvanced) {
-          if (hasStartChange) updateData.start_date = formStart;
-          if (hasEndChange) updateData.end_date = formEnd;
+          updateData.start_date = formStart;
         } else {
-          if (hasStartChange) updateData.data_inicio = formStart;
-          if (hasEndChange) updateData.data_fim = formEnd;
+          updateData.data_inicio = formStart;
         }
       }
       
-      if (hasNameChange) updateData.name = updates.name;
+      if (hasEndChange && formEnd) {
+        if (isAdvanced) {
+          updateData.end_date = formEnd;
+        } else {
+          updateData.data_fim = formEnd;
+        }
+      }
+      
+      if (hasNameChange) {
+        updateData.name = updates.name;
+      }
+      
       if (hasDescChange) {
         if (isAdvanced) {
           updateData.description = updates.description;
@@ -92,28 +115,29 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         }
       }
 
-      console.log('💾 [UPDATE] Executando:', { table: tableName, data: updateData });
+      console.log('💾 [UPDATE] Dados preparados:', { table: tableName, updateData });
 
       // Executar update
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from(tableName)
         .update(updateData)
-        .eq('id', campaign.id);
+        .eq('id', campaign.id)
+        .select();
 
       if (error) {
-        console.error('❌ [UPDATE] Erro:', error);
+        console.error('❌ [UPDATE] Erro no Supabase:', error);
         toast.error('Erro ao atualizar: ' + error.message);
         return false;
       }
 
-      console.log('✅ [UPDATE] Sucesso');
+      console.log('✅ [UPDATE] Sucesso - Dados retornados:', data);
       toast.success('Campanha atualizada com sucesso!');
       onSuccess();
       return true;
 
     } catch (error) {
       console.error('💥 [UPDATE] Erro inesperado:', error);
-      toast.error('Erro inesperado');
+      toast.error('Erro inesperado ao atualizar');
       return false;
     }
   };
