@@ -193,12 +193,55 @@ const MyCampaigns = () => {
     if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
 
     try {
-      const { error } = await supabase
-        .from('campanhas')
-        .delete()
-        .eq('id', campaignId);
+      // Encontrar a campanha para determinar o tipo
+      const campaign = campaigns.find(c => c.id === campaignId);
+      
+      if (!campaign) {
+        toast.error('Campanha não encontrada');
+        return;
+      }
 
-      if (error) throw error;
+      if (campaign.is_advanced) {
+        // Excluir campanha avançada e dados relacionados
+        
+        // 1. Buscar e excluir regras de agendamento
+        const { data: schedules } = await supabase
+          .from('campaign_video_schedules')
+          .select('id')
+          .eq('campaign_id', campaignId);
+
+        if (schedules?.length) {
+          const scheduleIds = schedules.map(s => s.id);
+          
+          // Excluir regras de agendamento
+          await supabase
+            .from('campaign_schedule_rules')
+            .delete()
+            .in('campaign_video_schedule_id', scheduleIds);
+          
+          // Excluir agendamentos de vídeo
+          await supabase
+            .from('campaign_video_schedules')
+            .delete()
+            .eq('campaign_id', campaignId);
+        }
+
+        // 2. Excluir campanha avançada
+        const { error } = await supabase
+          .from('campaigns_advanced')
+          .delete()
+          .eq('id', campaignId);
+
+        if (error) throw error;
+      } else {
+        // Excluir campanha legacy
+        const { error } = await supabase
+          .from('campanhas')
+          .delete()
+          .eq('id', campaignId);
+
+        if (error) throw error;
+      }
 
       toast.success('Campanha excluída com sucesso');
       loadCampaigns();
