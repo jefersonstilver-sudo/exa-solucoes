@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { VideoSchedule, ScheduleRule } from '@/hooks/campaigns/useAdvancedCampaignCreation';
-import { Play, Clock, Calendar, Plus, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Play, Clock, Calendar, Plus, Trash2, Video } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -119,19 +120,29 @@ export const VideoSchedulingSection: React.FC<VideoSchedulingSectionProps> = ({
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
             <div className="flex-1">
               <Label htmlFor="video-select" className="text-xs sm:text-sm">Selecionar Vídeo Aprovado</Label>
-              <select
-                id="video-select"
-                value={selectedVideoId}
-                onChange={(e) => setSelectedVideoId(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-xs sm:text-sm"
-              >
-                <option value="">Selecione um vídeo...</option>
-                {approvedVideos.map((video) => (
-                  <option key={video.videos.id} value={video.videos.id}>
-                    {video.videos.nome} ({video.videos.duracao}s - {video.videos.orientacao})
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedVideoId} onValueChange={setSelectedVideoId}>
+                <SelectTrigger className="w-full text-xs sm:text-sm">
+                  <SelectValue placeholder="Selecione um vídeo..." />
+                </SelectTrigger>
+                <SelectContent className="max-w-none z-50">
+                  {approvedVideos.map((video) => (
+                    <SelectItem key={video.videos.id} value={video.videos.id} className="min-h-[50px] p-3">
+                      <div className="flex flex-col gap-1 w-full">
+                        <div className="flex items-center gap-2">
+                          <Video className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="font-medium text-sm">
+                            {video.videos.nome}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>{video.videos.duracao}s</span>
+                          <span>{video.videos.orientacao}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button 
               type="button"

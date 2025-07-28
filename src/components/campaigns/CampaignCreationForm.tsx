@@ -9,12 +9,13 @@ import { useAdvancedCampaignCreation, VideoSchedule } from '@/hooks/campaigns/us
 import { VideoSchedulingSection } from './VideoSchedulingSection';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Building, Video, Monitor, Save, X } from 'lucide-react';
+import { CalendarIcon, Building, Video, Monitor, Save, X, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
 
 interface Panel {
   id: string;
@@ -333,30 +334,42 @@ export const CampaignCreationForm: React.FC<CampaignCreationFormProps> = ({
               <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Selecione um pedido pago..." />
               </SelectTrigger>
-              <SelectContent className="max-w-[90vw]">
+              <SelectContent className="max-w-none z-50">
                 {paidOrders.map((order) => (
-                  <SelectItem key={order.id} value={order.id} className="p-2">
-                    <div className="flex flex-col gap-1 w-full">
+                  <SelectItem key={order.id} value={order.id} className="min-h-[70px] p-3">
+                    <div className="flex flex-col gap-2 w-full">
                       {order.buildings && order.buildings.length > 0 ? (
                         <>
-                          <div className="font-medium text-xs sm:text-sm">{order.buildings[0].nome}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {order.buildings[0].endereco.split(',')[0]}
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="font-semibold text-sm">
+                              {order.buildings[0].nome}
+                            </span>
                           </div>
-                          <div className="text-xs font-medium text-primary">
-                            R$ {order.valor_total?.toFixed(2) || '0.00'}
+                          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            <span className="leading-tight">
+                              {order.buildings[0].endereco}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {order.buildings[0].bairro}
+                            </span>
+                            <Badge variant="secondary" className="text-xs font-medium">
+                              R$ {order.valor_total?.toFixed(2) || '0.00'}
+                            </Badge>
                           </div>
                         </>
                       ) : (
-                        <>
-                          <div className="font-medium text-xs sm:text-sm">Pedido {order.id.slice(0, 8)}...</div>
-                          <div className="text-xs text-muted-foreground">
-                            {order.lista_paineis?.length || 0} painéis
-                          </div>
-                          <div className="text-xs font-medium text-primary">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">
+                            Pedido #{order.id.substring(0, 8)}
+                          </span>
+                          <Badge variant="secondary" className="text-xs font-medium">
                             R$ {order.valor_total?.toFixed(2) || '0.00'}
-                          </div>
-                        </>
+                          </Badge>
+                        </div>
                       )}
                     </div>
                   </SelectItem>
