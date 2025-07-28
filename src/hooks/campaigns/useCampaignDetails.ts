@@ -103,10 +103,26 @@ export const useCampaignDetails = (campaignId: string | undefined) => {
         order = orderData;
 
         if (orderData?.lista_paineis) {
+          // Buscar painéis pelos building_ids que estão em lista_paineis
           const { data: panelsData, error: panelsError } = await supabase
             .from('painels')
-            .select('*, buildings(*)')
-            .in('id', orderData.lista_paineis);
+            .select(`
+              id,
+              code,
+              status,
+              resolucao,
+              orientacao,
+              localizacao,
+              building_id,
+              buildings (
+                id,
+                nome,
+                endereco,
+                bairro,
+                quantidade_telas
+              )
+            `)
+            .in('building_id', orderData.lista_paineis);
 
           if (panelsError) throw panelsError;
           panels = panelsData || [];
@@ -115,7 +131,25 @@ export const useCampaignDetails = (campaignId: string | undefined) => {
         // Buscar vídeos aprovados do pedido
         const { data: videosData, error: videosError } = await supabase
           .from('pedido_videos')
-          .select('*, videos(*)')
+          .select(`
+            id,
+            pedido_id,
+            video_id,
+            slot_position,
+            is_active,
+            selected_for_display,
+            approval_status,
+            videos (
+              id,
+              nome,
+              url,
+              duracao,
+              orientacao,
+              largura,
+              altura,
+              formato
+            )
+          `)
           .eq('pedido_id', campaignData.pedido_id)
           .eq('approval_status', 'approved');
 

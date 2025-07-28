@@ -82,8 +82,10 @@ const CampaignDetails = () => {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     try {
-      const date = new Date(dateString);
+      // Se for uma string de data, garantir que seja tratada corretamente
+      const date = new Date(dateString + 'T00:00:00');
       return format(date, 'dd/MM/yyyy', { locale: ptBR });
     } catch {
       return dateString;
@@ -201,14 +203,27 @@ const CampaignDetails = () => {
                     </Badge>
                   </div>
                   {panel.buildings && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {panel.buildings.nome}
+                    <div className="space-y-1">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {panel.buildings.nome}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {panel.buildings.endereco}, {panel.buildings.bairro}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {panel.buildings.quantidade_telas} painéis no prédio
+                      </p>
                     </div>
                   )}
                   {panel.resolucao && (
                     <p className="text-sm text-gray-500 mt-1">
                       Resolução: {panel.resolucao}
+                    </p>
+                  )}
+                  {panel.localizacao && (
+                    <p className="text-sm text-gray-500">
+                      Local: {panel.localizacao}
                     </p>
                   )}
                 </div>
@@ -231,24 +246,71 @@ const CampaignDetails = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {videos.map((video) => (
                 <div key={video.id} className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-2">
-                    {video.videos?.nome || video.nome || 'Vídeo sem nome'}
-                  </h4>
-                  {video.videos?.duracao && (
-                    <p className="text-sm text-gray-600">
-                      Duração: {Math.floor(video.videos.duracao / 60)}:{(video.videos.duracao % 60).toString().padStart(2, '0')}
-                    </p>
-                  )}
-                  {video.videos?.orientacao && (
-                    <p className="text-sm text-gray-600">
-                      Orientação: {video.videos.orientacao}
-                    </p>
-                  )}
-                  {video.is_active && (
-                    <Badge className="mt-2 bg-green-500 text-white">
-                      Ativo
-                    </Badge>
-                  )}
+                  <div className="flex items-start space-x-4">
+                    {/* Video Preview */}
+                    {video.videos?.url && (
+                      <div className="flex-shrink-0">
+                        <video 
+                          className="w-24 h-16 object-cover rounded border"
+                          src={video.videos.url}
+                          preload="metadata"
+                          muted
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex-1">
+                      <h4 className="font-medium mb-2">
+                        {video.videos?.nome || video.nome || 'Vídeo sem nome'}
+                      </h4>
+                      <div className="space-y-1">
+                        {video.videos?.duracao && (
+                          <p className="text-sm text-gray-600">
+                            Duração: {Math.floor(video.videos.duracao / 60)}:{(video.videos.duracao % 60).toString().padStart(2, '0')}
+                          </p>
+                        )}
+                        {video.videos?.orientacao && (
+                          <p className="text-sm text-gray-600">
+                            Orientação: {video.videos.orientacao}
+                          </p>
+                        )}
+                        {video.videos?.largura && video.videos?.altura && (
+                          <p className="text-sm text-gray-600">
+                            Resolução: {video.videos.largura}x{video.videos.altura}
+                          </p>
+                        )}
+                        {video.videos?.formato && (
+                          <p className="text-sm text-gray-600">
+                            Formato: {video.videos.formato.toUpperCase()}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 mt-2">
+                        {video.is_active && (
+                          <Badge className="bg-green-500 text-white">
+                            Ativo
+                          </Badge>
+                        )}
+                        {video.selected_for_display && (
+                          <Badge className="bg-blue-500 text-white">
+                            Em Exibição
+                          </Badge>
+                        )}
+                        {video.videos?.url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(video.videos.url, '_blank')}
+                            className="flex items-center"
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Ver Vídeo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

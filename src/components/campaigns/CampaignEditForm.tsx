@@ -5,6 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import CampaignScheduleEdit from './CampaignScheduleEdit';
 import { format } from 'date-fns';
 
 interface CampaignData {
@@ -161,6 +163,20 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
               />
             </div>
           </div>
+
+          {/* Horários de Veiculação */}
+          {isAdvanced && (
+            <>
+              <Separator />
+              <CampaignScheduleEdit
+                campaignId={campaign.id}
+                isAdvanced={isAdvanced}
+                onScheduleUpdate={() => {
+                  // Callback para atualizar dados se necessário
+                }}
+              />
+            </>
+          )}
 
           <div className="flex justify-end space-x-4">
             <Button
