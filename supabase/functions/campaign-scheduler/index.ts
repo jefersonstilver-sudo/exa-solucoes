@@ -150,9 +150,8 @@ Deno.serve(async (req) => {
           console.log(`[SCHEDULER]     ✅ Day matches: ${currentDay}`)
           
           // Criar objetos Date para comparação mais precisa com tolerância
-          // Usar o horário brasileiro real com segundos para máxima precisão
-          const brazilTimeStr = brazilTime.toISOString().split('T')[1].substring(0, 8) // HH:MM:SS
-          const today = new Date(`${currentDate}T${brazilTimeStr}`)
+          // Usar o currentTime que já está correto e adicionar segundos
+          const today = new Date(`${currentDate}T${currentTime}:00`)
           const startDate = new Date(`${currentDate}T${rule.start_time}:00`)
           const endDate = new Date(`${currentDate}T${rule.end_time}:00`)
           
