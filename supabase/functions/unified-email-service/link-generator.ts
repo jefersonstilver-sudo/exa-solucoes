@@ -58,11 +58,17 @@ export class LinkGenerator {
       console.log(`🔧 [LINK-GENERATOR] Usando estratégia: ${linkType}`);
       
       // Tentar gerar link com o tipo principal
+        // Detectar URL base dinamicamente
+        const siteUrl = Deno.env.get('SITE_URL') || 'https://loving-bough-1xb6c3h.lovableproject.com';
+        const redirectUrl = `${siteUrl}/confirmacao`;
+        
+        console.log(`🌐 [LINK-GENERATOR] URL de redirecionamento: ${redirectUrl}`);
+        
         const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
           type: linkType,
           email: email,
           options: {
-            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
+            redirectTo: redirectUrl
           }
         });
 
@@ -82,7 +88,7 @@ export class LinkGenerator {
           type: 'signup',
           email: email,
           options: {
-            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
+            redirectTo: redirectUrl
           }
         });
         
@@ -96,7 +102,7 @@ export class LinkGenerator {
           type: 'recovery',
           email: email,
           options: {
-            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
+            redirectTo: redirectUrl
           }
         });
         
@@ -121,7 +127,7 @@ export class LinkGenerator {
           type: 'recovery',
           email: email,
           options: {
-            redirectTo: 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao'
+            redirectTo: redirectUrl
           }
         });
         
