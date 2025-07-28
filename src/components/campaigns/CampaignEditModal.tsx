@@ -95,11 +95,38 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       
       console.log('🔄 [CAMPAIGN EDIT MODAL] Chamando onSuccess para recarregar lista...');
       
-      // ✅ CORREÇÃO CRÍTICA: Aguardar um pouco antes de chamar onSuccess
-      setTimeout(() => {
-        onSuccess();
-        console.log('✅ [CAMPAIGN EDIT MODAL] onSuccess executado - lista deve ser recarregada');
-      }, 100);
+        // ✅ CORREÇÃO FINAL: Verificar se os dados foram realmente atualizados antes de chamar onSuccess
+        const verificationQuery = campaign.is_advanced ? 
+          supabase.from('campaigns_advanced').select('*').eq('id', campaign.id).single() :
+          supabase.from('campanhas').select('*').eq('id', campaign.id).single();
+        
+        const { data: verificationData, error: verificationError } = await verificationQuery;
+        
+        if (verificationError) {
+          console.error('❌ [CAMPAIGN EDIT MODAL] Erro na verificação:', verificationError);
+        } else {
+          console.log('🔍 [CAMPAIGN EDIT MODAL] Dados verificados após update:', verificationData);
+          
+          // Verificar se as datas foram realmente atualizadas
+          if (updates.start_date && verificationData) {
+            const verifiedData = verificationData as any; // Type assertion para acessar propriedades dinâmicas
+            const updatedStartDate = verifiedData.start_date || verifiedData.data_inicio;
+            const updatedEndDate = verifiedData.end_date || verifiedData.data_fim;
+            
+            console.log('📊 [CAMPAIGN EDIT MODAL] Verificação de datas:', {
+              sent_start_date: updates.start_date,
+              received_start_date: updatedStartDate,
+              sent_end_date: updates.end_date,
+              received_end_date: updatedEndDate,
+              dates_match: updatedStartDate === updates.start_date && updatedEndDate === updates.end_date
+            });
+          }
+        }
+        
+        setTimeout(() => {
+          onSuccess();
+          console.log('✅ [CAMPAIGN EDIT MODAL] onSuccess executado - lista deve ser recarregada');
+        }, 200);
 
       return true;
     } catch (error) {
