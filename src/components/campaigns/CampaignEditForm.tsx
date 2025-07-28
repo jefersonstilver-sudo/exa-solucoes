@@ -363,12 +363,12 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="flex-shrink-0 pb-4">
           <DialogTitle>Editar Campanha</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 flex-1 overflow-y-auto">
           {isAdvanced && (
             <div className="space-y-2">
               <Label htmlFor="name">Nome da Campanha</Label>
@@ -412,7 +412,7 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_date">Data de Início</Label>
               <Input
@@ -448,16 +448,17 @@ const CampaignEditForm: React.FC<CampaignEditFormProps> = ({
             </>
           )}
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 flex-shrink-0 border-t bg-background mt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading || isSubmitting}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || isSubmitting}>
+            <Button type="submit" disabled={loading || isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </div>
