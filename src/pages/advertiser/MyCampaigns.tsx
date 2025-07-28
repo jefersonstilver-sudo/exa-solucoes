@@ -39,6 +39,29 @@ const MyCampaigns = () => {
     loadCampaigns();
   }, [userProfile]);
 
+  // Atualizar dados quando a página ganha foco (usuário retorna da edição)
+  useEffect(() => {
+    const handleFocus = () => {
+      loadCampaigns();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    // Também escutar por mudanças na visibilidade da página
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadCampaigns();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [userProfile]);
+
   const loadCampaigns = async () => {
     if (!userProfile?.id) return;
 
