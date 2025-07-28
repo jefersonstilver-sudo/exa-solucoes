@@ -41,7 +41,7 @@ export const useAdvancedCampaignCreation = () => {
     setLoading(true);
 
     try {
-      // 1. Criar campanha
+      // 1. Criar campanha com status 'scheduled' para ativação automática
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns_advanced')
         .insert({
@@ -51,7 +51,7 @@ export const useAdvancedCampaignCreation = () => {
           description: campaignData.description,
           start_date: campaignData.startDate,
           end_date: campaignData.endDate,
-          status: 'active'
+          status: 'scheduled'
         })
         .select()
         .single();

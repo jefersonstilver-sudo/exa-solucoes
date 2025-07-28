@@ -125,13 +125,28 @@ const MyCampaigns = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ativo':
+      case 'active':
         return <Badge className="bg-green-100 text-green-800">Ativa</Badge>;
+      case 'agendado':
+      case 'scheduled':
+        return <Badge className="bg-blue-100 text-blue-800">Agendada</Badge>;
+      case 'pausado':
+      case 'paused':
+        return <Badge className="bg-yellow-100 text-yellow-800">Pausada</Badge>;
       case 'pendente':
         return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
       case 'finalizado':
+      case 'completed':
         return <Badge className="bg-blue-100 text-blue-800">Finalizada</Badge>;
+      case 'expirado':
+      case 'expired':
+        return <Badge className="bg-gray-100 text-gray-800">Expirada</Badge>;
       case 'cancelado':
+      case 'cancelled':
         return <Badge className="bg-red-100 text-red-800">Cancelada</Badge>;
+      case 'rascunho':
+      case 'draft':
+        return <Badge className="bg-gray-100 text-gray-800">Rascunho</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
