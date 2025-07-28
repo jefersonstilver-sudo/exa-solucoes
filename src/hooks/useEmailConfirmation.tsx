@@ -23,6 +23,8 @@ export const useEmailConfirmation = () => {
         }
       });
       
+      console.log('📤 [HOOK] Resposta da função:', { data, error });
+      
       if (error) {
         console.error('❌ [HOOK] Erro na função unificada:', error);
         throw error;
