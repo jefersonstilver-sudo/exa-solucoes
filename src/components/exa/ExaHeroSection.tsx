@@ -1,6 +1,20 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const ExaHeroSection: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleKnowExa = () => {
+    const aboutSection = document.getElementById('sobre-exa');
+    if (aboutSection) {
+      aboutSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleViewLocation = () => {
+    navigate('/paineis-digitais/loja');
+  };
+
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 overflow-hidden">
       <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto gap-8 sm:gap-10 lg:gap-16 pt-20 pb-8 sm:pt-24 sm:pb-12 lg:pt-28 lg:pb-16">
@@ -32,10 +46,16 @@ const ExaHeroSection: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start w-full">
-          <button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:shadow-lg hover:scale-105 w-full sm:w-auto min-h-[56px] touch-manipulation">
+          <button 
+            onClick={handleKnowExa}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:shadow-lg hover:scale-105 w-full sm:w-auto min-h-[56px] touch-manipulation"
+          >
             Conhecer EXA
           </button>
-          <button className="border-2 border-white/60 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:bg-white/10 w-full sm:w-auto min-h-[56px] touch-manipulation">
+          <button 
+            onClick={handleViewLocation}
+            className="border-2 border-white/60 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:bg-white/10 w-full sm:w-auto min-h-[56px] touch-manipulation"
+          >
             Ver Localização
           </button>
         </div>
