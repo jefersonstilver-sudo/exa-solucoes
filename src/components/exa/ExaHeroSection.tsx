@@ -7,17 +7,17 @@ const ExaHeroSection: React.FC = () => {
         
         {/* Conteúdo de Texto */}
         <div className="flex-1 text-center lg:text-left text-white w-full lg:max-w-2xl order-2 lg:order-1">
-        <h1 className="font-playfair text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight mb-6 sm:mb-8 lg:mb-10 tracking-wide">
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400 drop-shadow-sm">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight mb-6 sm:mb-8 lg:mb-10">
+          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
             EXA
           </span>
         </h1>
         
-        <h2 className="font-montserrat text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold mb-6 sm:mb-8 lg:mb-10 leading-tight tracking-wide">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-6 sm:mb-8 lg:mb-10 leading-tight">
           Publicidade Inteligente que Conecta
         </h2>
         
-        <p className="font-montserrat text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-6 sm:mb-8 lg:mb-10 opacity-90 leading-relaxed max-w-4xl font-normal tracking-wide">
+        <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-6 sm:mb-8 lg:mb-10 opacity-90 leading-relaxed max-w-4xl">
           <span className="block mb-4 sm:mb-6">
             <strong>Imagine seu anúncio alcançando clientes reais na fronteira.</strong>
           </span>
@@ -32,10 +32,10 @@ const ExaHeroSection: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start w-full">
-          <button className="font-montserrat bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:shadow-lg hover:scale-105 w-full sm:w-auto min-h-[56px] touch-manipulation tracking-wide">
+          <button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:shadow-lg hover:scale-105 w-full sm:w-auto min-h-[56px] touch-manipulation">
             Conhecer EXA
           </button>
-          <button className="font-montserrat border-2 border-white/60 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:bg-white/10 w-full sm:w-auto min-h-[56px] touch-manipulation tracking-wide">
+          <button className="border-2 border-white/60 text-white font-semibold px-8 sm:px-10 py-4 sm:py-5 rounded-lg text-base sm:text-lg lg:text-xl transition-all duration-300 hover:bg-white/10 w-full sm:w-auto min-h-[56px] touch-manipulation">
             Ver Localização
           </button>
         </div>
