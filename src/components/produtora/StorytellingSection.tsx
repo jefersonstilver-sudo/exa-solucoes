@@ -1,0 +1,117 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, Heart, Target } from 'lucide-react';
+
+const StorytellingSection = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section 
+      ref={sectionRef}
+      className="h-[80vh] bg-gradient-to-br from-gray-900 via-indexa-purple-dark to-black flex items-center relative overflow-hidden"
+    >
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-indexa-mint/20 to-transparent"></div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 relative z-10">
+        <div className={`transform transition-all duration-1000 ${
+          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
+        }`}>
+          
+          {/* Header */}
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center mb-4">
+              <MapPin className="w-8 h-8 text-indexa-mint mr-3" />
+              <span className="font-montserrat text-indexa-mint text-lg font-medium">Foz do Iguaçu</span>
+            </div>
+            <h2 className="font-playfair text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
+              Nascida na <span className="text-indexa-mint">Fronteira</span>
+            </h2>
+          </div>
+
+          {/* Main Story */}
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            
+            {/* Story Text */}
+            <div className="space-y-8">
+              <div className={`transform transition-all duration-1000 delay-300 ${
+                isVisible ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'
+              }`}>
+                <p className="font-montserrat text-xl md:text-2xl text-white/90 leading-relaxed">
+                  <span className="font-bold text-indexa-mint">Nascida em Foz do Iguaçu</span>, a Produtora existe para superar dores como 
+                  <span className="italic text-white"> conteúdos planos que não conectam</span>, 
+                  criando vídeos que evocam emoções reais e transformam desafios em oportunidades de crescimento.
+                </p>
+              </div>
+
+              <div className={`transform transition-all duration-1000 delay-500 ${
+                isVisible ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'
+              }`}>
+                <p className="font-montserrat text-lg text-white/70 leading-relaxed">
+                  Na fronteira entre Brasil, Argentina e Paraguai, desenvolvemos uma visão única sobre storytelling, 
+                  mesclando culturas e perspectivas para criar narrativas que realmente impactam e transformam negócios.
+                </p>
+              </div>
+
+              {/* Icons */}
+              <div className={`flex space-x-8 transform transition-all duration-1000 delay-700 ${
+                isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+              }`}>
+                <div className="flex items-center space-x-3">
+                  <Heart className="w-6 h-6 text-indexa-mint" />
+                  <span className="font-montserrat text-white/80 text-sm">Emoção Real</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Target className="w-6 h-6 text-indexa-mint" />
+                  <span className="font-montserrat text-white/80 text-sm">Impacto Garantido</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Element */}
+            <div className={`transform transition-all duration-1000 delay-500 ${
+              isVisible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
+            }`}>
+              <div className="relative">
+                <div className="bg-gradient-to-br from-indexa-mint/20 to-indexa-purple/20 backdrop-blur-sm rounded-3xl p-8 border border-indexa-mint/30">
+                  <div className="text-center space-y-6">
+                    <div className="w-20 h-20 bg-gradient-to-r from-indexa-mint to-indexa-purple rounded-full flex items-center justify-center mx-auto">
+                      <MapPin className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="font-playfair text-2xl font-bold text-white">
+                      Perspectiva Única
+                    </h3>
+                    <p className="font-montserrat text-white/70 text-center leading-relaxed">
+                      Três países, uma visão: criamos conteúdos que transcendem fronteiras e conectam corações.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default StorytellingSection;
