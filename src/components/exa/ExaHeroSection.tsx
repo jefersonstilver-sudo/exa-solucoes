@@ -3,7 +3,7 @@ import React from 'react';
 const ExaHeroSection: React.FC = () => {
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 overflow-hidden">
-      <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto gap-8 sm:gap-10 lg:gap-16 py-8 sm:py-12 lg:py-16">
+      <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto gap-8 sm:gap-10 lg:gap-16 pt-20 pb-8 sm:pt-24 sm:pb-12 lg:pt-28 lg:pb-16">
         
         {/* Conteúdo de Texto */}
         <div className="flex-1 text-center lg:text-left text-white w-full lg:max-w-2xl order-2 lg:order-1">
