@@ -54,19 +54,23 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
       {/* Logo Overlay */}
       {qrCodeGenerated && (
         <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10 border border-gray-200"
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-3 shadow-xl z-20 border-2 border-gray-100"
           style={{
-            width: size * 0.25,
-            height: size * 0.25,
+            width: size * 0.35,
+            height: size * 0.35,
           }}
         >
           <img 
-            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc1MzgyODMxNSwiZXhwIjo5NjM2MTgyODMxNX0.YuAqWRCwlYHecA9tVsycO-cjzzjeru7FeUJY5MyAmSM"
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png"
             alt="INDEXA Logo"
             className="w-full h-full object-contain"
+            onLoad={() => {
+              console.log('✅ Logo carregada com sucesso no QR code');
+            }}
             onError={(e) => {
-              console.error('Erro ao carregar logo no QR code:', e);
-              e.currentTarget.src = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/1%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzLzEgKDEpLnBuZyIsImlhdCI6MTc1MzgxNTIwNCwiZXhwIjo5NjM2MTgxNTIwNH0.KlH5Ty2cfiwFR5rmrTRHOdW7cybUCRQqS3Bfg6Qy8dg";
+              console.error('❌ Erro ao carregar logo no QR code:', e);
+              // Fallback para logo alternativa
+              e.currentTarget.src = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/1%20(1).png";
             }}
           />
         </div>
