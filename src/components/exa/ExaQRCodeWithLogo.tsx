@@ -54,10 +54,10 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
       {/* Logo Overlay */}
       {qrCodeGenerated && (
         <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg"
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-lg"
           style={{
-            width: size * 0.25,
-            height: size * 0.25,
+            width: size * 0.20,
+            height: size * 0.20,
           }}
         >
           <UnifiedLogo 
@@ -65,6 +65,7 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
             variant="dark"
             className="w-full h-full"
             linkTo=""
+            logoUrl="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc1MzgyODMxNSwiZXhwIjo5NjM2MTgyODMxNX0.YuAqWRCwlYHecA9tVsycO-cjzzjeru7FeUJY5MyAmSM"
           />
         </div>
       )}
