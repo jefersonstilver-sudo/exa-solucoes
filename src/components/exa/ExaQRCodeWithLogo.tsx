@@ -60,12 +60,14 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
             height: size * 0.25,
           }}
         >
-          <UnifiedLogo 
-            size="custom" 
-            variant="dark"
-            className="w-full h-full"
-            linkTo=""
-            logoUrl="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc1MzgyODMxNSwiZXhwIjo5NjM2MTgyODMxNX0.YuAqWRCwlYHecA9tVsycO-cjzzjeru7FeUJY5MyAmSM"
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc1MzgyODMxNSwiZXhwIjo5NjM2MTgyODMxNX0.YuAqWRCwlYHecA9tVsycO-cjzzjeru7FeUJY5MyAmSM"
+            alt="INDEXA Logo"
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              console.error('Erro ao carregar logo no QR code:', e);
+              e.currentTarget.src = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/1%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzLzEgKDEpLnBuZyIsImlhdCI6MTc1MzgxNTIwNCwiZXhwIjo5NjM2MTgxNTIwNH0.KlH5Ty2cfiwFR5rmrTRHOdW7cybUCRQqS3Bfg6Qy8dg";
+            }}
           />
         </div>
       )}
