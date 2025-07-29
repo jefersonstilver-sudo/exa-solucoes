@@ -33,7 +33,6 @@ const Linkae = lazy(() => import('./pages/Linkae'));
 const Produtora = lazy(() => import('./pages/Produtora'));
 const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const Exa = lazy(() => import('./pages/Exa'));
-const ExaFormPage = lazy(() => import('./pages/ExaFormPage'));
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
@@ -115,11 +114,6 @@ function App() {
                     <Route path="/exa" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <Exa />
-                      </Suspense>
-                    } />
-                    <Route path="/exa/contato" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <ExaFormPage />
                       </Suspense>
                     } />
                     <Route path="/produtora" element={
