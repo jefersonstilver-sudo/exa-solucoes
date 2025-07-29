@@ -10,7 +10,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
   return (
     <section className="relative h-[80vh] flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900 overflow-hidden">
       {/* Background Image - Dynamic Social Networks */}
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611224923853-80b023f02d71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2339&q=80')] bg-cover bg-center opacity-20"></div>
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1605810230434-7631ac76ec81?ixlib=rb-4.0.3&auto=format&fit=crop&w=2339&q=80')] bg-cover bg-center opacity-20"></div>
       
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-orange-500/20 to-pink-600/30"></div>
