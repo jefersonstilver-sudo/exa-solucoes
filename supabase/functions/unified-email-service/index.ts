@@ -88,6 +88,7 @@ serve(async (req: Request) => {
       console.log('🔄 [UNIFIED-EMAIL] Reenviando confirmação para:', email);
 
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
+      // Para reenvios, sempre gerar um novo token (não usar token original)
       const confirmationUrl = await linkGenerator.generateConfirmationLink(email);
 
       const userName = email.split('@')[0];
@@ -137,12 +138,25 @@ serve(async (req: Request) => {
 
       console.log('📧 [UNIFIED-EMAIL] Enviando confirmação inicial para:', user.email);
 
-      // CORREÇÃO: Construir URL de confirmação correta
-      const appUrl = 'https://loving-bough-1xb6c3h.lovableproject.com';
-      const redirectUrl = `${appUrl}/confirmacao`;
-      console.log('🔗 [UNIFIED-EMAIL] Redirect URL construída:', redirectUrl);
+      // ESTRATÉGIA HÍBRIDA: Usar LinkGenerator para links mais duráveis
+      const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
       
-      const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
+      // Tentar extrair token original do webhook se disponível
+      const originalToken = email_data?.access_token || email_data?.confirmation_url?.match(/access_token=([^&]+)/)?.[1];
+      console.log('🔍 [UNIFIED-EMAIL] Token original detectado:', !!originalToken);
+      
+      let confirmationUrl;
+      try {
+        // Usar LinkGenerator que é mais robusto contra expiração
+        confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
+      } catch (linkGenError) {
+        console.warn('⚠️ [UNIFIED-EMAIL] LinkGenerator falhou, usando método tradicional:', linkGenError);
+        // Fallback para método tradicional se LinkGenerator falhar
+        const appUrl = 'https://loving-bough-1xb6c3h.lovableproject.com';
+        const redirectUrl = `${appUrl}/confirmacao`;
+        confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
+      }
+      
       const validatedUrl = URLValidator.validateAndCorrectUrl(confirmationUrl);
       
       console.log('🔗 [UNIFIED-EMAIL] URL final de confirmação:', validatedUrl);

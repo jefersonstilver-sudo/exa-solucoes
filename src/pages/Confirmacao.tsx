@@ -61,9 +61,26 @@ export default function Confirmacao() {
           
           const decodedError = decodeURIComponent(errorDescription || '');
           
-          if (error === 'access_denied' || decodedError.includes('expired') || decodedError.includes('invalid')) {
+          // DETECÇÃO MELHORADA de tokens expirados
+          if (error === 'access_denied' || 
+              decodedError.includes('expired') || 
+              decodedError.includes('invalid') ||
+              decodedError.includes('otp_expired') ||
+              error === 'invalid_request') {
             setStatus('expired');
-            setMessage('Link de confirmação expirado ou inválido. Você pode solicitar um novo email de confirmação.');
+            setMessage('Link de confirmação expirado ou inválido. Enviamos um novo email automaticamente.');
+            
+            // AUTO-REENVIO quando detectamos token expirado
+            const emailFromUrl = url.searchParams.get('email') || url.hash.match(/email=([^&]+)/)?.[1];
+            if (emailFromUrl) {
+              const decodedEmail = decodeURIComponent(emailFromUrl);
+              setUserEmail(decodedEmail);
+              console.log('🔄 [CONFIRMACAO] Iniciando auto-reenvio para:', decodedEmail);
+              // Aguardar um pouco antes do auto-reenvio
+              setTimeout(() => {
+                resendConfirmationEmail(decodedEmail);
+              }, 1500);
+            }
           } else {
             setStatus('error');
             setMessage(decodedError || 'Erro na confirmação do email');
@@ -104,9 +121,20 @@ export default function Confirmacao() {
           console.error('❌ [CONFIRMACAO] Erro ao configurar sessão:', sessionError);
           
           // Tratamento específico para diferentes tipos de erro
-          if (sessionError.message?.includes('invalid') || sessionError.message?.includes('expired')) {
+          if (sessionError.message?.includes('invalid') || 
+              sessionError.message?.includes('expired') ||
+              sessionError.message?.includes('otp_expired') ||
+              sessionError.code === 'invalid_grant') {
             setStatus('expired');
-            setMessage('Link de confirmação expirado. Solicite um novo email de confirmação.');
+            setMessage('Link de confirmação expirado. Enviando novo email automaticamente...');
+            
+            // AUTO-REENVIO quando sessão falha por token expirado
+            if (userEmail) {
+              console.log('🔄 [CONFIRMACAO] Auto-reenvio por erro de sessão para:', userEmail);
+              setTimeout(() => {
+                resendConfirmationEmail(userEmail);
+              }, 1000);
+            }
           } else {
             setStatus('error');
             setMessage(`Erro na autenticação: ${sessionError.message}`);

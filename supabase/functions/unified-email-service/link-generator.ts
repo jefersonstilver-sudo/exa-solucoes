@@ -17,10 +17,28 @@ export class LinkGenerator {
     });
   }
 
-  async generateConfirmationLink(email: string): Promise<string> {
+  async generateConfirmationLink(email: string, originalToken?: string): Promise<string> {
     console.log('🔗 [LINK-GENERATOR] Gerando link de confirmação válido para:', email);
     
     try {
+      // Se temos um token original válido, tentar usá-lo primeiro
+      if (originalToken) {
+        console.log('🔄 [LINK-GENERATOR] Tentando usar token original fornecido');
+        const siteUrl = Deno.env.get('SITE_URL') || 'https://loving-bough-1xb6c3h.lovableproject.com';
+        const directLink = `${siteUrl}/confirmacao#access_token=${originalToken}&type=signup`;
+        
+        // Verificar se o token ainda é válido (teste simples)
+        try {
+          const { data: testData, error: testError } = await this.supabaseAdmin.auth.getUser(originalToken);
+          if (!testError && testData.user) {
+            console.log('✅ [LINK-GENERATOR] Token original ainda válido, usando link direto');
+            return directLink;
+          }
+        } catch (e) {
+          console.log('⚠️ [LINK-GENERATOR] Token original não é mais válido, gerando novo');
+        }
+      }
+      
       // Verificar se o usuário existe e seu status de confirmação
       const { data: userData, error: userError } = await this.supabaseAdmin.auth.admin.listUsers();
       
@@ -64,11 +82,17 @@ export class LinkGenerator {
         
         console.log(`🌐 [LINK-GENERATOR] URL de redirecionamento: ${redirectUrl}`);
         
+        // CONFIGURAÇÕES OTIMIZADAS para links de longa duração
         const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
           type: linkType,
           email: email,
           options: {
-            redirectTo: redirectUrl
+            redirectTo: redirectUrl,
+            // Tentar configurar uma expiração mais longa se possível
+            data: {
+              extend_expiration: true,
+              confirmation_url: redirectUrl
+            }
           }
         });
 
