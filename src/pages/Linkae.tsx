@@ -1,15 +1,8 @@
 import React, { useRef } from 'react';
 import LinkaeHero from '@/components/linkae/LinkaeHero';
-import TaccohPuzzleHero from '@/components/linkae/TaccohPuzzleHero';
-import TaccohExplainer from '@/components/linkae/TaccohExplainer';
-import TaccohSolutionSection from '@/components/linkae/TaccohSolutionSection';
-import TaccohCaseStudies from '@/components/linkae/TaccohCaseStudies';
-import TaccohDiagnostic from '@/components/linkae/TaccohDiagnostic';
-import LinkaeMission from '@/components/linkae/LinkaeMission';
-import SocialMediaDeliverables from '@/components/linkae/SocialMediaDeliverables';
-import SocialPortfolio from '@/components/linkae/SocialPortfolio';
-import SocialObjections from '@/components/linkae/SocialObjections';
-import LinkaeCTASection from '@/components/linkae/LinkaeCTASection';
+import LinkaeStorytelling from '@/components/linkae/LinkaeStorytelling';
+import LinkaeExamples from '@/components/linkae/LinkaeExamples';
+import LinkaeDifferentiators from '@/components/linkae/LinkaeDifferentiators';
 import LinkaeForm from '@/components/linkae/LinkaeForm';
 import LinkaeFloatingCTA from '@/components/linkae/LinkaeFloatingCTA';
 import Layout from '@/components/layout/Layout';
@@ -28,16 +21,9 @@ const Linkae = () => {
     <Layout>
       <div className="min-h-screen bg-white text-gray-900">
         <LinkaeHero onScrollToForm={scrollToForm} />
-        <TaccohPuzzleHero />
-        <TaccohSolutionSection />
-        <TaccohExplainer />
-        <TaccohCaseStudies />
-        <TaccohDiagnostic onScrollToForm={scrollToForm} />
-        <LinkaeMission />
-        <SocialMediaDeliverables />
-        <SocialPortfolio />
-        <SocialObjections onScrollToForm={scrollToForm} />
-        <LinkaeCTASection />
+        <LinkaeStorytelling />
+        <LinkaeExamples />
+        <LinkaeDifferentiators />
         <LinkaeForm formRef={formRef} />
         <LinkaeFloatingCTA onScrollToForm={scrollToForm} />
       </div>
