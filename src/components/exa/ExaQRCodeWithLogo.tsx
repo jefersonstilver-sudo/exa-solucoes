@@ -61,16 +61,26 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
           }}
         >
           <img 
-            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png"
+            src="/images/logo-indexa.png"
             alt="INDEXA Logo"
             className="w-full h-full object-contain"
             onLoad={() => {
-              console.log('✅ Logo carregada com sucesso no QR code');
+              console.log('✅ Logo INDEXA carregada com sucesso no QR code');
             }}
             onError={(e) => {
-              console.error('❌ Erro ao carregar logo no QR code:', e);
-              // Fallback para logo alternativa
+              console.error('❌ Erro ao carregar logo local, tentando Supabase...');
+              // Fallback 1: URL Supabase codificada
               e.currentTarget.src = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/1%20(1).png";
+              
+              e.currentTarget.onerror = () => {
+                console.error('❌ Erro em todos os fallbacks da logo');
+                // Fallback final: emoji/texto
+                e.currentTarget.style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  parent.innerHTML = '<div class="flex items-center justify-center w-full h-full text-purple-600 font-bold text-sm">INDEXA</div>';
+                }
+              };
             }}
           />
         </div>
