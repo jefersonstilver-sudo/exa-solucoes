@@ -5,7 +5,7 @@ const ExaFinalCTASection: React.FC = () => {
   const navigate = useNavigate();
 
   const handleScheduleMeeting = () => {
-    navigate('/linkae');
+    navigate('/exa/contato');
   };
 
   const handleViewLocations = () => {
