@@ -11,16 +11,16 @@ const ExaAdvantagesSection: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 max-w-4xl mx-auto">
-          <div className="bg-white border border-purple-200 shadow-lg rounded-xl p-6 sm:p-8 lg:p-10 text-center transition-all duration-300 hover:shadow-xl hover:scale-105 hover:shadow-purple-500/25">
-            <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-exo-2 font-bold text-slate-800 mb-4 sm:mb-6 tracking-wide">Impacto Imediato</h3>
-            <p className="font-exo-2 font-light text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed tracking-wide">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-700 shadow-lg rounded-xl p-6 sm:p-8 lg:p-10 text-center transition-all duration-300 hover:shadow-xl hover:scale-105 hover:shadow-purple-500/25">
+            <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-exo-2 font-bold text-white mb-4 sm:mb-6 tracking-wide">Impacto Imediato</h3>
+            <p className="font-exo-2 font-light text-white/90 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed tracking-wide">
               Anuncie em locais estratégicos e sinta o impacto imediato
             </p>
           </div>
           
-          <div className="bg-white border border-purple-200 shadow-lg rounded-xl p-6 sm:p-8 lg:p-10 text-center transition-all duration-300 hover:shadow-xl hover:scale-105 hover:shadow-purple-500/25">
-            <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-exo-2 font-bold text-slate-800 mb-4 sm:mb-6 tracking-wide">Segmentação Inteligente</h3>
-            <p className="font-exo-2 font-light text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed tracking-wide">
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg rounded-xl p-6 sm:p-8 lg:p-10 text-center transition-all duration-300 hover:shadow-xl hover:scale-105 hover:shadow-emerald-500/25">
+            <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-exo-2 font-bold text-white mb-4 sm:mb-6 tracking-wide">Segmentação Inteligente</h3>
+            <p className="font-exo-2 font-light text-white/90 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed tracking-wide">
               Programe conteúdos por dias para segmentos variados, como lanches ou serviços locais
             </p>
           </div>
