@@ -17,7 +17,7 @@ const SouSindicoLinkSection: React.FC = () => {
         
         <button
           onClick={handleSindicoClick}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold py-4 sm:py-5 px-10 sm:px-12 rounded-lg text-lg sm:text-xl lg:text-2xl transition-all duration-300 hover:shadow-lg hover:scale-105 min-h-[56px] touch-manipulation"
+          className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold py-4 sm:py-5 px-10 sm:px-12 rounded-lg text-lg sm:text-xl lg:text-2xl transition-all duration-300 hover:shadow-lg hover:scale-105 min-h-[56px] touch-manipulation"
         >
           Modernizar Meu Prédio
         </button>
