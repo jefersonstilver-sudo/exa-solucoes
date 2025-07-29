@@ -2,19 +2,11 @@ import React from 'react';
 
 const ExaHeroSection: React.FC = () => {
   return (
-    <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-      {/* Background Video - Painéis EXA em ação */}
-      <video 
-        autoPlay 
-        muted 
-        loop 
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      >
-        <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
-      </video>
-      
-      <div className="relative z-10 text-center text-white px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto bg-black/40 backdrop-blur-sm rounded-lg py-8">
+    <section className="relative h-[80vh] bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 overflow-hidden">
+      <div className="h-full flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto gap-8 lg:gap-12">
+        
+        {/* Conteúdo de Texto */}
+        <div className="flex-1 text-center lg:text-left text-white max-w-2xl">
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 sm:mb-8">
           <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
             EXA
@@ -39,7 +31,7 @@ const ExaHeroSection: React.FC = () => {
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md sm:max-w-none mx-auto">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start max-w-md sm:max-w-none mx-auto lg:mx-0">
           <button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-8 py-4 rounded-lg text-base lg:text-lg transition-all duration-300 hover:shadow-lg hover:scale-105">
             Conhecer EXA
           </button>
@@ -47,6 +39,21 @@ const ExaHeroSection: React.FC = () => {
             Ver Localização
           </button>
         </div>
+        </div>
+        
+        {/* Vídeo dos Painéis EXA */}
+        <div className="flex-1 flex justify-center lg:justify-end max-w-lg">
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            className="w-full max-w-md lg:max-w-lg rounded-lg shadow-2xl"
+          >
+            <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
+          </video>
+        </div>
+        
       </div>
     </section>
   );
