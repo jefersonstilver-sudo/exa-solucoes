@@ -22,8 +22,8 @@ const ExaFinalCTASection: React.FC = () => {
       </div>
 
       {/* Main content container with card effect */}
-      <div className="relative z-10 max-w-6xl mx-auto">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8 sm:p-12 lg:p-16 text-center">
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl drop-shadow-2xl border border-white/20 p-8 sm:p-12 lg:p-16 text-center" style={{boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2)'}}>:
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-orbitron font-black text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-600 bg-clip-text mb-8 sm:mb-12 lg:mb-16 leading-tight tracking-wide drop-shadow-2xl">
             Agende uma Reunião Gratuita
           </h2>
