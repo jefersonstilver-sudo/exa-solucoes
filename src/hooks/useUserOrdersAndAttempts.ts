@@ -100,9 +100,50 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         // Continuar sem tentativas se houver erro
       }
 
+      // Filtrar tentativas órfãs antes de combinar
+      const validAttempts = processedAttempts.filter(attempt => {
+        // Filtrar tentativas com valor muito baixo
+        if (attempt.valor_total < 1) {
+          console.log(`🚫 Tentativa com valor inválido removida: ${attempt.id} (Valor: R$ ${attempt.valor_total})`);
+          return false;
+        }
+        
+        // Verificar se existe pedido pago com mesmo valor e data próxima
+        const hasMatchingOrder = processedOrders.some(order => {
+          // Verificar se é um pedido pago
+          if (!['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(order.status)) {
+            return false;
+          }
+          
+          // Mesmo valor
+          if (order.valor_total !== attempt.valor_total) {
+            return false;
+          }
+          
+          // Data próxima (máximo 24 horas de diferença)
+          const orderDate = new Date(order.created_at);
+          const attemptDate = new Date(attempt.created_at);
+          const timeDiff = Math.abs(orderDate.getTime() - attemptDate.getTime());
+          const maxTimeDiff = 24 * 60 * 60 * 1000; // 24 horas
+          
+          return timeDiff <= maxTimeDiff;
+        });
+        
+        if (hasMatchingOrder) {
+          console.log(`🚫 Tentativa órfã removida da visualização do usuário: ${attempt.id} (Valor: R$ ${attempt.valor_total})`);
+          return false;
+        }
+        
+        return true;
+      });
+
       // Combinar e ordenar por data
-      const combined = [...processedOrders, ...processedAttempts]
+      const combined = [...processedOrders, ...validAttempts]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      console.log(`📊 [UserOrders] Tentativas antes da filtragem: ${processedAttempts.length}`);
+      console.log(`📊 [UserOrders] Tentativas após filtragem: ${validAttempts.length}`);
+      console.log(`🗑️ [UserOrders] Tentativas órfãs removidas: ${processedAttempts.length - validAttempts.length}`);
 
       setUserOrdersAndAttempts(combined);
 
