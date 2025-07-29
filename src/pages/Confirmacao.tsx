@@ -163,12 +163,16 @@ export default function Confirmacao() {
         console.log('✅ [CONFIRMACAO] Email confirmado com sucesso!');
         setStatus('success');
         
+        // Tratamento baseado no tipo de link
         if (type === 'signup') {
           setMessage('Email confirmado com sucesso! Bem-vindo(a) à Indexa!');
           toast.success('Email confirmado! Sua conta está ativa.');
-          
-          // Redirecionar para a loja após confirmação
           setTimeout(() => navigate('/loja'), 2000);
+        } else if (type === 'recovery') {
+          // Link de recovery para usuário já confirmado - redirecionar para login
+          setMessage('Email verificado! Redirecionando para o login...');
+          toast.success('Verificação concluída! Você pode fazer login normalmente.');
+          setTimeout(() => navigate('/login'), 1500);
         } else {
           setMessage('Email confirmado com sucesso!');
           setTimeout(() => navigate('/login'), 3000);

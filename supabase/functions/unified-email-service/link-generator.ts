@@ -69,8 +69,9 @@ export class LinkGenerator {
         linkType = 'signup';
         shouldTryAlternatives = false;
       } else {
-        // Usuário existe e email já confirmado - usar invite para reenvio
-        linkType = 'invite';
+        // Usuário existe e email já confirmado - usar recovery para permitir login direto
+        linkType = 'recovery';
+        shouldTryAlternatives = true;
       }
       
       console.log(`🔧 [LINK-GENERATOR] Usando estratégia: ${linkType}`);
