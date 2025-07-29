@@ -23,7 +23,7 @@ const ProdutoraHeroSection = () => {
   };
 
   return (
-    <section className="relative h-[80vh] w-full overflow-hidden pt-20">
+    <section className="relative min-h-[100vh] sm:min-h-[90vh] md:h-[80vh] w-full overflow-hidden pt-16 sm:pt-20">
       {/* Vídeo de fundo com blur intenso */}
       <div className="absolute inset-0 z-0">
         <video
@@ -39,39 +39,39 @@ const ProdutoraHeroSection = () => {
       </div>
 
       {/* Conteúdo principal */}
-      <div className="relative z-10 flex items-center justify-center h-[calc(80vh-5rem)] px-4">
-        <div className="text-center max-w-4xl mx-auto">
+      <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(90vh-5rem)] md:h-[calc(80vh-5rem)] px-4 py-8">
+        <div className="text-center max-w-5xl mx-auto">
           {/* Frase principal com animação de escrita */}
           <div className={`transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <h1 className="font-playfair text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white mb-6 leading-tight">
+            <h1 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
               <span className="block bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent">
                 Eleve Sua História a Alturas Cinematográficas
               </span>
             </h1>
-            <p className="font-montserrat text-lg sm:text-xl md:text-2xl text-white/90 font-light leading-relaxed max-w-3xl mx-auto">
+            <p className="font-montserrat text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 font-light leading-relaxed max-w-4xl mx-auto px-2">
               Transformamos ideias em narrativas que capturam essências, resolvendo dores como vídeos genéricos que não inspiram, criando produções que fazem sentir e impulsionam negócios na fronteira.
             </p>
           </div>
 
           {/* Botões CTA */}
-          <div className={`flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+          <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mt-6 sm:mt-8 transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
             <button
               onClick={scrollToPortfolio}
-              className="group bg-indexa-mint text-indexa-purple-dark font-bold py-4 px-8 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1"
+              className="group bg-indexa-mint text-indexa-purple-dark font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 w-full sm:w-auto text-sm sm:text-base"
             >
-              <span className="flex items-center space-x-2">
-                <Play className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                <span>Ver Portfólio Exclusivo</span>
+              <span className="flex items-center justify-center space-x-2">
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                <span className="whitespace-nowrap">Ver Portfólio Exclusivo</span>
               </span>
             </button>
             
             <button
               onClick={scrollToCafe}
-              className="group bg-white/10 backdrop-blur-sm text-white border border-white/30 font-bold py-4 px-8 rounded-full hover:bg-white/20 transform transition-all duration-500 hover:scale-105"
+              className="group bg-white/10 backdrop-blur-sm text-white border border-white/30 font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:bg-white/20 transform transition-all duration-500 hover:scale-105 w-full sm:w-auto text-sm sm:text-base"
             >
-              <span className="flex items-center space-x-2">
-                <Camera className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
-                <span>Agendar Café com a Produtora</span>
+              <span className="flex items-center justify-center space-x-2">
+                <Camera className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform duration-300" />
+                <span className="whitespace-nowrap">Agendar Café com a Produtora</span>
               </span>
             </button>
           </div>

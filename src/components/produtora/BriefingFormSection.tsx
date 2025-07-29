@@ -137,18 +137,18 @@ const BriefingFormSection = () => {
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da seção */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-indexa-purple mb-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-bold text-indexa-purple mb-4 sm:mb-6 px-4">
               Formulário de Briefing
-              <span className="block text-2xl sm:text-3xl lg:text-4xl text-indexa-mint font-light mt-2">
+              <span className="block text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl text-indexa-mint font-light mt-2">
                 Conte-nos sobre seu projeto
               </span>
             </h2>
           </div>
 
           {/* Formulário */}
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               {/* Nome completo */}
               <div>
                 <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-2">
@@ -161,7 +161,7 @@ const BriefingFormSection = () => {
                   value={formData.nome}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors text-sm sm:text-base"
                   placeholder="Seu nome completo"
                 />
               </div>
@@ -177,13 +177,13 @@ const BriefingFormSection = () => {
                   name="empresa"
                   value={formData.empresa}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors text-sm sm:text-base"
                   placeholder="Nome da sua empresa"
                 />
               </div>
 
               {/* WhatsApp e Email em grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-2">
                     WhatsApp *
@@ -195,7 +195,7 @@ const BriefingFormSection = () => {
                     value={formData.whatsapp}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="(45) 99999-9999"
                   />
                 </div>
@@ -211,7 +211,7 @@ const BriefingFormSection = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="seu@email.com"
                   />
                 </div>
@@ -227,7 +227,7 @@ const BriefingFormSection = () => {
                   name="tipo_video"
                   value={formData.tipo_video}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors text-sm sm:text-base"
                 >
                   <option value="">Selecione o tipo de vídeo</option>
                   <option value="institucional">Institucional</option>
@@ -252,22 +252,22 @@ const BriefingFormSection = () => {
                   value={formData.objetivo}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors resize-none"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indexa-mint focus:border-transparent transition-colors resize-none text-sm sm:text-base"
                   placeholder="Conte-nos sobre seus objetivos, público-alvo e qualquer informação que considere importante..."
                 />
               </div>
 
               {/* Checkbox café presencial */}
-              <div className="flex items-center">
+              <div className="flex items-start sm:items-center">
                 <input
                   type="checkbox"
                   id="agendar_cafe"
                   name="agendar_cafe"
                   checked={formData.agendar_cafe}
                   onChange={handleInputChange}
-                  className="w-5 h-5 text-indexa-mint border-gray-300 rounded focus:ring-indexa-mint"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-indexa-mint border-gray-300 rounded focus:ring-indexa-mint mt-0.5 sm:mt-0"
                 />
-                <label htmlFor="agendar_cafe" className="ml-3 text-sm text-gray-700">
+                <label htmlFor="agendar_cafe" className="ml-2 sm:ml-3 text-sm text-gray-700 leading-relaxed">
                   Desejo agendar um café presencial no estúdio
                 </label>
               </div>
@@ -276,16 +276,16 @@ const BriefingFormSection = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-indexa-mint text-indexa-purple-dark font-bold py-4 px-6 rounded-lg hover:bg-indexa-mint/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-indexa-mint text-indexa-purple-dark font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-lg hover:bg-indexa-mint/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indexa-purple-dark mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-indexa-purple-dark mr-2"></div>
                     Enviando...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center">
-                    <Send className="w-5 h-5 mr-2" />
+                    <Send className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Enviar Briefing
                   </span>
                 )}
@@ -293,15 +293,15 @@ const BriefingFormSection = () => {
             </form>
 
             {/* Link WhatsApp no final */}
-            <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-              <p className="text-gray-600 text-sm mb-3">Ou fale conosco direto:</p>
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 text-center">
+              <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3">Ou fale conosco direto:</p>
               <a
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-green-600 hover:text-green-700 font-medium transition-colors"
+                className="inline-flex items-center text-green-600 hover:text-green-700 font-medium transition-colors text-sm sm:text-base"
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
+                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 WhatsApp: (45) 99125-0093
               </a>
             </div>
