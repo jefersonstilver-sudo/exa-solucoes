@@ -21,15 +21,22 @@ const AboutExaSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+    <section className="h-[80vh] flex items-center bg-gradient-to-b from-slate-900 to-slate-800 text-white">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-6xl font-bold mb-8">
-            O futuro da <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">publicidade</span>
+            Acabou o <span className="text-red-400">Marketing Genérico</span><br/>
+            Chegou a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Precisão EXA</span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            EXA revoluciona a publicidade exterior com painéis digitais inteligentes que se adaptam ao seu público-alvo, maximizando o impacto da sua mensagem.
+          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed mb-8">
+            <strong>Os painéis EXA permitem anúncios segmentados em prédios, com mensuração de QR codes escaneados e flexibilidade para múltiplos vídeos por semana.</strong>
           </p>
+          <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 backdrop-blur-sm p-6 rounded-xl border border-purple-500/30 max-w-3xl mx-auto">
+            <p className="text-lg text-purple-200">
+              Resolvemos as dores do marketing genérico e impulsionamos conexões que transformam 
+              <span className="text-yellow-300 font-bold"> visibilidade em vendas para todos os tamanhos de negócios</span>.
+            </p>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">

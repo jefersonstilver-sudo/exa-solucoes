@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, X } from 'lucide-react';
+import { MapPin, Calendar, QrCode } from 'lucide-react';
 
 const ExaAdvantagesSection: React.FC = () => {
   const comparison = [
@@ -46,33 +46,45 @@ const ExaAdvantagesSection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            EXA vs <span className="text-red-400">Publicidade Tradicional</span>
+            Benefícios <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400">Sensoriais EXA</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-            Veja por que a publicidade inteligente supera os métodos tradicionais em todos os aspectos.
+            Experimente a diferença que a publicidade direcionada faz para todos os portes de negócio.
           </p>
         </div>
 
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden">
-          <div className="grid grid-cols-3 bg-slate-700/50 p-4 font-bold text-lg">
-            <div className="text-center">Aspecto</div>
-            <div className="text-center text-red-400">Publicidade Tradicional</div>
-            <div className="text-center text-green-400">EXA</div>
-          </div>
-
-          {comparison.map((item, index) => (
-            <div key={index} className="grid grid-cols-3 p-4 border-b border-slate-700 hover:bg-slate-700/30 transition-colors">
-              <div className="font-semibold">{item.feature}</div>
-              <div className="text-center text-red-300 flex items-center justify-center">
-                <X className="h-5 w-5 mr-2 text-red-400" />
-                {item.traditional}
+        <div className="h-[60vh] flex items-center">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+            <div className="bg-gradient-to-br from-green-900/30 to-emerald-800/30 backdrop-blur-sm p-8 rounded-2xl border border-green-500/30 text-center group hover:scale-105 transition-all duration-300">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:shadow-2xl group-hover:shadow-green-500/25">
+                <MapPin className="h-8 w-8 text-white" />
               </div>
-              <div className="text-center text-green-300 flex items-center justify-center">
-                <Check className="h-5 w-5 mr-2 text-green-400" />
-                {item.exa}
-              </div>
+              <h3 className="text-xl font-bold mb-4 text-green-300">Anuncie em Locais Estratégicos</h3>
+              <p className="text-gray-300 leading-relaxed">
+                <strong className="text-green-200">Sinta o impacto imediato</strong> de seus anúncios em prédios residenciais e comerciais com alto fluxo de pessoas.
+              </p>
             </div>
-          ))}
+
+            <div className="bg-gradient-to-br from-blue-900/30 to-cyan-800/30 backdrop-blur-sm p-8 rounded-2xl border border-blue-500/30 text-center group hover:scale-105 transition-all duration-300">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:shadow-2xl group-hover:shadow-blue-500/25">
+                <Calendar className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4 text-blue-300">Programação Flexível por Dias</h3>
+              <p className="text-gray-300 leading-relaxed">
+                <strong className="text-blue-200">Programe conteúdos por dias</strong> para segmentos variados: lanches na segunda, serviços na terça, lazer no fim de semana.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-900/30 to-pink-800/30 backdrop-blur-sm p-8 rounded-2xl border border-purple-500/30 text-center group hover:scale-105 transition-all duration-300 md:col-span-2 lg:col-span-1">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:shadow-2xl group-hover:shadow-purple-500/25">
+                <QrCode className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4 text-purple-300">Mensuração Real com QR Codes</h3>
+              <p className="text-gray-300 leading-relaxed">
+                <strong className="text-purple-200">Acompanhe cada scan</strong> e veja como seus anúncios geram ação real, não apenas impressões.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="mt-16 grid md:grid-cols-3 gap-8">

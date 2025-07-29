@@ -43,18 +43,19 @@ const ExaFinalCTASection: React.FC = () => {
         <div className="text-center">
           <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-600 max-w-4xl mx-auto">
             <h3 className="text-3xl font-bold mb-6">
-              Agende uma <span className="text-yellow-400">Demonstração Gratuita</span>
+              Agende uma <span className="text-yellow-400">Reunião Gratuita</span>
             </h3>
             <p className="text-lg text-gray-300 mb-8">
-              Veja a EXA em ação e descubra como revolucionar sua estratégia publicitária
+              <strong>Para empresários de todos os portes:</strong> de pequenos lanches a grandes empresas. 
+              Descubra a oportunidade imediata da publicidade direcionada.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold px-8 py-4 rounded-full text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300">
-                📍 Ver Localizações Disponíveis
+                🚀 Agendar Reunião Gratuita
               </button>
               <button className="border-2 border-yellow-400 text-yellow-400 font-bold px-8 py-4 rounded-full text-lg hover:bg-yellow-400 hover:text-black transition-all duration-300">
-                📊 Calcular ROI da Minha Campanha
+                📍 Ver Localizações Disponíveis
               </button>
             </div>
             

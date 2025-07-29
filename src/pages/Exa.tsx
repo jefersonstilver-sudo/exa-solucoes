@@ -7,6 +7,7 @@ import IntelligentSystemsSection from '@/components/exa/IntelligentSystemsSectio
 import ExaAdvantagesSection from '@/components/exa/ExaAdvantagesSection';
 import ExaShowcaseSection from '@/components/exa/ExaShowcaseSection';
 import ExaAnalyticsSection from '@/components/exa/ExaAnalyticsSection';
+import SouSindicoLinkSection from '@/components/exa/SouSindicoLinkSection';
 import ExaFAQSection from '@/components/exa/ExaFAQSection';
 import ExaFinalCTASection from '@/components/exa/ExaFinalCTASection';
 
@@ -35,6 +36,7 @@ const Exa = () => {
         <ExaAdvantagesSection />
         <ExaShowcaseSection />
         <ExaAnalyticsSection />
+        <SouSindicoLinkSection />
         <ExaFAQSection />
         <ExaFinalCTASection />
       </div>
