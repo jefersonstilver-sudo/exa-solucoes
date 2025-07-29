@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Monitor, Lightbulb, MessageCircle } from 'lucide-react';
 
 const DiferenciaisSection = () => {
+  console.log('🎬 DiferenciaisSection: Renderizando com MessageCircle (não WhatsApp)');
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
