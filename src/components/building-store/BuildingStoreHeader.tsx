@@ -3,7 +3,6 @@ import React from 'react';
 import { Building2, MapPin, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import BuildingStoreRefreshButton from './BuildingStoreRefreshButton';
 
 const BuildingStoreHeader = () => {
   const isMobile = useIsMobile();
@@ -16,48 +15,41 @@ const BuildingStoreHeader = () => {
       className={`text-center ${isMobile ? 'py-8 px-4' : 'py-16 px-8'}`}
     >
       <div className="max-w-4xl mx-auto">
-        {/* Header com botão de refresh */}
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex-1">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className={`bg-gradient-to-br from-[#3C1361]/10 to-[#4A1B6B]/10 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                isMobile ? 'w-16 h-16' : 'w-20 h-20'
-              }`}
-            >
-              <Building2 className={`text-[#3C1361] ${isMobile ? 'h-8 w-8' : 'h-10 w-10'}`} />
-            </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className={`font-bold text-gray-900 mb-4 ${
-                isMobile ? 'text-2xl' : 'text-4xl lg:text-5xl'
-              }`}
-            >
-              Loja de Prédios
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className={`text-gray-600 leading-relaxed max-w-2xl mx-auto ${
-                isMobile ? 'text-base' : 'text-lg'
-              }`}
-            >
-              Encontre o local perfeito para sua campanha publicitária. 
-              Explore nossos prédios em localizações estratégicas da cidade.
-            </motion.p>
-          </div>
+        {/* Header centralizado */}
+        <div className="text-center mb-6">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className={`bg-gradient-to-br from-[#3C1361]/10 to-[#4A1B6B]/10 rounded-full flex items-center justify-center mx-auto mb-6 ${
+              isMobile ? 'w-16 h-16' : 'w-20 h-20'
+            }`}
+          >
+            <Building2 className={`text-[#3C1361] ${isMobile ? 'h-8 w-8' : 'h-10 w-10'}`} />
+          </motion.div>
           
-          {/* Botão de refresh */}
-          <div className="ml-4">
-            <BuildingStoreRefreshButton />
-          </div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className={`font-bold text-gray-900 mb-4 ${
+              isMobile ? 'text-2xl' : 'text-4xl lg:text-5xl'
+            }`}
+          >
+            Loja de Prédios
+          </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className={`text-gray-600 leading-relaxed max-w-2xl mx-auto ${
+              isMobile ? 'text-base' : 'text-lg'
+            }`}
+          >
+            Encontre o local perfeito para sua campanha publicitária. 
+            Explore nossos prédios em localizações estratégicas da cidade.
+          </motion.p>
         </div>
 
         {/* Features */}
