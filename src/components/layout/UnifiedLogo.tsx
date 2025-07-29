@@ -7,13 +7,15 @@ interface UnifiedLogoProps {
   linkTo?: string;
   variant?: 'light' | 'dark';
   className?: string;
+  logoUrl?: string;
 }
 
 const UnifiedLogo = ({ 
   size = 'md', 
   linkTo = '/', 
   variant = 'light',
-  className = '' 
+  className = '',
+  logoUrl
 }: UnifiedLogoProps) => {
   const sizeClasses = {
     sm: 'w-8 h-8',
@@ -31,7 +33,7 @@ const UnifiedLogo = ({
   const LogoImage = () => (
     <div className={`${size !== 'custom' ? sizeClasses[size] : ''} flex items-center justify-center ${className}`}>
       <img 
-        src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc1MzgxNzAwOCwiZXhwIjo5NjM2MTgxNzAwOH0.pXkOQ-amorGOh0_pP_KRQzURQkpPbPhq9K7Ltvd4dm4"
+        src={logoUrl || "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/1%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzLzEgKDEpLnBuZyIsImlhdCI6MTc1MzgxNTIwNCwiZXhwIjo5NjM2MTgxNTIwNH0.KlH5Ty2cfiwFR5rmrTRHOdW7cybUCRQqS3Bfg6Qy8dg"}
         alt="INDEXA Logo" 
         className={`w-full h-full object-contain ${filterClasses[variant]}`}
       />

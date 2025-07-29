@@ -131,6 +131,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
             size="custom" 
             linkTo="/" 
             variant="light"
+            logoUrl="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Indexa%20-%20Logo%201%20copiar%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0luZGV4YSAtIExvZ28gMSBjb3BpYXIgKDEpLnBuZyIsImlhdCI6MTc1MzgxNzAwOCwiZXhwIjo5NjM2MTgxNzAwOH0.pXkOQ-amorGOh0_pP_KRQzURQkpPbPhq9K7Ltvd4dm4"
             className={cn("drop-shadow-lg", isCollapsed ? "w-10 h-10" : "w-20 h-20")}
           />
         </div>
