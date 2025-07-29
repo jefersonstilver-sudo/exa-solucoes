@@ -54,10 +54,10 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
       {/* Logo Overlay */}
       {qrCodeGenerated && (
         <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-lg"
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10 border border-gray-200"
           style={{
-            width: size * 0.20,
-            height: size * 0.20,
+            width: size * 0.25,
+            height: size * 0.25,
           }}
         >
           <UnifiedLogo 
