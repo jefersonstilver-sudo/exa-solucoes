@@ -22,6 +22,9 @@ export default {
 			fontFamily: {
 				'playfair': ['Playfair Display', 'serif'],
 				'montserrat': ['Montserrat', 'sans-serif'],
+				'orbitron': ['Orbitron', 'monospace'],
+				'exo-2': ['Exo 2', 'sans-serif'],
+				'space-mono': ['Space Mono', 'monospace'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
