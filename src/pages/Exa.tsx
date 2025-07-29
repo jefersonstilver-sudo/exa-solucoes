@@ -2,13 +2,8 @@ import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import ExaHeroSection from '@/components/exa/ExaHeroSection';
 import AboutExaSection from '@/components/exa/AboutExaSection';
-import SmartAdvertisingSection from '@/components/exa/SmartAdvertisingSection';
-import IntelligentSystemsSection from '@/components/exa/IntelligentSystemsSection';
 import ExaAdvantagesSection from '@/components/exa/ExaAdvantagesSection';
-import ExaShowcaseSection from '@/components/exa/ExaShowcaseSection';
-import ExaAnalyticsSection from '@/components/exa/ExaAnalyticsSection';
 import SouSindicoLinkSection from '@/components/exa/SouSindicoLinkSection';
-import ExaFAQSection from '@/components/exa/ExaFAQSection';
 import ExaFinalCTASection from '@/components/exa/ExaFinalCTASection';
 
 const Exa = () => {
@@ -31,13 +26,8 @@ const Exa = () => {
       <div className="relative overflow-x-hidden w-full">
         <ExaHeroSection />
         <AboutExaSection />
-        <SmartAdvertisingSection />
-        <IntelligentSystemsSection />
         <ExaAdvantagesSection />
-        <ExaShowcaseSection />
-        <ExaAnalyticsSection />
         <SouSindicoLinkSection />
-        <ExaFAQSection />
         <ExaFinalCTASection />
       </div>
     </Layout>
