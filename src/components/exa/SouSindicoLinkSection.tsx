@@ -9,9 +9,9 @@ const SouSindicoLinkSection: React.FC = () => {
   };
 
   return (
-    <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-purple-900 to-black text-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 text-center">
-        <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-exo-2 font-light text-white/90 mb-10 sm:mb-12 lg:mb-16 leading-relaxed tracking-wide">
+    <section className="py-8 sm:py-10 lg:py-12 bg-gradient-to-br from-purple-900 to-black text-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 text-center">
+        <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-exo-2 font-light text-white/90 mb-6 sm:mb-8 lg:mb-10 leading-relaxed tracking-wide">
           Se você é síndico, veja como modernizar seu prédio
         </p>
         
