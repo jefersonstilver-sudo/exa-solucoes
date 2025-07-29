@@ -2,25 +2,25 @@ import React from 'react';
 
 const ExaAdvantagesSection: React.FC = () => {
   return (
-    <section className="min-h-[60vh] bg-gradient-to-br from-indigo-900 via-purple-900 to-purple-800 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-0">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 sm:mb-8">
+    <section className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-purple-800 flex items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-16 sm:py-20 lg:py-24">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-8 sm:mb-12 leading-tight">
             Benefícios Sensoriais EXA
           </h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 lg:p-8 text-center transition-all duration-300 hover:bg-white/15">
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Impacto Imediato</h3>
-            <p className="text-purple-100 text-sm sm:text-base lg:text-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 xl:gap-16 max-w-6xl mx-auto">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 sm:p-8 lg:p-10 xl:p-12 text-center transition-all duration-300 hover:bg-white/15 hover:scale-105">
+            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 sm:mb-6 lg:mb-8">Impacto Imediato</h3>
+            <p className="text-purple-100 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed">
               Anuncie em locais estratégicos e sinta o impacto imediato
             </p>
           </div>
           
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 lg:p-8 text-center transition-all duration-300 hover:bg-white/15">
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Segmentação Inteligente</h3>
-            <p className="text-purple-100 text-sm sm:text-base lg:text-lg">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 sm:p-8 lg:p-10 xl:p-12 text-center transition-all duration-300 hover:bg-white/15 hover:scale-105">
+            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 sm:mb-6 lg:mb-8">Segmentação Inteligente</h3>
+            <p className="text-purple-100 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed">
               Programe conteúdos por dias para segmentos variados, como lanches ou serviços locais
             </p>
           </div>

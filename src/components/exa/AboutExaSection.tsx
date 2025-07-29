@@ -2,12 +2,12 @@ import React from 'react';
 
 const AboutExaSection: React.FC = () => {
   return (
-    <section className="min-h-[80vh] bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-0">
-      <div className="max-w-6xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 sm:mb-8 lg:mb-8">
+    <section className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-16 sm:py-20 lg:py-24">
+      <div className="max-w-7xl mx-auto text-center">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-8 sm:mb-12 lg:mb-16 leading-tight">
           Acabou o Marketing Genérico
         </h2>
-        <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-purple-100 max-w-5xl mx-auto leading-relaxed px-4">
+        <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-purple-100 max-w-6xl mx-auto leading-relaxed">
           Os painéis EXA permitem anúncios segmentados em prédios, com mensuração de QR codes escaneados e flexibilidade para múltiplos vídeos por semana, resolvendo dores de marketing genérico e impulsionando conexões que transformam visibilidade em vendas para todos os tamanhos de negócios.
         </p>
       </div>
