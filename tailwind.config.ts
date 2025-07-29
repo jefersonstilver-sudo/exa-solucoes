@@ -84,10 +84,6 @@ export default {
 					'gradient-end': '#2837a8'    // Final dos gradientes
 				}
 			},
-			fontFamily: {
-				'playfair': ['Playfair Display', 'serif'],
-				'montserrat': ['Montserrat', 'sans-serif'],
-			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
