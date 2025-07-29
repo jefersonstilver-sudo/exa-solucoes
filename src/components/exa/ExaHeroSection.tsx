@@ -42,14 +42,14 @@ const ExaHeroSection: React.FC = () => {
         </div>
         
         {/* Vídeo dos Painéis EXA */}
-        <div className="flex-1 flex justify-center lg:justify-end w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl order-1 lg:order-2">
+        <div className="flex-1 flex justify-center lg:justify-end w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl order-1 lg:order-2">
           <video 
             autoPlay 
             muted 
             loop 
             playsInline
             preload="metadata"
-            className="w-full h-auto rounded-lg shadow-2xl max-h-[60vh] sm:max-h-[70vh] lg:max-h-[80vh] object-cover"
+            className="w-full h-auto rounded-lg shadow-2xl min-h-[400px] max-h-[70vh] sm:max-h-[80vh] lg:max-h-[90vh] object-cover"
           >
             <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
           </video>
