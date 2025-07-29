@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
+import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 
 interface ExaQRCodeWithLogoProps {
   url?: string;
@@ -15,6 +16,17 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [qrCodeGenerated, setQrCodeGenerated] = useState(false);
+  const { isMobile, isTablet, screenWidth } = useMobileBreakpoints();
+
+  // Responsive size calculation
+  const getResponsiveSize = () => {
+    if (screenWidth < 320) return Math.min(size, 120);
+    if (isMobile) return Math.min(size, screenWidth * 0.4);
+    if (isTablet) return Math.min(size, screenWidth * 0.25);
+    return size;
+  };
+
+  const responsiveSize = getResponsiveSize();
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -23,8 +35,8 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
       try {
         // Generate QR code on canvas
         await QRCode.toCanvas(canvasRef.current, url, {
-          width: size,
-          margin: 2,
+          width: responsiveSize,
+          margin: isMobile ? 1 : 2,
           color: {
             dark: '#1a1a2e', // Dark color for QR code
             light: '#ffffff' // Light background
@@ -38,7 +50,7 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
     };
 
     generateQRCode();
-  }, [url, size]);
+  }, [url, responsiveSize]);
 
   return (
     <div className={`relative inline-block ${className}`}>
@@ -54,10 +66,10 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
       {/* Logo Overlay */}
       {qrCodeGenerated && (
         <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-3 shadow-xl z-20 border-2 border-gray-100"
+          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full ${isMobile ? 'p-2' : 'p-3'} shadow-xl z-20 border-2 border-gray-100`}
           style={{
-            width: size * 0.35,
-            height: size * 0.35,
+            width: responsiveSize * 0.35,
+            height: responsiveSize * 0.35,
           }}
         >
           <img 
