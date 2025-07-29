@@ -2,8 +2,8 @@ import React from 'react';
 
 const ExaHeroSection: React.FC = () => {
   return (
-    <section className="relative min-h-[90vh] sm:min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 overflow-hidden">
-      <div className="min-h-[90vh] sm:min-h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto gap-6 sm:gap-8 lg:gap-16 py-6 sm:py-8 lg:py-16">
+    <section className="relative min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 overflow-hidden">
+      <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto gap-8 sm:gap-10 lg:gap-16 py-8 sm:py-12 lg:py-16">
         
         {/* Conteúdo de Texto */}
         <div className="flex-1 text-center lg:text-left text-white w-full lg:max-w-2xl order-2 lg:order-1">
@@ -43,18 +43,16 @@ const ExaHeroSection: React.FC = () => {
         
         {/* Vídeo dos Painéis EXA */}
         <div className="flex-1 flex justify-center lg:justify-end w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl order-1 lg:order-2">
-          <div className="w-full aspect-video min-h-[250px] max-h-[45vh] sm:max-h-[50vh] lg:max-h-[65vh]">
-            <video 
-              autoPlay 
-              muted 
-              loop 
-              playsInline
-              preload="metadata"
-              className="w-full h-full rounded-lg shadow-2xl object-contain"
-            >
-              <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
-            </video>
-          </div>
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            preload="metadata"
+            className="w-full h-auto rounded-lg shadow-2xl max-h-[60vh] sm:max-h-[70vh] lg:max-h-[80vh] object-cover"
+          >
+            <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
+          </video>
         </div>
         
       </div>
