@@ -22,16 +22,16 @@ const ExaFinalCTASection: React.FC = () => {
       </div>
 
       {/* Main content container with card effect */}
-      <div className="relative z-10 max-w-3xl mx-auto">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl drop-shadow-2xl border border-white/20 p-8 sm:p-12 lg:p-16 text-center" style={{boxShadow: '0 35px 60px -12px rgba(0, 0, 0, 0.4), 0 15px 35px -5px rgba(124, 58, 237, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2)'}}>:
+      <div className="relative z-10 max-w-2xl mx-auto">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl drop-shadow-2xl border border-white/20 p-6 sm:p-8 lg:p-10 text-center" style={{boxShadow: '0 35px 60px -12px rgba(0, 0, 0, 0.4), 0 15px 35px -5px rgba(124, 58, 237, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2)'}}>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-orbitron font-black text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-600 bg-clip-text mb-8 sm:mb-12 lg:mb-16 leading-tight tracking-wide drop-shadow-2xl">
             Agende uma Reunião Gratuita
           </h2>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-exo-2 font-light text-slate-700 mb-12 sm:mb-16 lg:mb-20 max-w-5xl mx-auto leading-relaxed tracking-wide">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-exo-2 font-light text-slate-700 mb-12 sm:mb-16 lg:mb-20 max-w-2xl mx-auto leading-relaxed tracking-wide">
             Descubra como a EXA pode revolucionar sua estratégia de marketing para empresários de todos os portes
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center max-w-3xl mx-auto mb-12 sm:mb-16">
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center max-w-2xl mx-auto mb-12 sm:mb-16">
             <button 
               onClick={handleScheduleMeeting}
               className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-exo-2 font-bold px-12 sm:px-14 py-6 sm:py-7 rounded-xl text-base sm:text-lg md:text-xl transition-all duration-300 hover:shadow-xl hover:scale-105 w-full sm:w-auto min-h-[72px] touch-manipulation tracking-wide shadow-2xl hover:shadow-purple-500/30"
