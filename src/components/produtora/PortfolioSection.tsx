@@ -16,6 +16,7 @@ const PortfolioSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -58,88 +59,123 @@ const PortfolioSection = () => {
     }
   };
 
+  const categories = ['Todos', 'Comerciais de TV', 'Institucionais', 'Campanhas', 'Lançamentos', 'Cursos Online'];
+
+  const filteredItems = selectedCategory === 'Todos' 
+    ? portfolioItems 
+    : portfolioItems.filter(item => item.categoria === selectedCategory);
+
+  const getEvocativeDescription = (categoria: string, titulo: string) => {
+    const descriptions = {
+      'Comerciais de TV': 'Imagine sua marca conquistando corações através da tela, com narrativas que fazem o público parar e sentir.',
+      'Institucionais': 'Veja sua empresa ganhando credibilidade e confiança através de vídeos que transmitem seus valores com autenticidade.',
+      'Campanhas': 'Sinta o poder de campanhas que não apenas informam, mas transformam espectadores em defensores da sua marca.',
+      'Lançamentos': 'Desperte a curiosidade e o desejo do seu público com lançamentos que criam expectativa e geram resultados.',
+      'Cursos Online': 'Imagine seu curso online ganhando vida com captações que inspiram alunos e elevam a experiência de aprendizado.'
+    };
+    return descriptions[categoria as keyof typeof descriptions] || 'Descubra como transformamos ideias em experiências visuais impactantes.';
+  };
+
   return (
     <section 
       id="portfolio-section"
       ref={sectionRef}
-      className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-gray-100 to-white"
+      className="h-[80vh] bg-gradient-to-br from-gray-900 to-indexa-purple-dark px-4 flex flex-col"
     >
-      <div className="max-w-6xl mx-auto px-4">
-        <div className={`transform transition-all duration-1000 ${
+      <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
+        <div className={`transform transition-all duration-1000 flex-1 flex flex-col ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da seção */}
-          <div className="text-center mb-12 lg:mb-16">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-indexa-purple mb-6">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
               Portfólio Cinematográfico
               <span className="block text-2xl sm:text-3xl lg:text-4xl text-indexa-mint font-light mt-2">
-                Showroom Exclusivo
+                Narrativas que Impactam
               </span>
             </h2>
           </div>
 
-          {/* Grid de vídeos do portfólio */}
-          {loading ? (
+          {/* Botões de categoria */}
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  selectedCategory === category
+                    ? 'bg-indexa-mint text-indexa-purple-dark'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          {/* Loading state */}
+          {loading && (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indexa-mint"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indexa-mint"></div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              {portfolioItems.map((item, index) => (
+          )}
+
+          {/* Grid de vídeos do portfólio */}
+          {!loading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
+              {filteredItems.slice(0, 6).map((item, index) => (
                 <div
                   key={item.id}
-                  className={`group relative bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform ${
+                  className={`group bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-500 hover:scale-105 transform ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                   }`}
-                  style={{ transitionDelay: `${index * 200}ms` }}
+                  style={{ transitionDelay: `${index * 100}ms` }}
                 >
-                  {/* Container do vídeo */}
-                  <div className="relative aspect-[9/16] overflow-hidden">
+                  {/* Thumbnail do vídeo */}
+                  <div className="relative aspect-video">
                     <video
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      autoPlay
-                      loop
+                      className="w-full h-full object-cover"
                       muted
-                      playsInline
+                      loop
+                      onMouseEnter={(e) => e.currentTarget.play()}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.pause();
+                        e.currentTarget.currentTime = 0;
+                      }}
                     >
                       <source src={item.url_video} type="video/mp4" />
                     </video>
                     
-                    {/* Overlay com play button */}
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                      <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <Play className="w-8 h-8 text-white ml-1" />
+                    {/* Overlay com informações */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                      <div className="text-white">
+                        <span className="inline-block bg-indexa-mint text-indexa-purple-dark text-xs font-semibold px-2 py-1 rounded-full mb-2">
+                          {item.categoria}
+                        </span>
                       </div>
                     </div>
-                    
-                    {/* Badge da categoria */}
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-indexa-purple text-white px-3 py-1 rounded-full text-sm font-medium">
-                        {item.categoria}
-                      </span>
-                    </div>
                   </div>
-
-                  {/* Informações do vídeo */}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-indexa-purple mb-2">{item.titulo}</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">{item.descricao}</p>
+                  
+                  {/* Informações do projeto */}
+                  <div className="p-4">
+                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-indexa-mint transition-colors duration-300">
+                      {item.titulo}
+                    </h3>
+                    <p className="text-white/80 text-sm leading-relaxed">
+                      {getEvocativeDescription(item.categoria, item.titulo)}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* CTA final */}
-          <div className="text-center mt-12 lg:mt-16">
-            <div className="inline-flex items-center bg-gradient-to-r from-indexa-purple to-indexa-mint p-1 rounded-2xl">
-              <div className="bg-white px-8 py-4 rounded-xl">
-                <p className="text-lg font-bold text-indexa-purple">
-                  Cada projeto uma <span className="text-indexa-mint">obra cinematográfica</span>
-                </p>
-              </div>
+          {/* Mensagem quando não há itens */}
+          {!loading && filteredItems.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-white/60">Nenhum item encontrado nesta categoria.</p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>

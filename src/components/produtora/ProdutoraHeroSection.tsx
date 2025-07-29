@@ -23,7 +23,7 @@ const ProdutoraHeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen w-full overflow-hidden pt-20">
+    <section className="relative h-[80vh] w-full overflow-hidden pt-20">
       {/* Vídeo de fundo com blur intenso */}
       <div className="absolute inset-0 z-0">
         <video
@@ -43,13 +43,13 @@ const ProdutoraHeroSection = () => {
         <div className="text-center max-w-4xl mx-auto">
           {/* Frase principal com animação de escrita */}
           <div className={`transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 leading-tight">
-              <span className="block mb-2">Sua marca com</span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 leading-tight font-playfair">
+              <span className="block mb-2">Eleve Sua História a</span>
               <span className="block bg-gradient-to-r from-indexa-mint to-white bg-clip-text text-transparent mb-2">
-                linguagem de cinema.
+                Alturas Cinematográficas
               </span>
-              <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-white/90 font-light">
-                Emocione. Conquiste. Venda.
+              <span className="block text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white/90 font-normal font-montserrat max-w-5xl mx-auto">
+                Transformamos ideias em narrativas que capturam essências, resolvendo dores como vídeos genéricos que não inspiram, criando produções que fazem sentir e impulsionam negócios na fronteira.
               </span>
             </h1>
           </div>

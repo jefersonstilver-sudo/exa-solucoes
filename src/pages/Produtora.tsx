@@ -2,12 +2,11 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import ProdutoraHeroSection from '@/components/produtora/ProdutoraHeroSection';
-import AboutProdutoraSection from '@/components/produtora/AboutProdutoraSection';
-import EstudioSection from '@/components/produtora/EstudioSection';
-import CreativeStudio from '@/components/linkae/CreativeStudio';
-import ProcessoProducaoSection from '@/components/produtora/ProcessoProducaoSection';
+import StorytellingSection from '@/components/produtora/StorytellingSection';
+import DiferenciaisSection from '@/components/produtora/DiferenciaisSection';
 import PortfolioSection from '@/components/produtora/PortfolioSection';
 import CafeManualSection from '@/components/produtora/CafeManualSection';
+import CTAFinalSection from '@/components/produtora/CTAFinalSection';
 import BriefingFormSection from '@/components/produtora/BriefingFormSection';
 
 const Produtora = () => {
@@ -16,31 +15,26 @@ const Produtora = () => {
   return (
     <Layout>
       <div className="relative z-10 overflow-x-hidden w-full">
-        {/* 1. Hero Section */}
+        {/* 1. Hero Section (80vh) */}
         <ProdutoraHeroSection />
         
-        {/* 2. Sobre a Indexa Produtora */}
-        <AboutProdutoraSection />
+        {/* 2. Storytelling Emocional (80vh) */}
+        <StorytellingSection />
         
-        {/* 3. Nosso Estúdio */}
-        <EstudioSection />
+        {/* 3. Diferenciais (Grid 3 Cards, 60vh) */}
+        <DiferenciaisSection />
         
-        {/* 3.5. Studio Criativo Completo */}
-        <CreativeStudio />
-        
-        {/* 4. Como Funciona a Produção */}
-        <ProcessoProducaoSection />
-        
-        {/* 5. Portfólio Cinematográfico */}
+        {/* 4. Portfólio com Botões por Categoria (80vh) */}
         <PortfolioSection />
         
-        {/* 6. Convite ao Café + Manual Gratuito */}
+        {/* 5. Convite ao Café + Manual Gratuito */}
         <CafeManualSection />
+        
+        {/* 6. CTA Final (40vh) */}
+        <CTAFinalSection />
         
         {/* 7. Formulário de Briefing */}
         <BriefingFormSection />
-        
-        {/* REMOVIDO: Qualquer footer adicional - apenas o Layout tem footer */}
       </div>
     </Layout>
   );
