@@ -8,7 +8,7 @@ interface LinkaeHeroProps {
 
 const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
   return (
-    <section className="relative h-[80vh] flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900 overflow-hidden">
+    <section className="relative h-[60vh] md:h-[70vh] flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900 overflow-hidden">
       {/* Background Image - Dynamic Social Networks */}
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1605810230434-7631ac76ec81?ixlib=rb-4.0.3&auto=format&fit=crop&w=2339&q=80')] bg-cover bg-center opacity-20"></div>
       
@@ -30,12 +30,12 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
               e.currentTarget.style.filter = 'drop-shadow(0 0 30px rgba(255, 138, 128, 0.6))';
             }}
           />
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-3">
             Conecte Sua Marca com Estratégias que Inspiram
           </h1>
         </div>
         
-        <p className="text-lg md:text-xl mb-8 max-w-4xl mx-auto opacity-90 leading-relaxed">
+        <p className="text-base md:text-lg mb-6 md:mb-8 max-w-4xl mx-auto opacity-90 leading-relaxed">
           Linkae by Indexa transforma desafios digitais em oportunidades, criando posts que conectam emocionalmente e impulsionam crescimento.
         </p>
         

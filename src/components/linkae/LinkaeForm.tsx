@@ -58,19 +58,19 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
   };
 
   return (
-    <section ref={formRef} className="py-20 bg-gradient-to-b from-white to-gray-50">
+    <section ref={formRef} className="py-12 md:py-16 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Informações da reunião */}
           <div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Agende sua <span className="text-[#00B377]">Estratégia Social</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-lg md:text-xl text-gray-600 mb-6">
               Uma conversa de 30 minutos pode transformar completamente sua presença digital
             </p>
             
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div className="flex items-start space-x-4">
                 <div className="w-8 h-8 bg-[#00FFAB] rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white font-bold">1</span>
@@ -104,8 +104,8 @@ const LinkaeForm: React.FC<LinkaeFormProps> = ({ formRef }) => {
           </div>
 
           {/* Formulário */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nome completo *

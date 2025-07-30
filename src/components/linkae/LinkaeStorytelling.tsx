@@ -3,17 +3,17 @@ import { TrendingUp, Users, Target, Zap, BarChart3, Calendar, MessageCircle } fr
 
 const LinkaeStorytelling: React.FC = () => {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-8 md:py-12 bg-white">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-16 text-gray-900">
+          <h2 className="text-3xl md:text-4xl font-bold mb-8 md:mb-10 text-gray-900">
             A Dor de Todo Empresário: <br />
             <span className="text-[#FF8A80]">"Não Sei o Que Postar"</span>
           </h2>
           
-          <div className="max-w-3xl mx-auto space-y-8">
+          <div className="max-w-3xl mx-auto space-y-6">
             {/* Storytelling Principal */}
-            <div className="text-lg md:text-xl text-gray-700 leading-relaxed space-y-6">
+            <div className="text-base md:text-lg text-gray-700 leading-relaxed space-y-4 md:space-y-6">
               <p>
                 <strong className="text-[#F57C00]">Toda sexta-feira às 17h</strong>, você senta na frente do computador com aquela sensação familiar no estômago. 
                 <span className="text-gray-900 font-semibold"> "Preciso postar alguma coisa..."</span>
@@ -31,8 +31,8 @@ const LinkaeStorytelling: React.FC = () => {
             </div>
 
             {/* Método T.A.C.C.O.H. */}
-            <div className="bg-gray-50 rounded-2xl p-8 mt-16">
-              <h3 className="text-2xl font-bold text-gray-900 mb-8">
+            <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mt-8 md:mt-12">
+              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">
                 Nosso Método T.A.C.C.O.H. Resolve Isso Definitivamente
               </h3>
               
