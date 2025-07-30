@@ -9,7 +9,7 @@ import BenefitsSection from './BenefitsSection';
 import HowItWorksSection from './HowItWorksSection';
 
 
-import ExclusiveBenefitsSection from './ExclusiveBenefitsSection';
+
 import InterestFormSection from './InterestFormSection';
 import FinalCTASection from './FinalCTASection';
 import ChecklistSection from './ChecklistSection';
@@ -67,12 +67,6 @@ const SindicoPageContainer: React.FC = () => {
 
 
 
-      <section 
-        ref={(el) => { sectionsRef.current['exclusive'] = el; }}
-        data-section="exclusive"
-      >
-        <ExclusiveBenefitsSection isVisible={visibleSections['exclusive']} />
-      </section>
 
       <section 
         ref={(el) => { sectionsRef.current['checklist'] = el; }}
