@@ -49,7 +49,7 @@ const ProdutoraHeroSection = () => {
               </span>
             </h1>
             <p className="font-montserrat text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 font-light leading-relaxed max-w-4xl mx-auto px-2">
-              Transformamos ideias em narrativas que capturam essências, resolvendo dores como vídeos genéricos que não inspiram, criando produções que fazem sentir e impulsionam negócios na fronteira.
+              Unimos tecnologia de ponta e criatividade humanizada para criar vídeos profissionais que capturam a essência da sua marca.
             </p>
           </div>
 
