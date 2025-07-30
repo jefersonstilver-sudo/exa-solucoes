@@ -15,6 +15,7 @@ interface PortfolioModalProps {
   onSubmit: (data: any) => Promise<boolean>;
   editingCampanha: CampanhaPortfolio | null;
   existingCategories: string[];
+  selectedCategory?: string;
 }
 
 const PortfolioModal: React.FC<PortfolioModalProps> = ({
@@ -22,7 +23,8 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
   onClose,
   onSubmit,
   editingCampanha,
-  existingCategories
+  existingCategories,
+  selectedCategory = ''
 }) => {
   const [formData, setFormData] = useState({
     titulo: '',
@@ -60,7 +62,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
       setFormData({
         titulo: '',
         cliente: '',
-        categoria: '',
+        categoria: selectedCategory || '', // Pré-selecionar categoria atual
         descricao: '',
         url_video: ''
       });

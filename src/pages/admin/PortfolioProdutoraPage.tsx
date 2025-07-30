@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Video, Search, Filter } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, RefreshCw, Download, X, Edit2, Settings } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePortfolioProdutora } from '@/hooks/usePortfolioProdutora';
-import PortfolioTable from '@/components/admin/portfolio/PortfolioTable';
 import PortfolioModal from '@/components/admin/portfolio/PortfolioModal';
+import CategoryModal from '@/components/admin/portfolio/CategoryModal';
+import VideoGrid from '@/components/admin/portfolio/VideoGrid';
 import { CampanhaPortfolio } from '@/hooks/useCampanhasPortfolio';
+import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const PortfolioProdutoraPage = () => {
   const {
@@ -19,48 +20,107 @@ const PortfolioProdutoraPage = () => {
     refetch
   } = usePortfolioProdutora();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCampanha, setEditingCampanha] = useState<CampanhaPortfolio | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   // Extrair categorias únicas
   const categories = Array.from(new Set(campanhas.map(c => c.categoria))).filter(Boolean);
+  
+  // Definir primeira categoria como selecionada se não houver seleção
+  React.useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0]);
+    }
+  }, [categories, selectedCategory]);
 
-  // Filtrar campanhas
-  const filteredCampanhas = campanhas.filter(campanha => {
-    const matchesSearch = campanha.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         campanha.cliente.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || campanha.categoria === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Filtrar campanhas por categoria selecionada
+  const categoryVideos = campanhas.filter(campanha => campanha.categoria === selectedCategory);
 
   const handleCreateNew = () => {
     setEditingCampanha(null);
-    setIsModalOpen(true);
+    setIsVideoModalOpen(true);
   };
 
-  const handleEdit = (campanha: CampanhaPortfolio) => {
+  const handleEditVideo = (campanha: CampanhaPortfolio) => {
     setEditingCampanha(campanha);
-    setIsModalOpen(true);
+    setIsVideoModalOpen(true);
   };
 
-  const handleModalSubmit = async (data: any) => {
+  const handleVideoModalSubmit = async (data: any) => {
     if (editingCampanha) {
       return await updateCampanha(editingCampanha.id, data);
     } else {
-      return await createCampanha(data);
+      // Se não há categoria selecionada, usar a primeira disponível ou forçar criação
+      const finalData = {
+        ...data,
+        categoria: data.categoria || selectedCategory || 'Geral'
+      };
+      return await createCampanha(finalData);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteVideo = async (id: string) => {
     await deleteCampanha(id);
+  };
+
+  const handleCreateCategory = () => {
+    setEditingCategory(null);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleEditCategory = (categoryName: string) => {
+    setEditingCategory(categoryName);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleCategoryModalSubmit = async (oldName: string | null, newName: string) => {
+    if (oldName) {
+      // Editar categoria existente - atualizar todas as campanhas
+      const videosToUpdate = campanhas.filter(c => c.categoria === oldName);
+      
+      try {
+        await Promise.all(
+          videosToUpdate.map(video => 
+            updateCampanha(video.id, { categoria: newName })
+          )
+        );
+        toast.success('Categoria atualizada com sucesso!');
+        return true;
+      } catch (error) {
+        toast.error('Erro ao atualizar categoria');
+        return false;
+      }
+    } else {
+      // Nova categoria - apenas criar, será usada quando adicionar vídeo
+      toast.success('Categoria criada! Adicione vídeos a ela.');
+      return true;
+    }
+  };
+
+  const handleDeleteCategory = async (categoryName: string) => {
+    const videosInCategory = campanhas.filter(c => c.categoria === categoryName);
+    
+    if (videosInCategory.length > 0) {
+      toast.error(`Esta categoria possui ${videosInCategory.length} vídeo(s). Exclua os vídeos primeiro.`);
+      return;
+    }
+
+    // Se chegou aqui, a categoria está vazia - apenas remove da seleção
+    if (selectedCategory === categoryName) {
+      const remainingCategories = categories.filter(c => c !== categoryName);
+      setSelectedCategory(remainingCategories[0] || '');
+    }
+    
+    toast.success('Categoria removida com sucesso!');
   };
 
   const handleExport = () => {
     const csvContent = [
       ['Título', 'Cliente', 'Categoria', 'Descrição', 'URL do Vídeo', 'Criado em'],
-      ...filteredCampanhas.map(campanha => [
+      ...campanhas.map(campanha => [
         campanha.titulo,
         campanha.cliente,
         campanha.categoria,
@@ -86,9 +146,9 @@ const PortfolioProdutoraPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Portfólio da Produtora</h1>
-          <p className="text-gray-600 mt-2">
-            Gerencie os vídeos do portfólio exibidos na seção institucional.
+          <h1 className="text-3xl font-bold">Portfólio da Produtora</h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie os vídeos organizados por categorias exibidos na página da produtora.
           </p>
         </div>
         
@@ -111,135 +171,158 @@ const PortfolioProdutoraPage = () => {
             <RefreshCw className="h-4 w-4" />
             Atualizar
           </Button>
-          <Button
-            onClick={handleCreateNew}
-            className="flex items-center gap-2 bg-indexa-purple hover:bg-indexa-purple/90"
-          >
-            <Plus className="h-4 w-4" />
-            Adicionar Vídeo
-          </Button>
         </div>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Total de Vídeos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indexa-purple">
-              {campanhas.length}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Categorias
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indexa-purple">
-              {categories.length}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Última Atualização
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-gray-900">
-              {campanhas.length > 0 
-                ? new Date(Math.max(...campanhas.map(c => new Date(c.updated_at).getTime()))).toLocaleDateString('pt-BR')
-                : 'N/A'
-              }
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Video className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-gray-900">Online</span>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats rápidas */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-card rounded-lg p-4 border">
+          <div className="text-2xl font-bold text-primary">{campanhas.length}</div>
+          <div className="text-sm text-muted-foreground">Total de vídeos</div>
+        </div>
+        <div className="bg-card rounded-lg p-4 border">
+          <div className="text-2xl font-bold text-primary">{categories.length}</div>
+          <div className="text-sm text-muted-foreground">Categorias</div>
+        </div>
+        <div className="bg-card rounded-lg p-4 border">
+          <div className="text-2xl font-bold text-primary">{categoryVideos.length}</div>
+          <div className="text-sm text-muted-foreground">Vídeos nesta categoria</div>
+        </div>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros e Busca
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar por título ou cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Filtrar por categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as categorias</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
+      {/* Interface por categorias */}
+      {categories.length > 0 ? (
+        <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+          <div className="flex items-center gap-4 mb-6">
+            <TabsList className="flex-1">
+              {categories.map((category) => (
+                <div key={category} className="flex items-center group">
+                  <TabsTrigger 
+                    value={category} 
+                    className="relative pr-8"
+                  >
                     {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">
+                      {campanhas.filter(c => c.categoria === category).length}
+                    </span>
+                  </TabsTrigger>
+                  
+                  {/* Botões de ação da categoria */}
+                  <div className="flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEditCategory(category)}
+                      className="h-6 w-6 p-0 hover:bg-muted"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir categoria "{category}"</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {campanhas.filter(c => c.categoria === category).length > 0 
+                              ? `Esta categoria possui ${campanhas.filter(c => c.categoria === category).length} vídeo(s). Exclua os vídeos primeiro para poder remover a categoria.`
+                              : 'Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.'
+                            }
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteCategory(category)}
+                            disabled={campanhas.filter(c => c.categoria === category).length > 0}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </TabsList>
+            
+            <Button 
+              onClick={handleCreateCategory}
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Nova Categoria
+            </Button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Tabela de Vídeos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Vídeos do Portfólio ({filteredCampanhas.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PortfolioTable
-            campanhas={filteredCampanhas}
-            loading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        </CardContent>
-      </Card>
+          {/* Conteúdo da categoria selecionada */}
+          {categories.map((category) => (
+            <TabsContent key={category} value={category} className="mt-0">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
+                  {category} ({categoryVideos.length} vídeos)
+                </h2>
+                <Button 
+                  onClick={handleCreateNew}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar Vídeo
+                </Button>
+              </div>
+              
+              <VideoGrid
+                videos={categoryVideos}
+                loading={loading}
+                onEdit={handleEditVideo}
+                onDelete={handleDeleteVideo}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
+      ) : (
+        /* Estado vazio */
+        <div className="text-center py-12 bg-card rounded-lg border border-dashed">
+          <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">Nenhuma categoria encontrada</h3>
+          <p className="text-muted-foreground mb-6">
+            Comece criando uma categoria para organizar seus vídeos do portfólio.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={handleCreateCategory} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Criar Primeira Categoria
+            </Button>
+          </div>
+        </div>
+      )}
 
-      {/* Modal de Criação/Edição */}
+      {/* Modais */}
       <PortfolioModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleModalSubmit}
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        onSubmit={handleVideoModalSubmit}
         editingCampanha={editingCampanha}
+        existingCategories={categories}
+        selectedCategory={selectedCategory}
+      />
+
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        onSubmit={handleCategoryModalSubmit}
+        editingCategory={editingCategory}
         existingCategories={categories}
       />
     </div>
