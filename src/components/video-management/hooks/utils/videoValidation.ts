@@ -12,42 +12,47 @@ export const isValidVideoUrl = (url: string) => {
   try {
     const urlObj = new URL(url);
     
-    // CORREÇÃO: Aceitar especificamente URLs do Supabase Storage
-    const isSupabaseStorage = url.includes('supabase.co/storage/v1/object/public/');
+    // ACEITAR APENAS URLs do Supabase Storage
+    const isSupabasePublic = url.includes('supabase.co/storage/v1/object/public/');
+    const isSupabaseSign = url.includes('supabase.co/storage/v1/object/sign/');
     const isHttps = urlObj.protocol === 'https:';
-    const hasVideoExtension = /\.(mp4|webm|ogg|avi|mov|mkv|m4v)(\?.*)?$/i.test(url);
+    const isSupabaseDomain = urlObj.hostname.includes('supabase.co');
     
     // Log detalhado para debug
     console.log('🔍 [VALIDATION] Análise da URL:', {
       url,
-      isSupabaseStorage,
+      isSupabasePublic,
+      isSupabaseSign,
       isHttps,
-      hasVideoExtension,
+      isSupabaseDomain,
       domain: urlObj.hostname,
       pathname: urlObj.pathname
     });
     
-    if (isSupabaseStorage && isHttps) {
-      console.log('✅ [VALIDATION] URL válida do Supabase Storage:', url);
+    // Aceitar URLs públicas do Supabase Storage
+    if (isSupabasePublic && isHttps && isSupabaseDomain) {
+      console.log('✅ [VALIDATION] URL pública válida do Supabase Storage:', url);
       return true;
     }
     
-    if (isHttps && hasVideoExtension) {
-      console.log('✅ [VALIDATION] URL de vídeo válida:', url);
+    // Aceitar URLs assinadas do Supabase Storage (com token)
+    if (isSupabaseSign && isHttps && isSupabaseDomain) {
+      console.log('✅ [VALIDATION] URL assinada válida do Supabase Storage:', url);
       return true;
     }
     
-    // FALLBACK: Se for HTTPS e do domínio Supabase, considerar válida mesmo sem extensão
-    if (isHttps && url.includes('supabase.co') && url.includes('storage')) {
-      console.log('✅ [VALIDATION] URL Supabase aceita (fallback):', url);
+    // FALLBACK: Qualquer URL do domínio Supabase com storage
+    if (isHttps && isSupabaseDomain && url.includes('storage')) {
+      console.log('✅ [VALIDATION] URL Supabase Storage aceita (fallback):', url);
       return true;
     }
     
-    console.log('⚠️ [VALIDATION] URL não reconhecida como vídeo válido:', {
+    console.log('❌ [VALIDATION] URL rejeitada - apenas URLs do Supabase Storage são aceitas:', {
       url,
-      isSupabaseStorage,
+      isSupabasePublic,
+      isSupabaseSign,
       isHttps,
-      hasVideoExtension
+      isSupabaseDomain
     });
     return false;
     
