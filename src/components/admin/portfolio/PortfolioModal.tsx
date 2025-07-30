@@ -245,7 +245,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
                 id="url_video"
                 value={formData.url_video}
                 onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder="https://youtube.com/watch?v=... ou https://drive.google.com/..."
+                placeholder="https://[projeto].supabase.co/storage/... (apenas links Supabase)"
                 required
               />
               <Button
@@ -293,16 +293,6 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
             </p>
           </div>
 
-          {/* Instruções */}
-          <Alert>
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Dicas para URLs:</strong><br />
-              • <strong>Supabase Storage:</strong> Use apenas URLs do seu storage do Supabase<br />
-              • <strong>Formato aceito:</strong> https://[projeto].supabase.co/storage/v1/object/...<br />
-              • <strong>URLs assinadas:</strong> URLs com tokens também são aceitas
-            </AlertDescription>
-          </Alert>
 
           {/* Botões */}
           <div className="flex justify-end gap-2 pt-4">
