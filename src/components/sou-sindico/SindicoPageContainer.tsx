@@ -2,13 +2,13 @@
 import React from 'react';
 import { useSindicoIntersectionObserver } from '@/hooks/sou-sindico/useSindicoIntersectionObserver';
 import { useSindicoForm } from '@/hooks/sou-sindico/useSindicoForm';
-import { benefits, howItWorksSteps, testimonials } from './SindicoPageData';
+import { benefits, howItWorksSteps } from './SindicoPageData';
 import HeroSection from './HeroSection';
 import AboutSection from './AboutSection';
 import BenefitsSection from './BenefitsSection';
 import HowItWorksSection from './HowItWorksSection';
 import WhatsAppSection from './WhatsAppSection';
-import TestimonialsSection from './TestimonialsSection';
+
 import ExclusiveBenefitsSection from './ExclusiveBenefitsSection';
 import InterestFormSection from './InterestFormSection';
 import FinalCTASection from './FinalCTASection';
@@ -72,12 +72,6 @@ const SindicoPageContainer: React.FC = () => {
         <WhatsAppSection isVisible={visibleSections['whatsapp']} />
       </section>
 
-      <section 
-        ref={(el) => { sectionsRef.current['testimonials'] = el; }}
-        data-section="testimonials"
-      >
-        <TestimonialsSection isVisible={visibleSections['testimonials']} testimonials={testimonials} />
-      </section>
 
       <section 
         ref={(el) => { sectionsRef.current['exclusive'] = el; }}
