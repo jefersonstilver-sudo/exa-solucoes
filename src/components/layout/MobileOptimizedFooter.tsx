@@ -3,68 +3,57 @@ import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
-
 interface AccordionSectionProps {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
 }
-
-const AccordionSection: React.FC<AccordionSectionProps> = ({ 
-  title, 
-  children, 
-  defaultOpen = false 
+const AccordionSection: React.FC<AccordionSectionProps> = ({
+  title,
+  children,
+  defaultOpen = false
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="border-b border-white/20 last:border-b-0">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-4 px-1 text-left hover:bg-white/5 transition-colors duration-200"
-      >
+  return <div className="border-b border-white/20 last:border-b-0">
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between py-4 px-1 text-left hover:bg-white/5 transition-colors duration-200">
         <h3 className="text-lg font-semibold text-white">{title}</h3>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.div animate={{
+        rotate: isOpen ? 180 : 0
+      }} transition={{
+        duration: 0.2
+      }}>
           <ChevronDown className="h-5 w-5 text-white/80" />
         </motion.div>
       </button>
       
       <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
+        {isOpen && <motion.div initial={{
+        height: 0,
+        opacity: 0
+      }} animate={{
+        height: "auto",
+        opacity: 1
+      }} exit={{
+        height: 0,
+        opacity: 0
+      }} transition={{
+        duration: 0.3,
+        ease: "easeInOut"
+      }} className="overflow-hidden">
             <div className="pb-4 px-1">
               {children}
             </div>
-          </motion.div>
-        )}
+          </motion.div>}
       </AnimatePresence>
-    </div>
-  );
+    </div>;
 };
-
 const MobileOptimizedFooter = () => {
   console.log('🦶 Footer: Renderizando MobileOptimizedFooter ÚNICO - PREVENINDO DUPLICAÇÃO');
-  
-  return (
-    <footer 
-      id="unique-indexa-footer" 
-      className="bg-indexa-purple-dark text-white w-full"
-      style={{ 
-        position: 'relative',
-        zIndex: 9999,
-        display: 'block'
-      }}
-      data-footer-debug="single-footer"
-    >
+  return <footer id="unique-indexa-footer" className="bg-indexa-purple-dark text-white w-full" style={{
+    position: 'relative',
+    zIndex: 9999,
+    display: 'block'
+  }} data-footer-debug="single-footer">
       <div className="container mx-auto px-4 lg:px-6">
         
         {/* Desktop Layout - 3 columns */}
@@ -97,7 +86,7 @@ const MobileOptimizedFooter = () => {
               <ul className="space-y-4">
                 <li className="flex items-center">
                   <Phone className="h-4 w-4 mr-2 text-white/80" />
-                  <span className="text-base text-white/80">(45) 99125-0093</span>
+                  <span className="text-base text-white/80">+55 45 9107-1566</span>
                 </li>
                 <li className="flex items-center">
                   <Mail className="h-4 w-4 mr-2 text-white/80" />
@@ -119,12 +108,7 @@ const MobileOptimizedFooter = () => {
           {/* Mobile Logo Section */}
           <div className="text-center mb-8 pb-6 border-b border-white/20">
             <div className="flex items-center justify-center space-x-3 mb-4">
-              <UnifiedLogo 
-                size="custom"
-                linkTo="/"
-                variant="light"
-                className="w-10 h-10"
-              />
+              <UnifiedLogo size="custom" linkTo="/" variant="light" className="w-10 h-10" />
               <span className="text-xl font-bold">INDEXA</span>
             </div>
             <p className="text-white/80 text-sm leading-relaxed px-4">
@@ -146,20 +130,14 @@ const MobileOptimizedFooter = () => {
 
             <AccordionSection title="Contato">
               <div className="space-y-4">
-                <a 
-                  href="tel:+5545991250093"
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
-                >
+                <a href="tel:+5545991250093" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
                   <div className="w-8 h-8 bg-indexa-mint/20 rounded-full flex items-center justify-center">
                     <Phone className="h-4 w-4 text-indexa-mint" />
                   </div>
                   <span className="text-white/90">(45) 99125-0093</span>
                 </a>
                 
-                <a 
-                  href="mailto:contato@indexamidia.com"
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
-                >
+                <a href="mailto:contato@indexamidia.com" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
                   <div className="w-8 h-8 bg-indexa-mint/20 rounded-full flex items-center justify-center">
                     <Mail className="h-4 w-4 text-indexa-mint" />
                   </div>
@@ -188,8 +166,6 @@ const MobileOptimizedFooter = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default MobileOptimizedFooter;
