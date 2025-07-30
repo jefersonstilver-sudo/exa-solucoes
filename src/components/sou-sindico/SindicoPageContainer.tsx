@@ -7,7 +7,7 @@ import HeroSection from './HeroSection';
 import AboutSection from './AboutSection';
 import BenefitsSection from './BenefitsSection';
 import HowItWorksSection from './HowItWorksSection';
-import WhatsAppSection from './WhatsAppSection';
+
 
 import ExclusiveBenefitsSection from './ExclusiveBenefitsSection';
 import InterestFormSection from './InterestFormSection';
@@ -65,12 +65,6 @@ const SindicoPageContainer: React.FC = () => {
         <HowItWorksSection isVisible={visibleSections['how-it-works']} steps={howItWorksSteps} />
       </section>
 
-      <section 
-        ref={(el) => { sectionsRef.current['whatsapp'] = el; }}
-        data-section="whatsapp"
-      >
-        <WhatsAppSection isVisible={visibleSections['whatsapp']} />
-      </section>
 
 
       <section 
