@@ -30,7 +30,7 @@ const CTAFinalSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-screen sm:min-h-[80vh] md:min-h-[60vh] lg:min-h-[50vh] bg-gradient-to-br from-indexa-purple via-indexa-purple-dark to-black flex items-center relative overflow-hidden py-8 sm:py-12 md:py-16"
+      className="min-h-[55vh] sm:min-h-[50vh] md:min-h-[45vh] bg-gradient-to-br from-indexa-purple via-indexa-purple-dark to-black flex items-center relative overflow-hidden py-16 sm:py-20 md:py-24"
     >
       {/* Background Effects */}
       <div className="absolute inset-0">

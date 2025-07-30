@@ -130,14 +130,14 @@ const BriefingFormSection = () => {
     <section 
       id="briefing-section"
       ref={sectionRef}
-      className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-gray-50 to-white"
+      className="py-20 sm:py-24 md:py-28 bg-gradient-to-br from-gray-50 to-white"
     >
       <div className="max-w-2xl mx-auto px-4">
         <div className={`transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da seção */}
-          <div className="text-center mb-8 sm:mb-12">
+          <div className="text-center mb-10 sm:mb-14 lg:mb-16">
             <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-bold text-indexa-purple mb-4 sm:mb-6 px-4">
               Formulário de Briefing
               <span className="block text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl text-indexa-mint font-light mt-2">

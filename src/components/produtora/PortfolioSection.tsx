@@ -87,14 +87,14 @@ const PortfolioSection = () => {
     <section 
       id="portfolio-section"
       ref={sectionRef}
-      className="min-h-[100vh] sm:min-h-[90vh] md:min-h-[80vh] bg-gradient-to-br from-gray-100 to-white flex flex-col py-12 sm:py-16 md:py-8"
+      className="min-h-[85vh] sm:min-h-[80vh] md:min-h-[75vh] bg-gradient-to-br from-gray-100 to-white flex flex-col py-20 sm:py-24 md:py-28"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col">
         <div className={`transform transition-all duration-1000 flex-1 flex flex-col ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
         }`}>
           {/* Título da seção */}
-          <div className="text-center mb-6 sm:mb-8">
+          <div className="text-center mb-8 sm:mb-10 lg:mb-12">
             <h2 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-bold text-indexa-purple mb-3 sm:mb-4">
               Portfólio Cinematográfico
             </h2>
@@ -104,7 +104,7 @@ const PortfolioSection = () => {
           </div>
 
           {/* Botões de Filtro */}
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 lg:gap-4 mb-6 sm:mb-8 px-2">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 lg:gap-4 mb-8 sm:mb-10 lg:mb-12 px-2">
             {categories.map((category) => (
               <button
                 key={category}

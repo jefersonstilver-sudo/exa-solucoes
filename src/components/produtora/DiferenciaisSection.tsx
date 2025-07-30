@@ -35,7 +35,7 @@ const DiferenciaisSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-[80vh] sm:min-h-[70vh] md:h-[60vh] bg-gradient-to-br from-white to-gray-100 flex items-center pt-24 sm:pt-32 lg:pt-40 py-12 sm:py-16"
+      className="min-h-[75vh] sm:min-h-[70vh] md:min-h-[65vh] bg-gradient-to-br from-white to-gray-100 flex items-center py-20 sm:py-24 md:py-28"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className={`transform transition-all duration-1000 ${
@@ -43,7 +43,7 @@ const DiferenciaisSection = () => {
         }`}>
           
           {/* Header */}
-          <div className="text-center mb-16 sm:mb-20 lg:mb-24 relative z-20">
+          <div className="text-center mb-12 sm:mb-16 lg:mb-20 relative z-20">
             <h2 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-bold text-indexa-purple mb-4 sm:mb-6">
               Nossos <span className="text-indexa-mint">Diferenciais</span>
             </h2>
@@ -53,7 +53,7 @@ const DiferenciaisSection = () => {
           </div>
 
           {/* Grid de 3 Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
             
             {/* Card 1: Vídeos Cinematográficos */}
             <div className={`transform transition-all duration-1000 delay-200 ${

@@ -25,7 +25,7 @@ const StorytellingSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-[100vh] sm:min-h-[90vh] md:h-[80vh] bg-gradient-to-br from-gray-900 via-indexa-purple-dark to-black flex items-center relative overflow-hidden py-12 sm:py-16 md:py-0"
+      className="min-h-[85vh] sm:min-h-[80vh] md:min-h-[75vh] bg-gradient-to-br from-gray-900 via-indexa-purple-dark to-black flex items-center relative overflow-hidden pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 md:pb-24"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
@@ -38,18 +38,18 @@ const StorytellingSection = () => {
         }`}>
           
           {/* Header */}
-          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-            <div className="flex items-center justify-center mb-3 sm:mb-4">
+          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+            <div className="flex items-center justify-center mb-4 sm:mb-6">
               <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-indexa-mint mr-2 sm:mr-3" />
               <span className="font-montserrat text-indexa-mint text-base sm:text-lg font-medium">Foz do Iguaçu</span>
             </div>
-            <h2 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+            <h2 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 sm:mb-8 leading-tight">
               Nascida na <span className="text-indexa-mint">Fronteira</span>
             </h2>
           </div>
 
           {/* Main Story */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 sm:gap-12 lg:gap-16 items-center">
             
             {/* Story Text */}
             <div className="space-y-6 sm:space-y-8 order-2 md:order-1">
