@@ -43,7 +43,7 @@ const DiferenciaisSection = () => {
         }`}>
           
           {/* Header */}
-          <div className="text-center mb-8 sm:mb-10 lg:mb-12">
+          <div className="text-center mb-12 sm:mb-16 lg:mb-20 relative z-20">
             <h2 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-bold text-indexa-purple mb-3 sm:mb-4">
               Nossos <span className="text-indexa-mint">Diferenciais</span>
             </h2>
