@@ -26,17 +26,26 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
       id="formulario" 
       className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
     >
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Formulário de Interesse
-            </span>
-          </h2>
-          <p className="text-lg text-gray-300">Solicite uma avaliação do seu prédio.</p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="bg-gray-900/50 backdrop-blur-sm p-8 rounded-3xl border border-purple-500/20">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Column - Text Content */}
+          <div className="space-y-6">
+            <h2 className="text-4xl md:text-5xl font-bold">
+              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                Agende Sua Instalação Gratuita
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300">
+              Modernize seu prédio com tecnologia + WhatsApp, sem custo ou manutenção.
+            </p>
+            <p className="text-lg text-gray-400">
+              Preencha o formulário e nossa equipe entrará em contato via WhatsApp para agendamento.
+            </p>
+          </div>
+          
+          {/* Right Column - Form */}
+          <div>
+            <form onSubmit={handleSubmit} className="bg-gray-900/50 backdrop-blur-sm p-8 rounded-3xl border border-purple-500/20">
           <div className="grid gap-6">
             <Input
               placeholder="Nome completo do síndico"
@@ -110,10 +119,12 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
             </Button>
           </div>
           
-          <p className="text-center text-sm text-gray-400 mt-6">
-            *A Indexa avalia e entra em contato apenas com os prédios selecionados via WhatsApp
-          </p>
-        </form>
+              <p className="text-center text-sm text-gray-400 mt-6">
+                *A Indexa avalia e entra em contato apenas com os prédios selecionados via WhatsApp
+              </p>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
   );
