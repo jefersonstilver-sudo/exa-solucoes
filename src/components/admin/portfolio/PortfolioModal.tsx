@@ -83,21 +83,28 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
       // Validação básica de URL
       new URL(url);
 
-      // Verificar se é URL de vídeo suportada
-      const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
-      const isGoogleDrive = url.includes('drive.google.com');
-      const isVimeo = url.includes('vimeo.com');
+      // Verificar se é URL do Supabase Storage
+      const isSupabasePublic = url.includes('supabase.co/storage/v1/object/public/');
+      const isSupabaseSign = url.includes('supabase.co/storage/v1/object/sign/');
+      const isSupabaseDomain = url.includes('supabase.co');
+      const hasStorage = url.includes('storage');
 
-      if (isYoutube || isGoogleDrive || isVimeo) {
+      if ((isSupabasePublic || isSupabaseSign) && isSupabaseDomain) {
         setUrlValidation({
           isValid: true,
-          message: `URL válida (${isYoutube ? 'YouTube' : isGoogleDrive ? 'Google Drive' : 'Vimeo'})`,
+          message: 'URL válida do Supabase Storage',
+          isValidating: false
+        });
+      } else if (isSupabaseDomain && hasStorage) {
+        setUrlValidation({
+          isValid: true,
+          message: 'URL válida do Supabase Storage',
           isValidating: false
         });
       } else {
         setUrlValidation({
           isValid: false,
-          message: 'URL não reconhecida. Use YouTube, Vimeo ou Google Drive.',
+          message: 'URL não reconhecida. Use apenas URLs do Supabase Storage.',
           isValidating: false
         });
       }
@@ -291,9 +298,9 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
               <strong>Dicas para URLs:</strong><br />
-              • <strong>Google Drive:</strong> Compartilhe o arquivo e cole o link direto<br />
-              • <strong>YouTube:</strong> Use a URL completa da página do vídeo<br />
-              • <strong>Vimeo:</strong> Use a URL completa da página do vídeo
+              • <strong>Supabase Storage:</strong> Use apenas URLs do seu storage do Supabase<br />
+              • <strong>Formato aceito:</strong> https://[projeto].supabase.co/storage/v1/object/...<br />
+              • <strong>URLs assinadas:</strong> URLs com tokens também são aceitas
             </AlertDescription>
           </Alert>
 
