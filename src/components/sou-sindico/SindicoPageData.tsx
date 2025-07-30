@@ -3,13 +3,10 @@ import { MessageSquare, Zap, Users, CheckCircle, TrendingUp, Award, Bot, Buildin
 import { Benefit, HowItWorksStep, Testimonial } from './types';
 
 export const benefits: Benefit[] = [
-  { icon: MessageSquare, title: 'Comunicação via WhatsApp', desc: 'Gerencie tudo direto pelo WhatsApp, sem complicação' },
-  { icon: Bot, title: 'IA Especializada', desc: 'Assistente inteligente para facilitar suas tarefas' },
-  { icon: Zap, title: 'Avisos em 20 minutos', desc: 'Publique comunicados instantaneamente' },
-  { icon: TrendingUp, title: 'Zero papel e burocracia', desc: 'Gestão 100% digital e sustentável' },
-  { icon: Award, title: 'Modernização do prédio', desc: 'Valorize seu condomínio com tecnologia' },
-  { icon: Users, title: 'Suporte 24h', desc: 'Assistência técnica sempre disponível' },
-  { icon: CheckCircle, title: 'Sem custos de instalação', desc: 'Implementação gratuita e manutenção incluída' }
+  { icon: MessageSquare, title: 'Comunicação Inteligente via WhatsApp', desc: 'Assistente IA integrado ao WhatsApp para gestão sem complicação' },
+  { icon: Zap, title: 'Avisos em 20 minutos', desc: 'Publique comunicados instantaneamente no elevador' },
+  { icon: TrendingUp, title: 'Zero papel e burocracia', desc: 'Gestão 100% digital que economiza tempo e recursos' },
+  { icon: CheckCircle, title: 'Sem custos de instalação', desc: 'Implementação gratuita e manutenção incluída sempre' }
 ];
 
 export const howItWorksSteps: HowItWorksStep[] = [

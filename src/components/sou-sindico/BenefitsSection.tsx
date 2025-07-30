@@ -21,7 +21,7 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ isVisible, benefits }
           <strong>Sinta a diferença no dia a dia</strong> com uma ferramenta gratuita que engaja moradores e moderniza seu condomínio. Altere módulos ou crie avisos 3D personalizados via chat simples, transformando desafios em conexões eficientes.
         </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {benefits.map((benefit, index) => {
             const IconComponent = benefit.icon;
             
