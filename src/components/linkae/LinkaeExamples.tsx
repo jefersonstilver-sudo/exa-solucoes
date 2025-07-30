@@ -45,43 +45,51 @@ const LinkaeExamples: React.FC = () => {
         <div className="grid md:grid-cols-3 gap-8">
           {examples.map((example, index) => {
             const IconComponent = example.icon;
+            const cardColors = [
+              'bg-gradient-to-br from-[#FF8A80]/10 to-[#FF8A80]/5 border-[#FF8A80]/20',
+              'bg-gradient-to-br from-[#F57C00]/10 to-[#F57C00]/5 border-[#F57C00]/20',
+              'bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20'
+            ];
+            const iconColors = ['text-[#FF8A80]', 'text-[#F57C00]', 'text-purple-500'];
+            const iconBgs = ['bg-[#FF8A80]/10', 'bg-[#F57C00]/10', 'bg-purple-500/10'];
+            
             return (
-              <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div key={index} className={`${cardColors[index]} border-2 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
                 <div className="flex items-center mb-6">
-                  <div className="p-3 rounded-full bg-gray-100">
-                    <IconComponent className="w-6 h-6 text-[#FF8A80]" />
+                  <div className={`p-3 rounded-full ${iconBgs[index]}`}>
+                    <IconComponent className={`w-6 h-6 ${iconColors[index]}`} />
                   </div>
                   <div className="ml-4">
                     <h3 className="text-xl font-bold text-gray-900">{example.business}</h3>
-                    <p className="text-sm text-gray-500">{example.location}</p>
+                    <p className="text-sm text-gray-500 font-medium">{example.location}</p>
                   </div>
                 </div>
                 
                 <div className="space-y-6">
-                  <div>
+                  <div className="bg-red-50 rounded-lg p-4 border-l-4 border-red-400">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 rounded-full bg-red-400 mr-2"></div>
-                      <span className="text-sm font-semibold text-gray-600">ANTES</span>
+                      <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                      <span className="text-sm font-bold text-red-700">ANTES</span>
                     </div>
-                    <p className="text-gray-700 text-sm leading-relaxed pl-5">
+                    <p className="text-gray-800 text-sm leading-relaxed font-medium pl-5">
                       {example.before}
                     </p>
                   </div>
                   
-                  <div>
+                  <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-400">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 rounded-full bg-green-400 mr-2"></div>
-                      <span className="text-sm font-semibold text-gray-600">DEPOIS</span>
+                      <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                      <span className="text-sm font-bold text-green-700">DEPOIS</span>
                     </div>
-                    <p className="text-gray-700 text-sm leading-relaxed pl-5">
+                    <p className="text-gray-800 text-sm leading-relaxed font-medium pl-5">
                       {example.after}
                     </p>
                   </div>
                   
-                  <div className="pt-4 border-t border-gray-100">
+                  <div className={`pt-4 pb-2 px-4 rounded-lg ${iconBgs[index]} border border-current/20`}>
                     <div className="flex items-center justify-center">
-                      <BarChart3 className="w-4 h-4 text-[#F57C00] mr-2" />
-                      <span className="text-sm font-bold text-[#F57C00]">
+                      <BarChart3 className={`w-5 h-5 ${iconColors[index]} mr-2`} />
+                      <span className={`text-sm font-bold ${iconColors[index]}`}>
                         {example.metrics}
                       </span>
                     </div>
