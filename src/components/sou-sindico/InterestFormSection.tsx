@@ -45,13 +45,13 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
           
           {/* Right Column - Form */}
           <div>
-            <form onSubmit={handleSubmit} className="bg-gray-800/60 backdrop-blur-sm p-8 rounded-3xl border border-purple-400/30">
+            <form onSubmit={handleSubmit} className="bg-gray-700/40 backdrop-blur-sm p-8 rounded-3xl border border-purple-400/50 shadow-2xl">
           <div className="grid gap-6">
             <Input
               placeholder="Nome completo do síndico"
               value={formData.nomeCompleto}
               onChange={(e) => setFormData({...formData, nomeCompleto: e.target.value})}
-              className="bg-white border-purple-400/30 text-black placeholder-gray-600"
+              className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
               required
             />
             
@@ -59,7 +59,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
               placeholder="Nome do prédio"
               value={formData.nomePredio}
               onChange={(e) => setFormData({...formData, nomePredio: e.target.value})}
-              className="bg-white border-purple-400/30 text-black placeholder-gray-600"
+              className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
               required
             />
             
@@ -67,7 +67,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
               placeholder="Endereço completo"
               value={formData.endereco}
               onChange={(e) => setFormData({...formData, endereco: e.target.value})}
-              className="bg-white border-purple-400/30 text-black placeholder-gray-600"
+              className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
               required
             />
             
@@ -77,7 +77,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
                 type="number"
                 value={formData.numeroAndares}
                 onChange={(e) => setFormData({...formData, numeroAndares: e.target.value})}
-                className="bg-white border-purple-400/30 text-black placeholder-gray-600"
+                className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
                 required
               />
               
@@ -86,7 +86,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
                 type="number"
                 value={formData.numeroUnidades}
                 onChange={(e) => setFormData({...formData, numeroUnidades: e.target.value})}
-                className="bg-white border-purple-400/30 text-black placeholder-gray-600"
+                className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
                 required
               />
             </div>
@@ -96,7 +96,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
-              className="bg-white border-purple-400/30 text-black placeholder-gray-600"
+              className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
               required
             />
             
@@ -105,7 +105,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
               type="tel"
               value={formData.celular}
               onChange={(e) => setFormData({...formData, celular: e.target.value})}
-              className="bg-white border-purple-400/30 text-black placeholder-gray-600"
+              className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
               required
             />
             
