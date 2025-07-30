@@ -140,44 +140,66 @@ const PortfolioSection = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {filteredItems.map((item, index) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleVideoClick(item)}
-                  className={`group relative bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform cursor-pointer ${
-                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                  }`}
-                  style={{ transitionDelay: `${index * 200}ms` }}
-                >
-                  {/* Container do vídeo */}
-                  <div className="relative aspect-[9/16] overflow-hidden bg-gray-200">
-                    <video
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
+              <div className="relative">
+                <div className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory">
+                  {filteredItems.slice(0, 3).map((item, index) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleVideoClick(item)}
+                      className={`group relative bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform cursor-pointer flex-shrink-0 w-72 sm:w-80 md:w-96 snap-start ${
+                        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                      }`}
+                      style={{ transitionDelay: `${index * 200}ms` }}
                     >
-                      <source src={item.url_video} type="video/mp4" />
-                    </video>
-                    
-                    {/* Overlay com play button */}
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white ml-1" />
+                      {/* Container do vídeo */}
+                      <div className="relative aspect-[9/16] overflow-hidden bg-gray-200">
+                        <video
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                        >
+                          <source src={item.url_video} type="video/mp4" />
+                        </video>
+                        
+                        {/* Overlay com play button */}
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white ml-1" />
+                          </div>
+                        </div>
+                        
+                        {/* Badge da categoria */}
+                        <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
+                          <span className="bg-indexa-purple text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
+                            {item.categoria}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    
-                    {/* Badge da categoria */}
-                    <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
-                      <span className="bg-indexa-purple text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
-                        {item.categoria}
-                      </span>
+                  ))}
+                  
+                  {/* Indicador de mais vídeos */}
+                  {filteredItems.length > 3 && (
+                    <div className="flex-shrink-0 w-16 flex items-center justify-center">
+                      <div className="bg-indexa-purple/10 rounded-full p-4 border-2 border-dashed border-indexa-purple">
+                        <span className="text-indexa-purple font-medium text-sm">
+                          +{filteredItems.length - 3}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-                ))}
+                
+                {/* Scroll indicator */}
+                {filteredItems.length > 3 && (
+                  <div className="text-center mt-4">
+                    <p className="text-sm text-gray-500">
+                      ← Deslize para ver mais vídeos →
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
