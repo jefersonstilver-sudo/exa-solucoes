@@ -51,7 +51,7 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ isVisible }) => {
         
         <div className="mt-16 p-8 bg-gradient-to-br from-green-900/30 to-blue-900/30 rounded-3xl border border-green-500/30">
           <h3 className="text-2xl font-bold text-green-400 mb-4">
-            ✅ Seu prédio se encaixa perfeitamente!
+            Seu prédio se encaixa perfeitamente!
           </h3>
           <p className="text-lg text-gray-300">
             Parabéns! Você está qualificado para receber a instalação gratuita dos painéis digitais.
