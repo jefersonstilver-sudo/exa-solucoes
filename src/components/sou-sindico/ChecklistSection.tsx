@@ -33,7 +33,9 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ isVisible }) => {
               className={`bg-gray-900/50 backdrop-blur-sm p-8 rounded-2xl border border-green-500/30 transform transition-all duration-500 delay-${index * 100} hover:scale-105 hover:border-green-400/50`}
             >
               <div className="flex items-start space-x-4">
-                <CheckCircle className="w-8 h-8 text-green-400 flex-shrink-0 mt-1" />
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
                 <div className="text-left">
                   <h3 className="text-lg font-bold text-white mb-2">
                     {requirement.text}
