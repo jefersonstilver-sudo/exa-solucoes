@@ -46,12 +46,12 @@ const LinkaeExamples: React.FC = () => {
           {examples.map((example, index) => {
             const IconComponent = example.icon;
             const cardColors = [
-              'bg-gradient-to-br from-[#FF8A80]/10 to-[#FF8A80]/5 border-[#FF8A80]/20',
-              'bg-gradient-to-br from-[#F57C00]/10 to-[#F57C00]/5 border-[#F57C00]/20',
-              'bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20'
+              'bg-gradient-to-br from-[#FF8A80]/30 to-[#FF8A80]/20 border-[#FF8A80]/50',
+              'bg-gradient-to-br from-[#F57C00]/30 to-[#F57C00]/20 border-[#F57C00]/50',
+              'bg-gradient-to-br from-purple-500/30 to-purple-500/20 border-purple-500/50'
             ];
             const iconColors = ['text-[#FF8A80]', 'text-[#F57C00]', 'text-purple-500'];
-            const iconBgs = ['bg-[#FF8A80]/10', 'bg-[#F57C00]/10', 'bg-purple-500/10'];
+            const iconBgs = ['bg-[#FF8A80]/20', 'bg-[#F57C00]/20', 'bg-purple-500/20'];
             
             return (
               <div key={index} className={`${cardColors[index]} border-2 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
