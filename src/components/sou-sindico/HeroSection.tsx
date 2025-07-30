@@ -26,7 +26,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
   }, []);
 
   return (
-    <section className="relative min-h-[calc(100vh-2rem)] md:min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pt-24 md:pt-32 pb-20 overflow-hidden">
+    <section className="relative min-h-[80vh] flex items-center justify-center px-4 pt-24 md:pt-32 pb-20 overflow-hidden">
       {/* Background Video */}
       <video
         ref={backgroundVideoRef}
@@ -56,8 +56,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
             </span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed">
             Painéis digitais + IA no WhatsApp = Comunicação simples e eficiente.
+          </p>
+          
+          <p className="text-lg text-gray-400 mb-8 italic">
+            Imagine gerenciar seu prédio com facilidade, sentindo a proximidade com moradores
           </p>
           
           <Button 

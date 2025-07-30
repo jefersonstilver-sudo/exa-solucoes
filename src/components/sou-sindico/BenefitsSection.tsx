@@ -9,13 +9,17 @@ interface BenefitsSectionProps {
 
 const BenefitsSection: React.FC<BenefitsSectionProps> = ({ isVisible, benefits }) => {
   return (
-    <section className={`py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+    <section className={`min-h-[80vh] py-20 px-4 bg-gray-800/30 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
+        <h2 className="text-4xl md:text-5xl font-bold text-center mb-8">
           <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Benefícios para o Síndico
+            Resolva a Dor de Comunicação Ineficiente
           </span>
         </h2>
+        
+        <p className="text-xl text-center text-gray-300 mb-16 max-w-4xl mx-auto">
+          <strong>Sinta a diferença no dia a dia</strong> com uma ferramenta gratuita que engaja moradores e moderniza seu condomínio. Altere módulos ou crie avisos 3D personalizados via chat simples, transformando desafios em conexões eficientes.
+        </p>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => {
