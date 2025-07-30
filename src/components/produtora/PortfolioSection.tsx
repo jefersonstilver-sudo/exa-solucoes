@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Play } from 'lucide-react';
+import PortfolioVideoModal from './PortfolioVideoModal';
 
 interface PortfolioItem {
   id: string;
@@ -18,6 +19,8 @@ const PortfolioSection = () => {
   const [filteredItems, setFilteredItems] = useState<PortfolioItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [loading, setLoading] = useState(true);
+  const [selectedVideo, setSelectedVideo] = useState<PortfolioItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
   const categories = ['Todos', 'Comerciais de TV', 'Institucionais', 'Campanhas', 'Lançamentos', 'Cursos Online com Drone'];
@@ -70,6 +73,16 @@ const PortfolioSection = () => {
     } else {
       setFilteredItems(portfolioItems.filter(item => item.categoria === category));
     }
+  };
+
+  const handleVideoClick = (item: PortfolioItem) => {
+    setSelectedVideo(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedVideo(null);
   };
 
 
@@ -127,7 +140,8 @@ const PortfolioSection = () => {
                 {filteredItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`group relative bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform ${
+                  onClick={() => handleVideoClick(item)}
+                  className={`group relative bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform cursor-pointer ${
                     isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                   }`}
                   style={{ transitionDelay: `${index * 200}ms` }}
@@ -135,7 +149,7 @@ const PortfolioSection = () => {
                   {/* Container do vídeo */}
                   <div className="relative aspect-[9/16] overflow-hidden">
                     <video
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700"
                       autoPlay
                       loop
                       muted
@@ -158,12 +172,6 @@ const PortfolioSection = () => {
                       </span>
                     </div>
                   </div>
-
-                  {/* Informações do vídeo */}
-                  <div className="p-3 sm:p-4">
-                    <h3 className="font-playfair text-sm sm:text-base lg:text-lg font-bold text-indexa-purple mb-1 sm:mb-2 line-clamp-2">{item.titulo}</h3>
-                    <p className="font-montserrat text-gray-600 text-xs sm:text-sm leading-relaxed line-clamp-3">{item.descricao}</p>
-                  </div>
                 </div>
                 ))}
               </div>
@@ -182,6 +190,17 @@ const PortfolioSection = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de vídeo */}
+      {selectedVideo && (
+        <PortfolioVideoModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          videoSrc={selectedVideo.url_video}
+          titulo={selectedVideo.titulo}
+          categoria={selectedVideo.categoria}
+        />
+      )}
     </section>
   );
 };
