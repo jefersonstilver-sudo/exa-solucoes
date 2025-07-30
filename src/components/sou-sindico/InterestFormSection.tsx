@@ -45,7 +45,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
           
           {/* Right Column - Form */}
           <div>
-            <form onSubmit={handleSubmit} className="bg-gray-900/50 backdrop-blur-sm p-8 rounded-3xl border border-purple-500/20">
+            <form onSubmit={handleSubmit} className="bg-gray-800/60 backdrop-blur-sm p-8 rounded-3xl border border-purple-400/30">
           <div className="grid gap-6">
             <Input
               placeholder="Nome completo do síndico"

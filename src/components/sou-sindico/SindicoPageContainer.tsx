@@ -11,7 +11,6 @@ import HowItWorksSection from './HowItWorksSection';
 
 
 import InterestFormSection from './InterestFormSection';
-import FinalCTASection from './FinalCTASection';
 import ChecklistSection from './ChecklistSection';
 
 const SindicoPageContainer: React.FC = () => {
@@ -88,12 +87,6 @@ const SindicoPageContainer: React.FC = () => {
         />
       </section>
 
-      <section 
-        ref={(el) => { sectionsRef.current['final-cta'] = el; }}
-        data-section="final-cta"
-      >
-        <FinalCTASection isVisible={visibleSections['final-cta']} />
-      </section>
     </div>
   );
 };
