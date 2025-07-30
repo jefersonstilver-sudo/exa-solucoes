@@ -43,11 +43,11 @@ const DiferenciaisSection = () => {
         }`}>
           
           {/* Header */}
-          <div className="text-center mb-12 sm:mb-16 lg:mb-20 relative z-20">
-            <h2 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-bold text-indexa-purple mb-3 sm:mb-4">
+          <div className="text-center mb-16 sm:mb-20 lg:mb-24 relative z-20">
+            <h2 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-bold text-indexa-purple mb-4 sm:mb-6">
               Nossos <span className="text-indexa-mint">Diferenciais</span>
             </h2>
-            <p className="font-montserrat text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+            <p className="font-montserrat text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4 mb-8">
               Três pilares que elevam sua marca a um novo patamar cinematográfico
             </p>
           </div>
