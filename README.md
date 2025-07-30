@@ -60,6 +60,12 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Projeto Linkae - Características Visuais e Responsividade
+
+**Visuals/Animações**: Rosa #FF8A80 e laranja #F57C00 como acentos para dinamismo, carrossel de posts com hover interativo.
+
+**Responsivo**: Cards stack.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/64f6806c-c0e0-422b-b85f-955fd5719544) and click on Share -> Publish.
