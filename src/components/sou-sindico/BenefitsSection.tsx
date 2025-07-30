@@ -28,9 +28,9 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ isVisible, benefits }
             className="w-full"
             plugins={[
               Autoplay({
-                delay: 7000,
-                stopOnInteraction: true,
-                stopOnMouseEnter: true,
+                delay: 4500,
+                stopOnInteraction: false,
+                stopOnMouseEnter: false,
               })
             ]}
             opts={{
@@ -77,8 +77,6 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ isVisible, benefits }
               })}
             </CarouselContent>
             
-            <CarouselPrevious className="hidden md:flex -left-12 bg-white/10 border-white/20 text-white hover:bg-white/20" />
-            <CarouselNext className="hidden md:flex -right-12 bg-white/10 border-white/20 text-white hover:bg-white/20" />
             
             <div className="flex justify-center mt-8 gap-2">
               {benefits.map((_, index) => (
