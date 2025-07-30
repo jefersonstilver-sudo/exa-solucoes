@@ -57,9 +57,10 @@ const StorytellingSection = () => {
                 isVisible ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'
               }`}>
                 <p className="font-montserrat text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 leading-relaxed">
-                  <span className="font-bold text-indexa-mint">Nascida em Foz do Iguaçu</span>, a Produtora existe para superar dores como 
-                  <span className="italic text-white"> conteúdos planos que não conectam</span>, 
-                  criando vídeos que evocam emoções reais e transformam desafios em oportunidades de crescimento.
+                  <span className="font-bold text-indexa-mint">A vertente criativa da INDEXA Mídia</span> que transforma conceitos em narrativas visuais impactantes. 
+                  Aqui, unimos tecnologia de ponta e criatividade humanizada para criar vídeos profissionais que capturam a essência da sua marca, 
+                  engajam o público e impulsionam resultados reais. Seja para comerciais de TV, gravações de cursos, eventos institucionais ou 
+                  conteúdos promocionais, nosso estúdio premium é o espaço onde suas histórias ganham forma.
                 </p>
               </div>
 
@@ -67,8 +68,8 @@ const StorytellingSection = () => {
                 isVisible ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'
               }`}>
                 <p className="font-montserrat text-sm sm:text-base md:text-lg text-white/70 leading-relaxed">
-                  Na fronteira entre Brasil, Argentina e Paraguai, desenvolvemos uma visão única sobre storytelling, 
-                  mesclando culturas e perspectivas para criar narrativas que realmente impactam e transformam negócios.
+                  Com expertise em produção audiovisual e uma abordagem estratégica, desenvolvemos conteúdos que não apenas comunicam, 
+                  mas conectam emocionalmente com seu público, transformando espectadores em clientes e clientes em defensores da sua marca.
                 </p>
               </div>
 
@@ -98,10 +99,10 @@ const StorytellingSection = () => {
                       <MapPin className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                     </div>
                     <h3 className="font-playfair text-lg sm:text-xl lg:text-2xl font-bold text-white">
-                      Perspectiva Única
+                      Excelência Criativa
                     </h3>
                     <p className="font-montserrat text-white/70 text-center leading-relaxed text-sm sm:text-base">
-                      Três países, uma visão: criamos conteúdos que transcendem fronteiras e conectam corações.
+                      Tecnologia avançada e criatividade humanizada unidos para criar vídeos que geram resultados reais.
                     </p>
                   </div>
                 </div>
