@@ -72,16 +72,6 @@ const PortfolioSection = () => {
     }
   };
 
-  const getEvocativeDescription = (categoria: string) => {
-    const descriptions = {
-      'Comerciais de TV': 'Imagine sua marca ganhando vida na televisão com narrativas que cativam e convencem.',
-      'Institucionais': 'Sinta o orgulho de apresentar sua empresa com vídeos que transmitem credibilidade e valores.',
-      'Campanhas': 'Veja sua campanha se tornar viral, conectando emocionalmente com seu público-alvo.',
-      'Lançamentos': 'Desperte a curiosidade e o desejo com lançamentos que marcam e transformam mercados.',
-      'Cursos Online com Drone': 'Imagine seu curso online ganhando vida com captações que inspiram alunos a transformar suas vidas.'
-    };
-    return descriptions[categoria as keyof typeof descriptions] || 'Experiências visuais que transformam sua mensagem em impacto real.';
-  };
 
   return (
     <section 
@@ -131,9 +121,6 @@ const PortfolioSection = () => {
                 <p className="font-montserrat text-gray-600 text-base sm:text-lg">
                   Nenhum vídeo encontrado para esta categoria.
                 </p>
-                <p className="font-montserrat text-indexa-mint text-xs sm:text-sm mt-2 italic">
-                  {getEvocativeDescription(selectedCategory)}
-                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -175,10 +162,7 @@ const PortfolioSection = () => {
                   {/* Informações do vídeo */}
                   <div className="p-3 sm:p-4">
                     <h3 className="font-playfair text-sm sm:text-base lg:text-lg font-bold text-indexa-purple mb-1 sm:mb-2 line-clamp-2">{item.titulo}</h3>
-                    <p className="font-montserrat text-gray-600 text-xs sm:text-sm leading-relaxed line-clamp-2">{item.descricao}</p>
-                    <p className="font-montserrat text-indexa-mint text-xs mt-1 sm:mt-2 italic line-clamp-1">
-                      {getEvocativeDescription(item.categoria)}
-                    </p>
+                    <p className="font-montserrat text-gray-600 text-xs sm:text-sm leading-relaxed line-clamp-3">{item.descricao}</p>
                   </div>
                 </div>
                 ))}
