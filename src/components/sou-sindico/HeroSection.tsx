@@ -49,15 +49,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
         <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Gerencie seu condomínio
+              Substitua avisos de papel
             </span>
             <span className="block text-white">
-              direto pelo WhatsApp.
+              por painéis digitais modernos.
             </span>
           </h1>
           
           <p className="text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed">
-            Painéis digitais + IA no WhatsApp = Comunicação simples e eficiente.
+            Gerencie tudo direto pelo WhatsApp. Painéis digitais + IA = Comunicação simples e eficiente.
           </p>
           
           <p className="text-lg text-gray-400 mb-8 italic">
@@ -95,7 +95,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
                     objectPosition: 'center 10%'
                   }}
                 >
-                  <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/2dac60f0-421e-4729-ac22-0d32dc360292.MP4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzJkYWM2MGYwLTQyMWUtNDcyOS1hYzIyLTBkMzJkYzM2MDI5Mi5NUDQiLCJpYXQiOjE3NDg2OTY5NTksImV4cCI6MTc4MDIzMjk1OX0.sJEjs0bci_thXgU-BTrLFmuF9M8H4XFRcPpigrjQCjw" type="video/mp4" />
+                  <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/2dac60f0-421e-4729-ac22-0d32dc360292.MP4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzJkYWM2MGYwLTQyMWUtNDcyOS1hYzIyLTBkMzJkYzM2MDI5Mi5NUDQiLCJpYXQiOjE3NTM4MzU0NzAsImV4cCI6OTYzNjE4MzU0NzB9.D2q27A9ZsqQbDLEtpjQEhTDJKLQKRtZwpITjUFNkzeg" type="video/mp4" />
                 </video>
               </div>
             </div>
