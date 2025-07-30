@@ -147,9 +147,9 @@ const PortfolioSection = () => {
                   style={{ transitionDelay: `${index * 200}ms` }}
                 >
                   {/* Container do vídeo */}
-                  <div className="relative aspect-[9/16] overflow-hidden">
+                  <div className="relative aspect-[9/16] overflow-hidden bg-gray-200">
                     <video
-                      className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover"
                       autoPlay
                       loop
                       muted
