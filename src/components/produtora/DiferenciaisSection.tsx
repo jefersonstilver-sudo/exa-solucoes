@@ -35,7 +35,7 @@ const DiferenciaisSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="min-h-[80vh] sm:min-h-[70vh] md:h-[60vh] bg-gradient-to-br from-white to-gray-100 flex items-center py-12 sm:py-16"
+      className="min-h-[80vh] sm:min-h-[70vh] md:h-[60vh] bg-gradient-to-br from-white to-gray-100 flex items-center pt-24 sm:pt-32 lg:pt-40 py-12 sm:py-16"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className={`transform transition-all duration-1000 ${
