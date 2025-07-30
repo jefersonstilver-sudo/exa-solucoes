@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Play } from 'lucide-react';
+import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import PortfolioVideoModal from './PortfolioVideoModal';
 
 interface PortfolioItem {
@@ -24,6 +24,7 @@ const PortfolioSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
 
   const [categories, setCategories] = useState<string[]>(['Todos']);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -72,11 +73,28 @@ const PortfolioSection = () => {
 
   const handleCategoryFilter = (category: string) => {
     setSelectedCategory(category);
+    setCurrentSlide(0); // Reset slide ao trocar categoria
     if (category === 'Todos') {
       setFilteredItems(portfolioItems);
     } else {
       setFilteredItems(portfolioItems.filter(item => item.categoria === category));
     }
+  };
+
+  const itemsPerSlide = 3;
+  const totalSlides = Math.ceil(filteredItems.length / itemsPerSlide);
+
+  const handlePrevSlide = () => {
+    setCurrentSlide(prev => prev > 0 ? prev - 1 : prev);
+  };
+
+  const handleNextSlide = () => {
+    setCurrentSlide(prev => prev < totalSlides - 1 ? prev + 1 : prev);
+  };
+
+  const getCurrentItems = () => {
+    const startIndex = currentSlide * itemsPerSlide;
+    return filteredItems.slice(startIndex, startIndex + itemsPerSlide);
   };
 
   const handleVideoClick = (item: PortfolioItem) => {
@@ -141,63 +159,93 @@ const PortfolioSection = () => {
               </div>
             ) : (
               <div className="relative">
-                <div className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory">
-                  {filteredItems.slice(0, 3).map((item, index) => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleVideoClick(item)}
-                      className={`group relative bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform cursor-pointer flex-shrink-0 w-72 sm:w-80 md:w-96 snap-start ${
-                        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                      }`}
-                      style={{ transitionDelay: `${index * 200}ms` }}
-                    >
-                      {/* Container do vídeo */}
-                      <div className="relative aspect-[9/16] overflow-hidden bg-gray-200">
-                        <video
-                          className="w-full h-full object-cover"
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                        >
-                          <source src={item.url_video} type="video/mp4" />
-                        </video>
-                        
-                        {/* Overlay com play button */}
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white ml-1" />
+                {/* Botão de navegação anterior */}
+                {totalSlides > 1 && (
+                  <button
+                    onClick={handlePrevSlide}
+                    disabled={currentSlide === 0}
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all duration-300 ${
+                      currentSlide === 0 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:bg-indexa-purple hover:text-white hover:shadow-xl transform hover:scale-110'
+                    }`}
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                )}
+
+                {/* Container dos vídeos */}
+                <div className="mx-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                    {getCurrentItems().map((item, index) => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleVideoClick(item)}
+                        className={`group relative bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 transform cursor-pointer ${
+                          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                        }`}
+                        style={{ transitionDelay: `${index * 200}ms` }}
+                      >
+                        {/* Container do vídeo */}
+                        <div className="relative aspect-[9/16] overflow-hidden bg-gray-200">
+                          <video
+                            className="w-full h-full object-cover"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                          >
+                            <source src={item.url_video} type="video/mp4" />
+                          </video>
+                          
+                          {/* Overlay com play button */}
+                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white ml-1" />
+                            </div>
+                          </div>
+                          
+                          {/* Badge da categoria */}
+                          <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
+                            <span className="bg-indexa-purple text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
+                              {item.categoria}
+                            </span>
                           </div>
                         </div>
-                        
-                        {/* Badge da categoria */}
-                        <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
-                          <span className="bg-indexa-purple text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
-                            {item.categoria}
-                          </span>
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                  
-                  {/* Indicador de mais vídeos */}
-                  {filteredItems.length > 3 && (
-                    <div className="flex-shrink-0 w-16 flex items-center justify-center">
-                      <div className="bg-indexa-purple/10 rounded-full p-4 border-2 border-dashed border-indexa-purple">
-                        <span className="text-indexa-purple font-medium text-sm">
-                          +{filteredItems.length - 3}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
-                
-                {/* Scroll indicator */}
-                {filteredItems.length > 3 && (
-                  <div className="text-center mt-4">
-                    <p className="text-sm text-gray-500">
-                      ← Deslize para ver mais vídeos →
-                    </p>
+
+                {/* Botão de navegação seguinte */}
+                {totalSlides > 1 && (
+                  <button
+                    onClick={handleNextSlide}
+                    disabled={currentSlide === totalSlides - 1}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all duration-300 ${
+                      currentSlide === totalSlides - 1 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:bg-indexa-purple hover:text-white hover:shadow-xl transform hover:scale-110'
+                    }`}
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                )}
+
+                {/* Indicadores de slide */}
+                {totalSlides > 1 && (
+                  <div className="flex justify-center mt-6 gap-2">
+                    {Array.from({ length: totalSlides }).map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                          currentSlide === index 
+                            ? 'bg-indexa-purple shadow-lg' 
+                            : 'bg-gray-300 hover:bg-gray-400'
+                        }`}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
