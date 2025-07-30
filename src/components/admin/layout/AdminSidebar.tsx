@@ -18,7 +18,8 @@ import {
   Bell,
   Megaphone,
   LogOut,
-  Zap
+  Zap,
+  Film
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -182,6 +183,14 @@ const AdminSidebar = () => {
       requireSuperAdmin: false,
       section: 'content',
       permission: 'canManageVideos'
+    },
+    {
+      label: 'Portfólio Produtora',
+      icon: <Film className="h-5 w-5" />,
+      href: '/super_admin/portfolio-produtora',
+      requireSuperAdmin: false,
+      section: 'content',
+      permission: 'canManagePortfolio'
     },
     {
       label: 'Notificações',
