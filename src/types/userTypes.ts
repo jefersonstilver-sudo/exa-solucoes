@@ -46,6 +46,7 @@ export interface UserPermissions {
   
   // Conteúdo
   canManageVideos: boolean;
+  canManagePortfolio: boolean;
   canManageNotifications: boolean;
 }
 
@@ -66,6 +67,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageHomepageConfig: true,
     canManageSystemSettings: true,
     canManageVideos: true,
+    canManagePortfolio: true,
     canManageNotifications: true,
   },
   admin: {
@@ -83,6 +85,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageHomepageConfig: false, // Reservado para marketing
     canManageSystemSettings: false, // Apenas super_admin
     canManageVideos: true,
+    canManagePortfolio: true,
     canManageNotifications: true,
   },
   admin_marketing: {
@@ -100,6 +103,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageHomepageConfig: true, // Acesso específico para marketing
     canManageSystemSettings: false,
     canManageVideos: false, // Apenas aprovação, não gestão
+    canManagePortfolio: false,
     canManageNotifications: true,
   },
   client: {
@@ -117,6 +121,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageHomepageConfig: false,
     canManageSystemSettings: false,
     canManageVideos: false,
+    canManagePortfolio: false,
     canManageNotifications: false,
   },
   painel: {
@@ -134,6 +139,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageHomepageConfig: false,
     canManageSystemSettings: false,
     canManageVideos: false,
+    canManagePortfolio: false,
     canManageNotifications: false,
   },
 };
