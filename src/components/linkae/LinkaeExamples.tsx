@@ -30,9 +30,9 @@ const examples = [
 
 const LinkaeExamples: React.FC = () => {
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-12 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             Transformações Reais
           </h2>
@@ -54,8 +54,8 @@ const LinkaeExamples: React.FC = () => {
             const iconBgs = ['bg-[#FF8A80]/20', 'bg-[#F57C00]/20', 'bg-[#FF8A80]/20'];
             
             return (
-              <div key={index} className={`${cardColors[index]} border-2 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
-                <div className="flex items-center mb-6">
+              <div key={index} className={`${cardColors[index]} border-2 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
+                <div className="flex items-center mb-4">
                   <div className={`p-3 rounded-full ${iconBgs[index]}`}>
                     <IconComponent className={`w-6 h-6 ${iconColors[index]}`} />
                   </div>
@@ -65,8 +65,8 @@ const LinkaeExamples: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="space-y-6">
-                  <div className="bg-red-50 rounded-lg p-4 border-l-4 border-red-400">
+                <div className="space-y-4">
+                  <div className="bg-red-50 rounded-lg p-3 border-l-4 border-red-400">
                     <div className="flex items-center mb-2">
                       <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
                       <span className="text-sm font-bold text-red-700">ANTES</span>
@@ -76,7 +76,7 @@ const LinkaeExamples: React.FC = () => {
                     </p>
                   </div>
                   
-                  <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-400">
+                  <div className="bg-green-50 rounded-lg p-3 border-l-4 border-green-400">
                     <div className="flex items-center mb-2">
                       <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
                       <span className="text-sm font-bold text-green-700">DEPOIS</span>
@@ -86,7 +86,7 @@ const LinkaeExamples: React.FC = () => {
                     </p>
                   </div>
                   
-                  <div className={`pt-4 pb-2 px-4 rounded-lg ${iconBgs[index]} border border-current/20`}>
+                  <div className={`py-3 px-4 rounded-lg ${iconBgs[index]} border border-current/20`}>
                     <div className="flex items-center justify-center">
                       <BarChart3 className={`w-5 h-5 ${iconColors[index]} mr-2`} />
                       <span className={`text-sm font-bold ${iconColors[index]}`}>
