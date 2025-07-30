@@ -23,7 +23,7 @@ const PortfolioSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
-  const categories = ['Todos', 'Comerciais de TV', 'Institucionais', 'Campanhas', 'Lançamentos', 'Cursos Online com Drone'];
+  const [categories, setCategories] = useState<string[]>(['Todos']);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -58,6 +58,10 @@ const PortfolioSection = () => {
       } else {
         setPortfolioItems(data || []);
         setFilteredItems(data || []);
+        
+        // Extrair categorias únicas dos dados
+        const uniqueCategories = Array.from(new Set(data?.map(item => item.categoria) || []));
+        setCategories(['Todos', ...uniqueCategories]);
       }
     } catch (error) {
       console.error('Erro ao buscar portfólio:', error);

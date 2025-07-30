@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit2, Trash2, ExternalLink, Play } from 'lucide-react';
-import { CampanhaPortfolio } from '@/hooks/useCampanhasPortfolio';
+import { CampanhaPortfolio } from '@/hooks/usePortfolioProdutora';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface VideoGridProps {
@@ -116,10 +116,6 @@ const VideoGrid: React.FC<VideoGridProps> = ({
               <h3 className="font-medium line-clamp-2 text-sm">
                 {video.titulo}
               </h3>
-              
-              <p className="text-xs text-muted-foreground">
-                Cliente: {video.cliente}
-              </p>
               
               {video.descricao && (
                 <p className="text-xs text-muted-foreground line-clamp-2">

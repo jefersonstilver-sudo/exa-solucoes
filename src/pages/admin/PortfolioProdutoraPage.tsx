@@ -6,7 +6,7 @@ import { usePortfolioProdutora } from '@/hooks/usePortfolioProdutora';
 import PortfolioModal from '@/components/admin/portfolio/PortfolioModal';
 import CategoryModal from '@/components/admin/portfolio/CategoryModal';
 import VideoGrid from '@/components/admin/portfolio/VideoGrid';
-import { CampanhaPortfolio } from '@/hooks/useCampanhasPortfolio';
+import { CampanhaPortfolio } from '@/hooks/usePortfolioProdutora';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -119,10 +119,9 @@ const PortfolioProdutoraPage = () => {
 
   const handleExport = () => {
     const csvContent = [
-      ['Título', 'Cliente', 'Categoria', 'Descrição', 'URL do Vídeo', 'Criado em'],
+      ['Título', 'Categoria', 'Descrição', 'URL do Vídeo', 'Criado em'],
       ...campanhas.map(campanha => [
         campanha.titulo,
-        campanha.cliente,
         campanha.categoria,
         campanha.descricao || '',
         campanha.url_video,

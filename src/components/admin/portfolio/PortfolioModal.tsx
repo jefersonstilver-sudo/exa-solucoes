@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { CampanhaPortfolio } from '@/hooks/useCampanhasPortfolio';
+import { CampanhaPortfolio } from '@/hooks/usePortfolioProdutora';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PortfolioModalProps {
@@ -28,7 +28,6 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     titulo: '',
-    cliente: '',
     categoria: '',
     descricao: '',
     url_video: ''
@@ -47,30 +46,30 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
   });
 
   useEffect(() => {
-    if (editingCampanha) {
+    if (editingCampanha && isOpen) {
       setFormData({
-        titulo: editingCampanha.titulo,
-        cliente: editingCampanha.cliente,
-        categoria: editingCampanha.categoria,
+        titulo: editingCampanha.titulo || '',
+        categoria: editingCampanha.categoria || '',
         descricao: editingCampanha.descricao || '',
-        url_video: editingCampanha.url_video
+        url_video: editingCampanha.url_video || ''
       });
       setUseCustomCategory(false);
       setCustomCategory('');
-      validateUrl(editingCampanha.url_video);
-    } else {
+      if (editingCampanha.url_video) {
+        validateUrl(editingCampanha.url_video);
+      }
+    } else if (isOpen) {
       setFormData({
         titulo: '',
-        cliente: '',
-        categoria: selectedCategory || '', // Pré-selecionar categoria atual
+        categoria: selectedCategory || '',
         descricao: '',
         url_video: ''
       });
       setUseCustomCategory(false);
       setCustomCategory('');
-      setUrlValidation({ isValid: false, message: '', isValidating: false });
+      setUrlValidation({ isValid: false, isValidating: false, message: '' });
     }
-  }, [editingCampanha, isOpen]);
+  }, [editingCampanha, isOpen, selectedCategory]);
 
   const validateUrl = async (url: string) => {
     if (!url.trim()) {
@@ -129,7 +128,9 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.titulo.trim() || !formData.cliente.trim() || !formData.url_video.trim()) {
+    const finalCategory = useCustomCategory ? customCategory.trim() : formData.categoria;
+    
+    if (!formData.titulo.trim() || !formData.url_video.trim() || !finalCategory.trim()) {
       return;
     }
 
@@ -137,19 +138,13 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
       return;
     }
 
-    const finalCategory = useCustomCategory ? customCategory.trim() : formData.categoria;
-    if (!finalCategory) {
-      return;
-    }
-
     setIsSubmitting(true);
 
     const submitData = {
-      ...formData,
-      categoria: finalCategory,
       titulo: formData.titulo.trim(),
-      cliente: formData.cliente.trim(),
-      descricao: formData.descricao.trim()
+      categoria: finalCategory,
+      descricao: formData.descricao.trim(),
+      url_video: formData.url_video.trim()
     };
 
     const success = await onSubmit(submitData);
@@ -196,19 +191,6 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
             <p className="text-xs text-gray-500">
               {formData.titulo.length}/100 caracteres
             </p>
-          </div>
-
-          {/* Cliente */}
-          <div className="space-y-2">
-            <Label htmlFor="cliente">Cliente *</Label>
-            <Input
-              id="cliente"
-              value={formData.cliente}
-              onChange={(e) => setFormData(prev => ({ ...prev, cliente: e.target.value }))}
-              placeholder="Ex: Empresa XYZ"
-              maxLength={80}
-              required
-            />
           </div>
 
           {/* Categoria */}
@@ -325,7 +307,6 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({
               disabled={
                 isSubmitting ||
                 !formData.titulo.trim() ||
-                !formData.cliente.trim() ||
                 !formData.url_video.trim() ||
                 !urlValidation.isValid ||
                 (!useCustomCategory && !formData.categoria) ||

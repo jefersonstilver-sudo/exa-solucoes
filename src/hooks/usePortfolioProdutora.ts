@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CampanhaPortfolio } from './useCampanhasPortfolio';
+
+export interface CampanhaPortfolio {
+  id: string;
+  titulo: string;
+  categoria: string;
+  descricao?: string;
+  url_video: string;
+  created_at: string;
+}
 
 export const usePortfolioProdutora = () => {
   const [campanhas, setCampanhas] = useState<CampanhaPortfolio[]>([]);
@@ -15,7 +23,7 @@ export const usePortfolioProdutora = () => {
       console.log('📊 Portfolio Admin: Buscando dados...');
       
       const { data, error } = await supabase
-        .from('campanhas_portfolio')
+        .from('portfolio_produtora')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -36,12 +44,12 @@ export const usePortfolioProdutora = () => {
     }
   };
 
-  const createCampanha = async (data: Omit<CampanhaPortfolio, 'id' | 'created_at' | 'updated_at'>) => {
+  const createCampanha = async (data: Omit<CampanhaPortfolio, 'id' | 'created_at'>) => {
     try {
       console.log('➕ Criando nova campanha:', data);
       
       const { data: newCampanha, error } = await supabase
-        .from('campanhas_portfolio')
+        .from('portfolio_produtora')
         .insert([data])
         .select()
         .single();
@@ -63,13 +71,13 @@ export const usePortfolioProdutora = () => {
     }
   };
 
-  const updateCampanha = async (id: string, data: Partial<Omit<CampanhaPortfolio, 'id' | 'created_at' | 'updated_at'>>) => {
+  const updateCampanha = async (id: string, data: Partial<Omit<CampanhaPortfolio, 'id' | 'created_at'>>) => {
     try {
       console.log('✏️ Atualizando campanha:', id, data);
       
       const { data: updatedCampanha, error } = await supabase
-        .from('campanhas_portfolio')
-        .update({ ...data, updated_at: new Date().toISOString() })
+        .from('portfolio_produtora')
+        .update(data)
         .eq('id', id)
         .select()
         .single();
@@ -96,7 +104,7 @@ export const usePortfolioProdutora = () => {
       console.log('🗑️ Deletando campanha:', id);
       
       const { error } = await supabase
-        .from('campanhas_portfolio')
+        .from('portfolio_produtora')
         .delete()
         .eq('id', id);
 
@@ -123,12 +131,12 @@ export const usePortfolioProdutora = () => {
     // Configurar realtime
     console.log('📡 Portfolio Admin: Configurando realtime...');
     const channel = supabase
-      .channel('campanhas-portfolio-admin-realtime')
+      .channel('portfolio-produtora-admin-realtime')
       .on('postgres_changes', 
         { 
           event: '*', 
           schema: 'public', 
-          table: 'campanhas_portfolio' 
+          table: 'portfolio_produtora' 
         }, 
         (payload) => {
           console.log('📡 Portfolio Admin: Dados atualizados em tempo real', payload);
