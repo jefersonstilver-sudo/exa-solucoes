@@ -30,7 +30,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
               e.currentTarget.style.filter = 'drop-shadow(0 0 30px rgba(255, 138, 128, 0.6))';
             }}
           />
-          <h1 className="text-2xl md:text-4xl font-bold text-white mb-3">
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-3 mt-2 md:mt-3">
             Conecte Sua Marca com Estratégias que Inspiram
           </h1>
         </div>
