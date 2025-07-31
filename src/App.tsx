@@ -67,7 +67,7 @@ function App() {
         <AuthProvider>
           <Router>
             <SimpleCartProvider>
-              <div className="min-h-screen bg-white">
+              <div className="min-h-screen bg-background">
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
                     {/* Rotas principais */}
