@@ -30,8 +30,6 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
 }) => {
   const isMobile = useIsMobile();
 
-  console.log('Banner image path:', bannerImage);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchLocation.trim()) {
@@ -147,7 +145,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                     {/* Imagem com efeito sombreado */}
                     <div className="w-full h-full rounded-xl overflow-hidden shadow-2xl">
                       <img 
-                        src="/banner-publicidade.png"
+                        src={bannerImage} 
                         alt="Banner publicitário"
                         className="w-full h-full object-cover"
                         loading="eager"
