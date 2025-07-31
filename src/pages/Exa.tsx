@@ -2,9 +2,11 @@ import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import ExaHeroSection from '@/components/exa/ExaHeroSection';
 import AboutExaSection from '@/components/exa/AboutExaSection';
-import ExaAdvantagesSection from '@/components/exa/ExaAdvantagesSection';
-import SouSindicoLinkSection from '@/components/exa/SouSindicoLinkSection';
-import ExaFinalCTASection from '@/components/exa/ExaFinalCTASection';
+import ExaWhatIsSection from '@/components/exa/ExaWhatIsSection';
+import ExaStrategicDifferentialsSection from '@/components/exa/ExaStrategicDifferentialsSection';
+import ExaRealTimeAttractionsSection from '@/components/exa/ExaRealTimeAttractionsSection';
+import ExaScaleExpansionSection from '@/components/exa/ExaScaleExpansionSection';
+import ExaFinalPurchaseSection from '@/components/exa/ExaFinalPurchaseSection';
 
 const Exa = () => {
   console.log('🚀 EXA: Renderizando página Publicidade Inteligente');
@@ -26,9 +28,11 @@ const Exa = () => {
       <div className="relative overflow-x-hidden w-full">
         <ExaHeroSection />
         <AboutExaSection />
-        <ExaAdvantagesSection />
-        <SouSindicoLinkSection />
-        <ExaFinalCTASection />
+        <ExaWhatIsSection />
+        <ExaStrategicDifferentialsSection />
+        <ExaRealTimeAttractionsSection />
+        <ExaScaleExpansionSection />
+        <ExaFinalPurchaseSection />
       </div>
     </Layout>
   );
