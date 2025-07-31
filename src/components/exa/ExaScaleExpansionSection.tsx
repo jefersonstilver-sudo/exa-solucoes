@@ -73,7 +73,7 @@ const ExaScaleExpansionSection: React.FC = () => {
                     {currentCount}
                   </span>
                   <span className="text-sm sm:text-base md:text-lg font-exo-2 font-medium text-slate-600">
-                    Prédios ativos
+                    Instalação em andamento
                   </span>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-3 sm:h-4">
