@@ -37,8 +37,7 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
 }) => {
   const venueTypes = [
     { value: 'Residencial', label: 'Residencial', icon: Building2 },
-    { value: 'Comercial', label: 'Comercial', icon: Building2 },
-    { value: 'Misto', label: 'Misto', icon: Building2 }
+    { value: 'Comercial', label: 'Comercial', icon: Building2 }
   ];
 
   const standardProfiles = [

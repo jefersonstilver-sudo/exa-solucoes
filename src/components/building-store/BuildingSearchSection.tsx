@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
+import bannerImage from '@/assets/banner-publicidade.png';
 
 interface BuildingSearchSectionProps {
   searchLocation: string;
@@ -131,7 +132,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                 </div>
               </div>
 
-              {/* Banner promocional - Coluna direita (mais quadrado) */}
+              {/* Banner promocional - Coluna direita com imagem */}
               <div className={`${isMobile ? 'col-span-1' : 'col-span-4'}`}>
                 <motion.div 
                   className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative z-10 h-full"
@@ -139,31 +140,33 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  {/* Container interno com padding adequado */}
-                  <div className={`relative h-full flex flex-col justify-center ${isMobile ? 'p-4' : 'p-6'}`}>
-                    {/* Elementos decorativos */}
-                    {!isMobile && (
-                      <>
-                        <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-[#58E3AB]/10 to-transparent rounded-full -translate-y-12 -translate-x-12"></div>
-                        <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-[#3C1361]/5 to-transparent rounded-full translate-y-16 translate-x-16"></div>
-                      </>
-                    )}
+                  {/* Container interno com imagem */}
+                  <div className="relative h-full">
+                    {/* Imagem de fundo */}
+                    <div className="absolute inset-0">
+                      <img 
+                        src={bannerImage} 
+                        alt="Banner publicitário"
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Overlay para melhorar legibilidade */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#3C1361]/20 to-black/30"></div>
+                    </div>
                     
-                    {/* Conteúdo do banner */}
-                    <div className="relative z-30 text-center">
-                      <div className="w-16 h-16 bg-gradient-to-r from-[#3C1361] to-[#4A1B7D] rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                        <div className="text-white text-2xl font-bold">%</div>
-                      </div>
-                      <h3 className="text-xl font-bold text-[#3C1361] mb-2">
-                        Promoções Especiais
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4">
-                        Descontos exclusivos em campanhas publicitárias
-                      </p>
-                      <div className="bg-gradient-to-r from-[#58E3AB]/10 to-[#3C1361]/10 rounded-lg p-3">
-                        <p className="text-xs text-gray-500">
-                          Fique atento às nossas ofertas e maximize seu investimento em publicidade
+                    {/* Conteúdo sobreposto */}
+                    <div className={`relative z-10 h-full flex flex-col justify-end text-white ${isMobile ? 'p-4' : 'p-6'}`}>
+                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <h3 className="text-lg font-bold mb-2">
+                          Maximize seu Alcance
+                        </h3>
+                        <p className="text-white/90 text-sm mb-3">
+                          Posicione sua marca nos melhores locais da cidade
                         </p>
+                        <div className="bg-white/20 rounded-lg p-2">
+                          <p className="text-xs text-white/80">
+                            Campanhas estratégicas para resultados excepcionais
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
