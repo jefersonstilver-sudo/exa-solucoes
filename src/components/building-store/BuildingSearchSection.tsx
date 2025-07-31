@@ -140,34 +140,15 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  {/* Container interno com imagem */}
-                  <div className="relative h-full">
-                    {/* Imagem de fundo */}
-                    <div className="absolute inset-0">
+                  {/* Container da imagem com padding */}
+                  <div className={`relative h-full ${isMobile ? 'p-4' : 'p-6'}`}>
+                    {/* Imagem com efeito sombreado */}
+                    <div className="w-full h-full rounded-xl overflow-hidden shadow-2xl">
                       <img 
                         src={bannerImage} 
                         alt="Banner publicitário"
                         className="w-full h-full object-cover"
                       />
-                      {/* Overlay para melhorar legibilidade */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#3C1361]/20 to-black/30"></div>
-                    </div>
-                    
-                    {/* Conteúdo sobreposto */}
-                    <div className={`relative z-10 h-full flex flex-col justify-end text-white ${isMobile ? 'p-4' : 'p-6'}`}>
-                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <h3 className="text-lg font-bold mb-2">
-                          Maximize seu Alcance
-                        </h3>
-                        <p className="text-white/90 text-sm mb-3">
-                          Posicione sua marca nos melhores locais da cidade
-                        </p>
-                        <div className="bg-white/20 rounded-lg p-2">
-                          <p className="text-xs text-white/80">
-                            Campanhas estratégicas para resultados excepcionais
-                          </p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </motion.div>
