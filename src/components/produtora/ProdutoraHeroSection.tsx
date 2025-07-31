@@ -29,9 +29,11 @@ const ProdutoraHeroSection = () => {
       </div>
 
       {/* Conteúdo principal */}
-      <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(90vh-5rem)] md:h-[calc(80vh-5rem)] px-4 py-8">
+      <div className="relative z-10 flex flex-col justify-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(90vh-5rem)] md:h-[calc(80vh-5rem)] px-4 py-8">
+        {/* Espaço para o vídeo aparecer */}
+        <div className="flex-1"></div>
+        
         <div className="text-center max-w-5xl mx-auto">
-
           {/* Frase principal com animação de escrita */}
           <div className={`transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
             <h1 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
@@ -59,6 +61,9 @@ const ProdutoraHeroSection = () => {
             </button>
           </div>
         </div>
+        
+        {/* Espaço inferior */}
+        <div className="h-16 sm:h-20"></div>
       </div>
     </section>;
 };
