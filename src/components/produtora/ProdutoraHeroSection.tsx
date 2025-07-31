@@ -31,7 +31,7 @@ const ProdutoraHeroSection = () => {
     </section>
 
     {/* Seção dos botões embaixo do vídeo */}
-    <section className="bg-indexa-purple py-4 sm:py-6">
+    <section className="bg-gradient-to-b from-gray-50 to-white py-6 sm:py-8">
       <div className="container mx-auto px-4">
         <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
           <button onClick={scrollToPortfolio} className="group bg-indexa-mint text-indexa-purple-dark font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 w-full sm:w-auto text-sm sm:text-base">
@@ -41,7 +41,7 @@ const ProdutoraHeroSection = () => {
             </span>
           </button>
           
-          <button onClick={scrollToCafe} className="group bg-white/10 backdrop-blur-sm text-white border border-white/30 font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:bg-white/20 transform transition-all duration-500 hover:scale-105 w-full sm:w-auto text-sm sm:text-base">
+          <button onClick={scrollToCafe} className="group bg-white/10 backdrop-blur-sm text-indexa-purple border border-indexa-purple/30 font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:bg-indexa-purple/10 transform transition-all duration-500 hover:scale-105 w-full sm:w-auto text-sm sm:text-base">
             <span className="flex items-center justify-center space-x-2">
               <Camera className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform duration-300" />
               <span className="whitespace-nowrap">Agendar Café com a Produtora</span>
