@@ -1,23 +1,23 @@
 
-/* Utility classes - Essential only */
+/* Utility classes - Essential only - Using HSL */
 .text-indexa-purple {
-  color: rgb(88 28 135);
+  color: hsl(var(--indexa-purple));
 }
 
 .text-indexa-mint {
-  color: rgb(88 227 171);
+  color: hsl(var(--indexa-mint));
 }
 
 .bg-indexa-purple {
-  background-color: rgb(88 28 135);
+  background-color: hsl(var(--indexa-purple));
 }
 
 .bg-indexa-mint {
-  background-color: rgb(88 227 171);
+  background-color: hsl(var(--indexa-mint));
 }
 
 .border-indexa-purple {
-  border-color: rgb(88 28 135);
+  border-color: hsl(var(--indexa-purple));
 }
 
 /* Performance utilities */
