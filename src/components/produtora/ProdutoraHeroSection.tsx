@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Play, Camera } from 'lucide-react';
 const ProdutoraHeroSection = () => {
   const [textVisible, setTextVisible] = useState(false);
-  const heroVideoSrc = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20produtora/reels%20conheca%20o%20estudio%20Chroma%20v2.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcHJvZHV0b3JhL3JlZWxzIGNvbmhlY2EgbyBlc3R1ZGlvIENocm9tYSB2Mi5tcDQiLCJpYXQiOjE3NDg3MDU5MTgsImV4cCI6MTc4MDI0MTkxOH0.jZXItKJQsy0DLstm8TT6Ky_Y8Y4nZrJY3150yC9MwLo";
+  const indexaVideoSrc = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20produtora/indexa%20lettr.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcHJvZHV0b3JhL2luZGV4YSBsZXR0ci5tcDQiLCJpYXQiOjE3NTM5MjU0NTcsImV4cCI6MTc4NTQ2MTQ1N30.y-klo_wvwItBeDzzHr6jq3aHQMWDumvwmh3jfJFi6WE";
   useEffect(() => {
     const timer = setTimeout(() => setTextVisible(true), 500);
     return () => clearTimeout(timer);
@@ -20,31 +20,17 @@ const ProdutoraHeroSection = () => {
     });
   };
   return <section className="relative min-h-[100vh] sm:min-h-[90vh] md:h-[80vh] w-full overflow-hidden pt-16 sm:pt-20">
-      {/* Vídeo de fundo com blur intenso */}
+      {/* Vídeo de fundo com efeito vitrine */}
       <div className="absolute inset-0 z-0">
-        <video className="w-full h-full object-cover blur-lg" autoPlay loop muted playsInline>
-          <source src={heroVideoSrc} type="video/mp4" />
+        <video className="w-full h-full object-cover" autoPlay loop muted playsInline>
+          <source src={indexaVideoSrc} type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-black/60" />
       </div>
 
       {/* Conteúdo principal */}
       <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(90vh-5rem)] md:h-[calc(80vh-5rem)] px-4 py-8">
         <div className="text-center max-w-5xl mx-auto">
-          {/* Vídeo principal da Indexa */}
-          <div className={`mb-8 transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <div className="relative max-w-2xl mx-auto">
-              <video 
-                className="w-full h-auto rounded-2xl shadow-2xl" 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-              >
-                <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20produtora/indexa%20lettr.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcHJvZHV0b3JhL2luZGV4YSBsZXR0ci5tcDQiLCJpYXQiOjE3NTM5MjU0NTcsImV4cCI6MTc4NTQ2MTQ1N30.y-klo_wvwItBeDzzHr6jq3aHQMWDumvwmh3jfJFi6WE" type="video/mp4" />
-              </video>
-            </div>
-          </div>
 
           {/* Frase principal com animação de escrita */}
           <div className={`transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
