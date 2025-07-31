@@ -30,22 +30,7 @@ const ProdutoraHeroSection = () => {
 
       {/* Conteúdo principal */}
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)] sm:min-h-[calc(90vh-5rem)] md:h-[calc(80vh-5rem)] px-4 py-8">
-        {/* Espaço superior para destacar o vídeo */}
-        <div className="flex-grow-[3]"></div>
-        
-        <div className="text-center max-w-5xl mx-auto">
-          {/* Frase principal com animação de escrita */}
-          <div className={`transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-            <h1 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-              
-            </h1>
-            <p className="font-montserrat text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 font-light leading-relaxed max-w-4xl mx-auto px-2">
-              Unimos tecnologia de ponta e criatividade humanizada para criar vídeos profissionais que capturam a essência da sua marca.
-            </p>
-          </div>
-        </div>
-        
-        {/* Espaço menor entre texto e botões */}
+        {/* Espaço superior máximo para destacar o vídeo */}
         <div className="flex-grow"></div>
         
         {/* Botões CTA na parte inferior */}
