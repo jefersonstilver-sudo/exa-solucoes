@@ -89,7 +89,7 @@ const BriefingFormSection = () => {
     }
   };
 
-  const whatsappLink = "https://wa.me/5545991250093";
+  const whatsappLink = "https://wa.me/554591071566?text=Ol%C3%A1%20quero%20informa%C3%A7%C3%B5es%20sobre%20um%20projeto%20de%20v%C3%ADdeo";
 
   if (submitted) {
     return (
@@ -302,7 +302,7 @@ const BriefingFormSection = () => {
                 className="inline-flex items-center text-green-600 hover:text-green-700 font-medium transition-colors text-sm sm:text-base"
               >
                 <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                WhatsApp: (45) 99125-0093
+                WhatsApp: (45) 9107-1566
               </a>
             </div>
           </div>
