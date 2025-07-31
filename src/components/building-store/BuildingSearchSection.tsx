@@ -148,6 +148,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                         src={bannerImage} 
                         alt="Banner publicitário"
                         className="w-full h-full object-cover"
+                        loading="eager"
                       />
                     </div>
                   </div>
