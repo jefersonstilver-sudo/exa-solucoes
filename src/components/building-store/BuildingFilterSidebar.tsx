@@ -27,7 +27,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
   const [mapOpen, setMapOpen] = useState(false);
 
   return (
-    <div className={`space-y-4 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-full'}`}>
+    <div className={`space-y-3 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-14' : 'w-full'}`}>
       {/* Hamburger Toggle Button */}
       {onToggle && (
         <motion.div 
@@ -39,7 +39,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
           <Button
             variant="outline"
             className={`border-2 border-[#3C1361]/20 text-[#3C1361] hover:bg-[#3C1361]/5 hover:border-[#3C1361]/50 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md group ${
-              isCollapsed ? 'w-16 h-16 p-0' : 'w-full py-3'
+              isCollapsed ? 'w-14 h-14 p-0' : 'w-full py-3'
             }`}
             onClick={onToggle}
           >
@@ -88,7 +88,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
         >
           <Button
             variant="outline"
-            className="w-16 h-16 border-2 border-[#3C1361]/20 text-[#3C1361] hover:bg-[#3C1361]/5 hover:border-[#3C1361]/50 rounded-xl p-0 transition-all duration-300 shadow-sm hover:shadow-md group"
+            className="w-14 h-14 border-2 border-[#3C1361]/20 text-[#3C1361] hover:bg-[#3C1361]/5 hover:border-[#3C1361]/50 rounded-xl p-0 transition-all duration-300 shadow-sm hover:shadow-md group"
             onClick={() => setMapOpen(!mapOpen)}
           >
             <Map className="h-5 w-5 transition-transform group-hover:scale-110 duration-300" />
@@ -165,27 +165,27 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
         </Sheet>
       </div>
       
-      {/* Desktop Filter Sidebar */}
+      {/* Desktop Filter Sidebar - MAIS FINA */}
       {!isCollapsed && (
         <motion.div 
-          className="hidden lg:block bg-white rounded-3xl border-2 border-gray-100/50 shadow-xl overflow-hidden backdrop-blur-sm"
+          className="hidden lg:block bg-white rounded-2xl border-2 border-gray-100/50 shadow-lg overflow-hidden backdrop-blur-sm"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="bg-gradient-to-r from-[#3C1361] via-[#3C1361] to-[#4A1B6B] p-6 relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#3C1361] via-[#3C1361] to-[#4A1B6B] p-4 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
-            <h3 className="text-xl font-bold text-white flex items-center relative z-10">
-              <Filter className="h-5 w-5 mr-3" />
-              Filtrar Prédios
-              <Sparkles className="h-4 w-4 ml-auto text-white/70" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-12 translate-x-12"></div>
+            <h3 className="text-lg font-bold text-white flex items-center relative z-10">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtrar
+              <Sparkles className="h-3 w-3 ml-auto text-white/70" />
             </h3>
-            <p className="text-white/80 text-sm mt-1 relative z-10">
-              Encontre o prédio ideal para sua campanha
+            <p className="text-white/80 text-xs mt-1 relative z-10">
+              Encontre o prédio ideal
             </p>
           </div>
-          <div className="p-6 bg-gradient-to-b from-white to-gray-50/30">
+          <div className="p-4 bg-gradient-to-b from-white to-gray-50/30">
             <BuildingFiltersComponent 
               filters={filters}
               onFilterChange={handleFilterChange}
@@ -204,8 +204,8 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="w-16 h-16 bg-white rounded-xl border-2 border-gray-100/50 shadow-lg flex items-center justify-center">
-            <Filter className="h-5 w-5 text-[#3C1361]" />
+          <div className="w-14 h-14 bg-white rounded-xl border-2 border-gray-100/50 shadow-lg flex items-center justify-center">
+            <Filter className="h-4 w-4 text-[#3C1361]" />
           </div>
         </motion.div>
       )}

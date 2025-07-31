@@ -1,8 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
-import { useSidebarResponsive } from '@/hooks/useSidebarResponsive';
 import { useAuth } from '@/hooks/useAuth';
 import MobileBottomNavigation from '@/components/mobile/MobileBottomNavigation';
 import MobileDrawerNavigation from '@/components/mobile/MobileDrawerNavigation';
@@ -11,15 +10,22 @@ import AdvertiserMobileHeader from './AdvertiserMobileHeader';
 
 const ResponsiveAdvertiserLayout = () => {
   const { isMobile, isTablet } = useMobileBreakpoints();
-  const { 
-    isOpen, 
-    variant, 
-    isMobileDrawerOpen, 
-    toggle, 
-    closeMobileDrawer 
-  } = useSidebarResponsive();
+  const [isOpen, setIsOpen] = useState(true);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
+
+  const toggle = () => {
+    if (isMobile) {
+      setIsMobileDrawerOpen(prev => !prev);
+    } else {
+      setIsOpen(prev => !prev);
+    }
+  };
+
+  const closeMobileDrawer = () => {
+    setIsMobileDrawerOpen(false);
+  };
 
   const handleLogout = async () => {
     try {
