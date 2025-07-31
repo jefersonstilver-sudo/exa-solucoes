@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Phone, Mail, MapPin, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
@@ -48,6 +48,12 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
     </div>;
 };
 const MobileOptimizedFooter = () => {
+  const location = useLocation();
+  const isExaPage = location.pathname === '/exa';
+  
+  const logoUrl = isExaPage ? 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1MzkyNDY3NywiZXhwIjoxNzg1NDYwNjc3fQ.Obullg6SYYcT2j1mmJgZ4MIL-_9lqNDHmImhft_ZbmM' : undefined;
+  const brandText = isExaPage ? 'EXA' : 'INDEXA';
+  
   console.log('🦶 Footer: Renderizando MobileOptimizedFooter ÚNICO - PREVENINDO DUPLICAÇÃO');
   return <footer id="unique-indexa-footer" className="bg-indexa-purple-dark text-white w-full" style={{
     position: 'relative',
@@ -115,8 +121,8 @@ const MobileOptimizedFooter = () => {
           {/* Mobile Logo Section */}
           <div className="text-center mb-8 pb-6 border-b border-white/20">
             <div className="flex items-center justify-center space-x-3 mb-4">
-              <UnifiedLogo size="custom" linkTo="/" variant="light" className="w-10 h-10" />
-              <span className="text-xl font-bold">INDEXA</span>
+              <UnifiedLogo size="custom" linkTo="/" variant="light" className="w-10 h-10" logoUrl={logoUrl} />
+              <span className="text-xl font-bold">{brandText}</span>
             </div>
             <p className="text-white/80 text-sm leading-relaxed px-4">
               Transformando ideias em resultados através do marketing digital, produção audiovisual e publicidade inovadora.
