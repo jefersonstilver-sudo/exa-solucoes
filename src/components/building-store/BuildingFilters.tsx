@@ -143,40 +143,6 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
         </div>
       </FilterSection>
 
-      {/* Padrão do Público */}
-      <FilterSection title="Padrão do Público" icon={Star} delay={0.3}>
-        <div className="space-y-3">
-          {standardProfiles.map((profile) => (
-            <motion.label 
-              key={profile.value} 
-              className="flex items-center space-x-3 cursor-pointer hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent p-3 rounded-xl transition-all duration-200 group border border-transparent hover:border-gray-200/50"
-              whileHover={{ x: 4 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Checkbox
-                id={`profile-${profile.value}`}
-                checked={filters.standardProfile.includes(profile.value)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    onFilterChange({
-                      standardProfile: [...filters.standardProfile, profile.value]
-                    });
-                  } else {
-                    onFilterChange({
-                      standardProfile: filters.standardProfile.filter(p => p !== profile.value)
-                    });
-                  }
-                }}
-                disabled={loading}
-                className="border-2 border-gray-300 data-[state=checked]:border-[#3C1361] data-[state=checked]:bg-[#3C1361]"
-              />
-              <Badge className={`${profile.color} border text-xs px-3 py-1 font-medium shadow-sm`}>
-                {profile.label}
-              </Badge>
-            </motion.label>
-          ))}
-        </div>
-      </FilterSection>
 
       {/* Faixa de Preço */}
       <FilterSection title="Faixa de Preço" icon={DollarSign} delay={0.4}>
