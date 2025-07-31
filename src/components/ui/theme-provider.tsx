@@ -23,16 +23,9 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme)
   
-  React.useEffect(() => {
-    console.log('ThemeProvider initialized with theme:', theme);
-    document.documentElement.className = theme;
-  }, [theme]);
-  
   return (
     <ThemeProviderContext.Provider value={{ theme, setTheme }}>
-      <div className="min-h-screen bg-background text-foreground">
-        {children}
-      </div>
+      {children}
     </ThemeProviderContext.Provider>
   )
 }
