@@ -88,7 +88,7 @@ const PanelCardVertical: React.FC<PanelCardVerticalProps> = ({ panel, inCart, on
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
         <div className="md:flex">
           {/* Building image - left side */}
-          <div className="relative w-full aspect-square md:w-2/5 md:h-auto overflow-hidden">
+          <div className="relative w-full aspect-square md:w-2/5 md:aspect-square overflow-hidden">
             <img 
               src={(panel.buildings as any)?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'}
               alt={panel.buildings?.nome || 'Building image'} 
