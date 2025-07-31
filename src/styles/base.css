@@ -14,6 +14,16 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
+    min-height: 100vh;
+  }
+
+  html {
+    height: 100%;
+  }
+
+  #root {
+    min-height: 100vh;
+    background-color: hsl(var(--background));
   }
 }
 
@@ -44,12 +54,12 @@
     --indexa-mint: 160 72% 59%;
     --indexa-purple-dark: 261 83% 15%;
     
-    /* Variáveis LINKAÊ */
-    --linkae-primary: 26 27 92;        /* #1a1b5c */
-    --linkae-secondary: 44 48 148;     /* #2c3094 */
-    --linkae-accent: 77 166 255;       /* #4da6ff */
-    --linkae-cyan: 91 192 235;         /* #5bc0eb */
-    --linkae-white: 255 255 255;       /* #ffffff */
+    /* Variáveis LINKAÊ - Corrigidas para HSL */
+    --linkae-primary: 236 82% 23%;     /* #1a1b5c - Convertido para HSL */
+    --linkae-secondary: 233 52% 38%;   /* #2c3094 - Convertido para HSL */
+    --linkae-accent: 213 100% 65%;     /* #4da6ff - Convertido para HSL */
+    --linkae-cyan: 192 77% 64%;        /* #5bc0eb - Convertido para HSL */
+    --linkae-white: 0 0% 100%;         /* #ffffff - Convertido para HSL */
   }
 
   .dark {

@@ -22,14 +22,19 @@ const Index = () => {
   const { banners, isLoading: bannersLoading } = useHomepageBanners();
 
   useEffect(() => {
+    console.log('Index component mounted, starting data fetch...');
+    
     const fetchConfigs = async () => {
       try {
+        console.log('Fetching homepage configs from Supabase...');
         const { data, error } = await supabase
           .from('homepage_config')
           .select('*')
           .order('service_type');
 
         if (error) {
+          console.error('Error fetching homepage configs:', error);
+          console.log('Using fallback data due to Supabase error');
           setConfigs([
             {
               id: '1',
@@ -57,11 +62,40 @@ const Index = () => {
             }
           ]);
         } else {
+          console.log('Successfully fetched configs:', data);
           setConfigs(data || []);
         }
       } catch (error) {
-        // Silent error handling for performance
+        console.error('Unexpected error during fetch:', error);
+        console.log('Using fallback data due to unexpected error');
+        setConfigs([
+          {
+            id: '1',
+            service_type: 'marketing',
+            title: 'Marketing',
+            image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80',
+            href: '/marketing',
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: '2',
+            service_type: 'produtora',
+            title: 'Produtora',
+            image_url: 'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?auto=format&fit=crop&q=80',
+            href: '/produtora',
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: '3',
+            service_type: 'paineis',
+            title: 'Painéis Publicitários',
+            image_url: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80',
+            href: '/paineis-digitais/loja',
+            updated_at: new Date().toISOString()
+          }
+        ]);
       } finally {
+        console.log('Finished loading homepage configs');
         setIsLoading(false);
       }
     };

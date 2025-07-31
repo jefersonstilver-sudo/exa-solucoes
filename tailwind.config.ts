@@ -70,25 +70,17 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Cores específicas do Indexa - updated with more vibrant colors
-				indexa: {
-					purple: '#4A0968',
-					'purple-dark': '#38064F',
-					'purple-light': '#6A1888',
-					mint: '#58E3AB',
-					'mint-dark': '#4AD399',
-					'mint-light': '#7EEAC0',
-					white: '#FFFFFF'
-				},
-				// Novas cores LINKAÊ baseadas na imagem do usuário
+				// Cores específicas do Indexa - usando HSL
+				'indexa-purple': 'hsl(var(--indexa-purple))',
+				'indexa-mint': 'hsl(var(--indexa-mint))',
+				'indexa-purple-dark': 'hsl(var(--indexa-purple-dark))',
+				// Novas cores LINKAÊ usando as variáveis HSL
 				linkae: {
-					'dark-blue': '#1a1b5c',      // Azul escuro principal
-					'royal-blue': '#2c3094',     // Azul royal médio  
-					'bright-blue': '#4da6ff',    // Azul vibrante
-					'cyan-light': '#5bc0eb',     // Cyan claro para CTAs
-					'white': '#ffffff',          // Branco puro
-					'gradient-start': '#1a1b5c', // Início dos gradientes
-					'gradient-end': '#2837a8'    // Final dos gradientes
+					primary: 'hsl(var(--linkae-primary))',
+					secondary: 'hsl(var(--linkae-secondary))',
+					accent: 'hsl(var(--linkae-accent))',
+					cyan: 'hsl(var(--linkae-cyan))',
+					white: 'hsl(var(--linkae-white))'
 				}
 			},
 			borderRadius: {

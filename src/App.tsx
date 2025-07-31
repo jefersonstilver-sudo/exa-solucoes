@@ -67,9 +67,10 @@ function App() {
         <AuthProvider>
           <Router>
             <SimpleCartProvider>
-              <div className="min-h-screen bg-background">
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Routes>
+              <ErrorBoundary>
+                <div className="min-h-screen bg-background">
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Routes>
                     {/* Rotas principais */}
                     <Route path="/" element={<Index />} />
                     
@@ -199,10 +200,11 @@ function App() {
                     
                     {/* Rota catch-all para páginas não encontradas */}
                     <Route path="*" element={<NaoEncontrado />} />
-                  </Routes>
-                </Suspense>
-                <Toaster />
-              </div>
+                    </Routes>
+                  </Suspense>
+                  <Toaster />
+                </div>
+              </ErrorBoundary>
             </SimpleCartProvider>
           </Router>
         </AuthProvider>

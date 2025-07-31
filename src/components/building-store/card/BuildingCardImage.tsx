@@ -21,7 +21,7 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
   const totalImages = imageUrls.length;
 
   return (
-    <div className="relative w-full aspect-square">
+    <div className="relative w-full h-72 lg:h-80">
       {primaryImage ? (
         <img
           src={primaryImage}

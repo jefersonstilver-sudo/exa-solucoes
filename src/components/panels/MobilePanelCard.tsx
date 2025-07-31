@@ -64,8 +64,8 @@ export const MobilePanelCard: React.FC<MobilePanelCardProps> = ({
     >
       <Card className="overflow-hidden border border-gray-200 hover:border-[#3C1361]/30 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300">
         <CardContent className="p-0">
-          {/* Building image - Mobile optimized square aspect ratio */}
-          <div className="relative w-full aspect-square overflow-hidden">
+          {/* Building image - Mobile optimized aspect ratio */}
+          <div className="relative w-full aspect-[16/9] overflow-hidden">
             <img 
               src={(panel.buildings as any)?.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab'}
               alt={panel.buildings?.nome || 'Building image'} 
