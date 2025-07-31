@@ -45,7 +45,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
         className="w-full"
       >
         {/* Container principal com espaçamento adequado */}
-        <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-6 mt-4' : 'px-6 py-8 mt-6'}`}>
+        <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-3 mt-2' : 'px-6 py-4 mt-3'}`}>
           <div className="w-full max-w-6xl mx-auto">
             {/* Card principal com proteções contra sobreposição */}
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative z-10">
