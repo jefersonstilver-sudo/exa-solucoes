@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useMobileBreakpoints } from './useMobileBreakpoints';
 

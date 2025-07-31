@@ -14,6 +14,8 @@ interface BuildingStoreGridLayoutProps {
   selectedLocation: { lat: number, lng: number } | null;
   filters: BuildingFilters;
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;
+  sidebarCollapsed?: boolean;
+  onSidebarToggle?: () => void;
 }
 
 const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
@@ -22,7 +24,9 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
   isSearching,
   selectedLocation,
   filters,
-  handleFilterChange
+  handleFilterChange,
+  sidebarCollapsed = false,
+  onSidebarToggle
 }) => {
   const isMobile = useIsMobile();
 
@@ -58,25 +62,29 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
       {/* Left sidebar with filters - Desktop only */}
-      <div className="lg:col-span-4 xl:col-span-3">
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-4 xl:col-span-3'}`}>
         <div className="sticky top-4">
           <BuildingFilterSidebar 
             filters={filters}
             handleFilterChange={handleFilterChange}
             isLoading={isLoading}
             isSearching={isSearching}
+            isCollapsed={sidebarCollapsed}
+            onToggle={onSidebarToggle}
           />
         </div>
       </div>
       
       {/* Main content with building grid */}
-      <div className="lg:col-span-8 xl:col-span-9">
-        <BuildingStoreGrid 
-          buildings={buildings}
-          isLoading={isLoading}
-          isSearching={isSearching}
-          selectedLocation={selectedLocation}
-        />
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:col-span-11' : 'lg:col-span-8 xl:col-span-9'}`}>
+        <div className={`${sidebarCollapsed ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
+          <BuildingStoreGrid 
+            buildings={buildings}
+            isLoading={isLoading}
+            isSearching={isSearching}
+            selectedLocation={selectedLocation}
+          />
+        </div>
       </div>
     </div>
   );

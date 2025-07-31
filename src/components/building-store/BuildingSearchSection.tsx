@@ -50,8 +50,8 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
             {/* Layout de duas colunas no desktop, uma coluna no mobile */}
             <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-12'}`}>
               
-              {/* Card de busca - Coluna esquerda */}
-              <div className={`${isMobile ? 'col-span-1' : 'col-span-7'}`}>
+              {/* Card de busca - Coluna esquerda (aumentado) */}
+              <div className={`${isMobile ? 'col-span-1' : 'col-span-8'}`}>
                 <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative z-10 h-full">
                   {/* Container interno com padding adequado */}
                   <div className={`relative ${isMobile ? 'p-4' : 'p-6'}`}>
@@ -131,8 +131,8 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                 </div>
               </div>
 
-              {/* Banner promocional - Coluna direita */}
-              <div className={`${isMobile ? 'col-span-1' : 'col-span-5'}`}>
+              {/* Banner promocional - Coluna direita (mais quadrado) */}
+              <div className={`${isMobile ? 'col-span-1' : 'col-span-4'}`}>
                 <motion.div 
                   className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative z-10 h-full"
                   initial={{ opacity: 0, x: 20 }}

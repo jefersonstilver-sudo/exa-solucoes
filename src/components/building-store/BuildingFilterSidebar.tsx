@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
-import { Map, Filter, Sparkles } from 'lucide-react';
+import { Map, Filter, Sparkles, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BuildingFiltersComponent from './BuildingFilters';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -12,36 +12,89 @@ interface BuildingFilterSidebarProps {
   handleFilterChange: (filters: Partial<BuildingFilters>) => void;
   isLoading: boolean;
   isSearching: boolean;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
 }
 
 const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
   filters,
   handleFilterChange,
   isLoading,
-  isSearching
+  isSearching,
+  isCollapsed = false,
+  onToggle
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
 
   return (
-    <div className="space-y-4 sticky top-24">
-      {/* Map Toggle Button */}
-      <motion.div 
-        className="w-full"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Button
-          variant="outline"
-          className="w-full border-2 border-gradient-to-r from-[#3C1361]/20 to-[#3C1361]/30 text-[#3C1361] hover:bg-gradient-to-r hover:from-[#3C1361]/5 hover:to-[#3C1361]/10 hover:border-[#3C1361]/50 rounded-2xl flex gap-3 justify-center items-center py-6 relative overflow-hidden group transition-all duration-300 shadow-sm hover:shadow-md"
-          onClick={() => setMapOpen(!mapOpen)}
+    <div className={`space-y-4 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-full'}`}>
+      {/* Hamburger Toggle Button */}
+      {onToggle && (
+        <motion.div 
+          className="w-full"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#3C1361]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <Map className="h-5 w-5 transition-transform group-hover:scale-110 duration-300 relative z-10" />
-          <span className="relative z-10 font-semibold">{mapOpen ? "Fechar mapa" : "Ver no mapa"}</span>
-          <Sparkles className="h-4 w-4 text-[#3C1361]/50 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        </Button>
-      </motion.div>
+          <Button
+            variant="outline"
+            className={`border-2 border-[#3C1361]/20 text-[#3C1361] hover:bg-[#3C1361]/5 hover:border-[#3C1361]/50 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md group ${
+              isCollapsed ? 'w-16 h-16 p-0' : 'w-full py-3'
+            }`}
+            onClick={onToggle}
+          >
+            <div className="relative">
+              {isCollapsed ? (
+                <Menu className="h-5 w-5 transition-transform group-hover:scale-110 duration-300" />
+              ) : (
+                <div className="flex items-center gap-3">
+                  <X className="h-5 w-5 transition-transform group-hover:rotate-90 duration-300" />
+                  {!isCollapsed && <span className="font-semibold">Recolher filtros</span>}
+                </div>
+              )}
+            </div>
+          </Button>
+        </motion.div>
+      )}
+      
+      {/* Map Toggle Button */}
+      {!isCollapsed && (
+        <motion.div 
+          className="w-full"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Button
+            variant="outline"
+            className="w-full border-2 border-gradient-to-r from-[#3C1361]/20 to-[#3C1361]/30 text-[#3C1361] hover:bg-gradient-to-r hover:from-[#3C1361]/5 hover:to-[#3C1361]/10 hover:border-[#3C1361]/50 rounded-2xl flex gap-3 justify-center items-center py-6 relative overflow-hidden group transition-all duration-300 shadow-sm hover:shadow-md"
+            onClick={() => setMapOpen(!mapOpen)}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[#3C1361]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <Map className="h-5 w-5 transition-transform group-hover:scale-110 duration-300 relative z-10" />
+            <span className="relative z-10 font-semibold">{mapOpen ? "Fechar mapa" : "Ver no mapa"}</span>
+            <Sparkles className="h-4 w-4 text-[#3C1361]/50 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </Button>
+        </motion.div>
+      )}
+      
+      {/* Collapsed state - Map icon only */}
+      {isCollapsed && (
+        <motion.div 
+          className="w-full"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Button
+            variant="outline"
+            className="w-16 h-16 border-2 border-[#3C1361]/20 text-[#3C1361] hover:bg-[#3C1361]/5 hover:border-[#3C1361]/50 rounded-xl p-0 transition-all duration-300 shadow-sm hover:shadow-md group"
+            onClick={() => setMapOpen(!mapOpen)}
+          >
+            <Map className="h-5 w-5 transition-transform group-hover:scale-110 duration-300" />
+          </Button>
+        </motion.div>
+      )}
       
       {/* Map Area (Expandable) */}
       <AnimatePresence>
@@ -113,33 +166,49 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
       </div>
       
       {/* Desktop Filter Sidebar */}
-      <motion.div 
-        className="hidden lg:block bg-white rounded-3xl border-2 border-gray-100/50 shadow-xl overflow-hidden backdrop-blur-sm"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <div className="bg-gradient-to-r from-[#3C1361] via-[#3C1361] to-[#4A1B6B] p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
-          <h3 className="text-xl font-bold text-white flex items-center relative z-10">
-            <Filter className="h-5 w-5 mr-3" />
-            Filtrar Prédios
-            <Sparkles className="h-4 w-4 ml-auto text-white/70" />
-          </h3>
-          <p className="text-white/80 text-sm mt-1 relative z-10">
-            Encontre o prédio ideal para sua campanha
-          </p>
-        </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50/30">
-          <BuildingFiltersComponent 
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            loading={isLoading || isSearching}
-            compact={true}
-          />
-        </div>
-      </motion.div>
+      {!isCollapsed && (
+        <motion.div 
+          className="hidden lg:block bg-white rounded-3xl border-2 border-gray-100/50 shadow-xl overflow-hidden backdrop-blur-sm"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="bg-gradient-to-r from-[#3C1361] via-[#3C1361] to-[#4A1B6B] p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+            <h3 className="text-xl font-bold text-white flex items-center relative z-10">
+              <Filter className="h-5 w-5 mr-3" />
+              Filtrar Prédios
+              <Sparkles className="h-4 w-4 ml-auto text-white/70" />
+            </h3>
+            <p className="text-white/80 text-sm mt-1 relative z-10">
+              Encontre o prédio ideal para sua campanha
+            </p>
+          </div>
+          <div className="p-6 bg-gradient-to-b from-white to-gray-50/30">
+            <BuildingFiltersComponent 
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              loading={isLoading || isSearching}
+              compact={true}
+            />
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Collapsed state - Filter icons only */}
+      {isCollapsed && (
+        <motion.div 
+          className="hidden lg:block space-y-3"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="w-16 h-16 bg-white rounded-xl border-2 border-gray-100/50 shadow-lg flex items-center justify-center">
+            <Filter className="h-5 w-5 text-[#3C1361]" />
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

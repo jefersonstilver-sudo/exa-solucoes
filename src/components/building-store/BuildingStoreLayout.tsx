@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import BuildingStoreSearchSection from './layout/BuildingStoreSearchSection';
@@ -30,6 +30,11 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   handleSearch,
   handleClearLocation
 }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const handleSidebarToggle = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
   return (
     <div className="w-full">
       {/* Search section - Container sem limitações */}
@@ -56,6 +61,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
           selectedLocation={selectedLocation}
           filters={filters}
           handleFilterChange={handleFilterChange}
+          sidebarCollapsed={sidebarCollapsed}
+          onSidebarToggle={handleSidebarToggle}
         />
       </div>
     </div>
