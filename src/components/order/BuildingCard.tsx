@@ -27,10 +27,10 @@ export const BuildingCard: React.FC<BuildingCardProps> = ({ building, index }) =
           <img 
             src={building.imageurl} 
             alt={building.nome}
-            className="w-full aspect-square object-cover"
+            className="w-full h-48 object-cover"
           />
         ) : (
-          <div className="w-full aspect-square bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="w-full h-48 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
             <Building className="h-16 w-16 text-white opacity-70" />
           </div>
         )}
