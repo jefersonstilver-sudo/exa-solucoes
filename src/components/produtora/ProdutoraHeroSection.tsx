@@ -31,6 +31,21 @@ const ProdutoraHeroSection = () => {
       {/* Conteúdo principal */}
       <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(90vh-5rem)] md:h-[calc(80vh-5rem)] px-4 py-8">
         <div className="text-center max-w-5xl mx-auto">
+          {/* Vídeo principal da Indexa */}
+          <div className={`mb-8 transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+            <div className="relative max-w-2xl mx-auto">
+              <video 
+                className="w-full h-auto rounded-2xl shadow-2xl" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+              >
+                <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20produtora/indexa%20lettr.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcHJvZHV0b3JhL2luZGV4YSBsZXR0ci5tcDQiLCJpYXQiOjE3NTM5MjU0NTcsImV4cCI6MTc4NTQ2MTQ1N30.y-klo_wvwItBeDzzHr6jq3aHQMWDumvwmh3jfJFi6WE" type="video/mp4" />
+              </video>
+            </div>
+          </div>
+
           {/* Frase principal com animação de escrita */}
           <div className={`transform transition-all duration-1000 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
             <h1 className="font-playfair text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
