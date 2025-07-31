@@ -73,7 +73,7 @@ const MobileBuildingGrid = ({ buildings, isLoading, onAddToCart }: MobileBuildin
             <CardContent className="p-0">
               <div className="flex">
                 {/* Building Image/Icon */}
-                <div className="w-24 h-24 bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/20 flex items-center justify-center rounded-l-lg">
+                <div className="w-28 h-28 bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/20 flex items-center justify-center rounded-l-lg">
                   <Building className="h-8 w-8 text-indexa-purple" />
                 </div>
                 
