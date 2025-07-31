@@ -14,11 +14,16 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [showControls, setShowControls] = useState(true);
+  const [showCenterButton, setShowCenterButton] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorDetails, setErrorDetails] = useState<string>('');
   const [isElementReady, setIsElementReady] = useState(false);
+  
+  // Auto-hide controls timer
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const centerButtonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create video controls
   const {
@@ -177,6 +182,79 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     };
   }, [src]);
 
+  // Auto-hide controls logic
+  const clearControlsTimeout = () => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+      controlsTimeoutRef.current = null;
+    }
+  };
+
+  const clearCenterButtonTimeout = () => {
+    if (centerButtonTimeoutRef.current) {
+      clearTimeout(centerButtonTimeoutRef.current);
+      centerButtonTimeoutRef.current = null;
+    }
+  };
+
+  const startControlsTimer = () => {
+    clearControlsTimeout();
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000); // Hide after 3 seconds of inactivity
+    }
+  };
+
+  const startCenterButtonTimer = () => {
+    clearCenterButtonTimeout();
+    if (isPlaying) {
+      centerButtonTimeoutRef.current = setTimeout(() => {
+        setShowCenterButton(false);
+      }, 1000); // Hide center button after 1 second when playing
+    }
+  };
+
+  const showControlsTemporarily = () => {
+    setShowControls(true);
+    if (!isPlaying) {
+      setShowCenterButton(true);
+    }
+    startControlsTimer();
+  };
+
+  // Enhanced toggle play that handles center button visibility
+  const enhancedTogglePlay = () => {
+    togglePlay();
+    // Update center button visibility based on new playing state
+    if (!isPlaying) {
+      // About to start playing
+      startCenterButtonTimer();
+    } else {
+      // About to pause
+      setShowCenterButton(true);
+      clearCenterButtonTimeout();
+    }
+  };
+
+  // Effect to handle auto-hide based on playing state
+  useEffect(() => {
+    if (isPlaying) {
+      startControlsTimer();
+      startCenterButtonTimer();
+    } else {
+      setShowControls(true);
+      setShowCenterButton(true);
+      clearControlsTimeout();
+      clearCenterButtonTimeout();
+    }
+
+    return () => {
+      clearControlsTimeout();
+      clearCenterButtonTimeout();
+    };
+  }, [isPlaying]);
+
   return {
     videoRef,
     isPlaying,
@@ -187,17 +265,19 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     currentTime,
     showControls,
     setShowControls,
+    showCenterButton,
     isFullscreen,
     hasError,
     isLoading,
     errorDetails,
     isValidVideoUrl,
-    togglePlay,
+    togglePlay: enhancedTogglePlay,
     toggleMute,
     handleVolumeChange,
     handleProgressChange,
     toggleFullscreen,
     restart,
-    formatTime
+    formatTime,
+    showControlsTemporarily
   };
 };

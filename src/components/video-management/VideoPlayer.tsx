@@ -37,6 +37,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     currentTime,
     showControls,
     setShowControls,
+    showCenterButton,
     hasError,
     isLoading,
     errorDetails,
@@ -47,7 +48,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     handleProgressChange,
     toggleFullscreen,
     restart,
-    formatTime
+    formatTime,
+    showControlsTemporarily
   } = useVideoPlayer(src, autoPlay, muted);
 
   const isValidUrl = isValidVideoUrl(src);
@@ -66,8 +68,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         "relative bg-black rounded-lg overflow-hidden group",
         className
       )}
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => setShowControls(controls)}
+      onMouseEnter={() => showControlsTemporarily()}
+      onMouseMove={() => showControlsTemporarily()}
+      onMouseLeave={() => {
+        // Don't hide if paused or has error
+        if (isPlaying && !hasError && !isLoading) {
+          setShowControls(false);
+        }
+      }}
     >
       {/* SEMPRE renderizar o elemento de vídeo para evitar deadlock */}
       <VideoPlayerCore
@@ -117,6 +125,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           volume={volume}
           toggleMute={toggleMute}
           handleVolumeChange={handleVolumeChange}
+          showCenterButton={showCenterButton}
         />
       )}
     </div>

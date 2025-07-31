@@ -28,6 +28,7 @@ interface VideoPlayerControlsProps {
   volume: number;
   toggleMute: () => void;
   handleVolumeChange: (value: number[]) => void;
+  showCenterButton?: boolean;
 }
 
 export const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({
@@ -45,7 +46,8 @@ export const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({
   isMuted,
   volume,
   toggleMute,
-  handleVolumeChange
+  handleVolumeChange,
+  showCenterButton = true
 }) => {
   return (
     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 flex flex-col justify-between p-4 transition-opacity duration-300">
@@ -79,20 +81,22 @@ export const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({
       </div>
 
       {/* Center Play Button */}
-      <div className="flex justify-center">
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={togglePlay}
-          className="text-white hover:bg-white/20 h-16 w-16 rounded-full p-0"
-        >
-          {isPlaying ? (
-            <Pause className="h-8 w-8" />
-          ) : (
-            <Play className="h-8 w-8 ml-1" />
-          )}
-        </Button>
-      </div>
+      {showCenterButton && (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={togglePlay}
+            className="text-white hover:bg-white/20 h-16 w-16 rounded-full p-0 transition-opacity duration-300"
+          >
+            {isPlaying ? (
+              <Pause className="h-8 w-8" />
+            ) : (
+              <Play className="h-8 w-8 ml-1" />
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Bottom Controls */}
       <div className="space-y-3">
