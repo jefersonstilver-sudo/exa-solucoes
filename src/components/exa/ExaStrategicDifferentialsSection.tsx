@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Target, Calendar, BarChart3, Shield } from 'lucide-react';
+import { Target, Calendar, BarChart3, Zap } from 'lucide-react';
 
 const ExaStrategicDifferentialsSection: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -42,10 +42,10 @@ const ExaStrategicDifferentialsSection: React.FC = () => {
       gradient: "from-purple-600 to-indigo-600"
     },
     {
-      icon: Shield,
-      title: "Tecnologia proprietária + infraestrutura blindada",
-      description: "A rede é 100% construída e operada pela Indexa. Os painéis usam monitores profissionais, internet dedicada, sistema de reinício automático e operação remota — para que tudo funcione com precisão e estabilidade.",
-      gradient: "from-indigo-600 to-purple-600"
+      icon: Zap,
+      title: "ROI Comprovado e Mensurável",
+      description: "Retorno sobre investimento demonstrado com métricas reais e resultados tangíveis para seu negócio. Acompanhe o crescimento das suas vendas em tempo real.",
+      gradient: "from-green-500 to-emerald-500"
     }
   ];
 

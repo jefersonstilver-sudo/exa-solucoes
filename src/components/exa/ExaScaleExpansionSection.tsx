@@ -91,10 +91,10 @@ const ExaScaleExpansionSection: React.FC = () => {
                 <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600" />
                 <div>
                   <h3 className="text-xl sm:text-2xl md:text-3xl font-exo-2 font-bold text-slate-800 tracking-wide">
-                    Fase 2 - Expansão Regional
+                    Fase 2 - Expansão
                   </h3>
                   <p className="text-slate-600 font-exo-2 font-light text-sm sm:text-base md:text-lg">
-                    Tríplice fronteira
+                    Novos prédios planejados
                   </p>
                 </div>
               </div>
@@ -103,26 +103,10 @@ const ExaScaleExpansionSection: React.FC = () => {
                 <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm sm:text-base md:text-lg font-exo-2 font-medium text-slate-600">
-                      Ciudad del Este
+                      Outros 50 prédios
                     </span>
                     <span className="text-xs sm:text-sm text-indigo-600 font-medium">
-                      Em andamento
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm sm:text-base md:text-lg font-exo-2 font-medium text-slate-600">
-                      Hernandarias
-                    </span>
-                    <span className="text-xs sm:text-sm text-indigo-600 font-medium">
-                      Planejado
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm sm:text-base md:text-lg font-exo-2 font-medium text-slate-600">
-                      Puerto Iguazú
-                    </span>
-                    <span className="text-xs sm:text-sm text-indigo-600 font-medium">
-                      Planejado
+                      Em planejamento
                     </span>
                   </div>
                 </div>
@@ -141,7 +125,7 @@ const ExaScaleExpansionSection: React.FC = () => {
             <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-6 sm:p-8 lg:p-10 text-white shadow-xl">
               <MapPin className="w-8 h-8 sm:w-10 sm:h-10 mb-4 sm:mb-6 text-purple-200" />
               <h3 className="text-xl sm:text-2xl md:text-3xl font-exo-2 font-bold mb-4 sm:mb-6 leading-tight tracking-wide">
-                Maior sistema de mídia inteligente da tríplice fronteira
+                Maior sistema de mídia inteligente da região
               </h3>
               <div className="space-y-4 sm:space-y-6 font-exo-2 font-light text-white/90 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed tracking-wide">
                 <p>
@@ -151,7 +135,7 @@ const ExaScaleExpansionSection: React.FC = () => {
                   A cada novo prédio, a audiência cresce — e a densidade da presença da sua marca aumenta.
                 </p>
                 <p>
-                  A rede está em plena expansão para Ciudad del Este, Hernandarias e Puerto Iguazú, consolidando a EXA como o maior sistema de mídia inteligente da tríplice fronteira.
+                  Com mais 50 novos prédios planejados, a EXA se consolida como o maior sistema de mídia inteligente da região.
                 </p>
               </div>
             </div>

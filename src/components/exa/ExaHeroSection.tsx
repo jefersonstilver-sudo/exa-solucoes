@@ -21,11 +21,13 @@ const ExaHeroSection: React.FC = () => {
         
         {/* Conteúdo de Texto */}
         <div className="flex-1 text-center lg:text-left text-white w-full lg:max-w-2xl order-2 lg:order-1">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight mb-6 sm:mb-8 lg:mb-10">
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
-            EXA
-          </span>
-        </h1>
+        <div className="mb-6 sm:mb-8 lg:mb-10 flex justify-center lg:justify-start">
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1MzkyNDY3NywiZXhwIjoxNzg1NDYwNjc3fQ.Obullg6SYYcT2j1mmJgZ4MIL-_9lqNDHmImhft_ZbmM" 
+            alt="EXA Logo" 
+            className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto object-contain"
+          />
+        </div>
         
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-6 sm:mb-8 lg:mb-10 leading-tight">
           Publicidade Inteligente que Conecta
@@ -62,14 +64,14 @@ const ExaHeroSection: React.FC = () => {
         </div>
         
         {/* Vídeo dos Painéis EXA */}
-        <div className="flex-1 flex justify-center lg:justify-end w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl order-1 lg:order-2 mt-8 sm:mt-0">
+        <div className="flex-1 flex justify-center lg:justify-end w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl order-1 lg:order-2 mt-8 sm:mt-0">
           <video 
             autoPlay 
             muted 
             loop 
             playsInline
             preload="metadata"
-            className="w-full h-auto rounded-lg shadow-2xl min-h-[350px] sm:min-h-[400px] max-h-[65vh] sm:max-h-[70vh] lg:max-h-[90vh] object-cover"
+            className="w-full h-auto rounded-lg shadow-2xl min-h-[280px] sm:min-h-[320px] max-h-[52vh] sm:max-h-[56vh] lg:max-h-[72vh] object-cover"
           >
             <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
           </video>
