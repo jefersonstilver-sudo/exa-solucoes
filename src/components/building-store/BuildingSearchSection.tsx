@@ -69,9 +69,6 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                   <h1 className={`font-bold text-[#3C1361] ${isMobile ? 'text-2xl mb-3' : 'text-4xl mb-4'}`}>
                     Encontre prédios para publicidade
                   </h1>
-                  <p className={`text-gray-600 max-w-3xl mx-auto ${isMobile ? 'text-base px-2' : 'text-xl'}`}>
-                    {isMobile ? 'Locais estratégicos para sua campanha' : 'Descubra locais estratégicos para sua campanha publicitária'}
-                  </p>
                 </motion.div>
 
                 {/* Barra de busca com z-index alto */}
