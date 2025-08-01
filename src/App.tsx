@@ -8,6 +8,8 @@ import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MinimalLoader from '@/components/ui/MinimalLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { useDeveloperAuth } from '@/hooks/useDeveloperAuth';
+import ComingSoonPage from '@/pages/ComingSoonPage';
 
 // Importações diretas para páginas críticas
 import Index from './pages/Index';
@@ -65,6 +67,142 @@ const queryClient = new QueryClient({
 });
 console.log('✅ QueryClient initialized');
 
+// Main App content wrapper with Coming Soon protection
+const AppContent = () => {
+  const { isAuthenticated } = useDeveloperAuth();
+
+  // If not authenticated, show Coming Soon page
+  if (!isAuthenticated) {
+    return <ComingSoonPage />;
+  }
+
+  // If authenticated, show normal app routes
+  return (
+    <div className="min-h-screen bg-background">
+      <Routes>
+        {/* Rotas principais */}
+        <Route path="/" element={<Index />} />
+        
+        {/* CORREÇÃO: Rotas da loja unificadas */}
+        <Route path="/loja" element={<BuildingStore />} />
+        <Route path="/paineis-digitais/loja" element={<BuildingStore />} />
+        <Route path="/building-store" element={<BuildingStore />} />
+        
+        <Route path="/plano" element={<PlanSelection />} />
+        <Route path="/planos" element={<PlanSelection />} />
+        <Route path="/selecionar-plano" element={<PlanSelection />} />
+        
+        {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
+        <Route path="/confirmacao" element={<Confirmacao />} />
+        <Route path="/confirmacao/*" element={<Confirmacao />} />
+        
+        {/* CHECKOUT FLOW CORRIGIDO - REMOVIDA ROTA /checkout ANTIGA */}
+        <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
+        <Route path="/checkout/resumo" element={<CheckoutSummary />} />
+        <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
+        
+        {/* PAGAMENTO - ROTAS CORRIGIDAS */}
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/pix-payment" element={<PixPayment />} />
+        <Route path="/pedido-confirmado" element={
+          <Suspense fallback={<MinimalLoader />}>
+            <OrderConfirmation />
+          </Suspense>
+        } />
+
+        {/* Rotas com lazy loading */}
+        {/* REDIRECTS 301 para novas URLs */}
+        <Route path="/marketing" element={<Navigate to="/linkae" replace />} />
+        <Route path="/paineis-publicitarios" element={<Navigate to="/exa" replace />} />
+        
+        {/* PÁGINAS PRINCIPAIS - SEM LAZY LOADING PARA PERFORMANCE */}
+        <Route path="/linkae" element={<Linkae />} />
+        <Route path="/exa" element={<Exa />} />
+        <Route path="/produtora" element={<Produtora />} />
+        <Route path="/sou-sindico" element={
+          <Suspense fallback={<MinimalLoader />}>
+            <SouSindico />
+          </Suspense>
+        } />
+        <Route path="/panel-store" element={
+          <Suspense fallback={<MinimalLoader />}>
+            <PanelStore />
+          </Suspense>
+        } />
+        <Route path="/painel-store" element={
+          <Suspense fallback={<MinimalLoader />}>
+            <PainelStore />
+          </Suspense>
+        } />
+        <Route path="/email-enviado" element={
+          <Suspense fallback={<MinimalLoader />}>
+            <EmailSent />
+          </Suspense>
+        } />
+
+        {/* ÁREA DO ANUNCIANTE */}
+        <Route path="/anunciante/*" element={
+          <ErrorBoundary>
+            <Suspense fallback={<MinimalLoader />}>
+              <CompleteResponsiveLayout />
+            </Suspense>
+          </ErrorBoundary>
+        }>
+          <Route index element={
+            <Suspense fallback={<MinimalLoader />}>
+              <AdvertiserDashboard />
+            </Suspense>
+          } />
+          <Route path="pedidos" element={
+            <Suspense fallback={<MinimalLoader />}>
+              <AdvertiserOrders />
+            </Suspense>
+          } />
+          <Route path="pedido/:id" element={
+            <Suspense fallback={<MinimalLoader />}>
+              <OrderDetails />
+            </Suspense>
+          } />
+          <Route path="campanhas" element={
+            <Suspense fallback={<MinimalLoader />}>
+              <MyCampaigns />
+            </Suspense>
+          } />
+          <Route path="campanhas/:id" element={
+            <Suspense fallback={<MinimalLoader />}>
+              <CampaignDetails />
+            </Suspense>
+          } />
+          <Route path="videos" element={
+            <Suspense fallback={<MinimalLoader />}>
+              <MyVideos />
+            </Suspense>
+          } />
+          <Route path="perfil" element={
+            <Suspense fallback={<MinimalLoader />}>
+              <AdvertiserSettings />
+            </Suspense>
+          } />
+        </Route>
+
+        {/* Rotas de autenticação */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/termos-uso" element={<TermosUso />} />
+        <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+
+        {/* Rotas administrativas */}
+        <Route path="/super_admin/*" element={<SuperAdminPage />} />
+        <Route path="/admin/*" element={<AdminPage />} />
+        
+        {/* Rota catch-all para páginas não encontradas */}
+        <Route path="*" element={<NaoEncontrado />} />
+      </Routes>
+      <Toaster />
+    </div>
+  );
+};
+
 function App() {
   console.log('🎯 App component rendering...');
   
@@ -75,128 +213,7 @@ function App() {
           <Router>
             <SimpleCartProvider>
               <ErrorBoundary>
-                <div className="min-h-screen bg-background">
-                  <Routes>
-                    {/* Rotas principais */}
-                    <Route path="/" element={<Index />} />
-                    
-                    {/* CORREÇÃO: Rotas da loja unificadas */}
-                    <Route path="/loja" element={<BuildingStore />} />
-                    <Route path="/paineis-digitais/loja" element={<BuildingStore />} />
-                    <Route path="/building-store" element={<BuildingStore />} />
-                    
-                    <Route path="/plano" element={<PlanSelection />} />
-                    <Route path="/planos" element={<PlanSelection />} />
-                    <Route path="/selecionar-plano" element={<PlanSelection />} />
-                    
-                    {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
-                    <Route path="/confirmacao" element={<Confirmacao />} />
-                    <Route path="/confirmacao/*" element={<Confirmacao />} />
-                    
-                    {/* CHECKOUT FLOW CORRIGIDO - REMOVIDA ROTA /checkout ANTIGA */}
-                    <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
-                    <Route path="/checkout/resumo" element={<CheckoutSummary />} />
-                    <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
-                    
-                    {/* PAGAMENTO - ROTAS CORRIGIDAS */}
-                    <Route path="/payment" element={<Payment />} />
-                    <Route path="/pix-payment" element={<PixPayment />} />
-                    <Route path="/pedido-confirmado" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <OrderConfirmation />
-                      </Suspense>
-                    } />
-
-                    {/* Rotas com lazy loading */}
-                    {/* REDIRECTS 301 para novas URLs */}
-                    <Route path="/marketing" element={<Navigate to="/linkae" replace />} />
-                    <Route path="/paineis-publicitarios" element={<Navigate to="/exa" replace />} />
-                    
-                    {/* PÁGINAS PRINCIPAIS - SEM LAZY LOADING PARA PERFORMANCE */}
-                    <Route path="/linkae" element={<Linkae />} />
-                    <Route path="/exa" element={<Exa />} />
-                    <Route path="/produtora" element={<Produtora />} />
-                    <Route path="/sou-sindico" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <SouSindico />
-                      </Suspense>
-                    } />
-                    <Route path="/panel-store" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <PanelStore />
-                      </Suspense>
-                    } />
-                    <Route path="/painel-store" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <PainelStore />
-                      </Suspense>
-                    } />
-                    <Route path="/email-enviado" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <EmailSent />
-                      </Suspense>
-                    } />
-
-                    {/* ÁREA DO ANUNCIANTE */}
-                    <Route path="/anunciante/*" element={
-                      <ErrorBoundary>
-                        <Suspense fallback={<MinimalLoader />}>
-                          <CompleteResponsiveLayout />
-                        </Suspense>
-                      </ErrorBoundary>
-                    }>
-                      <Route index element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <AdvertiserDashboard />
-                        </Suspense>
-                      } />
-                      <Route path="pedidos" element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <AdvertiserOrders />
-                        </Suspense>
-                      } />
-                      <Route path="pedido/:id" element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <OrderDetails />
-                        </Suspense>
-                      } />
-                      <Route path="campanhas" element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <MyCampaigns />
-                        </Suspense>
-                      } />
-                      <Route path="campanhas/:id" element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <CampaignDetails />
-                        </Suspense>
-                      } />
-                      <Route path="videos" element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <MyVideos />
-                        </Suspense>
-                      } />
-                      <Route path="perfil" element={
-                        <Suspense fallback={<MinimalLoader />}>
-                          <AdvertiserSettings />
-                        </Suspense>
-                      } />
-                    </Route>
-
-                    {/* Rotas de autenticação */}
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/cadastro" element={<Cadastro />} />
-                    <Route path="/termos-uso" element={<TermosUso />} />
-                    <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
-
-                    {/* Rotas administrativas */}
-                    <Route path="/super_admin/*" element={<SuperAdminPage />} />
-                    <Route path="/admin/*" element={<AdminPage />} />
-                    
-                    {/* Rota catch-all para páginas não encontradas */}
-                    <Route path="*" element={<NaoEncontrado />} />
-                    </Routes>
-                  <Toaster />
-                </div>
+                <AppContent />
               </ErrorBoundary>
             </SimpleCartProvider>
           </Router>
