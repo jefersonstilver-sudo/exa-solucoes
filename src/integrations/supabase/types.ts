@@ -1402,6 +1402,10 @@ export type Database = {
         Args: { user_id: string; user_email: string; user_role: string }
         Returns: string
       }
+      admin_update_user_role_secure: {
+        Args: { p_user_id: string; p_new_role: string; p_admin_id?: string }
+        Returns: Json
+      }
       approve_video: {
         Args: { p_pedido_video_id: string; p_approved_by: string }
         Returns: boolean
@@ -1474,6 +1478,10 @@ export type Database = {
       }
       generate_coupon_code: {
         Args: { prefix?: string }
+        Returns: string
+      }
+      generate_secure_temp_password: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_approvals_stats: {
