@@ -82,7 +82,7 @@ const ExaHeroSection: React.FC = () => {
         </div>
         
         {/* Painel Digital INDEXA com Vídeo EXA */}
-        <div className="flex-1 flex justify-center lg:justify-end w-full order-1 lg:order-2 -mt-8 lg:mt-0">
+        <div className="flex-1 flex justify-center lg:justify-center w-full order-1 lg:order-2 -mt-12 lg:-mt-4">
           <div className="relative group">
             {/* Frame do Painel Físico */}
             <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-3 lg:p-4 rounded-2xl shadow-2xl border border-gray-700 max-w-[280px] lg:max-w-[320px] mx-auto hover:scale-105 transition-transform duration-300">
