@@ -26,6 +26,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import CreateAdminDialog from './CreateAdminDialog';
 import UserDetailsDialog from './UserDetailsDialog';
+import { useSecureAdmin } from '@/hooks/useSecureAdmin';
+import SecurityAuditBanner from '../security/SecurityAuditBanner';
 
 interface User {
   id: string;
@@ -48,6 +50,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { updateUserRole, loading: secureLoading } = useSecureAdmin();
 
   const indexaTeam = users.filter(user => 
     user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing'
@@ -61,20 +64,12 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
   const handleRoleChange = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'admin' ? 'super_admin' : 'admin';
     
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: newRole })
-        .eq('id', userId);
-
-      if (error) throw error;
-
+    const result = await updateUserRole(userId, newRole);
+    if (result.success) {
       toast.success(`Role alterada para ${newRole} com sucesso`);
       onRefresh();
-    } catch (error) {
-      console.error('Erro ao alterar role:', error);
-      toast.error('Erro ao alterar role do usuário');
     }
+    // Error handling is done inside useSecureAdmin hook
   };
 
   const handleViewDetails = (user: User) => {
@@ -166,6 +161,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
 
   return (
     <div className="space-y-6">
+      <SecurityAuditBanner />
       {/* Header da Seção */}
       <div className="flex items-center justify-between">
         <div>
@@ -188,7 +184,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
           <Button 
             variant="outline" 
             onClick={onRefresh} 
-            disabled={loading}
+            disabled={loading || secureLoading}
             className="flex items-center"
           >
             <RefreshCw className="h-4 w-4 mr-2" />

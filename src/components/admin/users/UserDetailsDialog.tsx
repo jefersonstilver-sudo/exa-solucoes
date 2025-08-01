@@ -163,16 +163,26 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     try {
       setLoading(true);
 
+      // Use secure password generation instead of hardcoded password
+      const { data: securePassword, error: passwordError } = await supabase
+        .rpc('generate_secure_temp_password');
+
+      if (passwordError || !securePassword) {
+        throw new Error('Falha ao gerar senha segura');
+      }
+
       const { error } = await supabase.auth.admin.updateUserById(user.id, {
-        password: 'indexa2025'
+        password: securePassword
       });
 
       if (error) throw error;
 
-      toast.success('Senha resetada para "indexa2025"');
-    } catch (error) {
+      toast.success(`Senha resetada para: ${securePassword}`, {
+        duration: 10000,
+      });
+    } catch (error: any) {
       console.error('Erro ao resetar senha:', error);
-      toast.error('Erro ao resetar senha');
+      toast.error(`Erro: ${error.message || 'Falha ao resetar senha'}`);
     } finally {
       setLoading(false);
     }
@@ -362,7 +372,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                       disabled={loading}
                     >
                       <Key className="h-4 w-4 mr-2" />
-                      Resetar Senha para "indexa2025"
+                      Gerar Nova Senha Segura
                     </Button>
                   </div>
 
@@ -370,7 +380,8 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                     <p><strong>Lembrete de Segurança:</strong></p>
                     <p>• Apenas jefersonstilver@gmail.com é Super Admin permanente</p>
                     <p>• Outras contas jamais podem ser promovidas a Super Admin</p>
-                    <p>• Senhas resetadas ficam como "indexa2025"</p>
+                    <p>• Senhas resetadas são geradas automaticamente de forma segura</p>
+                    <p>• A nova senha será exibida apenas uma vez após a geração</p>
                   </div>
                 </div>
               </CardContent>

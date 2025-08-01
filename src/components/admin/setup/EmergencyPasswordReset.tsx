@@ -6,15 +6,22 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Shield, Key, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Shield, Key, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { generateSecurePassword } from '@/utils/securityUtils';
 
 const EmergencyPasswordReset = () => {
   const [email, setEmail] = useState('jefersonstilver@gmail.com');
-  const [newPassword, setNewPassword] = useState('admin123456');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmationCode, setConfirmationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const generateNewPassword = () => {
+    const securePassword = generateSecurePassword(16);
+    setNewPassword(securePassword);
+    toast.success('Senha segura gerada automaticamente');
+  };
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,15 +116,31 @@ const EmergencyPasswordReset = () => {
           
           <div className="space-y-2">
             <Label htmlFor="newPassword">Nova Senha</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              disabled={isLoading}
-              placeholder="Digite a nova senha"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                placeholder="Digite a nova senha"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={generateNewPassword}
+                disabled={isLoading}
+                className="whitespace-nowrap"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Gerar
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Recomendado: Use o botão "Gerar" para criar uma senha segura automaticamente
+            </p>
           </div>
           
           <div className="space-y-2">
