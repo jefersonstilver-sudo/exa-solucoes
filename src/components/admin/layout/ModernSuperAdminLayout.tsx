@@ -8,9 +8,9 @@ import ModernAdminHeader from './ModernAdminHeader';
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background">
         <ModernAdminSidebar />
-        <SidebarInset className="flex flex-col w-full">
+        <SidebarInset className="flex flex-col w-full min-h-screen">
           <ModernAdminHeader />
           <main className="flex-1 p-6 overflow-y-auto bg-background">
             {children || <Outlet />}
