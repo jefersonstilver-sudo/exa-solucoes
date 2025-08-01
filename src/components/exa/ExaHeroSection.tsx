@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Volume2, VolumeX } from 'lucide-react';
 
 const ExaHeroSection: React.FC = () => {
   const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [showSoundButton, setShowSoundButton] = useState(false);
 
   const handleKnowExa = () => {
     const aboutSection = document.getElementById('sobre-exa');
@@ -13,6 +17,22 @@ const ExaHeroSection: React.FC = () => {
 
   const handleViewLocation = () => {
     navigate('/paineis-digitais/loja');
+  };
+
+  const handleVideoClick = () => {
+    if (videoRef.current) {
+      setIsMuted(false);
+      videoRef.current.muted = false;
+      setShowSoundButton(true);
+    }
+  };
+
+  const toggleSound = () => {
+    if (videoRef.current) {
+      const newMutedState = !isMuted;
+      setIsMuted(newMutedState);
+      videoRef.current.muted = newMutedState;
+    }
   };
 
   return (
@@ -63,18 +83,73 @@ const ExaHeroSection: React.FC = () => {
         </div>
         </div>
         
-        {/* Vídeo dos Painéis EXA */}
-        <div className="flex-1 flex justify-center lg:justify-end w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl order-1 lg:order-2 mt-8 sm:mt-0">
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline
-            preload="metadata"
-            className="w-full h-auto rounded-lg shadow-2xl min-h-[280px] sm:min-h-[320px] max-h-[52vh] sm:max-h-[56vh] lg:max-h-[72vh] object-cover"
-          >
-            <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
-          </video>
+        {/* Painel Digital INDEXA com Vídeo EXA */}
+        <div className="flex-1 flex justify-center lg:justify-end w-full order-1 lg:order-2 -mt-8 lg:mt-0">
+          <div className="relative group">
+            {/* Frame do Painel Físico */}
+            <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-3 lg:p-4 rounded-2xl shadow-2xl border border-gray-700 max-w-[280px] lg:max-w-[320px] mx-auto hover:scale-105 transition-transform duration-300">
+              
+              {/* LEDs Indicativos */}
+              <div className="absolute top-3 right-3 flex gap-1 z-20">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+              </div>
+
+              {/* Tela do Painel */}
+              <div className="relative bg-black rounded-lg overflow-hidden aspect-[9/16] cursor-pointer" onClick={handleVideoClick}>
+                <video 
+                  ref={videoRef}
+                  autoPlay 
+                  muted={isMuted}
+                  loop 
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                >
+                  <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
+                </video>
+                
+                {/* Overlay de Som */}
+                {!isMuted && (
+                  <div className="absolute top-2 left-2 bg-black/70 rounded-full p-1">
+                    <Volume2 className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                
+                {/* Indicação de Clique para Som */}
+                {isMuted && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-black/70 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+                      <VolumeX className="w-4 h-4" />
+                      Clique para ativar som
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botão de Som (aparece após primeiro clique) */}
+              {showSoundButton && (
+                <button
+                  onClick={toggleSound}
+                  className="absolute bottom-3 left-3 bg-black/70 text-white p-2 rounded-full hover:bg-black/90 transition-colors duration-200 z-20"
+                >
+                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
+              )}
+
+              {/* Marca INDEXA no Painel */}
+              <div className="absolute bottom-2 right-2 text-gray-400 text-xs font-mono">
+                INDEXA
+              </div>
+            </div>
+
+            {/* Texto Informativo */}
+            <div className="text-center mt-4 text-white/80 text-sm">
+              <p>Painel Digital INDEXA</p>
+              <p className="text-xs text-purple-300">Clique para ativar áudio</p>
+            </div>
+          </div>
         </div>
         
       </div>
