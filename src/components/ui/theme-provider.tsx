@@ -21,7 +21,10 @@ export function ThemeProvider({
   children, 
   defaultTheme = "light"
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme)
+  console.log('🎨 ThemeProvider initializing with theme:', defaultTheme);
+  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  
+  console.log('✅ ThemeProvider ready, current theme:', theme);
   
   return (
     <ThemeProviderContext.Provider value={{ theme, setTheme }}>

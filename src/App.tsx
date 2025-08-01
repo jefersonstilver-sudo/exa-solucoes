@@ -49,18 +49,22 @@ const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSetti
 const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
 const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
+console.log('⚙️ Initializing QueryClient...');
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
-      retry: 1,
+      retry: 0, // Reduced retries for stability
       refetchOnWindowFocus: false,
     },
   },
 });
+console.log('✅ QueryClient initialized');
 
 function App() {
+  console.log('🎯 App component rendering...');
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -69,8 +73,7 @@ function App() {
             <SimpleCartProvider>
               <ErrorBoundary>
                 <div className="min-h-screen bg-background">
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Routes>
+                  <Routes>
                     {/* Rotas principais */}
                     <Route path="/" element={<Index />} />
                     
@@ -201,7 +204,6 @@ function App() {
                     {/* Rota catch-all para páginas não encontradas */}
                     <Route path="*" element={<NaoEncontrado />} />
                     </Routes>
-                  </Suspense>
                   <Toaster />
                 </div>
               </ErrorBoundary>
