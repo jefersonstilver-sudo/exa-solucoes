@@ -44,21 +44,21 @@ const ComingSoonPage = () => {
         {/* Three Brand Logos */}
         <div className="mb-12 animate-fade-in">
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
-            {/* LINKAE Logo */}
-            <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              <img 
-                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/logo-linkae-branco.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL2xvZ28tbGlua2FlLWJyYW5jby5wbmciLCJpYXQiOjE3NTM4MTQ3OTksImV4cCI6OTYzNjE4MTQ3OTl9.ERz9rbEWAs_6Ep6BXI5ErN9ixotyUMb3szh2klNK4Us"
-                alt="LINKAÊ Logo" 
-                className="w-40 h-40 object-contain filter brightness-0 invert hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            
             {/* INDEXA Logo (larger, parent brand) */}
-            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <UnifiedLogo 
                 size="custom" 
                 variant="light"
                 className="w-56 h-56 filter brightness-0 invert hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            
+            {/* LINKAE Logo */}
+            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <img 
+                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/logo-linkae-branco.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL2xvZ28tbGlua2FlLWJyYW5jby5wbmciLCJpYXQiOjE3NTM4MTQ3OTksImV4cCI6OTYzNjE4MTQ3OTl9.ERz9rbEWAs_6Ep6BXI5ErN9ixotyUMb3szh2klNK4Us"
+                alt="LINKAÊ Logo" 
+                className="w-40 h-40 object-contain filter brightness-0 invert hover:scale-105 transition-transform duration-300"
               />
             </div>
             
