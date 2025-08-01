@@ -6,7 +6,6 @@ const ExaHeroSection: React.FC = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
-  const [showSoundButton, setShowSoundButton] = useState(false);
 
   const handleKnowExa = () => {
     const aboutSection = document.getElementById('sobre-exa');
@@ -23,7 +22,6 @@ const ExaHeroSection: React.FC = () => {
     if (videoRef.current) {
       setIsMuted(false);
       videoRef.current.muted = false;
-      setShowSoundButton(true);
     }
   };
 
@@ -110,44 +108,24 @@ const ExaHeroSection: React.FC = () => {
                   <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/videos%20painel%20comercial/WhatsApp%20Video%202025-05-21%20at%2013.24.20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy92aWRlb3MgcGFpbmVsIGNvbWVyY2lhbC9XaGF0c0FwcCBWaWRlbyAyMDI1LTA1LTIxIGF0IDEzLjI0LjIwLm1wNCIsImlhdCI6MTc1MzgyNDIyOSwiZXhwIjo5NjM2MTgyNDIyOX0._w4I2p-iPfcVC0MFevGRW5jcJXF5RTzAuVk8KB-MZeU" type="video/mp4" />
                 </video>
                 
-                {/* Overlay de Som */}
-                {!isMuted && (
-                  <div className="absolute top-2 left-2 bg-black/70 rounded-full p-1">
-                    <Volume2 className="w-4 h-4 text-white" />
-                  </div>
-                )}
-                
-                {/* Indicação de Clique para Som */}
-                {isMuted && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="bg-black/70 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2">
-                      <VolumeX className="w-4 h-4" />
-                      Clique para ativar som
-                    </div>
-                  </div>
-                )}
+                {/* Controle de Som */}
+                <div className="absolute top-2 left-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSound();
+                    }}
+                    className="bg-black/70 text-white p-2 rounded-full hover:bg-black/90 transition-colors duration-200"
+                  >
+                    {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-
-              {/* Botão de Som (aparece após primeiro clique) */}
-              {showSoundButton && (
-                <button
-                  onClick={toggleSound}
-                  className="absolute bottom-3 left-3 bg-black/70 text-white p-2 rounded-full hover:bg-black/90 transition-colors duration-200 z-20"
-                >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-              )}
 
               {/* Marca INDEXA no Painel */}
               <div className="absolute bottom-2 right-2 text-gray-400 text-xs font-mono">
                 INDEXA
               </div>
-            </div>
-
-            {/* Texto Informativo */}
-            <div className="text-center mt-4 text-white/80 text-sm">
-              <p>Painel Digital INDEXA</p>
-              <p className="text-xs text-purple-300">Clique para ativar áudio</p>
             </div>
           </div>
         </div>
