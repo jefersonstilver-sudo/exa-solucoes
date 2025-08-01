@@ -8,18 +8,12 @@ export const useDeveloperAuth = () => {
   const [password, setPassword] = useState('');
   const [showPasswordField, setShowPasswordField] = useState(false);
 
-  useEffect(() => {
-    // Check if already authenticated
-    const authStatus = localStorage.getItem(AUTH_KEY);
-    if (authStatus === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, []);
+  // Removed localStorage check - authentication is session-only now
 
   const authenticateUser = (inputPassword: string) => {
     if (inputPassword === DEVELOPER_PASSWORD) {
       setIsAuthenticated(true);
-      localStorage.setItem(AUTH_KEY, 'true');
+      // Removed localStorage - session-only authentication
       return true;
     }
     return false;
@@ -27,7 +21,7 @@ export const useDeveloperAuth = () => {
 
   const logout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem(AUTH_KEY);
+    // Removed localStorage - session-only authentication
   };
 
   return {
