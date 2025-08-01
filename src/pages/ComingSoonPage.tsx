@@ -41,13 +41,36 @@ const ComingSoonPage = () => {
       </div>
 
       <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-        {/* Logo */}
+        {/* Three Brand Logos */}
         <div className="mb-12 animate-fade-in">
-          <UnifiedLogo 
-            size="custom" 
-            variant="light"
-            className="w-48 h-48 mx-auto filter brightness-0 invert"
-          />
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+            {/* LINKAE Logo */}
+            <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <img 
+                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/logo-linkae-branco.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL2xvZ28tbGlua2FlLWJyYW5jby5wbmciLCJpYXQiOjE3NTM4MTQ3OTksImV4cCI6OTYzNjE4MTQ3OTl9.ERz9rbEWAs_6Ep6BXI5ErN9ixotyUMb3szh2klNK4Us"
+                alt="LINKAÊ Logo" 
+                className="w-40 h-40 object-contain filter brightness-0 invert hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            
+            {/* INDEXA Logo (larger, parent brand) */}
+            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <UnifiedLogo 
+                size="custom" 
+                variant="light"
+                className="w-56 h-56 filter brightness-0 invert hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            
+            {/* EXA Logo */}
+            <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <img 
+                src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1MzkyNDY3NywiZXhwIjoxNzg1NDYwNjc3fQ.Obullg6SYYcT2j1mmJgZ4MIL-_9lqNDHmImhft_ZbmM"
+                alt="EXA Logo" 
+                className="w-40 h-40 object-contain filter brightness-0 invert hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Main content */}
@@ -56,7 +79,7 @@ const ComingSoonPage = () => {
             Em breve
           </p>
           <p className="text-lg text-white/80 mb-12 max-w-2xl mx-auto">
-            Lançamento oficial em <span className="text-indexa-mint font-semibold">10 de agosto de 2025</span>
+            Lançamento oficial das três marcas em <span className="text-indexa-mint font-semibold">10 de agosto de 2025</span>
           </p>
         </div>
 
