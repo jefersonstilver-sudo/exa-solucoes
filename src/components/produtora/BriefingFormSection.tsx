@@ -1,14 +1,14 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, CheckCircle, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 
 const BriefingFormSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
+  const { isVisible, elementRef: sectionRef } = useIntersectionObserver({ threshold: 0.2 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -20,22 +20,6 @@ const BriefingFormSection = () => {
     agendar_cafe: false
   });
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;

@@ -1,9 +1,10 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  onError?: (error: any) => void;
 }
 
 interface State {
@@ -12,42 +13,48 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-  public static getDerivedStateFromError(error: Error): State {
-    console.error('ErrorBoundary caught an error:', error);
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary details:', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
     if (this.props.onError) {
-      this.props.onError(error, errorInfo);
+      this.props.onError(error);
     }
   }
 
-  public render() {
+  handleRetry = () => {
+    this.setState({ hasError: false, error: undefined });
+  };
+
+  render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-foreground mb-4">
+        <div className="min-h-[200px] flex items-center justify-center p-8">
+          <div className="text-center max-w-md">
+            <AlertTriangle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
               Algo deu errado
             </h2>
-            <p className="text-muted-foreground mb-4">
-              Ocorreu um erro inesperado. Tente recarregar a página.
+            <p className="text-gray-600 mb-6">
+              Ocorreu um erro inesperado. Tente recarregar esta seção.
             </p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
+            <button
+              onClick={this.handleRetry}
+              className="inline-flex items-center px-4 py-2 bg-indexa-purple text-white rounded-lg hover:bg-indexa-purple-dark transition-colors"
             >
-              Recarregar Página
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar novamente
             </button>
           </div>
         </div>

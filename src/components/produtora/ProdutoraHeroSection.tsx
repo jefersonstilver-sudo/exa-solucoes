@@ -19,37 +19,39 @@ const ProdutoraHeroSection = () => {
       behavior: 'smooth'
     });
   };
-  return <>
-    <section className="relative min-h-[100vh] sm:min-h-[90vh] md:h-[80vh] w-full overflow-hidden pt-16 sm:pt-20">
-      {/* Vídeo de fundo com efeito vitrine */}
-      <div className="absolute inset-0 z-0">
-        <video className="w-full h-full object-cover" autoPlay loop muted playsInline>
-          <source src={indexaVideoSrc} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-black/60" />
-      </div>
-    </section>
-
-    {/* Seção dos botões embaixo do vídeo */}
-    <section className="bg-indexa-purple py-4 sm:py-6">
-      <div className="container mx-auto px-4">
-        <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-          <button onClick={scrollToPortfolio} className="group bg-indexa-mint text-indexa-purple-dark font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 w-full sm:w-auto text-sm sm:text-base">
-            <span className="flex items-center justify-center space-x-2">
-              <Play className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-300" />
-              <span className="whitespace-nowrap">Ver Portfólio Exclusivo</span>
-            </span>
-          </button>
-          
-          <button onClick={scrollToCafe} className="group bg-white/10 backdrop-blur-sm text-white border border-white/30 font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:bg-white/20 transform transition-all duration-500 hover:scale-105 w-full sm:w-auto text-sm sm:text-base">
-            <span className="flex items-center justify-center space-x-2">
-              <Camera className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="whitespace-nowrap">Agendar Café com a Produtora</span>
-            </span>
-          </button>
+  return (
+    <div className="w-full">
+      <section className="relative min-h-[100vh] sm:min-h-[90vh] md:h-[80vh] w-full overflow-hidden pt-16 sm:pt-20">
+        {/* Vídeo de fundo com efeito vitrine */}
+        <div className="absolute inset-0 z-0">
+          <video className="w-full h-full object-cover" autoPlay loop muted playsInline>
+            <source src={indexaVideoSrc} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/60" />
         </div>
-      </div>
-    </section>
-  </>;
+      </section>
+
+      {/* Seção dos botões embaixo do vídeo */}
+      <section className="bg-indexa-purple py-4 sm:py-6">
+        <div className="container mx-auto px-4">
+          <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center transform transition-all duration-1000 delay-300 ${textVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+            <button onClick={scrollToPortfolio} className="group bg-indexa-mint text-indexa-purple-dark font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full shadow-2xl hover:shadow-indexa-mint/50 transform transition-all duration-500 hover:scale-105 hover:-translate-y-1 w-full sm:w-auto text-sm sm:text-base">
+              <span className="flex items-center justify-center space-x-2">
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                <span className="whitespace-nowrap">Ver Portfólio Exclusivo</span>
+              </span>
+            </button>
+            
+            <button onClick={scrollToCafe} className="group bg-white/10 backdrop-blur-sm text-white border border-white/30 font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:bg-white/20 transform transition-all duration-500 hover:scale-105 w-full sm:w-auto text-sm sm:text-base">
+              <span className="flex items-center justify-center space-x-2">
+                <Camera className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform duration-300" />
+                <span className="whitespace-nowrap">Agendar Café com a Produtora</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 };
 export default ProdutoraHeroSection;

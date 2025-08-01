@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import PortfolioVideoModal from './PortfolioVideoModal';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 
 interface PortfolioItem {
   id: string;
@@ -14,34 +15,16 @@ interface PortfolioItem {
 }
 
 const PortfolioSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
+  const { isVisible, elementRef: sectionRef } = useIntersectionObserver({ threshold: 0.2 });
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<PortfolioItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<PortfolioItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
 
   const [categories, setCategories] = useState<string[]>(['Todos']);
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     fetchPortfolioItems();
@@ -71,7 +54,7 @@ const PortfolioSection = () => {
     }
   };
 
-  const handleCategoryFilter = (category: string) => {
+  const handleCategoryFilter = useCallback((category: string) => {
     setSelectedCategory(category);
     setCurrentSlide(0); // Reset slide ao trocar categoria
     if (category === 'Todos') {
@@ -79,7 +62,7 @@ const PortfolioSection = () => {
     } else {
       setFilteredItems(portfolioItems.filter(item => item.categoria === category));
     }
-  };
+  }, [portfolioItems]);
 
   const itemsPerSlide = 3;
   const totalSlides = Math.ceil(filteredItems.length / itemsPerSlide);
@@ -92,10 +75,10 @@ const PortfolioSection = () => {
     setCurrentSlide(prev => prev < totalSlides - 1 ? prev + 1 : prev);
   };
 
-  const getCurrentItems = () => {
+  const getCurrentItems = useMemo(() => {
     const startIndex = currentSlide * itemsPerSlide;
     return filteredItems.slice(startIndex, startIndex + itemsPerSlide);
-  };
+  }, [currentSlide, filteredItems]);
 
   const handleVideoClick = (item: PortfolioItem) => {
     setSelectedVideo(item);
@@ -177,7 +160,7 @@ const PortfolioSection = () => {
                 {/* Container dos vídeos */}
                 <div className="mx-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                    {getCurrentItems().map((item, index) => (
+                    {getCurrentItems.map((item, index) => (
                       <div
                         key={item.id}
                         onClick={() => handleVideoClick(item)}
@@ -188,15 +171,17 @@ const PortfolioSection = () => {
                       >
                         {/* Container do vídeo */}
                         <div className="relative aspect-[9/16] overflow-hidden bg-gray-200">
-                          <video
-                            className="w-full h-full object-cover"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                          >
-                            <source src={item.url_video} type="video/mp4" />
-                          </video>
+                          {isVisible && (
+                            <video
+                              className="w-full h-full object-cover"
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                            >
+                              <source src={item.url_video} type="video/mp4" />
+                            </video>
+                          )}
                           
                           {/* Overlay com play button */}
                           <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">

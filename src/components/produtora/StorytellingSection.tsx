@@ -1,21 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { MapPin, Heart, Target } from 'lucide-react';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+
 const StorytellingSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setIsVisible(true);
-      }
-    }, {
-      threshold: 0.3
-    });
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-    return () => observer.disconnect();
-  }, []);
+  const { isVisible, elementRef: sectionRef } = useIntersectionObserver({ threshold: 0.3 });
   return <section ref={sectionRef} className="min-h-[85vh] sm:min-h-[80vh] md:min-h-[75vh] bg-gradient-to-br from-gray-900 via-indexa-purple-dark to-black flex items-center relative overflow-hidden pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 md:pb-24">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
