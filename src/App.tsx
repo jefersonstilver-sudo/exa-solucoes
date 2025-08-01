@@ -27,12 +27,14 @@ import NaoEncontrado from './pages/NaoEncontrado';
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 
-// Lazy load para páginas menos usadas
-const Marketing = lazy(() => import('./pages/Marketing'));
-const Linkae = lazy(() => import('./pages/Linkae'));
-const Produtora = lazy(() => import('./pages/Produtora'));
-const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
-const Exa = lazy(() => import('./pages/Exa'));
+// Importações diretas para páginas principais (performance otimizada)
+import Marketing from './pages/Marketing';
+import Linkae from './pages/Linkae';
+import Produtora from './pages/Produtora';
+import PaineisPublicitarios from './pages/PaineisPublicitarios';
+import Exa from './pages/Exa';
+
+// Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
@@ -53,10 +55,11 @@ console.log('⚙️ Initializing QueryClient...');
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      retry: 0, // Reduced retries for stability
+      staleTime: 10 * 60 * 1000, // 10 minutes cache
+      gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
+      retry: 1, // Quick retry for better UX
       refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
     },
   },
 });
@@ -109,22 +112,10 @@ function App() {
                     <Route path="/marketing" element={<Navigate to="/linkae" replace />} />
                     <Route path="/paineis-publicitarios" element={<Navigate to="/exa" replace />} />
                     
-                    {/* NOVAS ROTAS */}
-                    <Route path="/linkae" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <Linkae />
-                      </Suspense>
-                    } />
-                    <Route path="/exa" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <Exa />
-                      </Suspense>
-                    } />
-                    <Route path="/produtora" element={
-                      <Suspense fallback={<MinimalLoader />}>
-                        <Produtora />
-                      </Suspense>
-                    } />
+                    {/* PÁGINAS PRINCIPAIS - SEM LAZY LOADING PARA PERFORMANCE */}
+                    <Route path="/linkae" element={<Linkae />} />
+                    <Route path="/exa" element={<Exa />} />
+                    <Route path="/produtora" element={<Produtora />} />
                     <Route path="/sou-sindico" element={
                       <Suspense fallback={<MinimalLoader />}>
                         <SouSindico />

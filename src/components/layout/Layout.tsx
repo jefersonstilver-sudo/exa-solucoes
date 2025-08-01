@@ -1,5 +1,5 @@
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, memo } from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
@@ -11,7 +11,7 @@ interface LayoutProps {
   className?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
+const Layout: React.FC<LayoutProps> = memo(({ children, className = '' }) => {
   const { 
     cartItems, 
     isOpen, 
@@ -48,6 +48,8 @@ const Layout: React.FC<LayoutProps> = ({ children, className = '' }) => {
       <MobileOptimizedFooter />
     </div>
   );
-};
+});
+
+Layout.displayName = 'Layout';
 
 export default Layout;
