@@ -48,7 +48,7 @@ const ExaHeroSection: React.FC = () => {
         </div>
         
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-6 sm:mb-8 lg:mb-10 leading-tight">
-          Publicidade Inteligente que Conecta
+          Publicidade Inteligente
         </h2>
         
         <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-6 sm:mb-8 lg:mb-10 opacity-90 leading-relaxed max-w-4xl">
