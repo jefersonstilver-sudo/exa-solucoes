@@ -79,7 +79,7 @@ const ComingSoonPage = () => {
             Em breve
           </p>
           <p className="text-lg text-white/80 mb-12 max-w-2xl mx-auto">
-            Lançamento oficial das três marcas em <span className="text-indexa-mint font-semibold">10 de agosto de 2025</span>
+            Lançamento Oficial do nosso site <span className="text-indexa-mint font-semibold">10 de agosto de 2025</span>
           </p>
         </div>
 
