@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -14,173 +14,192 @@ import {
   Bell,
   Settings,
   Play,
-  Camera,
   Coffee
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+  useSidebar,
+} from '@/components/ui/sidebar';
 
-interface SidebarProps {
-  isCollapsed: boolean;
-}
-
-const ModernAdminSidebar = ({ isCollapsed }: SidebarProps) => {
+const ModernAdminSidebar = () => {
+  const { state } = useSidebar();
   const location = useLocation();
 
-  const navigationItems = [
+  const navigationGroups = [
     {
-      title: 'Dashboard',
-      href: '/admin',
-      icon: LayoutDashboard,
-      description: 'Visão geral do sistema'
+      label: 'Dashboard',
+      items: [
+        {
+          title: 'Dashboard',
+          href: '/super_admin',
+          icon: LayoutDashboard,
+        }
+      ]
     },
     {
-      title: 'Prédios',
-      href: '/admin/predios',
-      icon: Building2,
-      description: 'Gestão de edifícios'
+      label: 'Gestão de Conteúdo',
+      items: [
+        {
+          title: 'Prédios',
+          href: '/super_admin/predios',
+          icon: Building2,
+        },
+        {
+          title: 'Painéis',
+          href: '/super_admin/paineis',
+          icon: Monitor,
+        },
+        {
+          title: 'Vídeos',
+          href: '/super_admin/videos',
+          icon: Play,
+        },
+        {
+          title: 'Config Homepage',
+          href: '/super_admin/homepage-config',
+          icon: ImageIcon,
+        }
+      ]
     },
     {
-      title: 'Painéis',
-      href: '/admin/paineis',
-      icon: Monitor,
-      description: 'Dispositivos de exibição'
+      label: 'Vendas & Usuários',
+      items: [
+        {
+          title: 'Pedidos',
+          href: '/super_admin/pedidos',
+          icon: ShoppingCart,
+        },
+        {
+          title: 'Usuários',
+          href: '/super_admin/usuarios',
+          icon: Users,
+        },
+        {
+          title: 'Cupons',
+          href: '/super_admin/cupons',
+          icon: Ticket,
+        }
+      ]
     },
     {
-      title: 'Pedidos',
-      href: '/admin/pedidos',
-      icon: ShoppingCart,
-      description: 'Vendas e transações'
+      label: 'Leads & Aprovações',
+      items: [
+        {
+          title: 'Aprovações',
+          href: '/super_admin/aprovacoes',
+          icon: CheckSquare,
+        },
+        {
+          title: 'Síndicos Interessados',
+          href: '/super_admin/sindicos-interessados',
+          icon: UserCheck,
+        },
+        {
+          title: 'Leads Produtora',
+          href: '/super_admin/leads-produtora',
+          icon: Coffee,
+        }
+      ]
     },
     {
-      title: 'Aprovações',
-      href: '/admin/aprovacoes',
-      icon: CheckSquare,
-      description: 'Aprovação de vídeos'
-    },
-    {
-      title: 'Usuários',
-      href: '/admin/usuarios',
-      icon: Users,
-      description: 'Gestão de usuários'
-    },
-    {
-      title: 'Síndicos Interessados',
-      href: '/admin/sindicos-interessados',
-      icon: UserCheck,
-      description: 'Leads de síndicos'
-    },
-    {
-      title: 'Leads Produtora',
-      href: '/admin/leads-produtora',
-      icon: Coffee,
-      description: 'Leads da produtora'
-    },
-    {
-      title: 'Cupons',
-      href: '/admin/cupons',
-      icon: Ticket,
-      description: 'Códigos de desconto'
-    },
-    {
-      title: 'Config Homepage',
-      href: '/admin/homepage-config',
-      icon: ImageIcon,
-      description: 'Imagens da página inicial'
-    },
-    {
-      title: 'Notificações',
-      href: '/admin/notificacoes',
-      icon: Bell,
-      description: 'Central de notificações'
-    },
-    {
-      title: 'Vídeos',
-      href: '/admin/videos',
-      icon: Play,
-      description: 'Gestão de vídeos'
-    },
-    {
-      title: 'Configurações',
-      href: '/admin/configuracoes',
-      icon: Settings,
-      description: 'Configurações do sistema'
+      label: 'Sistema',
+      items: [
+        {
+          title: 'Notificações',
+          href: '/super_admin/notificacoes',
+          icon: Bell,
+        },
+        {
+          title: 'Configurações',
+          href: '/super_admin/configuracoes',
+          icon: Settings,
+        }
+      ]
     }
   ];
 
   return (
-    <div className="h-full bg-white border-r border-gray-200 flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <div className={cn(
-          "flex items-center",
-          isCollapsed ? "justify-center" : "justify-center mb-2"
-        )}>
+    <Sidebar 
+      variant="sidebar" 
+      className="border-r border-sidebar-border bg-gradient-to-b from-indexa-purple to-purple-700"
+    >
+      <SidebarHeader className="border-b border-white/10 p-6">
+        <div className="flex items-center justify-center mb-2">
           <UnifiedLogo 
             size="custom"
             linkTo="/"
-            variant="dark"
-            className="w-32 h-32"
+            variant="light"
+            className={cn(
+              "transition-all duration-300",
+              state === "collapsed" ? "w-8 h-8" : "w-16 h-16"
+            )}
           />
         </div>
-        {!isCollapsed && (
+        {state !== "collapsed" && (
           <div className="text-center">
-            <h2 className="text-lg font-semibold text-gray-900">INDEXA</h2>
-            <p className="text-xs text-gray-500">Admin Panel</p>
+            <h2 className="text-lg font-semibold text-white">INDEXA</h2>
+            <p className="text-xs text-white/70">Admin Panel</p>
           </div>
         )}
-      </div>
+      </SidebarHeader>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navigationItems.map((item) => {
-          const isActive = location.pathname === item.href;
-          const Icon = item.icon;
-          
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group",
-                isActive
-                  ? "bg-indexa-purple text-white shadow-lg"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-indexa-purple"
-              )}
-              title={isCollapsed ? item.title : undefined}
-            >
-              <Icon className={cn(
-                "flex-shrink-0 transition-colors duration-200",
-                isActive ? "text-white" : "text-gray-400 group-hover:text-indexa-purple",
-                isCollapsed ? "h-5 w-5" : "h-4 w-4 mr-3"
-              )} />
-              
-              {!isCollapsed && (
-                <div className="flex flex-col">
-                  <span>{item.title}</span>
-                  <span className={cn(
-                    "text-xs transition-colors duration-200",
-                    isActive ? "text-white/80" : "text-gray-500"
-                  )}>
-                    {item.description}
-                  </span>
-                </div>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+      <SidebarContent className="overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30">
+        {navigationGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="text-white/80 font-medium text-xs uppercase tracking-wider">
+              {state === "collapsed" ? "" : group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  const Icon = item.icon;
+                  
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className={cn(
+                          "text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200",
+                          isActive && "bg-white/20 text-white font-medium shadow-lg"
+                        )}
+                        tooltip={state === "collapsed" ? item.title : undefined}
+                      >
+                        <a href={item.href}>
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      <SidebarFooter className="border-t border-white/10 p-4">
         <div className={cn(
-          "text-xs text-gray-500",
-          isCollapsed ? "text-center" : ""
+          "text-xs text-white/60",
+          state === "collapsed" ? "text-center" : ""
         )}>
-          {isCollapsed ? "v2.0" : "INDEXA Admin v2.0"}
+          {state === "collapsed" ? "v2.0" : "INDEXA Admin v2.0"}
         </div>
-      </div>
-    </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 };
 
