@@ -46,15 +46,12 @@ const ComingSoonPage = () => {
           <UnifiedLogo 
             size="custom" 
             variant="light"
-            className="w-32 h-32 mx-auto filter brightness-0 invert"
+            className="w-48 h-48 mx-auto filter brightness-0 invert"
           />
         </div>
 
         {/* Main content */}
         <div className="animate-slide-in" style={{ animationDelay: '0.2s' }}>
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 font-montserrat">
-            INDEXA
-          </h1>
           <p className="text-xl md:text-2xl text-indexa-mint mb-4 font-exo-2">
             Em breve
           </p>
@@ -130,7 +127,7 @@ const ComingSoonPage = () => {
                     setPassword('');
                     setError('');
                   }}
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className="border-white/20 text-white hover:bg-white/10 hover:text-white"
                 >
                   Cancelar
                 </Button>
