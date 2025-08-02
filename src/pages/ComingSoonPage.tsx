@@ -6,11 +6,9 @@ import { Button } from '@/components/ui/button';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 
-// Move launch date outside component to prevent recreation on each render
-const LAUNCH_DATE = new Date('2025-08-10T00:00:00');
-
 const ComingSoonPage = () => {
-  const timeLeft = useCountdown(LAUNCH_DATE);
+  const launchDate = new Date('2025-08-10T00:00:00');
+  const timeLeft = useCountdown(launchDate);
   const { 
     password, 
     setPassword, 
@@ -87,18 +85,18 @@ const ComingSoonPage = () => {
 
         {/* Countdown Timer */}
         <div className="mb-16 animate-slide-in" style={{ animationDelay: '0.4s' }}>
-          <div className="grid grid-cols-4 gap-2 md:gap-8 max-w-2xl mx-auto">
+          <div className="grid grid-cols-4 gap-4 md:gap-8 max-w-2xl mx-auto">
             {[
               { value: timeLeft.days, label: 'Dias' },
               { value: timeLeft.hours, label: 'Horas' },
               { value: timeLeft.minutes, label: 'Minutos' },
               { value: timeLeft.seconds, label: 'Segundos' }
             ].map((item, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-6 border border-white/20">
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 md:p-6 border border-white/20">
                 <div className="text-3xl md:text-5xl font-bold text-white font-orbitron mb-2">
                   {item.value.toString().padStart(2, '0')}
                 </div>
-                <div className="text-xs md:text-base text-indexa-mint uppercase tracking-wide">
+                <div className="text-sm md:text-base text-indexa-mint uppercase tracking-wide">
                   {item.label}
                 </div>
               </div>

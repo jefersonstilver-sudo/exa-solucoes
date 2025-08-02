@@ -67,44 +67,14 @@ const queryClient = new QueryClient({
 });
 console.log('✅ QueryClient initialized');
 
-// Critical URLs that should NOT be blocked (APIs, webhooks, backend services)
-const CRITICAL_PATHS = [
-  '/api/',
-  '/.netlify/',
-  '/auth/',
-  '/_supabase/',
-  '/webhook/',
-  '/functions/',
-  '/storage/',
-  '/rest/',
-  '/realtime/',
-  '/health'
-];
-
-// Check if current request is for a critical API/backend service
-const isCriticalPath = (path: string): boolean => {
-  return CRITICAL_PATHS.some(criticalPath => path.startsWith(criticalPath));
-};
-
-// Main App content wrapper with full site protection
+// Main App content wrapper with Coming Soon protection
 const AppContent = () => {
   const { isAuthenticated } = useDeveloperAuth();
-  const currentPath = window.location.pathname;
 
-  // NEVER block critical backend paths (APIs, webhooks, auth, etc.)
-  if (isCriticalPath(currentPath)) {
-    console.log('🔓 Critical path detected, allowing access:', currentPath);
-    // For critical paths, render minimal container to avoid breaking APIs
-    return null;
-  }
-
-  // For all interface routes, check authentication
+  // If not authenticated, show Coming Soon page
   if (!isAuthenticated) {
-    console.log('🔒 Site blocked - Developer authentication required');
     return <ComingSoonPage />;
   }
-
-  console.log('✅ Developer authenticated - Full access granted');
 
   // If authenticated, show normal app routes
   return (
