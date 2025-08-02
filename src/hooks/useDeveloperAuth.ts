@@ -7,20 +7,28 @@ export const useDeveloperAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     // Recuperar estado do sessionStorage no init
     try {
-      return sessionStorage.getItem('indexa_dev_session') === 'true';
+      const authState = sessionStorage.getItem('indexa_dev_session') === 'true';
+      console.log('🔑 Initial auth state from sessionStorage:', authState);
+      return authState;
     } catch {
+      console.log('⚠️ Failed to read sessionStorage, defaulting to false');
       return false;
     }
   });
   const [password, setPassword] = useState('');
   const [showPasswordField, setShowPasswordField] = useState(false);
 
+  // Debug: Monitorar mudanças no estado de autenticação
+  console.log('🔐 useDeveloperAuth - Current isAuthenticated:', isAuthenticated);
+
   const authenticateUser = (inputPassword: string) => {
-    console.log('🔐 Attempting authentication...');
+    console.log('🔐 Attempting authentication with password:', inputPassword);
+    console.log('🔐 Expected password:', DEVELOPER_PASSWORD);
     if (inputPassword === DEVELOPER_PASSWORD) {
       console.log('✅ Password correct, setting auth state...');
-      setIsAuthenticated(true);
       sessionStorage.setItem('indexa_dev_session', 'true');
+      setIsAuthenticated(true);
+      console.log('✅ State updated, isAuthenticated should now be true');
       return true;
     }
     console.log('❌ Password incorrect');

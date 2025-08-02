@@ -70,11 +70,16 @@ console.log('✅ QueryClient initialized');
 // Main App content wrapper with Coming Soon protection
 const AppContent = () => {
   const { isAuthenticated } = useDeveloperAuth();
+  
+  console.log('🎯 AppContent - isAuthenticated:', isAuthenticated);
 
   // If not authenticated, show Coming Soon page
   if (!isAuthenticated) {
+    console.log('🚫 Not authenticated, showing ComingSoonPage');
     return <ComingSoonPage />;
   }
+  
+  console.log('✅ Authenticated, showing main app');
 
   // If authenticated, show normal app routes
   return (
