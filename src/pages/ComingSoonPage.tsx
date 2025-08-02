@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 
+// Move launch date outside component to prevent recreation on each render
+const LAUNCH_DATE = new Date('2025-08-10T00:00:00');
+
 const ComingSoonPage = () => {
-  const launchDate = new Date('2025-08-10T00:00:00');
-  const timeLeft = useCountdown(launchDate);
+  const timeLeft = useCountdown(LAUNCH_DATE);
   const { 
     password, 
     setPassword, 
