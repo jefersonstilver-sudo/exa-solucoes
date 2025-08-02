@@ -20,11 +20,19 @@ export const useCountdown = (targetDate: Date) => {
       const difference = targetDate.getTime() - new Date().getTime();
       
       if (difference > 0) {
-        setTimeLeft({
+        const newTimeLeft = {
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
           hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
           minutes: Math.floor((difference / 1000 / 60) % 60),
           seconds: Math.floor((difference / 1000) % 60),
+        };
+        
+        // Só atualizar se os valores mudaram
+        setTimeLeft(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(newTimeLeft)) {
+            return newTimeLeft;
+          }
+          return prev;
         });
       } else {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });

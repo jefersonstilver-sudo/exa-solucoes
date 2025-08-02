@@ -4,24 +4,32 @@ const DEVELOPER_PASSWORD = '573039';
 const AUTH_KEY = 'indexa_dev_auth';
 
 export const useDeveloperAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Recuperar estado do sessionStorage no init
+    try {
+      return sessionStorage.getItem('indexa_dev_session') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [password, setPassword] = useState('');
   const [showPasswordField, setShowPasswordField] = useState(false);
 
-  // Removed localStorage check - authentication is session-only now
-
   const authenticateUser = (inputPassword: string) => {
+    console.log('🔐 Attempting authentication...');
     if (inputPassword === DEVELOPER_PASSWORD) {
+      console.log('✅ Password correct, setting auth state...');
       setIsAuthenticated(true);
-      // Removed localStorage - session-only authentication
+      sessionStorage.setItem('indexa_dev_session', 'true');
       return true;
     }
+    console.log('❌ Password incorrect');
     return false;
   };
 
   const logout = () => {
     setIsAuthenticated(false);
-    // Removed localStorage - session-only authentication
+    sessionStorage.removeItem('indexa_dev_session');
   };
 
   return {

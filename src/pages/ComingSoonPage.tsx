@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 
+// Mover data para fora do componente para evitar recriações
+const LAUNCH_DATE = new Date('2025-08-10T00:00:00');
+
 const ComingSoonPage = () => {
-  const launchDate = new Date('2025-08-10T00:00:00');
-  const timeLeft = useCountdown(launchDate);
+  const timeLeft = useCountdown(LAUNCH_DATE);
   const { 
     password, 
     setPassword, 
@@ -22,8 +24,12 @@ const ComingSoonPage = () => {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🚀 Password submitted:', password);
     if (authenticateUser(password)) {
-      window.location.reload(); // Reload to access the main site
+      console.log('🎉 Authentication successful - NO RELOAD NEEDED');
+      // Remover window.location.reload() - deixar React atualizar naturalmente
+      setPassword('');
+      setError('');
     } else {
       setError('Senha incorreta');
       setPassword('');
