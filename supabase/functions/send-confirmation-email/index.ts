@@ -81,7 +81,7 @@ serve(async (req) => {
 
     // Enviar email via Resend
     const emailResult = await resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com>',
+      from: 'Indexa <noreply@indexamidia.com.br>',
       to: [user.email],
       subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
       html: htmlTemplate,
