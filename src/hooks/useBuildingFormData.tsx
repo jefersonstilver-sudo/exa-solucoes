@@ -129,28 +129,20 @@ export const useBuildingFormData = (building: any, open: boolean) => {
 
         toast.success('Prédio atualizado com sucesso!');
       } else {
-        // Para novos prédios, usar a API /api/admin/buildings
-        const { data: session } = await supabase.auth.getSession();
-        if (!session?.session?.access_token) {
-          throw new Error('Token de autenticação não encontrado');
-        }
+        const { data, error } = await supabase
+          .from('buildings')
+          .insert([dataToSave])
+          .select()
+          .single();
 
-        const response = await fetch('/api/admin/buildings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.session.access_token}`
-          },
-          body: JSON.stringify(dataToSave)
+        if (error) throw error;
+
+        await supabase.rpc('log_building_action', {
+          p_building_id: data.id,
+          p_action_type: 'create',
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type}`,
+          p_new_values: dataToSave
         });
-
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`Erro na API: ${response.status} - ${errorData}`);
-        }
-
-        const data = await response.json();
-        console.log('Prédio criado via API:', data);
 
         toast.success('Prédio criado com sucesso!');
       }

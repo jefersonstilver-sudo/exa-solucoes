@@ -62,28 +62,7 @@ async function getBuildings(req: NextApiRequest, res: NextApiResponse) {
 // Create a new building
 async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { 
-      nome, 
-      endereco, 
-      bairro, 
-      latitude, 
-      longitude, 
-      numero_unidades,
-      preco_base,
-      padrao_publico,
-      status,
-      venue_type,
-      location_type,
-      caracteristicas,
-      amenities,
-      monthly_traffic,
-      nome_sindico,
-      contato_sindico,
-      nome_vice_sindico,
-      contato_vice_sindico,
-      nome_contato_predio,
-      numero_contato_predio
-    } = req.body;
+    const { nome, endereco, bairro, latitude, longitude } = req.body;
     
     if (!nome || !endereco || !bairro) {
       return res.status(400).json({ error: 'Nome, endereco, and bairro are required' });
@@ -96,22 +75,9 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
           nome,
           endereco,
           bairro,
-          latitude: latitude || 0,
-          longitude: longitude || 0,
-          numero_unidades: numero_unidades || 0,
-          preco_base: preco_base || 0,
-          padrao_publico: padrao_publico || 'normal',
-          status: status || 'ativo',
-          venue_type: venue_type || 'Residencial',
-          location_type: location_type || 'residential',
-          caracteristicas: caracteristicas || amenities || [],
-          monthly_traffic: monthly_traffic || 0,
-          nome_sindico: nome_sindico || '',
-          contato_sindico: contato_sindico || '',
-          nome_vice_sindico: nome_vice_sindico || '',
-          contato_vice_sindico: contato_vice_sindico || '',
-          nome_contato_predio: nome_contato_predio || '',
-          numero_contato_predio: numero_contato_predio || ''
+          latitude,
+          longitude,
+          status: 'ativo'
         }
       ])
       .select()
