@@ -110,7 +110,8 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
       .select(`
         video_id,
         videos (
-          nome
+          nome,
+          url
         )
       `)
       .eq('pedido_id', campaignData.pedidoId)
@@ -175,6 +176,7 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
 
       videoPayload[exactFilename] = {
         titulo: campaignData.name,
+        video_url: video.videos?.url || '',
         data_ini: `${campaignData.startDate}T${campaignData.startTime}:00`,
         data_fim: `${campaignData.endDate}T${campaignData.endTime}:00`,
         programacao
