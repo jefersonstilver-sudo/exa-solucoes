@@ -62,24 +62,15 @@ async function getBuildings(req: NextApiRequest, res: NextApiResponse) {
 // Create a new building
 async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { nome, endereco, bairro, latitude, longitude } = req.body;
+    const buildingData = req.body;
     
-    if (!nome || !endereco || !bairro) {
+    if (!buildingData.nome || !buildingData.endereco || !buildingData.bairro) {
       return res.status(400).json({ error: 'Nome, endereco, and bairro are required' });
     }
     
     const { data, error } = await supabase
       .from('buildings')
-      .insert([
-        {
-          nome,
-          endereco,
-          bairro,
-          latitude,
-          longitude,
-          status: 'ativo'
-        }
-      ])
+      .insert([buildingData])
       .select()
       .single();
       
@@ -105,7 +96,7 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
       await supabase.functions.invoke('create-external-client', {
         body: {
           buildingId: data.id,
-          buildingName: nome
+          buildingName: buildingData.nome
         }
       });
     } catch (webhookError) {
