@@ -12,18 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, userName } = await req.json()
+    const { buildingId, buildingName } = await req.json()
 
-    if (!userId || !userName) {
-      throw new Error('Missing required fields: userId or userName')
+    if (!buildingId || !buildingName) {
+      throw new Error('Missing required fields: buildingId or buildingName')
     }
 
-    // Extract cliente_id from UUID (first 4 characters)
-    const clienteId = userId.substring(0, 4)
+    // Extract cliente_id from building UUID (first 4 characters after removing dashes)
+    const clienteId = buildingId.replace(/-/g, '').substring(0, 4)
 
     const payload = {
       cliente_id: clienteId,
-      cliente_name: userName
+      cliente_name: buildingName
     }
 
     console.log('Sending to webhook:', {
@@ -57,11 +57,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     await supabase.from('log_eventos_sistema').insert({
-      tipo_evento: 'WEBHOOK_INOOVAWEB_CLIENT_CREATION_SUCCESS',
+      tipo_evento: 'WEBHOOK_INOOVAWEB_BUILDING_CREATION_SUCCESS',
       descricao: JSON.stringify({
-        userId,
+        buildingId,
         clienteId,
-        userName,
+        buildingName,
         webhookResponse: result,
         timestamp: new Date().toISOString()
       })
@@ -82,7 +82,7 @@ serve(async (req) => {
       const supabase = createClient(supabaseUrl, supabaseKey)
 
       await supabase.from('log_eventos_sistema').insert({
-        tipo_evento: 'WEBHOOK_INOOVAWEB_CLIENT_CREATION_ERROR',
+        tipo_evento: 'WEBHOOK_INOOVAWEB_BUILDING_CREATION_ERROR',
         descricao: JSON.stringify({
           error: error.message,
           timestamp: new Date().toISOString()

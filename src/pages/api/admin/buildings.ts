@@ -87,6 +87,32 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
       throw error;
     }
     
+    // Extrair os primeiros 4 dígitos do UUID como codigo_predio
+    const codigoPredio = data.id.replace(/-/g, '').substring(0, 4);
+    
+    // Atualizar o prédio com o codigo_predio
+    const { error: updateError } = await supabase
+      .from('buildings')
+      .update({ codigo_predio: codigoPredio })
+      .eq('id', data.id);
+      
+    if (updateError) {
+      console.error('Error updating codigo_predio:', updateError);
+    }
+    
+    // Chamar edge function para criar cliente externo
+    try {
+      await supabase.functions.invoke('create-external-client', {
+        body: {
+          buildingId: data.id,
+          buildingName: nome
+        }
+      });
+    } catch (webhookError) {
+      console.error('Error calling create-external-client webhook:', webhookError);
+      // Não falhar a criação do prédio se o webhook falhar
+    }
+    
     // Log action
     if (req.headers.authorization) {
       const token = req.headers.authorization.split(' ')[1];
@@ -96,12 +122,16 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
         await logUserAction(
           user.id,
           'create_building',
-          { building_id: data.id }
+          { building_id: data.id, codigo_predio: codigoPredio }
         );
       }
     }
     
-    return res.status(201).json(data);
+    // Retornar dados atualizados com codigo_predio
+    return res.status(201).json({
+      ...data,
+      codigo_predio: codigoPredio
+    });
   } catch (error) {
     console.error('Error creating building:', error);
     return res.status(500).json({ error: 'Error creating building' });
