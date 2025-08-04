@@ -129,21 +129,37 @@ export const useBuildingFormData = (building: any, open: boolean) => {
 
         toast.success('Prédio atualizado com sucesso!');
       } else {
-        // Criar novo prédio via API
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        const response = await fetch('/api/admin/buildings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify(dataToSave),
+        const { data, error } = await supabase
+          .from('buildings')
+          .insert([dataToSave])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        await supabase.rpc('log_building_action', {
+          p_building_id: data.id,
+          p_action_type: 'create',
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type}`,
+          p_new_values: dataToSave
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Erro ao criar prédio');
+        // Enviar para webhook (não bloquear criação se falhar)
+        try {
+          const clienteId = data.id.replace(/-/g, '').substring(0, 4);
+          
+          await fetch('https://stilver.app.n8n.cloud/webhook/CRIAR_CONTA_PREDIO_CLIENTE', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              cliente_id: clienteId,
+              cliente_name: formData.nome
+            }),
+          });
+        } catch (webhookError) {
+          console.warn('Erro no webhook (não crítico):', webhookError);
         }
 
         toast.success('Prédio criado com sucesso!');
