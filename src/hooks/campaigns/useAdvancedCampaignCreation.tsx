@@ -31,11 +31,8 @@ interface CreateAdvancedCampaignData {
 
 // Funções auxiliares
 const convertToTitleCase = (filename: string): string => {
-  return filename
-    .replace(/[_\s]+/g, '_')
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join('_');
+  // Manter o nome do arquivo original sem modificações
+  return filename;
 };
 
 const mapDaysToPortuguese = (dayNumbers: number[]): string[] => {
@@ -44,19 +41,30 @@ const mapDaysToPortuguese = (dayNumbers: number[]): string[] => {
 };
 
 const formatScheduleRules = (rules: ScheduleRule[]) => {
+  // Ordem exata dos dias conforme o exemplo
+  const daysOrder = ['sexta', 'quarta', 'quinta', 'terça', 'domingo', 'segunda', 'sábado'];
+  
   const programacao: Record<string, Array<{inicio: string, fim: string}>> = {};
   
+  // Primeiro, preencher com horário padrão para todos os dias
+  daysOrder.forEach(day => {
+    programacao[day] = [{
+      inicio: "00:00",
+      fim: "23:59"
+    }];
+  });
+  
+  // Depois, sobrescrever com regras específicas se existirem
   rules.forEach(rule => {
     if (rule.isActive) {
       const days = mapDaysToPortuguese(rule.daysOfWeek);
       days.forEach(day => {
-        if (!programacao[day]) {
-          programacao[day] = [];
+        if (daysOrder.includes(day)) {
+          programacao[day] = [{
+            inicio: rule.startTime,
+            fim: rule.endTime
+          }];
         }
-        programacao[day].push({
-          inicio: rule.startTime,
-          fim: rule.endTime
-        });
       });
     }
   });
