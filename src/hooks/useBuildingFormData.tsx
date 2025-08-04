@@ -113,7 +113,6 @@ export const useBuildingFormData = (building: any, open: boolean) => {
       };
 
       if (building) {
-        // Atualização - usar Supabase diretamente
         const { error } = await supabase
           .from('buildings')
           .update(dataToSave)
@@ -130,57 +129,19 @@ export const useBuildingFormData = (building: any, open: boolean) => {
 
         toast.success('Prédio atualizado com sucesso!');
       } else {
-        // Criação - usar API para gerar codigo_predio e chamar webhook
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.access_token) {
-          throw new Error('Usuário não autenticado');
-        }
+        const { data, error } = await supabase
+          .from('buildings')
+          .insert([dataToSave])
+          .select()
+          .single();
 
-        console.log('Sending data to API:', dataToSave);
-        
-        const response = await fetch('/api/admin/buildings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify(dataToSave)
-        });
-
-        console.log('API Response status:', response.status);
-        console.log('API Response headers:', Object.fromEntries(response.headers.entries()));
-
-        if (!response.ok) {
-          let errorMessage = 'Erro ao criar prédio';
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorMessage;
-          } catch (jsonError) {
-            console.error('Failed to parse error response as JSON:', jsonError);
-            const textResponse = await response.text();
-            console.error('Raw error response:', textResponse);
-            errorMessage = `Erro HTTP ${response.status}: ${textResponse || 'Resposta vazia'}`;
-          }
-          throw new Error(errorMessage);
-        }
-
-        let data;
-        try {
-          data = await response.json();
-          console.log('Received data from API:', data);
-        } catch (jsonError) {
-          console.error('Failed to parse success response as JSON:', jsonError);
-          const textResponse = await response.text();
-          console.error('Raw success response:', textResponse);
-          throw new Error('Resposta da API não é um JSON válido');
-        }
+        if (error) throw error;
 
         await supabase.rpc('log_building_action', {
           p_building_id: data.id,
           p_action_type: 'create',
-          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type} - Código: ${data.codigo_predio}`,
-          p_new_values: { ...dataToSave, codigo_predio: data.codigo_predio }
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type}`,
+          p_new_values: dataToSave
         });
 
         toast.success('Prédio criado com sucesso!');
