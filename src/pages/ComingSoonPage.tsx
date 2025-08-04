@@ -22,14 +22,21 @@ const ComingSoonPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🚀 Password submitted:', password);
-    if (authenticateUser(password)) {
-      console.log('🎉 Authentication successful - NO RELOAD NEEDED');
-      // Remover window.location.reload() - deixar React atualizar naturalmente
+    console.log('🚀 Password submission started');
+    
+    const success = authenticateUser(password);
+    
+    if (success) {
+      console.log('🎉 Authentication successful');
+      
+      // Aguardar propagação do estado
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
       setPassword('');
       setError('');
+      console.log('🔄 Fields cleared, waiting for state propagation...');
     } else {
       setError('Senha incorreta');
       setPassword('');

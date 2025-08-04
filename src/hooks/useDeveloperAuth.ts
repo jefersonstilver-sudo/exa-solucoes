@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const DEVELOPER_PASSWORD = '573039';
 const AUTH_KEY = 'indexa_dev_auth';
@@ -18,22 +18,46 @@ export const useDeveloperAuth = () => {
   const [password, setPassword] = useState('');
   const [showPasswordField, setShowPasswordField] = useState(false);
 
-  // Debug: Monitorar mudanças no estado de autenticação
-  console.log('🔐 useDeveloperAuth - Current isAuthenticated:', isAuthenticated);
+  // FIXED: Mover logs para useEffect para evitar loop infinito
+  useEffect(() => {
+    console.log('🔐 Auth state changed:', isAuthenticated);
+  }, [isAuthenticated]);
 
-  const authenticateUser = (inputPassword: string) => {
+  // Adicionar listener para mudanças no sessionStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const stored = sessionStorage.getItem('indexa_dev_session') === 'true';
+      if (stored !== isAuthenticated) {
+        console.log('🔄 Storage changed, updating state:', stored);
+        setIsAuthenticated(stored);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [isAuthenticated]);
+
+  const authenticateUser = useCallback((inputPassword: string) => {
     console.log('🔐 Attempting authentication with password:', inputPassword);
     console.log('🔐 Expected password:', DEVELOPER_PASSWORD);
     if (inputPassword === DEVELOPER_PASSWORD) {
       console.log('✅ Password correct, setting auth state...');
+      
+      // Atualizar sessionStorage ANTES do setState
       sessionStorage.setItem('indexa_dev_session', 'true');
       setIsAuthenticated(true);
-      console.log('✅ State updated, isAuthenticated should now be true');
+      
+      // Verificar após um tick
+      setTimeout(() => {
+        const verified = sessionStorage.getItem('indexa_dev_session') === 'true';
+        console.log('✅ Authentication verified:', verified);
+      }, 100);
+      
       return true;
     }
     console.log('❌ Password incorrect');
     return false;
-  };
+  }, []);
 
   const logout = () => {
     setIsAuthenticated(false);
