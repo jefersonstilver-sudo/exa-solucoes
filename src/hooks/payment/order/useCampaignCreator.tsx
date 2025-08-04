@@ -1,6 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { prepareForInsert, prepareForUpdate, filterEq } from '@/utils/supabaseUtils';
+import { processExternalClientCreation } from '@/services/externalClientService';
+import { logSystemEvent } from '@/utils/auditLogger';
 
 export const useCampaignCreator = () => {
   const createCampaignsAfterPayment = async (pedidoId: string, userId: string) => {
@@ -32,7 +34,32 @@ export const useCampaignCreator = () => {
         .update(updateData as any)
         .eq('id', filterEq(pedidoId));
       
-      const panelIds = Array.isArray(orderData.lista_paineis) 
+      // Processar criação de cliente externo na primeira compra aprovada
+      logSystemEvent('PAYMENT_APPROVED_PROCESSING_EXTERNAL_CLIENT', {
+        pedidoId,
+        userId,
+        orderValue: orderData.valor_total
+      });
+      
+      const externalClientResult = await processExternalClientCreation(userId);
+      
+      if (externalClientResult.attempted) {
+        if (externalClientResult.success) {
+          logSystemEvent('EXTERNAL_CLIENT_CREATION_COMPLETED', {
+            pedidoId,
+            userId,
+            success: true
+          });
+        } else {
+          logSystemEvent('EXTERNAL_CLIENT_CREATION_FAILED', {
+            pedidoId,
+            userId,
+            error: externalClientResult.error
+          }, 'WARNING');
+        }
+      }
+      
+      const panelIds = Array.isArray(orderData.lista_paineis)
         ? orderData.lista_paineis 
         : [orderData.lista_paineis];
       
