@@ -31,8 +31,19 @@ interface CreateAdvancedCampaignData {
 
 // Funções auxiliares
 const convertToTitleCase = (filename: string): string => {
-  // Retorna sempre o nome padrão exato solicitado
-  return "Vídeo_Promocional_JG_Locadora.mp4";
+  // Separar nome e extensão
+  const parts = filename.split('.');
+  const extension = parts.pop(); // última parte é a extensão
+  const nameWithoutExtension = parts.join('.');
+  
+  // Converter para camelCase
+  const camelCaseName = nameWithoutExtension
+    .toLowerCase()
+    .replace(/[-_\s]+(.)?/g, (_, char) => char ? char.toUpperCase() : '')
+    .replace(/[^a-zA-Z0-9]/g, ''); // remove caracteres especiais restantes
+  
+  // Retornar com extensão
+  return `${camelCaseName}.${extension}`;
 };
 
 const mapDaysToPortuguese = (dayNumbers: number[]): string[] => {
