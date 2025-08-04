@@ -61,6 +61,7 @@ export type Database = {
           audience_profile: string[] | null
           bairro: string
           caracteristicas: string[] | null
+          codigo_predio: string | null
           contato_sindico: string | null
           contato_vice_sindico: string | null
           created_at: string | null
@@ -96,6 +97,7 @@ export type Database = {
           audience_profile?: string[] | null
           bairro: string
           caracteristicas?: string[] | null
+          codigo_predio?: string | null
           contato_sindico?: string | null
           contato_vice_sindico?: string | null
           created_at?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           audience_profile?: string[] | null
           bairro?: string
           caracteristicas?: string[] | null
+          codigo_predio?: string | null
           contato_sindico?: string | null
           contato_vice_sindico?: string | null
           created_at?: string | null

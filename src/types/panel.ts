@@ -9,6 +9,7 @@ export interface Building {
   cep: string;
   latitude: number;
   longitude: number;
+  codigo_predio?: string; // ADICIONADO: Código único de 3 dígitos
   imageUrl?: string;
   basePrice?: number;
   preco_base?: number; // Add this property for database compatibility
