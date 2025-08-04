@@ -153,7 +153,7 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
     // Para cada vídeo aprovado, criar entrada no payload
     approvedVideos?.forEach((video: any) => {
       const filename = video.videos?.nome || 'video_sem_nome.mp4';
-      const exactFilename = convertToTitleCase(filename);
+      const exactFilename = filename; // Usar nome original do arquivo
 
       // Converter regras de programação
       const rules: ScheduleRule[] = scheduleRules?.map(rule => ({
