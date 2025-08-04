@@ -113,7 +113,6 @@ export const useBuildingFormData = (building: any, open: boolean) => {
       };
 
       if (building) {
-        // Para atualização, continuar usando Supabase diretamente
         const { error } = await supabase
           .from('buildings')
           .update(dataToSave)
@@ -130,34 +129,19 @@ export const useBuildingFormData = (building: any, open: boolean) => {
 
         toast.success('Prédio atualizado com sucesso!');
       } else {
-        // Para criação, usar a API que chama o webhook
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.access_token) {
-          throw new Error('Usuário não autenticado');
-        }
+        const { data, error } = await supabase
+          .from('buildings')
+          .insert([dataToSave])
+          .select()
+          .single();
 
-        const response = await fetch('/api/admin/buildings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify(dataToSave)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Erro ao criar prédio');
-        }
-
-        const data = await response.json();
+        if (error) throw error;
 
         await supabase.rpc('log_building_action', {
           p_building_id: data.id,
           p_action_type: 'create',
-          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type} - Código: ${data.codigo_predio}`,
-          p_new_values: { ...dataToSave, codigo_predio: data.codigo_predio }
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type}`,
+          p_new_values: dataToSave
         });
 
         toast.success('Prédio criado com sucesso!');
