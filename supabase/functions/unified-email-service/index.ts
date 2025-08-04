@@ -140,6 +140,8 @@ serve(async (req: Request) => {
 
       // ESTRATÉGIA HÍBRIDA: Usar LinkGenerator para links mais duráveis
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
+      const redirectUrl = `${baseUrl}/confirmacao`;
+      console.log('🎯 [UNIFIED-EMAIL] URL de redirect definida:', redirectUrl);
       
       // Tentar extrair token original do webhook se disponível
       const originalToken = email_data?.access_token || email_data?.confirmation_url?.match(/access_token=([^&]+)/)?.[1];
@@ -148,13 +150,25 @@ serve(async (req: Request) => {
       let confirmationUrl;
       try {
         // Usar LinkGenerator que é mais robusto contra expiração
-        confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
+        confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken, redirectUrl);
+        console.log('✅ [UNIFIED-EMAIL] URL de confirmação construída via LinkGenerator:', {
+          baseUrl,
+          redirectTo: redirectUrl,
+          hasOriginalToken: !!originalToken,
+          fullUrl: confirmationUrl
+        });
       } catch (linkGenError) {
         console.warn('⚠️ [UNIFIED-EMAIL] LinkGenerator falhou, usando método tradicional:', linkGenError);
         // Fallback para método tradicional se LinkGenerator falhar
         console.log('🌐 [UNIFIED-EMAIL] URL base detectada para fallback:', baseUrl);
-        const redirectUrl = `${baseUrl}/confirmacao`;
         confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
+        
+        console.log('✅ [UNIFIED-EMAIL] URL de confirmação construída via fallback:', {
+          baseUrl,
+          redirectTo: redirectUrl,
+          tokenHashLength: email_data.token_hash?.length || 0,
+          fullUrl: confirmationUrl
+        });
       }
       
       const validatedUrl = URLValidator.validateAndCorrectUrl(confirmationUrl);

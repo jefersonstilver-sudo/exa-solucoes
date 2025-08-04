@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import ServiceCard from '@/components/ui/service-card';
 import { HomepageBannerCarousel } from '@/components/ui/homepage-banner';
@@ -20,9 +21,27 @@ const Index = () => {
   const [configs, setConfigs] = useState<HomepageConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { banners, isLoading: bannersLoading } = useHomepageBanners();
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.log('Index component mounted, starting data fetch...');
+    
+    // 🔗 [CONFIRMACAO-FALLBACK] Detectar tokens de confirmação na URL raiz
+    const checkForConfirmationTokens = () => {
+      const hash = window.location.hash;
+      if (hash.includes('access_token=') && hash.includes('type=signup')) {
+        console.log('🎯 [CONFIRMACAO-FALLBACK] Tokens de confirmação detectados na raiz, redirecionando para /confirmacao');
+        // Preservar o hash com os tokens e redirecionar
+        navigate('/confirmacao' + hash);
+        return true;
+      }
+      return false;
+    };
+
+    // Se encontrou tokens, não precisa carregar configs
+    if (checkForConfirmationTokens()) {
+      return;
+    }
     
     const fetchConfigs = async () => {
       try {
