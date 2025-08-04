@@ -152,8 +152,8 @@ serve(async (req: Request) => {
       } catch (linkGenError) {
         console.warn('⚠️ [UNIFIED-EMAIL] LinkGenerator falhou, usando método tradicional:', linkGenError);
         // Fallback para método tradicional se LinkGenerator falhar
-        const appUrl = 'https://loving-bough-1xb6c3h.lovableproject.com';
-        const redirectUrl = `${appUrl}/confirmacao`;
+        console.log('🌐 [UNIFIED-EMAIL] URL base detectada para fallback:', baseUrl);
+        const redirectUrl = `${baseUrl}/confirmacao`;
         confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
       }
       
