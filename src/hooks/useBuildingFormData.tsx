@@ -129,20 +129,22 @@ export const useBuildingFormData = (building: any, open: boolean) => {
 
         toast.success('Prédio atualizado com sucesso!');
       } else {
-        const { data, error } = await supabase
-          .from('buildings')
-          .insert([dataToSave])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        await supabase.rpc('log_building_action', {
-          p_building_id: data.id,
-          p_action_type: 'create',
-          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type}`,
-          p_new_values: dataToSave
+        // Criar novo prédio via API
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const response = await fetch('/api/admin/buildings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify(dataToSave),
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Erro ao criar prédio');
+        }
 
         toast.success('Prédio criado com sucesso!');
       }

@@ -18,21 +18,18 @@ serve(async (req) => {
       throw new Error('Missing required fields: buildingId or buildingName')
     }
 
-    // Extract cliente_id from building UUID (first 4 characters after removing dashes)
-    const clienteId = buildingId.replace(/-/g, '').substring(0, 4)
-
     const payload = {
-      cliente_id: clienteId,
+      cliente_id: buildingId,
       cliente_name: buildingName
     }
 
     console.log('Sending to webhook:', {
-      url: 'https://webhook.inoovaweb.com.br/webhook/criar_usuario_externo',
+      url: 'https://stilver.app.n8n.cloud/webhook/CRIAR_CONTA_PREDIO_CLIENTE',
       payload
     })
 
     // Send to external webhook
-    const response = await fetch('https://webhook.inoovaweb.com.br/webhook/criar_usuario_externo', {
+    const response = await fetch('https://stilver.app.n8n.cloud/webhook/CRIAR_CONTA_PREDIO_CLIENTE', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,10 +54,9 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     await supabase.from('log_eventos_sistema').insert({
-      tipo_evento: 'WEBHOOK_INOOVAWEB_BUILDING_CREATION_SUCCESS',
+      tipo_evento: 'WEBHOOK_STILVER_BUILDING_CREATION_SUCCESS',
       descricao: JSON.stringify({
         buildingId,
-        clienteId,
         buildingName,
         webhookResponse: result,
         timestamp: new Date().toISOString()
@@ -82,7 +78,7 @@ serve(async (req) => {
       const supabase = createClient(supabaseUrl, supabaseKey)
 
       await supabase.from('log_eventos_sistema').insert({
-        tipo_evento: 'WEBHOOK_INOOVAWEB_BUILDING_CREATION_ERROR',
+        tipo_evento: 'WEBHOOK_STILVER_BUILDING_CREATION_ERROR',
         descricao: JSON.stringify({
           error: error.message,
           timestamp: new Date().toISOString()
