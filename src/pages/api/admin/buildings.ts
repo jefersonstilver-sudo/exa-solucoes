@@ -1,4 +1,3 @@
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import { checkRole } from '../../../lib/auth';
 import { supabase, logUserAction } from '../../../services/supabase';
@@ -62,11 +61,21 @@ async function getBuildings(req: NextApiRequest, res: NextApiResponse) {
 // Create a new building
 async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
   try {
+    console.log('=== CREATE BUILDING DEBUG ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const buildingData = req.body;
     
     if (!buildingData.nome || !buildingData.endereco || !buildingData.bairro) {
+      console.log('Missing required fields:', { 
+        nome: !!buildingData.nome, 
+        endereco: !!buildingData.endereco, 
+        bairro: !!buildingData.bairro 
+      });
       return res.status(400).json({ error: 'Nome, endereco, and bairro are required' });
     }
+    
+    console.log('Creating building with data:', buildingData);
     
     const { data, error } = await supabase
       .from('buildings')
@@ -75,57 +84,66 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
       .single();
       
     if (error) {
-      throw error;
+      console.error('Supabase error creating building:', error);
+      return res.status(500).json({ error: error.message });
     }
     
-    // Extrair os primeiros 4 dígitos do UUID como codigo_predio
-    const codigoPredio = data.id.replace(/-/g, '').substring(0, 4);
+    console.log('Building created successfully:', data);
+
+    // Generate codigo_predio from building ID
+    const codigoPredioParts = data.id.split('-');
+    const codigo_predio = codigoPredioParts[0].substring(0, 3).toUpperCase();
     
-    // Atualizar o prédio com o codigo_predio
+    console.log('Generated codigo_predio:', codigo_predio);
+    
     const { error: updateError } = await supabase
       .from('buildings')
-      .update({ codigo_predio: codigoPredio })
+      .update({ codigo_predio })
       .eq('id', data.id);
-      
+    
     if (updateError) {
-      console.error('Error updating codigo_predio:', updateError);
+      console.error('Error updating building with codigo_predio:', updateError);
+      return res.status(500).json({ error: updateError.message });
     }
     
-    // Chamar edge function para criar cliente externo
+    console.log('Building updated with codigo_predio successfully');
+
+    // Call external webhook
     try {
-      await supabase.functions.invoke('create-external-client', {
+      console.log('Calling external webhook...');
+      const webhookResult = await supabase.functions.invoke('create-external-client', {
         body: {
           buildingId: data.id,
           buildingName: buildingData.nome
         }
       });
+      console.log('Webhook result:', webhookResult);
     } catch (webhookError) {
-      console.error('Error calling create-external-client webhook:', webhookError);
-      // Não falhar a criação do prédio se o webhook falhar
+      console.error('Webhook error (non-blocking):', webhookError);
+    }
+
+    // Log user action
+    try {
+      console.log('Logging user action...');
+      await logUserAction(
+        (req as any).user.id,
+        'create_building',
+        { description: `Created building: ${buildingData.nome}`, building_id: data.id, codigo_predio }
+      );
+      console.log('User action logged successfully');
+    } catch (logError) {
+      console.error('Error logging user action (non-blocking):', logError);
     }
     
-    // Log action
-    if (req.headers.authorization) {
-      const token = req.headers.authorization.split(' ')[1];
-      const { data: { user } } = await supabase.auth.getUser(token);
-      
-      if (user) {
-        await logUserAction(
-          user.id,
-          'create_building',
-          { building_id: data.id, codigo_predio: codigoPredio }
-        );
-      }
-    }
+    const finalResult = { ...data, codigo_predio };
+    console.log('Returning final result:', finalResult);
+    console.log('=== END CREATE BUILDING DEBUG ===');
     
-    // Retornar dados atualizados com codigo_predio
-    return res.status(201).json({
-      ...data,
-      codigo_predio: codigoPredio
-    });
-  } catch (error) {
-    console.error('Error creating building:', error);
-    return res.status(500).json({ error: 'Error creating building' });
+    res.status(201).json(finalResult);
+  } catch (error: any) {
+    console.error('Error in createBuilding:', error);
+    console.log('=== END CREATE BUILDING DEBUG (ERROR) ===');
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
 
@@ -156,23 +174,20 @@ async function updateBuilding(req: NextApiRequest, res: NextApiResponse) {
       throw error;
     }
     
-    // Log action
-    if (req.headers.authorization) {
-      const token = req.headers.authorization.split(' ')[1];
-      const { data: { user } } = await supabase.auth.getUser(token);
-      
-      if (user) {
-        await logUserAction(
-          user.id,
-          'update_building',
-          { building_id: id }
-        );
-      }
+    // Log user action
+    try {
+      await logUserAction(
+        (req as any).user.id,
+        'update_building',
+        { description: `Updated building: ${nome}`, building_id: id }
+      );
+    } catch (logError) {
+      console.error('Error logging user action (non-blocking):', logError);
     }
     
     return res.status(200).json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating building:', error);
-    return res.status(500).json({ error: 'Error updating building' });
+    return res.status(500).json({ error: error.message || 'Error updating building' });
   }
 }

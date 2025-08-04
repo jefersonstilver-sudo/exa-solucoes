@@ -137,6 +137,8 @@ export const useBuildingFormData = (building: any, open: boolean) => {
           throw new Error('Usuário não autenticado');
         }
 
+        console.log('Sending data to API:', dataToSave);
+        
         const response = await fetch('/api/admin/buildings', {
           method: 'POST',
           headers: {
@@ -146,12 +148,33 @@ export const useBuildingFormData = (building: any, open: boolean) => {
           body: JSON.stringify(dataToSave)
         });
 
+        console.log('API Response status:', response.status);
+        console.log('API Response headers:', Object.fromEntries(response.headers.entries()));
+
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Erro ao criar prédio');
+          let errorMessage = 'Erro ao criar prédio';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (jsonError) {
+            console.error('Failed to parse error response as JSON:', jsonError);
+            const textResponse = await response.text();
+            console.error('Raw error response:', textResponse);
+            errorMessage = `Erro HTTP ${response.status}: ${textResponse || 'Resposta vazia'}`;
+          }
+          throw new Error(errorMessage);
         }
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+          console.log('Received data from API:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse success response as JSON:', jsonError);
+          const textResponse = await response.text();
+          console.error('Raw success response:', textResponse);
+          throw new Error('Resposta da API não é um JSON válido');
+        }
 
         await supabase.rpc('log_building_action', {
           p_building_id: data.id,
