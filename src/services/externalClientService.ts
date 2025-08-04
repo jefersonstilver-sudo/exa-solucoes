@@ -53,7 +53,7 @@ export const checkIfFirstPurchase = async (userId: string): Promise<boolean> => 
       .from('pedidos')
       .select('id')
       .eq('client_id', userId)
-      .in('status', ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'])
+      .in('status', ['pago'])
       .limit(2); // Buscar 2 para ver se já existe mais de 1
 
     if (error) {
@@ -83,7 +83,7 @@ export const createExternalClient = async (
     cliente_name: userName
   };
 
-  logSystemEvent('EXTERNAL_CLIENT_CREATION_ATTEMPT', {
+  logSystemEvent('WEBHOOK_INOOVAWEB_CLIENT_CREATION_ATTEMPT', {
     userId,
     clienteId,
     userName,
@@ -92,7 +92,7 @@ export const createExternalClient = async (
   });
 
   try {
-    const response = await fetch('http://15.228.8.3:8000/criar-cliente', {
+    const response = await fetch('https://webhook.inoovaweb.com.br/webhook/criar_usuario_externo', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export const createExternalClient = async (
 
     const result = await response.json();
     
-    logSystemEvent('EXTERNAL_CLIENT_CREATION_SUCCESS', {
+    logSystemEvent('WEBHOOK_INOOVAWEB_CLIENT_CREATION_SUCCESS', {
       userId,
       clienteId,
       userName,
@@ -119,7 +119,7 @@ export const createExternalClient = async (
   } catch (error: any) {
     const errorMessage = error.message || 'Erro desconhecido';
     
-    logSystemEvent('EXTERNAL_CLIENT_CREATION_ERROR', {
+    logSystemEvent('WEBHOOK_INOOVAWEB_CLIENT_CREATION_ERROR', {
       userId,
       clienteId,
       userName,
@@ -152,7 +152,7 @@ export const processExternalClientCreation = async (
     const isFirstPurchase = await checkIfFirstPurchase(userId);
     
     if (!isFirstPurchase) {
-      logSystemEvent('EXTERNAL_CLIENT_CREATION_SKIPPED', {
+      logSystemEvent('WEBHOOK_INOOVAWEB_CLIENT_CREATION_SKIPPED', {
         userId,
         reason: 'not_first_purchase'
       });
@@ -172,7 +172,7 @@ export const processExternalClientCreation = async (
       error: result.error
     };
   } catch (error: any) {
-    logSystemEvent('EXTERNAL_CLIENT_PROCESSING_ERROR', {
+    logSystemEvent('WEBHOOK_INOOVAWEB_CLIENT_PROCESSING_ERROR', {
       userId,
       error: error.message
     }, 'ERROR');
