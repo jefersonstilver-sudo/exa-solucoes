@@ -29,6 +29,122 @@ interface CreateAdvancedCampaignData {
   videoSchedules: VideoSchedule[];
 }
 
+// Funções auxiliares
+const convertToTitleCase = (filename: string): string => {
+  return filename
+    .replace(/[_\s]+/g, '_')
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join('_');
+};
+
+const mapDaysToPortuguese = (dayNumbers: number[]): string[] => {
+  const dayMap = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  return dayNumbers.map(day => dayMap[day]);
+};
+
+const formatScheduleRules = (rules: ScheduleRule[]) => {
+  const programacao: Record<string, Array<{inicio: string, fim: string}>> = {};
+  
+  rules.forEach(rule => {
+    if (rule.isActive) {
+      const days = mapDaysToPortuguese(rule.daysOfWeek);
+      days.forEach(day => {
+        if (!programacao[day]) {
+          programacao[day] = [];
+        }
+        programacao[day].push({
+          inicio: rule.startTime,
+          fim: rule.endTime
+        });
+      });
+    }
+  });
+  
+  return programacao;
+};
+
+const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdvancedCampaignData) => {
+  try {
+    // Buscar vídeos aprovados do pedido
+    const { data: approvedVideos, error: videosError } = await supabase
+      .from('pedido_videos')
+      .select(`
+        video_id,
+        videos (
+          nome
+        )
+      `)
+      .eq('pedido_id', campaignData.pedidoId)
+      .eq('approval_status', 'approved');
+
+    if (videosError) throw videosError;
+
+    // Buscar regras de programação da campanha
+    const { data: scheduleRules, error: rulesError } = await supabase
+      .from('campaign_schedule_rules')
+      .select(`
+        days_of_week,
+        start_time,
+        end_time,
+        is_active,
+        campaign_video_schedules!inner (
+          campaign_id
+        )
+      `)
+      .eq('campaign_video_schedules.campaign_id', campaignId);
+
+    if (rulesError) throw rulesError;
+
+    const payload: Record<string, any> = {};
+
+    // Para cada vídeo aprovado, criar entrada no payload
+    approvedVideos?.forEach((video: any) => {
+      const filename = video.videos?.nome || 'video_sem_nome.mp4';
+      const camelCaseFilename = convertToTitleCase(filename);
+
+      // Converter regras de programação
+      const rules: ScheduleRule[] = scheduleRules?.map(rule => ({
+        daysOfWeek: rule.days_of_week,
+        startTime: rule.start_time,
+        endTime: rule.end_time,
+        isActive: rule.is_active
+      })) || [];
+
+      // Se não há regras específicas, usar padrão da campanha
+      const finalRules = rules.length > 0 ? rules : [{
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: campaignData.startTime,
+        endTime: campaignData.endTime,
+        isActive: true
+      }];
+
+      const programacao = formatScheduleRules(finalRules);
+
+      payload[camelCaseFilename] = {
+        titulo: campaignData.name,
+        data_ini: `${campaignData.startDate}T${campaignData.startTime}:00`,
+        data_fim: `${campaignData.endDate}T${campaignData.endTime}:00`,
+        programacao
+      };
+    });
+
+    // Enviar para webhook
+    await fetch('https://stilver.app.n8n.cloud/webhook/propagandas_upload_propagandas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    console.log('✅ Dados enviados para webhook com sucesso:', payload);
+  } catch (error) {
+    console.error('❌ Erro ao enviar dados para webhook:', error);
+    throw error;
+  }
+};
+
 export const useAdvancedCampaignCreation = () => {
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -99,6 +215,13 @@ export const useAdvancedCampaignCreation = () => {
       }
 
       // Não criar campanha duplicada - apenas campanhas avançadas
+
+      // Enviar dados para webhook após sucesso
+      try {
+        await sendCampaignToWebhook(campaign.id, campaignData);
+      } catch (webhookError) {
+        console.warn('Erro no webhook (não crítico):', webhookError);
+      }
 
       toast.success('Campanha criada com sucesso!');
       return { success: true, data: campaign };
