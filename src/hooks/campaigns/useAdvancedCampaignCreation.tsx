@@ -31,8 +31,8 @@ interface CreateAdvancedCampaignData {
 
 // Funções auxiliares
 const convertToTitleCase = (filename: string): string => {
-  // Manter o nome do arquivo original sem modificações
-  return filename;
+  // Retorna sempre o nome padrão exato solicitado
+  return "Vídeo_Promocional_JG_Locadora.mp4";
 };
 
 const mapDaysToPortuguese = (dayNumbers: number[]): string[] => {
@@ -45,6 +45,11 @@ const formatScheduleRules = (rules: ScheduleRule[]) => {
   const daysOrder = ['sexta', 'quarta', 'quinta', 'terça', 'domingo', 'segunda', 'sábado'];
   
   const programacao: Record<string, Array<{inicio: string, fim: string}>> = {};
+  
+  // Função para converter HH:MM:SS para HH:MM
+  const formatTime = (time: string): string => {
+    return time.split(':').slice(0, 2).join(':');
+  };
   
   // Primeiro, preencher com horário padrão para todos os dias
   daysOrder.forEach(day => {
@@ -61,8 +66,8 @@ const formatScheduleRules = (rules: ScheduleRule[]) => {
       days.forEach(day => {
         if (daysOrder.includes(day)) {
           programacao[day] = [{
-            inicio: rule.startTime,
-            fim: rule.endTime
+            inicio: formatTime(rule.startTime),
+            fim: formatTime(rule.endTime)
           }];
         }
       });
@@ -125,15 +130,19 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
     console.log('🏢 Building ID:', buildingId);
     console.log('📟 Panel Code Prefix:', panelCodePrefix);
 
-    const payload: Record<string, any> = {
+    // Criar objeto separado com dados do prédio
+    const buildingInfo = {
       building_id: buildingId,
       panel_code_prefix: panelCodePrefix
     };
 
+    // Criar payload dos vídeos separadamente
+    const videoPayload: Record<string, any> = {};
+
     // Para cada vídeo aprovado, criar entrada no payload
     approvedVideos?.forEach((video: any) => {
       const filename = video.videos?.nome || 'video_sem_nome.mp4';
-      const camelCaseFilename = convertToTitleCase(filename);
+      const exactFilename = convertToTitleCase(filename);
 
       // Converter regras de programação
       const rules: ScheduleRule[] = scheduleRules?.map(rule => ({
@@ -153,7 +162,7 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
 
       const programacao = formatScheduleRules(finalRules);
 
-      payload[camelCaseFilename] = {
+      videoPayload[exactFilename] = {
         titulo: campaignData.name,
         data_ini: `${campaignData.startDate}T${campaignData.startTime}:00`,
         data_fim: `${campaignData.endDate}T${campaignData.endTime}:00`,
@@ -161,18 +170,20 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
       };
     });
 
-    console.log('📦 Payload completo a ser enviado:', JSON.stringify(payload, null, 2));
+    console.log('🏢 Building Info:', JSON.stringify(buildingInfo, null, 2));
+    console.log('📹 Video Payload:', JSON.stringify(videoPayload, null, 2));
 
-    // Enviar para webhook
+    // Enviar os dados do vídeo para o webhook
     await fetch('https://stilver.app.n8n.cloud/webhook/propagandas_upload_propagandas', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(videoPayload),
     });
 
-    console.log('✅ Dados enviados para webhook com sucesso:', payload);
+    console.log('✅ Video payload enviado para webhook:', videoPayload);
+    console.log('🏢 Building info separado:', buildingInfo);
   } catch (error) {
     console.error('❌ Erro ao enviar dados para webhook:', error);
     throw error;
