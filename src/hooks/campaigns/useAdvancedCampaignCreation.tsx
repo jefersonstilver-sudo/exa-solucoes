@@ -74,6 +74,20 @@ const formatScheduleRules = (rules: ScheduleRule[]) => {
 
 const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdvancedCampaignData) => {
   try {
+    // Buscar informações do painel e prédio
+    const { data: panelData, error: panelError } = await supabase
+      .from('painels')
+      .select('building_id, code')
+      .eq('id', campaignData.panelId)
+      .single();
+
+    if (panelError || !panelData) {
+      console.error('❌ Erro ao buscar dados do painel:', panelError);
+      throw new Error('Não foi possível buscar informações do painel');
+    }
+
+    console.log('🏢 Dados do painel obtidos:', panelData);
+
     // Buscar vídeos aprovados do pedido
     const { data: approvedVideos, error: videosError } = await supabase
       .from('pedido_videos')
@@ -104,7 +118,17 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
 
     if (rulesError) throw rulesError;
 
-    const payload: Record<string, any> = {};
+    // Extrair informações do painel
+    const buildingId = panelData.building_id;
+    const panelCodePrefix = panelData.code.slice(0, 4); // Primeiros 4 caracteres do código
+
+    console.log('🏢 Building ID:', buildingId);
+    console.log('📟 Panel Code Prefix:', panelCodePrefix);
+
+    const payload: Record<string, any> = {
+      building_id: buildingId,
+      panel_code_prefix: panelCodePrefix
+    };
 
     // Para cada vídeo aprovado, criar entrada no payload
     approvedVideos?.forEach((video: any) => {
@@ -136,6 +160,8 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
         programacao
       };
     });
+
+    console.log('📦 Payload completo a ser enviado:', JSON.stringify(payload, null, 2));
 
     // Enviar para webhook
     await fetch('https://stilver.app.n8n.cloud/webhook/propagandas_upload_propagandas', {
