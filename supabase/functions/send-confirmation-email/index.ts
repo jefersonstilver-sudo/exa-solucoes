@@ -27,6 +27,11 @@ serve(async (req) => {
 
     // Inicializar Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    console.log('🔑 [SEND-CONFIRMATION] API Key status:', {
+      hasApiKey: !!resendApiKey,
+      keyLength: resendApiKey?.length || 0
+    })
+    
     if (!resendApiKey) {
       throw new Error('RESEND_API_KEY não configurada')
     }
@@ -79,17 +84,43 @@ serve(async (req) => {
       </html>
     `
 
-    // Enviar email via Resend
-    const emailResult = await resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com.br>',
-      to: [user.email],
-      subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
-      html: htmlTemplate,
-    })
+    // Tentar enviar email via Resend
+    console.log('📤 [SEND-CONFIRMATION] Tentando enviar email para:', user.email)
+    
+    try {
+      const emailResult = await resend.emails.send({
+        from: 'Indexa <onboarding@resend.dev>', // Usando domínio verificado temporariamente
+        to: [user.email],
+        subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
+        html: htmlTemplate,
+      })
 
-    if (emailResult.error) {
-      console.error('❌ [SEND-CONFIRMATION] Erro do Resend:', emailResult.error)
-      throw new Error(`Erro ao enviar email: ${emailResult.error.message}`)
+      console.log('📧 [SEND-CONFIRMATION] Resposta do Resend:', {
+        success: !emailResult.error,
+        emailId: emailResult.data?.id,
+        error: emailResult.error
+      })
+
+      if (emailResult.error) {
+        console.error('❌ [SEND-CONFIRMATION] Erro do Resend:', {
+          message: emailResult.error.message,
+          name: emailResult.error.name,
+          statusCode: emailResult.error.statusCode,
+          fullError: emailResult.error
+        })
+        
+        // Retornar erro mais detalhado
+        throw new Error(`Falha no envio de email: ${emailResult.error.message || 'Erro desconhecido'}`)
+      }
+
+      return emailResult
+    } catch (sendError: any) {
+      console.error('💥 [SEND-CONFIRMATION] Erro na tentativa de envio:', {
+        message: sendError.message,
+        name: sendError.name,
+        stack: sendError.stack
+      })
+      throw sendError
     }
 
     console.log('✅ [SEND-CONFIRMATION] Email enviado com sucesso:', {
