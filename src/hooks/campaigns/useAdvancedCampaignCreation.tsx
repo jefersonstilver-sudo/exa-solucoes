@@ -170,20 +170,24 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
       };
     });
 
-    console.log('🏢 Building Info:', JSON.stringify(buildingInfo, null, 2));
-    console.log('📹 Video Payload:', JSON.stringify(videoPayload, null, 2));
+    // Combinar building info com video payload
+    const finalPayload = {
+      ...buildingInfo,
+      ...videoPayload
+    };
 
-    // Enviar os dados do vídeo para o webhook
+    console.log('📦 Payload final completo:', JSON.stringify(finalPayload, null, 2));
+
+    // Enviar payload completo para webhook
     await fetch('https://stilver.app.n8n.cloud/webhook/propagandas_upload_propagandas', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(videoPayload),
+      body: JSON.stringify(finalPayload),
     });
 
-    console.log('✅ Video payload enviado para webhook:', videoPayload);
-    console.log('🏢 Building info separado:', buildingInfo);
+    console.log('✅ Payload completo enviado para webhook:', finalPayload);
   } catch (error) {
     console.error('❌ Erro ao enviar dados para webhook:', error);
     throw error;
