@@ -7,41 +7,103 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // CORS para OPTIONS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const requestBody = await req.json()
-    console.log('📧 [SEND-CONFIRMATION] Recebido:', {
+    console.log('🚀 [SEND-CONFIRMATION] Iniciando processamento do email de confirmação')
+    
+    // Validação da requisição
+    if (req.method !== 'POST') {
+      console.error('❌ [SEND-CONFIRMATION] Método não permitido:', req.method)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Método não permitido' }),
+        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    let requestBody
+    try {
+      requestBody = await req.json()
+    } catch (parseError: any) {
+      console.error('❌ [SEND-CONFIRMATION] Erro ao parsear JSON:', parseError)
+      return new Response(
+        JSON.stringify({ success: false, error: 'JSON inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('📦 [SEND-CONFIRMATION] Dados recebidos:', {
       hasUser: !!requestBody.user,
       hasEmailData: !!requestBody.email_data,
-      userEmail: requestBody.user?.email
+      userEmail: requestBody.user?.email,
+      hasTokenHash: !!requestBody.email_data?.token_hash,
+      hasRedirectTo: !!requestBody.email_data?.redirect_to
     })
 
     const { user, email_data } = requestBody
 
-    if (!user?.email || !email_data?.token_hash) {
-      throw new Error('Dados de usuário ou email incompletos')
+    // Validação rigorosa dos dados
+    if (!user) {
+      console.error('❌ [SEND-CONFIRMATION] Objeto user não fornecido')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Dados de usuário não fornecidos' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Inicializar Resend
+    if (!user.email) {
+      console.error('❌ [SEND-CONFIRMATION] Email do usuário não fornecido')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Email do usuário é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!email_data?.token_hash) {
+      console.error('❌ [SEND-CONFIRMATION] Token hash não fornecido')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Token de confirmação não fornecido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Verificar API key do Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    console.log('🔑 [SEND-CONFIRMATION] API Key status:', {
+    console.log('🔑 [SEND-CONFIRMATION] Status da API Key:', {
       hasApiKey: !!resendApiKey,
-      keyLength: resendApiKey?.length || 0
+      keyLength: resendApiKey?.length || 0,
+      keyStart: resendApiKey ? `${resendApiKey.substring(0, 6)}...` : 'N/A'
     })
     
     if (!resendApiKey) {
-      throw new Error('RESEND_API_KEY não configurada')
+      console.error('❌ [SEND-CONFIRMATION] RESEND_API_KEY não configurada')
+      // CRÍTICO: Não quebrar o fluxo de cadastro, mas logar o erro
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Serviço de email não configurado',
+          user_can_continue: true // Flag para indicar que o usuário pode continuar
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const resend = new Resend(resendApiKey)
 
-    // Construir URL de confirmação
-    const confirmationUrl = `https://aakenoljsycyrcrchgxj.supabase.co/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(email_data.redirect_to || 'https://loving-bough-1xb6c3h.lovableproject.com/confirmacao')}`
+    // Construir URL de confirmação com fallback
+    const baseUrl = 'https://aakenoljsycyrcrchgxj.supabase.co'
+    const redirectTo = email_data.redirect_to || 'https://loving-bough-1xb6c3h.lovableproject.com/'
+    const confirmationUrl = `${baseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`
 
-    console.log('🔗 [SEND-CONFIRMATION] URL gerada:', confirmationUrl)
+    console.log('🔗 [SEND-CONFIRMATION] URL de confirmação construída:', {
+      baseUrl,
+      redirectTo,
+      tokenHashLength: email_data.token_hash.length,
+      fullUrl: confirmationUrl
+    })
 
     // Template HTML simplificado
     const htmlTemplate = `
@@ -113,32 +175,49 @@ serve(async (req) => {
         throw new Error(`Falha no envio de email: ${emailResult.error.message || 'Erro desconhecido'}`)
       }
 
-      return emailResult
+      console.log('✅ [SEND-CONFIRMATION] Email enviado com sucesso:', {
+        emailId: emailResult.data?.id,
+        recipient: user.email
+      })
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Email de confirmação enviado com sucesso',
+          emailId: emailResult.data?.id
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
+
     } catch (sendError: any) {
       console.error('💥 [SEND-CONFIRMATION] Erro na tentativa de envio:', {
         message: sendError.message,
         name: sendError.name,
-        stack: sendError.stack
+        stack: sendError.stack,
+        type: typeof sendError
       })
-      throw sendError
+      
+      // CRÍTICO: Não quebrar o fluxo de cadastro
+      // Retornar 200 com flag de erro para permitir que o usuário continue
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Erro no envio de email: ${sendError.message}`,
+          user_can_continue: true,
+          details: {
+            errorType: sendError.name || 'UnknownError',
+            timestamp: new Date().toISOString()
+          }
+        }),
+        { 
+          status: 200, // 200 para não quebrar o Auth Hook
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
-
-    console.log('✅ [SEND-CONFIRMATION] Email enviado com sucesso:', {
-      emailId: emailResult.data?.id,
-      recipient: user.email
-    })
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Email de confirmação enviado com sucesso',
-        emailId: emailResult.data?.id
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    )
 
   } catch (error: any) {
     console.error('💥 [SEND-CONFIRMATION] Erro:', error)
