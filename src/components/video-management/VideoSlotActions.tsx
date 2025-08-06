@@ -8,7 +8,8 @@ import {
   Star,
   Lock,
   AlertTriangle,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Check
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -104,34 +105,37 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   return (
     <>
       <div className="flex flex-col space-y-2">
-        {/* Botão de Seleção - Melhorado para indicar troca */}
-        <Button
-          onClick={handleSelectForDisplay}
-          disabled={!isApproved}
-          className={`w-full ${
-            slot.selected_for_display 
-              ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-              : isApproved
+        {/* Status informativo para vídeos aprovados e em exibição */}
+        {isApproved && slot.selected_for_display ? (
+          <div className="w-full flex items-center justify-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <Check className="h-5 w-5 text-green-600" />
+            <span className="font-medium text-green-700">Aprovado e em Exibição</span>
+          </div>
+        ) : (
+          /* Botão de Seleção - Para vídeos aprovados mas não selecionados */
+          <Button
+            onClick={handleSelectForDisplay}
+            disabled={!isApproved}
+            className={`w-full ${
+              isApproved
                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-          title={
-            !isApproved 
-              ? isPending 
-                ? 'Vídeo aguardando aprovação - não pode ser selecionado'
-                : isRejected
-                  ? 'Vídeo rejeitado - não pode ser selecionado'
-                  : 'Vídeo não aprovado - não pode ser selecionado'
-              : slot.selected_for_display 
-                ? 'Este vídeo está selecionado para exibição'
+            }`}
+            title={
+              !isApproved 
+                ? isPending 
+                  ? 'Vídeo aguardando aprovação - não pode ser selecionado'
+                  : isRejected
+                    ? 'Vídeo rejeitado - não pode ser selecionado'
+                    : 'Vídeo não aprovado - não pode ser selecionado'
                 : 'Selecionar este vídeo para exibição (substituirá o atual)'
-          }
-        >
-          {!isApproved && <Lock className="h-4 w-4 mr-2" />}
-          {isApproved && !slot.selected_for_display && <ArrowRightLeft className="h-4 w-4 mr-2" />}
-          {isApproved && slot.selected_for_display && <Star className="h-4 w-4 mr-2" />}
-          {slot.selected_for_display ? 'SELECIONADO ✓' : 'Selecionar para Exibição'}
-        </Button>
+            }
+          >
+            {!isApproved && <Lock className="h-4 w-4 mr-2" />}
+            {isApproved && <ArrowRightLeft className="h-4 w-4 mr-2" />}
+            Selecionar para Exibição
+          </Button>
+        )}
 
         {/* Botões secundários */}
         <div className="flex space-x-2">
