@@ -18,43 +18,36 @@ export const useDeveloperAuth = () => {
   const [password, setPassword] = useState('');
   const [showPasswordField, setShowPasswordField] = useState(false);
 
-  // FIXED: Mover logs para useEffect para evitar loop infinito
+  // Debug logs para mudanças no estado
   useEffect(() => {
     console.log('🔐 Auth state changed:', isAuthenticated);
   }, [isAuthenticated]);
 
-  // Adicionar listener para mudanças no sessionStorage
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const stored = sessionStorage.getItem('indexa_dev_session') === 'true';
-      if (stored !== isAuthenticated) {
-        console.log('🔄 Storage changed, updating state:', stored);
-        setIsAuthenticated(stored);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [isAuthenticated]);
-
   const authenticateUser = useCallback((inputPassword: string) => {
-    console.log('🔐 Attempting authentication with password:', inputPassword);
+    console.log('🔐 Attempting authentication...');
+    console.log('🔐 Input password:', inputPassword);
     console.log('🔐 Expected password:', DEVELOPER_PASSWORD);
+    console.log('🔐 Password match:', inputPassword === DEVELOPER_PASSWORD);
+    
     if (inputPassword === DEVELOPER_PASSWORD) {
-      console.log('✅ Password correct, setting auth state...');
+      console.log('✅ Password correct! Setting authentication...');
       
-      // Atualizar sessionStorage ANTES do setState
-      sessionStorage.setItem('indexa_dev_session', 'true');
+      // Primeiro: Atualizar sessionStorage
+      try {
+        sessionStorage.setItem('indexa_dev_session', 'true');
+        console.log('✅ SessionStorage updated successfully');
+      } catch (error) {
+        console.error('❌ Failed to update sessionStorage:', error);
+        return false;
+      }
+      
+      // Segundo: Atualizar estado React
       setIsAuthenticated(true);
-      
-      // Verificar após um tick
-      setTimeout(() => {
-        const verified = sessionStorage.getItem('indexa_dev_session') === 'true';
-        console.log('✅ Authentication verified:', verified);
-      }, 100);
+      console.log('✅ React state updated to authenticated');
       
       return true;
     }
+    
     console.log('❌ Password incorrect');
     return false;
   }, []);
