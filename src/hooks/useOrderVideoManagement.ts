@@ -124,7 +124,11 @@ export const useOrderVideoManagement = (orderId: string) => {
         throw new Error('Título deve ter entre 3 e 50 caracteres');
       }
 
-      console.log('📋 [ORDER_VIDEO] Regras de agendamento recebidas:', scheduleRules);
+      console.log('📋 [ORDER_VIDEO] REGRAS DE AGENDAMENTO RECEBIDAS:', {
+        hasRules: !!scheduleRules,
+        rulesCount: scheduleRules?.length || 0,
+        rules: scheduleRules
+      });
 
       const success = await uploadVideoAction(
         slotPosition,

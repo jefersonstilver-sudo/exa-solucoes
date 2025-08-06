@@ -190,9 +190,12 @@ export const uploadVideo = async (
 
     // Salvar regras de agendamento se fornecidas
     if (scheduleRules && scheduleRules.length > 0) {
-      console.log('📅 Salvando regras de agendamento...', { 
+      console.log('📅 [UPLOAD] INICIANDO SALVAMENTO DE REGRAS:', { 
         rulesCount: scheduleRules.length, 
-        rules: scheduleRules 
+        rules: scheduleRules,
+        orderId,
+        slotPosition,
+        videoId: videoRecord.id
       });
       
       try {
@@ -233,15 +236,15 @@ export const uploadVideo = async (
         // Filtrar apenas regras ativas para salvar
         const activeRules = scheduleRules.filter(rule => rule.isActive && rule.daysOfWeek.length > 0);
         
+        console.log('🔍 [UPLOAD] REGRAS PROCESSADAS:', {
+          totalRules: scheduleRules.length,
+          activeRules: activeRules.length,
+          rulesData: activeRules
+        });
+        
         if (activeRules.length === 0) {
-          console.warn('⚠️ Nenhuma regra ativa encontrada, criando regra padrão');
-          // Criar regra padrão se não houver regras ativas
-          activeRules.push({
-            daysOfWeek: [1, 2, 3, 4, 5], // Segunda a sexta
-            startTime: '08:00',
-            endTime: '18:00',
-            isActive: true
-          });
+          console.error('❌ [UPLOAD] NENHUMA REGRA ATIVA VÁLIDA! Isso deve bloquear o upload.');
+          throw new Error('Nenhuma regra de agendamento ativa válida encontrada. Configure pelo menos uma regra ativa com dias e horários selecionados.');
         }
 
         // Salvar todas as regras de agendamento ativas
@@ -265,18 +268,20 @@ export const uploadVideo = async (
           throw new Error(`Falha ao salvar regras: ${rulesError.message}`);
         }
 
-        console.log('✅ Regras de agendamento salvas com sucesso!', { 
+        console.log('✅ [UPLOAD] REGRAS SALVAS COM SUCESSO!', { 
           savedRules: insertedRules?.length || 0,
-          scheduleId: scheduleData.id 
+          scheduleId: scheduleData.id,
+          insertedRules: insertedRules
         });
 
       } catch (scheduleError) {
-        console.error('💥 Erro crítico ao salvar agendamento:', scheduleError);
+        console.error('💥 [UPLOAD] ERRO CRÍTICO AO SALVAR AGENDAMENTO:', scheduleError);
         toast.error(`Erro ao salvar agendamento: ${scheduleError instanceof Error ? scheduleError.message : 'Erro desconhecido'}`);
         throw scheduleError; // Re-throw para interromper o processo
       }
     } else {
-      console.log('📅 Nenhuma regra de agendamento fornecida, usando configuração padrão no webhook');
+      console.error('❌ [UPLOAD] NENHUMA REGRA DE AGENDAMENTO FORNECIDA!');
+      throw new Error('Regras de agendamento são obrigatórias. Configure pelo menos uma regra de exibição antes de fazer upload.');
     }
 
     onProgress?.(100);

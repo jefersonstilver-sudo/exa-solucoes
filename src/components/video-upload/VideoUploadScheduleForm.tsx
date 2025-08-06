@@ -84,6 +84,11 @@ export const VideoUploadScheduleForm: React.FC<VideoUploadScheduleFormProps> = (
   };
 
   const handleSubmit = () => {
+    console.log('📋 [SCHEDULE_FORM] ENVIANDO REGRAS:', {
+      totalRules: scheduleRules.length,
+      rules: scheduleRules,
+      activeRules: scheduleRules.filter(rule => rule.isActive && rule.daysOfWeek.length > 0)
+    });
     onSubmit(scheduleRules);
   };
 
