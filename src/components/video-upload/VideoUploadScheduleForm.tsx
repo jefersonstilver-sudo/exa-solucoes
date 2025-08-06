@@ -7,7 +7,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Clock, Calendar, Plus, Trash2, ArrowLeft, Upload } from 'lucide-react';
-import { toast } from 'sonner';
 
 export interface ScheduleRule {
   daysOfWeek: number[];
@@ -85,19 +84,6 @@ export const VideoUploadScheduleForm: React.FC<VideoUploadScheduleFormProps> = (
   };
 
   const handleSubmit = () => {
-    // Validação obrigatória antes do envio
-    if (!isValidSchedule) {
-      toast.error('Configure pelo menos uma regra de agendamento ativa!');
-      return;
-    }
-    
-    const activeRules = scheduleRules.filter(rule => rule.isActive && rule.daysOfWeek.length > 0);
-    if (activeRules.length === 0) {
-      toast.error('Configure pelo menos uma regra de agendamento com dias selecionados!');
-      return;
-    }
-    
-    console.log('📋 Enviando agendamento:', { rulesCount: activeRules.length, scheduleRules });
     onSubmit(scheduleRules);
   };
 
