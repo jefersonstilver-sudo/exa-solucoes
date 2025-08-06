@@ -14,7 +14,9 @@ export const uploadVideo = async (
   userId: string,
   orderId: string,
   onProgress?: (progress: number) => void,
-  videoTitle?: string
+  videoTitle?: string,
+  scheduleRules?: any[],
+  priority?: number
 ): Promise<boolean> => {
   try {
     console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
@@ -187,9 +189,61 @@ export const uploadVideo = async (
       throw new Error(`Erro ao salvar no slot: ${slotResult.error.message}`);
     }
 
+    // Salvar regras de agendamento se fornecidas
+    if (scheduleRules && scheduleRules.length > 0) {
+      console.log('📅 Salvando regras de agendamento...');
+      
+      // Buscar o ID do pedido_video que acabamos de criar/atualizar
+      const { data: pedidoVideoData, error: findError } = await supabase
+        .from('pedido_videos')
+        .select('id')
+        .eq('pedido_id', orderId)
+        .eq('slot_position', slotPosition)
+        .single();
+
+      if (findError || !pedidoVideoData) {
+        console.error('❌ Erro ao buscar pedido_video para salvar regras:', findError);
+      } else {
+        // Criar um schedule de vídeo fictício para campanhas avançadas
+        const { data: scheduleData, error: scheduleError } = await supabase
+          .from('campaign_video_schedules')
+          .insert({
+            campaign_id: orderId, // Usar orderId como campaign_id temporariamente
+            video_id: videoRecord.id,
+            slot_position: slotPosition,
+            priority: priority || 1
+          })
+          .select()
+          .single();
+
+        if (scheduleError) {
+          console.error('❌ Erro ao criar schedule:', scheduleError);
+        } else {
+          // Salvar todas as regras de agendamento
+          const ruleInserts = scheduleRules.map(rule => ({
+            campaign_video_schedule_id: scheduleData.id,
+            days_of_week: rule.daysOfWeek,
+            start_time: rule.startTime,
+            end_time: rule.endTime,
+            is_active: rule.isActive
+          }));
+
+          const { error: rulesError } = await supabase
+            .from('campaign_schedule_rules')
+            .insert(ruleInserts);
+
+          if (rulesError) {
+            console.error('❌ Erro ao salvar regras de agendamento:', rulesError);
+          } else {
+            console.log('✅ Regras de agendamento salvas com sucesso!');
+          }
+        }
+      }
+    }
+
     onProgress?.(100);
     console.log('🎉 Upload completo com sucesso!');
-    toast.success(`Vídeo "${finalVideoName}" enviado com sucesso!`);
+    toast.success(`Vídeo "${finalVideoName}" ${scheduleRules?.length ? 'e agendamento' : ''} enviado com sucesso!`);
     return true;
 
   } catch (error) {

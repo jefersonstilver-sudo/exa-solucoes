@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { VideoTitleInput } from '@/components/video-upload/VideoTitleInput';
+import { VideoUploadScheduleForm, ScheduleRule } from '@/components/video-upload/VideoUploadScheduleForm';
 import { Button } from '@/components/ui/button';
 
 interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
   isUploading: boolean;
-  onUpload: (slotPosition: number, file: File, title: string) => void;
+  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[], priority?: number) => void;
 }
 
 export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
@@ -20,6 +21,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [titleError, setTitleError] = useState('');
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
 
   const validateTitle = (title: string): boolean => {
     if (!title.trim()) {
@@ -55,7 +57,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     setSelectedFile(file);
   };
 
-  const handleUploadClick = () => {
+  const handleContinueToSchedule = () => {
     if (!validateTitle(videoTitle)) {
       return;
     }
@@ -65,15 +67,39 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       return;
     }
 
-    onUpload(slotPosition, selectedFile, videoTitle);
+    setShowScheduleForm(true);
+  };
+
+  const handleScheduleSubmit = (scheduleRules: ScheduleRule[], priority: number) => {
+    if (!selectedFile) return;
+    
+    onUpload(slotPosition, selectedFile, videoTitle, scheduleRules, priority);
     
     // Reset after upload
     setSelectedFile(null);
     setVideoTitle('');
     setTitleError('');
+    setShowScheduleForm(false);
+  };
+
+  const handleBackFromSchedule = () => {
+    setShowScheduleForm(false);
   };
 
   const canUpload = selectedFile && videoTitle.length >= 3 && videoTitle.length <= 50 && !uploading && !isUploading;
+
+  // Mostrar formulário de agendamento se estiver nessa etapa
+  if (showScheduleForm && selectedFile) {
+    return (
+      <VideoUploadScheduleForm
+        videoTitle={videoTitle}
+        fileName={selectedFile.name}
+        onBack={handleBackFromSchedule}
+        onSubmit={handleScheduleSubmit}
+        uploading={isUploading}
+      />
+    );
+  }
 
   return (
     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 space-y-4">
@@ -133,9 +159,9 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         </div>
       )}
 
-      {/* Botão de Upload */}
+      {/* Botão para continuar para agendamento */}
       <Button
-        onClick={handleUploadClick}
+        onClick={handleContinueToSchedule}
         disabled={!canUpload}
         className="w-full"
       >
@@ -145,7 +171,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
             Enviando...
           </>
         ) : (
-          'Fazer Upload'
+          'Continuar para Agendamento'
         )}
       </Button>
 

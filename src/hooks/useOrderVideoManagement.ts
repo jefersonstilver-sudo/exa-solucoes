@@ -101,7 +101,14 @@ export const useOrderVideoManagement = (orderId: string) => {
     }
   };
 
-  const uploadVideo = async (slotPosition: number, file: File, userId: string, videoTitle?: string) => {
+  const uploadVideo = async (
+    slotPosition: number, 
+    file: File, 
+    userId: string, 
+    videoTitle?: string,
+    scheduleRules?: any[],
+    priority?: number
+  ) => {
     try {
       console.log('📤 [ORDER_VIDEO] Iniciando upload:', { 
         slotPosition, 
@@ -127,7 +134,9 @@ export const useOrderVideoManagement = (orderId: string) => {
           console.log(`📊 [ORDER_VIDEO] Progresso upload slot ${slotPosition}:`, progress);
           setUploadProgress(prev => ({ ...prev, [slotPosition]: progress }));
         },
-        videoTitle // Passar título para o serviço
+        videoTitle,
+        scheduleRules,
+        priority
       );
 
       if (success) {

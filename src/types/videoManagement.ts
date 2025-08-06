@@ -30,6 +30,6 @@ export interface VideoManagementActions {
   selectVideoForDisplay: (slotId: string) => Promise<void>;
   activateVideo: (slotId: string) => Promise<void>;
   removeVideo: (slotId: string) => Promise<void>;
-  uploadVideo: (slotPosition: number, file: File, userId: string) => Promise<void>;
+  uploadVideo: (slotPosition: number, file: File, userId: string, videoTitle?: string, scheduleRules?: any[], priority?: number) => Promise<void>;
   refreshSlots: () => Promise<void>;
 }
