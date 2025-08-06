@@ -9,7 +9,7 @@ interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
   isUploading: boolean;
-  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[], priority?: number) => void;
+  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[]) => void;
 }
 
 export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
@@ -70,10 +70,10 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     setShowScheduleForm(true);
   };
 
-  const handleScheduleSubmit = (scheduleRules: ScheduleRule[], priority: number) => {
+  const handleScheduleSubmit = (scheduleRules: ScheduleRule[]) => {
     if (!selectedFile) return;
     
-    onUpload(slotPosition, selectedFile, videoTitle, scheduleRules, priority);
+    onUpload(slotPosition, selectedFile, videoTitle, scheduleRules);
     
     // Reset after upload
     setSelectedFile(null);

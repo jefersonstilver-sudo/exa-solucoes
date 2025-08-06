@@ -15,8 +15,7 @@ export const uploadVideo = async (
   orderId: string,
   onProgress?: (progress: number) => void,
   videoTitle?: string,
-  scheduleRules?: any[],
-  priority?: number
+  scheduleRules?: any[]
 ): Promise<boolean> => {
   try {
     console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
@@ -211,7 +210,7 @@ export const uploadVideo = async (
             campaign_id: orderId, // Usar orderId como campaign_id temporariamente
             video_id: videoRecord.id,
             slot_position: slotPosition,
-            priority: priority || 1
+            priority: 1
           })
           .select()
           .single();

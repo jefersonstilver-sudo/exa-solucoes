@@ -138,7 +138,21 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
       if (error) throw error;
 
-      toast.success(`Vídeo de ${clientName} aprovado com sucesso!`);
+      // Enviar automaticamente para o webhook após aprovação
+      try {
+        const { sendVideoApprovalToWebhook } = await import('@/services/videoApprovalWebhookService');
+        const webhookSuccess = await sendVideoApprovalToWebhook(videoId);
+        
+        if (webhookSuccess) {
+          toast.success(`Vídeo de ${clientName} aprovado e programação ativada automaticamente!`);
+        } else {
+          toast.success(`Vídeo de ${clientName} aprovado! (Erro ao ativar programação - verificar logs)`);
+        }
+      } catch (webhookError) {
+        console.error('Erro ao enviar webhook:', webhookError);
+        toast.success(`Vídeo de ${clientName} aprovado! (Erro ao ativar programação automática)`);
+      }
+
       onRefresh();
       fetchPendingVideos();
     } catch (error) {

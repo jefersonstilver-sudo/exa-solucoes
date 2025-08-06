@@ -19,7 +19,7 @@ interface VideoUploadScheduleFormProps {
   videoTitle: string;
   fileName: string;
   onBack: () => void;
-  onSubmit: (scheduleRules: ScheduleRule[], priority: number) => void;
+  onSubmit: (scheduleRules: ScheduleRule[]) => void;
   uploading: boolean;
 }
 
@@ -48,7 +48,6 @@ export const VideoUploadScheduleForm: React.FC<VideoUploadScheduleFormProps> = (
       isActive: true
     }
   ]);
-  const [priority, setPriority] = useState<number>(1);
 
   const addScheduleRule = () => {
     const newRule: ScheduleRule = {
@@ -85,7 +84,7 @@ export const VideoUploadScheduleForm: React.FC<VideoUploadScheduleFormProps> = (
   };
 
   const handleSubmit = () => {
-    onSubmit(scheduleRules, priority);
+    onSubmit(scheduleRules);
   };
 
   const isValidSchedule = scheduleRules.some(rule => 
@@ -113,20 +112,6 @@ export const VideoUploadScheduleForm: React.FC<VideoUploadScheduleFormProps> = (
           </div>
         </div>
 
-        {/* Prioridade */}
-        <div className="space-y-2">
-          <Label htmlFor="priority" className="text-sm">Prioridade do Slot</Label>
-          <Select value={priority.toString()} onValueChange={(value) => setPriority(Number(value))}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecionar prioridade..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 - Alta prioridade</SelectItem>
-              <SelectItem value="2">2 - Média prioridade</SelectItem>
-              <SelectItem value="3">3 - Baixa prioridade</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         {/* Regras de horário */}
         <div className="space-y-3 sm:space-y-4">

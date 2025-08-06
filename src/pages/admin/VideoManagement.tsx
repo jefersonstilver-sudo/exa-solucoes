@@ -142,7 +142,21 @@ const VideoManagement = () => {
 
       if (error) throw error;
 
-      toast.success('Vídeo aprovado com sucesso!');
+      // Enviar automaticamente para o webhook após aprovação
+      try {
+        const { sendVideoApprovalToWebhook } = await import('@/services/videoApprovalWebhookService');
+        const webhookSuccess = await sendVideoApprovalToWebhook(videoId);
+        
+        if (webhookSuccess) {
+          toast.success('Vídeo aprovado e programação ativada automaticamente!');
+        } else {
+          toast.success('Vídeo aprovado! (Erro ao ativar programação - verificar logs)');
+        }
+      } catch (webhookError) {
+        console.error('Erro ao enviar webhook:', webhookError);
+        toast.success('Vídeo aprovado! (Erro ao ativar programação automática)');
+      }
+
       loadVideos();
     } catch (error) {
       console.error('Erro ao aprovar vídeo:', error);

@@ -106,8 +106,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     file: File, 
     userId: string, 
     videoTitle?: string,
-    scheduleRules?: any[],
-    priority?: number
+    scheduleRules?: any[]
   ) => {
     try {
       console.log('📤 [ORDER_VIDEO] Iniciando upload:', { 
@@ -135,8 +134,7 @@ export const useOrderVideoManagement = (orderId: string) => {
           setUploadProgress(prev => ({ ...prev, [slotPosition]: progress }));
         },
         videoTitle,
-        scheduleRules,
-        priority
+        scheduleRules
       );
 
       if (success) {
