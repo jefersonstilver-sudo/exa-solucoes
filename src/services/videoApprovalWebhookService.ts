@@ -45,8 +45,8 @@ const formatScheduleRules = (rules: ScheduleRule[]): Record<string, any[]> => {
         schedule[day] = [];
       }
       schedule[day].push({
-        inicio: rule.start_time,
-        fim: rule.end_time
+        inicio: rule.start_time.substring(0, 5), // Remove seconds
+        fim: rule.end_time.substring(0, 5) // Remove seconds
       });
     });
   });
@@ -65,11 +65,11 @@ const getContractTimeRange = (
     .flatMap(rule => [rule.start_time, rule.end_time]);
   
   const earliestTime = activeTimes.length > 0 
-    ? activeTimes.sort()[0] 
+    ? activeTimes.sort()[0].substring(0, 5) // Remove seconds
     : '08:00';
   
   const latestTime = activeTimes.length > 0 
-    ? activeTimes.sort().reverse()[0] 
+    ? activeTimes.sort().reverse()[0].substring(0, 5) // Remove seconds
     : '18:00';
   
   return {
