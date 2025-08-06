@@ -27,7 +27,7 @@ interface VideoSlotGridProps {
   videoSlots: VideoSlot[];
   uploading: boolean;
   uploadProgress: { [key: number]: number };
-  onUpload: (slotPosition: number, file: File, title: string) => void;
+  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => void;
   onActivate: (slotId: string) => void;
   onRemove: (slotId: string) => void;
   onSelectForDisplay: (slotId: string) => void;

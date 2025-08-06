@@ -12,7 +12,7 @@ interface VideoManagementCardProps {
   videoSlots: VideoSlot[];
   uploading: boolean;
   uploadProgress: { [key: number]: number };
-  onUpload: (slotPosition: number, file: File, title: string) => Promise<void>;
+  onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => Promise<void>;
   onActivate: (slotId: string) => Promise<void>;
   onRemove: (slotId: string) => Promise<void>;
   onSelectForDisplay: (slotId: string) => Promise<void>;

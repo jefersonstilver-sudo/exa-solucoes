@@ -109,7 +109,7 @@ const OrderDetails = () => {
     }
   };
 
-  const handleVideoUpload = async (slotPosition: number, file: File) => {
+  const handleVideoUpload = async (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => {
     if (!userProfile?.id || !id) return;
     
     if (contractStatus.isExpired) {
@@ -117,7 +117,15 @@ const OrderDetails = () => {
       return;
     }
     
-    await uploadVideo(slotPosition, file, userProfile.id);
+    console.log('📋 [ORDER_DETAILS] REPASSANDO REGRAS PARA UPLOAD:', {
+      slotPosition,
+      title,
+      hasScheduleRules: !!scheduleRules,
+      rulesCount: scheduleRules?.length || 0,
+      scheduleRules
+    });
+    
+    await uploadVideo(slotPosition, file, userProfile.id, title, scheduleRules);
   };
 
   const handleVideoAction = async (action: () => Promise<void>) => {
