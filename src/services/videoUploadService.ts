@@ -199,26 +199,53 @@ export const uploadVideo = async (
       });
       
       try {
-        // Buscar o ID do pedido_video que acabamos de criar/atualizar
-        const { data: pedidoVideoData, error: findError } = await supabase
-          .from('pedido_videos')
+        // Primeiro, criar uma campanha avançada para o pedido se não existir
+        let campaignId = orderId; // Inicialmente, tentar usar o orderId como campaign_id
+        
+        // Verificar se já existe uma campanha avançada para este pedido
+        const { data: existingCampaign, error: campaignCheckError } = await supabase
+          .from('campaigns_advanced')
           .select('id')
           .eq('pedido_id', orderId)
-          .eq('slot_position', slotPosition)
-          .single();
+          .maybeSingle();
 
-        if (findError || !pedidoVideoData) {
-          console.error('❌ Erro ao buscar pedido_video para salvar regras:', findError);
-          throw new Error(`Falha ao localizar registro do vídeo: ${findError?.message || 'Dados não encontrados'}`);
+        if (campaignCheckError) {
+          console.error('❌ Erro ao verificar campanha existente:', campaignCheckError);
         }
 
-        console.log('📋 Pedido video encontrado:', { pedidoVideoId: pedidoVideoData.id });
+        if (!existingCampaign) {
+          // Criar uma campanha avançada para armazenar o agendamento
+          const { data: newCampaign, error: createCampaignError } = await supabase
+            .from('campaigns_advanced')
+            .insert({
+              client_id: userId,
+              pedido_id: orderId,
+              name: `Campanha - ${finalVideoName}`,
+              description: `Campanha automática para vídeo: ${finalVideoName}`,
+              start_date: new Date().toISOString().split('T')[0],
+              end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias
+              status: 'active'
+            })
+            .select()
+            .single();
 
-        // Criar um schedule de vídeo para campanhas avançadas
+          if (createCampaignError || !newCampaign) {
+            console.error('❌ Erro ao criar campanha avançada:', createCampaignError);
+            throw new Error(`Falha ao criar campanha: ${createCampaignError?.message || 'Dados não retornados'}`);
+          }
+
+          campaignId = newCampaign.id;
+          console.log('✅ Campanha avançada criada:', { campaignId });
+        } else {
+          campaignId = existingCampaign.id;
+          console.log('✅ Usando campanha existente:', { campaignId });
+        }
+
+        // Criar um schedule de vídeo
         const { data: scheduleData, error: scheduleError } = await supabase
           .from('campaign_video_schedules')
           .insert({
-            campaign_id: orderId, // Usar orderId como campaign_id temporariamente
+            campaign_id: campaignId,
             video_id: videoRecord.id,
             slot_position: slotPosition,
             priority: 1
@@ -271,6 +298,7 @@ export const uploadVideo = async (
         console.log('✅ [UPLOAD] REGRAS SALVAS COM SUCESSO!', { 
           savedRules: insertedRules?.length || 0,
           scheduleId: scheduleData.id,
+          campaignId: campaignId,
           insertedRules: insertedRules
         });
 
@@ -280,8 +308,7 @@ export const uploadVideo = async (
         throw scheduleError; // Re-throw para interromper o processo
       }
     } else {
-      console.error('❌ [UPLOAD] NENHUMA REGRA DE AGENDAMENTO FORNECIDA!');
-      throw new Error('Regras de agendamento são obrigatórias. Configure pelo menos uma regra de exibição antes de fazer upload.');
+      console.log('⚠️ [UPLOAD] NENHUMA REGRA DE AGENDAMENTO FORNECIDA - Webhook usará regras padrão');
     }
 
     onProgress?.(100);

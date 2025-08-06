@@ -120,24 +120,40 @@ const fetchVideoApprovalData = async (pedidoVideoId: string): Promise<VideoAppro
       listaPredios: videoData.pedidos?.lista_predios
     });
 
-    // Buscar regras de agendamento específicas do vídeo
-    const { data: scheduleData, error: scheduleError } = await supabase
-      .from('campaign_video_schedules')
-      .select(`
-        id,
-        campaign_schedule_rules (
-          days_of_week,
-          start_time,
-          end_time,
-          is_active
-        )
-      `)
-      .eq('campaign_id', videoData.pedido_id)
-      .eq('video_id', videoData.video_id)
-      .eq('slot_position', videoData.slot_position);
+    // Buscar campanha avançada associada ao pedido
+    const { data: campaignData, error: campaignError } = await supabase
+      .from('campaigns_advanced')
+      .select('id')
+      .eq('pedido_id', videoData.pedido_id)
+      .maybeSingle();
 
-    if (scheduleError) {
-      console.error('❌ Erro ao buscar regras de agendamento:', scheduleError);
+    if (campaignError) {
+      console.error('❌ Erro ao buscar campanha avançada:', campaignError);
+    }
+
+    let scheduleData = null;
+    if (campaignData) {
+      // Buscar regras de agendamento específicas do vídeo usando a campanha avançada
+      const { data: scheduleResult, error: scheduleError } = await supabase
+        .from('campaign_video_schedules')
+        .select(`
+          id,
+          campaign_schedule_rules (
+            days_of_week,
+            start_time,
+            end_time,
+            is_active
+          )
+        `)
+        .eq('campaign_id', campaignData.id)
+        .eq('video_id', videoData.video_id)
+        .eq('slot_position', videoData.slot_position);
+
+      if (!scheduleError) {
+        scheduleData = scheduleResult;
+      } else {
+        console.error('❌ Erro ao buscar regras de agendamento:', scheduleError);
+      }
     }
 
     console.log('📅 Regras de agendamento encontradas:', scheduleData?.length || 0, scheduleData);
