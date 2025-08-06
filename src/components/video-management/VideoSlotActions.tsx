@@ -139,17 +139,6 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
 
         {/* Botões secundários */}
         <div className="flex space-x-2">
-          {slot.approval_status === 'approved' && !slot.is_active && slot.selected_for_display && (
-            <Button
-              size="sm"
-              onClick={() => slot.id && onActivate(slot.id)}
-              className="bg-green-600 hover:bg-green-700 flex-1"
-            >
-              <Play className="h-3 w-3 mr-1" />
-              Ativar
-            </Button>
-          )}
-          
           <Button
             variant="outline"
             size="sm"
