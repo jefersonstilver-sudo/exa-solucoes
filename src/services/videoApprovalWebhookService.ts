@@ -161,15 +161,17 @@ const fetchVideoApprovalData = async (pedidoVideoId: string): Promise<VideoAppro
       }
     }
 
-    // Se não há regras específicas, usar regra padrão
+    // CRÍTICO: NÃO usar regra padrão - apenas programação personalizada do cliente
     if (scheduleRules.length === 0) {
-      console.log('⚠️ Nenhuma regra específica encontrada, usando padrão (segunda a sexta)');
-      scheduleRules = [{
-        days_of_week: [1, 2, 3, 4, 5], // Segunda a sexta
-        start_time: '08:00',
-        end_time: '18:00',
-        is_active: true
-      }];
+      console.error('❌ ERRO CRÍTICO: Nenhuma programação personalizada encontrada para o vídeo!');
+      console.error('📋 Dados de busca:', { 
+        pedidoVideoId, 
+        orderId: videoData.pedidos?.id,
+        scheduleDataLength: scheduleData?.length || 0
+      });
+      
+      // Retornar null para indicar erro - webhook não deve prosseguir sem programação personalizada
+      return null;
     }
 
     // Buscar informações dos painéis e building_id
@@ -249,10 +251,13 @@ const fetchVideoApprovalData = async (pedidoVideoId: string): Promise<VideoAppro
 
 export const sendVideoApprovalToWebhook = async (pedidoVideoId: string): Promise<boolean> => {
   try {
+    console.log('🌐 Iniciando envio para webhook...', { pedidoVideoId });
+    
     const data = await fetchVideoApprovalData(pedidoVideoId);
     
     if (!data) {
-      console.error('Não foi possível obter dados para enviar ao webhook');
+      console.error('❌ ERRO CRÍTICO: Falha ao obter dados do vídeo ou programação personalizada não encontrada');
+      console.error('🚫 Webhook bloqueado - vídeo sem programação personalizada não será enviado');
       return false;
     }
 

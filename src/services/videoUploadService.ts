@@ -234,15 +234,13 @@ export const uploadVideo = async (
         const activeRules = scheduleRules.filter(rule => rule.isActive && rule.daysOfWeek.length > 0);
         
         if (activeRules.length === 0) {
-          console.warn('⚠️ Nenhuma regra ativa encontrada, criando regra padrão');
-          // Criar regra padrão se não houver regras ativas
-          activeRules.push({
-            daysOfWeek: [1, 2, 3, 4, 5], // Segunda a sexta
-            startTime: '08:00',
-            endTime: '18:00',
-            isActive: true
-          });
+          console.error('❌ ERRO CRÍTICO: Nenhuma regra ativa configurada pelo cliente!');
+          console.error('📋 Regras recebidas:', scheduleRules);
+          toast.error('Erro: Configure pelo menos uma regra de agendamento ativa');
+          throw new Error('Upload bloqueado: É obrigatório configurar pelo menos uma regra de agendamento ativa');
         }
+        
+        console.log('✅ Regras ativas validadas:', { activeRulesCount: activeRules.length, activeRules });
 
         // Salvar todas as regras de agendamento ativas
         const ruleInserts = activeRules.map(rule => ({
@@ -276,7 +274,9 @@ export const uploadVideo = async (
         throw scheduleError; // Re-throw para interromper o processo
       }
     } else {
-      console.log('📅 Nenhuma regra de agendamento fornecida, usando configuração padrão no webhook');
+      console.error('❌ ERRO CRÍTICO: Upload sem programação personalizada detectado!');
+      toast.error('Erro: É obrigatório configurar um agendamento personalizado');
+      throw new Error('Upload bloqueado: Agendamento personalizado é obrigatório');
     }
 
     onProgress?.(100);
