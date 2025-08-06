@@ -190,20 +190,28 @@ export const uploadVideo = async (
 
     // Salvar regras de agendamento se fornecidas
     if (scheduleRules && scheduleRules.length > 0) {
-      console.log('📅 Salvando regras de agendamento...');
+      console.log('📅 Salvando regras de agendamento...', { 
+        rulesCount: scheduleRules.length, 
+        rules: scheduleRules 
+      });
       
-      // Buscar o ID do pedido_video que acabamos de criar/atualizar
-      const { data: pedidoVideoData, error: findError } = await supabase
-        .from('pedido_videos')
-        .select('id')
-        .eq('pedido_id', orderId)
-        .eq('slot_position', slotPosition)
-        .single();
+      try {
+        // Buscar o ID do pedido_video que acabamos de criar/atualizar
+        const { data: pedidoVideoData, error: findError } = await supabase
+          .from('pedido_videos')
+          .select('id')
+          .eq('pedido_id', orderId)
+          .eq('slot_position', slotPosition)
+          .single();
 
-      if (findError || !pedidoVideoData) {
-        console.error('❌ Erro ao buscar pedido_video para salvar regras:', findError);
-      } else {
-        // Criar um schedule de vídeo fictício para campanhas avançadas
+        if (findError || !pedidoVideoData) {
+          console.error('❌ Erro ao buscar pedido_video para salvar regras:', findError);
+          throw new Error(`Falha ao localizar registro do vídeo: ${findError?.message || 'Dados não encontrados'}`);
+        }
+
+        console.log('📋 Pedido video encontrado:', { pedidoVideoId: pedidoVideoData.id });
+
+        // Criar um schedule de vídeo para campanhas avançadas
         const { data: scheduleData, error: scheduleError } = await supabase
           .from('campaign_video_schedules')
           .insert({
@@ -215,29 +223,60 @@ export const uploadVideo = async (
           .select()
           .single();
 
-        if (scheduleError) {
+        if (scheduleError || !scheduleData) {
           console.error('❌ Erro ao criar schedule:', scheduleError);
-        } else {
-          // Salvar todas as regras de agendamento
-          const ruleInserts = scheduleRules.map(rule => ({
-            campaign_video_schedule_id: scheduleData.id,
-            days_of_week: rule.daysOfWeek,
-            start_time: rule.startTime,
-            end_time: rule.endTime,
-            is_active: rule.isActive
-          }));
-
-          const { error: rulesError } = await supabase
-            .from('campaign_schedule_rules')
-            .insert(ruleInserts);
-
-          if (rulesError) {
-            console.error('❌ Erro ao salvar regras de agendamento:', rulesError);
-          } else {
-            console.log('✅ Regras de agendamento salvas com sucesso!');
-          }
+          throw new Error(`Falha ao criar agendamento: ${scheduleError?.message || 'Dados não retornados'}`);
         }
+
+        console.log('📊 Schedule criado:', { scheduleId: scheduleData.id });
+
+        // Filtrar apenas regras ativas para salvar
+        const activeRules = scheduleRules.filter(rule => rule.isActive && rule.daysOfWeek.length > 0);
+        
+        if (activeRules.length === 0) {
+          console.warn('⚠️ Nenhuma regra ativa encontrada, criando regra padrão');
+          // Criar regra padrão se não houver regras ativas
+          activeRules.push({
+            daysOfWeek: [1, 2, 3, 4, 5], // Segunda a sexta
+            startTime: '08:00',
+            endTime: '18:00',
+            isActive: true
+          });
+        }
+
+        // Salvar todas as regras de agendamento ativas
+        const ruleInserts = activeRules.map(rule => ({
+          campaign_video_schedule_id: scheduleData.id,
+          days_of_week: rule.daysOfWeek,
+          start_time: rule.startTime,
+          end_time: rule.endTime,
+          is_active: rule.isActive
+        }));
+
+        console.log('📝 Inserindo regras:', { rulesCount: ruleInserts.length, rules: ruleInserts });
+
+        const { data: insertedRules, error: rulesError } = await supabase
+          .from('campaign_schedule_rules')
+          .insert(ruleInserts)
+          .select();
+
+        if (rulesError) {
+          console.error('❌ Erro ao salvar regras de agendamento:', rulesError);
+          throw new Error(`Falha ao salvar regras: ${rulesError.message}`);
+        }
+
+        console.log('✅ Regras de agendamento salvas com sucesso!', { 
+          savedRules: insertedRules?.length || 0,
+          scheduleId: scheduleData.id 
+        });
+
+      } catch (scheduleError) {
+        console.error('💥 Erro crítico ao salvar agendamento:', scheduleError);
+        toast.error(`Erro ao salvar agendamento: ${scheduleError instanceof Error ? scheduleError.message : 'Erro desconhecido'}`);
+        throw scheduleError; // Re-throw para interromper o processo
       }
+    } else {
+      console.log('📅 Nenhuma regra de agendamento fornecida, usando configuração padrão no webhook');
     }
 
     onProgress?.(100);

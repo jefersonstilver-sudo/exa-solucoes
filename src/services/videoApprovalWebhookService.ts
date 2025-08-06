@@ -80,13 +80,16 @@ const getContractTimeRange = (
 
 const fetchVideoApprovalData = async (pedidoVideoId: string): Promise<VideoApprovalData | null> => {
   try {
-    // Buscar dados do vídeo, pedido e configurações
+    console.log('🔍 Buscando dados para webhook:', pedidoVideoId);
+
+    // Buscar dados do pedido_video, vídeo e pedido
     const { data: videoData, error: videoError } = await supabase
       .from('pedido_videos')
       .select(`
         id,
         pedido_id,
         video_id,
+        slot_position,
         videos!inner (
           id,
           nome,
@@ -96,72 +99,136 @@ const fetchVideoApprovalData = async (pedidoVideoId: string): Promise<VideoAppro
           id,
           data_inicio,
           data_fim,
-          lista_paineis
+          lista_paineis,
+          lista_predios
         )
       `)
       .eq('id', pedidoVideoId)
       .single();
 
     if (videoError || !videoData) {
-      console.error('Erro ao buscar dados do vídeo:', videoError);
+      console.error('❌ Erro ao buscar dados do vídeo:', videoError);
       return null;
     }
 
-    // Buscar regras de agendamento salvas
+    console.log('📊 Dados encontrados:', {
+      videoId: videoData.video_id,
+      pedidoId: videoData.pedido_id,
+      slotPosition: videoData.slot_position,
+      videoName: videoData.videos?.nome,
+      listaPaineis: videoData.pedidos?.lista_paineis,
+      listaPredios: videoData.pedidos?.lista_predios
+    });
+
+    // Buscar regras de agendamento específicas do vídeo
     const { data: scheduleData, error: scheduleError } = await supabase
       .from('campaign_video_schedules')
       .select(`
         id,
-        campaign_schedule_rules!inner (
+        campaign_schedule_rules (
           days_of_week,
           start_time,
           end_time,
           is_active
         )
       `)
-      .eq('video_id', videoData.video_id);
+      .eq('campaign_id', videoData.pedido_id)
+      .eq('video_id', videoData.video_id)
+      .eq('slot_position', videoData.slot_position);
 
     if (scheduleError) {
-      console.error('Erro ao buscar regras de agendamento:', scheduleError);
+      console.error('❌ Erro ao buscar regras de agendamento:', scheduleError);
     }
 
-    // Se não tiver regras específicas, criar regra padrão
+    console.log('📅 Regras de agendamento encontradas:', scheduleData?.length || 0, scheduleData);
+
+    // Processar regras de agendamento
     let scheduleRules: ScheduleRule[] = [];
+    
     if (scheduleData && scheduleData.length > 0) {
-      scheduleRules = scheduleData.flatMap(schedule => 
-        schedule.campaign_schedule_rules.map(rule => ({
-          days_of_week: rule.days_of_week,
-          start_time: rule.start_time,
-          end_time: rule.end_time,
-          is_active: rule.is_active
-        }))
-      );
-    } else {
-      // Regra padrão: Segunda a sexta, 8h às 18h
+      const schedule = scheduleData[0];
+      if (schedule.campaign_schedule_rules && schedule.campaign_schedule_rules.length > 0) {
+        scheduleRules = schedule.campaign_schedule_rules
+          .filter((rule: any) => rule.is_active)
+          .map((rule: any) => ({
+            days_of_week: rule.days_of_week,
+            start_time: rule.start_time,
+            end_time: rule.end_time,
+            is_active: rule.is_active
+          }));
+        
+        console.log('✅ Usando regras personalizadas do cliente:', scheduleRules);
+      }
+    }
+
+    // Se não há regras específicas, usar regra padrão
+    if (scheduleRules.length === 0) {
+      console.log('⚠️ Nenhuma regra específica encontrada, usando padrão (segunda a sexta)');
       scheduleRules = [{
-        days_of_week: [1, 2, 3, 4, 5],
+        days_of_week: [1, 2, 3, 4, 5], // Segunda a sexta
         start_time: '08:00',
         end_time: '18:00',
         is_active: true
       }];
     }
 
-    // Buscar dados dos painéis
-    const panelIds = videoData.pedidos.lista_paineis || [];
+    // Buscar informações dos painéis e building_id
     let panelCodes: string[] = [];
     let buildingId = '';
+    
+    const listaPaineis = videoData.pedidos?.lista_paineis || [];
+    const listaPredios = videoData.pedidos?.lista_predios || [];
 
-    if (panelIds.length > 0) {
-      const { data: panelData, error: panelError } = await supabase
+    // Tentar buscar painéis primeiro
+    if (listaPaineis.length > 0) {
+      const { data: painelData, error: painelError } = await supabase
         .from('painels')
         .select('code, building_id')
-        .in('id', panelIds);
+        .in('id', listaPaineis);
 
-      if (!panelError && panelData.length > 0) {
-        panelCodes = panelData.map(panel => panel.code);
-        buildingId = panelData[0].building_id;
+      if (!painelError && painelData && painelData.length > 0) {
+        panelCodes = painelData.map(p => p.code);
+        buildingId = painelData[0].building_id;
+        console.log('✅ Painéis encontrados via lista_paineis:', { panelCodes, buildingId });
+      } else {
+        // Se não encontrou painéis, lista_paineis pode conter building_ids incorretamente
+        console.log('🔄 lista_paineis não contém painel_ids válidos, tentando como building_ids');
+        
+        const { data: paineisByBuilding, error: painelBuildingError } = await supabase
+          .from('painels')
+          .select('code, building_id')
+          .in('building_id', listaPaineis)
+          .eq('status', 'online')
+          .limit(1);
+
+        if (!painelBuildingError && paineisByBuilding && paineisByBuilding.length > 0) {
+          panelCodes = paineisByBuilding.map(p => p.code);
+          buildingId = paineisByBuilding[0].building_id;
+          console.log('✅ Painéis encontrados via building_id em lista_paineis:', { panelCodes, buildingId });
+        }
       }
     }
+
+    // Fallback: usar lista_predios se não encontrou nada ainda
+    if (!buildingId && listaPredios.length > 0) {
+      buildingId = listaPredios[0];
+      console.log('🔄 Usando building_id do fallback lista_predios:', buildingId);
+      
+      const { data: paineisByPredios, error: painelPrediosError } = await supabase
+        .from('painels')
+        .select('code, building_id')
+        .eq('building_id', buildingId)
+        .eq('status', 'online')
+        .limit(1);
+
+      if (!painelPrediosError && paineisByPredios && paineisByPredios.length > 0) {
+        panelCodes = paineisByPredios.map(p => p.code);
+        console.log('✅ Painéis encontrados via lista_predios:', { panelCodes });
+      }
+    }
+
+    console.log('🏢 Building ID final:', buildingId);
+    console.log('🖥️ Panel codes final:', panelCodes);
 
     return {
       videoId: videoData.video_id,
@@ -175,7 +242,7 @@ const fetchVideoApprovalData = async (pedidoVideoId: string): Promise<VideoAppro
       buildingId
     };
   } catch (error) {
-    console.error('Erro ao buscar dados para webhook:', error);
+    console.error('💥 Erro ao buscar dados para webhook:', error);
     return null;
   }
 };
