@@ -52,9 +52,6 @@ const mapDaysToPortuguese = (dayNumbers: number[]): string[] => {
 };
 
 const formatScheduleRules = (rules: ScheduleRule[]) => {
-  // Ordem exata dos dias conforme o exemplo
-  const daysOrder = ['sexta', 'quarta', 'quinta', 'terça', 'domingo', 'segunda', 'sábado'];
-  
   const programacao: Record<string, Array<{inicio: string, fim: string}>> = {};
   
   // Função para converter HH:MM:SS para HH:MM
@@ -62,29 +59,23 @@ const formatScheduleRules = (rules: ScheduleRule[]) => {
     return time.split(':').slice(0, 2).join(':');
   };
   
-  // Primeiro, preencher com horário padrão para todos os dias
-  daysOrder.forEach(day => {
-    programacao[day] = [{
-      inicio: "00:00",
-      fim: "23:59"
-    }];
-  });
-  
-  // Depois, sobrescrever com regras específicas se existirem
+  // Apenas aplicar regras específicas que foram definidas
   rules.forEach(rule => {
     if (rule.isActive) {
       const days = mapDaysToPortuguese(rule.daysOfWeek);
       days.forEach(day => {
-        if (daysOrder.includes(day)) {
-          programacao[day] = [{
-            inicio: formatTime(rule.startTime),
-            fim: formatTime(rule.endTime)
-          }];
+        if (!programacao[day]) {
+          programacao[day] = [];
         }
+        programacao[day].push({
+          inicio: formatTime(rule.startTime),
+          fim: formatTime(rule.endTime)
+        });
       });
     }
   });
   
+  console.log('📅 Programação formatada:', programacao);
   return programacao;
 };
 
@@ -131,9 +122,12 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
           campaign_id
         )
       `)
-      .eq('campaign_video_schedules.campaign_id', campaignId);
+      .eq('campaign_video_schedules.campaign_id', campaignId)
+      .eq('is_active', true);
 
     if (rulesError) throw rulesError;
+
+    console.log('📅 Regras de programação encontradas:', scheduleRules);
 
     // Extrair informações do painel
     const buildingId = panelData.building_id;
@@ -164,15 +158,9 @@ const sendCampaignToWebhook = async (campaignId: string, campaignData: CreateAdv
         isActive: rule.is_active
       })) || [];
 
-      // Se não há regras específicas, usar padrão da campanha
-      const finalRules = rules.length > 0 ? rules : [{
-        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-        startTime: campaignData.startTime,
-        endTime: campaignData.endTime,
-        isActive: true
-      }];
+      console.log('🔍 Regras convertidas para vídeo:', rules);
 
-      const programacao = formatScheduleRules(finalRules);
+      const programacao = formatScheduleRules(rules);
 
       videoPayload[exactFilename] = {
         titulo: campaignData.name,
@@ -251,15 +239,8 @@ export const useAdvancedCampaignCreation = () => {
 
         if (scheduleError) throw scheduleError;
 
-        // 3. Criar regras de horários - usar regras específicas ou globais da campanha
-        const rules = videoSchedule.scheduleRules.length > 0 
-          ? videoSchedule.scheduleRules 
-          : [{
-              daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Todos os dias
-              startTime: campaignData.startTime,
-              endTime: campaignData.endTime,
-              isActive: true
-            }];
+        // 3. Criar regras de horários conforme especificado pelo usuário
+        const rules = videoSchedule.scheduleRules;
 
         for (const rule of rules) {
           const { error: ruleError } = await supabase
