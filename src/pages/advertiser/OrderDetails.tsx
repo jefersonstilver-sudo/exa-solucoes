@@ -46,6 +46,7 @@ const OrderDetails = () => {
 
   // Hook para verificar status do contrato - usando orderDetails como parâmetro
   const contractStatus = useContractStatus(orderDetails || {
+    id: id,
     data_inicio: undefined,
     data_fim: undefined,
     status: 'pendente',
@@ -212,9 +213,6 @@ const OrderDetails = () => {
         <EnhancedContractStatusCard
           orderId={orderDetails.id}
           orderDetails={orderDetails}
-          videoData={{
-            approvedVideos: videoSlots.filter(slot => slot.approval_status === 'approved').length
-          }}
         />
 
         {/* Status do Contrato */}

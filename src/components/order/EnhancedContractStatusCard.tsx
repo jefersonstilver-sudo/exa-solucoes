@@ -16,15 +16,11 @@ interface EnhancedContractStatusCardProps {
     status: string;
     plano_meses: number;
   };
-  videoData?: {
-    approvedVideos: number;
-  };
 }
 
 const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
   orderId,
-  orderDetails,
-  videoData
+  orderDetails
 }) => {
   const { 
     isActive, 
@@ -35,7 +31,7 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
     isExpiringSoon,
     isExpired,
     hasStarted
-  } = useContractStatus(orderDetails, videoData);
+  } = useContractStatus({ ...orderDetails, id: orderId });
 
   const getStatusConfig = () => {
     if (isExpired) {

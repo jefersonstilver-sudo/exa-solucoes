@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContractStatusReturn {
   isActive: boolean;
@@ -13,11 +14,12 @@ interface ContractStatusReturn {
 }
 
 export const useContractStatus = (orderDetails: {
+  id?: string;
   data_inicio?: string;
   data_fim?: string;
   status: string;
   plano_meses: number;
-}, videoData?: { approvedVideos: number }) => {
+}) => {
   const [contractData, setContractData] = useState<ContractStatusReturn>({
     isActive: false,
     daysRemaining: 0,
@@ -30,22 +32,39 @@ export const useContractStatus = (orderDetails: {
   });
 
   useEffect(() => {
-    if (!orderDetails) return;
+    if (!orderDetails || !orderDetails.id) return;
 
-    const { data_inicio, data_fim, status } = orderDetails;
-    
-    // Usar timezone brasileiro para cálculos corretos
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    console.log('📅 [CONTRACT STATUS] Debug de datas:', {
-      data_inicio,
-      data_fim,
-      status,
-      today: today.toISOString(),
-      videoData,
-      hasApprovedVideos: videoData?.approvedVideos && videoData.approvedVideos > 0
-    });
+    const checkContractStatus = async () => {
+      const { data_inicio, data_fim, status, id } = orderDetails;
+      
+      // Consultar vídeos aprovados diretamente do banco
+      let approvedVideosCount = 0;
+      try {
+        const { data: approvedVideos, error } = await supabase
+          .from('pedido_videos')
+          .select('id')
+          .eq('pedido_id', id)
+          .eq('approval_status', 'approved');
+        
+        if (!error && approvedVideos) {
+          approvedVideosCount = approvedVideos.length;
+        }
+      } catch (error) {
+        console.error('❌ [CONTRACT STATUS] Erro ao buscar vídeos aprovados:', error);
+      }
+      
+      // Usar timezone brasileiro para cálculos corretos
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      console.log('📅 [CONTRACT STATUS] Debug de datas:', {
+        data_inicio,
+        data_fim,
+        status,
+        today: today.toISOString(),
+        approvedVideosCount,
+        hasApprovedVideos: approvedVideosCount > 0
+      });
     
     let newContractData: ContractStatusReturn = {
       isActive: false,
@@ -58,9 +77,11 @@ export const useContractStatus = (orderDetails: {
       hasStarted: false
     };
 
-    // Verificar se o contrato já iniciou (tem datas definidas E vídeo aprovado)
-    const hasStarted = !!(data_inicio && data_fim && videoData?.approvedVideos && videoData.approvedVideos > 0);
-    newContractData.hasStarted = hasStarted;
+      // Verificar se o contrato já iniciou (tem datas definidas E vídeo aprovado OU status ativo)
+      const hasVideoApproved = approvedVideosCount > 0;
+      const hasActiveStatus = ['video_aprovado', 'ativo'].includes(status);
+      const hasStarted = !!(data_inicio && data_fim && (hasVideoApproved || hasActiveStatus));
+      newContractData.hasStarted = hasStarted;
 
     if (hasStarted) {
       // Criar objetos Date apenas com data (sem hora) para cálculos precisos
@@ -115,16 +136,19 @@ export const useContractStatus = (orderDetails: {
         totalDays: newContractData.totalDays,
         progressPercentage: newContractData.progressPercentage
       });
-    } else {
-      // Contrato ainda não iniciou - aguardando aprovação de vídeo
-      newContractData.isActive = false;
-      newContractData.daysRemaining = 0;
-      newContractData.totalDays = orderDetails.plano_meses * 30; // Estimativa
-      console.log('⏳ [CONTRACT STATUS] Contrato aguardando aprovação de vídeo');
-    }
+      } else {
+        // Contrato ainda não iniciou - aguardando aprovação de vídeo
+        newContractData.isActive = false;
+        newContractData.daysRemaining = 0;
+        newContractData.totalDays = orderDetails.plano_meses * 30; // Estimativa
+        console.log('⏳ [CONTRACT STATUS] Contrato aguardando aprovação de vídeo - Videos aprovados:', approvedVideosCount);
+      }
 
-    setContractData(newContractData);
-  }, [orderDetails, videoData]);
+      setContractData(newContractData);
+    };
+
+    checkContractStatus();
+  }, [orderDetails]);
 
   return contractData;
 };
