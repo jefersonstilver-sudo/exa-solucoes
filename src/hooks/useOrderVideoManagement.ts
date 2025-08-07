@@ -167,6 +167,12 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
     } catch (error: any) {
       console.error('❌ [ORDER_VIDEO] Erro no upload:', error);
+      console.log('🔍 [DEBUG] Verificando erro:', {
+        message: error.message,
+        hasConflictData: !!error.conflictData,
+        conflictData: error.conflictData
+      });
+      
       setUploading(false);
       setUploadProgress(prev => {
         const newProgress = { ...prev };
@@ -176,11 +182,13 @@ export const useOrderVideoManagement = (orderId: string) => {
       
       // Verificar se é um erro de conflito de horário
       if (error.message === 'SCHEDULE_CONFLICT' && error.conflictData) {
+        console.log('🎯 [DEBUG] Abrindo modal de conflito:', error.conflictData);
         conflictModal.showConflictModal(
           error.conflictData.conflicts,
           error.conflictData.suggestions,
           error.conflictData.newVideoName
         );
+        return; // Não mostrar toast de erro para conflitos
       } else {
         toast.error(error.message || 'Erro ao fazer upload do vídeo');
       }

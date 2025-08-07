@@ -27,6 +27,11 @@ export const useConflictModal = () => {
     suggestions: { [day: number]: string[] },
     newVideoName: string
   ) => {
+    console.log('🚨 [CONFLICT_MODAL] Abrindo modal com dados:', {
+      conflicts,
+      suggestions,
+      newVideoName
+    });
     setModalData({
       isOpen: true,
       conflicts,

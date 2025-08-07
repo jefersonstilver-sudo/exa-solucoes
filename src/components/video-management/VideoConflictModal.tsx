@@ -29,6 +29,13 @@ export const VideoConflictModal: React.FC<VideoConflictModalProps> = ({
   suggestions,
   newVideoName
 }) => {
+  console.log('🎭 [CONFLICT_MODAL] Renderizando modal:', { 
+    isOpen, 
+    conflictsCount: conflicts?.length, 
+    suggestionsKeys: Object.keys(suggestions || {}),
+    newVideoName 
+  });
+
   return (
     <AnimatePresence>
       {isOpen && (
