@@ -2,6 +2,7 @@
 import React from 'react';
 import { MapPin, Users, Building } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BuildingDetails {
   id: string;
@@ -9,6 +10,10 @@ interface BuildingDetails {
   endereco: string;
   bairro: string;
   imageurl?: string;
+  imagem_principal?: string;
+  imagem_2?: string;
+  imagem_3?: string;
+  imagem_4?: string;
   publico_estimado?: number;
   numero_unidades?: number;
   caracteristicas?: string[];
@@ -19,13 +24,28 @@ interface BuildingCardProps {
   index: number;
 }
 
+const getBuildingImageUrl = (building: BuildingDetails): string | null => {
+  // Prioridade: imagem_principal -> imageurl -> null
+  const imagePath = building.imagem_principal || building.imageurl;
+  
+  if (!imagePath) return null;
+  
+  // Se é uma URL completa, retorna diretamente
+  if (imagePath.startsWith('http')) return imagePath;
+  
+  // Se é um path, constrói URL do Supabase Storage
+  return supabase.storage.from('building-images').getPublicUrl(imagePath).data.publicUrl;
+};
+
 export const BuildingCard: React.FC<BuildingCardProps> = ({ building, index }) => {
+  const imageUrl = getBuildingImageUrl(building);
+  
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
       <div className="relative">
-        {building.imageurl ? (
+        {imageUrl ? (
           <img 
-            src={building.imageurl} 
+            src={imageUrl} 
             alt={building.nome}
             className="w-full h-48 object-cover"
           />

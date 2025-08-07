@@ -8,6 +8,10 @@ interface BuildingDetails {
   endereco: string;
   bairro: string;
   imageurl?: string;
+  imagem_principal?: string;
+  imagem_2?: string;
+  imagem_3?: string;
+  imagem_4?: string;
   publico_estimado?: number;
   numero_unidades?: number;
   caracteristicas?: string[];
@@ -36,7 +40,7 @@ export const useSelectedBuildingsDetails = (listaPredios: string[] = []) => {
 
         const { data: buildingsData, error: buildingsError } = await supabase
           .from('buildings')
-          .select('id, nome, endereco, bairro, imageurl, publico_estimado, numero_unidades, caracteristicas, latitude, longitude')
+          .select('id, nome, endereco, bairro, imageurl, imagem_principal, imagem_2, imagem_3, imagem_4, publico_estimado, numero_unidades, caracteristicas, latitude, longitude')
           .in('id', listaPredios);
 
         if (buildingsError) {
