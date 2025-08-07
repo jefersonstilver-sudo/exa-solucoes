@@ -124,46 +124,39 @@ export const VideoConflictModal: React.FC<VideoConflictModalProps> = ({
                 </div>
               </div>
 
-              {/* Suggestions Section */}
-              {Object.keys(suggestions).length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <RotateCcw className="w-5 h-5 text-primary" />
-                    <h3 className="font-medium text-foreground">Por favor, escolha um horário diferente ou outro dia para seu vídeo</h3>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {Object.entries(suggestions).map(([day, timeSlots], index) => (
-                      <motion.div
-                        key={day}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: (index * 0.1) + 0.3 }}
-                        className="bg-primary/5 border border-primary/20 rounded-lg p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <Calendar className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-foreground mb-2">
-                              {dayNames[parseInt(day)]}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {timeSlots.map((timeSlot, slotIndex) => (
-                                <span
-                                  key={slotIndex}
-                                  className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20"
-                                >
-                                  {timeSlot}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
+              {/* Instructions Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5 text-primary" />
+                  <h3 className="font-medium text-foreground">Como resolver este conflito</h3>
                 </div>
-              )}
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-primary/5 border border-primary/20 rounded-lg p-4"
+                >
+                  <div className="space-y-3">
+                    <p className="text-sm text-foreground">
+                      Para resolver este conflito, você precisa:
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
+                        Escolher um horário diferente para seu vídeo
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
+                        Ou agendar seu vídeo para outro dia
+                      </li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground pt-2 border-t border-primary/10">
+                      Feche este modal e tente novamente com um novo horário.
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
             </div>
 
             {/* Footer */}
