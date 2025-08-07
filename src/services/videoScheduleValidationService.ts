@@ -55,8 +55,7 @@ export const validateScheduleConflicts = async (
         )
       `)
       .eq('pedido_id', orderId)
-      .eq('approval_status', 'approved')
-      .eq('selected_for_display', true);
+      .eq('approval_status', 'approved');
 
     if (error) {
       console.error('Erro ao buscar vídeos do pedido:', error);
