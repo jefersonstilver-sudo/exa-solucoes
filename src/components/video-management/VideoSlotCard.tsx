@@ -113,13 +113,19 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       return <Lock className="h-5 w-5 text-gray-400" />;
     }
     
-    if (slot.selected_for_display) {
+    // Só mostra estrela preenchida se realmente está ativo no horário
+    if (isScheduledAndActive()) {
       return <Star className="h-5 w-5 text-yellow-500 fill-current" />;
     }
     
     // Se tem agendamento mas não está ativo, mostrar ícone de relógio
     if (slot.schedule_rules && slot.schedule_rules.length > 0) {
       return <Clock className="h-5 w-5 text-blue-500" />;
+    }
+    
+    // Se não tem agendamento e está selecionado, mostrar estrela
+    if (slot.selected_for_display) {
+      return <Star className="h-5 w-5 text-yellow-500 fill-current" />;
     }
     
     return <StarOff className="h-5 w-5 text-gray-400" />;
