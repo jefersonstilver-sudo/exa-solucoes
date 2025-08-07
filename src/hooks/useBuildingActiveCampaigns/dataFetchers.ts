@@ -31,13 +31,19 @@ export const fetchActivePedidos = async (buildingId: string) => {
 };
 
 export const fetchClients = async () => {
-  const { data: clients, error: clientsError } = await supabase.auth.admin.listUsers();
+  console.log('👥 [ACTIVE CAMPAIGNS] Buscando dados dos clientes...');
   
-  if (clientsError) {
-    console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar clientes:', clientsError);
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, email, role');
+  
+  if (usersError) {
+    console.error('❌ [ACTIVE CAMPAIGNS] Erro ao buscar usuários:', usersError);
+    return null;
   }
   
-  return clients;
+  console.log('✅ [ACTIVE CAMPAIGNS] Usuários encontrados:', users?.length || 0);
+  return { users };
 };
 
 export const fetchPedidoVideos = async (pedidoIds: string[]) => {
