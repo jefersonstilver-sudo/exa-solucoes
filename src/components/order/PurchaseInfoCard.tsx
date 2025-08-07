@@ -118,8 +118,8 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
       </CardHeader>
       
       {/* Informações básicas sempre visíveis */}
-      <CardContent className="max-w-full overflow-hidden">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="flex items-center space-x-3">
             <Calendar className="h-6 w-6 text-blue-500" />
             <div>
@@ -161,8 +161,8 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
 
         {/* Informações expandidas */}
         {isExpanded && (
-            <div className="border-t pt-4 space-y-4 max-w-full overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="border-t pt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-semibold mb-3">Detalhes do Pagamento</h4>
                 <div className="space-y-2">
@@ -172,12 +172,12 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
                   </div>
                   <div className="flex justify-between items-start">
                     <span className="text-gray-600">ID Transação:</span>
-                    <div className="text-right min-w-0 max-w-[60%]">
+                    <div className="text-right">
                       <div className="flex items-center space-x-1">
-                        <Hash className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                        <span className="font-mono text-xs truncate max-w-full">
-                          {transactionId.length > 15 ? 
-                            `${transactionId.substring(0, 15)}...` : 
+                        <Hash className="h-3 w-3 text-gray-400" />
+                        <span className="font-mono text-xs">
+                          {transactionId.length > 20 ? 
+                            `${transactionId.substring(0, 20)}...` : 
                             transactionId
                           }
                         </span>

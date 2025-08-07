@@ -47,7 +47,7 @@ const OrderDetails: React.FC = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 max-w-7xl overflow-x-hidden">
+      <div className="container mx-auto px-4 py-8 space-y-6">
         {/* Header do pedido */}
         <Card>
           <CardHeader>
@@ -56,7 +56,7 @@ const OrderDetails: React.FC = () => {
               Detalhes do Pedido #{orderDetails.id.slice(-8)}
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-gray-600">Status</p>
               <p className="font-medium">{orderDetails.status}</p>
