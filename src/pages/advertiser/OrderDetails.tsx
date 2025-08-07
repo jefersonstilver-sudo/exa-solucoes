@@ -199,7 +199,7 @@ const OrderDetails = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
 

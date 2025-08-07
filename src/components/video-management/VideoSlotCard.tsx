@@ -186,11 +186,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   return (
     <Card className={cardClasses}>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         {/* Header do Slot */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
           <div className="flex items-center space-x-2">
-            <h3 className="font-semibold text-lg text-gray-900">Slot {slot.slot_position}</h3>
+            <h3 className="font-semibold text-base sm:text-lg text-gray-900">Slot {slot.slot_position}</h3>
             {slot.video_data && getStatusIcon(slot.approval_status)}
             {slot.video_data && getSelectionIcon(slot)}
             {isBlocked && (
@@ -199,7 +199,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               </span>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {slot.video_data && getStatusBadge(slot)}
             {slot.video_data && getScheduleBadge(slot)}
           </div>
@@ -219,7 +219,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         {slot.video_data ? (
           <div className="space-y-4">
             {/* Video Player */}
-            <div className="aspect-video rounded-lg overflow-hidden relative">
+            <div className="aspect-video rounded-lg overflow-hidden relative max-w-full">
               <VideoPlayer
                 src={slot.video_data.url}
                 title={slot.video_data.nome}
@@ -251,7 +251,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               <h4 className="font-medium text-sm truncate text-gray-900" title={slot.video_data.nome}>
                 {slot.video_data.nome}
               </h4>
-              <div className="flex justify-between text-xs text-gray-600">
+              <div className="flex flex-wrap justify-between gap-1 text-xs text-gray-600">
                 <span>{formatDuration(slot.video_data.duracao)}</span>
                 <span>{slot.video_data.orientacao}</span>
                 <span>{formatFileSize(slot.video_data.tamanho_arquivo)}</span>
