@@ -63,6 +63,62 @@ export const uploadVideo = async (
     console.log('✅ Vídeo validado com sucesso:', validation.metadata);
     onProgress?.(25);
 
+    // VALIDAÇÃO CRÍTICA: Verificar conflitos de agendamento ANTES de qualquer operação de upload
+    if (scheduleRules && scheduleRules.length > 0) {
+      console.log('⏰ [UPLOAD] VALIDAÇÃO CRÍTICA: Verificando conflitos ANTES do upload...');
+      
+      // Converter formato das regras para a validação
+      const convertedRules = scheduleRules
+        .filter(rule => rule.isActive && rule.daysOfWeek.length > 0)
+        .map(rule => ({
+          days_of_week: rule.daysOfWeek,
+          start_time: rule.startTime,
+          end_time: rule.endTime,
+          is_active: rule.isActive
+        }));
+
+      console.log('🔍 [UPLOAD] Regras convertidas para validação:', convertedRules);
+
+      const conflicts = await validateScheduleConflicts(orderId, convertedRules);
+      
+      if (conflicts.length > 0) {
+        console.error('🚨 [UPLOAD] CONFLITOS DETECTADOS - BLOQUEANDO UPLOAD COMPLETAMENTE:', conflicts);
+        
+        // Preparar dados estruturados para o modal
+        const structuredConflicts = conflicts.map(conflict => ({
+          conflictingVideoName: conflict.conflictingVideoName,
+          day: conflict.conflictingDay,
+          conflictingTimeRange: `${conflict.conflictingStartTime}-${conflict.conflictingEndTime}`,
+          newVideoTimeRange: `${conflict.newStartTime}-${conflict.newEndTime}`
+        }));
+
+        // Gerar sugestões para cada dia com conflito
+        const suggestions: { [day: number]: string[] } = {};
+        const conflictDays = [...new Set(conflicts.map(c => c.conflictingDay))];
+        
+        for (const day of conflictDays) {
+          const dayConflicts = conflicts.filter(c => c.conflictingDay === day);
+          const timeSlots = suggestAvailableTimeSlots(dayConflicts, day);
+          if (timeSlots.length > 0) {
+            suggestions[day] = timeSlots;
+          }
+        }
+
+        // Criar erro estruturado para o modal
+        const conflictError = new Error('SCHEDULE_CONFLICT');
+        (conflictError as any).conflictData = {
+          conflicts: structuredConflicts,
+          suggestions,
+          newVideoName: videoTitle || `Vídeo ${slotPosition}`
+        };
+        
+        console.log('❌ [UPLOAD] UPLOAD TOTALMENTE BLOQUEADO - Retornando erro estruturado');
+        throw conflictError;
+      }
+      
+      console.log('✅ [UPLOAD] Nenhum conflito detectado - prosseguindo com upload');
+    }
+
     // Upload para storage
     let videoUrl: string;
     let retryCount = 0;
@@ -190,58 +246,6 @@ export const uploadVideo = async (
       throw new Error(`Erro ao salvar no slot: ${slotResult.error.message}`);
     }
 
-    // Validar conflitos de agendamento ANTES de salvar
-    if (scheduleRules && scheduleRules.length > 0) {
-      console.log('🔍 Validando conflitos de horário...');
-      
-      // Converter formato das regras para a validação
-      const convertedRules = scheduleRules
-        .filter(rule => rule.isActive && rule.daysOfWeek.length > 0)
-        .map(rule => ({
-          days_of_week: rule.daysOfWeek,
-          start_time: rule.startTime,
-          end_time: rule.endTime,
-          is_active: rule.isActive
-        }));
-
-      const conflicts = await validateScheduleConflicts(orderId, convertedRules);
-      
-      if (conflicts.length > 0) {
-        console.error('❌ Conflitos de horário detectados:', conflicts);
-        
-        // Preparar dados estruturados para o modal
-        const structuredConflicts = conflicts.map(conflict => ({
-          conflictingVideoName: conflict.conflictingVideoName,
-          day: conflict.conflictingDay,
-          conflictingTimeRange: `${conflict.conflictingStartTime}-${conflict.conflictingEndTime}`,
-          newVideoTimeRange: `${conflict.newStartTime}-${conflict.newEndTime}`
-        }));
-
-        // Gerar sugestões para cada dia com conflito
-        const suggestions: { [day: number]: string[] } = {};
-        const conflictDays = [...new Set(conflicts.map(c => c.conflictingDay))];
-        
-        for (const day of conflictDays) {
-          const dayConflicts = conflicts.filter(c => c.conflictingDay === day);
-          const timeSlots = suggestAvailableTimeSlots(dayConflicts, day);
-          if (timeSlots.length > 0) {
-            suggestions[day] = timeSlots;
-          }
-        }
-
-        // Criar erro estruturado para o modal
-        const conflictError = new Error('SCHEDULE_CONFLICT');
-        (conflictError as any).conflictData = {
-          conflicts: structuredConflicts,
-          suggestions,
-          newVideoName: videoTitle || `Vídeo ${slotPosition}`
-        };
-        
-        throw conflictError;
-      }
-      
-      console.log('✅ Nenhum conflito de horário detectado');
-    }
 
     // Salvar regras de agendamento se fornecidas
     if (scheduleRules && scheduleRules.length > 0) {
@@ -374,6 +378,12 @@ export const uploadVideo = async (
   } catch (error) {
     console.error('💥 Erro no upload:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    
+    // Tratamento específico para conflitos de agendamento
+    if (errorMessage === 'SCHEDULE_CONFLICT') {
+      console.log('🚫 [UPLOAD] Erro de conflito capturado - re-lançando para modal');
+      throw error; // Re-lançar para ser tratado pelo useOrderVideoManagement
+    }
     
     // Tratamento específico para erros de segurança
     if (errorMessage.includes('não permitido para pedidos não pagos')) {
