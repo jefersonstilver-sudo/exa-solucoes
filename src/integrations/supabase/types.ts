@@ -1451,6 +1451,10 @@ export type Database = {
           is_consistent: boolean
         }[]
       }
+      check_video_schedule_conflict: {
+        Args: { p_video1_id: string; p_video2_id: string }
+        Returns: boolean
+      }
       cleanup_orphaned_users: {
         Args: Record<PropertyKey, never>
         Returns: Json
