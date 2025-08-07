@@ -7,7 +7,7 @@ import {
   cleanupPendingUploads
 } from '@/services/videoStorageService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
-import { validateScheduleConflicts, formatConflictMessage, suggestAvailableTimeSlots } from './videoScheduleValidationService';
+import { validateScheduleConflicts, formatConflictMessage } from './videoScheduleValidationService';
 import type { ScheduleConflict } from './videoScheduleValidationService';
 
 export const uploadVideo = async (
@@ -92,23 +92,11 @@ export const uploadVideo = async (
           newVideoTimeRange: `${conflict.newStartTime}-${conflict.newEndTime}`
         }));
 
-        // Gerar sugestões para cada dia com conflito
-        const suggestions: { [day: number]: string[] } = {};
-        const conflictDays = [...new Set(conflicts.map(c => c.conflictingDay))];
-        
-        for (const day of conflictDays) {
-          const dayConflicts = conflicts.filter(c => c.conflictingDay === day);
-          const timeSlots = suggestAvailableTimeSlots(dayConflicts, day);
-          if (timeSlots.length > 0) {
-            suggestions[day] = timeSlots;
-          }
-        }
-
         // Criar erro estruturado para o modal
         const conflictError = new Error('SCHEDULE_CONFLICT');
         (conflictError as any).conflictData = {
           conflicts: structuredConflicts,
-          suggestions,
+          suggestions: {},
           newVideoName: videoTitle || `Vídeo ${slotPosition}`
         };
         
