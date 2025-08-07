@@ -80,7 +80,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   const getStatusBadge = (slot: VideoSlot) => {
     // Só mostra "SELECIONADO" se realmente está ativo no momento
-    if (slot.selected_for_display && slot.approval_status === 'approved') {
+    if (slot.approval_status === 'approved' && isScheduledAndActive()) {
       return <Badge className="bg-green-500 text-white">SELECIONADO</Badge>;
     }
     
@@ -222,7 +222,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 controls={true}
                 onDownload={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)}
               />
-              {slot.selected_for_display && (
+              {isScheduledAndActive() && (
                 <div className="absolute top-2 left-2 z-10">
                   <Badge className="bg-yellow-500 text-white flex items-center space-x-1">
                     <Star className="h-3 w-3 fill-current" />
