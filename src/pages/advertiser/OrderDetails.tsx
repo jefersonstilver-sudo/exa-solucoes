@@ -21,6 +21,7 @@ import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
+import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 
 interface OrderDetails {
   id: string;
@@ -73,6 +74,13 @@ const OrderDetails = () => {
     hideSuccess,
     conflictModal
   } = useOrderVideoManagement(id || '');
+
+  // Hook para monitoramento automático de agendamentos
+  const { forceUpdate } = useVideoScheduleMonitor({
+    orderId: id || '',
+    enabled: !!id && !!orderDetails,
+    intervalMinutes: 1
+  });
 
   useEffect(() => {
     if (id && userProfile?.id) {

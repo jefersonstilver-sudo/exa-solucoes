@@ -1,12 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { videoScheduleService } from '@/services/videoScheduleService';
 
 interface VideoDisplayInfo {
   videoId: string;
   isDisplaying: boolean;
   displayStartDate?: string;
   panelCount: number;
+  isScheduled?: boolean;
+  scheduleActive?: boolean;
 }
 
 export const useVideoDisplayStatus = (orderId: string) => {
@@ -50,12 +53,22 @@ export const useVideoDisplayStatus = (orderId: string) => {
 
         console.log('📹 [VIDEO_DISPLAY] Vídeos em exibição encontrados:', pedidoVideos);
 
-        const displayInfo: VideoDisplayInfo[] = pedidoVideos?.map(video => ({
-          videoId: video.video_id,
-          isDisplaying: true,
-          displayStartDate: video.approved_at,
-          panelCount: 1 // Por enquanto assumindo 1 painel por vídeo
-        })) || [];
+        const displayInfo: VideoDisplayInfo[] = [];
+        
+        for (const video of pedidoVideos || []) {
+          // Verificar se tem regras de agendamento
+          const hasSchedule = await videoScheduleService.hasScheduleRules(video.video_id);
+          const scheduleActive = hasSchedule ? await videoScheduleService.isVideoActiveNow(video.video_id) : true;
+          
+          displayInfo.push({
+            videoId: video.video_id,
+            isDisplaying: video.selected_for_display && (!hasSchedule || scheduleActive),
+            displayStartDate: video.approved_at,
+            panelCount: 1,
+            isScheduled: hasSchedule,
+            scheduleActive: scheduleActive
+          });
+        }
 
         setDisplayingVideos(displayInfo);
         

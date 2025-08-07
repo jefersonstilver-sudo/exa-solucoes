@@ -35,6 +35,13 @@ interface VideoSlot {
     formato?: string;
   };
   rejection_reason?: string;
+  schedule_rules?: {
+    id: string;
+    days_of_week: number[];
+    start_time: string;
+    end_time: string;
+    is_active: boolean;
+  }[];
 }
 
 interface VideoSlotCardProps {
@@ -117,10 +124,44 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       return <Lock className="h-5 w-5 text-gray-400" />;
     }
     
+    // Se tem agendamento, mostrar ícone de relógio
+    if (slot.schedule_rules && slot.schedule_rules.length > 0) {
+      return <Clock className="h-5 w-5 text-blue-500" />;
+    }
+    
     if (slot.selected_for_display) {
       return <Star className="h-5 w-5 text-yellow-500 fill-current" />;
     }
     return <StarOff className="h-5 w-5 text-gray-400" />;
+  };
+
+  const getScheduleBadge = (slot: VideoSlot) => {
+    if (!slot.schedule_rules || slot.schedule_rules.length === 0) return null;
+    
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    let isActiveNow = false;
+    for (const rule of slot.schedule_rules) {
+      if (rule.days_of_week.includes(currentDay) && 
+          currentTime >= rule.start_time && 
+          currentTime <= rule.end_time) {
+        isActiveNow = true;
+        break;
+      }
+    }
+    
+    return (
+      <Badge className={`flex items-center space-x-1 ${
+        isActiveNow 
+          ? 'bg-green-100 text-green-800' 
+          : 'bg-blue-100 text-blue-800'
+      }`}>
+        <Clock className="h-3 w-3" />
+        <span>{isActiveNow ? 'Agendado - Ativo' : 'Agendado - Inativo'}</span>
+      </Badge>
+    );
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -169,7 +210,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               </span>
             )}
           </div>
-          {slot.video_data && getStatusBadge(slot)}
+          <div className="flex flex-wrap gap-2">
+            {slot.video_data && getStatusBadge(slot)}
+            {slot.video_data && getScheduleBadge(slot)}
+          </div>
         </div>
 
         {/* Progress Bar para Upload */}
