@@ -129,7 +129,7 @@ export const VideoConflictModal: React.FC<VideoConflictModalProps> = ({
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <RotateCcw className="w-5 h-5 text-primary" />
-                    <h3 className="font-medium text-foreground">Horários Disponíveis</h3>
+                    <h3 className="font-medium text-foreground">Por favor, escolha um horário diferente ou outro dia para seu vídeo</h3>
                   </div>
                   
                   <div className="space-y-3">
