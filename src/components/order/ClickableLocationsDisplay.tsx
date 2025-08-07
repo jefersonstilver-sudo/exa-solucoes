@@ -123,11 +123,11 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
       <DialogTrigger asChild>
         <Button 
           variant="ghost" 
-          className={`flex items-center space-x-2 h-auto p-2 hover:bg-gray-50 ${className}`}
+          className={`flex items-center space-x-2 h-auto p-2 hover:bg-gray-50 max-w-full ${className}`}
         >
-          <MapPin className="h-4 w-4 text-blue-500" />
-          <div className="text-left">
-            <div className="font-medium text-gray-900">
+          <MapPin className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <div className="text-left min-w-0 flex-1">
+            <div className="font-medium text-gray-900 truncate">
               {totalLocations === 1 ? firstLocation : `${firstLocation} + ${totalLocations - 1} mais`}
             </div>
             <div className="text-xs text-gray-500 flex items-center">
@@ -148,9 +148,9 @@ export const ClickableLocationsDisplay: React.FC<ClickableLocationsDisplayProps>
         
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {displayNames.map((nome, index) => (
-            <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg max-w-full">
               <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-              <span className="font-medium text-gray-900">{nome}</span>
+              <span className="font-medium text-gray-900 break-words min-w-0">{nome}</span>
             </div>
           ))}
         </div>

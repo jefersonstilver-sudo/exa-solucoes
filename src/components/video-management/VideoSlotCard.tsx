@@ -186,11 +186,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   return (
     <Card className={cardClasses}>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="p-4 sm:p-6 max-w-full overflow-hidden">
         {/* Header do Slot */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-          <div className="flex items-center space-x-2">
-            <h3 className="font-semibold text-base sm:text-lg text-gray-900">Slot {slot.slot_position}</h3>
+          <div className="flex items-center space-x-2 min-w-0">
+            <h3 className="font-semibold text-base sm:text-lg text-gray-900 truncate">Slot {slot.slot_position}</h3>
             {slot.video_data && getStatusIcon(slot.approval_status)}
             {slot.video_data && getSelectionIcon(slot)}
             {isBlocked && (

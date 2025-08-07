@@ -47,7 +47,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
           }
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 max-w-full overflow-hidden">
         {/* Banner de segurança */}
         <OrderSecurityBanner orderStatus={orderStatus} />
         
