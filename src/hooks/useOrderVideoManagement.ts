@@ -9,6 +9,7 @@ import {
 import { uploadVideo as uploadVideoAction } from '@/services/videoUploadService';
 import { toast } from 'sonner';
 import { useSuccessPopup } from './useSuccessPopup';
+import { useConflictModal } from './useConflictModal';
 
 export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
@@ -16,6 +17,8 @@ export const useOrderVideoManagement = (orderId: string) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  
+  const conflictModal = useConflictModal();
 
   // Hook do popup de sucesso
   const { isOpen: isSuccessOpen, videoName, showSuccess, hideSuccess } = useSuccessPopup();
@@ -162,6 +165,25 @@ export const useOrderVideoManagement = (orderId: string) => {
           return newProgress;
         });
       }
+    } catch (error: any) {
+      console.error('❌ [ORDER_VIDEO] Erro no upload:', error);
+      setUploading(false);
+      setUploadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[slotPosition];
+        return newProgress;
+      });
+      
+      // Verificar se é um erro de conflito de horário
+      if (error.message === 'SCHEDULE_CONFLICT' && error.conflictData) {
+        conflictModal.showConflictModal(
+          error.conflictData.conflicts,
+          error.conflictData.suggestions,
+          error.conflictData.newVideoName
+        );
+      } else {
+        toast.error(error.message || 'Erro ao fazer upload do vídeo');
+      }
     } finally {
       setUploading(false);
     }
@@ -186,6 +208,8 @@ export const useOrderVideoManagement = (orderId: string) => {
     // Estados do popup de sucesso
     isSuccessOpen,
     videoName,
-    hideSuccess
+    hideSuccess,
+    // Estados do modal de conflito
+    conflictModal
   };
 };

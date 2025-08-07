@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useOrderVideoManagement } from '@/hooks/useOrderVideoManagement';
 import { VideoActivationSuccessPopup } from '@/components/video-management/VideoActivationSuccessPopup';
+import { VideoConflictModal } from '@/components/video-management/VideoConflictModal';
 import { PurchaseInfoCard } from '@/components/order/PurchaseInfoCard';
 import { useEnhancedOrderData } from '@/hooks/useEnhancedOrderData';
 import { OrderHeader } from '@/components/order/OrderHeader';
@@ -69,7 +70,8 @@ const OrderDetails = () => {
     uploadVideo,
     isSuccessOpen,
     videoName,
-    hideSuccess
+    hideSuccess,
+    conflictModal
   } = useOrderVideoManagement(id || '');
 
   useEffect(() => {
@@ -277,6 +279,15 @@ const OrderDetails = () => {
         isOpen={isSuccessOpen}
         onClose={hideSuccess}
         videoName={videoName}
+      />
+
+      {/* Modal de Conflito de Horário */}
+      <VideoConflictModal
+        isOpen={conflictModal.isOpen}
+        onClose={conflictModal.hideConflictModal}
+        conflicts={conflictModal.conflicts}
+        suggestions={conflictModal.suggestions}
+        newVideoName={conflictModal.newVideoName}
       />
     </>
   );
