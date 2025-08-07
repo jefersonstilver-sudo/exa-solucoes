@@ -407,19 +407,6 @@ const AdvertiserDashboard = () => {
 
       {/* Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/anunciante/campanhas')}>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Play className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Gerenciar Campanhas</h3>
-                <p className="text-sm text-gray-500">Crie e monitore suas campanhas</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/anunciante/videos')}>
           <CardContent className="p-6">

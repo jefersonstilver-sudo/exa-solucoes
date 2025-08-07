@@ -28,11 +28,6 @@ const ModernAdvertiserSidebar = () => {
       icon: ShoppingBag
     },
     {
-      title: 'Campanhas',
-      href: '/anunciante/campanhas',
-      icon: Play
-    },
-    {
       title: 'Meus Vídeos',
       href: '/anunciante/videos',
       icon: Video

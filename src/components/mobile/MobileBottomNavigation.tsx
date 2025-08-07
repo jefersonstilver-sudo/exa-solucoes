@@ -48,12 +48,6 @@ const MobileBottomNavigation = ({ userRole = 'client' }: MobileBottomNavigationP
         path: '/anunciante/videos'
       },
       {
-        id: 'campaigns',
-        label: 'Campanhas',
-        icon: BarChart3,
-        path: '/anunciante/campanhas'
-      },
-      {
         id: 'profile',
         label: 'Perfil',
         icon: User,

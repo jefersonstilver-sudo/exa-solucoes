@@ -64,12 +64,6 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       icon: ShoppingBag,
       section: 'main'
     },
-    {
-      title: 'Campanhas',
-      href: '/anunciante/campanhas',
-      icon: BarChart3,
-      section: 'main'
-    },
     
     // CONTEÚDO
     {
