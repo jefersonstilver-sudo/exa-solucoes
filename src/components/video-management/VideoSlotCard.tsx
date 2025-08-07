@@ -186,7 +186,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   return (
     <Card className={cardClasses}>
-      <CardContent className="p-6">
+      <CardContent className="p-3 sm:p-6 max-w-full overflow-hidden">
         {/* Header do Slot */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">

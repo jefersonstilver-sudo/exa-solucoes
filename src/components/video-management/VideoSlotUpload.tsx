@@ -102,7 +102,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   }
 
   return (
-    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 space-y-4">
+    <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-6 space-y-4 max-w-full overflow-hidden">
       <div className="text-center">
         <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
         <p className="text-sm text-gray-600 mb-4">

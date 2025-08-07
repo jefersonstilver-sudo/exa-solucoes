@@ -141,34 +141,34 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
         )}
 
         {/* Botões secundários */}
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
-            size="sm"
+            size="default"
             onClick={() => onDownload(slot.video_data!.url, slot.video_data!.nome)}
-            className="border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
+            className="flex-1 border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
           >
-            <Download className="h-3 w-3 mr-1" />
+            <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
           
           <Button
             variant="outline"
-            size="sm"
+            size="default"
             onClick={() => setShowScheduleModal(true)}
-            className="text-blue-600 hover:text-blue-700 border-blue-300 hover:bg-blue-50"
+            className="flex-1 text-blue-600 hover:text-blue-700 border-blue-300 hover:bg-blue-50"
           >
-            <Info className="h-3 w-3 mr-1" />
+            <Info className="h-4 w-4 mr-2" />
             Detalhes
           </Button>
           
           <Button
             variant="outline"
-            size="sm"
+            size="default"
             onClick={() => slot.id && onRemove(slot.id)}
-            className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+            className="flex-1 text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
           >
-            <Trash2 className="h-3 w-3 mr-1" />
+            <Trash2 className="h-4 w-4 mr-2" />
             Remover
           </Button>
         </div>
