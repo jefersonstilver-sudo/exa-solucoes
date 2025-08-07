@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminBuildingCardProps {
   building: any;
@@ -23,6 +24,12 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   onViewCampaigns
 }) => {
   console.log('🏢 [ADMIN BUILDING CARD] Renderizando prédio:', building.nome, 'Status:', building.status);
+
+  const getImageUrl = (path: string) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
+  };
 
   const getStatusBadge = (status: string) => {
     if (status === 'ativo') {
@@ -74,9 +81,9 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
           {/* Image Section */}
           <div className="lg:col-span-3">
             <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
-              {building.imagem_url ? (
+              {building.imagem_principal ? (
                 <img 
-                  src={building.imagem_url} 
+                  src={getImageUrl(building.imagem_principal)} 
                   alt={building.nome}
                   className="w-full h-full object-cover"
                 />
