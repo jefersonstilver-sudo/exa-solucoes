@@ -119,7 +119,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
         {isApproved && slot.selected_for_display ? (
           <div className="w-full flex items-center justify-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
             <Check className="h-5 w-5 text-green-600" />
-            <span className="font-medium text-green-700">Aprovado e em Exibição</span>
+            <span className="font-medium text-green-700">Aprovado para Exibição</span>
           </div>
         ) : (
           /* Botão de Seleção - Para vídeos aprovados mas não selecionados */
