@@ -7,6 +7,7 @@ import {
   cleanupPendingUploads
 } from '@/services/videoStorageService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
+import { validateScheduleConflicts, formatConflictMessage } from './videoScheduleValidationService';
 
 export const uploadVideo = async (
   slotPosition: number,
@@ -186,6 +187,32 @@ export const uploadVideo = async (
       }
       
       throw new Error(`Erro ao salvar no slot: ${slotResult.error.message}`);
+    }
+
+    // Validar conflitos de agendamento ANTES de salvar
+    if (scheduleRules && scheduleRules.length > 0) {
+      console.log('🔍 Validando conflitos de horário...');
+      
+      // Converter formato das regras para a validação
+      const convertedRules = scheduleRules
+        .filter(rule => rule.isActive && rule.daysOfWeek.length > 0)
+        .map(rule => ({
+          days_of_week: rule.daysOfWeek,
+          start_time: rule.startTime,
+          end_time: rule.endTime,
+          is_active: rule.isActive
+        }));
+
+      const conflicts = await validateScheduleConflicts(orderId, convertedRules);
+      
+      if (conflicts.length > 0) {
+        const conflictMessage = formatConflictMessage(conflicts);
+        console.error('⚠️ Conflitos de horário detectados:', conflictMessage);
+        toast.error('Conflito de horário detectado! Verifique os detalhes no console.');
+        throw new Error(conflictMessage);
+      }
+      
+      console.log('✅ Nenhum conflito de horário detectado');
     }
 
     // Salvar regras de agendamento se fornecidas
