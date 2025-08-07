@@ -79,20 +79,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   };
 
   const getStatusBadge = (slot: VideoSlot) => {
-    if (slot.selected_for_display && slot.approval_status === 'approved' && slot.is_active) {
-      return <Badge className="bg-green-500 text-white">EXIBINDO AGORA</Badge>;
-    }
-    
+    // Só mostra "SELECIONADO" se realmente está ativo no momento
     if (slot.selected_for_display && slot.approval_status === 'approved') {
-      return <Badge className="bg-blue-500 text-white">APROVADO - SELECIONADO</Badge>;
-    }
-    
-    if (slot.selected_for_display && slot.approval_status === 'pending') {
-      return <Badge className="bg-orange-500 text-white">SELECIONADO - AGUARDANDO APROVAÇÃO</Badge>;
-    }
-    
-    if (slot.selected_for_display && slot.approval_status === 'rejected') {
-      return <Badge className="bg-red-500 text-white">SELECIONADO - REJEITADO</Badge>;
+      return <Badge className="bg-green-500 text-white">SELECIONADO</Badge>;
     }
     
     if (slot.approval_status === 'approved') {
@@ -124,44 +113,21 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       return <Lock className="h-5 w-5 text-gray-400" />;
     }
     
-    // Se tem agendamento, mostrar ícone de relógio
+    if (slot.selected_for_display) {
+      return <Star className="h-5 w-5 text-yellow-500 fill-current" />;
+    }
+    
+    // Se tem agendamento mas não está ativo, mostrar ícone de relógio
     if (slot.schedule_rules && slot.schedule_rules.length > 0) {
       return <Clock className="h-5 w-5 text-blue-500" />;
     }
     
-    if (slot.selected_for_display) {
-      return <Star className="h-5 w-5 text-yellow-500 fill-current" />;
-    }
     return <StarOff className="h-5 w-5 text-gray-400" />;
   };
 
   const getScheduleBadge = (slot: VideoSlot) => {
-    if (!slot.schedule_rules || slot.schedule_rules.length === 0) return null;
-    
-    const now = new Date();
-    const currentDay = now.getDay();
-    const currentTime = now.toTimeString().slice(0, 5);
-    
-    let isActiveNow = false;
-    for (const rule of slot.schedule_rules) {
-      if (rule.days_of_week.includes(currentDay) && 
-          currentTime >= rule.start_time && 
-          currentTime <= rule.end_time) {
-        isActiveNow = true;
-        break;
-      }
-    }
-    
-    return (
-      <Badge className={`flex items-center space-x-1 ${
-        isActiveNow 
-          ? 'bg-green-100 text-green-800' 
-          : 'bg-blue-100 text-blue-800'
-      }`}>
-        <Clock className="h-3 w-3" />
-        <span>{isActiveNow ? 'Agendado - Ativo' : 'Agendado - Inativo'}</span>
-      </Badge>
-    );
+    // Não mostrar mais badges de agendamento
+    return null;
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -183,16 +149,33 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   const currentProgress = uploadProgress[slot.slot_position];
 
-  // Determinar se o card deve ter visual de bloqueio
+  // Verificar se deve ter borda amarela (apenas quando realmente ativo no horário)
+  const isScheduledAndActive = () => {
+    if (!slot.schedule_rules || slot.schedule_rules.length === 0) {
+      return slot.selected_for_display;
+    }
+    
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    for (const rule of slot.schedule_rules) {
+      if (rule.days_of_week.includes(currentDay) && 
+          currentTime >= rule.start_time && 
+          currentTime <= rule.end_time) {
+        return slot.selected_for_display;
+      }
+    }
+    return false;
+  };
+
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const cardClasses = `transition-all duration-200 bg-white border ${
-    slot.selected_for_display 
+    isScheduledAndActive()
       ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
-      : slot.is_active 
-        ? 'border-2 border-green-500 bg-green-50 shadow-lg'
-        : isBlocked
-          ? 'border-2 border-gray-300 bg-gray-50 opacity-75'
-          : 'border-gray-200 hover:shadow-md'
+      : isBlocked
+        ? 'border-2 border-gray-300 bg-gray-50 opacity-75'
+        : 'border-gray-200 hover:shadow-md'
   }`;
 
   return (
