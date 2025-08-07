@@ -17,6 +17,13 @@ export interface VideoSlot {
     formato?: string;
   };
   rejection_reason?: string;
+  schedule_rules?: {
+    id: string;
+    days_of_week: number[];
+    start_time: string;
+    end_time: string;
+    is_active: boolean;
+  }[];
 }
 
 export interface VideoManagementState {

@@ -9,7 +9,8 @@ import {
   Lock,
   AlertTriangle,
   ArrowRightLeft,
-  Check
+  Check,
+  Info
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -21,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
+import { VideoScheduleDetailsModal } from './VideoScheduleDetailsModal';
 
 interface VideoSlot {
   id?: string;
@@ -40,6 +42,13 @@ interface VideoSlot {
     formato?: string;
   };
   rejection_reason?: string;
+  schedule_rules?: {
+    id: string;
+    days_of_week: number[];
+    start_time: string;
+    end_time: string;
+    is_active: boolean;
+  }[];
 }
 
 interface VideoSlotActionsProps {
@@ -58,6 +67,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   onDownload
 }) => {
   const [showApprovalAlert, setShowApprovalAlert] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   if (!slot.video_data) return null;
 
@@ -152,6 +162,16 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowScheduleModal(true)}
+            className="text-blue-600 hover:text-blue-700 border-blue-300 hover:bg-blue-50"
+          >
+            <Info className="h-3 w-3 mr-1" />
+            Detalhes
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => slot.id && onRemove(slot.id)}
             className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
           >
@@ -180,6 +200,14 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de Detalhes da Programação */}
+      <VideoScheduleDetailsModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        videoName={slot.video_data?.nome || 'Vídeo sem nome'}
+        scheduleRules={slot.schedule_rules}
+      />
     </>
   );
 };

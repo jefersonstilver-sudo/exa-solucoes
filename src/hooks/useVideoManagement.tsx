@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { uploadVideo } from '@/services/videoUploadService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
 import { VideoSlot } from '@/types/videoManagement';
+import { loadVideoSlots } from '@/services/videoSlotService';
 
 interface UseVideoManagementProps {
   orderId: string;
@@ -21,54 +22,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
   useEffect(() => {
     const fetchVideoSlots = async () => {
       try {
-        const { data, error } = await supabase
-          .from('pedido_videos')
-          .select(`
-            id,
-            slot_position,
-            approval_status,
-            is_active,
-            selected_for_display,
-            created_at,
-            approved_at,
-            rejection_reason,
-            videos (
-              id,
-              nome,
-              url,
-              duracao,
-              orientacao,
-              tem_audio,
-              tamanho_arquivo,
-              formato
-            )
-          `)
-          .eq('pedido_id', orderId)
-          .order('slot_position');
-
-        if (error) throw error;
-
-        const formattedSlots: VideoSlot[] = data?.map(slot => ({
-          id: slot.id,
-          slot_position: slot.slot_position,
-          video_id: slot.videos?.id,
-          is_active: slot.is_active,
-          selected_for_display: slot.selected_for_display,
-          approval_status: slot.approval_status as 'pending' | 'approved' | 'rejected',
-          video_data: slot.videos ? {
-            id: slot.videos.id,
-            nome: slot.videos.nome,
-            url: slot.videos.url,
-            duracao: slot.videos.duracao,
-            orientacao: slot.videos.orientacao,
-            tem_audio: slot.videos.tem_audio,
-            tamanho_arquivo: slot.videos.tamanho_arquivo,
-            formato: slot.videos.formato
-          } : undefined,
-          rejection_reason: slot.rejection_reason
-        })) || [];
-
-        setVideoSlots(formattedSlots);
+        const slots = await loadVideoSlots(orderId);
+        setVideoSlots(slots);
       } catch (error) {
         console.error('Erro ao carregar slots:', error);
         toast.error('Erro ao carregar vídeos');

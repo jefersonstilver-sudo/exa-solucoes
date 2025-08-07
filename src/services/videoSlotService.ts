@@ -8,7 +8,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
   console.log('🔍 [VIDEO_SLOTS] Carregando slots para pedido:', orderId);
 
   try {
-    // NOVA ABORDAGEM: Buscar pedido_videos primeiro, depois videos separadamente
+    // Buscar pedido_videos primeiro
     const { data: pedidoVideos, error: pedidoError } = await supabase
       .from('pedido_videos')
       .select('*')
@@ -21,7 +21,20 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
 
     console.log('📊 [VIDEO_SLOTS] Pedido_videos encontrados:', pedidoVideos);
 
-    // Buscar vídeos separadamente se houver pedido_videos
+    // Buscar campanha avançada associada ao pedido para obter schedule rules
+    const { data: campaign, error: campaignError } = await supabase
+      .from('campaigns_advanced')
+      .select('id')
+      .eq('pedido_id', orderId)
+      .single();
+
+    if (campaignError && campaignError.code !== 'PGRST116') {
+      console.error('❌ [VIDEO_SLOTS] Erro ao buscar campanha:', campaignError);
+    }
+
+    console.log('📋 [VIDEO_SLOTS] Campanha encontrada:', campaign);
+
+    // Buscar vídeos e suas regras de agendamento
     const videoPromises = pedidoVideos?.map(async (pv) => {
       if (!pv.video_id) return null;
       
@@ -36,8 +49,35 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
         return null;
       }
 
+      // Buscar regras de agendamento se houver campanha
+      let scheduleRules = [];
+      if (campaign?.id) {
+        const { data: videoSchedule, error: scheduleError } = await supabase
+          .from('campaign_video_schedules')
+          .select(`
+            id,
+            campaign_schedule_rules (
+              id,
+              days_of_week,
+              start_time,
+              end_time,
+              is_active
+            )
+          `)
+          .eq('campaign_id', campaign.id)
+          .eq('video_id', pv.video_id)
+          .eq('slot_position', pv.slot_position);
+
+        if (scheduleError) {
+          console.error(`❌ [VIDEO_SLOTS] Erro ao buscar schedule para video ${pv.video_id}:`, scheduleError);
+        } else if (videoSchedule && videoSchedule.length > 0) {
+          scheduleRules = videoSchedule[0].campaign_schedule_rules || [];
+        }
+      }
+
       console.log(`✅ [VIDEO_SLOTS] Video carregado:`, video);
-      return { pedidoVideo: pv, video };
+      console.log(`📅 [VIDEO_SLOTS] Schedule rules:`, scheduleRules);
+      return { pedidoVideo: pv, video, scheduleRules };
     }) || [];
 
     const videoResults = await Promise.all(videoPromises);
@@ -52,8 +92,8 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
       );
       
       if (matchingResult) {
-        const { pedidoVideo, video } = matchingResult;
-        console.log(`🎯 [VIDEO_SLOTS] Slot ${position} preenchido com:`, { pedidoVideo, video });
+        const { pedidoVideo, video, scheduleRules } = matchingResult;
+        console.log(`🎯 [VIDEO_SLOTS] Slot ${position} preenchido com:`, { pedidoVideo, video, scheduleRules });
         
         return {
           id: pedidoVideo.id,
@@ -72,7 +112,8 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
             tamanho_arquivo: video.tamanho_arquivo,
             formato: video.formato
           },
-          rejection_reason: pedidoVideo.rejection_reason
+          rejection_reason: pedidoVideo.rejection_reason,
+          schedule_rules: scheduleRules
         };
       } else {
         console.log(`📭 [VIDEO_SLOTS] Slot ${position} vazio`);
