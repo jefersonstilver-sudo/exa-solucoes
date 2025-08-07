@@ -97,7 +97,28 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Não definido';
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    try {
+      // Parse da data e formatação para timezone brasileiro
+      const date = new Date(dateString);
+      // Garantir que estamos trabalhando com a data local correta
+      const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+      const formattedDate = localDate.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+      
+      console.log('📅 [ENHANCED CONTRACT] Formatando data:', {
+        original: dateString,
+        parsed: date.toISOString(),
+        formatted: formattedDate
+      });
+      
+      return formattedDate;
+    } catch (error) {
+      console.error('❌ [ENHANCED CONTRACT] Erro ao formatar data:', dateString, error);
+      return 'Data inválida';
+    }
   };
 
   const getTimeDisplayText = () => {

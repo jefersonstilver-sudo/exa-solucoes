@@ -33,7 +33,19 @@ export const useContractStatus = (orderDetails: {
     if (!orderDetails) return;
 
     const { data_inicio, data_fim, status } = orderDetails;
-    const today = new Date();
+    
+    // Usar timezone brasileiro para cálculos corretos
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    console.log('📅 [CONTRACT STATUS] Debug de datas:', {
+      data_inicio,
+      data_fim,
+      status,
+      today: today.toISOString(),
+      videoData,
+      hasApprovedVideos: videoData?.approvedVideos && videoData.approvedVideos > 0
+    });
     
     let newContractData: ContractStatusReturn = {
       isActive: false,
@@ -51,42 +63,64 @@ export const useContractStatus = (orderDetails: {
     newContractData.hasStarted = hasStarted;
 
     if (hasStarted) {
+      // Criar objetos Date apenas com data (sem hora) para cálculos precisos
       const endDate = new Date(data_fim);
       const startDate = new Date(data_inicio);
+      const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
       
-      const timeDiff = endDate.getTime() - today.getTime();
+      // Calcular diferença em dias - mais preciso
+      const timeDiff = endDateOnly.getTime() - today.getTime();
       const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      
+      console.log('📅 [CONTRACT STATUS] Cálculo de dias:', {
+        endDateOnly: endDateOnly.toISOString(),
+        startDateOnly: startDateOnly.toISOString(),
+        today: today.toISOString(),
+        timeDiff,
+        daysRemaining
+      });
       
       newContractData.daysRemaining = Math.max(0, daysRemaining);
       
       // Calcular horas restantes se < 24 horas
       if (daysRemaining === 0 && timeDiff > 0) {
-        newContractData.hoursRemaining = Math.ceil(timeDiff / (1000 * 3600));
+        const hoursRemaining = Math.ceil(timeDiff / (1000 * 3600));
+        newContractData.hoursRemaining = hoursRemaining;
+        console.log('⏰ [CONTRACT STATUS] Horas restantes:', hoursRemaining);
       }
       
       // Verificar se expirou
       if (daysRemaining < 0 || status === 'expirado') {
         newContractData.isExpired = true;
         newContractData.isActive = false;
+        console.log('❌ [CONTRACT STATUS] Contrato expirado');
       } else {
         newContractData.isActive = ['video_aprovado', 'ativo'].includes(status);
         
         // Verificar se está próximo da expiração (7 dias)
         if (daysRemaining <= 7 && daysRemaining > 0) {
           newContractData.isExpiringSoon = true;
+          console.log('⚠️ [CONTRACT STATUS] Contrato expirando em breve');
         }
       }
       
       // Calcular progresso e total de dias
-      const totalTime = endDate.getTime() - startDate.getTime();
-      const elapsedTime = today.getTime() - startDate.getTime();
+      const totalTime = endDateOnly.getTime() - startDateOnly.getTime();
+      const elapsedTime = today.getTime() - startDateOnly.getTime();
       newContractData.totalDays = Math.ceil(totalTime / (1000 * 3600 * 24));
       newContractData.progressPercentage = Math.min(100, Math.max(0, (elapsedTime / totalTime) * 100));
+      
+      console.log('📊 [CONTRACT STATUS] Progresso calculado:', {
+        totalDays: newContractData.totalDays,
+        progressPercentage: newContractData.progressPercentage
+      });
     } else {
       // Contrato ainda não iniciou - aguardando aprovação de vídeo
       newContractData.isActive = false;
       newContractData.daysRemaining = 0;
       newContractData.totalDays = orderDetails.plano_meses * 30; // Estimativa
+      console.log('⏳ [CONTRACT STATUS] Contrato aguardando aprovação de vídeo');
     }
 
     setContractData(newContractData);
