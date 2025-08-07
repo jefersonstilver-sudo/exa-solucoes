@@ -67,9 +67,14 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
     if (orderDetails.log_pagamento?.payment_status === 'approved') {
       return { label: 'Pagamento Aprovado', color: 'text-green-600' };
     }
-    if (orderDetails.status === 'pago' || orderDetails.status.includes('pago')) {
+    
+    // Status que indicam pagamento confirmado
+    const paidStatuses = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'];
+    
+    if (paidStatuses.includes(orderDetails.status) || orderDetails.status.includes('pago')) {
       return { label: 'Pagamento Confirmado', color: 'text-green-600' };
     }
+    
     return { label: 'Processando', color: 'text-yellow-600' };
   };
 
