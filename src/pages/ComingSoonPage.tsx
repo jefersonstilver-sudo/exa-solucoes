@@ -5,12 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { Eye, EyeOff, Lock } from 'lucide-react';
+import { LAUNCH_DATE_ISO, SHOW_DEV_ACCESS } from '@/config/comingSoonConfig';
 
-// Mover data para fora do componente para evitar recriações
-const LAUNCH_DATE = new Date('2025-08-10T00:00:00');
+// Data de lançamento configurável
+const launchDate = new Date(LAUNCH_DATE_ISO || '2025-08-10T00:00:00');
+const formattedDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).format(launchDate);
 
 const ComingSoonPage = () => {
-  const timeLeft = useCountdown(LAUNCH_DATE);
+  const timeLeft = useCountdown(launchDate);
   const { 
     password, 
     setPassword, 
@@ -92,7 +94,7 @@ const ComingSoonPage = () => {
             Em breve
           </p>
           <p className="text-lg text-white/80 mb-12 max-w-2xl mx-auto">
-            Lançamento Oficial do nosso site <span className="text-indexa-mint font-semibold">10 de agosto de 2025</span>
+            Lançamento Oficial do nosso site <span className="text-indexa-mint font-semibold">{formattedDate}</span>
           </p>
         </div>
 
@@ -117,60 +119,62 @@ const ComingSoonPage = () => {
           </div>
         </div>
 
-        {/* Developer Access */}
-        <div className="animate-slide-in" style={{ animationDelay: '0.6s' }}>
-          {!showPasswordField ? (
-            <button
-              onClick={() => setShowPasswordField(true)}
-              className="inline-flex items-center gap-2 text-white/60 hover:text-white/80 transition-colors text-sm"
-            >
-              <Lock className="w-4 h-4" />
-              Acesso para desenvolvedores
-            </button>
-          ) : (
-            <form onSubmit={handlePasswordSubmit} className="max-w-sm mx-auto">
-              <div className="relative mb-4">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Digite a senha"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {error && (
-                <p className="text-red-400 text-sm mb-4">{error}</p>
-              )}
-              <div className="flex gap-2">
-                <Button 
-                  type="submit" 
-                  className="bg-indexa-mint hover:bg-indexa-mint/90 text-black font-semibold flex-1"
-                >
-                  Entrar
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={() => {
-                    setShowPasswordField(false);
-                    setPassword('');
-                    setError('');
-                  }}
-                  className="border-white/20 text-white hover:bg-white/20 hover:text-white bg-transparent"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          )}
-        </div>
+        {/* Developer Access (configurável) */}
+        {SHOW_DEV_ACCESS && (
+          <div className="animate-slide-in" style={{ animationDelay: '0.6s' }}>
+            {!showPasswordField ? (
+              <button
+                onClick={() => setShowPasswordField(true)}
+                className="inline-flex items-center gap-2 text-white/60 hover:text-white/80 transition-colors text-sm"
+              >
+                <Lock className="w-4 h-4" />
+                Acesso para desenvolvedores
+              </button>
+            ) : (
+              <form onSubmit={handlePasswordSubmit} className="max-w-sm mx-auto">
+                <div className="relative mb-4">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Digite a senha"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {error && (
+                  <p className="text-red-400 text-sm mb-4">{error}</p>
+                )}
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    className="bg-indexa-mint hover:bg-indexa-mint/90 text-black font-semibold flex-1"
+                  >
+                    Entrar
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => {
+                      setShowPasswordField(false);
+                      setPassword('');
+                      setError('');
+                    }}
+                    className="border-white/20 text-white hover:bg-white/20 hover:text-white bg-transparent"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="mt-16 text-white/40 text-sm animate-fade-in" style={{ animationDelay: '0.8s' }}>

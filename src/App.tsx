@@ -8,7 +8,7 @@ import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MinimalLoader from '@/components/ui/MinimalLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
-import { useDeveloperAuth } from '@/hooks/useDeveloperAuth';
+import { MAINTENANCE_MODE } from '@/config/comingSoonConfig';
 import ComingSoonPage from '@/pages/ComingSoonPage';
 
 // Importações diretas para páginas críticas
@@ -69,24 +69,20 @@ console.log('✅ QueryClient initialized');
 
 // Main App content wrapper with Coming Soon protection
 const AppContent = () => {
-  const { isAuthenticated } = useDeveloperAuth();
-  
-  console.log('🎯 AppContent - isAuthenticated:', isAuthenticated);
-
-  // If not authenticated, show Coming Soon page
-  if (!isAuthenticated) {
-    console.log('🚫 Not authenticated, showing ComingSoonPage');
+  if (MAINTENANCE_MODE) {
+    console.log('🚧 Maintenance mode ON - showing ComingSoonPage');
     return <ComingSoonPage />;
   }
-  
-  console.log('✅ Authenticated, showing main app');
 
-  // If authenticated, show normal app routes
+  console.log('✅ Maintenance mode OFF - showing main app');
+
+  // Normal app routes
   return (
     <div className="min-h-screen bg-background">
       <Routes>
         {/* Rotas principais */}
         <Route path="/" element={<Index />} />
+        <Route path="/coming-soon" element={<ComingSoonPage />} />
         
         {/* CORREÇÃO: Rotas da loja unificadas */}
         <Route path="/loja" element={<BuildingStore />} />
