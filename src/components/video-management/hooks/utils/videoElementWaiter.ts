@@ -5,7 +5,7 @@ export const waitForVideoElement = (
 ): Promise<HTMLVideoElement> => {
   return new Promise((resolve, reject) => {
     let attempts = 0;
-    const maxAttempts = 50; // 5 segundos com intervalos de 100ms
+    const maxAttempts = 20; // 6 segundos com intervalos progressivos
     
     const checkElement = () => {
       const video = videoRef.current;
@@ -33,12 +33,12 @@ export const waitForVideoElement = (
           attempts,
           maxAttempts
         });
-        reject(new Error('Elemento de vídeo não foi encontrado após 5 segundos'));
+        reject(new Error('Elemento de vídeo não foi encontrado após 6 segundos'));
         return;
       }
       
-      // Delay progressivo para dar mais chance ao DOM de se estabilizar
-      const delay = attempts < 10 ? 100 : attempts < 30 ? 200 : 300;
+      // Delay progressivo mais generoso para dar chance ao DOM de se estabilizar
+      const delay = attempts < 5 ? 200 : attempts < 15 ? 300 : 400;
       setTimeout(checkElement, delay);
     };
     

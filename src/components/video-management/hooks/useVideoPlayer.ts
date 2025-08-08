@@ -69,13 +69,13 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       return;
     }
 
-    // Timeout de segurança para forçar saída do loading se necessário
+    // Timeout de segurança mais generoso
     const emergencyTimeout = setTimeout(() => {
       console.warn('🚨 [PLAYER] TIMEOUT DE EMERGÊNCIA ATIVADO - Forçando saída do loading');
       setIsLoading(false);
       setHasError(true);
-      setErrorDetails('Timeout de carregamento - elemento de vídeo pode não ter sido renderizado');
-    }, 10000); // 10 segundos como último recurso
+      setErrorDetails('Elemento de vídeo não foi inicializado corretamente');
+    }, 30000); // 30 segundos como último recurso
 
     // Aguardar elemento estar pronto
     waitForVideoElement(videoRef, setIsElementReady)

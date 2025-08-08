@@ -29,6 +29,8 @@ export const VideoPlayerCore: React.FC<VideoPlayerCoreProps> = ({
       muted={muted}
       loop
       playsInline
+      preload="metadata"
+      crossOrigin="anonymous"
       onLoadStart={() => console.log('🎬 [CORE] Video element loadstart event')}
       onLoadedMetadata={() => console.log('🎬 [CORE] Video element metadata loaded')}
     />
