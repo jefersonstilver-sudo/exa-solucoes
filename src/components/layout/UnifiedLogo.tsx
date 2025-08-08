@@ -8,6 +8,7 @@ interface UnifiedLogoProps {
   variant?: 'light' | 'dark';
   className?: string;
   logoUrl?: string;
+  altText?: string;
 }
 
 const UnifiedLogo = ({ 
@@ -15,7 +16,8 @@ const UnifiedLogo = ({
   linkTo = '/', 
   variant = 'light',
   className = '',
-  logoUrl
+  logoUrl,
+  altText = 'Logo'
 }: UnifiedLogoProps) => {
   const sizeClasses = {
     sm: 'w-8 h-8',
@@ -34,7 +36,7 @@ const UnifiedLogo = ({
     <div className={`${size !== 'custom' ? sizeClasses[size] : ''} flex items-center justify-center ${className}`}>
       <img 
         src={logoUrl || "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/1%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzLzEgKDEpLnBuZyIsImlhdCI6MTc1MzgxNTIwNCwiZXhwIjo5NjM2MTgxNTIwNH0.KlH5Ty2cfiwFR5rmrTRHOdW7cybUCRQqS3Bfg6Qy8dg"}
-        alt="INDEXA Logo" 
+        alt={logoUrl ? altText : "INDEXA Logo"}
         className={`w-full h-full object-contain ${filterClasses[variant]}`}
       />
     </div>
