@@ -69,13 +69,27 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       return;
     }
 
-    // Timeout otimizado - força o elemento a ser considerado pronto após 8 segundos
+    // Timeout progressivo baseado no contexto
+    const getTimeoutDuration = () => {
+      // Para URLs que parecem ser do Supabase, dar mais tempo
+      if (src.includes('supabase.co')) return 15000; // 15s para Supabase
+      
+      // Para arquivos grandes (estimado pelo URL), dar mais tempo
+      if (src.includes('video') || src.includes('.mp4') || src.includes('.mov')) {
+        return 12000; // 12s para vídeos
+      }
+      
+      return 10000; // 10s padrão
+    };
+    
+    const timeoutDuration = getTimeoutDuration();
+    
     const emergencyTimeout = setTimeout(() => {
-      console.warn('⚠️ [VIDEO_PLAYER] Timeout de emergência ativado - forçando elemento como pronto');
+      console.warn(`⚠️ [VIDEO_PLAYER] Timeout após ${timeoutDuration}ms - tentando reload`);
       setIsLoading(false);
       setHasError(true);
-      setErrorDetails('Vídeo demorou muito para carregar - tente novamente');
-    }, 8000); // 8 segundos (otimizado)
+      setErrorDetails(`Vídeo demorou ${timeoutDuration/1000}s para carregar. Clique em "Tentar Novamente".`);
+    }, timeoutDuration);
 
     // Aguardar elemento estar pronto
     waitForVideoElement(videoRef, setIsElementReady)

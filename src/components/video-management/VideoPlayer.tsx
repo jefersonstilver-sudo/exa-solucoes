@@ -55,17 +55,33 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const isValidUrl = isValidVideoUrl(src);
 
   const handleRetry = () => {
-    console.log('🔄 [VIDEO_PLAYER] Retry manual iniciado');
-    const video = videoRef.current;
-    if (video) {
-      // Forçar novo carregamento simples
-      video.load();
+    console.log('🔄 [VideoPlayer] Retry inteligente iniciado para:', src);
+    
+    if (videoRef.current) {
+      // Estratégia 1: Reload simples
+      const currentTime = videoRef.current.currentTime;
+      videoRef.current.load();
       
-      // Tentar reproduzir automaticamente após carregar
-      video.addEventListener('loadeddata', () => {
-        video.play().catch(e => 
-          console.warn('⚠️ [VIDEO_PLAYER] Autoplay falhou após retry:', e)
-        );
+      // Estratégia 2: Se falhar após 3s, tenta forçar src
+      setTimeout(() => {
+        if (videoRef.current && hasError) {
+          console.log('🔄 [VideoPlayer] Retry com redefinição de src');
+          const originalSrc = videoRef.current.src;
+          videoRef.current.src = '';
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.src = originalSrc;
+              videoRef.current.load();
+            }
+          }, 100);
+        }
+      }, 3000);
+      
+      // Restaurar posição se havia uma
+      videoRef.current.addEventListener('loadedmetadata', () => {
+        if (videoRef.current && currentTime > 0) {
+          videoRef.current.currentTime = currentTime;
+        }
       }, { once: true });
     }
   };

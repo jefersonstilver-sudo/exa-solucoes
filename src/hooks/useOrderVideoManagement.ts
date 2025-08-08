@@ -124,14 +124,19 @@ export const useOrderVideoManagement = (orderId: string) => {
         videoTitle 
       });
       
-      // Health check preventivo simplificado
+      // Health check rápido (timeout de 2s)
       try {
-        const health = await testSystemHealth();
-        if (!health.overall) {
-          console.warn('⚠️ [ORDER_VIDEO] Sistema com problemas, mas continuando...');
+        const healthPromise = testSystemHealth();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Health check timeout')), 2000)
+        );
+        
+        const health = await Promise.race([healthPromise, timeoutPromise]) as any;
+        if (!health?.overall) {
+          console.warn('⚠️ [ORDER_VIDEO] Sistema com problemas, continuando...');
         }
       } catch (healthError) {
-        console.warn('⚠️ [ORDER_VIDEO] Health check falhou, continuando...');
+        console.warn('⚠️ [ORDER_VIDEO] Health check falhou/timeout, continuando...');
       }
       
       setUploading(true);
@@ -210,22 +215,32 @@ export const useOrderVideoManagement = (orderId: string) => {
         return;
       }
       
-      // Erro de conectividade - sugerir retry
-      if (error.message.includes('network') || error.message.includes('fetch')) {
-        toast.error('❌ Erro de conexão. Verifique sua internet e tente novamente.', {
+      // Erro de conectividade - retry imediato com backoff
+      if (error.message.includes('network') || error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+        toast.error('❌ Falha de rede detectada', {
+          description: 'Tentativa automática em 3 segundos...',
           action: {
-            label: 'Tentar Novamente',
+            label: 'Retry Agora',
             onClick: () => uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules)
           }
         });
+        
+        // Retry automático após 3 segundos
+        setTimeout(() => {
+          uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules);
+        }, 3000);
         return;
       }
       
-      // Erro de timeout
+      // Erro de timeout - estratégias diferentes baseadas no tamanho
       if (error.message.includes('timeout') || error.message.includes('time')) {
-        toast.error('⏱️ Upload demorou muito. Arquivo muito grande ou conexão lenta.', {
+        const fileSizeMB = file.size / (1024 * 1024);
+        const strategy = fileSizeMB > 50 ? 'Arquivo grande' : 'Conexão lenta';
+        
+        toast.error(`⏱️ Timeout: ${strategy} detectado`, {
+          description: `Arquivo: ${fileSizeMB.toFixed(1)}MB`,
           action: {
-            label: 'Retry',
+            label: 'Retry Otimizado',
             onClick: () => uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules)
           }
         });

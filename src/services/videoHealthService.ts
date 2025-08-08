@@ -21,36 +21,74 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 export const testSystemHealth = async (): Promise<HealthCheckResult> => {
   const startTime = Date.now();
-  const results = { storage: false, database: false, auth: false, overall: false, latency: 0 };
+  let authHealth = false;
+  let dbHealth = false;
+  let storageHealth = false;
 
   try {
-    // Teste paralelo de todos os componentes
-    const [authCheck, dbCheck, storageCheck] = await Promise.allSettled([
-      // Teste de autenticação
-      supabase.auth.getSession(),
-      
-      // Teste de banco (query rápida)
-      supabase.from('videos').select('id').limit(1),
-      
-      // Teste de storage (list buckets)
-      supabase.storage.listBuckets()
-    ]);
-
-    results.auth = authCheck.status === 'fulfilled' && authCheck.value.data.session !== null;
-    results.database = dbCheck.status === 'fulfilled' && !dbCheck.value.error;
-    results.storage = storageCheck.status === 'fulfilled' && !storageCheck.value.error;
+    // Test auth com timeout de 3s
+    const authPromise = supabase.auth.getUser();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Auth timeout')), 3000)
+    );
     
-    results.overall = results.auth && results.database && results.storage;
-    results.latency = Date.now() - startTime;
-
-    console.log('🏥 [HEALTH] System check:', results);
-    return results;
-    
+    const { data: { user } } = await Promise.race([authPromise, timeoutPromise]) as any;
+    authHealth = !!user;
+    console.log('🔐 Auth check:', authHealth ? 'OK' : 'FAIL');
   } catch (error) {
-    console.error('💔 [HEALTH] Health check failed:', error);
-    results.latency = Date.now() - startTime;
-    return results;
+    console.error('❌ Auth health check failed:', error);
   }
+
+  try {
+    // Test database com timeout de 3s  
+    const dbPromise = supabase
+      .from('videos')
+      .select('id')
+      .limit(1);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('DB timeout')), 3000)
+    );
+    
+    const { data } = await Promise.race([dbPromise, timeoutPromise]) as any;
+    dbHealth = Array.isArray(data);
+    console.log('🗄️ DB check:', dbHealth ? 'OK' : 'FAIL');
+  } catch (error) {
+    console.error('❌ DB health check failed:', error);
+  }
+
+  try {
+    // Test storage com timeout de 2s
+    const storagePromise = supabase.storage.listBuckets();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Storage timeout')), 2000)
+    );
+    
+    const { data } = await Promise.race([storagePromise, timeoutPromise]) as any;
+    storageHealth = Array.isArray(data);
+    console.log('📦 Storage check:', storageHealth ? 'OK' : 'FAIL');
+  } catch (error) {
+    console.error('❌ Storage health check failed:', error);
+  }
+
+  const endTime = Date.now();
+  const latency = endTime - startTime;
+  const overall = authHealth && dbHealth && storageHealth;
+
+  console.log(`🏥 [HEALTH] Resultado completo:`, {
+    auth: authHealth,
+    database: dbHealth, 
+    storage: storageHealth,
+    overall,
+    latency: `${latency}ms`
+  });
+
+  return {
+    auth: authHealth,
+    database: dbHealth,
+    storage: storageHealth,
+    overall,
+    latency
+  };
 };
 
 export const validateUrlWithCache = (url: string): boolean => {

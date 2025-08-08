@@ -9,6 +9,8 @@ import {
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
 import { validateScheduleConflicts, formatConflictMessage } from './videoScheduleValidationService';
 import type { ScheduleConflict } from './videoScheduleValidationService';
+import { uploadCache, getCacheKey } from './videoUploadCacheService';
+import { UploadSession } from './videoUploadLogsService';
 
 export const uploadVideo = async (
   slotPosition: number,
@@ -19,21 +21,41 @@ export const uploadVideo = async (
   videoTitle?: string,
   scheduleRules?: any[]
 ): Promise<boolean> => {
+  // Criar sessão de logs estruturados
+  const uploadSession = new UploadSession(orderId, userId);
+  
   try {
     console.log(`🚀 Iniciando upload para slot ${slotPosition}:`, file.name);
-    console.log('👤 User ID:', userId);
-    console.log('📋 Order ID:', orderId);
 
-    // NOVA VALIDAÇÃO DE SEGURANÇA
+    // VALIDAÇÃO DE SEGURANÇA OTIMIZADA COM CACHE
     onProgress?.(5);
-    const securityValidation = await validateVideoUploadPermission(orderId);
+    const securityStart = uploadSession.logPhaseStart('SECURITY', { 
+      slotPosition, 
+      fileName: file.name, 
+      fileSize: file.size 
+    });
     
-    if (!securityValidation.canUpload) {
-      console.error('🔒 [VideoUpload] Upload bloqueado por segurança:', securityValidation);
-      toast.error(`Upload não permitido: ${securityValidation.reason}`);
+    const securityCacheKey = getCacheKey.security(orderId);
+    let securityValidation = uploadCache.get<any>(securityCacheKey);
+    
+    if (!securityValidation) {
+      console.log('🔍 [VideoUpload] Validando permissões (cache miss)...');
+      securityValidation = await validateVideoUploadPermission(orderId);
+      
+      // Cache por 5 minutos se aprovado, 1 minuto se negado
+      const cacheTtl = securityValidation?.canUpload ? 5 * 60 * 1000 : 60 * 1000;
+      uploadCache.set(securityCacheKey, securityValidation, cacheTtl);
+    } else {
+      console.log('⚡ [VideoUpload] Validação de segurança (cache hit)');
+    }
+    
+    if (!securityValidation?.canUpload) {
+      uploadSession.logPhaseFailure('SECURITY', securityStart, securityValidation?.reason || 'Validação negada');
+      toast.error(`Upload não permitido: ${securityValidation?.reason || 'Erro de validação'}`);
       return false;
     }
 
+    uploadSession.logPhaseSuccess('SECURITY', securityStart, { cached: !!uploadCache.get(securityCacheKey) });
     console.log('✅ [VideoUpload] Validação de segurança aprovada');
 
     // Validar título se fornecido
@@ -44,22 +66,42 @@ export const uploadVideo = async (
       }
     }
 
-    // Limpar uploads pendentes
+    // LIMPEZA OTIMIZADA COM CACHE E DEBOUNCE
     onProgress?.(10);
-    const cleanedCount = await cleanupPendingUploads(userId);
-    if (cleanedCount > 0) {
-      console.log(`🧹 ${cleanedCount} registros órfãos removidos`);
+    const cleanupStart = uploadSession.logPhaseStart('CLEANUP');
+    
+    const cleanupCacheKey = getCacheKey.cleanup(userId);
+    const lastCleanup = uploadCache.get(cleanupCacheKey);
+    
+    // Só executa limpeza se não foi feita nos últimos 2 minutos
+    if (!lastCleanup) {
+      console.log('🧹 [VideoUpload] Executando limpeza (cache miss)...');
+      const cleanedCount = await cleanupPendingUploads(userId);
+      uploadSession.logPhaseSuccess('CLEANUP', cleanupStart, { cleanedCount, cached: false });
+      if (cleanedCount > 0) {
+        console.log(`🧹 ${cleanedCount} registros órfãos removidos`);
+      }
+      
+      // Cache por 2 minutos para evitar limpezas excessivas
+      uploadCache.set(cleanupCacheKey, { cleanedAt: Date.now() }, 2 * 60 * 1000);
+    } else {
+      uploadSession.logPhaseSuccess('CLEANUP', cleanupStart, { cached: true, skipped: true });
+      console.log('⚡ [VideoUpload] Limpeza pulada (executada recentemente)');
     }
 
     // Validar vídeo
     onProgress?.(15);
+    const validationStart = uploadSession.logPhaseStart('VALIDATION', { fileSize: file.size, fileType: file.type });
+    
     const validation = await validateVideoFile(file);
     if (!validation.valid) {
+      uploadSession.logPhaseFailure('VALIDATION', validationStart, validation.errors.join(', '), { errors: validation.errors });
       console.error('❌ Validação falhou:', validation.errors);
       toast.error(validation.errors.join(', '));
       return false;
     }
 
+    uploadSession.logPhaseSuccess('VALIDATION', validationStart, { metadata: validation.metadata });
     console.log('✅ Vídeo validado com sucesso:', validation.metadata);
     onProgress?.(25);
 
@@ -359,6 +401,7 @@ export const uploadVideo = async (
     }
 
     onProgress?.(100);
+    uploadSession.complete();
     console.log('🎉 Upload completo com sucesso!');
     toast.success(`Vídeo "${finalVideoName}" ${scheduleRules?.length ? 'e agendamento' : ''} enviado com sucesso!`);
     return true;
