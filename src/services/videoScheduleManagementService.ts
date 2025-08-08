@@ -7,6 +7,7 @@ interface ScheduleRule {
   start_time: string;
   end_time: string;
   is_active: boolean;
+  is_all_day?: boolean;
 }
 
 interface CampaignScheduleData {
@@ -112,7 +113,8 @@ export const videoScheduleManagementService = {
           days_of_week: rule.days_of_week,
           start_time: rule.start_time,
           end_time: rule.end_time,
-          is_active: rule.is_active
+          is_active: rule.is_active,
+          is_all_day: rule.is_all_day || false
         }));
 
         const { error: insertError } = await supabase
@@ -149,7 +151,8 @@ export const videoScheduleManagementService = {
             days_of_week,
             start_time,
             end_time,
-            is_active
+            is_active,
+            is_all_day
           )
         `)
         .eq('video_id', videoId)

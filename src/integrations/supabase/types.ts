@@ -174,6 +174,7 @@ export type Database = {
           end_time: string
           id: string
           is_active: boolean
+          is_all_day: boolean
           start_time: string
           updated_at: string
         }
@@ -184,6 +185,7 @@ export type Database = {
           end_time: string
           id?: string
           is_active?: boolean
+          is_all_day?: boolean
           start_time: string
           updated_at?: string
         }
@@ -194,6 +196,7 @@ export type Database = {
           end_time?: string
           id?: string
           is_active?: boolean
+          is_all_day?: boolean
           start_time?: string
           updated_at?: string
         }
