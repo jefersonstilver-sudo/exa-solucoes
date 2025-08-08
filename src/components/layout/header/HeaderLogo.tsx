@@ -8,7 +8,8 @@ const HeaderLogo: React.FC = () => {
       size="custom" 
       linkTo="/" 
       variant="light"
-      className="w-32 h-32 py-2"
+      className="w-32 h-auto py-2"
+      showSubtitle={true}
     />
   );
 };
