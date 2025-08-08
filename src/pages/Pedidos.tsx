@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
-import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import Layout from '@/components/layout/Layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -16,8 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
 import { AutoPaymentVerifier } from '@/components/admin/AutoPaymentVerifier';
-import { VideoThumbnailDisplay } from '@/components/video-management/VideoThumbnailDisplay';
-import { OrderVideoThumbnail } from '@/components/video-management/OrderVideoThumbnail';
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,7 +91,6 @@ const Pedidos: React.FC = () => {
     const status = formatStatus(item);
     const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
     const isPendingPix = item.type === 'order' && item.status === 'pendente';
-    const showVideoThumbnail = item.type === 'order' && ['video_aprovado', 'ativo'].includes(item.status);
 
     return (
       <Card key={`${item.type}-${item.id}`} className="mb-4 p-4 bg-white border-gray-200">
@@ -115,17 +111,6 @@ const Pedidos: React.FC = () => {
             R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
           </p>
         </div>
-
-        {/* Vídeo em Exibição */}
-        {showVideoThumbnail && (
-          <div className="mb-3 p-3 bg-gray-50 rounded-lg border">
-            <p className="text-xs text-gray-600 mb-2 font-medium">Vídeo em Exibição</p>
-            <OrderVideoThumbnail
-              orderId={item.id}
-              className="w-full"
-            />
-          </div>
-        )}
         
         <div className="grid grid-cols-2 gap-2 text-sm mt-3">
           <div>
@@ -307,7 +292,6 @@ const Pedidos: React.FC = () => {
                         <TableHead className="text-gray-900 font-semibold">ID</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Data</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Status</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Vídeo em Exibição</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Valor</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Duração</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Período</TableHead>
@@ -316,51 +300,40 @@ const Pedidos: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                       {filteredItems.map((item) => {
-                         const status = formatStatus(item);
-                         const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
-                         const isPendingPix = item.type === 'order' && item.status === 'pendente';
-                         const showVideoThumbnail = item.type === 'order' && ['video_aprovado', 'ativo'].includes(item.status);
-                         
-                         return (
-                           <React.Fragment key={`${item.type}-${item.id}`}>
-                             <TableRow className="border-gray-200 hover:bg-gray-50">
-                               <TableCell>
-                                 {item.type === 'attempt' ? (
-                                   <Badge variant="outline" className="border-orange-500 text-orange-700">
-                                     <AlertTriangle className="h-3 w-3 mr-1" />
-                                     Tentativa
-                                   </Badge>
-                                 ) : (
-                                   <Badge variant="outline" className="border-green-500 text-green-700">
-                                     Pedido
-                                   </Badge>
-                                 )}
-                               </TableCell>
-                               <TableCell className="font-medium text-gray-900">
-                                 {item.id.substring(0, 8)}...
-                               </TableCell>
-                               <TableCell className="text-gray-800 font-medium">
-                                 {formatDate(item.created_at)}
-                               </TableCell>
-                               <TableCell>
-                                 <Badge className={status.color}>
-                                   {status.label}
-                                 </Badge>
-                               </TableCell>
-                               <TableCell className="w-64">
-                                 {showVideoThumbnail ? (
-                                   <OrderVideoThumbnail
-                                     orderId={item.id}
-                                     compact={true}
-                                   />
-                                 ) : (
-                                   <span className="text-muted-foreground text-sm">-</span>
-                                 )}
-                               </TableCell>
-                               <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
-                                 R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
-                               </TableCell>
+                      {filteredItems.map((item) => {
+                        const status = formatStatus(item);
+                        const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
+                        const isPendingPix = item.type === 'order' && item.status === 'pendente';
+                        
+                        return (
+                          <React.Fragment key={`${item.type}-${item.id}`}>
+                            <TableRow className="border-gray-200 hover:bg-gray-50">
+                              <TableCell>
+                                {item.type === 'attempt' ? (
+                                  <Badge variant="outline" className="border-orange-500 text-orange-700">
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    Tentativa
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="border-green-500 text-green-700">
+                                    Pedido
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="font-medium text-gray-900">
+                                {item.id.substring(0, 8)}...
+                              </TableCell>
+                              <TableCell className="text-gray-800 font-medium">
+                                {formatDate(item.created_at)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={status.color}>
+                                  {status.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
+                                R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
+                              </TableCell>
                               <TableCell className="text-gray-800 font-medium">
                                 {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
                               </TableCell>
