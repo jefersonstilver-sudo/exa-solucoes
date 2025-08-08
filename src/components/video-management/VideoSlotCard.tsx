@@ -265,7 +265,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const cardClasses = `transition-all duration-200 bg-white border ${
-    isScheduledAndActive()
+    slot.is_base_video
       ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
       : hasActiveSchedule
         ? 'border-2 border-blue-400 bg-blue-50 shadow-md'
@@ -297,8 +297,25 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       <CardContent className="p-3 sm:p-6 max-w-full overflow-hidden">
         {/* Header do Slot */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <h3 className="font-semibold text-lg text-gray-900">Slot {slot.slot_position}</h3>
+            
+            {/* Botão Vídeo Principal */}
+            {slot.video_data && slot.approval_status === 'approved' && totalApprovedVideos >= 2 && (
+              <Button
+                variant={slot.is_base_video ? "default" : "outline"}
+                size="sm"
+                onClick={() => slot.id && onSetBaseVideo && onSetBaseVideo(slot.id)}
+                className={`text-xs px-3 py-1 h-7 ${
+                  slot.is_base_video 
+                    ? 'bg-yellow-500 text-white hover:bg-yellow-600 border-yellow-500' 
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
+                title={slot.is_base_video ? "Este é o vídeo principal" : "Clique para definir como vídeo principal"}
+              >
+                Vídeo Principal
+              </Button>
+            )}
             
             {slot.video_data && getStatusIcon(slot.approval_status)}
             {isBlocked && (
@@ -311,33 +328,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             {getStatusBadge()}
           </div>
         </div>
-
-        {/* Badge Vídeo Base Centralizado */}
-        {slot.is_base_video && (
-          <div className="flex justify-center mb-4">
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 flex items-center space-x-1">
-              <Star className="h-3 w-3" />
-              <span>VÍDEO BASE</span>
-            </Badge>
-          </div>
-        )}
-
-        {/* Estrela de Vídeo Base - Clicável apenas para vídeos aprovados */}
-        {slot.video_data && slot.approval_status === 'approved' && totalApprovedVideos >= 2 && (
-          <div className="flex justify-center mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => slot.id && onSetBaseVideo && onSetBaseVideo(slot.id)}
-              className="p-2 h-auto hover:bg-yellow-50"
-              title={slot.is_base_video ? "Este é o vídeo base" : "Clique para definir como vídeo base"}
-            >
-              <Star 
-                className={`h-6 w-6 ${slot.is_base_video ? 'text-yellow-500 fill-current' : 'text-gray-400 hover:text-yellow-400'}`} 
-              />
-            </Button>
-          </div>
-        )}
 
         {/* Progress Bar para Upload */}
         {currentProgress !== undefined && (
