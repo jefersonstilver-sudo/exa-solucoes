@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Play, Clock, Video } from 'lucide-react';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
+import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { VideoPlayerCore } from './VideoPlayerCore';
 
 interface VideoDisplayPopupProps {
@@ -17,9 +18,17 @@ export const VideoDisplayPopup: React.FC<VideoDisplayPopupProps> = ({
   onClose
 }) => {
   const { videoData, loading, error } = useOrderCurrentVideoData(orderId);
+  const { currentVideo, loading: currentVideoLoading } = useCurrentVideoDisplay({ 
+    orderId, 
+    enabled: !!orderId && isOpen 
+  });
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
-  if (loading) {
+  // Determinar tipo e status do vídeo
+  const videoType = currentVideo?.is_scheduled ? 'Vídeo Agendado' : 'Vídeo Principal';
+  const statusColor = currentVideo?.is_scheduled ? 'text-blue-600' : 'text-green-600';
+
+  if (loading || currentVideoLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl">
@@ -123,8 +132,18 @@ export const VideoDisplayPopup: React.FC<VideoDisplayPopupProps> = ({
               </div>
               <div>
                 <span className="text-muted-foreground">Tipo:</span>
-                <span className="ml-2 font-medium">Vídeo Principal</span>
+                <span className={`ml-2 font-medium ${statusColor}`}>
+                  {videoType}
+                </span>
               </div>
+              {currentVideo?.is_scheduled && (
+                <div className="md:col-span-2">
+                  <span className="text-muted-foreground">Programação:</span>
+                  <span className="ml-2 text-blue-600 font-medium">
+                    Agendamento ativo - verifique os horários no gerenciamento de vídeos
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
