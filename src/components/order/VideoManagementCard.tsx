@@ -46,27 +46,29 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
 
   const handleScheduleVideo = async (videoId: string, scheduleRules: any[]) => {
     try {
-      console.log('📅 [VIDEO_MGMT] Salvando agendamento:', { videoId, scheduleRules });
+      console.log('📅 [VIDEO_MGMT] Agendando vídeo:', { videoId, scheduleRules });
       
-      const success = await videoScheduleManagementService.updateVideoScheduleRules(videoId, scheduleRules);
+      // Encontrar a posição do slot do vídeo
+      const videoSlot = videoSlots.find(slot => slot.video_id === videoId);
+      const slotPosition = videoSlot?.slot_position || 1;
       
-      console.log('📅 [VIDEO_MGMT] Resultado do agendamento:', success);
+      console.log('📅 [VIDEO_MGMT] Slot position encontrada:', slotPosition);
+      
+      const success = await videoScheduleManagementService.updateVideoScheduleRules(
+        videoId,
+        scheduleRules,
+        slotPosition
+      );
       
       if (success) {
-        // CORREÇÃO: Sempre recarregar após sucesso para atualizar status
+        console.log('✅ [VIDEO_MGMT] Agendamento realizado com sucesso');
+        // Refresh the slots to show the updated schedule
         if (onRefreshSlots) {
-          console.log('🔄 [VIDEO_MGMT] Recarregando slots após agendamento...');
           await onRefreshSlots();
-          console.log('✅ [VIDEO_MGMT] Slots recarregados com sucesso');
         }
-        toast.success('Agendamento salvo com sucesso!');
-      } else {
-        toast.error('Falha ao salvar agendamento');
       }
-      
     } catch (error) {
-      console.error('❌ [VIDEO_MGMT] Erro ao salvar agendamento:', error);
-      toast.error('Erro ao salvar agendamento');
+      console.error('❌ [VIDEO_MGMT] Erro ao agendar vídeo:', error);
     }
   };
 

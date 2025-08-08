@@ -21,13 +21,15 @@ export const videoScheduleManagementService = {
   /**
    * Criar ou atualizar regras de programação para um vídeo
    */
-  async updateVideoScheduleRules(
+async updateVideoScheduleRules(
     videoId: string,
-    scheduleRules: ScheduleRule[]
+    scheduleRules: ScheduleRule[],
+    slotPosition?: number
   ): Promise<boolean> {
     try {
       console.log('📅 [SCHEDULE_MGMT] Atualizando regras de programação:', {
         videoId,
+        slotPosition,
         rulesCount: scheduleRules.length
       });
 
@@ -50,7 +52,7 @@ export const videoScheduleManagementService = {
         // Buscar informações do pedido através do vídeo
         const { data: videoInfo, error: videoError } = await supabase
           .from('pedido_videos')
-          .select('pedido_id, pedidos(client_id)')
+          .select('pedido_id, slot_position, pedidos(client_id)')
           .eq('video_id', videoId)
           .single();
 
@@ -77,17 +79,20 @@ export const videoScheduleManagementService = {
           throw new Error('Erro ao criar campanha avançada');
         }
 
-        // Criar schedule de vídeo
+        // Criar schedule de vídeo usando a posição correta do slot
+        const correctSlotPosition = slotPosition || videoInfo.slot_position || 1;
         const { data: newVideoSchedule, error: scheduleError } = await supabase
           .from('campaign_video_schedules')
           .insert({
             campaign_id: newCampaign.id,
             video_id: videoId,
-            slot_position: 1,
+            slot_position: correctSlotPosition,
             priority: 1
           })
           .select('id')
           .single();
+
+        console.log('📅 [SCHEDULE_MGMT] Created video schedule with slot_position:', correctSlotPosition);
 
         if (scheduleError || !newVideoSchedule) {
           throw new Error('Erro ao criar schedule de vídeo');

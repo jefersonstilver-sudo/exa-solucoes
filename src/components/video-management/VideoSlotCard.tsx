@@ -99,10 +99,21 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
   };
 
-  // CORREÇÃO: Verificar se tem agendamento configurado (não necessariamente ativo agora)
+  // Verificar se o vídeo tem agendamento ativo
   const hasActiveSchedule = slot.schedule_rules && 
     slot.schedule_rules.length > 0 && 
-    slot.schedule_rules.some(rule => rule.is_active);
+    slot.schedule_rules.some(rule => rule.is_active && rule.days_of_week && rule.days_of_week.length > 0);
+  
+  console.log(`🔍 [SLOT_${slot.slot_position}] Status debug:`, {
+    hasVideo: !!slot.video_data,
+    isActive: slot.is_active,
+    approvalStatus: slot.approval_status,
+    selectedForDisplay: slot.selected_for_display,
+    isBaseVideo: slot.is_base_video,
+    scheduleRules: slot.schedule_rules,
+    hasActiveSchedule,
+    currentDisplayVideoId
+  });
   
   // Verificar se o agendamento está ativo AGORA (verificação temporal)
   const isScheduledActiveNow = () => {
@@ -143,85 +154,44 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     const videoId = slot.video_data.id;
     const isCurrentlyShowing = isVideoCurrentlyDisplaying(videoId);
     
-    console.log(`📍 [SLOT_${slot.slot_position}] Badge Logic:`, {
+    console.log(`🔍 [SLOT_${slot.slot_position}] Calculando status:`, {
       approvalStatus: slot.approval_status,
-      isScheduledActiveNow: isScheduledActiveNow(),
       isCurrentlyShowing,
-      isBaseVideo: slot.is_base_video,
       hasActiveSchedule,
-      isActive: slot.is_active
+      isActive: slot.is_active,
+      scheduleRulesCount: slot.schedule_rules?.length || 0
     });
-    
-    switch (slot.approval_status) {
-      case 'pending':
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 flex items-center space-x-1">
-            <Clock className="h-3 w-3" />
-            <span>Aguardando Aprovação</span>
-          </Badge>
-        );
-      case 'approved':
-        // PRIORIDADE CORRIGIDA: 
-        // 1. AGENDAMENTO ATIVO AGORA = EM EXIBIÇÃO
-        if (isScheduledActiveNow() && isCurrentlyShowing) {
-          console.log(`📍 [SLOT_${slot.slot_position}] Status: EM EXIBIÇÃO (agendamento ativo)`);
-          return (
-            <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
-              <Tv className="h-3 w-3" />
-              <span>EM EXIBIÇÃO</span>
-            </Badge>
-          );
-        } 
-        // 2. VÍDEO BASE SELECIONADO = EM EXIBIÇÃO
-        else if (slot.is_base_video && isCurrentlyShowing) {
-          console.log(`📍 [SLOT_${slot.slot_position}] Status: EM EXIBIÇÃO (vídeo base)`);
-          return (
-            <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
-              <Tv className="h-3 w-3" />
-              <span>EM EXIBIÇÃO</span>
-            </Badge>
-          );
-        } 
-        // 3. TEM AGENDAMENTO MAS NÃO ESTÁ ATIVO AGORA = AGENDADO
-        else if (hasActiveSchedule && !isScheduledActiveNow()) {
-          console.log(`📍 [SLOT_${slot.slot_position}] Status: AGENDADO`);
-          return (
-            <Badge className="bg-blue-600 text-white flex items-center space-x-1 font-bold">
-              <Clock className="h-3 w-3" />
-              <span>AGENDADO</span>
-            </Badge>
-          );
-        } 
-        // 4. VÍDEO ATIVO (SEM AGENDAMENTO)
-        else if (slot.is_active) {
-          console.log(`📍 [SLOT_${slot.slot_position}] Status: Aprovado (ativo)`);
-          return (
-            <Badge className="bg-blue-100 text-blue-800 flex items-center space-x-1">
-              <CheckCircle className="h-3 w-3" />
-              <span>Aprovado</span>
-            </Badge>
-          );
-        } 
-        // 5. APROVADO MAS INATIVO
-        else {
-          console.log(`📍 [SLOT_${slot.slot_position}] Status: Aprovado (inativo)`);
-          return (
-            <Badge className="bg-gray-100 text-gray-600 flex items-center space-x-1">
-              <CheckCircle className="h-3 w-3" />
-              <span>Aprovado</span>
-            </Badge>
-          );
-        }
-      case 'rejected':
-        return (
-          <Badge className="bg-red-100 text-red-800 flex items-center space-x-1">
-            <XCircle className="h-3 w-3" />
-            <span>Rejeitado</span>
-          </Badge>
-        );
-      default:
-        return null;
+
+    // Se está sendo exibido atualmente (base video), tem prioridade máxima
+    if (isCurrentlyShowing) {
+      return <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>;
     }
+
+    if (slot.approval_status === 'rejected') {
+      return <Badge variant="destructive">REJEITADO</Badge>;
+    }
+
+    if (slot.approval_status === 'pending') {
+      return <Badge variant="secondary">PENDENTE</Badge>;
+    }
+
+    if (slot.approval_status === 'approved') {
+      // Se tem agendamento ativo e NÃO está em exibição, mostra AGENDADO
+      if (hasActiveSchedule && !isCurrentlyShowing) {
+        console.log(`✅ [SLOT_${slot.slot_position}] Status AGENDADO aplicado`);
+        return <Badge className="bg-blue-600 text-white">AGENDADO</Badge>;
+      }
+      
+      // Se está ativo mas sem agendamento específico
+      if (slot.is_active) {
+        return <Badge className="bg-yellow-600 text-white">ATIVO</Badge>;
+      }
+      
+      // Apenas aprovado, sem ativação ou agendamento
+      return <Badge variant="outline" className="text-green-600 border-green-600">APROVADO</Badge>;
+    }
+
+    return null;
   };
 
   const getSelectionIcon = (slot: VideoSlot) => {
