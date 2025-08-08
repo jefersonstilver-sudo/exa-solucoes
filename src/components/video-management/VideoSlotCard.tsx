@@ -99,8 +99,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
   };
 
-  // Verificar se tem agendamento configurado (não necessariamente ativo agora)
-  const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.length > 0 && 
+  // CORREÇÃO: Verificar se tem agendamento configurado (não necessariamente ativo agora)
+  const hasActiveSchedule = slot.schedule_rules && 
+    slot.schedule_rules.length > 0 && 
     slot.schedule_rules.some(rule => rule.is_active);
   
   // Verificar se o agendamento está ativo AGORA (verificação temporal)
@@ -124,9 +125,15 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     });
   };
   
-  console.log(`🔍 [VIDEO_SLOT] Slot ${slot.slot_position}:`, {
-    hasActiveSchedule,
+  console.log(`🔍 [VIDEO_SLOT] Slot ${slot.slot_position} DEBUG:`, {
+    videoData: !!slot.video_data,
+    videoId: slot.video_data?.id,
+    approvalStatus: slot.approval_status,
+    hasScheduleRules: !!slot.schedule_rules,
+    rulesCount: slot.schedule_rules?.length || 0,
+    hasActiveSchedule: hasActiveSchedule,
     isScheduledActiveNow: isScheduledActiveNow(),
+    isBaseVideo: slot.is_base_video,
     rules: slot.schedule_rules
   });
 
@@ -135,6 +142,15 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     
     const videoId = slot.video_data.id;
     const isCurrentlyShowing = isVideoCurrentlyDisplaying(videoId);
+    
+    console.log(`📍 [SLOT_${slot.slot_position}] Badge Logic:`, {
+      approvalStatus: slot.approval_status,
+      isScheduledActiveNow: isScheduledActiveNow(),
+      isCurrentlyShowing,
+      isBaseVideo: slot.is_base_video,
+      hasActiveSchedule,
+      isActive: slot.is_active
+    });
     
     switch (slot.approval_status) {
       case 'pending':
@@ -145,38 +161,50 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           </Badge>
         );
       case 'approved':
-        // PRIORIDADE: 1. AGENDAMENTO ATIVO AGORA > 2. VÍDEO BASE > 3. AGENDADO > 4. APROVADO
+        // PRIORIDADE CORRIGIDA: 
+        // 1. AGENDAMENTO ATIVO AGORA = EM EXIBIÇÃO
         if (isScheduledActiveNow() && isCurrentlyShowing) {
+          console.log(`📍 [SLOT_${slot.slot_position}] Status: EM EXIBIÇÃO (agendamento ativo)`);
           return (
             <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
               <Tv className="h-3 w-3" />
               <span>EM EXIBIÇÃO</span>
             </Badge>
           );
-        } else if (slot.is_base_video && !hasActiveSchedule) {
-          // Vídeo base só fica "EM EXIBIÇÃO" se não há agendamento ativo
+        } 
+        // 2. VÍDEO BASE SELECIONADO = EM EXIBIÇÃO
+        else if (slot.is_base_video && isCurrentlyShowing) {
+          console.log(`📍 [SLOT_${slot.slot_position}] Status: EM EXIBIÇÃO (vídeo base)`);
           return (
             <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
               <Tv className="h-3 w-3" />
               <span>EM EXIBIÇÃO</span>
             </Badge>
           );
-        } else if (hasActiveSchedule && !isScheduledActiveNow()) {
-          // AGENDADO: tem schedule mas não está ativo agora
+        } 
+        // 3. TEM AGENDAMENTO MAS NÃO ESTÁ ATIVO AGORA = AGENDADO
+        else if (hasActiveSchedule && !isScheduledActiveNow()) {
+          console.log(`📍 [SLOT_${slot.slot_position}] Status: AGENDADO`);
           return (
             <Badge className="bg-blue-600 text-white flex items-center space-x-1 font-bold">
               <Clock className="h-3 w-3" />
               <span>AGENDADO</span>
             </Badge>
           );
-        } else if (slot.is_active) {
+        } 
+        // 4. VÍDEO ATIVO (SEM AGENDAMENTO)
+        else if (slot.is_active) {
+          console.log(`📍 [SLOT_${slot.slot_position}] Status: Aprovado (ativo)`);
           return (
             <Badge className="bg-blue-100 text-blue-800 flex items-center space-x-1">
               <CheckCircle className="h-3 w-3" />
               <span>Aprovado</span>
             </Badge>
           );
-        } else {
+        } 
+        // 5. APROVADO MAS INATIVO
+        else {
+          console.log(`📍 [SLOT_${slot.slot_position}] Status: Aprovado (inativo)`);
           return (
             <Badge className="bg-gray-100 text-gray-600 flex items-center space-x-1">
               <CheckCircle className="h-3 w-3" />

@@ -50,9 +50,18 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
       
       const success = await videoScheduleManagementService.updateVideoScheduleRules(videoId, scheduleRules);
       
-      if (success && onRefreshSlots) {
-        // Refresh slots para atualizar o status
-        await onRefreshSlots();
+      console.log('📅 [VIDEO_MGMT] Resultado do agendamento:', success);
+      
+      if (success) {
+        // CORREÇÃO: Sempre recarregar após sucesso para atualizar status
+        if (onRefreshSlots) {
+          console.log('🔄 [VIDEO_MGMT] Recarregando slots após agendamento...');
+          await onRefreshSlots();
+          console.log('✅ [VIDEO_MGMT] Slots recarregados com sucesso');
+        }
+        toast.success('Agendamento salvo com sucesso!');
+      } else {
+        toast.error('Falha ao salvar agendamento');
       }
       
     } catch (error) {
