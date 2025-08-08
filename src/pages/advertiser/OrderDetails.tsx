@@ -70,6 +70,7 @@ const OrderDetails = () => {
     selectVideoForDisplay,
     activateVideo,
     removeVideo,
+    setBaseVideo,
     uploadVideo,
     refreshSlots,
     isSuccessOpen,
@@ -277,10 +278,7 @@ const OrderDetails = () => {
               onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
               onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
               onDownload={handleVideoDownload}
-              onSetBaseVideo={(slotId) => handleVideoAction(async () => {
-                // TODO: Implementar setBaseVideo
-                console.log('Definindo vídeo base:', slotId);
-              })}
+              onSetBaseVideo={(slotId) => handleVideoAction(() => setBaseVideo(slotId))}
               onRefreshSlots={refreshSlots}
               orderId={id || ''}
             />
