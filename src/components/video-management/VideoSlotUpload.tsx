@@ -52,9 +52,9 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       return;
     }
 
-    // Validar tamanho (500MB max)
-    if (file.size > 500 * 1024 * 1024) {
-      alert('O arquivo deve ter no máximo 500MB');
+    // Validar tamanho (100MB max)
+    if (file.size > 100 * 1024 * 1024) {
+      alert('O arquivo deve ter no máximo 100MB');
       return;
     }
 
@@ -98,7 +98,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           <Video className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-gray-600 font-medium mb-2">Clique para enviar seu vídeo</p>
           <p className="text-sm text-gray-500">
-            Formatos aceitos: MP4, MOV, AVI (máx. 500MB)
+            Formatos aceitos: MP4, MOV, AVI (máx. 100MB)
           </p>
         </div>
         

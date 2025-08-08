@@ -137,12 +137,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
   // Download de vídeo
   const handleDownload = (videoUrl: string, fileName: string) => {
-    const link = document.createElement('a');
-    link.href = videoUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    window.open(videoUrl, '_blank');
   };
 
   // Definir vídeo base
