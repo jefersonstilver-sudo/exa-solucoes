@@ -2,6 +2,7 @@
 import React from 'react';
 import { VideoSlotCard } from './VideoSlotCard';
 import { VideoSlotStatus } from './VideoSlotStatus';
+import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 
 interface VideoSlot {
   id?: string;
@@ -51,6 +52,12 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   onScheduleVideo,
   orderId
 }) => {
+  const { currentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
+
+  // Contar vídeos aprovados
+  const totalApprovedVideos = videoSlots.filter(slot => 
+    slot.approval_status === 'approved'
+  ).length;
   return (
     <div className="space-y-4">
       <VideoSlotStatus videoSlots={videoSlots} />
@@ -70,6 +77,8 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             onSetBaseVideo={onSetBaseVideo}
             onScheduleVideo={onScheduleVideo}
             orderId={orderId}
+            currentDisplayVideoId={currentVideo?.video_id}
+            totalApprovedVideos={totalApprovedVideos}
           />
         ))}
       </div>

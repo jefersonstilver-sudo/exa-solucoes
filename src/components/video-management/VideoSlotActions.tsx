@@ -58,6 +58,7 @@ interface VideoSlotActionsProps {
   onSelectForDisplay: (slotId: string) => void;
   onDownload: (videoUrl: string, fileName: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
+  totalApprovedVideos: number;
 }
 
 export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
@@ -66,7 +67,8 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   onRemove,
   onSelectForDisplay,
   onDownload,
-  onScheduleVideo
+  onScheduleVideo,
+  totalApprovedVideos
 }) => {
   const [showApprovalAlert, setShowApprovalAlert] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -136,8 +138,8 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Download className="h-4 w-4" />
         </Button>
 
-        {/* Agendar Vídeo - apenas para vídeos aprovados */}
-        {isApproved && (
+        {/* Agendar Vídeo - apenas para vídeos aprovados e quando há mais de 1 vídeo */}
+        {isApproved && totalApprovedVideos > 1 && (
           <Button
             variant="outline"
             size="sm"

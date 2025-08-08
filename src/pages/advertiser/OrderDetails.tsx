@@ -226,8 +226,6 @@ const OrderDetails = () => {
           hasStarted={contractStatus.hasStarted}
         />
 
-        {/* Status de Exibição */}
-        <VideoDisplayStatus orderId={orderDetails.id} />
 
         {/* Locais Selecionados - Show only if we have building data */}
         {hasLocationData && displayBuildingIds.length > 0 && (

@@ -62,6 +62,8 @@ interface VideoSlotCardProps {
   onSetBaseVideo?: (slotId: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
   orderId: string;
+  currentDisplayVideoId?: string;
+  totalApprovedVideos: number;
 }
 
 export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
@@ -75,7 +77,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   onDownload,
   onSetBaseVideo,
   onScheduleVideo,
-  orderId
+  orderId,
+  currentDisplayVideoId,
+  totalApprovedVideos
 }) => {
   const { isVideoCurrentlyDisplaying, getCurrentDisplayType } = useCurrentVideoDisplay({
     orderId,
@@ -353,6 +357,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               onSelectForDisplay={onSelectForDisplay}
               onDownload={handleDownload}
               onScheduleVideo={onScheduleVideo}
+              totalApprovedVideos={totalApprovedVideos}
             />
           </div>
         ) : (

@@ -117,37 +117,6 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
           ))}
         </div>
         
-        {buildings.length > 0 && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Resumo da Seleção</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-blue-600 font-medium">{buildings.length}</span>
-                <div className="text-blue-700">Locais</div>
-              </div>
-              {totalUnidades > 0 && (
-                <div>
-                  <span className="text-blue-600 font-medium">{totalUnidades.toLocaleString()}</span>
-                  <div className="text-blue-700">Unidades</div>
-                </div>
-              )}
-              {totalPublico > 0 && (
-                <div>
-                  <span className="text-blue-600 font-medium">{totalPublico.toLocaleString()}</span>
-                  <div className="text-blue-700">Público Estimado</div>
-                </div>
-              )}
-              <div>
-                <span className="text-blue-600 font-medium">
-                  {buildings.map(b => b.bairro).filter((value, index, self) => self.indexOf(value) === index).length}
-                </span>
-                <div className="text-blue-700">
-                  {buildings.map(b => b.bairro).filter((value, index, self) => self.indexOf(value) === index).length === 1 ? 'Bairro' : 'Bairros'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
