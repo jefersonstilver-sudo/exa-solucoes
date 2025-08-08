@@ -19,10 +19,53 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
   return new Promise((resolve) => {
     console.log('🔍 Iniciando validação do arquivo:', file.name, 'Tamanho:', file.size);
     
+    const METADATA_TIMEOUT_MS = 5000; // Timeout para evitar travas na leitura de metadados
     const video = document.createElement('video');
     const url = URL.createObjectURL(file);
+    let resolved = false;
+
+    const clearAll = () => {
+      try {
+        video.removeAttribute('src');
+        video.load();
+      } catch {}
+      URL.revokeObjectURL(url);
+    };
+
+    const finalize = (result: VideoValidationResult) => {
+      if (resolved) return;
+      resolved = true;
+      clearAll();
+      resolve(result);
+    };
+
+    // Fallback rápido caso metadados não carreguem a tempo
+    const timeoutId = window.setTimeout(() => {
+      console.warn('⏱️ [VALIDATION] Timeout ao carregar metadados. Usando validação rápida.');
+      const allowedTypes = ['video/mp4', 'video/quicktime', 'video/avi', 'video/mov'];
+      const isTypeOk = allowedTypes.includes(file.type);
+      const isSizeOk = file.size <= 100 * 1024 * 1024; // 100MB
+
+      const errors: string[] = [];
+      if (!isTypeOk) errors.push('Formato deve ser MP4, MOV ou AVI');
+      if (!isSizeOk) errors.push('Arquivo deve ter no máximo 100MB');
+
+      finalize({
+        valid: isTypeOk && isSizeOk,
+        errors,
+        metadata: {
+          duration: 0,
+          width: 0,
+          height: 0,
+          orientation: 'horizontal',
+          size: file.size,
+          format: file.type
+        }
+      });
+    }, METADATA_TIMEOUT_MS);
     
     video.onloadedmetadata = () => {
+      window.clearTimeout(timeoutId);
       const duration = Math.round(video.duration);
       const width = video.videoWidth;
       const height = video.videoHeight;
@@ -31,7 +74,7 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
       
       console.log('📊 Metadados do vídeo:', { duration, width, height, orientation });
       
-      // Validações
+      // Validações estritas somente quando há metadados
       if (duration > 15) {
         errors.push('Vídeo deve ter no máximo 15 segundos');
       }
@@ -44,9 +87,7 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
         errors.push('Vídeo deve ter no máximo 100MB');
       }
       
-      URL.revokeObjectURL(url);
-      
-      resolve({
+      finalize({
         valid: errors.length === 0,
         errors,
         metadata: {
@@ -61,9 +102,9 @@ export const validateVideoFile = (file: File): Promise<VideoValidationResult> =>
     };
     
     video.onerror = (e) => {
+      window.clearTimeout(timeoutId);
       console.error('❌ Erro ao processar vídeo:', e);
-      URL.revokeObjectURL(url);
-      resolve({
+      finalize({
         valid: false,
         errors: ['Erro ao processar vídeo'],
         metadata: {

@@ -24,6 +24,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
   // Auto-hide controls timer
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const centerButtonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const didAutoReloadRef = useRef(false);
 
   // Create video controls
   const {
@@ -59,6 +60,7 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     setIsLoading(true);
     setErrorDetails('');
     setIsElementReady(false);
+    didAutoReloadRef.current = false;
 
     // Verificar URL primeiro
     if (!isValidVideoUrl(src)) {
@@ -72,23 +74,70 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
     // Timeout progressivo baseado no contexto
     const getTimeoutDuration = () => {
       // Para URLs que parecem ser do Supabase, dar mais tempo
-      if (src.includes('supabase.co')) return 15000; // 15s para Supabase
+      if (src.includes('supabase.co')) return 25000; // 25s para Supabase
       
       // Para arquivos grandes (estimado pelo URL), dar mais tempo
       if (src.includes('video') || src.includes('.mp4') || src.includes('.mov')) {
-        return 12000; // 12s para vídeos
+        return 20000; // 20s para vídeos
       }
       
-      return 10000; // 10s padrão
+      return 15000; // 15s padrão
     };
     
     const timeoutDuration = getTimeoutDuration();
     
     const emergencyTimeout = setTimeout(() => {
-      console.warn(`⚠️ [VIDEO_PLAYER] Timeout após ${timeoutDuration}ms - tentando reload`);
-      setIsLoading(false);
-      setHasError(true);
-      setErrorDetails(`Vídeo demorou ${timeoutDuration/1000}s para carregar. Clique em "Tentar Novamente".`);
+      console.warn(`⚠️ [VIDEO_PLAYER] Timeout após ${timeoutDuration}ms`);
+      // Tentar um auto-reload UMA vez antes de exibir erro
+      if (videoRef.current && !didAutoReloadRef.current) {
+        didAutoReloadRef.current = true;
+        try {
+          const currentT = videoRef.current.currentTime || 0;
+          const originalSrc = videoRef.current.src;
+          setIsLoading(true);
+          setHasError(false);
+          setErrorDetails('Reconectando ao vídeo...');
+          // Reload simples
+          videoRef.current.load();
+          // Fallback: forçar redefinição do src após 200ms
+          setTimeout(() => {
+            if (videoRef.current && videoRef.current.readyState < 2) {
+              videoRef.current.src = '';
+              setTimeout(() => {
+                if (videoRef.current) {
+                  videoRef.current.src = originalSrc;
+                  videoRef.current.load();
+                  videoRef.current.addEventListener('loadedmetadata', () => {
+                    if (videoRef.current && currentT > 0) {
+                      videoRef.current.currentTime = currentT;
+                    }
+                  }, { once: true });
+                }
+              }, 100);
+            }
+          }, 200);
+
+          // Segundo timeout após retry
+          const secondTimeout = setTimeout(() => {
+            if (!videoRef.current || videoRef.current.readyState < 2) {
+              setIsLoading(false);
+              setHasError(true);
+              setErrorDetails(`Vídeo demorou ${timeoutDuration/1000 + 8}s para carregar. Clique em "Tentar Novamente".`);
+            }
+          }, 8000);
+
+          // Limpeza do segundo timeout quando o vídeo começar a carregar
+          videoRef.current.addEventListener('loadeddata', () => clearTimeout(secondTimeout), { once: true });
+        } catch (e) {
+          setIsLoading(false);
+          setHasError(true);
+          setErrorDetails(`Falha ao reconectar: ${e instanceof Error ? e.message : 'erro desconhecido'}`);
+        }
+      } else {
+        setIsLoading(false);
+        setHasError(true);
+        setErrorDetails(`Vídeo demorou ${timeoutDuration/1000}s para carregar. Clique em "Tentar Novamente".`);
+      }
     }, timeoutDuration);
 
     // Aguardar elemento estar pronto
