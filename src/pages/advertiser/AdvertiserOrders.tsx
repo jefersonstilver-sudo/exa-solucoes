@@ -4,6 +4,7 @@ import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
+import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -20,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 const AdvertiserOrders = () => {
@@ -30,6 +31,24 @@ const AdvertiserOrders = () => {
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [videoDisplayPopup, setVideoDisplayPopup] = useState<{ isOpen: boolean; orderId: string | null }>({
+    isOpen: false,
+    orderId: null
+  });
+
+  // Listen for video display popup events
+  useEffect(() => {
+    const handleOpenVideoDisplay = (event: CustomEvent) => {
+      const { orderId } = event.detail;
+      setVideoDisplayPopup({ isOpen: true, orderId });
+    };
+
+    window.addEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
+    
+    return () => {
+      window.removeEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
+    };
+  }, []);
 
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
   if (isMobile) {
@@ -327,6 +346,15 @@ const AdvertiserOrders = () => {
             <OrderCard key={`${item.type}-${item.id}`} item={item} />
           ))}
         </div>
+      )}
+
+      {/* Video Display Popup */}
+      {videoDisplayPopup.orderId && (
+        <VideoDisplayPopup
+          orderId={videoDisplayPopup.orderId}
+          isOpen={videoDisplayPopup.isOpen}
+          onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
+        />
       )}
     </div>
   );

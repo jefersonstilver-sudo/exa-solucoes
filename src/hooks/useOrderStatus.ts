@@ -9,7 +9,8 @@ import {
   XCircle,
   AlertTriangle,
   CreditCard,
-  Eye
+  Eye,
+  Monitor
 } from 'lucide-react';
 
 export interface OrderStatusInfo {
@@ -111,9 +112,13 @@ export const useOrderStatus = (order: any) => {
             bgColor: 'bg-green-600 border-green-700',
             icon: Play,
             action: {
-              label: 'Ver Relatório',
+              label: 'Em Exibição',
               variant: 'outline',
-              href: `/anunciante/pedido/${order.id}#relatorio`
+              onClick: () => {
+                // Esta ação será interceptada pelo componente pai para abrir o popup
+                const event = new CustomEvent('openVideoDisplay', { detail: { orderId: order.id } });
+                window.dispatchEvent(event);
+              }
             }
           };
         }
@@ -133,9 +138,13 @@ export const useOrderStatus = (order: any) => {
           bgColor: 'bg-green-600 border-green-700',
           icon: Play,
           action: {
-            label: 'Ver Relatório',
+            label: 'Em Exibição',
             variant: 'outline',
-            href: `/anunciante/pedido/${order.id}#relatorio`
+            onClick: () => {
+              // Esta ação será interceptada pelo componente pai para abrir o popup
+              const event = new CustomEvent('openVideoDisplay', { detail: { orderId: order.id } });
+              window.dispatchEvent(event);
+            }
           }
         };
 
