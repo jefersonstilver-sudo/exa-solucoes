@@ -99,6 +99,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
   };
 
+  // Verificar se tem agendamento ativo - MOVIDO PARA CIMA
+  const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.length > 0 && 
+    slot.schedule_rules.some(rule => rule.is_active);
+
   const getStatusBadge = () => {
     if (!slot.video_data) return null;
     
@@ -114,7 +118,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           </Badge>
         );
       case 'approved':
-        // Status dinâmico baseado em exibição atual
+        // PRIORIDADE: 1. EM EXIBIÇÃO > 2. AGENDADO > 3. VÍDEO BASE > 4. APROVADO
         if (isCurrentlyShowing) {
           return (
             <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
@@ -124,7 +128,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           );
         } else if (hasActiveSchedule) {
           return (
-            <Badge className="bg-blue-500 text-white flex items-center space-x-1">
+            <Badge className="bg-blue-600 text-white flex items-center space-x-1 font-bold">
               <Clock className="h-3 w-3" />
               <span>AGENDADO</span>
             </Badge>
@@ -230,9 +234,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     return false;
   };
 
-  // Verificar se tem agendamento ativo
-  const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.some(rule => rule.is_active);
-  
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const cardClasses = `transition-all duration-200 bg-white border ${
     isScheduledAndActive()
