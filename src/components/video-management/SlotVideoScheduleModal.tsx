@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,19 +86,26 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
     updateRule(ruleIndex, 'days_of_week', days);
   };
 
+  // Validação de regra individual
+  const isRuleValid = (rule: ScheduleRule) => {
+    const hasDays = rule.days_of_week.length > 0;
+    const hasValidTime = rule.is_all_day || (rule.start_time && rule.end_time && rule.start_time < rule.end_time);
+    return hasDays && hasValidTime;
+  };
+
+  // Calcular se todas as regras são válidas em tempo real
+  const canSave = useMemo(() => {
+    return scheduleRules.length > 0 && scheduleRules.every(rule => isRuleValid(rule));
+  }, [scheduleRules]);
+
   const validateRules = (): boolean => {
-    for (const rule of scheduleRules) {
-      if (rule.days_of_week.length === 0) {
-        toast.error('Selecione pelo menos um dia da semana para cada regra');
-        return false;
-      }
-      
-      // Pular validação de horários se for "Dia Inteiro"
-      if (!rule.is_all_day && rule.start_time >= rule.end_time) {
-        toast.error('Horário de início deve ser menor que horário de fim');
-        return false;
-      }
+    const invalidRules = scheduleRules.filter((rule) => !isRuleValid(rule));
+
+    if (invalidRules.length > 0) {
+      toast.error('Por favor, complete todas as regras de agendamento corretamente');
+      return false;
     }
+
     return true;
   };
 
@@ -172,10 +179,19 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
               </div>
             )}
 
-            {scheduleRules.map((rule, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
+            {scheduleRules.map((rule, index) => {
+              const ruleIsValid = isRuleValid(rule);
+              return (
+              <div key={index} className={`border rounded-lg p-4 space-y-4 ${ruleIsValid ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'}`}>
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm text-gray-700">Regra {index + 1}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm text-gray-700">Regra {index + 1}</h4>
+                    {ruleIsValid ? (
+                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">✓ Válida</span>
+                    ) : (
+                      <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">⚠ Incompleta</span>
+                    )}
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
@@ -190,7 +206,9 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
                 {/* Dias da Semana + Toggle Dia Inteiro */}
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <Label className="text-sm font-medium mb-2 block">Dias da Semana</Label>
+                    <Label className={`text-sm font-medium mb-2 block ${rule.days_of_week.length === 0 ? 'text-orange-600' : ''}`}>
+                      Dias da Semana {rule.days_of_week.length === 0 && '(obrigatório)'}
+                    </Label>
                     <div className="flex flex-wrap gap-2">
                       {DAYS_OF_WEEK.map((day) => {
                         const isSelected = rule.days_of_week.includes(day.value);
@@ -226,8 +244,8 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
                 {!rule.is_all_day && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor={`start-${index}`} className="text-sm font-medium">
-                        Horário Início
+                      <Label htmlFor={`start-${index}`} className={`text-sm font-medium ${!rule.start_time ? 'text-orange-600' : ''}`}>
+                        Horário Início {!rule.start_time && '(obrigatório)'}
                       </Label>
                       <Input
                         id={`start-${index}`}
@@ -238,8 +256,8 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
                       />
                     </div>
                     <div>
-                      <Label htmlFor={`end-${index}`} className="text-sm font-medium">
-                        Horário Fim
+                      <Label htmlFor={`end-${index}`} className={`text-sm font-medium ${!rule.end_time ? 'text-orange-600' : ''}`}>
+                        Horário Fim {!rule.end_time && '(obrigatório)'}
                       </Label>
                       <Input
                         id={`end-${index}`}
@@ -274,7 +292,8 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
                   </Label>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Botões */}
@@ -290,7 +309,7 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
             <Button
               type="button"
               onClick={handleSave}
-              disabled={saving}
+              disabled={!canSave || saving}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {saving ? 'Salvando...' : 'Salvar Agendamento'}

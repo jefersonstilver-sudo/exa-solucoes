@@ -5,7 +5,7 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
   try {
     console.log('⭐ [VIDEO_BASE] Definindo vídeo base:', slotId);
     
-    const { data, error } = await supabase.rpc('set_base_video', {
+    const { data, error } = await supabase.rpc('set_base_video_enhanced', {
       p_pedido_video_id: slotId
     });
 
@@ -14,13 +14,24 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       throw error;
     }
 
-    if (data) {
+    console.log('📋 [VIDEO_BASE] Resposta da função:', data);
+
+    // Type guard para a resposta da função
+    const response = data as { success?: boolean; schedules_deactivated?: boolean; new_base_slot?: number; error?: string } | null;
+
+    if (response?.success) {
       console.log('✅ [VIDEO_BASE] Vídeo base definido com sucesso');
-      toast.success('✅ Vídeo definido como base!');
+      
+      if (response.schedules_deactivated) {
+        toast.success(`✅ Vídeo do Slot ${response.new_base_slot} definido como principal! Agendamento desativado automaticamente.`);
+      } else {
+        toast.success(`✅ Vídeo do Slot ${response.new_base_slot} definido como principal!`);
+      }
+      
       return true;
     } else {
-      console.error('❌ [VIDEO_BASE] Função retornou falso - vídeo não aprovado?');
-      toast.error('❌ Apenas vídeos aprovados podem ser definidos como base');
+      console.error('❌ [VIDEO_BASE] Erro retornado pela função:', response?.error);
+      toast.error(`❌ ${response?.error || 'Erro ao definir vídeo base'}`);
       return false;
     }
   } catch (error) {

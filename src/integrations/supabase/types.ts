@@ -1304,6 +1304,42 @@ export type Database = {
         }
         Relationships: []
       }
+      video_management_logs: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          pedido_id: string
+          slot_from: number | null
+          slot_to: number | null
+          video_from_id: string | null
+          video_to_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          pedido_id: string
+          slot_from?: number | null
+          slot_to?: number | null
+          video_from_id?: string | null
+          video_to_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          pedido_id?: string
+          slot_from?: number | null
+          slot_to?: number | null
+          video_from_id?: string | null
+          video_to_id?: string | null
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           altura: number | null
@@ -1744,6 +1780,10 @@ export type Database = {
       set_base_video: {
         Args: { p_pedido_video_id: string }
         Returns: boolean
+      }
+      set_base_video_enhanced: {
+        Args: { p_pedido_video_id: string }
+        Returns: Json
       }
       switch_video_selection: {
         Args: { p_pedido_video_id: string }

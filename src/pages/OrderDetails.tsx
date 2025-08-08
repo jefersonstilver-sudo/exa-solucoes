@@ -7,6 +7,7 @@ import { useVideoManagement } from '@/hooks/useVideoManagement';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
+import { VideoManagementLogs } from '@/components/video-management/VideoManagementLogs';
 import { Loader2, Package, AlertTriangle } from 'lucide-react';
 
 const OrderDetails: React.FC = () => {
@@ -110,6 +111,9 @@ const OrderDetails: React.FC = () => {
           onSetBaseVideo={videoManagement.handleSetBaseVideo}
           orderId={orderId || ''}
         />
+
+        {/* Log de Agendamentos */}
+        <VideoManagementLogs orderId={orderId || ''} />
       </div>
     </Layout>
   );
