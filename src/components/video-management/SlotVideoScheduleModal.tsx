@@ -14,6 +14,7 @@ interface ScheduleRule {
   start_time: string;
   end_time: string;
   is_active: boolean;
+  is_all_day?: boolean;
 }
 
 interface SlotVideoScheduleModalProps {
@@ -53,7 +54,8 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
       days_of_week: [],
       start_time: '09:00',
       end_time: '18:00',
-      is_active: true
+      is_active: true,
+      is_all_day: false
     };
     setScheduleRules([...scheduleRules, newRule]);
   };
@@ -65,6 +67,13 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
   const updateRule = (index: number, field: keyof ScheduleRule, value: any) => {
     const updated = [...scheduleRules];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // Se ativou "Dia Inteiro", configurar horários automaticamente
+    if (field === 'is_all_day' && value === true) {
+      updated[index].start_time = '00:00';
+      updated[index].end_time = '23:59';
+    }
+    
     setScheduleRules(updated);
   };
 
@@ -84,7 +93,8 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
         return false;
       }
       
-      if (rule.start_time >= rule.end_time) {
+      // Pular validação de horários se for "Dia Inteiro"
+      if (!rule.is_all_day && rule.start_time >= rule.end_time) {
         toast.error('Horário de início deve ser menor que horário de fim');
         return false;
       }
@@ -170,59 +180,77 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
                   </Button>
                 </div>
 
-                {/* Dias da Semana */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Dias da Semana</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {DAYS_OF_WEEK.map((day) => {
-                      const isSelected = rule.days_of_week.includes(day.value);
-                      return (
-                        <Badge
-                          key={day.value}
-                          variant={isSelected ? "default" : "outline"}
-                          className={`cursor-pointer ${isSelected ? 'bg-blue-600' : ''}`}
-                          onClick={() => toggleDay(index, day.value)}
-                        >
-                          {day.label}
-                        </Badge>
-                      );
-                    })}
+                {/* Dias da Semana + Toggle Dia Inteiro */}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium mb-2 block">Dias da Semana</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS_OF_WEEK.map((day) => {
+                        const isSelected = rule.days_of_week.includes(day.value);
+                        return (
+                          <Badge
+                            key={day.value}
+                            variant={isSelected ? "default" : "outline"}
+                            className={`cursor-pointer ${isSelected ? 'bg-blue-600' : ''}`}
+                            onClick={() => toggleDay(index, day.value)}
+                          >
+                            {day.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  <div className="ml-4 mt-6">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`all-day-${index}`}
+                        checked={rule.is_all_day || false}
+                        onCheckedChange={(checked) => updateRule(index, 'is_all_day', checked)}
+                      />
+                      <Label htmlFor={`all-day-${index}`} className="text-sm font-medium">
+                        Dia Inteiro
+                      </Label>
+                    </div>
                   </div>
                 </div>
 
-                {/* Horários */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor={`start-${index}`} className="text-sm font-medium">
-                      Horário Início
-                    </Label>
-                    <Input
-                      id={`start-${index}`}
-                      type="time"
-                      value={rule.start_time}
-                      onChange={(e) => updateRule(index, 'start_time', e.target.value)}
-                      className="mt-1"
-                    />
+                {/* Horários - só aparecem se NÃO for dia inteiro */}
+                {!rule.is_all_day && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor={`start-${index}`} className="text-sm font-medium">
+                        Horário Início
+                      </Label>
+                      <Input
+                        id={`start-${index}`}
+                        type="time"
+                        value={rule.start_time}
+                        onChange={(e) => updateRule(index, 'start_time', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`end-${index}`} className="text-sm font-medium">
+                        Horário Fim
+                      </Label>
+                      <Input
+                        id={`end-${index}`}
+                        type="time"
+                        value={rule.end_time}
+                        onChange={(e) => updateRule(index, 'end_time', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor={`end-${index}`} className="text-sm font-medium">
-                      Horário Fim
-                    </Label>
-                    <Input
-                      id={`end-${index}`}
-                      type="time"
-                      value={rule.end_time}
-                      onChange={(e) => updateRule(index, 'end_time', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
+                )}
 
                 {/* Preview da Regra */}
                 {rule.days_of_week.length > 0 && (
                   <div className="bg-gray-50 rounded p-3">
                     <p className="text-sm text-gray-700">
-                      <strong>Preview:</strong> {formatDaysText(rule.days_of_week)} das {rule.start_time} às {rule.end_time}
+                      <strong>Preview:</strong> {formatDaysText(rule.days_of_week)} 
+                      {rule.is_all_day ? ' - Dia inteiro' : ` das ${rule.start_time} às ${rule.end_time}`}
                     </p>
                   </div>
                 )}
