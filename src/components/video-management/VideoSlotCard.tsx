@@ -182,12 +182,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         return <Badge className="bg-blue-600 text-white">AGENDADO</Badge>;
       }
       
-      // Se está ativo mas sem agendamento específico
-      if (slot.is_active) {
-        return <Badge className="bg-yellow-600 text-white">ATIVO</Badge>;
-      }
-      
-      // Apenas aprovado, sem ativação ou agendamento
+      // Apenas aprovado (não mostrar ATIVO incorretamente)
       return <Badge variant="outline" className="text-green-600 border-green-600">APROVADO</Badge>;
     }
 

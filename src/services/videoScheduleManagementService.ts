@@ -81,6 +81,15 @@ async updateVideoScheduleRules(
 
         // Criar schedule de vídeo usando a posição correta do slot
         const correctSlotPosition = slotPosition || videoInfo.slot_position || 1;
+        
+        console.log('📅 [SCHEDULE_MGMT] Creating video schedule:', {
+          campaignId: newCampaign.id,
+          videoId,
+          slotPosition: correctSlotPosition,
+          parametroSlotPosition: slotPosition,
+          videoInfoSlotPosition: videoInfo.slot_position
+        });
+        
         const { data: newVideoSchedule, error: scheduleError } = await supabase
           .from('campaign_video_schedules')
           .insert({
