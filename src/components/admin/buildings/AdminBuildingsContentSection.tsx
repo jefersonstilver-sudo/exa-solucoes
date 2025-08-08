@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminBuildingCard from './AdminBuildingCard';
 import BuildingsEmptyState from './BuildingsEmptyState';
+import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
 
 interface AdminBuildingsContentSectionProps {
   buildings: any[];
@@ -31,6 +32,8 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
 
   const activeBuildings = filteredBuildings.filter(b => b.status === 'ativo');
   const inactiveBuildings = filteredBuildings.filter(b => b.status === 'inativo');
+  const buildingIds = filteredBuildings.map(b => b.id);
+  const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);
 
   return (
     <Card>
@@ -57,6 +60,7 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
                 onEdit={onEdit}
                 onImageManager={onImageManager}
                 onDelete={onDelete}
+                videoCount={videoCounts[building.id] ?? 0}
               />
             ))
           )}

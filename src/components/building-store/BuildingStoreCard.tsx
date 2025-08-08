@@ -104,6 +104,16 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
           <div className="lg:w-2/5 relative overflow-hidden">
             <BuildingCardImage building={building} />
             
+            {/* Em exibição: contador (desktop) */}
+            {typeof videoCount === 'number' && (
+              <div className="absolute bottom-3 left-3 z-10">
+                <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur px-2 py-1 rounded-full shadow-sm text-xs font-medium text-gray-800">
+                  <PlayCircle className="w-3.5 h-3.5 text-green-600" />
+                  <span>Em exibição: {videoCount}</span>
+                </div>
+              </div>
+            )}
+            
             {/* Badge de prioridade se for high-end */}
             {building.padrao_publico === 'alto' && (
               <motion.div

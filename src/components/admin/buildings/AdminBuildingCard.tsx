@@ -13,6 +13,7 @@ interface AdminBuildingCardProps {
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
   onViewCampaigns?: (building: any) => void;
+  videoCount?: number;
 }
 
 const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
@@ -21,7 +22,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   onEdit,
   onImageManager,
   onDelete,
-  onViewCampaigns
+  onViewCampaigns,
+  videoCount
 }) => {
   console.log('🏢 [ADMIN BUILDING CARD] Renderizando prédio:', building.nome, 'Status:', building.status);
 
@@ -93,6 +95,12 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 </div>
               )}
             </div>
+            {typeof videoCount === 'number' && (
+              <div className="mt-2 flex items-center text-sm text-gray-700">
+                <Video className="h-4 w-4 mr-1 text-green-600" />
+                <span>Em exibição: {videoCount}</span>
+              </div>
+            )}
           </div>
           
           {/* Info Section */}
