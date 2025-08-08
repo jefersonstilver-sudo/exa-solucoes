@@ -12,13 +12,15 @@ import {
   Clock,
   AlertCircle,
   Lock,
-  Shield
+  Shield,
+  Tv
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
 import { VideoSlotActions } from './VideoSlotActions';
 import { VideoSlotUpload } from './VideoSlotUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 
 interface VideoSlot {
   id?: string;
@@ -59,6 +61,7 @@ interface VideoSlotCardProps {
   onDownload?: (videoUrl: string, fileName: string) => void;
   onSetBaseVideo?: (slotId: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
+  orderId: string;
 }
 
 export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
@@ -71,8 +74,13 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   onSelectForDisplay,
   onDownload,
   onSetBaseVideo,
-  onScheduleVideo
+  onScheduleVideo,
+  orderId
 }) => {
+  const { isVideoCurrentlyDisplaying, getCurrentDisplayType } = useCurrentVideoDisplay({
+    orderId,
+    enabled: !!slot.video_data?.id
+  });
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved':
@@ -86,34 +94,61 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
   };
 
-  const getStatusBadge = (slot: VideoSlot) => {
-    // Só mostra "SELECIONADO" se realmente está ativo no momento
-    if (slot.approval_status === 'approved' && isScheduledAndActive()) {
-      return <Badge className="bg-green-500 text-white">SELECIONADO</Badge>;
-    }
+  const getStatusBadge = () => {
+    if (!slot.video_data) return null;
     
-    if (slot.approval_status === 'approved') {
-      return <Badge className="bg-green-100 text-green-800 flex items-center space-x-1">
-        <Shield className="h-3 w-3" />
-        <span>Aprovado</span>
-      </Badge>;
-    }
+    const videoId = slot.video_data.id;
+    const isCurrentlyShowing = isVideoCurrentlyDisplaying(videoId);
     
-    if (slot.approval_status === 'rejected') {
-      return <Badge className="bg-red-100 text-red-800 flex items-center space-x-1">
-        <XCircle className="h-3 w-3" />
-        <span>Rejeitado</span>
-      </Badge>;
+    switch (slot.approval_status) {
+      case 'pending':
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 flex items-center space-x-1">
+            <Clock className="h-3 w-3" />
+            <span>Aguardando Aprovação</span>
+          </Badge>
+        );
+      case 'approved':
+        // Status dinâmico baseado em exibição atual
+        if (isCurrentlyShowing) {
+          return (
+            <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
+              <Tv className="h-3 w-3" />
+              <span>EM EXIBIÇÃO</span>
+            </Badge>
+          );
+        } else if (slot.is_base_video) {
+          return (
+            <Badge className="bg-amber-100 text-amber-800 flex items-center space-x-1">
+              <Star className="h-3 w-3" />
+              <span>Vídeo Base</span>
+            </Badge>
+          );
+        } else if (slot.is_active) {
+          return (
+            <Badge className="bg-blue-100 text-blue-800 flex items-center space-x-1">
+              <CheckCircle className="h-3 w-3" />
+              <span>Aprovado</span>
+            </Badge>
+          );
+        } else {
+          return (
+            <Badge className="bg-gray-100 text-gray-600 flex items-center space-x-1">
+              <CheckCircle className="h-3 w-3" />
+              <span>Aprovado</span>
+            </Badge>
+          );
+        }
+      case 'rejected':
+        return (
+          <Badge className="bg-red-100 text-red-800 flex items-center space-x-1">
+            <XCircle className="h-3 w-3" />
+            <span>Rejeitado</span>
+          </Badge>
+        );
+      default:
+        return null;
     }
-    
-    if (slot.approval_status === 'pending') {
-      return <Badge className="bg-yellow-100 text-yellow-800 flex items-center space-x-1">
-        <Clock className="h-3 w-3" />
-        <span>Pendente</span>
-      </Badge>;
-    }
-    
-    return null;
   };
 
   const getSelectionIcon = (slot: VideoSlot) => {
@@ -223,7 +258,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {slot.video_data && getStatusBadge(slot)}
+            {getStatusBadge()}
             {slot.is_base_video && (
               <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
                 VÍDEO BASE

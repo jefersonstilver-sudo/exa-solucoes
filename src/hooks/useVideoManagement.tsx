@@ -6,6 +6,7 @@ import { uploadVideo } from '@/services/videoUploadService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
 import { VideoSlot } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
+import { setBaseVideo } from '@/services/videoBaseService';
 
 interface UseVideoManagementProps {
   orderId: string;
@@ -144,6 +145,21 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     document.body.removeChild(link);
   };
 
+  // Definir vídeo base
+  const handleSetBaseVideo = async (slotId: string) => {
+    try {
+      const success = await setBaseVideo(slotId);
+      if (success) {
+        // Recarregar slots para refletir mudanças
+        const slots = await loadVideoSlots(orderId);
+        setVideoSlots(slots);
+      }
+    } catch (error) {
+      console.error('Erro ao definir vídeo base:', error);
+      toast.error('Erro ao definir vídeo base');
+    }
+  };
+
   return {
     videoSlots,
     uploading,
@@ -152,6 +168,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     handleActivate,
     handleRemove,
     handleSelectForDisplay,
-    handleDownload
+    handleDownload,
+    handleSetBaseVideo
   };
 };

@@ -18,6 +18,7 @@ interface VideoManagementCardProps {
   onSelectForDisplay: (slotId: string) => Promise<void>;
   onDownload: (videoUrl: string, fileName: string) => void;
   onSetBaseVideo: (slotId: string) => Promise<void>;
+  orderId: string;
 }
 
 export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
@@ -30,7 +31,8 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onRemove,
   onSelectForDisplay,
   onDownload,
-  onSetBaseVideo
+  onSetBaseVideo,
+  orderId
 }) => {
   const security = getOrderSecurityStatus(orderStatus);
   const uploadAllowed = security.level === 'allowed' || security.level === 'active';
@@ -68,6 +70,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
             onScheduleVideo={async (videoId: string, scheduleRules: any[]) => {
               console.log('Agendamento individual:', { videoId, scheduleRules });
             }}
+            orderId={orderId}
           />
         ) : (
           <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">

@@ -35,6 +35,7 @@ interface VideoSlotGridProps {
   onDownload?: (videoUrl: string, fileName: string) => void;
   onSetBaseVideo?: (slotId: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
+  orderId: string;
 }
 
 export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
@@ -47,7 +48,8 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   onSelectForDisplay,
   onDownload,
   onSetBaseVideo,
-  onScheduleVideo
+  onScheduleVideo,
+  orderId
 }) => {
   return (
     <div className="space-y-4">
@@ -67,6 +69,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             onDownload={onDownload}
             onSetBaseVideo={onSetBaseVideo}
             onScheduleVideo={onScheduleVideo}
+            orderId={orderId}
           />
         ))}
       </div>

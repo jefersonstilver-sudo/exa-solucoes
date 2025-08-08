@@ -107,6 +107,8 @@ const OrderDetails: React.FC = () => {
           onRemove={videoManagement.handleRemove}
           onSelectForDisplay={videoManagement.handleSelectForDisplay}
           onDownload={videoManagement.handleDownload}
+          onSetBaseVideo={videoManagement.handleSetBaseVideo}
+          orderId={orderId || ''}
         />
       </div>
     </Layout>

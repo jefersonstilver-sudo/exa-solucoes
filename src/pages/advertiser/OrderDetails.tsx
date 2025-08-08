@@ -278,6 +278,11 @@ const OrderDetails = () => {
               onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
               onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
               onDownload={handleVideoDownload}
+              onSetBaseVideo={(slotId) => handleVideoAction(async () => {
+                // TODO: Implementar setBaseVideo
+                console.log('Definindo vídeo base:', slotId);
+              })}
+              orderId={id || ''}
             />
             
             {/* Video Schedule Manager - Only show if contract is active */}
