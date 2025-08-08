@@ -292,6 +292,7 @@ const OrderDetails = () => {
                   // TODO: Implementar lógica de atualização de programação
                 }}
                 disabled={contractStatus.isExpired}
+                orderId={id || ''}
               />
             )}
           </>

@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { VideoSlot } from '@/types/videoManagement';
 import { Play, Calendar, Clock, Film } from 'lucide-react';
+import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 
 interface VideoWeeklyScheduleProps {
   videoSlots: VideoSlot[];
+  orderId?: string;
 }
 
 const DAYS_OF_WEEK = [
@@ -18,7 +20,69 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Sábado', short: 'Sáb' },
 ];
 
-export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoSlots }) => {
+export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoSlots, orderId }) => {
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  
+  // Usar o mesmo hook que os cards usam para obter o vídeo atual
+  const { currentVideo } = useCurrentVideoDisplay({ 
+    orderId: orderId || '', 
+    enabled: !!orderId 
+  });
+
+  // Função para verificar se um vídeo agendado está ativo AGORA (horário de Brasília)
+  const isVideoActiveInSchedule = (video: VideoSlot): boolean => {
+    if (!video.schedule_rules || video.schedule_rules.length === 0) {
+      return false;
+    }
+
+    // Obter horário atual de Brasília (UTC-3)
+    const brasiliaTime = new Date(currentTime.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const currentDay = brasiliaTime.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentTimeStr = brasiliaTime.toTimeString().substring(0, 5); // HH:MM format
+
+    // Verificar se alguma regra está ativa agora
+    return video.schedule_rules.some(rule => {
+      if (!rule.is_active) return false;
+      
+      // Verificar se hoje está nos dias programados
+      const isDayActive = rule.days_of_week.includes(currentDay);
+      if (!isDayActive) return false;
+      
+      // Verificar se está no horário programado
+      if (rule.is_all_day) return true;
+      
+      return currentTimeStr >= rule.start_time && currentTimeStr <= rule.end_time;
+    });
+  };
+
+  // Função para verificar se um vídeo está sendo exibido AGORA
+  const isVideoCurrentlyDisplaying = (video: VideoSlot): boolean => {
+    if (!currentVideo?.video_id) return false;
+    
+    // Verificar se é o vídeo atual retornado pela RPC
+    if (currentVideo.video_id === video.video_id) {
+      // Se for vídeo base, sempre está exibindo quando selecionado
+      if (currentVideo.priority_type === 'base') {
+        return true;
+      }
+      
+      // Se for vídeo agendado, verificar se está no horário
+      if (currentVideo.priority_type === 'scheduled') {
+        return isVideoActiveInSchedule(video);
+      }
+    }
+    
+    return false;
+  };
+
+  // Atualizar horário atual a cada minuto para sincronizar com mudanças de programação
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // 1 minuto (mesmo intervalo do useCurrentVideoDisplay)
+
+    return () => clearInterval(interval);
+  }, []);
   // Filtrar apenas vídeos aprovados
   const approvedVideos = videoSlots.filter(slot => 
     slot.approval_status === 'approved' && slot.video_data
@@ -161,12 +225,12 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
                                    Vídeo Principal
                                  </Badge>
                               )}
-                              {item.video.selected_for_display && (
-                                <Badge className="bg-green-600 text-white">
-                                  <Play className="h-3 w-3 mr-1" />
-                                  EM EXIBIÇÃO
-                                </Badge>
-                              )}
+                               {isVideoCurrentlyDisplaying(item.video) && (
+                                 <Badge className="bg-green-600 text-white">
+                                   <Play className="h-3 w-3 mr-1" />
+                                   EM EXIBIÇÃO
+                                 </Badge>
+                               )}
                             </div>
                             
                             <div className="flex items-center space-x-4 text-sm text-gray-600">

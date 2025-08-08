@@ -6,13 +6,15 @@ interface VideoScheduleManagerProps {
   videoSlots: VideoSlot[];
   onScheduleUpdate: (videoId: string, scheduleRules: any[]) => Promise<void>;
   disabled?: boolean;
+  orderId?: string;
 }
 
 export const VideoScheduleManager: React.FC<VideoScheduleManagerProps> = ({
   videoSlots,
   onScheduleUpdate,
-  disabled = false
+  disabled = false,
+  orderId
 }) => {
   // Agora só mostra a playlist semanal - removido botão de editar
-  return <VideoWeeklySchedule videoSlots={videoSlots} />;
+  return <VideoWeeklySchedule videoSlots={videoSlots} orderId={orderId} />;
 };
