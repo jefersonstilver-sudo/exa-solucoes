@@ -8,6 +8,8 @@ import { VideoSlot } from '@/types/videoManagement';
 import { getOrderSecurityStatus } from '@/services/videoUploadSecurityService';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
+import { videoScheduleManagementService } from '@/services/videoScheduleManagementService';
+import { toast } from 'sonner';
 
 interface VideoManagementCardProps {
   orderStatus: string;
@@ -20,6 +22,7 @@ interface VideoManagementCardProps {
   onSelectForDisplay: (slotId: string) => Promise<void>;
   onDownload: (videoUrl: string, fileName: string) => void;
   onSetBaseVideo: (slotId: string) => Promise<void>;
+  onRefreshSlots?: () => Promise<void>;
   orderId: string;
 }
 
@@ -34,11 +37,29 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onSelectForDisplay,
   onDownload,
   onSetBaseVideo,
+  onRefreshSlots,
   orderId
 }) => {
   const [showHelp, setShowHelp] = useState(false);
   const security = getOrderSecurityStatus(orderStatus);
   const uploadAllowed = security.level === 'allowed' || security.level === 'active';
+
+  const handleScheduleVideo = async (videoId: string, scheduleRules: any[]) => {
+    try {
+      console.log('📅 [VIDEO_MGMT] Salvando agendamento:', { videoId, scheduleRules });
+      
+      const success = await videoScheduleManagementService.updateVideoScheduleRules(videoId, scheduleRules);
+      
+      if (success && onRefreshSlots) {
+        // Refresh slots para atualizar o status
+        await onRefreshSlots();
+      }
+      
+    } catch (error) {
+      console.error('❌ [VIDEO_MGMT] Erro ao salvar agendamento:', error);
+      toast.error('Erro ao salvar agendamento');
+    }
+  };
 
   return (
     <Card>
@@ -91,9 +112,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
             onSelectForDisplay={onSelectForDisplay}
             onDownload={onDownload}
             onSetBaseVideo={onSetBaseVideo}
-            onScheduleVideo={async (videoId: string, scheduleRules: any[]) => {
-              console.log('Agendamento individual:', { videoId, scheduleRules });
-            }}
+            onScheduleVideo={handleScheduleVideo}
             orderId={orderId}
           />
         ) : (

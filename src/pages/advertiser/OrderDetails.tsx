@@ -71,6 +71,7 @@ const OrderDetails = () => {
     activateVideo,
     removeVideo,
     uploadVideo,
+    refreshSlots,
     isSuccessOpen,
     videoName,
     hideSuccess,
@@ -280,6 +281,7 @@ const OrderDetails = () => {
                 // TODO: Implementar setBaseVideo
                 console.log('Definindo vídeo base:', slotId);
               })}
+              onRefreshSlots={refreshSlots}
               orderId={id || ''}
             />
             
