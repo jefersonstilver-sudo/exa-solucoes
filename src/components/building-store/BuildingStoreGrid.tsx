@@ -5,7 +5,6 @@ import { Building2, MapPin, Sparkles } from 'lucide-react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingStoreCard from './BuildingStoreCard';
-import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
 
 interface BuildingStoreGridProps {
   buildings: BuildingStore[] | undefined;
@@ -159,8 +158,6 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   }
 
   console.log('✅ [BUILDING STORE GRID] EXIBINDO', buildings.length, 'prédios');
-  const buildingIds = (buildings || []).map((b) => b.id);
-  const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);
   
   return (
     <motion.div 
@@ -212,7 +209,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
               } : {}}
               className="group"
             >
-              <BuildingStoreCard building={building} videoCount={videoCounts[building.id] ?? 0} />
+              <BuildingStoreCard building={building} />
             </motion.div>
           );
         })}

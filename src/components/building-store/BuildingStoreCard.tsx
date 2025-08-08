@@ -9,16 +9,14 @@ import BuildingCardHeader from './card/BuildingCardHeader';
 import BuildingCardMetrics from './card/BuildingCardMetrics';
 import BuildingCardAmenities from './card/BuildingCardAmenities';
 import BuildingCardActions from './card/BuildingCardActions';
-import { PlayCircle } from 'lucide-react';
+
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
-  videoCount?: number;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
-  building,
-  videoCount
+  building
 }) => {
   const isMobile = useIsMobile();
 
@@ -55,15 +53,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                 </motion.div>
               )}
 
-              {/* Em exibição: contador */}
-              {typeof videoCount === 'number' && (
-                <div className="absolute bottom-2 left-2 z-10">
-                  <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur px-2 py-1 rounded-full shadow-sm text-xs font-medium text-gray-800">
-                    <PlayCircle className="w-3.5 h-3.5 text-green-600" />
-                    <span>Em exibição: {videoCount}</span>
-                  </div>
-                </div>
-              )}
+              
             </div>
 
             {/* Informações - Mobile: Layout compacto */}
@@ -104,15 +94,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
           <div className="lg:w-2/5 relative overflow-hidden">
             <BuildingCardImage building={building} />
             
-            {/* Em exibição: contador (desktop) */}
-            {typeof videoCount === 'number' && (
-              <div className="absolute bottom-3 left-3 z-10">
-                <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur px-2 py-1 rounded-full shadow-sm text-xs font-medium text-gray-800">
-                  <PlayCircle className="w-3.5 h-3.5 text-green-600" />
-                  <span>Em exibição: {videoCount}</span>
-                </div>
-              </div>
-            )}
+            
             
             {/* Badge de prioridade se for high-end */}
             {building.padrao_publico === 'alto' && (
