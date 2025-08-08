@@ -57,6 +57,25 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     setSelectedFile(file);
   };
 
+  // Upload direto sem agendamento
+  const handleDirectUpload = () => {
+    if (!validateTitle(videoTitle)) {
+      return;
+    }
+
+    if (!selectedFile) {
+      alert('Por favor, selecione um arquivo de vídeo');
+      return;
+    }
+
+    onUpload(slotPosition, selectedFile, videoTitle);
+    
+    // Reset after upload
+    setSelectedFile(null);
+    setVideoTitle('');
+    setTitleError('');
+  };
+
   const handleContinueToSchedule = () => {
     if (!validateTitle(videoTitle)) {
       return;
@@ -159,21 +178,34 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         </div>
       )}
 
-      {/* Botão para continuar para agendamento */}
-      <Button
-        onClick={handleContinueToSchedule}
-        disabled={!canUpload}
-        className="w-full"
-      >
-        {isUploading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Enviando...
-          </>
-        ) : (
-          'Continuar para Agendamento'
-        )}
-      </Button>
+      {/* Botões de Upload */}
+      <div className="space-y-2">
+        {/* Botão principal - Upload direto */}
+        <Button
+          onClick={handleDirectUpload}
+          disabled={!canUpload}
+          className="w-full"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Enviando...
+            </>
+          ) : (
+            'Enviar Vídeo'
+          )}
+        </Button>
+
+        {/* Botão secundário - Upload com agendamento */}
+        <Button
+          onClick={handleContinueToSchedule}
+          disabled={!canUpload}
+          variant="outline"
+          className="w-full"
+        >
+          Agendar Upload
+        </Button>
+      </div>
 
       {/* Dicas */}
       <div className="text-xs text-gray-500 space-y-1">

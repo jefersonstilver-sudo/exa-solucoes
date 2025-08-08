@@ -121,6 +121,13 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               <span>EM EXIBIÇÃO</span>
             </Badge>
           );
+        } else if (hasActiveSchedule) {
+          return (
+            <Badge className="bg-blue-500 text-white flex items-center space-x-1">
+              <Clock className="h-3 w-3" />
+              <span>AGENDADO</span>
+            </Badge>
+          );
         } else if (slot.is_base_video) {
           return (
             <Badge className="bg-amber-100 text-amber-800 flex items-center space-x-1">
@@ -222,10 +229,15 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     return false;
   };
 
+  // Verificar se tem agendamento ativo
+  const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.some(rule => rule.is_active);
+  
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const cardClasses = `transition-all duration-200 bg-white border ${
     isScheduledAndActive()
       ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
+      : hasActiveSchedule
+        ? 'border-2 border-blue-400 bg-blue-50 shadow-md'
       : isBlocked
         ? 'border-2 border-gray-300 bg-gray-50 opacity-75'
         : 'border-gray-200 hover:shadow-md'
