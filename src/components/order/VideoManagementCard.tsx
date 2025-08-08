@@ -52,8 +52,6 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Banner de segurança */}
-        <OrderSecurityBanner orderStatus={orderStatus} />
         
         {/* Grid de vídeos - só mostra se upload for permitido */}
         {uploadAllowed ? (

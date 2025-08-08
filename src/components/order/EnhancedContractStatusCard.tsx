@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Clock, TrendingUp, AlertTriangle, PlayCircle } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, AlertTriangle, PlayCircle, ShoppingCart, Flag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -15,6 +15,7 @@ interface EnhancedContractStatusCardProps {
     data_fim?: string;
     status: string;
     plano_meses: number;
+    created_at?: string;
   };
 }
 
@@ -184,36 +185,37 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
           </div>
         )}
 
-        {/* Informações do Período */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        {/* Informações das Datas */}
+        <div className="grid grid-cols-3 gap-3 text-sm">
           <div className="flex items-center space-x-2">
-            <Calendar className="h-4 w-4 text-gray-500" />
+            <ShoppingCart className="h-4 w-4 text-gray-500" />
             <div>
-              <p className="text-gray-500">Início</p>
+              <p className="text-gray-500">Data de Compra</p>
+              <p className="font-medium">{formatDate(orderDetails.created_at)}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <PlayCircle className="h-4 w-4 text-gray-500" />
+            <div>
+              <p className="text-gray-500">Data de Início</p>
               <p className="font-medium">{formatDate(orderDetails.data_inicio)}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Calendar className="h-4 w-4 text-gray-500" />
+            <Flag className="h-4 w-4 text-gray-500" />
             <div>
-              <p className="text-gray-500">Término</p>
+              <p className="text-gray-500">Data de Término</p>
               <p className="font-medium">{formatDate(orderDetails.data_fim)}</p>
             </div>
           </div>
         </div>
 
-        {/* Detalhes Adicionais */}
+        {/* Detalhes do Plano */}
         <div className="bg-gray-50 rounded-lg p-3 text-sm">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between">
             <span className="text-gray-600">Duração do Plano:</span>
             <span className="font-medium">{orderDetails.plano_meses} meses</span>
           </div>
-          {hasStarted && totalDays && (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Total de Dias:</span>
-              <span className="font-medium">{totalDays} dias</span>
-            </div>
-          )}
         </div>
 
         {/* Status específicos */}
