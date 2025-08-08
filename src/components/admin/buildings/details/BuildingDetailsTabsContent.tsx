@@ -42,7 +42,7 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-6">
         <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-        <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
+        <TabsTrigger value="campaigns">Programação</TabsTrigger>
         <TabsTrigger value="panels">Painéis ({panels?.length || 0})</TabsTrigger>
         <TabsTrigger value="available">Disponíveis</TabsTrigger>
         <TabsTrigger value="sales">Vendas ({sales?.length || 0})</TabsTrigger>

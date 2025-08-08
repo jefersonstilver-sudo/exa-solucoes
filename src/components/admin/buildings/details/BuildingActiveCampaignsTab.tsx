@@ -72,7 +72,7 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Carregando campanhas ativas...</span>
+        <span className="ml-2">Carregando programação...</span>
       </div>
     );
   }
@@ -82,7 +82,7 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
       <Card className="border-red-200 bg-red-50">
         <CardContent className="p-6">
           <div className="text-center">
-            <p className="text-red-600 mb-4">Erro ao carregar campanhas: {error}</p>
+            <p className="text-red-600 mb-4">Erro ao carregar programação: {error}</p>
             <Button onClick={refetch} variant="outline">
               Tentar Novamente
             </Button>
@@ -98,9 +98,9 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
         <CardContent className="p-8">
           <div className="text-center">
             <Video className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma Campanha Ativa</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma Programação Ativa</h3>
             <p className="text-gray-500">
-              Este prédio não possui campanhas ativas no momento.
+              Este prédio não possui vídeos programados no momento.
             </p>
           </div>
         </CardContent>
@@ -113,10 +113,10 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Campanhas Ativas em {buildingName}
+            Programação em {buildingName}
           </h3>
           <p className="text-sm text-gray-600">
-            {campaigns.length} campanha{campaigns.length !== 1 ? 's' : ''} ativa{campaigns.length !== 1 ? 's' : ''}
+            Lista de vídeos atualmente programados e em exibição para este prédio.
           </p>
         </div>
         <Button onClick={refetch} variant="outline" size="sm">
@@ -129,7 +129,7 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
           const daysRemaining = getDaysRemaining(campaign.data_fim);
           const totalVideos = campaign.videos.length;
           const activeVideos = campaign.videos.filter(v => v.is_active).length;
-          const displayingVideos = campaign.videos.filter(v => v.selected_for_display).length;
+          const displayingVideos = campaign.videos.filter(v => v.selected_for_display && v.is_active).length;
 
           return (
             <Card key={campaign.id} className="border-l-4 border-l-blue-500">
