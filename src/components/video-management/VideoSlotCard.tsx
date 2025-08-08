@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Star,
   StarOff,
@@ -243,7 +244,25 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         : 'border-gray-200 hover:shadow-md'
   }`;
 
-  return (
+  const getScheduleTooltipContent = () => {
+    if (!hasActiveSchedule || !slot.schedule_rules) return null;
+    
+    return (
+      <div className="p-2 space-y-2">
+        <p className="font-medium text-sm">Agendamento Ativo:</p>
+        {slot.schedule_rules.map((rule, index) => (
+          <div key={index} className="text-xs">
+            <p>Dias: {rule.days_of_week.map(day => 
+              ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][day]
+            ).join(', ')}</p>
+            <p>Horário: {rule.start_time} - {rule.end_time}</p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const cardElement = (
     <Card className={cardClasses}>
       <CardContent className="p-3 sm:p-6 max-w-full overflow-hidden">
         {/* Header do Slot */}
@@ -383,4 +402,22 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       </CardContent>
     </Card>
   );
+
+  // Se tem agendamento ativo, envolver com tooltip
+  if (hasActiveSchedule) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {cardElement}
+          </TooltipTrigger>
+          <TooltipContent side="top" className="bg-blue-900 text-white p-3 rounded-lg shadow-lg">
+            {getScheduleTooltipContent()}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return cardElement;
 };

@@ -104,11 +104,12 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
             <div className="flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded p-2 -m-2">
               <CardTitle className="flex items-center">
                 <Building className="h-5 w-5 mr-2 text-blue-500" />
-                Locais Selecionados ({buildings.length})
+                Locais Selecionados
                 {isExpanded ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </CardTitle>
               <div className="text-sm text-gray-600 font-normal">
-                {totalPublico > 0 && `${totalPublico.toLocaleString()} pessoas`}
+                {buildings.length} {buildings.length === 1 ? 'local' : 'locais'}
+                {totalPublico > 0 && ` • ${totalPublico.toLocaleString()} pessoas`}
                 {totalUnidades > 0 && ` • ${totalUnidades} unidades`}
               </div>
             </div>
