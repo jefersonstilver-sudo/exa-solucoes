@@ -39,7 +39,7 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
         startTime: '00:00',
         endTime: '23:59',
         isAllDay: true,
-        title: 'Vídeo Padrão'
+        title: baseVideo.video_data?.nome || 'Vídeo Base'
       }] : [];
     });
 
@@ -85,9 +85,22 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
   };
 
   const getVideoThumbnail = (video: VideoSlot) => {
-    // Por enquanto, usar ícone. Futuramente pode ser thumbnail real
+    if (video.video_data?.url) {
+      return (
+        <div className="w-16 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+          <video 
+            src={video.video_data.url} 
+            className="w-full h-full object-cover"
+            muted
+            preload="metadata"
+          />
+        </div>
+      );
+    }
+    
+    // Fallback para ícone
     return (
-      <div className="w-16 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+      <div className="w-16 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
         <Film className="h-6 w-6 text-white" />
       </div>
     );

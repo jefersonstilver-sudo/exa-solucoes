@@ -145,8 +145,16 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           </Badge>
         );
       case 'approved':
-        // PRIORIDADE: 1. EM EXIBIÇÃO > 2. AGENDADO > 3. VÍDEO BASE > 4. APROVADO
-        if (isCurrentlyShowing) {
+        // PRIORIDADE: 1. AGENDAMENTO ATIVO AGORA > 2. VÍDEO BASE > 3. AGENDADO > 4. APROVADO
+        if (isScheduledActiveNow() && isCurrentlyShowing) {
+          return (
+            <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
+              <Tv className="h-3 w-3" />
+              <span>EM EXIBIÇÃO</span>
+            </Badge>
+          );
+        } else if (slot.is_base_video && !hasActiveSchedule) {
+          // Vídeo base só fica "EM EXIBIÇÃO" se não há agendamento ativo
           return (
             <Badge className="bg-green-500 text-white flex items-center space-x-1 font-medium">
               <Tv className="h-3 w-3" />
@@ -159,13 +167,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             <Badge className="bg-blue-600 text-white flex items-center space-x-1 font-bold">
               <Clock className="h-3 w-3" />
               <span>AGENDADO</span>
-            </Badge>
-          );
-        } else if (slot.is_base_video) {
-          return (
-            <Badge className="bg-amber-100 text-amber-800 flex items-center space-x-1">
-              <Star className="h-3 w-3" />
-              <span>Vídeo Base</span>
             </Badge>
           );
         } else if (slot.is_active) {
@@ -299,21 +300,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           <div className="flex items-center space-x-2">
             <h3 className="font-semibold text-lg text-gray-900">Slot {slot.slot_position}</h3>
             
-            {/* Estrela de Vídeo Base - Clicável apenas para vídeos aprovados */}
-            {slot.video_data && slot.approval_status === 'approved' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => slot.id && onSetBaseVideo && onSetBaseVideo(slot.id)}
-                className="p-1 h-auto"
-                title={slot.is_base_video ? "Este é o vídeo base" : "Clique para definir como vídeo base"}
-              >
-                <Star 
-                  className={`h-5 w-5 ${slot.is_base_video ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} 
-                />
-              </Button>
-            )}
-            
             {slot.video_data && getStatusIcon(slot.approval_status)}
             {isBlocked && (
               <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
@@ -323,14 +309,35 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           </div>
           <div className="flex flex-wrap gap-2">
             {getStatusBadge()}
-            {slot.is_base_video && (
-              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                VÍDEO BASE
-              </Badge>
-            )}
-            {slot.video_data && getScheduleBadge(slot)}
           </div>
         </div>
+
+        {/* Badge Vídeo Base Centralizado */}
+        {slot.is_base_video && (
+          <div className="flex justify-center mb-4">
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 flex items-center space-x-1">
+              <Star className="h-3 w-3" />
+              <span>VÍDEO BASE</span>
+            </Badge>
+          </div>
+        )}
+
+        {/* Estrela de Vídeo Base - Clicável apenas para vídeos aprovados */}
+        {slot.video_data && slot.approval_status === 'approved' && totalApprovedVideos >= 2 && (
+          <div className="flex justify-center mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => slot.id && onSetBaseVideo && onSetBaseVideo(slot.id)}
+              className="p-2 h-auto hover:bg-yellow-50"
+              title={slot.is_base_video ? "Este é o vídeo base" : "Clique para definir como vídeo base"}
+            >
+              <Star 
+                className={`h-6 w-6 ${slot.is_base_video ? 'text-yellow-500 fill-current' : 'text-gray-400 hover:text-yellow-400'}`} 
+              />
+            </Button>
+          </div>
+        )}
 
         {/* Progress Bar para Upload */}
         {currentProgress !== undefined && (
