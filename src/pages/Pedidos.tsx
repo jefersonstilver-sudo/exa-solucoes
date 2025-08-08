@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
 import { AutoPaymentVerifier } from '@/components/admin/AutoPaymentVerifier';
+import { OrderVideoThumbnail } from '@/components/video-management/OrderVideoThumbnail';
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,6 +112,17 @@ const Pedidos: React.FC = () => {
             R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
           </p>
         </div>
+        
+        {/* Vídeo em exibição - apenas para pedidos */}
+        {item.type === 'order' && (
+          <div className="mt-3 mb-3">
+            <OrderVideoThumbnail 
+              orderId={item.id} 
+              orderStatus={item.status}
+              className="w-full"
+            />
+          </div>
+        )}
         
         <div className="grid grid-cols-2 gap-2 text-sm mt-3">
           <div>
@@ -296,6 +308,7 @@ const Pedidos: React.FC = () => {
                         <TableHead className="text-gray-900 font-semibold">Duração</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Período</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Qtd. Painéis</TableHead>
+                        <TableHead className="text-gray-900 font-semibold">Vídeo em Exibição</TableHead>
                         <TableHead className="text-gray-900 font-semibold">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -350,6 +363,15 @@ const Pedidos: React.FC = () => {
                               </TableCell>
                               <TableCell className="text-gray-800 font-medium">
                                 {paineisList.length}
+                              </TableCell>
+                              <TableCell className="max-w-xs">
+                                {item.type === 'order' && (
+                                  <OrderVideoThumbnail 
+                                    orderId={item.id} 
+                                    orderStatus={item.status}
+                                    compact={true}
+                                  />
+                                )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-col space-y-2">
