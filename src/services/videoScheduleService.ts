@@ -7,6 +7,15 @@ interface ScheduleRule {
   is_active: boolean;
 }
 
+interface VideoSyncResponse {
+  success: boolean;
+  timestamp: string;
+  trocas_realizadas: number;
+  videos_ativados: number;
+  videos_desativados: number;
+  erros: string[];
+}
+
 export const videoScheduleService = {
   /**
    * Verifica se um vídeo deve estar ativo no momento atual
@@ -163,6 +172,101 @@ export const videoScheduleService = {
       if (error) return false;
       return data && data.length > 0;
     } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Força sincronização manual via Edge Function
+   */
+  async forceSyncVideoSchedules(orderId?: string): Promise<VideoSyncResponse> {
+    console.log('🔄 [VIDEO_SCHEDULE] Forcing video schedule sync...', { orderId });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('video-schedule-sync', {
+        body: { orderId }
+      });
+
+      if (error) {
+        console.error('❌ [VIDEO_SCHEDULE] Error calling sync function:', error);
+        throw error;
+      }
+
+      console.log('✅ [VIDEO_SCHEDULE] Sync completed:', data);
+      return data;
+    } catch (error) {
+      console.error('💥 [VIDEO_SCHEDULE] Sync failed:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Verifica se vídeo deve estar ativo baseado em campanhas avançadas
+   */
+  async isVideoActiveInCampaign(videoId: string): Promise<boolean> {
+    console.log('🔍 [VIDEO_SCHEDULE] Checking if video is active in campaign:', videoId);
+    
+    try {
+      // Buscar regras ativas para este vídeo
+      const { data: rules, error } = await supabase
+        .from('campaign_schedule_rules')
+        .select(`
+          *,
+          campaign_video_schedules (
+            video_id,
+            campaigns_advanced (
+              status
+            )
+          )
+        `)
+        .eq('is_active', true)
+        .eq('campaign_video_schedules.video_id', videoId);
+
+      if (error) {
+        console.error('❌ [VIDEO_SCHEDULE] Error fetching campaign rules:', error);
+        return false;
+      }
+
+      if (!rules || rules.length === 0) {
+        console.log('📭 [VIDEO_SCHEDULE] No active rules found for video:', videoId);
+        return false;
+      }
+
+      // Verificar horário atual (horário de Brasília)
+      const now = new Date();
+      const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+      const currentDay = brasiliaTime.getDay();
+      const currentTime = brasiliaTime.toTimeString().slice(0, 5);
+
+      for (const rule of rules) {
+        const campaign = rule.campaign_video_schedules?.campaigns_advanced;
+        
+        // Verificar se campanha está ativa
+        if (campaign?.status !== 'active') {
+          continue;
+        }
+
+        // Verificar se hoje está nos dias programados
+        if (!rule.days_of_week.includes(currentDay)) {
+          continue;
+        }
+
+        // Verificar se estamos no horário programado
+        if (currentTime >= rule.start_time && currentTime <= rule.end_time) {
+          console.log('✅ [VIDEO_SCHEDULE] Video should be active now:', {
+            videoId,
+            currentDay,
+            currentTime,
+            ruleTime: `${rule.start_time}-${rule.end_time}`
+          });
+          return true;
+        }
+      }
+
+      console.log('⏰ [VIDEO_SCHEDULE] Video not in active time window:', videoId);
+      return false;
+    } catch (error) {
+      console.error('💥 [VIDEO_SCHEDULE] Error checking video campaign status:', error);
       return false;
     }
   }
