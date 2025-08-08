@@ -186,44 +186,41 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
                 </div>
 
                 {/* Lista de Vídeos */}
-                {campaign.videos.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-gray-900">Vídeos da Campanha:</h4>
-                    {campaign.videos.map((video, index) => (
-                      <div key={video.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <Play className="h-4 w-4 text-blue-600" />
+                {campaign.videos.length > 0 && (() => {
+                  const videosToShow = campaign.videos.filter(v => v.selected_for_display && v.is_active);
+                  if (videosToShow.length === 0) return null;
+                  return (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900">Vídeo em Exibição:</h4>
+                      {videosToShow.map((video) => (
+                        <div key={video.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              <Play className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{video.nome}</p>
+                              <p className="text-sm text-gray-600">Slot {video.slot_position}</p>
+                              {video.rejection_reason && (
+                                <p className="text-xs text-red-600 mt-1">Motivo da rejeição: {video.rejection_reason}</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{video.nome}</p>
-                            <p className="text-sm text-gray-600">Slot {video.slot_position}</p>
-                            {video.rejection_reason && (
-                              <p className="text-xs text-red-600 mt-1">
-                                Motivo da rejeição: {video.rejection_reason}
-                              </p>
+                          
+                          <div className="flex items-center gap-2">
+                            {getVideoStatusBadge(video)}
+                            {video.url && (
+                              <Button size="sm" variant="outline" onClick={() => window.open(video.url, '_blank')} className="flex items-center gap-1">
+                                <ExternalLink className="h-3 w-3" />
+                                Ver
+                              </Button>
                             )}
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                          {getVideoStatusBadge(video)}
-                          {video.url && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => window.open(video.url, '_blank')}
-                              className="flex items-center gap-1"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              Ver
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           );
