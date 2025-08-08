@@ -146,13 +146,6 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         )}
       </Button>
 
-      {/* Dicas */}
-      <div className="text-xs text-gray-500 space-y-1">
-        <p>💡 <strong>Dicas para um bom título:</strong></p>
-        <p>• Use palavras-chave relevantes</p>
-        <p>• Seja claro e descritivo</p>
-        <p>• Evite caracteres especiais</p>
-      </div>
     </div>
   );
 };

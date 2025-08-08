@@ -101,28 +101,9 @@ export const ContractStatusAlert: React.FC<ContractStatusAlertProps> = ({
     );
   }
 
+  // Remove green banner for active contracts - RD requirement
   if (isActive) {
-    return (
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-              <div>
-                <h3 className="font-medium text-green-800">Contrato Ativo</h3>
-                <p className="text-sm text-green-700 mt-1">
-                  Seu contrato está ativo até {expiryDate && new Date(expiryDate).toLocaleDateString('pt-BR')}.
-                  Restam {daysRemaining} dias.
-                </p>
-              </div>
-            </div>
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
-              ATIVO
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   return null;

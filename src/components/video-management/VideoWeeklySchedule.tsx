@@ -157,9 +157,9 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
                                   AGENDADO
                                 </Badge>
                               ) : (
-                                <Badge variant="outline">
-                                  PADRÃO
-                                </Badge>
+                                 <Badge variant="outline">
+                                   Vídeo Principal
+                                 </Badge>
                               )}
                               {item.video.selected_for_display && (
                                 <Badge className="bg-green-600 text-white">
