@@ -99,11 +99,36 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
   };
 
-  // Verificar se tem agendamento ativo - PRIORIDADE: AGENDADO tem prioridade sobre APROVADO
+  // Verificar se tem agendamento configurado (não necessariamente ativo agora)
   const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.length > 0 && 
     slot.schedule_rules.some(rule => rule.is_active);
   
-  console.log(`🔍 [VIDEO_SLOT] Slot ${slot.slot_position} - hasActiveSchedule:`, hasActiveSchedule, 'rules:', slot.schedule_rules);
+  // Verificar se o agendamento está ativo AGORA (verificação temporal)
+  const isScheduledActiveNow = () => {
+    if (!hasActiveSchedule) return false;
+    
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    
+    return slot.schedule_rules!.some(rule => {
+      if (!rule.is_active) return false;
+      
+      // Verificar se hoje está nos dias programados
+      const isDayMatched = rule.days_of_week.includes(currentDay);
+      
+      // Verificar se está no horário programado
+      const isTimeMatched = currentTime >= rule.start_time && currentTime <= rule.end_time;
+      
+      return isDayMatched && isTimeMatched;
+    });
+  };
+  
+  console.log(`🔍 [VIDEO_SLOT] Slot ${slot.slot_position}:`, {
+    hasActiveSchedule,
+    isScheduledActiveNow: isScheduledActiveNow(),
+    rules: slot.schedule_rules
+  });
 
   const getStatusBadge = () => {
     if (!slot.video_data) return null;
@@ -128,7 +153,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               <span>EM EXIBIÇÃO</span>
             </Badge>
           );
-        } else if (hasActiveSchedule) {
+        } else if (hasActiveSchedule && !isScheduledActiveNow()) {
+          // AGENDADO: tem schedule mas não está ativo agora
           return (
             <Badge className="bg-blue-600 text-white flex items-center space-x-1 font-bold">
               <Clock className="h-3 w-3" />

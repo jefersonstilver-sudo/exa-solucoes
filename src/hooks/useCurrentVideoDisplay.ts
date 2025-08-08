@@ -20,27 +20,35 @@ export const useCurrentVideoDisplay = ({ orderId, enabled = true }: UseCurrentVi
     if (!orderId || !enabled) return;
 
     try {
+      console.log('🎯 [CURRENT_VIDEO] Buscando vídeo atual para o pedido:', orderId);
+      
       const { data, error } = await supabase.rpc('get_current_display_video', {
         p_pedido_id: orderId
       });
 
       if (error) {
-        console.error('Erro ao obter vídeo atual:', error);
+        console.error('❌ [CURRENT_VIDEO] Erro ao obter vídeo atual:', error);
         return;
       }
 
+      console.log('📺 [CURRENT_VIDEO] Resultado da RPC:', data);
+
       if (data && data.length > 0) {
         const videoData = data[0];
-        setCurrentVideo({
+        const newCurrentVideo = {
           video_id: videoData.video_id,
           is_scheduled: videoData.is_scheduled,
           priority_type: videoData.priority_type as 'scheduled' | 'base'
-        });
+        };
+        
+        console.log('✅ [CURRENT_VIDEO] Vídeo atual definido:', newCurrentVideo);
+        setCurrentVideo(newCurrentVideo);
       } else {
+        console.log('🚫 [CURRENT_VIDEO] Nenhum vídeo em exibição encontrado');
         setCurrentVideo(null);
       }
     } catch (error) {
-      console.error('Erro geral ao obter vídeo atual:', error);
+      console.error('💥 [CURRENT_VIDEO] Erro geral ao obter vídeo atual:', error);
     } finally {
       setLoading(false);
     }
