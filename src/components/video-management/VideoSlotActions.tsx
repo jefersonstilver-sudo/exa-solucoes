@@ -138,14 +138,27 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Download className="h-4 w-4" />
         </Button>
 
-        {/* Agendar Vídeo - apenas para vídeos aprovados e quando há mais de 1 vídeo */}
-        {isApproved && totalApprovedVideos > 1 && (
+        {/* Agendar Vídeo - apenas para vídeos aprovados e quando há 2+ vídeos */}
+        {isApproved && totalApprovedVideos >= 2 && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowSlotScheduleModal(true)}
             className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white p-2"
-            title="Agendar horários para este vídeo"
+            title="Agendar horários de exibição"
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
+        )}
+        
+        {/* Tooltip quando não pode agendar */}
+        {isApproved && totalApprovedVideos < 2 && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            className="border-gray-300 text-gray-400 p-2 cursor-not-allowed"
+            title="Precisa de pelo menos 2 vídeos aprovados para agendar"
           >
             <Calendar className="h-4 w-4" />
           </Button>

@@ -71,14 +71,14 @@ export const BuildingCard: React.FC<BuildingCardProps> = ({ building, index }) =
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-3">
-          {building.numero_unidades && (
+          {building.numero_unidades && building.numero_unidades > 0 && (
             <div className="flex items-center space-x-2">
               <Building className="h-4 w-4 text-blue-500" />
               <span className="text-sm text-gray-600">{building.numero_unidades} unidades</span>
             </div>
           )}
           
-          {building.publico_estimado && (
+          {building.publico_estimado && building.publico_estimado > 0 && (
             <div className="flex items-center space-x-2">
               <Users className="h-4 w-4 text-green-500" />
               <span className="text-sm text-gray-600">{building.publico_estimado.toLocaleString()} pessoas</span>

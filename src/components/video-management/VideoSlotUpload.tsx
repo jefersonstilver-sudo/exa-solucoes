@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Upload, Loader2, Video } from 'lucide-react';
 import { VideoTitleInput } from '@/components/video-upload/VideoTitleInput';
 import { VideoUploadScheduleForm, ScheduleRule } from '@/components/video-upload/VideoUploadScheduleForm';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const [videoTitle, setVideoTitle] = useState('');
   const [titleError, setTitleError] = useState('');
   const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateTitle = (title: string): boolean => {
     if (!title.trim()) {
@@ -40,7 +41,10 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     return true;
   };
 
-  const handleFileSelect = (file: File) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
     // Validar tipo de arquivo
     const validTypes = ['video/mp4', 'video/quicktime', 'video/avi', 'video/mov'];
     if (!validTypes.includes(file.type)) {
@@ -48,9 +52,9 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       return;
     }
 
-    // Validar tamanho (100MB max)
-    if (file.size > 100 * 1024 * 1024) {
-      alert('O arquivo deve ter no máximo 100MB');
+    // Validar tamanho (500MB max)
+    if (file.size > 500 * 1024 * 1024) {
+      alert('O arquivo deve ter no máximo 500MB');
       return;
     }
 
@@ -76,136 +80,71 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     setTitleError('');
   };
 
-  const handleContinueToSchedule = () => {
-    if (!validateTitle(videoTitle)) {
-      return;
-    }
-
-    if (!selectedFile) {
-      alert('Por favor, selecione um arquivo de vídeo');
-      return;
-    }
-
-    setShowScheduleForm(true);
-  };
-
-  const handleScheduleSubmit = (scheduleRules: ScheduleRule[]) => {
-    if (!selectedFile) return;
-    
-    onUpload(slotPosition, selectedFile, videoTitle, scheduleRules);
-    
-    // Reset after upload
-    setSelectedFile(null);
-    setVideoTitle('');
-    setTitleError('');
-    setShowScheduleForm(false);
-  };
-
-  const handleBackFromSchedule = () => {
-    setShowScheduleForm(false);
-  };
-
-  const canUpload = selectedFile && videoTitle.length >= 3 && videoTitle.length <= 50 && !uploading && !isUploading;
-
-  // Mostrar formulário de agendamento se estiver nessa etapa
-  if (showScheduleForm && selectedFile) {
-    return (
-      <VideoUploadScheduleForm
-        videoTitle={videoTitle}
-        fileName={selectedFile.name}
-        onBack={handleBackFromSchedule}
-        onSubmit={handleScheduleSubmit}
-        uploading={isUploading}
-      />
-    );
-  }
+  const canUpload = selectedFile && videoTitle.trim() && !uploading && !isUploading;
 
   return (
-    <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-6 space-y-4 max-w-full overflow-hidden">
-      <div className="text-center">
-        <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-        <p className="text-sm text-gray-600 mb-4">
-          Clique para enviar vídeo ou arraste aqui
-        </p>
-        <p className="text-xs text-gray-500 mb-4">
-          Formatos aceitos: MP4, MOV, AVI (máx. 100MB, horizontal, até 45s)
-        </p>
-      </div>
-
-      {/* Título do Vídeo */}
-      <VideoTitleInput
-        title={videoTitle}
-        onTitleChange={setVideoTitle}
-        error={titleError}
-        placeholder={`Ex: Campanha Slot ${slotPosition}`}
+    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="video/*"
+        className="hidden"
+        id={`file-upload-${slotPosition}`}
       />
-
-      {/* Seleção de Arquivo */}
-      <div>
-        <input
-          type="file"
-          accept="video/mp4,video/quicktime,video/avi,video/mov"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              handleFileSelect(file);
-            }
-          }}
-          className="hidden"
-          id={`upload-${slotPosition}`}
-          disabled={uploading || isUploading}
-        />
-        
-        <label 
-          htmlFor={`upload-${slotPosition}`}
-          className={`cursor-pointer inline-flex items-center justify-center w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-            (uploading || isUploading) ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          {selectedFile ? `Arquivo: ${selectedFile.name}` : 'Selecionar Arquivo'}
-        </label>
-      </div>
-
-      {/* Preview do arquivo selecionado */}
-      {selectedFile && (
-        <div className="p-3 bg-gray-50 rounded-md">
-          <p className="text-sm font-medium">Arquivo selecionado:</p>
-          <p className="text-xs text-gray-600">{selectedFile.name}</p>
-          <p className="text-xs text-gray-600">
-            Tamanho: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+      
+      <div className="space-y-4">
+        <div>
+          <Video className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-gray-600 font-medium mb-2">Clique para enviar seu vídeo</p>
+          <p className="text-sm text-gray-500">
+            Formatos aceitos: MP4, MOV, AVI (máx. 500MB)
           </p>
         </div>
-      )}
-
-      {/* Botões de Upload */}
-      <div className="space-y-2">
-        {/* Botão principal - Upload direto */}
-        <Button
-          onClick={handleDirectUpload}
-          disabled={!canUpload}
-          className="w-full"
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Enviando...
-            </>
-          ) : (
-            'Enviar Vídeo'
-          )}
-        </Button>
-
-        {/* Botão secundário - Upload com agendamento */}
-        <Button
-          onClick={handleContinueToSchedule}
-          disabled={!canUpload}
-          variant="outline"
-          className="w-full"
-        >
-          Agendar Upload
-        </Button>
+        
+        <VideoTitleInput
+          title={videoTitle}
+          onTitleChange={setVideoTitle}
+          error={titleError}
+          placeholder={`Título do vídeo ${slotPosition}`}
+        />
+        
+        <label htmlFor={`file-upload-${slotPosition}`}>
+          <Button 
+            asChild
+            variant="outline" 
+            className="w-full cursor-pointer"
+            disabled={uploading || isUploading}
+          >
+            <span>
+              {selectedFile ? selectedFile.name : 'Selecionar Arquivo'}
+            </span>
+          </Button>
+        </label>
+        
+        {selectedFile && (
+          <div className="text-xs text-gray-500 bg-white p-2 rounded border">
+            <strong>Arquivo:</strong> {selectedFile.name}<br/>
+            <strong>Tamanho:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+          </div>
+        )}
       </div>
+
+      {/* Botão principal - Upload direto */}
+      <Button
+        onClick={handleDirectUpload}
+        disabled={!canUpload}
+        className="w-full mt-4"
+      >
+        {isUploading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Enviando...
+          </>
+        ) : (
+          'Enviar Vídeo'
+        )}
+      </Button>
 
       {/* Dicas */}
       <div className="text-xs text-gray-500 space-y-1">

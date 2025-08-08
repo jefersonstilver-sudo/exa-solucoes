@@ -1,11 +1,13 @@
 
-import React from 'react';
-import { Video } from 'lucide-react';
+import React, { useState } from 'react';
+import { Video, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoSlotGrid } from '@/components/video-management/VideoSlotGrid';
 import { OrderSecurityBanner } from '@/components/order/OrderSecurityBanner';
 import { VideoSlot } from '@/types/videoManagement';
 import { getOrderSecurityStatus } from '@/services/videoUploadSecurityService';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 interface VideoManagementCardProps {
   orderStatus: string;
@@ -34,16 +36,40 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onSetBaseVideo,
   orderId
 }) => {
+  const [showHelp, setShowHelp] = useState(false);
   const security = getOrderSecurityStatus(orderStatus);
   const uploadAllowed = security.level === 'allowed' || security.level === 'active';
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Video className="h-5 w-5 mr-2" />
-          Gestão de Vídeos
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Video className="h-5 w-5 mr-2" />
+            Gestão de Vídeos
+          </div>
+          <Collapsible open={showHelp} onOpenChange={setShowHelp}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </CollapsibleTrigger>
+          </Collapsible>
         </CardTitle>
+        <Collapsible open={showHelp} onOpenChange={setShowHelp}>
+          <CollapsibleContent>
+            <div className="mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-900 mb-2">Como Funciona:</h4>
+              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                <li>Envie até 4 vídeos (MP4, MOV, AVI - máx. 500MB)</li>
+                <li>Aguarde a aprovação dos administradores</li>
+                <li>Com 2+ vídeos aprovados, você pode agendar horários</li>
+                <li>Selecione qual vídeo será exibido nos painéis</li>
+                <li>Defina um vídeo como base (padrão) se desejar</li>
+              </ul>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
         <p className="text-sm text-gray-600">
           {uploadAllowed 
             ? "Envie até 4 vídeos com títulos descritivos e selecione qual será exibido nos painéis."
