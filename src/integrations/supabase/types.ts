@@ -1542,6 +1542,13 @@ export type Database = {
           video_rejeitado: number
         }[]
       }
+      get_buildings_current_video_count: {
+        Args: { p_building_ids: string[] }
+        Returns: {
+          building_id: string
+          current_videos_count: number
+        }[]
+      }
       get_coupon_stats: {
         Args: Record<PropertyKey, never>
         Returns: {

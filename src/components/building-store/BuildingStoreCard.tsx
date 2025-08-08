@@ -9,13 +9,16 @@ import BuildingCardHeader from './card/BuildingCardHeader';
 import BuildingCardMetrics from './card/BuildingCardMetrics';
 import BuildingCardAmenities from './card/BuildingCardAmenities';
 import BuildingCardActions from './card/BuildingCardActions';
+import { PlayCircle } from 'lucide-react';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
+  videoCount?: number;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
-  building
+  building,
+  videoCount
 }) => {
   const isMobile = useIsMobile();
 
@@ -50,6 +53,16 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                     ⭐ Premium
                   </div>
                 </motion.div>
+              )}
+
+              {/* Em exibição: contador */}
+              {typeof videoCount === 'number' && (
+                <div className="absolute bottom-2 left-2 z-10">
+                  <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur px-2 py-1 rounded-full shadow-sm text-xs font-medium text-gray-800">
+                    <PlayCircle className="w-3.5 h-3.5 text-green-600" />
+                    <span>Em exibição: {videoCount}</span>
+                  </div>
+                </div>
               )}
             </div>
 
