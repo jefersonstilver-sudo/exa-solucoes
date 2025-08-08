@@ -38,7 +38,8 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-gray-900">Lista Administrativa de Prédios</CardTitle>
+        {/* Admin-only section: do NOT display these metrics publicly */}
+        <CardTitle className="text-gray-900">Ativos em Prédios Cadastrados</CardTitle>
         <CardDescription className="text-gray-600">
           {filteredBuildings.length} prédios encontrados ({activeBuildings.length} ativos, {inactiveBuildings.length} inativos)
         </CardDescription>
