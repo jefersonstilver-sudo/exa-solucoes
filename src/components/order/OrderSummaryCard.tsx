@@ -8,9 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface OrderSummaryCardProps {
   orderDetails: {
-    valor_total: number;
     plano_meses: number;
-    created_at: string;
   };
   displayPanels: string[];
   isRecovered?: boolean;
@@ -21,16 +19,6 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   displayPanels, 
   isRecovered 
 }) => {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
 
   return (
     <Card>
@@ -38,28 +26,20 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         <CardTitle>Resumo do Pedido</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-center space-x-3">
-            <DollarSign className="h-8 w-8 text-green-500" />
-            <div>
-              <p className="font-medium">Valor Total</p>
-              <p className="text-lg">{formatCurrency(orderDetails.valor_total)}</p>
-            </div>
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-center space-x-3">
             <Calendar className="h-8 w-8 text-purple-500" />
             <div>
-              <p className="font-medium">Duração</p>
-              <p className="text-lg">{orderDetails.plano_meses} meses</p>
+              <p className="font-medium">Duração do Contrato</p>
+              <p className="text-lg">{orderDetails.plano_meses} {orderDetails.plano_meses === 1 ? 'mês' : 'meses'}</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
             <Calendar className="h-8 w-8 text-orange-500" />
             <div>
-              <p className="font-medium">Criado em</p>
-              <p className="text-lg">{formatDate(orderDetails.created_at)}</p>
+              <p className="font-medium">Locais Contratados</p>
+              <p className="text-lg">{displayPanels.length} {displayPanels.length === 1 ? 'local' : 'locais'}</p>
             </div>
           </div>
         </div>

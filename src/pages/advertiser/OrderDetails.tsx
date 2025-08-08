@@ -20,6 +20,7 @@ import { VideoDisplayStatus } from '@/components/order/VideoDisplayStatus';
 import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
+import { VideoScheduleManager } from '@/components/video-management/VideoScheduleManager';
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 
@@ -266,17 +267,31 @@ const OrderDetails = () => {
             </div>
           </div>
         ) : (
-          <VideoManagementCard
-            orderStatus={orderDetails.status}
-            videoSlots={videoSlots}
-            uploading={uploading}
-            uploadProgress={uploadProgress}
-            onUpload={handleVideoUpload}
-            onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
-            onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
-            onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
-            onDownload={handleVideoDownload}
-          />
+          <>
+            <VideoManagementCard
+              orderStatus={orderDetails.status}
+              videoSlots={videoSlots}
+              uploading={uploading}
+              uploadProgress={uploadProgress}
+              onUpload={handleVideoUpload}
+              onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
+              onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
+              onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
+              onDownload={handleVideoDownload}
+            />
+            
+            {/* Video Schedule Manager - Only show if contract is active */}
+            {contractStatus.isActive && (
+              <VideoScheduleManager
+                videoSlots={videoSlots}
+                onScheduleUpdate={async (videoId: string, scheduleRules: any[]) => {
+                  console.log('📅 Atualizando programação:', { videoId, scheduleRules });
+                  // TODO: Implementar lógica de atualização de programação
+                }}
+                disabled={contractStatus.isExpired}
+              />
+            )}
+          </>
         )}
       </div>
 

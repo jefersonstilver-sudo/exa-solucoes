@@ -123,36 +123,42 @@ export const removeVideo = async (
   try {
     console.log('🗑️ [VIDEO_ACTION] Removendo vídeo:', slotId);
     
-    // Verificar se é o único vídeo selecionado
-    const selectedVideos = videoSlots.filter(slot => 
-      slot.video_data && slot.selected_for_display
-    );
-    
     const videoToRemove = videoSlots.find(slot => slot.id === slotId);
     
-    if (selectedVideos.length === 1 && videoToRemove?.selected_for_display) {
-      toast.error('❌ Não é possível remover o único vídeo selecionado. Selecione outro vídeo primeiro.');
+    if (!videoToRemove) {
+      toast.error('❌ Vídeo não encontrado');
       return false;
     }
 
     // Deletar arquivo do storage se existir
-    if (videoToRemove?.video_data?.url && videoToRemove.video_data.url !== 'pending_upload') {
+    if (videoToRemove.video_data?.url && videoToRemove.video_data.url !== 'pending_upload') {
       await deleteVideoFromStorage(videoToRemove.video_data.url);
     }
 
-    // Deletar do banco
+    // Deletar do banco - o trigger prevent_last_video_removal fará a validação
     const { error } = await supabase
       .from('pedido_videos')
       .delete()
       .eq('id', slotId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [VIDEO_ACTION] Erro ao remover vídeo:', error);
+      
+      // Verificar se é erro de proteção do último vídeo
+      if (error.message?.includes('CANNOT_REMOVE_LAST_VIDEO')) {
+        toast.error('❌ Não é possível remover o último vídeo ativo. Envie outro vídeo primeiro.');
+        return false;
+      }
+      
+      toast.error('❌ Erro ao remover vídeo');
+      return false;
+    }
 
     toast.success('✅ Vídeo removido com sucesso');
     return true;
   } catch (error) {
-    console.error('❌ [VIDEO_ACTION] Erro ao remover vídeo:', error);
-    toast.error('❌ Erro ao remover vídeo');
+    console.error('❌ [VIDEO_ACTION] Erro inesperado:', error);
+    toast.error('❌ Erro inesperado ao remover vídeo');
     return false;
   }
 };
