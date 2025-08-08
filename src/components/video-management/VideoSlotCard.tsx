@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { 
   Star,
   StarOff,
@@ -16,6 +17,8 @@ import {
 import { VideoPlayer } from './VideoPlayer';
 import { VideoSlotActions } from './VideoSlotActions';
 import { VideoSlotUpload } from './VideoSlotUpload';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface VideoSlot {
   id?: string;
@@ -23,6 +26,7 @@ interface VideoSlot {
   video_id?: string;
   is_active: boolean;
   selected_for_display: boolean;
+  is_base_video: boolean;
   approval_status: 'pending' | 'approved' | 'rejected';
   video_data?: {
     id: string;
@@ -53,6 +57,8 @@ interface VideoSlotCardProps {
   onRemove: (slotId: string) => void;
   onSelectForDisplay: (slotId: string) => void;
   onDownload?: (videoUrl: string, fileName: string) => void;
+  onSetBaseVideo?: (slotId: string) => void;
+  onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
 }
 
 export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
@@ -63,7 +69,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   onActivate,
   onRemove,
   onSelectForDisplay,
-  onDownload
+  onDownload,
+  onSetBaseVideo,
+  onScheduleVideo
 }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -191,8 +199,23 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <h3 className="font-semibold text-lg text-gray-900">Slot {slot.slot_position}</h3>
+            
+            {/* Estrela de Vídeo Base - Clicável apenas para vídeos aprovados */}
+            {slot.video_data && slot.approval_status === 'approved' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => slot.id && onSetBaseVideo && onSetBaseVideo(slot.id)}
+                className="p-1 h-auto"
+                title={slot.is_base_video ? "Este é o vídeo base" : "Clique para definir como vídeo base"}
+              >
+                <Star 
+                  className={`h-5 w-5 ${slot.is_base_video ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} 
+                />
+              </Button>
+            )}
+            
             {slot.video_data && getStatusIcon(slot.approval_status)}
-            {slot.video_data && getSelectionIcon(slot)}
             {isBlocked && (
               <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
                 Não Selecionável
@@ -201,6 +224,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           </div>
           <div className="flex flex-wrap gap-2">
             {slot.video_data && getStatusBadge(slot)}
+            {slot.is_base_video && (
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                VÍDEO BASE
+              </Badge>
+            )}
             {slot.video_data && getScheduleBadge(slot)}
           </div>
         </div>
@@ -289,6 +317,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               onRemove={onRemove}
               onSelectForDisplay={onSelectForDisplay}
               onDownload={handleDownload}
+              onScheduleVideo={onScheduleVideo}
             />
           </div>
         ) : (

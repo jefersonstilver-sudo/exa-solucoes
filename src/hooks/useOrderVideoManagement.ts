@@ -53,6 +53,7 @@ export const useOrderVideoManagement = (orderId: string) => {
         slot_position: position,
         is_active: false,
         selected_for_display: false,
+        is_base_video: false,
         approval_status: 'pending' as const
       })));
     } finally {
@@ -202,6 +203,18 @@ export const useOrderVideoManagement = (orderId: string) => {
     refreshSlots();
   }, [orderId]);
 
+  const setBaseVideo = async (slotId: string) => {
+    try {
+      const { setBaseVideo } = await import('@/services/videoBaseService');
+      const success = await setBaseVideo(slotId);
+      if (success) {
+        refreshSlots();
+      }
+    } catch (error) {
+      console.error('Erro ao definir vídeo base:', error);
+    }
+  };
+
   return {
     videoSlots,
     loading,
@@ -211,6 +224,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     selectVideoForDisplay,
     activateVideo,
     removeVideo,
+    setBaseVideo,
     uploadVideo,
     refreshSlots,
     // Estados do popup de sucesso

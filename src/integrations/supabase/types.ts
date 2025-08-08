@@ -944,6 +944,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_base_video: boolean
           pedido_id: string
           rejection_reason: string | null
           selected_for_display: boolean
@@ -958,6 +959,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_base_video?: boolean
           pedido_id: string
           rejection_reason?: string | null
           selected_for_display?: boolean
@@ -972,6 +974,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_base_video?: boolean
           pedido_id?: string
           rejection_reason?: string | null
           selected_for_display?: boolean
@@ -1520,6 +1523,14 @@ export type Database = {
           data_uso: string
         }[]
       }
+      get_current_display_video: {
+        Args: { p_pedido_id: string }
+        Returns: {
+          video_id: string
+          is_scheduled: boolean
+          priority_type: string
+        }[]
+      }
       get_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1724,6 +1735,10 @@ export type Database = {
         Returns: Json
       }
       select_video_for_display: {
+        Args: { p_pedido_video_id: string }
+        Returns: boolean
+      }
+      set_base_video: {
         Args: { p_pedido_video_id: string }
         Returns: boolean
       }

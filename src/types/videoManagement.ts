@@ -5,6 +5,7 @@ export interface VideoSlot {
   video_id?: string;
   is_active: boolean;
   selected_for_display: boolean;
+  is_base_video: boolean;
   approval_status: 'pending' | 'approved' | 'rejected';
   video_data?: {
     id: string;
@@ -37,6 +38,7 @@ export interface VideoManagementActions {
   selectVideoForDisplay: (slotId: string) => Promise<void>;
   activateVideo: (slotId: string) => Promise<void>;
   removeVideo: (slotId: string) => Promise<void>;
+  setBaseVideo: (slotId: string) => Promise<void>;
   uploadVideo: (slotPosition: number, file: File, userId: string, videoTitle?: string, scheduleRules?: any[]) => Promise<void>;
   refreshSlots: () => Promise<void>;
 }

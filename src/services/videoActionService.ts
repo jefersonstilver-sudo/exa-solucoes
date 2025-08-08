@@ -146,7 +146,13 @@ export const removeVideo = async (
       
       // Verificar se é erro de proteção do último vídeo
       if (error.message?.includes('CANNOT_REMOVE_LAST_VIDEO')) {
-        toast.error('❌ Não é possível remover o último vídeo ativo. Envie outro vídeo primeiro.');
+        toast.error('❌ Não é possível remover o último vídeo aprovado. Envie outro vídeo primeiro.');
+        return false;
+      }
+      
+      // Verificar se é erro de proteção do vídeo base
+      if (error.message?.includes('CANNOT_REMOVE_BASE_VIDEO')) {
+        toast.error('❌ Não é possível remover o vídeo base. Defina outro vídeo como base primeiro.');
         return false;
       }
       

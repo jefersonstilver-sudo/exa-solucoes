@@ -101,6 +101,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
           video_id: pedidoVideo.video_id,
           is_active: pedidoVideo.is_active || false,
           selected_for_display: pedidoVideo.selected_for_display || false,
+          is_base_video: pedidoVideo.is_base_video || false,
           approval_status: (pedidoVideo.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
           video_data: {
             id: video.id,
@@ -121,6 +122,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
           slot_position: position,
           is_active: false,
           selected_for_display: false,
+          is_base_video: false,
           approval_status: 'pending' as const
         };
       }
@@ -138,6 +140,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
       slot_position: position,
       is_active: false,
       selected_for_display: false,
+      is_base_video: false,
       approval_status: 'pending' as const
     }));
   }

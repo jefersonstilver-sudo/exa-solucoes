@@ -2,13 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
-  Play, 
   Trash2, 
   Download, 
-  Star,
+  Calendar,
   Lock,
   AlertTriangle,
-  ArrowRightLeft,
   Check,
   Info
 } from 'lucide-react';
@@ -23,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { VideoScheduleDetailsModal } from './VideoScheduleDetailsModal';
+import { SlotVideoScheduleModal } from './SlotVideoScheduleModal';
 
 interface VideoSlot {
   id?: string;
@@ -30,6 +29,7 @@ interface VideoSlot {
   video_id?: string;
   is_active: boolean;
   selected_for_display: boolean;
+  is_base_video: boolean;
   approval_status: 'pending' | 'approved' | 'rejected';
   video_data?: {
     id: string;
@@ -57,6 +57,7 @@ interface VideoSlotActionsProps {
   onRemove: (slotId: string) => void;
   onSelectForDisplay: (slotId: string) => void;
   onDownload: (videoUrl: string, fileName: string) => void;
+  onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
 }
 
 export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
@@ -64,10 +65,12 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   onActivate,
   onRemove,
   onSelectForDisplay,
-  onDownload
+  onDownload,
+  onScheduleVideo
 }) => {
   const [showApprovalAlert, setShowApprovalAlert] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showSlotScheduleModal, setShowSlotScheduleModal] = useState(false);
 
   if (!slot.video_data) return null;
 
@@ -112,66 +115,62 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
 
   const alertContent = getApprovalAlertContent();
 
+  const handleScheduleVideo = async (scheduleRules: any[]) => {
+    if (onScheduleVideo && slot.video_data?.id) {
+      await onScheduleVideo(slot.video_data.id, scheduleRules);
+    }
+  };
+
   return (
     <>
-      <div className="flex flex-col space-y-2">
-        {/* Status informativo para vídeos aprovados */}
-        {isApproved ? (
-          <div className="w-full flex items-center justify-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <Check className="h-5 w-5 text-green-600" />
-            <span className="font-medium text-green-700">Aprovado e em Exibição</span>
-          </div>
-        ) : (
-          /* Botão de Seleção - Para vídeos não aprovados (desabilitado) */
+      {/* Botões principais com apenas ícones */}
+      <div className="flex justify-center gap-2">
+        {/* Download - sempre disponível */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onDownload(slot.video_data!.url, slot.video_data!.nome)}
+          className="border-black text-black hover:bg-black hover:text-white p-2"
+          title="Download do vídeo"
+        >
+          <Download className="h-4 w-4" />
+        </Button>
+
+        {/* Agendar Vídeo - apenas para vídeos aprovados */}
+        {isApproved && (
           <Button
-            onClick={handleSelectForDisplay}
-            disabled={true}
-            className="w-full bg-gray-300 text-gray-500 cursor-not-allowed"
-            title={
-              isPending 
-                ? 'Vídeo aguardando aprovação - não pode ser selecionado'
-                : isRejected
-                  ? 'Vídeo rejeitado - não pode ser selecionado'
-                  : 'Vídeo não aprovado - não pode ser selecionado'
-            }
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSlotScheduleModal(true)}
+            className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white p-2"
+            title="Agendar horários para este vídeo"
           >
-            <Lock className="h-4 w-4 mr-2" />
-            Selecionar para Exibição
+            <Calendar className="h-4 w-4" />
           </Button>
         )}
-
-        {/* Botões secundários */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button
-            variant="outline"
-            size="default"
-            onClick={() => onDownload(slot.video_data!.url, slot.video_data!.nome)}
-            className="flex-1 border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-white"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="default"
-            onClick={() => setShowScheduleModal(true)}
-            className="flex-1 text-blue-600 hover:text-blue-700 border-blue-300 hover:bg-blue-50"
-          >
-            <Info className="h-4 w-4 mr-2" />
-            Detalhes
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="default"
-            onClick={() => slot.id && onRemove(slot.id)}
-            className="flex-1 text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Remover
-          </Button>
-        </div>
+        
+        {/* Detalhes */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowScheduleModal(true)}
+          className="border-gray-600 text-gray-600 hover:bg-gray-600 hover:text-white p-2"
+          title="Ver detalhes do vídeo"
+        >
+          <Info className="h-4 w-4" />
+        </Button>
+        
+        {/* Remover - verificar se é vídeo base */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => slot.id && onRemove(slot.id)}
+          disabled={slot.is_base_video}
+          className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={slot.is_base_video ? "Não é possível remover o vídeo base" : "Remover vídeo"}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Alert Dialog para vídeos não aprovados */}
@@ -201,6 +200,18 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
         videoName={slot.video_data?.nome || 'Vídeo sem nome'}
         scheduleRules={slot.schedule_rules}
       />
+
+      {/* Modal de Agendamento Individual do Slot */}
+      {slot.video_data && (
+        <SlotVideoScheduleModal
+          isOpen={showSlotScheduleModal}
+          onClose={() => setShowSlotScheduleModal(false)}
+          videoName={slot.video_data.nome}
+          videoId={slot.video_data.id}
+          onSave={handleScheduleVideo}
+          existingRules={slot.schedule_rules}
+        />
+      )}
     </>
   );
 };

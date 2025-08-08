@@ -9,6 +9,7 @@ interface VideoSlot {
   video_id?: string;
   is_active: boolean;
   selected_for_display: boolean;
+  is_base_video: boolean;
   approval_status: 'pending' | 'approved' | 'rejected';
   video_data?: {
     id: string;
@@ -32,6 +33,8 @@ interface VideoSlotGridProps {
   onRemove: (slotId: string) => void;
   onSelectForDisplay: (slotId: string) => void;
   onDownload?: (videoUrl: string, fileName: string) => void;
+  onSetBaseVideo?: (slotId: string) => void;
+  onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
 }
 
 export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
@@ -42,7 +45,9 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   onActivate,
   onRemove,
   onSelectForDisplay,
-  onDownload
+  onDownload,
+  onSetBaseVideo,
+  onScheduleVideo
 }) => {
   return (
     <div className="space-y-4">
@@ -60,6 +65,8 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             onRemove={onRemove}
             onSelectForDisplay={onSelectForDisplay}
             onDownload={onDownload}
+            onSetBaseVideo={onSetBaseVideo}
+            onScheduleVideo={onScheduleVideo}
           />
         ))}
       </div>
