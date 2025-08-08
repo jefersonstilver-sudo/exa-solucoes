@@ -61,7 +61,8 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
               days_of_week,
               start_time,
               end_time,
-              is_active
+              is_active,
+              is_all_day
             )
           `)
           .eq('campaign_id', campaign.id)

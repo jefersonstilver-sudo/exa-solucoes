@@ -99,9 +99,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
   };
 
-  // Verificar se tem agendamento ativo - MOVIDO PARA CIMA
+  // Verificar se tem agendamento ativo - PRIORIDADE: AGENDADO tem prioridade sobre APROVADO
   const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.length > 0 && 
     slot.schedule_rules.some(rule => rule.is_active);
+  
+  console.log(`🔍 [VIDEO_SLOT] Slot ${slot.slot_position} - hasActiveSchedule:`, hasActiveSchedule, 'rules:', slot.schedule_rules);
 
   const getStatusBadge = () => {
     if (!slot.video_data) return null;

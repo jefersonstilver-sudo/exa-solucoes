@@ -7,7 +7,7 @@ interface ScheduleRule {
   start_time: string;
   end_time: string;
   is_active: boolean;
-  is_all_day?: boolean;
+  is_all_day: boolean;
 }
 
 interface CampaignScheduleData {
