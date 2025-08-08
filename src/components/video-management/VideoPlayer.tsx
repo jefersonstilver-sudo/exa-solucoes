@@ -55,10 +55,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const isValidUrl = isValidVideoUrl(src);
 
   const handleRetry = () => {
-    console.log('🔄 Tentando recarregar vídeo...');
+    console.log('🔄 [VIDEO_PLAYER] Retry manual iniciado');
     const video = videoRef.current;
     if (video) {
-      video.load(); // Força o recarregamento do vídeo
+      // Forçar novo carregamento simples
+      video.load();
+      
+      // Tentar reproduzir automaticamente após carregar
+      video.addEventListener('loadeddata', () => {
+        video.play().catch(e => 
+          console.warn('⚠️ [VIDEO_PLAYER] Autoplay falhou após retry:', e)
+        );
+      }, { once: true });
     }
   };
 

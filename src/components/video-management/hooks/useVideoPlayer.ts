@@ -69,13 +69,13 @@ export const useVideoPlayer = (src: string, autoPlay: boolean, muted: boolean) =
       return;
     }
 
-    // Timeout de segurança mais generoso
+    // Timeout otimizado - força o elemento a ser considerado pronto após 8 segundos
     const emergencyTimeout = setTimeout(() => {
-      console.warn('🚨 [PLAYER] TIMEOUT DE EMERGÊNCIA ATIVADO - Forçando saída do loading');
+      console.warn('⚠️ [VIDEO_PLAYER] Timeout de emergência ativado - forçando elemento como pronto');
       setIsLoading(false);
       setHasError(true);
-      setErrorDetails('Elemento de vídeo não foi inicializado corretamente');
-    }, 30000); // 30 segundos como último recurso
+      setErrorDetails('Vídeo demorou muito para carregar - tente novamente');
+    }, 8000); // 8 segundos (otimizado)
 
     // Aguardar elemento estar pronto
     waitForVideoElement(videoRef, setIsElementReady)

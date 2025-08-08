@@ -1,260 +1,168 @@
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
-export interface VideoHealthCheck {
-  videoId: string;
-  url: string;
-  urlValid: boolean;
-  fileExists: boolean;
-  fileAccessible: boolean;
-  errorDetails?: string;
-  suggestions: string[];
-  alascaSeteStatus?: 'ok' | 'warning' | 'error';
+interface HealthCheckResult {
+  storage: boolean;
+  database: boolean;
+  auth: boolean;
+  overall: boolean;
+  latency: number;
 }
 
-export const checkVideoHealth = async (videoUrl: string, videoId: string): Promise<VideoHealthCheck> => {
-  console.log('🔍 [ALASCA SETE] Iniciando verificação de saúde do vídeo:', { videoId, videoUrl });
+interface PerformanceMetrics {
+  uploadSpeed: number; // MB/s
+  dbLatency: number; // ms
+  storageLatency: number; // ms
+  errorRate: number; // percentage
+}
+
+// Cache para URLs já validadas (evita validações repetidas)
+const urlValidationCache = new Map<string, { valid: boolean; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+export const testSystemHealth = async (): Promise<HealthCheckResult> => {
+  const startTime = Date.now();
+  const results = { storage: false, database: false, auth: false, overall: false, latency: 0 };
+
+  try {
+    // Teste paralelo de todos os componentes
+    const [authCheck, dbCheck, storageCheck] = await Promise.allSettled([
+      // Teste de autenticação
+      supabase.auth.getSession(),
+      
+      // Teste de banco (query rápida)
+      supabase.from('videos').select('id').limit(1),
+      
+      // Teste de storage (list buckets)
+      supabase.storage.listBuckets()
+    ]);
+
+    results.auth = authCheck.status === 'fulfilled' && authCheck.value.data.session !== null;
+    results.database = dbCheck.status === 'fulfilled' && !dbCheck.value.error;
+    results.storage = storageCheck.status === 'fulfilled' && !storageCheck.value.error;
+    
+    results.overall = results.auth && results.database && results.storage;
+    results.latency = Date.now() - startTime;
+
+    console.log('🏥 [HEALTH] System check:', results);
+    return results;
+    
+  } catch (error) {
+    console.error('💔 [HEALTH] Health check failed:', error);
+    results.latency = Date.now() - startTime;
+    return results;
+  }
+};
+
+export const validateUrlWithCache = (url: string): boolean => {
+  // Verificar cache primeiro
+  const cached = urlValidationCache.get(url);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    return cached.valid;
+  }
+
+  // Validação simplificada (mais permissiva)
+  let isValid = false;
+  try {
+    const urlObj = new URL(url);
+    isValid = urlObj.protocol === 'https:' && 
+             (urlObj.hostname.includes('supabase.co') || urlObj.hostname.includes('amazonaws.com'));
+  } catch {
+    isValid = url.includes('supabase.co') || url.includes('amazonaws.com');
+  }
+
+  // Armazenar no cache
+  urlValidationCache.set(url, { valid: isValid, timestamp: Date.now() });
   
-  const result: VideoHealthCheck = {
-    videoId,
-    url: videoUrl,
-    urlValid: false,
-    fileExists: false,
-    fileAccessible: false,
-    suggestions: [],
-    alascaSeteStatus: 'error'
+  // Limpar cache antigo periodicamente
+  if (urlValidationCache.size > 100) {
+    const now = Date.now();
+    for (const [key, value] of urlValidationCache.entries()) {
+      if ((now - value.timestamp) > CACHE_DURATION) {
+        urlValidationCache.delete(key);
+      }
+    }
+  }
+
+  return isValid;
+};
+
+export const trackPerformanceMetrics = (() => {
+  let metrics: PerformanceMetrics = {
+    uploadSpeed: 0,
+    dbLatency: 0,
+    storageLatency: 0,
+    errorRate: 0
   };
-
-  try {
-    // 1. Verificar se a URL é válida
-    try {
-      new URL(videoUrl);
-      result.urlValid = true;
-      console.log('✅ [ALASCA SETE] URL é válida:', videoUrl);
-    } catch {
-      result.urlValid = false;
-      result.errorDetails = 'URL malformada ou pendente';
-      if (videoUrl === 'pending_upload') {
-        result.suggestions.push('Upload não foi concluído - tentar enviar novamente');
-      } else {
-        result.suggestions.push('Gerar nova URL para o arquivo');
-      }
-      console.error('❌ [ALASCA SETE] URL inválida:', videoUrl);
-      return result;
-    }
-
-    // 2. Verificar se é uma URL do Supabase Storage
-    const isSupabaseUrl = videoUrl.includes('supabase.co/storage/v1/object/public/videos/');
-    if (!isSupabaseUrl) {
-      result.errorDetails = 'URL não é do Supabase Storage';
-      result.suggestions.push('Verificar se o arquivo foi enviado corretamente');
-      console.warn('⚠️ [ALASCA SETE] URL não é do Supabase Storage:', videoUrl);
-    }
-
-    // 3. Testar conectividade HTTP com timeout mais curto
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      console.log('🌐 [ALASCA SETE] Testando conectividade HTTP...');
-      const response = await fetch(videoUrl, { 
-        method: 'HEAD',
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        result.fileExists = true;
-        result.fileAccessible = true;
-        result.alascaSeteStatus = 'ok';
-        console.log('✅ [ALASCA SETE] Arquivo acessível via HTTP:', response.status);
-        
-        const contentType = response.headers.get('content-type');
-        if (contentType && !contentType.startsWith('video/')) {
-          result.suggestions.push(`Tipo de arquivo inesperado: ${contentType}`);
-          result.alascaSeteStatus = 'warning';
-        }
-        
-        const contentLength = response.headers.get('content-length');
-        if (contentLength) {
-          const sizeInMB = parseInt(contentLength) / (1024 * 1024);
-          console.log(`📦 [ALASCA SETE] Tamanho do arquivo: ${sizeInMB.toFixed(2)} MB`);
-        }
-        
-      } else {
-        result.fileExists = false;
-        result.fileAccessible = false;
-        result.errorDetails = `HTTP ${response.status} - ${response.statusText}`;
-        result.alascaSeteStatus = 'error';
-        console.error('❌ [ALASCA SETE] Erro HTTP:', response.status, response.statusText);
-        
-        if (response.status === 404) {
-          result.suggestions.push('Arquivo não encontrado no storage - reenviar vídeo');
-        } else if (response.status === 403) {
-          result.suggestions.push('Problema de permissão - verificar configuração');
-        } else {
-          result.suggestions.push('Erro no servidor - tentar novamente mais tarde');
-        }
-      }
-    } catch (error) {
-      result.fileAccessible = false;
-      result.alascaSeteStatus = 'error';
-      if (error.name === 'AbortError') {
-        result.errorDetails = 'Timeout na conexão (>5s)';
-        result.suggestions.push('Conexão muito lenta - verificar internet');
-      } else {
-        result.errorDetails = `Erro de rede: ${error.message}`;
-        result.suggestions.push('Verificar conectividade com a internet');
-      }
-      console.error('❌ [ALASCA SETE] Erro ao testar conectividade:', error);
-    }
-
-    // 4. Verificar no storage via API
-    if (isSupabaseUrl) {
-      try {
-        console.log('🔍 [ALASCA SETE] Verificando no Supabase Storage...');
-        const urlParts = videoUrl.split('/storage/v1/object/public/videos/');
-        if (urlParts.length === 2) {
-          const filePath = urlParts[1];
-          console.log('📁 [ALASCA SETE] Caminho do arquivo:', filePath);
-          
-          const pathSegments = filePath.split('/');
-          const fileName = pathSegments.pop();
-          const folderPath = pathSegments.join('/');
-          
-          const { data, error } = await supabase.storage
-            .from('videos')
-            .list(folderPath || '', {
-              search: fileName
-            });
-          
-          if (error) {
-            console.error('❌ [ALASCA SETE] Erro ao listar arquivos:', error);
-            result.suggestions.push('Erro ao acessar storage - verificar permissões');
-          } else if (data && data.length > 0) {
-            console.log('✅ [ALASCA SETE] Arquivo encontrado no storage:', data[0]);
-            result.fileExists = true;
-          } else {
-            console.log('❌ [ALASCA SETE] Arquivo não encontrado no storage');
-            result.suggestions.push('Arquivo foi deletado ou não foi enviado corretamente');
-          }
-        }
-      } catch (error) {
-        console.error('❌ [ALASCA SETE] Erro ao verificar storage:', error);
-        result.suggestions.push('Erro ao verificar storage do Supabase');
-      }
-    }
-
-  } catch (error) {
-    result.errorDetails = `Erro geral: ${error.message}`;
-    result.suggestions.push('Erro inesperado na verificação');
-    result.alascaSeteStatus = 'error';
-    console.error('❌ [ALASCA SETE] Erro geral na verificação:', error);
-  }
-
-  // Adicionar sugestões baseadas no resultado
-  if (!result.fileAccessible && result.urlValid) {
-    result.suggestions.push('Tentar reenviar o vídeo');
-    result.suggestions.push('Usar a funcionalidade de limpeza de registros órfãos');
-  }
-
-  console.log('📊 [ALASCA SETE] Resultado da verificação:', result);
-  return result;
-};
-
-export const diagnosePanelVideoIssues = async (orderId: string): Promise<VideoHealthCheck[]> => {
-  console.log('🔍 [ALASCA SETE] Diagnosticando vídeos do pedido:', orderId);
   
-  try {
-    const { data: pedidoVideos, error } = await supabase
-      .from('pedido_videos')
-      .select(`
-        id,
-        video_id,
-        slot_position,
-        selected_for_display,
-        videos (
-          id,
-          nome,
-          url
-        )
-      `)
-      .eq('pedido_id', orderId);
+  let uploadSamples: number[] = [];
+  let dbSamples: number[] = [];
+  let storageSamples: number[] = [];
+  let errorCount = 0;
+  let totalOperations = 0;
 
-    if (error) {
-      console.error('❌ [ALASCA SETE] Erro ao buscar vídeos do pedido:', error);
-      throw error;
+  return {
+    recordUploadSpeed: (mbPerSecond: number) => {
+      uploadSamples.push(mbPerSecond);
+      if (uploadSamples.length > 10) uploadSamples.shift();
+      metrics.uploadSpeed = uploadSamples.reduce((a, b) => a + b, 0) / uploadSamples.length;
+    },
+    
+    recordDbLatency: (ms: number) => {
+      dbSamples.push(ms);
+      if (dbSamples.length > 20) dbSamples.shift();
+      metrics.dbLatency = dbSamples.reduce((a, b) => a + b, 0) / dbSamples.length;
+    },
+    
+    recordStorageLatency: (ms: number) => {
+      storageSamples.push(ms);
+      if (storageSamples.length > 20) storageSamples.shift();
+      metrics.storageLatency = storageSamples.reduce((a, b) => a + b, 0) / storageSamples.length;
+    },
+    
+    recordError: () => {
+      errorCount++;
+      totalOperations++;
+      metrics.errorRate = (errorCount / totalOperations) * 100;
+    },
+    
+    recordSuccess: () => {
+      totalOperations++;
+      metrics.errorRate = (errorCount / totalOperations) * 100;
+    },
+    
+    getMetrics: (): PerformanceMetrics => ({ ...metrics }),
+    
+    shouldRetry: (): boolean => {
+      // Lógica inteligente: retry se error rate < 50% e latência não for muito alta
+      return metrics.errorRate < 50 && metrics.dbLatency < 5000;
     }
+  };
+})();
 
-    if (!pedidoVideos || pedidoVideos.length === 0) {
-      console.log('ℹ️ [ALASCA SETE] Nenhum vídeo encontrado para o pedido');
-      return [];
-    }
+// Sistema de alertas automáticos
+export const monitorSystemHealth = () => {
+  let lastHealthCheck = 0;
+  const HEALTH_CHECK_INTERVAL = 2 * 60 * 1000; // 2 minutos
 
-    console.log(`📊 [ALASCA SETE] Encontrados ${pedidoVideos.length} vídeos para diagnóstico`);
-
-    const healthChecks = await Promise.all(
-      pedidoVideos.map(async (pv) => {
-        if (pv.videos) {
-          return await checkVideoHealth(pv.videos.url, pv.videos.id);
-        } else {
-          return {
-            videoId: pv.video_id || 'unknown',
-            url: 'N/A',
-            urlValid: false,
-            fileExists: false,
-            fileAccessible: false,
-            errorDetails: 'Vídeo não encontrado no banco',
-            suggestions: ['Verificar integridade do banco de dados', 'Reenviar vídeo'],
-            alascaSeteStatus: 'error'
-          } as VideoHealthCheck;
+  return {
+    checkIfNeeded: async (): Promise<boolean> => {
+      const now = Date.now();
+      if ((now - lastHealthCheck) > HEALTH_CHECK_INTERVAL) {
+        lastHealthCheck = now;
+        const health = await testSystemHealth();
+        
+        if (!health.overall) {
+          console.warn('🚨 [MONITOR] Sistema com problemas:', health);
+          return false;
         }
-      })
-    );
-
-    return healthChecks;
-  } catch (error) {
-    console.error('❌ [ALASCA SETE] Erro ao diagnosticar vídeos:', error);
-    throw error;
-  }
-};
-
-export const testStorageConnectivity = async (): Promise<boolean> => {
-  try {
-    console.log('🔍 [ALASCA SETE] Testando conectividade com o storage...');
-    
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error('❌ [ALASCA SETE] Erro ao listar buckets:', bucketsError);
-      return false;
-    }
-    
-    const videosBucket = buckets?.find(bucket => bucket.name === 'videos');
-    if (!videosBucket) {
-      console.error('❌ [ALASCA SETE] Bucket "videos" não encontrado');
-      return false;
-    }
-    
-    try {
-      const { error: listError } = await supabase.storage
-        .from('videos')
-        .list('', { limit: 1 });
-      
-      if (listError) {
-        console.error('❌ [ALASCA SETE] Erro ao acessar bucket videos:', listError);
-        return false;
+        
+        if (health.latency > 3000) {
+          console.warn('🐌 [MONITOR] Sistema lento:', health.latency + 'ms');
+        }
+        
+        return health.overall;
       }
-      
-      console.log('✅ [ALASCA SETE] Conectividade com storage OK - Bucket videos acessível');
-      return true;
-    } catch (listError) {
-      console.error('❌ [ALASCA SETE] Erro ao testar acesso ao bucket:', listError);
-      return false;
+      return true; // Assumir OK se não chegou na hora de verificar
     }
-  } catch (error) {
-    console.error('❌ [ALASCA SETE] Erro ao testar conectividade:', error);
-    return false;
-  }
+  };
 };

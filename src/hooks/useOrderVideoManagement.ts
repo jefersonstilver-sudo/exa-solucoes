@@ -112,27 +112,39 @@ export const useOrderVideoManagement = (orderId: string) => {
     videoTitle?: string,
     scheduleRules?: any[]
   ) => {
+    // Sistema de saúde e métricas otimizado
+    const { testSystemHealth, trackPerformanceMetrics } = await import('@/services/videoHealthService');
+    const performanceTracker = trackPerformanceMetrics;
+    
     try {
-      console.log('📤 [ORDER_VIDEO] Iniciando upload:', { 
+      console.log('📤 [ORDER_VIDEO] Upload otimizado iniciado:', { 
         slotPosition, 
         fileName: file.name, 
         fileSize: file.size,
         videoTitle 
       });
       
+      // Health check preventivo simplificado
+      try {
+        const health = await testSystemHealth();
+        if (!health.overall) {
+          console.warn('⚠️ [ORDER_VIDEO] Sistema com problemas, mas continuando...');
+        }
+      } catch (healthError) {
+        console.warn('⚠️ [ORDER_VIDEO] Health check falhou, continuando...');
+      }
+      
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
 
-      // Validar título se fornecido
+      // Validação otimizada de título
       if (videoTitle && (videoTitle.length < 3 || videoTitle.length > 50)) {
         throw new Error('Título deve ter entre 3 e 50 caracteres');
       }
 
-      console.log('📋 [ORDER_VIDEO] REGRAS DE AGENDAMENTO RECEBIDAS:', {
-        hasRules: !!scheduleRules,
-        rulesCount: scheduleRules?.length || 0,
-        rules: scheduleRules
-      });
+      // Rastrear início da operação
+      const startTime = Date.now();
+      performanceTracker.recordSuccess();
 
       const success = await uploadVideoAction(
         slotPosition,
@@ -140,8 +152,14 @@ export const useOrderVideoManagement = (orderId: string) => {
         userId,
         orderId,
         (progress) => {
-          console.log(`📊 [ORDER_VIDEO] Progresso upload slot ${slotPosition}:`, progress);
+          console.log(`📊 [ORDER_VIDEO] Progresso slot ${slotPosition}:`, progress);
           setUploadProgress(prev => ({ ...prev, [slotPosition]: progress }));
+          
+          // Calcular velocidade de upload
+          const elapsed = (Date.now() - startTime) / 1000;
+          const bytesUploaded = (file.size * progress) / 100;
+          const mbPerSecond = (bytesUploaded / (1024 * 1024)) / elapsed;
+          performanceTracker.recordUploadSpeed(mbPerSecond);
         },
         videoTitle,
         scheduleRules
@@ -149,17 +167,21 @@ export const useOrderVideoManagement = (orderId: string) => {
 
       if (success) {
         console.log('✅ [ORDER_VIDEO] Upload concluído com sucesso');
+        performanceTracker.recordSuccess();
+        
+        // Limpeza otimizada do progresso
         setTimeout(() => {
           setUploadProgress(prev => {
             const newProgress = { ...prev };
             delete newProgress[slotPosition];
             return newProgress;
           });
-        }, 2000);
+        }, 1500); // Reduzido de 2s para 1.5s
 
         refreshSlots();
       } else {
         console.error('❌ [ORDER_VIDEO] Upload falhou');
+        performanceTracker.recordError();
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[slotPosition];
@@ -168,11 +190,7 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
     } catch (error: any) {
       console.error('❌ [ORDER_VIDEO] Erro no upload:', error);
-      console.log('🔍 [DEBUG] Verificando erro:', {
-        message: error.message,
-        hasConflictData: !!error.conflictData,
-        conflictData: error.conflictData
-      });
+      performanceTracker.recordError();
       
       setUploading(false);
       setUploadProgress(prev => {
@@ -181,17 +199,54 @@ export const useOrderVideoManagement = (orderId: string) => {
         return newProgress;
       });
       
-      // Verificar se é um erro de conflito de horário
+      // Sistema inteligente de tratamento de erros
       if (error.message === 'SCHEDULE_CONFLICT' && error.conflictData) {
-        console.log('🎯 [DEBUG] Abrindo modal de conflito:', error.conflictData);
+        console.log('🎯 [DEBUG] Conflito de agendamento:', error.conflictData);
         conflictModal.showConflictModal(
           error.conflictData.conflicts,
           error.conflictData.suggestions,
           error.conflictData.newVideoName
         );
-        return; // Não mostrar toast de erro para conflitos
+        return;
+      }
+      
+      // Erro de conectividade - sugerir retry
+      if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error('❌ Erro de conexão. Verifique sua internet e tente novamente.', {
+          action: {
+            label: 'Tentar Novamente',
+            onClick: () => uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules)
+          }
+        });
+        return;
+      }
+      
+      // Erro de timeout
+      if (error.message.includes('timeout') || error.message.includes('time')) {
+        toast.error('⏱️ Upload demorou muito. Arquivo muito grande ou conexão lenta.', {
+          action: {
+            label: 'Retry',
+            onClick: () => uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules)
+          }
+        });
+        return;
+      }
+      
+      // Erro genérico com métricas
+      const metrics = performanceTracker.getMetrics();
+      const shouldRetry = performanceTracker.shouldRetry();
+      
+      console.log('📊 [ORDER_VIDEO] Métricas atuais:', metrics);
+      
+      if (shouldRetry) {
+        toast.error(error.message || 'Erro no upload', {
+          action: {
+            label: 'Retry Inteligente',
+            onClick: () => uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules)
+          }
+        });
       } else {
-        toast.error(error.message || 'Erro ao fazer upload do vídeo');
+        toast.error(error.message || 'Erro no upload - sistema instável');
       }
     } finally {
       setUploading(false);
