@@ -4,7 +4,7 @@ import { defaultFilters } from './defaultFilters';
 
 export const createFilterActions = (set: any, get: any) => ({
   applyFilters: () => {
-    const { allBuildings, filters, disableFilters } = get();
+    const { allBuildings, filters, disableFilters, selectedLocation } = get();
     
     console.log('🔍 [BUILDING STORE] === APLICANDO FILTROS ===');
     console.log('🔍 [BUILDING STORE] Total de prédios disponíveis:', allBuildings.length);
@@ -16,27 +16,42 @@ export const createFilterActions = (set: any, get: any) => ({
       set({ buildings: activeBuildings });
       return;
     }
-    
-    const hasActiveFilters = (
-      filters.neighborhood.trim() !== '' ||
-      filters.venueType.length > 0 ||
-      filters.priceRange[0] > 0 || filters.priceRange[1] < 10000 ||
-      filters.audienceMin > 0 ||
-      filters.standardProfile.length > 0 ||
-      filters.amenities.length > 0
-    );
-    
-    if (!hasActiveFilters) {
-      console.log('🟢 [BUILDING STORE] Nenhum filtro específico ativo - Mostrando todos os prédios ativos');
-      const activeBuildings = allBuildings.filter((building: any) => building.status === 'ativo');
-      set({ buildings: activeBuildings });
-      return;
+
+    // Base: apenas prédios ativos
+    let result = allBuildings.filter((building: any) => building.status === 'ativo');
+
+    // Aplicar filtro de distância quando houver localização selecionada
+    if (selectedLocation && typeof selectedLocation.lat === 'number' && typeof selectedLocation.lng === 'number') {
+      const deg2rad = (deg: number) => deg * (Math.PI / 180);
+      const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // km
+        const dLat = deg2rad(lat2 - lat1);
+        const dLon = deg2rad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      const radiusKm = (filters.radius || 20000) / 1000;
+      result = result.filter((building: any) => {
+        if (typeof building.latitude !== 'number' || typeof building.longitude !== 'number') return false;
+        const d = distanceKm(selectedLocation.lat, selectedLocation.lng, building.latitude, building.longitude);
+        return d <= radiusKm;
+      });
+      console.log('📏 [BUILDING STORE] Após filtro de distância (<=', radiusKm, 'km):', result.length);
+    } else {
+      console.log('ℹ️ [BUILDING STORE] Sem localização selecionada - filtro de distância não aplicado');
     }
-    
-    const filteredBuildings = filterBuildings(allBuildings, filters);
-    console.log('✅ [BUILDING STORE] Prédios após aplicar filtros:', filteredBuildings.length);
-    
-    set({ buildings: filteredBuildings });
+
+    // Aplicar apenas filtro de Tipo de Prédio
+    if (filters.venueType && filters.venueType.length > 0) {
+      result = result.filter((building: any) => filters.venueType.includes(building.venue_type));
+    }
+
+    console.log('✅ [BUILDING STORE] Prédios após aplicar filtros finais:', result.length);
+    set({ buildings: result });
   },
 
   resetFilters: () => {

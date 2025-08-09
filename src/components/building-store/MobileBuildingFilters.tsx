@@ -23,15 +23,8 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Contar filtros ativos
-  const activeFiltersCount = Object.values(filters).filter(value => {
-    if (Array.isArray(value)) return value.length > 0;
-    if (typeof value === 'string') return value !== '';
-    if (typeof value === 'object' && value !== null) {
-      return Object.values(value).some(v => v !== null && v !== '');
-    }
-    return false;
-  }).length;
+  // Contar filtros ativos: apenas Tipo de Prédio
+  const activeFiltersCount = filters.venueType.length;
 
   return (
     <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
