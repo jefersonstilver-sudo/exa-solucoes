@@ -1,4 +1,3 @@
-
 project_id = "aakenoljsycyrcrchgxj"
 
 [api]
@@ -36,4 +35,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.create-external-client]
+verify_jwt = false
+
+[functions.geocode_v1]
 verify_jwt = false

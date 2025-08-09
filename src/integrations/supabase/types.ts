@@ -55,6 +55,48 @@ export type Database = {
           },
         ]
       }
+      building_geocodes: {
+        Row: {
+          address: string
+          building_id: string | null
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          normalized_address: string
+          precision: string | null
+          provider: string | null
+          raw: Json | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          building_id?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          normalized_address: string
+          precision?: string | null
+          provider?: string | null
+          raw?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          building_id?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          normalized_address?: string
+          precision?: string | null
+          provider?: string | null
+          raw?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       buildings: {
         Row: {
           amenities: string[] | null

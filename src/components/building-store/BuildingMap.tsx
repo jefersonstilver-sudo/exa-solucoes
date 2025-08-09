@@ -4,6 +4,7 @@ import loadGoogleMaps from '@/utils/googleMapsLoader';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 import { useToast } from '@/hooks/use-toast';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { getPersistentGeocode } from '@/services/geocodingCache';
 
 interface BuildingMapProps {
   buildings: BuildingStore[];
@@ -176,10 +177,25 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
         }
 
         // Build address string
-        const parts = [b.endereco, b.bairro, b.cidade || 'Foz do Iguaçu', b.estado || 'PR'].filter(Boolean);
-        if (!parts.length || !geocoderRef.current) continue;
+        const parts = [b.endereco, b.bairro, (b as any).cidade || 'Foz do Iguaçu', (b as any).estado || 'PR'].filter(Boolean);
+        if (!parts.length) continue;
 
         const address = parts.join(', ');
+
+        // Try persistent geocode (Supabase Edge + DB cache)
+        try {
+          const persisted = await getPersistentGeocode({ address, buildingId: b.id });
+          if (persisted?.coords) {
+            hasAny = true;
+            setCached(b, persisted.coords);
+            addMarker(persisted.coords, b);
+            await sleep(120);
+            continue;
+          }
+        } catch {}
+
+        // If Google Geocoder available, use as fallback (precise only)
+        if (!geocoderRef.current) continue;
         const result = await new Promise<{ coords: { lat: number; lng: number } | null; precise: boolean }>((resolve) => {
           geocoderRef.current!.geocode({ address }, (results, status) => {
             if (status === 'OK' && results && results[0]) {
