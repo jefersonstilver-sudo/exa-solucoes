@@ -32,6 +32,12 @@ export interface BuildingStoreState {
   initialized: boolean;
   forceRefresh?: boolean; // NOVO: Para forçar refresh
   
+  // Sincronização Card ↔ Mapa
+  hoveredBuildingId?: string | null;
+  selectedBuildingId?: string | null;
+  setHoveredBuilding?: (id: string | null) => void;
+  setSelectedBuildingId?: (id: string | null) => void;
+  
   // Ações básicas
   setSearchLocation: (location: string) => void;
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;

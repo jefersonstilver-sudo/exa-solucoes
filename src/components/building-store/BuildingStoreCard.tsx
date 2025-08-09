@@ -9,7 +9,7 @@ import BuildingCardHeader from './card/BuildingCardHeader';
 import BuildingCardMetrics from './card/BuildingCardMetrics';
 import BuildingCardAmenities from './card/BuildingCardAmenities';
 import BuildingCardActions from './card/BuildingCardActions';
-
+import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
@@ -21,6 +21,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   wideMode = false
 }) => {
   const isMobile = useIsMobile();
+  const { setHoveredBuilding, setSelectedBuildingId } = useBuildingStore();
 
   console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD ===');
   console.log('🏢 [BUILDING STORE CARD] isMobile:', isMobile);
@@ -29,7 +30,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   if (isMobile) {
     // Layout mobile: Card vertical compacto com título no topo
     return (
-      <Card className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative">
+      <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
         <CardContent className="p-0 relative">
           <div className="flex flex-col">
             {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
@@ -89,7 +90,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
 
   // Layout desktop: Card horizontal com título no topo
   return (
-    <Card className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative">
+    <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
       <CardContent className="p-0 relative">
         <div className={`flex flex-col lg:flex-row ${wideMode ? 'min-h-[420px]' : 'min-h-[320px]'}`}>
           {/* Imagem Principal - Desktop: Lado esquerdo */}

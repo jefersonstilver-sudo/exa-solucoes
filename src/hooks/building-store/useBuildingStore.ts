@@ -17,6 +17,12 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   filters: { ...defaultFilters },
   disableFilters: false,
   initialized: false,
+
+  // Sincronização Card ↔ Mapa
+  hoveredBuildingId: null,
+  selectedBuildingId: null,
+  setHoveredBuilding: (id) => set({ hoveredBuildingId: id }),
+  setSelectedBuildingId: (id) => set({ selectedBuildingId: id }),
   
   // Combine all actions
   ...createBuildingStoreActions(set, get),
