@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
-import bannerImage from '@/assets/banner-publicidade.png';
+
 
 interface BuildingSearchSectionProps {
   searchLocation: string;
@@ -47,12 +47,12 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
       >
         {/* Container principal com espaçamento adequado */}
         <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-3 mt-2' : 'px-6 py-4 mt-3'}`}>
-          <div className="w-full max-w-6xl mx-auto">
+          <div className="w-full mx-auto">
             {/* Layout de duas colunas no desktop, uma coluna no mobile */}
             <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-12'}`}>
               
               {/* Card de busca - Coluna esquerda (aumentado) */}
-              <div className={`${isMobile ? 'col-span-1' : 'col-span-8'}`}>
+              <div className={`${isMobile ? 'col-span-1' : 'col-span-12'}`}>
                 <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative z-10 h-full">
                   {/* Container interno com padding adequado */}
                   <div className={`relative ${isMobile ? 'p-4' : 'p-6'}`}>
@@ -93,7 +93,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                             value={searchLocation}
                             onChange={(e) => setSearchLocation(e.target.value)}
                             className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#3C1361] focus:ring-2 focus:ring-[#3C1361]/10 bg-white transition-all duration-300 shadow-lg ${
-                              isMobile ? 'pl-12 pr-4 py-4 text-base h-14' : 'pl-14 pr-4 py-5 text-lg h-16'
+                              isMobile ? 'pl-12 pr-4 py-3 text-base h-12' : 'pl-14 pr-4 py-3 text-lg h-12'
                             }`}
                           />
                           {selectedLocation && (
@@ -111,7 +111,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                           type="submit"
                           disabled={isSearching || !searchLocation.trim()}
                           className={`bg-gradient-to-r from-[#3C1361] to-[#4A1B7D] hover:from-[#4A1B7D] hover:to-[#3C1361] text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${
-                            isMobile ? 'px-8 py-4 h-14 w-full' : 'px-10 py-5 h-16 w-full'
+                            isMobile ? 'px-8 py-3 h-12 w-full' : 'px-10 py-3 h-12 w-full'
                           }`}
                         >
                           {isSearching ? (
@@ -132,28 +132,6 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                 </div>
               </div>
 
-              {/* Banner promocional - Coluna direita com imagem */}
-              <div className={`${isMobile ? 'col-span-1' : 'col-span-4'}`}>
-                <motion.div 
-                  className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative z-10 h-full"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  {/* Container da imagem com padding */}
-                  <div className={`relative h-full ${isMobile ? 'p-4' : 'p-6'}`}>
-                    {/* Imagem com efeito sombreado */}
-                    <div className="w-full h-full rounded-xl overflow-hidden shadow-2xl">
-                      <img 
-                        src={bannerImage} 
-                        alt="Banner publicitário"
-                        className="w-full h-full object-cover"
-                        loading="eager"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
               
             </div>
           </div>
