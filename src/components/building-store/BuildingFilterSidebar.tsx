@@ -6,6 +6,8 @@ import { Map, Filter, Sparkles, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BuildingFiltersComponent from './BuildingFilters';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import BuildingMap from './BuildingMap';
+import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 
 interface BuildingFilterSidebarProps {
   filters: BuildingFilters;
@@ -25,6 +27,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
   onToggle
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
+  const { buildings, selectedLocation } = useBuildingStore();
 
   return (
     <div className={`space-y-3 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-14' : 'w-full'}`}>
@@ -106,24 +109,8 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
             exit={{ opacity: 0, height: 0, scale: 0.95 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
           >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center p-6">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, duration: 0.3 }}
-                >
-                  <Map className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                </motion.div>
-                <motion.p 
-                  className="text-gray-500 text-sm bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg font-medium shadow-sm border border-gray-200/50"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Mapa interativo será implementado em breve
-                </motion.p>
-              </div>
+            <div className="absolute inset-0">
+              <BuildingMap buildings={buildings} selectedLocation={selectedLocation} />
             </div>
           </motion.div>
         )}
