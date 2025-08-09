@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
-import { Map, Filter, Sparkles, Menu, X } from 'lucide-react';
+import { Map, Filter, Sparkles, Menu, X, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BuildingFiltersComponent from './BuildingFilters';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import BuildingMap from './BuildingMap';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 
@@ -27,6 +28,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
   onToggle
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
+  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const { buildings, selectedLocation } = useBuildingStore();
 
   return (
@@ -110,13 +112,30 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
             transition={{ duration: 0.4, ease: "easeInOut" }}
           >
             <div className="absolute inset-0">
-              <BuildingMap buildings={buildings} selectedLocation={selectedLocation} />
+              <BuildingMap buildings={buildings} selectedLocation={selectedLocation} scrollwheel={false} />
+              <div className="absolute top-2 right-2 z-10">
+                <Button
+                  variant="outline"
+                  className="border-2 border-[#3C1361]/20 text-[#3C1361] bg-white/90 hover:bg-white rounded-lg px-3 py-2 h-9 flex items-center gap-2 shadow-sm"
+                  onClick={() => setIsMapDialogOpen(true)}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  <span className="hidden sm:inline text-sm font-medium">Expandir</span>
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-      
-      {/* Mobile Filter Trigger */}
+
+      {/* Full-screen Map Dialog */}
+      <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
+        <DialogContent className="max-w-[96vw] w-[96vw] p-0">
+          <div className="w-full h-[82vh]">
+            <BuildingMap buildings={buildings} selectedLocation={selectedLocation} scrollwheel={true} defaultZoom={15} />
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="lg:hidden w-full">
         <Sheet>
           <SheetTrigger asChild>
