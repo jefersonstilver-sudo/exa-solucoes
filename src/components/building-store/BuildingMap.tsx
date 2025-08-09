@@ -234,6 +234,57 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
     };
   }, [buildings, selectedLocation, defaultZoom]);
 
+  // Sync card → marker visuals (hover/selection)
+  useEffect(() => {
+    const maps = (window as any).google?.maps as typeof google.maps | undefined;
+    if (!maps) return;
+    markerByIdRef.current.forEach((marker, id) => {
+      const isHovered = hoveredBuildingId === id;
+      const isSelected = selectedBuildingId === id;
+      const baseIcon = {
+        path: maps.SymbolPath.CIRCLE,
+        fillColor: '#3C1361',
+        fillOpacity: 0.95,
+        strokeColor: '#ffffff',
+        strokeWeight: 1.5,
+        scale: isSelected ? 11 : isHovered ? 10 : 8,
+      } as google.maps.Symbol;
+      marker.setIcon(baseIcon);
+    });
+  }, [hoveredBuildingId, selectedBuildingId]);
+
+  // Handle map container resize (e.g., when expanding dialog)
+  useEffect(() => {
+    const el = mapRef.current;
+    const maps = (window as any).google?.maps as typeof google.maps | undefined;
+    if (!el || !maps) return;
+
+    const observer = new ResizeObserver(() => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      // Trigger internal resize and recenter
+      try {
+        if ((maps as any).event?.trigger) {
+          (maps as any).event.trigger(map, 'resize');
+        }
+      } catch {}
+
+      if (selectedLocation) {
+        map.setCenter(selectedLocation);
+      } else if (markersRef.current.length > 0) {
+        const b = new maps.LatLngBounds();
+        markersRef.current.forEach(m => {
+          const pos = m.getPosition();
+          if (pos) b.extend(pos);
+        });
+        map.fitBounds(b, 40);
+      }
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [selectedLocation]);
+
   return (
     <div ref={mapRef} className="w-full h-full" />
   );
