@@ -7,9 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface BuildingCardImageProps {
   building: BuildingStore;
+  mode?: 'square' | 'fill';
 }
 
-const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
+const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 'square' }) => {
   const getImageUrl = (path: string) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
@@ -21,7 +22,7 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building }) => {
   const totalImages = imageUrls.length;
 
   return (
-    <div className="relative w-full aspect-square">
+    <div className={mode === 'fill' ? "relative w-full h-full min-h-[280px]" : "relative w-full aspect-square"}>
       {primaryImage ? (
         <img
           src={primaryImage}

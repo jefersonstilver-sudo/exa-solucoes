@@ -13,10 +13,12 @@ import BuildingCardActions from './card/BuildingCardActions';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
+  wideMode?: boolean;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
-  building
+  building,
+  wideMode = false
 }) => {
   const isMobile = useIsMobile();
 
@@ -89,10 +91,10 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   return (
     <Card className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative">
       <CardContent className="p-0 relative">
-        <div className="flex flex-col lg:flex-row min-h-[320px]">
+        <div className={`flex flex-col lg:flex-row ${wideMode ? 'min-h-[420px]' : 'min-h-[320px]'}`}>
           {/* Imagem Principal - Desktop: Lado esquerdo */}
-          <div className="lg:w-2/5 relative overflow-hidden">
-            <BuildingCardImage building={building} />
+          <div className={`${wideMode ? 'lg:w-1/2' : 'lg:w-2/5'} relative overflow-hidden`}>
+            <BuildingCardImage building={building} mode={wideMode ? 'fill' : 'square'} />
             
             
             
@@ -112,7 +114,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
           </div>
 
           {/* Informações - Desktop: Lado direito com título no topo */}
-          <div className="lg:w-3/5 p-4 lg:p-6 relative flex flex-col">
+          <div className={`${wideMode ? 'lg:w-1/2' : 'lg:w-3/5'} p-4 lg:p-6 relative flex flex-col`}>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}

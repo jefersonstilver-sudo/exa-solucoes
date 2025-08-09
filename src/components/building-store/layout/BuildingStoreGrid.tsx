@@ -93,6 +93,7 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
             isLoading={isLoading}
             isSearching={isSearching}
             selectedLocation={selectedLocation}
+            wideMode={sidebarCollapsed}
           />
         </div>
       </div>

@@ -11,13 +11,15 @@ interface BuildingStoreGridProps {
   isLoading: boolean;
   isSearching: boolean;
   selectedLocation: { lat: number, lng: number } | null;
+  wideMode?: boolean;
 }
 
 const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   buildings,
   isLoading,
   isSearching,
-  selectedLocation
+  selectedLocation,
+  wideMode = false
 }) => {
   const isMobile = useIsMobile();
 
@@ -209,7 +211,7 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
               } : {}}
               className="group"
             >
-              <BuildingStoreCard building={building} />
+              <BuildingStoreCard building={building} wideMode={!!wideMode} />
             </motion.div>
           );
         })}
