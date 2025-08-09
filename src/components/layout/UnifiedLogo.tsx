@@ -41,7 +41,7 @@ const UnifiedLogo = ({
         alt={logoUrl ? altText : "INDEXA Logo"}
         className={`w-full h-auto object-contain mt-1 ${filterClasses[variant]} ${showSubtitle ? 'mb-1' : ''}`}
       />
-      {showSubtitle && (
+      {false && (
         <span className={`text-xs font-medium text-center whitespace-nowrap ${variant === 'light' ? 'text-white' : 'text-gray-700'}`}>
           Publicidade inteligente
         </span>
