@@ -1,32 +1,48 @@
-import React, { useRef } from 'react';
-import LinkaeHero from '@/components/linkae/LinkaeHero';
-import LinkaeStorytelling from '@/components/linkae/LinkaeStorytelling';
-import LinkaeExamples from '@/components/linkae/LinkaeExamples';
-import LinkaeDifferentiators from '@/components/linkae/LinkaeDifferentiators';
-import LinkaeForm from '@/components/linkae/LinkaeForm';
-import LinkaeFloatingCTA from '@/components/linkae/LinkaeFloatingCTA';
+import React, { useEffect, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
+import LinkaeHeroNew from '@/components/linkae-new/LinkaeHeroNew';
+import LinkaeSolutionSection from '@/components/linkae-new/LinkaeSolutionSection';
+import CTAFormSection from '@/components/linkae-new/CTAFormSection';
 
 const Linkae = () => {
-  console.log('📱 LINKAÊ: Inicializando página Social Media com tema claro');
-  
   const formRef = useRef<HTMLElement>(null);
 
+  // SEO básico sem dependências externas
+  useEffect(() => {
+    document.title = 'LinkAE: Ideias e calendário de conteúdo | Indexa';
+
+    const desc = 'Acabe com o “não sei o que postar”. A LinkAE cria seu calendário inteligente com ideias, artes e legendas prontas — toda semana.';
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    if (meta) meta.setAttribute('content', desc);
+
+    const linkRelCanonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const canonicalHref = `${window.location.origin}/linkae`;
+    if (!linkRelCanonical) {
+      const link = document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      link.setAttribute('href', canonicalHref);
+      document.head.appendChild(link);
+    } else {
+      linkRelCanonical.setAttribute('href', canonicalHref);
+    }
+  }, []);
+
   const scrollToForm = () => {
-    console.log('📱 LINKAÊ: Scroll para formulário');
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <Layout>
-      <div className="min-h-screen bg-white text-gray-900">
-        <LinkaeHero onScrollToForm={scrollToForm} />
-        <LinkaeStorytelling />
-        <LinkaeExamples />
-        <LinkaeDifferentiators />
-        <LinkaeForm formRef={formRef} />
-        <LinkaeFloatingCTA onScrollToForm={scrollToForm} />
-      </div>
+      <main className="min-h-screen bg-white text-gray-900">
+        <LinkaeHeroNew onScrollToForm={scrollToForm} />
+        <LinkaeSolutionSection />
+        <CTAFormSection formRef={formRef} />
+      </main>
     </Layout>
   );
 };
