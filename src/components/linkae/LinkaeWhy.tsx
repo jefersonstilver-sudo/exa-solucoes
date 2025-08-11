@@ -15,17 +15,17 @@ const bullets = [
 
 const LinkaeWhy: React.FC = () => {
   return (
-    <section className="bg-background">
+    <section className="bg-background section-bg-soft-linkae">
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-12 md:py-16">
         <header className="text-center mb-8 md:mb-10 animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight gradient-text-linkae">
             Por que a Linkaê?
           </h2>
         </header>
 
         <ul className="space-y-4">
           {bullets.map((b) => (
-            <li key={b.title} className="p-5 rounded-lg border bg-card animate-fade-in">
+            <li key={b.title} className="p-5 rounded-lg border bg-card animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30">
               <p className="text-base md:text-lg text-foreground">{b.title}</p>
             </li>
           ))}

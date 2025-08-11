@@ -11,10 +11,10 @@ const steps = [
 
 const LinkaeHowItWorks: React.FC = () => {
   return (
-    <section className="bg-background">
+    <section className="bg-background section-bg-soft-linkae">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-16">
         <header className="text-center mb-8 md:mb-12 animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight gradient-text-linkae">
             Como funciona
           </h2>
           <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
@@ -24,8 +24,8 @@ const LinkaeHowItWorks: React.FC = () => {
 
         <ol className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {steps.map(({ icon: Icon, title, desc }, idx) => (
-            <li key={title} className="relative flex items-start gap-4 p-5 rounded-lg border bg-card animate-fade-in">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+            <li key={title} className="relative flex items-start gap-4 p-5 rounded-lg border bg-card animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-linkae-accent/10 text-linkae-accent shrink-0">
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>

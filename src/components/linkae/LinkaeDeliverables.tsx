@@ -43,10 +43,10 @@ const items = [
 
 const LinkaeDeliverables: React.FC = () => {
   return (
-    <section className="bg-background">
+    <section className="bg-background section-bg-soft-linkae">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-16">
         <header className="text-center mb-8 md:mb-12 animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight gradient-text-linkae">
             O que a Linkaê entrega
           </h2>
           <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
@@ -57,12 +57,12 @@ const LinkaeDeliverables: React.FC = () => {
           {items.map(({ icon: Icon, title, desc, highlight }) => (
             <Card
               key={title}
-              className={`border-border/60 bg-card hover-scale animate-fade-in ${
-                highlight ? "ring-1 ring-primary/20" : ""
+              className={`border-border/60 bg-card hover-scale animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30 ${
+                highlight ? "ring-1 ring-linkae-accent/30" : ""
               }`}
             >
               <CardHeader className="flex flex-row items-center gap-3">
-                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary`}> 
+                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-md bg-linkae-primary/10 text-linkae-primary`}> 
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div className="flex-1">
@@ -70,7 +70,7 @@ const LinkaeDeliverables: React.FC = () => {
                     {title}
                   </CardTitle>
                   {highlight && (
-                    <span className="mt-1 inline-flex text-[10px] uppercase tracking-wide text-primary">
+                    <span className="mt-1 inline-flex text-[10px] uppercase tracking-wide text-linkae-accent">
                       Destaque
                     </span>
                   )}

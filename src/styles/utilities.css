@@ -42,3 +42,19 @@
     display: none;
   }
 }
+
+/* Linkaê gradient utilities */
+.gradient-text-linkae {
+  background-image: linear-gradient(135deg, hsl(var(--linkae-primary)), hsl(var(--linkae-accent)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.section-bg-soft-linkae {
+  background-image: radial-gradient(800px 300px at 50% -10%, hsl(var(--linkae-primary) / 0.08), transparent 70%);
+}
+
+.glow-linkae {
+  box-shadow: 0 0 40px hsl(var(--linkae-accent) / 0.25);
+}

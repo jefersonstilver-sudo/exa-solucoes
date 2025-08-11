@@ -11,9 +11,9 @@ interface LinkaeFinalCTAProps {
 
 const LinkaeFinalCTA: React.FC<LinkaeFinalCTAProps> = ({ className = "" }) => {
   return (
-    <aside className={`bg-background ${className}`}>
+    <aside className={`bg-background bg-gradient-to-br from-linkae-primary/10 via-linkae-accent/10 to-transparent ${className}`}>
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-12 md:py-16 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+        <h2 className="text-2xl md:text-3xl font-bold gradient-text-linkae">
           Vamos fazer sua marca avançar?
         </h2>
         <p className="text-muted-foreground mt-3">
