@@ -47,15 +47,9 @@ export const fetchBuildingsData = async () => {
   try {
     console.log('🏢 [BUILDINGS DATA SERVICE] Iniciando busca de prédios para acesso público...');
     
-    // CORREÇÃO CRÍTICA: Remover verificação de autenticação para permitir acesso público
-    // A tabela buildings agora tem RLS configurado para permitir leitura pública de prédios ativos
-    
-    // Query para buscar prédios com timeout - REMOVIDA autenticação obrigatória
+    // Consulta segura via função RPC (sem expor dados sensíveis)
     const buildingsPromise = supabase
-      .from('buildings')
-      .select('*')
-      .eq('status', 'ativo') // Apenas prédios ativos são visíveis publicamente
-      .order('created_at', { ascending: false });
+      .rpc('get_public_buildings');
 
     const panelsPromise = supabase
       .from('painels')

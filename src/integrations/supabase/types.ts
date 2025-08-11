@@ -1695,6 +1695,34 @@ export type Database = {
           video_orientacao: string
         }[]
       }
+      get_public_buildings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          nome: string
+          endereco: string
+          bairro: string
+          status: string
+          venue_type: string
+          monthly_traffic: number
+          latitude: number
+          longitude: number
+          numero_unidades: number
+          publico_estimado: number
+          preco_base: number
+          image_urls: string[]
+          amenities: string[]
+          padrao_publico: string
+          quantidade_telas: number
+          visualizacoes_mes: number
+          imagem_principal: string
+          imagem_2: string
+          imagem_3: string
+          imagem_4: string
+          caracteristicas: string[]
+          created_at: string
+        }[]
+      }
       get_real_approval_stats: {
         Args: Record<PropertyKey, never>
         Returns: {

@@ -33,10 +33,7 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
     
     // Força uma nova consulta sem cache
     const { data: buildings, error } = await supabase
-      .from('buildings')
-      .select('*')
-      .eq('status', 'ativo')
-      .order('created_at', { ascending: false });
+      .rpc('get_public_buildings');
 
     if (error) {
       console.error('❌ [SIMPLE SERVICE] Erro na query:', error);

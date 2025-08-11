@@ -35,10 +35,7 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
     console.log('🏢 [BUILDING STORE SERVICE] === VERSÃO SIMPLIFICADA ===');
     
     const { data: buildings, error } = await supabase
-      .from('buildings')
-      .select('*')
-      .eq('status', 'ativo')
-      .order('created_at', { ascending: false });
+      .rpc('get_public_buildings');
 
     if (error) {
       console.error('❌ [BUILDING STORE SERVICE] Erro na query:', error);
