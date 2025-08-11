@@ -82,7 +82,8 @@ const Index = () => {
           ]);
         } else {
           console.log('Successfully fetched configs:', data);
-          setConfigs(data || []);
+          const normalized = (data || []).map((c) => c.href === '/linkae' ? { ...c, title: 'Marketing' } : c);
+          setConfigs(normalized);
         }
       } catch (error) {
         console.error('Unexpected error during fetch:', error);
