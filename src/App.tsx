@@ -69,12 +69,13 @@ console.log('✅ QueryClient initialized');
 
 // Main App content wrapper with Coming Soon protection
 const AppContent = () => {
-  if (MAINTENANCE_MODE) {
+  const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('indexa_dev_session') === 'true';
+  if (MAINTENANCE_MODE && !isDevSession) {
     console.log('🚧 Maintenance mode ON - showing ComingSoonPage');
     return <ComingSoonPage />;
   }
 
-  console.log('✅ Maintenance mode OFF - showing main app');
+  console.log('✅ Maintenance bypass or OFF - showing main app');
 
   // Normal app routes
   return (

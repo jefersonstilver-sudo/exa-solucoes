@@ -38,7 +38,10 @@ const ComingSoonPage = () => {
       
       setPassword('');
       setError('');
-      console.log('🔄 Fields cleared, waiting for state propagation...');
+      console.log('🔄 Fields cleared, reloading to bypass maintenance...');
+      try {
+        window.location.reload();
+      } catch {}
     } else {
       setError('Senha incorreta');
       setPassword('');
