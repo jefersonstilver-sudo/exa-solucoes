@@ -43,13 +43,28 @@ const BriefingFormSection = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('leads_produtora')
-        .insert([formData]);
+      const { data, error } = await supabase
+        .rpc('submit_lead_produtora', {
+          p_nome: formData.nome,
+          p_email: formData.email,
+          p_whatsapp: formData.whatsapp,
+          p_empresa: formData.empresa || null,
+          p_tipo_video: formData.tipo_video || null,
+          p_objetivo: formData.objetivo || null,
+          p_agendar_cafe: formData.agendar_cafe,
+        });
 
-      if (error) {
-        console.error('Erro ao salvar lead:', error);
-        toast.error('Erro ao enviar formulário. Tente novamente.');
+      const success = (data as any)?.success === true;
+      if (error || !success) {
+        console.error('Erro ao salvar lead:', error || data);
+        const reason = (data as any)?.error as string | null;
+        const friendly =
+          reason === 'rate_limited' ? 'Muitas submissões recentemente. Tente novamente em alguns minutos.' :
+          reason === 'invalid_email' ? 'E-mail inválido.' :
+          reason === 'invalid_whatsapp' ? 'WhatsApp inválido.' :
+          reason === 'invalid_name' ? 'Nome inválido.' :
+          'Erro ao enviar formulário. Tente novamente.';
+        toast.error(friendly);
       } else {
         setSubmitted(true);
         toast.success('Briefing enviado com sucesso!');

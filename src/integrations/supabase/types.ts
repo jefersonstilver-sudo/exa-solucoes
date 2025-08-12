@@ -1862,6 +1862,18 @@ export type Database = {
         Args: { p_pedido_video_id: string }
         Returns: Json
       }
+      submit_lead_produtora: {
+        Args: {
+          p_nome: string
+          p_email: string
+          p_whatsapp: string
+          p_empresa?: string
+          p_tipo_video?: string
+          p_objetivo?: string
+          p_agendar_cafe?: boolean
+        }
+        Returns: Json
+      }
       switch_video_selection: {
         Args: { p_pedido_video_id: string }
         Returns: boolean
