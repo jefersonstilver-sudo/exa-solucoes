@@ -7,13 +7,15 @@ interface UseVideoScheduleMonitorProps {
   enabled?: boolean;
   intervalMinutes?: number;
   enableRealtime?: boolean;
+  onDataChange?: () => void;
 }
 
 export const useVideoScheduleMonitor = ({ 
   orderId, 
   enabled = true, 
   intervalMinutes = 1,
-  enableRealtime = true
+  enableRealtime = true,
+  onDataChange
 }: UseVideoScheduleMonitorProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -91,10 +93,12 @@ export const useVideoScheduleMonitor = ({
         },
         (payload) => {
           console.log('📢 [SCHEDULE_MONITOR] Mudança detectada em pedido_videos:', payload);
-          // Força um refresh quando houver mudanças
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          // Atualiza dados via callback em vez de recarregar a página
+          if (onDataChange) {
+            setTimeout(() => {
+              onDataChange();
+            }, 1000);
+          }
         }
       )
       .subscribe();

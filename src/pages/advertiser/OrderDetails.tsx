@@ -83,7 +83,8 @@ const OrderDetails = () => {
   const { forceUpdate } = useVideoScheduleMonitor({
     orderId: id || '',
     enabled: !!id && !!orderDetails,
-    intervalMinutes: 1
+    intervalMinutes: 1,
+    onDataChange: refreshSlots
   });
 
   useEffect(() => {

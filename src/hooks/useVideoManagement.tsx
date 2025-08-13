@@ -62,7 +62,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
       if (success) {
         // Recarregar slots após upload bem-sucedido
-        window.location.reload();
+        const slots = await loadVideoSlots(orderId);
+        setVideoSlots(slots);
       }
 
     } catch (error) {
@@ -85,7 +86,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
       if (error) throw error;
 
       toast.success('Vídeo ativado com sucesso!');
-      window.location.reload();
+      const slots = await loadVideoSlots(orderId);
+      setVideoSlots(slots);
     } catch (error) {
       console.error('Erro ao ativar vídeo:', error);
       toast.error('Erro ao ativar vídeo');
@@ -128,7 +130,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
       if (error) throw error;
 
       toast.success('Vídeo selecionado para exibição!');
-      window.location.reload();
+      const slots = await loadVideoSlots(orderId);
+      setVideoSlots(slots);
     } catch (error) {
       console.error('Erro ao selecionar vídeo:', error);
       toast.error('Erro ao selecionar vídeo');
