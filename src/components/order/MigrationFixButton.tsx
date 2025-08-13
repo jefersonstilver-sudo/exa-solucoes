@@ -30,12 +30,12 @@ export const MigrationFixButton: React.FC<MigrationFixButtonProps> = ({
     const migrationResult = await fixSpecificOrder(orderId);
     setResult(migrationResult);
     
-    // Recarregar a página após 2 segundos se bem sucedido
-    if (migrationResult.success) {
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-    }
+    // Não fazer reload automático - deixar usuário decidir
+    // if (migrationResult.success) {
+    //   setTimeout(() => {
+    //     window.location.reload();
+    //   }, 2000);
+    // }
   };
 
   const handleFullMigration = async () => {

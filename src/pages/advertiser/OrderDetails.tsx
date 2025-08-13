@@ -79,13 +79,13 @@ const OrderDetails = () => {
     conflictModal
   } = useOrderVideoManagement(id || '');
 
-  // Hook para monitoramento automático de agendamentos
-  const { forceUpdate } = useVideoScheduleMonitor({
-    orderId: id || '',
-    enabled: !!id && !!orderDetails && contractStatus?.isActive,
-    intervalMinutes: 5, // Reduzido para 5 minutos
-    onDataChange: refreshSlots
-  });
+  // Hook para monitoramento automático de agendamentos - TEMPORARIAMENTE DESABILITADO
+  // const { forceUpdate } = useVideoScheduleMonitor({
+  //   orderId: id || '',
+  //   enabled: false, // Desabilitado para parar os reloads
+  //   intervalMinutes: 30,
+  //   onDataChange: refreshSlots
+  // });
 
   useEffect(() => {
     if (id && userProfile?.id) {
