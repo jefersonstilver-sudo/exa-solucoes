@@ -21,18 +21,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
 
     console.log('📊 [VIDEO_SLOTS] Pedido_videos encontrados:', pedidoVideos);
 
-    // Buscar campanha avançada associada ao pedido para obter schedule rules
-    const { data: campaign, error: campaignError } = await supabase
-      .from('campaigns_advanced')
-      .select('id')
-      .eq('pedido_id', orderId)
-      .single();
-
-    if (campaignError && campaignError.code !== 'PGRST116') {
-      console.error('❌ [VIDEO_SLOTS] Erro ao buscar campanha:', campaignError);
-    }
-
-    console.log('📋 [VIDEO_SLOTS] Campanha encontrada:', campaign);
+    console.log('📋 [VIDEO_SLOTS] Iniciando busca de agendamentos para os vídeos');
 
     // Buscar vídeos e suas regras de agendamento
     const videoPromises = pedidoVideos?.map(async (pv) => {
@@ -49,36 +38,40 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
         return null;
       }
 
-      // Buscar regras de agendamento se houver campanha
-      let scheduleRules = [];
-      if (campaign?.id) {
-        console.log(`🔍 [VIDEO_SLOTS] Buscando regras para video ${pv.video_id} na campanha ${campaign.id}`);
-        
-        const { data: videoSchedule, error: scheduleError } = await supabase
-          .from('campaign_video_schedules')
-          .select(`
+      // Buscar regras de agendamento diretamente por video_id e slot_position
+      console.log(`🔍 [VIDEO_SLOTS] Buscando regras para video ${pv.video_id} slot ${pv.slot_position}`);
+      
+      const { data: videoSchedules, error: scheduleError } = await supabase
+        .from('campaign_video_schedules')
+        .select(`
+          id,
+          campaign_id,
+          slot_position,
+          campaign_schedule_rules (
             id,
-            campaign_schedule_rules (
-              id,
-              days_of_week,
-              start_time,
-              end_time,
-              is_active,
-              is_all_day
-            )
-          `)
-          .eq('campaign_id', campaign.id)
-          .eq('video_id', pv.video_id)
-          .eq('slot_position', pv.slot_position);
+            days_of_week,
+            start_time,
+            end_time,
+            is_active,
+            is_all_day
+          )
+        `)
+        .eq('video_id', pv.video_id)
+        .eq('slot_position', pv.slot_position);
 
-        if (scheduleError) {
-          console.error(`❌ [VIDEO_SLOTS] Erro ao buscar schedule para video ${pv.video_id}:`, scheduleError);
-        } else if (videoSchedule && videoSchedule.length > 0) {
-          scheduleRules = videoSchedule[0].campaign_schedule_rules?.filter(rule => rule.is_active) || [];
-          console.log(`📅 [VIDEO_SLOTS] Regras ativas encontradas para video ${pv.video_id}:`, scheduleRules);
-        } else {
-          console.log(`📭 [VIDEO_SLOTS] Nenhum schedule encontrado para video ${pv.video_id}`);
-        }
+      let scheduleRules = [];
+      if (scheduleError) {
+        console.error(`❌ [VIDEO_SLOTS] Erro ao buscar schedule para video ${pv.video_id}:`, scheduleError);
+      } else if (videoSchedules && videoSchedules.length > 0) {
+        // Coletar todas as regras ativas de todos os schedules para este vídeo
+        videoSchedules.forEach(schedule => {
+          const activeRules = schedule.campaign_schedule_rules?.filter(rule => rule.is_active) || [];
+          scheduleRules.push(...activeRules);
+        });
+        console.log(`📅 [VIDEO_SLOTS] Total de regras ativas encontradas para video ${pv.video_id}:`, scheduleRules.length);
+        console.log(`📅 [VIDEO_SLOTS] Regras detalhadas:`, scheduleRules);
+      } else {
+        console.log(`📭 [VIDEO_SLOTS] Nenhum schedule encontrado para video ${pv.video_id} slot ${pv.slot_position}`);
       }
 
       console.log(`✅ [VIDEO_SLOTS] Video carregado:`, video);
