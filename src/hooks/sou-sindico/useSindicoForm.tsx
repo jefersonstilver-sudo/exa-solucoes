@@ -21,23 +21,23 @@ export const useSindicoForm = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('sindicos_interessados')
-        .insert({
-          nome_completo: formData.nomeCompleto,
-          nome_predio: formData.nomePredio,
+      const { data, error } = await supabase.functions.invoke('submit-sindico-lead', {
+        body: {
+          nomeCompleto: formData.nomeCompleto,
+          nomePredio: formData.nomePredio,
           endereco: formData.endereco,
-          numero_andares: parseInt(formData.numeroAndares),
-          numero_unidades: parseInt(formData.numeroUnidades),
+          numeroAndares: parseInt(formData.numeroAndares),
+          numeroUnidades: parseInt(formData.numeroUnidades),
           email: formData.email,
           celular: formData.celular
-        });
+        }
+      });
 
-      if (error) {
+      if (error || !data?.success) {
         console.error('Erro ao enviar formulário:', error);
-        toast.error('Erro ao enviar formulário. Tente novamente.');
+        toast.error(data?.error || 'Erro ao enviar formulário. Tente novamente.');
       } else {
-        toast.success('Formulário enviado com sucesso! Nossa equipe entrará em contato em breve.');
+        toast.success(data.message || 'Formulário enviado com sucesso! Nossa equipe entrará em contato em breve.');
         setFormData({
           nomeCompleto: '',
           nomePredio: '',
