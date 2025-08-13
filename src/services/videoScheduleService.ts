@@ -86,16 +86,48 @@ export const videoScheduleService = {
 
   /**
    * Atualiza o status selected_for_display de um vídeo baseado no agendamento
+   * IMPORTANTE: NÃO sobrescreve ativações manuais do usuário
    */
   async updateVideoSelectionStatus(pedidoVideoId: string, videoId: string): Promise<boolean> {
     try {
+      // Verificar se o vídeo foi ativado manualmente
+      const { data: currentVideo, error: checkError } = await supabase
+        .from('pedido_videos')
+        .select('is_active, selected_for_display, updated_at')
+        .eq('id', pedidoVideoId)
+        .eq('approval_status', 'approved')
+        .single();
+
+      if (checkError || !currentVideo) {
+        console.error('❌ [SCHEDULE] Erro ao verificar vídeo:', checkError);
+        return false;
+      }
+
+      // Se o vídeo foi ativado manualmente (is_active = true), 
+      // NÃO sobrescrever com controle automático
+      if (currentVideo.is_active) {
+        console.log('⚠️ [SCHEDULE] Vídeo ativo manualmente - pulando atualização automática:', {
+          pedidoVideoId,
+          videoId,
+          isActive: currentVideo.is_active
+        });
+        return true; // Retorna sucesso mas não faz alterações
+      }
+
       const shouldBeActive = await this.isVideoActiveNow(videoId);
       
-      console.log('🔄 [SCHEDULE] Atualizando status do vídeo:', {
+      console.log('🔄 [SCHEDULE] Atualizando status do vídeo (automático):', {
         pedidoVideoId,
         videoId,
-        shouldBeActive
+        shouldBeActive,
+        currentlySelected: currentVideo.selected_for_display
       });
+
+      // Só atualizar se realmente mudou o status
+      if (currentVideo.selected_for_display === shouldBeActive) {
+        console.log('📝 [SCHEDULE] Status já está correto - sem alterações');
+        return true;
+      }
 
       const { error } = await supabase
         .from('pedido_videos')
@@ -104,14 +136,14 @@ export const videoScheduleService = {
           updated_at: new Date().toISOString()
         })
         .eq('id', pedidoVideoId)
-        .eq('approval_status', 'approved'); // Só atualizar vídeos aprovados
+        .eq('approval_status', 'approved');
 
       if (error) {
         console.error('❌ [SCHEDULE] Erro ao atualizar status:', error);
         return false;
       }
 
-      console.log('✅ [SCHEDULE] Status atualizado com sucesso');
+      console.log('✅ [SCHEDULE] Status atualizado automaticamente com sucesso');
       return true;
 
     } catch (error) {
