@@ -345,7 +345,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 controls={true}
                 onDownload={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)}
               />
-              {isScheduledAndActive() && (
+              {slot.is_base_video && (
                 <div className="absolute top-2 left-2 z-10">
                   <Badge className="bg-yellow-500 text-white flex items-center space-x-1">
                     <Star className="h-3 w-3 fill-current" />
