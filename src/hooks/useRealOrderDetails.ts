@@ -47,6 +47,12 @@ interface BuildingData {
   nome: string;
   endereco: string;
   bairro: string;
+  imagem_principal?: string;
+  imagem_2?: string;
+  imagem_3?: string;
+  imagem_4?: string;
+  imageurl?: string;
+  image_urls?: string[];
 }
 
 export const useRealOrderDetails = (orderId: string) => {
@@ -171,7 +177,13 @@ export const useRealOrderDetails = (orderId: string) => {
               id,
               nome,
               endereco,
-              bairro
+              bairro,
+              imagem_principal,
+              imagem_2,
+              imagem_3,
+              imagem_4,
+              imageurl,
+              image_urls
             `)
             .in('id', order.lista_predios);
 
@@ -181,7 +193,13 @@ export const useRealOrderDetails = (orderId: string) => {
             id: b.id,
             nome: b.nome || 'N/A',
             endereco: b.endereco || 'N/A',
-            bairro: b.bairro || 'N/A'
+            bairro: b.bairro || 'N/A',
+            imagem_principal: b.imagem_principal,
+            imagem_2: b.imagem_2,
+            imagem_3: b.imagem_3,
+            imagem_4: b.imagem_4,
+            imageurl: b.imageurl,
+            image_urls: b.image_urls
           })) || [];
 
           setBuildingData(formattedBuildings);

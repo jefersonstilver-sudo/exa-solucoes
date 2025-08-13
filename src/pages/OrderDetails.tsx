@@ -8,7 +8,8 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
 import { VideoManagementLogs } from '@/components/video-management/VideoManagementLogs';
-import { Loader2, Package, AlertTriangle } from 'lucide-react';
+import { Loader2, Package, AlertTriangle, Building2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const OrderDetails: React.FC = () => {
   const { id: orderId } = useParams<{ id: string }>();
@@ -83,15 +84,40 @@ const OrderDetails: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {panelData.map((building) => (
-                  <div key={building.id} className="flex justify-between items-center p-3 border rounded">
-                    <div>
-                      <p className="font-medium">{building.nome}</p>
-                      <p className="text-sm text-gray-600">{building.endereco}</p>
-                      <p className="text-xs text-gray-500">Bairro: {building.bairro}</p>
+                {panelData.map((building) => {
+                  const getImageUrl = (imagePath?: string) => {
+                    if (!imagePath) return null;
+                    if (imagePath.startsWith('http')) return imagePath;
+                    return supabase.storage.from('buildings').getPublicUrl(imagePath).data.publicUrl;
+                  };
+
+                  const imageUrl = getImageUrl(building.imagem_principal) || 
+                                 getImageUrl(building.imageurl) || 
+                                 (building.image_urls && building.image_urls.length > 0 ? getImageUrl(building.image_urls[0]) : null);
+
+                  return (
+                    <div key={building.id} className="flex items-center gap-4 p-3 border rounded">
+                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                        {imageUrl ? (
+                          <img 
+                            src={imageUrl} 
+                            alt={building.nome}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Building2 className="h-6 w-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{building.nome}</p>
+                        <p className="text-sm text-gray-600">{building.endereco}</p>
+                        <p className="text-xs text-gray-500">Bairro: {building.bairro}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
