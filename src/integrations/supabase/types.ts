@@ -576,6 +576,30 @@ export type Database = {
         }
         Relationships: []
       }
+      developer_auth_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          token_hash?: string
+        }
+        Relationships: []
+      }
       homepage_banners: {
         Row: {
           created_at: string
@@ -1571,6 +1595,10 @@ export type Database = {
         Args: { prefix?: string }
         Returns: string
       }
+      generate_developer_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_secure_temp_password: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1895,6 +1923,10 @@ export type Database = {
           valid: boolean
           message: string
         }[]
+      }
+      validate_developer_token: {
+        Args: { p_token: string }
+        Returns: boolean
       }
       validate_price_integrity: {
         Args: { p_transaction_id: string; p_expected_price: number }
