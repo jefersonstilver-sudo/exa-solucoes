@@ -51,10 +51,17 @@ export const useBuildingNames = (listaPaineis: string[], listaPredios?: string[]
 
         console.log('🔗 [BUILDING_NAMES] Tentando conectar ao Supabase...');
         
-        const { data: buildings, error: buildingsError } = await supabase
-          .from('buildings')
-          .select('id, nome')
-          .in('id', listaPredios);
+        // Usar função get_public_buildings() para acessar dados públicos
+        const { data: publicBuildings, error: buildingsError } = await supabase
+          .rpc('get_public_buildings');
+
+        let buildings = null;
+        if (!buildingsError && publicBuildings) {
+          // Filtrar apenas os prédios solicitados
+          buildings = publicBuildings.filter(building => 
+            listaPredios.includes(building.id)
+          );
+        }
 
         console.log('📊 [BUILDING_NAMES] Resposta do Supabase:', {
           data: buildings,
@@ -171,11 +178,17 @@ export const useBuildingNames = (listaPaineis: string[], listaPredios?: string[]
         return;
       }
 
-      // Buscar nomes dos prédios
-      const { data: buildings, error: buildingsError } = await supabase
-        .from('buildings')
-        .select('id, nome')
-        .in('id', buildingIds);
+      // Buscar nomes dos prédios usando função pública
+      const { data: publicBuildings, error: buildingsError } = await supabase
+        .rpc('get_public_buildings');
+
+      let buildings = null;
+      if (!buildingsError && publicBuildings) {
+        // Filtrar apenas os prédios solicitados
+        buildings = publicBuildings.filter(building => 
+          buildingIds.includes(building.id)
+        );
+      }
 
       console.log('📊 [BUILDING_NAMES] Resposta prédios (fallback):', {
         data: buildings,

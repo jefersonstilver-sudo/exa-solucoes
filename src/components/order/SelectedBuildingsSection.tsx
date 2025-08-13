@@ -19,7 +19,7 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
   className = ""
 }) => {
   const { buildings, loading, error } = useSelectedBuildingsDetails(listaPredios);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(listaPredios.length > 10 ? 'list' : 'grid');
 
   if (loading) {
