@@ -408,6 +408,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               onDownload={handleDownload}
               onScheduleVideo={onScheduleVideo}
               totalApprovedVideos={totalApprovedVideos}
+              orderId={orderId}
             />
           </div>
         ) : (

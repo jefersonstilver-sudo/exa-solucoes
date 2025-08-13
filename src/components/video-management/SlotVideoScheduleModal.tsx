@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Calendar, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendWebhookAfterScheduleSave } from '@/services/webhookProgramacaoService';
 
 interface ScheduleRule {
   id?: string;
@@ -24,6 +25,7 @@ interface SlotVideoScheduleModalProps {
   videoId: string;
   onSave: (scheduleRules: ScheduleRule[]) => Promise<void>;
   existingRules?: ScheduleRule[];
+  orderId?: string; // Novo: ID do pedido para enviar webhook
 }
 
 const DAYS_OF_WEEK = [
@@ -42,7 +44,8 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
   videoName,
   videoId,
   onSave,
-  existingRules = []
+  existingRules = [],
+  orderId
 }) => {
   const [scheduleRules, setScheduleRules] = useState<ScheduleRule[]>(
     existingRules.length > 0 ? existingRules : []
@@ -119,6 +122,19 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
       
       console.log('✅ [SCHEDULE_MODAL] Agendamento salvo com sucesso');
       toast.success('Agendamento salvo com sucesso!');
+      
+      // Enviar webhook após salvar com sucesso (só se tiver orderId)
+      if (orderId) {
+        console.log('📡 [SCHEDULE_MODAL] Enviando webhook de programação...');
+        try {
+          await sendWebhookAfterScheduleSave(orderId, videoName);
+          console.log('✅ [SCHEDULE_MODAL] Webhook enviado com sucesso');
+        } catch (webhookError) {
+          console.error('❌ [SCHEDULE_MODAL] Erro no webhook (não afeta o save):', webhookError);
+          // Não mostrar erro do webhook para o usuário, pois o save foi bem-sucedido
+        }
+      }
+      
       onClose();
       
       // Forçar refresh da página após salvar para garantir que as mudanças sejam refletidas

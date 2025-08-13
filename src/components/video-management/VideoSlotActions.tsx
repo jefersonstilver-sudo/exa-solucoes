@@ -59,6 +59,7 @@ interface VideoSlotActionsProps {
   onDownload: (videoUrl: string, fileName: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
   totalApprovedVideos: number;
+  orderId?: string; // Novo: ID do pedido para o webhook
 }
 
 export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
@@ -68,7 +69,8 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   onSelectForDisplay,
   onDownload,
   onScheduleVideo,
-  totalApprovedVideos
+  totalApprovedVideos,
+  orderId
 }) => {
   const [showApprovalAlert, setShowApprovalAlert] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -225,6 +227,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           videoId={slot.video_data.id}
           onSave={handleScheduleVideo}
           existingRules={slot.schedule_rules}
+          orderId={orderId}
         />
       )}
     </>
