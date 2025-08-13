@@ -27,6 +27,7 @@ export const useSelectedBuildingsDetails = (listaPredios: string[] = []) => {
   useEffect(() => {
     const fetchBuildingsDetails = async () => {
       if (!listaPredios || listaPredios.length === 0) {
+        console.log('🏢 [BUILDINGS_DETAILS] Lista de prédios vazia ou não fornecida');
         setBuildings([]);
         setLoading(false);
         return;
@@ -36,24 +37,41 @@ export const useSelectedBuildingsDetails = (listaPredios: string[] = []) => {
         setLoading(true);
         setError(null);
 
-        console.log('🏢 [BUILDINGS_DETAILS] Buscando detalhes dos prédios:', listaPredios);
+        console.log('🏢 [BUILDINGS_DETAILS] Iniciando busca de detalhes dos prédios:');
+        console.log('   - Lista de IDs:', listaPredios);
+        console.log('   - Quantidade:', listaPredios.length);
 
-        const { data: buildingsData, error: buildingsError } = await supabase
-          .from('buildings')
-          .select('id, nome, endereco, bairro, imageurl, imagem_principal, imagem_2, imagem_3, imagem_4, publico_estimado, numero_unidades, caracteristicas, latitude, longitude')
-          .in('id', listaPredios);
+        // Usar função get_public_buildings() para acessar dados públicos
+        const { data: publicBuildings, error: buildingsError } = await supabase
+          .rpc('get_public_buildings');
 
         if (buildingsError) {
-          console.error('❌ [BUILDINGS_DETAILS] Erro ao buscar prédios:', buildingsError);
+          console.error('❌ [BUILDINGS_DETAILS] Erro ao buscar prédios públicos:', buildingsError);
           throw buildingsError;
         }
 
-        console.log('✅ [BUILDINGS_DETAILS] Prédios encontrados:', buildingsData);
+        console.log('✅ [BUILDINGS_DETAILS] Dados públicos retornados:', publicBuildings);
+
+        // Filtrar apenas os prédios solicitados
+        const buildingsData = publicBuildings?.filter(building => 
+          listaPredios.includes(building.id)
+        ) || [];
+
+        console.log('✅ [BUILDINGS_DETAILS] Dados retornados do Supabase:');
+        console.log('   - Quantidade encontrada:', buildingsData?.length || 0);
+        console.log('   - Dados:', buildingsData);
+
+        if (!buildingsData || buildingsData.length === 0) {
+          console.warn('⚠️ [BUILDINGS_DETAILS] Nenhum prédio encontrado para os IDs fornecidos');
+          console.log('   - IDs solicitados:', listaPredios);
+          console.log('   - Total de prédios públicos encontrados:', publicBuildings?.length || 0);
+        }
+
         setBuildings(buildingsData || []);
 
       } catch (error) {
         console.error('💥 [BUILDINGS_DETAILS] Erro geral:', error);
-        setError('Erro ao carregar detalhes dos prédios');
+        setError(`Erro ao carregar detalhes dos prédios: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         setBuildings([]);
       } finally {
         setLoading(false);
@@ -61,7 +79,7 @@ export const useSelectedBuildingsDetails = (listaPredios: string[] = []) => {
     };
 
     fetchBuildingsDetails();
-  }, [listaPredios]);
+  }, [JSON.stringify(listaPredios)]); // Use JSON.stringify para comparação correta de arrays
 
   return { buildings, loading, error };
 };
