@@ -82,8 +82,8 @@ const OrderDetails = () => {
   // Hook para monitoramento automático de agendamentos
   const { forceUpdate } = useVideoScheduleMonitor({
     orderId: id || '',
-    enabled: !!id && !!orderDetails,
-    intervalMinutes: 1,
+    enabled: !!id && !!orderDetails && contractStatus?.isActive,
+    intervalMinutes: 5, // Reduzido para 5 minutos
     onDataChange: refreshSlots
   });
 
