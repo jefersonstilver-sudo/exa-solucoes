@@ -52,6 +52,8 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
       // Buscar regras de agendamento se houver campanha
       let scheduleRules = [];
       if (campaign?.id) {
+        console.log(`🔍 [VIDEO_SLOTS] Buscando regras para video ${pv.video_id} na campanha ${campaign.id}`);
+        
         const { data: videoSchedule, error: scheduleError } = await supabase
           .from('campaign_video_schedules')
           .select(`
@@ -72,7 +74,10 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
         if (scheduleError) {
           console.error(`❌ [VIDEO_SLOTS] Erro ao buscar schedule para video ${pv.video_id}:`, scheduleError);
         } else if (videoSchedule && videoSchedule.length > 0) {
-          scheduleRules = videoSchedule[0].campaign_schedule_rules || [];
+          scheduleRules = videoSchedule[0].campaign_schedule_rules?.filter(rule => rule.is_active) || [];
+          console.log(`📅 [VIDEO_SLOTS] Regras ativas encontradas para video ${pv.video_id}:`, scheduleRules);
+        } else {
+          console.log(`📭 [VIDEO_SLOTS] Nenhum schedule encontrado para video ${pv.video_id}`);
         }
       }
 

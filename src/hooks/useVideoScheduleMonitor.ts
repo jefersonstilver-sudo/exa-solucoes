@@ -12,9 +12,9 @@ interface UseVideoScheduleMonitorProps {
 
 export const useVideoScheduleMonitor = ({ 
   orderId, 
-  enabled = false, // TEMPORARIAMENTE DESABILITADO para parar os reloads
-  intervalMinutes = 30, // Aumentado para 30 minutos quando reativado
-  enableRealtime = false, // TEMPORARIAMENTE DESABILITADO
+  enabled = true, // REABILITADO TEMPORARIAMENTE para teste
+  intervalMinutes = 45, // Intervalo aumentado para evitar reloads excessivos
+  enableRealtime = false, // Mantido desabilitado
   onDataChange
 }: UseVideoScheduleMonitorProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);

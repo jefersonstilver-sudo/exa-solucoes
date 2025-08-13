@@ -36,7 +36,11 @@ export const useOrderVideoManagement = (orderId: string) => {
       setLoadError(null);
       
       const slots = await loadVideoSlots(orderId);
-      console.log('✅ [ORDER_VIDEO] Slots carregados:', slots);
+      console.log('✅ [ORDER_VIDEO] Slots carregados com schedule_rules:', slots.map(s => ({ 
+        slot: s.slot_position, 
+        hasRules: s.schedule_rules?.length || 0,
+        rules: s.schedule_rules 
+      })));
       
       setVideoSlots(slots);
       

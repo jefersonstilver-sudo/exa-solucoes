@@ -119,11 +119,13 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
       
       console.log('✅ [SCHEDULE_MODAL] Agendamento salvo com sucesso');
       toast.success('Agendamento salvo com sucesso!');
+      onClose();
       
-      // Aguardar um pouco antes de fechar para garantir que o refresh aconteça
+      // Forçar refresh da página após salvar para garantir que as mudanças sejam refletidas
       setTimeout(() => {
-        onClose();
-      }, 500);
+        console.log('🔄 [SCHEDULE_MODAL] Forçando refresh da página após save');
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('❌ [SCHEDULE_MODAL] Erro ao salvar agendamento:', error);
       toast.error('Erro ao salvar agendamento');
