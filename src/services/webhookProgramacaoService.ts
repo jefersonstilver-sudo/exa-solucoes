@@ -141,6 +141,17 @@ async function getBuildingIdFromOrder(orderId: string): Promise<string | null> {
 }
 
 /**
+ * Remove segundos do formato de hora (HH:MM:SS -> HH:MM)
+ */
+function formatTimeWithoutSeconds(time: string): string {
+  if (time && time.includes(':')) {
+    const parts = time.split(':');
+    return `${parts[0]}:${parts[1]}`;
+  }
+  return time;
+}
+
+/**
  * Formata as regras de agendamento para o formato do webhook
  */
 function formatScheduleRulesForWebhook(rules: ScheduleRule[]) {
@@ -156,8 +167,8 @@ function formatScheduleRulesForWebhook(rules: ScheduleRule[]) {
 
   rules.forEach(rule => {
     const timeSlot = {
-      inicio: rule.is_all_day ? '00:00' : rule.start_time,
-      fim: rule.is_all_day ? '23:59' : rule.end_time
+      inicio: rule.is_all_day ? '00:00' : formatTimeWithoutSeconds(rule.start_time),
+      fim: rule.is_all_day ? '23:59' : formatTimeWithoutSeconds(rule.end_time)
     };
 
     rule.days_of_week.forEach(dayNumber => {
