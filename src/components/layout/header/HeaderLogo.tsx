@@ -19,8 +19,8 @@ const HeaderLogo: React.FC = () => {
       variant="light"
       className="w-32 h-auto py-2"
       showSubtitle={true}
-      logoUrl={isStoreRoute ? HEXA_LOGO_URL : isExaRoute ? EXA_LOGO_URL : undefined}
-      altText={isStoreRoute ? 'HEXA Logo' : isExaRoute ? 'EXA Logo' : undefined}
+      logoUrl={(isStoreRoute || isExaRoute) ? EXA_LOGO_URL : undefined}
+      altText={(isStoreRoute || isExaRoute) ? 'EXA Logo' : undefined}
     />
   );
 };
