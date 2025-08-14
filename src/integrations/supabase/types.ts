@@ -1000,6 +1000,44 @@ export type Database = {
           },
         ]
       }
+      panel_access_logs: {
+        Row: {
+          access_type: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          panel_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_type: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          panel_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          panel_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_access_logs_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_status_tracking: {
         Row: {
           created_at: string | null
@@ -1582,6 +1620,10 @@ export type Database = {
         Args: { p_pedido_id: string }
         Returns: boolean
       }
+      can_access_panel_credentials: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       cancel_expired_orders: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1756,6 +1798,36 @@ export type Database = {
           client_id: string
           client_email: string
           client_name: string
+        }[]
+      }
+      get_panel_credentials: {
+        Args: { p_panel_id: string }
+        Returns: {
+          id: string
+          codigo_anydesk: string
+          senha_anydesk: string
+          ip_interno: string
+          mac_address: string
+          versao_firmware: string
+          observacoes: string
+        }[]
+      }
+      get_panels_basic: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          building_id: string
+          code: string
+          status: string
+          resolucao: string
+          polegada: string
+          orientacao: string
+          sistema_operacional: string
+          modelo: string
+          marca: string
+          localizacao: string
+          created_at: string
+          ultima_sync: string
         }[]
       }
       get_panels_by_location: {
@@ -1998,6 +2070,10 @@ export type Database = {
       }
       update_expired_contracts_daily: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      update_panel_secure: {
+        Args: { p_panel_id: string; p_updates: Json }
         Returns: Json
       }
       validate_coupon_secure: {

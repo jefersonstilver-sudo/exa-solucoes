@@ -3,25 +3,21 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Basic panel interface (non-sensitive data)
 interface Panel {
   id: string;
   code: string;
-  building_id: string;
+  building_id?: string;
   status: string;
-  resolucao: string;
-  ultima_sync: string;
+  resolucao?: string;
+  ultima_sync?: string;
   created_at: string;
-  polegada: string;
-  orientacao: string;
-  sistema_operacional: string;
-  codigo_anydesk: string;
-  senha_anydesk: string;
-  modelo: string;
-  versao_firmware: string;
-  ip_interno: string;
-  mac_address: string;
-  observacoes: string;
-  localizacao: string;
+  polegada?: string;
+  orientacao?: string;
+  sistema_operacional?: string;
+  modelo?: string;
+  marca?: string;
+  localizacao?: string;
   buildings?: {
     id: string;
     nome: string;
@@ -44,32 +40,47 @@ export const usePanelsData = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('painels')
-        .select(`
-          *,
-          buildings (
-            id,
-            nome,
-            endereco,
-            bairro
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // Use secure function to get basic panel data only
+      const { data, error } = await supabase.rpc('get_panels_basic');
 
       if (error) {
         console.error('Erro ao buscar painéis:', error);
-        toast.error('Erro ao carregar painéis');
+        if (error.message.includes('must be')) {
+          toast.error('Acesso negado: Apenas administradores podem ver painéis');
+        } else {
+          toast.error('Erro ao carregar painéis');
+        }
         return;
       }
 
-      setPanels(data || []);
+      // Transform data to include buildings if needed
+      const panelsWithBuildings = await Promise.all((data || []).map(async (panel: any) => {
+        if (panel.building_id) {
+          try {
+            const { data: buildingData } = await supabase
+              .from('buildings')
+              .select('id, nome, endereco, bairro')
+              .eq('id', panel.building_id)
+              .single();
+            
+            return {
+              ...panel,
+              buildings: buildingData
+            };
+          } catch {
+            return panel;
+          }
+        }
+        return panel;
+      }));
+
+      setPanels(panelsWithBuildings);
       
       // Calcular estatísticas
-      const total = data?.length || 0;
-      const online = data?.filter(p => p.status === 'online').length || 0;
-      const offline = data?.filter(p => p.status === 'offline').length || 0;
-      const maintenance = data?.filter(p => p.status === 'maintenance').length || 0;
+      const total = panelsWithBuildings?.length || 0;
+      const online = panelsWithBuildings?.filter(p => p.status === 'online').length || 0;
+      const offline = panelsWithBuildings?.filter(p => p.status === 'offline').length || 0;
+      const maintenance = panelsWithBuildings?.filter(p => p.status === 'maintenance').length || 0;
 
       setStats({ total, online, offline, maintenance });
       
