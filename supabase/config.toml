@@ -37,5 +37,8 @@ verify_jwt = false
 [functions.create-external-client]
 verify_jwt = false
 
+[functions.submit-sindico-lead]
+verify_jwt = true
+
 [functions.geocode_v1]
 verify_jwt = false
