@@ -31,7 +31,15 @@ const CheckoutCoupon = () => {
   // Função wrapper para validateCoupon
   const handleValidateCoupon = () => {
     if (couponCode && selectedPlan) {
+      console.log('[CheckoutCoupon] Iniciando validação de cupom:', { 
+        couponCode, 
+        selectedPlan, 
+        currentTotal,
+        cartItemsCount: cartItems.length 
+      });
       validateCoupon(couponCode, selectedPlan);
+    } else {
+      console.warn('[CheckoutCoupon] Dados insuficientes para validação:', { couponCode, selectedPlan });
     }
   };
   

@@ -72,10 +72,13 @@ export const useCheckout = () => {
     return result;
   }, [selectedPlan, cartItems, couponValid, validationResult]);
 
-  // Wrapper para validação de cupom
+  // Wrapper para validação de cupom - Agora usa valor do pedido em vez de meses
   const validateCoupon = useCallback(async (code: string, planMonths: number) => {
-    return await validateCouponOriginal(code, planMonths);
-  }, [validateCouponOriginal]);
+    // Calcular valor atual do pedido para validação
+    const currentOrderValue = calculateTotalPriceWrapper();
+    console.log('[useCheckout] Validando cupom com valor:', { code, planMonths, currentOrderValue });
+    return await validateCouponOriginal(code, currentOrderValue);
+  }, [validateCouponOriginal, calculateTotalPriceWrapper]);
 
   // Navegação entre etapas - CORRIGIDO: redirecionar para /checkout/resumo
   const handleNextStep = useCallback(() => {

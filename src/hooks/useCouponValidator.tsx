@@ -54,7 +54,7 @@ export function useCouponValidator() {
     }
   }, []);
 
-  const validateCoupon = useCallback(async (code: string, selectedMonths: number) => {
+  const validateCoupon = useCallback(async (code: string, orderValue: number) => {
     if (!code) {
       const result = {
         valid: false,
@@ -69,20 +69,25 @@ export function useCouponValidator() {
     setIsValidating(true);
     
     try {
+      console.log('[useCouponValidator] Validando cupom:', { code, orderValue });
+      
       const { data: responseData, error } = await supabase
-        .rpc('validate_cupom', { 
+        .rpc('validate_coupon_secure', { 
           p_codigo: code,
-          p_meses: selectedMonths
+          p_valor_pedido: orderValue || 0
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error('[useCouponValidator] Erro RPC:', error);
+        throw error;
+      }
       
-      const resultsArray = ensureArray(responseData);
+      console.log('[useCouponValidator] Resposta RPC:', responseData);
       
-      if (resultsArray.length === 0) {
+      if (!responseData || typeof responseData !== 'object' || Array.isArray(responseData)) {
         const result = {
           valid: false,
-          message: 'Cupom inválido',
+          message: 'Cupom inválido ou expirado',
           couponId: null,
           discountPercent: 0
         };
@@ -91,21 +96,30 @@ export function useCouponValidator() {
         return false;
       }
       
-      const result = resultsArray[0] as any;
-      
-      const validationResult = {
-        valid: result.valid === true,
-        message: result.message || 'Cupom processado',
-        couponId: result.valid === true ? result.id : null,
-        discountPercent: result.valid === true ? result.desconto_percentual : 0
+      // Type assertion para garantir que responseData é um objeto
+      const couponData = responseData as { 
+        valid?: boolean; 
+        error?: string; 
+        id?: string; 
+        desconto_percentual?: number; 
       };
+      
+      const isValid = couponData.valid === true;
+      const validationResult = {
+        valid: isValid,
+        message: isValid ? 'Cupom aplicado com sucesso!' : (couponData.error || 'Cupom inválido'),
+        couponId: isValid ? (couponData.id || null) : null,
+        discountPercent: isValid ? (couponData.desconto_percentual || 0) : 0
+      };
+      
+      console.log('[useCouponValidator] Resultado da validação:', validationResult);
       
       setValidationResult(validationResult);
       saveCouponState(code, validationResult);
       
-      return result.valid === true;
+      return isValid;
     } catch (error) {
-      console.error('Erro ao validar cupom:', error);
+      console.error('[useCouponValidator] Erro ao validar cupom:', error);
       
       const errorResult = {
         valid: false,
