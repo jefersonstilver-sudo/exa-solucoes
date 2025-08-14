@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -1599,11 +1599,11 @@ export type Database = {
         Returns: string[]
       }
       admin_insert_user: {
-        Args: { user_id: string; user_email: string; user_role: string }
+        Args: { user_email: string; user_id: string; user_role: string }
         Returns: string
       }
       admin_update_user_role_secure: {
-        Args: { p_user_id: string; p_new_role: string; p_admin_id?: string }
+        Args: { p_admin_id?: string; p_new_role: string; p_user_id: string }
         Returns: Json
       }
       apply_coupon_secure: {
@@ -1611,7 +1611,7 @@ export type Database = {
         Returns: Json
       }
       approve_video: {
-        Args: { p_pedido_video_id: string; p_approved_by: string }
+        Args: { p_approved_by: string; p_pedido_video_id: string }
         Returns: boolean
       }
       audit_unauthorized_uploads: {
@@ -1647,17 +1647,17 @@ export type Database = {
         Returns: Json
       }
       check_panel_availability: {
-        Args: { p_panel_id: string; p_start_date: string; p_end_date: string }
+        Args: { p_end_date: string; p_panel_id: string; p_start_date: string }
         Returns: boolean
       }
       check_user_data_integrity: {
         Args: Record<PropertyKey, never>
         Returns: {
-          user_id: string
           email: string
-          users_role: string
-          metadata_role: string
           is_consistent: boolean
+          metadata_role: string
+          user_id: string
+          users_role: string
         }[]
       }
       check_video_schedule_conflict: {
@@ -1711,50 +1711,50 @@ export type Database = {
       get_admin_buildings_safe: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          nome: string
-          endereco: string
-          bairro: string
-          status: string
-          venue_type: string
-          monthly_traffic: number
-          latitude: number
-          longitude: number
-          numero_unidades: number
-          publico_estimado: number
-          preco_base: number
-          image_urls: string[]
           amenities: string[]
-          padrao_publico: string
-          quantidade_telas: number
-          visualizacoes_mes: number
-          imagem_principal: string
+          bairro: string
+          caracteristicas: string[]
+          codigo_predio: string
+          created_at: string
+          endereco: string
+          id: string
+          image_urls: string[]
           imagem_2: string
           imagem_3: string
           imagem_4: string
-          caracteristicas: string[]
-          created_at: string
-          codigo_predio: string
+          imagem_principal: string
+          latitude: number
+          longitude: number
+          monthly_traffic: number
+          nome: string
+          numero_unidades: number
+          padrao_publico: string
+          preco_base: number
+          publico_estimado: number
+          quantidade_telas: number
+          status: string
+          venue_type: string
+          visualizacoes_mes: number
         }[]
       }
       get_approvals_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
           pago_pendente_video: number
-          video_enviado: number
           video_aprovado: number
+          video_enviado: number
           video_rejeitado: number
         }[]
       }
       get_building_contact_info: {
         Args: { building_id: string }
         Returns: {
-          id: string
-          nome_sindico: string
           contato_sindico: string
-          nome_vice_sindico: string
           contato_vice_sindico: string
+          id: string
           nome_contato_predio: string
+          nome_sindico: string
+          nome_vice_sindico: string
           numero_contato_predio: string
         }[]
       }
@@ -1768,29 +1768,29 @@ export type Database = {
       get_coupon_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
-          total_cupons: number
           cupons_ativos: number
           cupons_expirados: number
-          total_usos: number
           receita_com_desconto: number
+          total_cupons: number
+          total_usos: number
         }[]
       }
       get_coupon_usage_details: {
         Args: { cupom_id_param: string }
         Returns: {
-          user_email: string
-          pedido_id: string
-          valor_pedido: number
-          valor_desconto: number
           data_uso: string
+          pedido_id: string
+          user_email: string
+          valor_desconto: number
+          valor_pedido: number
         }[]
       }
       get_current_display_video: {
         Args: { p_pedido_id: string }
         Returns: {
-          video_id: string
           is_scheduled: boolean
           priority_type: string
+          video_id: string
         }[]
       }
       get_dashboard_stats: {
@@ -1798,7 +1798,7 @@ export type Database = {
         Returns: Json
       }
       get_dashboard_stats_by_month: {
-        Args: { p_year: number; p_month: number }
+        Args: { p_month: number; p_year: number }
         Returns: Json
       }
       get_last_12_months_stats: {
@@ -1806,133 +1806,133 @@ export type Database = {
         Returns: Json
       }
       get_monthly_comparison: {
-        Args: { p_year: number; p_month: number }
+        Args: { p_month: number; p_year: number }
         Returns: Json
       }
       get_paid_orders_without_video: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
+          client_email: string
+          client_id: string
+          client_name: string
           created_at: string
-          valor_total: number
+          id: string
           lista_paineis: string[]
           plano_meses: number
-          client_id: string
-          client_email: string
-          client_name: string
+          valor_total: number
         }[]
       }
       get_panel_credentials: {
         Args: { p_panel_id: string }
         Returns: {
-          id: string
           codigo_anydesk: string
-          senha_anydesk: string
+          id: string
           ip_interno: string
           mac_address: string
-          versao_firmware: string
           observacoes: string
+          senha_anydesk: string
+          versao_firmware: string
         }[]
       }
       get_panels_basic: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
           building_id: string
           code: string
-          status: string
-          resolucao: string
-          polegada: string
-          orientacao: string
-          sistema_operacional: string
-          modelo: string
-          marca: string
-          localizacao: string
           created_at: string
+          id: string
+          localizacao: string
+          marca: string
+          modelo: string
+          orientacao: string
+          polegada: string
+          resolucao: string
+          sistema_operacional: string
+          status: string
           ultima_sync: string
         }[]
       }
       get_panels_by_location: {
         Args: { lat: number; lng: number; radius_meters: number }
         Returns: {
-          id: string
-          code: string
           building_id: string
+          buildings: Json
+          code: string
+          id: string
+          modo: string
+          resolucao: string
           status: string
           ultima_sync: string
-          resolucao: string
-          modo: string
-          buildings: Json
         }[]
       }
       get_pedidos_com_clientes: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
+          client_email: string
+          client_id: string
+          client_name: string
           created_at: string
-          status: string
-          valor_total: number
+          data_fim: string
+          data_inicio: string
+          id: string
           lista_paineis: string[]
           plano_meses: number
-          data_inicio: string
-          data_fim: string
-          client_id: string
-          client_email: string
-          client_name: string
+          status: string
+          valor_total: number
           video_status: string
         }[]
       }
       get_pending_approval_videos: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          pedido_id: string
-          video_id: string
-          slot_position: number
-          created_at: string
           client_email: string
           client_name: string
+          created_at: string
+          id: string
+          pedido_id: string
           pedido_valor: number
-          video_nome: string
-          video_url: string
+          slot_position: number
           video_duracao: number
+          video_id: string
+          video_nome: string
           video_orientacao: string
+          video_url: string
         }[]
       }
       get_public_buildings: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          nome: string
-          endereco: string
-          bairro: string
-          status: string
-          venue_type: string
-          monthly_traffic: number
-          latitude: number
-          longitude: number
-          numero_unidades: number
-          publico_estimado: number
-          preco_base: number
-          image_urls: string[]
           amenities: string[]
-          padrao_publico: string
-          quantidade_telas: number
-          visualizacoes_mes: number
-          imagem_principal: string
+          bairro: string
+          caracteristicas: string[]
+          created_at: string
+          endereco: string
+          id: string
+          image_urls: string[]
           imagem_2: string
           imagem_3: string
           imagem_4: string
-          caracteristicas: string[]
-          created_at: string
+          imagem_principal: string
+          latitude: number
+          longitude: number
+          monthly_traffic: number
+          nome: string
+          numero_unidades: number
+          padrao_publico: string
+          preco_base: number
+          publico_estimado: number
+          quantidade_telas: number
+          status: string
+          venue_type: string
+          visualizacoes_mes: number
         }[]
       }
       get_real_approval_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
+          approved: number
           paid_without_video: number
           pending_approval: number
-          approved: number
           rejected: number
         }[]
       }
@@ -1943,15 +1943,15 @@ export type Database = {
       get_recently_approved_videos: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          pedido_id: string
-          video_id: string
-          slot_position: number
           approved_at: string
-          is_active: boolean
           client_email: string
           client_name: string
+          id: string
+          is_active: boolean
+          pedido_id: string
           pedido_valor: number
+          slot_position: number
+          video_id: string
           video_nome: string
           video_url: string
         }[]
@@ -1965,7 +1965,7 @@ export type Database = {
         Returns: string
       }
       investigate_missing_transaction: {
-        Args: { p_email: string; p_amount: number }
+        Args: { p_amount: number; p_email: string }
         Returns: Json
       }
       is_admin_user: {
@@ -1994,11 +1994,11 @@ export type Database = {
       }
       log_building_action: {
         Args: {
-          p_building_id: string
           p_action_type: string
+          p_building_id: string
           p_description: string
-          p_old_values?: Json
           p_new_values?: Json
+          p_old_values?: Json
         }
         Returns: string
       }
@@ -2044,8 +2044,8 @@ export type Database = {
       }
       reject_video: {
         Args: {
-          p_pedido_video_id: string
           p_approved_by: string
+          p_pedido_video_id: string
           p_rejection_reason: string
         }
         Returns: boolean
@@ -2055,7 +2055,7 @@ export type Database = {
         Returns: Json
       }
       safe_create_admin_user: {
-        Args: { p_email: string; p_role: string; p_password?: string }
+        Args: { p_email: string; p_password?: string; p_role: string }
         Returns: Json
       }
       select_video_for_display: {
@@ -2072,13 +2072,13 @@ export type Database = {
       }
       submit_lead_produtora: {
         Args: {
-          p_nome: string
-          p_email: string
-          p_whatsapp: string
-          p_empresa?: string
-          p_tipo_video?: string
-          p_objetivo?: string
           p_agendar_cafe?: boolean
+          p_email: string
+          p_empresa?: string
+          p_nome: string
+          p_objetivo?: string
+          p_tipo_video?: string
+          p_whatsapp: string
         }
         Returns: Json
       }
@@ -2105,11 +2105,11 @@ export type Database = {
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }
         Returns: {
-          id: string
           codigo: string
           desconto_percentual: number
-          valid: boolean
+          id: string
           message: string
+          valid: boolean
         }[]
       }
       validate_developer_token: {
@@ -2117,20 +2117,20 @@ export type Database = {
         Returns: boolean
       }
       validate_price_integrity: {
-        Args: { p_transaction_id: string; p_expected_price: number }
+        Args: { p_expected_price: number; p_transaction_id: string }
         Returns: boolean
       }
       validate_video_specs: {
         Args: {
+          p_altura?: number
           p_duracao: number
+          p_largura?: number
           p_orientacao: string
           p_tem_audio: boolean
-          p_largura?: number
-          p_altura?: number
         }
         Returns: {
-          valid: boolean
           errors: string[]
+          valid: boolean
         }[]
       }
       validate_video_upload_permission: {
