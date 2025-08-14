@@ -11,34 +11,44 @@ const steps = [
 
 const LinkaeHowItWorks: React.FC = () => {
   return (
-    <section className="bg-background section-bg-soft-linkae">
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-16">
-        <header className="text-center mb-8 md:mb-12 animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight gradient-text-linkae">
+    <section className="bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_30%_70%,hsl(var(--linkae-primary))_0%,transparent_50%)] opacity-30 animate-float"></div>
+      <div className="absolute inset-0 bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--linkae-cyan))_0deg,transparent_120deg,hsl(var(--linkae-accent))_240deg,transparent_360deg)] opacity-25"></div>
+      
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-20 relative z-10">
+        <header className="text-center mb-12 md:mb-16 animate-fade-in">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-linkae-cyan via-white to-linkae-accent bg-clip-text text-transparent font-orbitron mb-6">
             Como funciona
           </h2>
-          <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
+          <p className="text-slate-300 text-lg md:text-xl mt-4 max-w-3xl mx-auto leading-relaxed font-exo-2">
             Sem fórmulas prontas. Cada projeto é pensado do zero, do jeito certo.
           </p>
+          <div className="w-32 h-1 bg-gradient-to-r from-linkae-cyan to-linkae-accent mx-auto mt-6 rounded-full"></div>
         </header>
 
-        <ol className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <ol className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           {steps.map(({ icon: Icon, title, desc }, idx) => (
-            <li key={title} className="relative flex items-start gap-4 p-5 rounded-lg border bg-card animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-linkae-accent/10 text-linkae-accent shrink-0">
-                <Icon className="h-5 w-5" aria-hidden="true" />
+            <li key={title} className="relative flex items-start gap-6 p-6 md:p-8 rounded-2xl backdrop-blur-sm bg-white/10 border border-white/20 animate-fade-in transition-all duration-500 hover:scale-105 hover:-translate-y-1 hover:bg-white/15 hover:border-linkae-accent/50 hover:glow-linkae group">
+              {/* Step number with gradient */}
+              <div className="absolute -top-3 -left-3 w-8 h-8 bg-gradient-to-br from-linkae-accent to-linkae-cyan rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-lg">
+                {idx + 1}
+              </div>
+              
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-linkae-cyan to-linkae-accent text-white shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <Icon className="h-6 w-6" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="text-base md:text-lg font-semibold text-foreground">{idx + 1}. {title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{desc}</p>
+                <h3 className="text-lg md:text-xl font-bold text-white font-montserrat mb-2">{title}</h3>
+                <p className="text-base text-slate-300 leading-relaxed font-exo-2">{desc}</p>
               </div>
             </li>
           ))}
         </ol>
 
-        <div className="mt-6 md:mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Wand2 className="h-4 w-4" aria-hidden="true" />
-          <span>Personalização total para o seu contexto.</span>
+        <div className="mt-8 md:mt-12 flex items-center justify-center gap-3 text-lg text-slate-300 backdrop-blur-sm bg-white/5 rounded-full px-6 py-3 border border-white/20">
+          <Wand2 className="h-6 w-6 text-linkae-accent" aria-hidden="true" />
+          <span className="font-exo-2 font-semibold">Personalização total para o seu contexto.</span>
         </div>
       </div>
     </section>

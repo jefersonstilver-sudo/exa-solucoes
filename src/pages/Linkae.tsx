@@ -39,14 +39,18 @@ const Linkae = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-white text-gray-900">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 text-white overflow-hidden">
         <LinkaeHero onScrollToForm={scrollToForm} />
-        <main>
-          <LinkaeStorytelling />
-          <LinkaeDeliverables />
-          <LinkaeHowItWorks />
-          <LinkaeWhy />
-          <LinkaeFinalCTA />
+        <main className="relative">
+          {/* Background pattern overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-40%,hsl(var(--linkae-accent))_0%,transparent_50%)] opacity-20"></div>
+          <div className="relative z-10">
+            <LinkaeStorytelling />
+            <LinkaeDeliverables />
+            <LinkaeHowItWorks />
+            <LinkaeWhy />
+            <LinkaeFinalCTA />
+          </div>
         </main>
       </div>
     </Layout>
