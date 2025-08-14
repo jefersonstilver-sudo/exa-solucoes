@@ -3,12 +3,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Eye, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
 interface TermsScrollViewerProps {
   onScrollToBottom: (reached: boolean) => void;
   hasScrolledToBottom: boolean;
 }
-
 export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
   onScrollToBottom,
   hasScrolledToBottom
@@ -16,40 +14,36 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-
   const handleScroll = () => {
     if (!viewportRef.current) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = viewportRef.current;
+    const {
+      scrollTop,
+      scrollHeight,
+      clientHeight
+    } = viewportRef.current;
     const totalScrollable = scrollHeight - clientHeight;
-    
     if (totalScrollable <= 0) {
       setScrollProgress(100);
       onScrollToBottom(true);
       return;
     }
-    
-    const progress = (scrollTop / totalScrollable) * 100;
+    const progress = scrollTop / totalScrollable * 100;
     setScrollProgress(Math.min(progress, 100));
-    
+
     // Considera como "lido completamente" quando chegou a 95% do scroll
     const hasReachedBottom = progress >= 95;
     onScrollToBottom(hasReachedBottom);
   };
-
   useEffect(() => {
     const viewport = viewportRef.current;
     if (viewport) {
       viewport.addEventListener('scroll', handleScroll);
       // Verifica scroll inicial
       handleScroll();
-      
       return () => viewport.removeEventListener('scroll', handleScroll);
     }
   }, []);
-
-  return (
-    <div className="h-full flex flex-col">
+  return <div className="h-full flex flex-col">
       {/* Header com indicador de progresso */}
       <div className="mb-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -58,47 +52,31 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
             Termos de Uso - EXA Publicidade
           </h3>
           <AnimatePresence>
-            {hasScrolledToBottom ? (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="flex items-center text-green-600"
-              >
+            {hasScrolledToBottom ? <motion.div initial={{
+            scale: 0
+          }} animate={{
+            scale: 1
+          }} className="flex items-center text-green-600">
                 <CheckCircle className="h-5 w-5 mr-1" />
                 <span className="text-sm font-medium">Leitura completa</span>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center text-orange-600"
-              >
+              </motion.div> : <motion.div initial={{
+            opacity: 0
+          }} animate={{
+            opacity: 1
+          }} className="flex items-center text-orange-600">
                 <ArrowDown className="h-4 w-4 mr-1 animate-bounce" />
                 <span className="text-sm">Continue lendo...</span>
-              </motion.div>
-            )}
+              </motion.div>}
           </AnimatePresence>
         </div>
         
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>Progresso da leitura</span>
-            <span>{Math.round(scrollProgress)}%</span>
-          </div>
-          <Progress 
-            value={scrollProgress} 
-            className="h-2"
-          />
-        </div>
+        
       </div>
 
       {/* Área de scroll compacta com termos */}
       <div className="flex-1">
         <ScrollArea className="h-80 border rounded-lg bg-white shadow-sm" ref={scrollAreaRef}>
-          <div 
-            ref={viewportRef}
-            className="p-4 space-y-4 text-xs leading-relaxed"
-          >
+          <div ref={viewportRef} className="p-4 space-y-4 text-xs leading-relaxed">
             <div className="text-center border-b pb-3">
               <h2 className="text-sm font-bold text-gray-900 mb-1">
                 Termos de Uso – EXA Publicidade
@@ -275,18 +253,10 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
             <div className="border-t pt-6 mt-8 text-center text-xs text-gray-500">
               <p>Indexa Midia LTDA – 38.142.638/0001-30</p>
               <p>Todos os direitos reservados</p>
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-700 font-medium">
-                  ✅ Você chegou ao final dos Termos de Uso
-                </p>
-                <p className="text-green-600 text-xs mt-1">
-                  Agora você pode aceitar os termos e criar sua conta
-                </p>
-              </div>
+              
             </div>
           </div>
         </ScrollArea>
       </div>
-    </div>
-  );
+    </div>;
 };
