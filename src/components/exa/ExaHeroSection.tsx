@@ -35,7 +35,7 @@ const ExaHeroSection: React.FC = () => {
         {/* Conteúdo de Texto */}
         <div className="flex-1 text-center lg:text-left text-white w-full lg:max-w-2xl order-2 lg:order-1">
         <div className="mb-6 sm:mb-8 lg:mb-10 flex justify-center lg:justify-start">
-          <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" alt="EXA Logo" className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-36 w-auto object-contain" />
+          
         </div>
         
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-6 sm:mb-8 lg:mb-10 leading-tight">
@@ -52,9 +52,7 @@ const ExaHeroSection: React.FC = () => {
         </p>
         
         <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 sm:p-6 mb-8 sm:mb-10 text-sm sm:text-base md:text-lg">
-          <p className="text-purple-200">
-            Impacto comprovado em lanches residenciais com apenas 1-2 prédios
-          </p>
+          <p className="text-purple-200">atenção onde a vida acontece</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start w-full">
