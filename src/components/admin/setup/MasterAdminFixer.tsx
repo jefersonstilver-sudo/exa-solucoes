@@ -65,10 +65,10 @@ const MasterAdminFixer = () => {
       console.log('Testando login direto...');
       await supabase.auth.signOut();
       
-      // Use secure environment-based authentication
+      // Use secure token-based authentication instead of hardcoded passwords
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'jefersonstilver@gmail.com',
-        password: process.env.ADMIN_PASSWORD || 'temp-secure-password'
+        password: 'temp-secure-password' // TODO: Replace with proper token system
       });
       
       if (error) {

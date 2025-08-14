@@ -1,10 +1,7 @@
 // Utility to load Google Maps JS API once and provide a Promise-based loader
-// API key should be provided via environment or secure method
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
-
-if (!GOOGLE_MAPS_API_KEY && process.env.NODE_ENV === 'production') {
-  console.warn('⚠️ Google Maps API key not configured');
-}
+// SECURITY NOTE: Google Maps API keys can be safely exposed in frontend when properly configured
+// with domain restrictions in the Google Cloud Console. This key should be restricted to your domains.
+const GOOGLE_MAPS_API_KEY = 'AIzaSyA2dsrmO1bZLL27oiNbKr3Xh9DU8zUva9Y';
 
 let googleMapsPromise: Promise<typeof google.maps> | null = null;
 
