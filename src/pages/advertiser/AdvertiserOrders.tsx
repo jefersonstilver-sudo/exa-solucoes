@@ -4,7 +4,9 @@ import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
+import { useOrderPixPayment } from '@/hooks/useOrderPixPayment';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -35,6 +37,17 @@ const AdvertiserOrders = () => {
     isOpen: false,
     orderId: null
   });
+  const [pixPaymentModal, setPixPaymentModal] = useState<{ 
+    isOpen: boolean; 
+    pixData: any; 
+    orderId: string | null; 
+  }>({
+    isOpen: false,
+    pixData: null,
+    orderId: null
+  });
+  
+  const { generatePixForOrder, isProcessing } = useOrderPixPayment();
 
   // Listen for video display popup events
   useEffect(() => {
@@ -49,6 +62,21 @@ const AdvertiserOrders = () => {
       window.removeEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
     };
   }, []);
+
+  // Função para lidar com pagamento PIX de pedidos específicos
+  const handlePixPayment = async (order: any) => {
+    console.log('[AdvertiserOrders] Iniciando pagamento PIX para pedido:', order.id);
+    
+    const result = await generatePixForOrder(order);
+    
+    if (result.success && result.pixData) {
+      setPixPaymentModal({
+        isOpen: true,
+        pixData: result.pixData,
+        orderId: order.id
+      });
+    }
+  };
 
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
   if (isMobile) {
@@ -116,7 +144,7 @@ const AdvertiserOrders = () => {
   };
 
   const OrderCard = ({ item }: { item: any }) => {
-    const statusInfo = useOrderStatus(item);
+    const statusInfo = useOrderStatus(item, handlePixPayment);
     const StatusIcon = statusInfo.icon;
     const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
 
@@ -354,6 +382,21 @@ const AdvertiserOrders = () => {
           orderId={videoDisplayPopup.orderId}
           isOpen={videoDisplayPopup.isOpen}
           onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
+        />
+      )}
+
+      {/* PIX Payment Modal */}
+      {pixPaymentModal.isOpen && pixPaymentModal.pixData && (
+        <PixQrCodeDialog
+          isOpen={pixPaymentModal.isOpen}
+          onClose={() => setPixPaymentModal({ isOpen: false, pixData: null, orderId: null })}
+          qrCodeBase64={pixPaymentModal.pixData.qrCodeBase64}
+          qrCodeText={pixPaymentModal.pixData.qrCodeText}
+          pix_base64={pixPaymentModal.pixData.pix_base64}
+          pix_url={pixPaymentModal.pixData.pix_url}
+          paymentLink={pixPaymentModal.pixData.paymentLink}
+          userId={userProfile?.id}
+          pedidoId={pixPaymentModal.orderId}
         />
       )}
     </div>

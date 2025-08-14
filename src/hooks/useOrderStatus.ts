@@ -27,7 +27,7 @@ export interface OrderStatusInfo {
   };
 }
 
-export const useOrderStatus = (order: any) => {
+export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) => {
   const statusInfo = useMemo((): OrderStatusInfo => {
     // CORREÇÃO: Verificar se é uma tentativa de compra primeiro
     if (order?.type === 'attempt') {
@@ -66,7 +66,11 @@ export const useOrderStatus = (order: any) => {
             label: 'Pagar com PIX',
             variant: 'default',
             onClick: () => {
-              console.log('Abrir PIX para pedido:', order.id);
+              if (onPixPayment) {
+                onPixPayment(order);
+              } else {
+                console.log('Abrir PIX para pedido:', order.id);
+              }
             }
           }
         };
