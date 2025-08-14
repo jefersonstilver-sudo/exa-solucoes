@@ -37,6 +37,7 @@ interface StepRendererProps {
   isValidatingCoupon: boolean;
   couponMessage: string;
   couponValid: boolean;
+  removeCoupon: () => void;
   acceptTerms: boolean;
   setAcceptTerms: (value: boolean) => void;
   totalPrice: number;
@@ -57,6 +58,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   isValidatingCoupon,
   couponMessage,
   couponValid,
+  removeCoupon,
   acceptTerms,
   setAcceptTerms,
   totalPrice,
@@ -154,6 +156,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
             isValidatingCoupon={isValidatingCoupon}
             couponMessage={couponMessage}
             couponValid={couponValid}
+            removeCoupon={removeCoupon}
           />
           <TrustIndicators />
         </motion.div>

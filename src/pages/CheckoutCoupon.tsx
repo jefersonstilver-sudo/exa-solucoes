@@ -15,6 +15,7 @@ const CheckoutCoupon = () => {
     isValidatingCoupon,
     couponMessage,
     couponValid,
+    removeCoupon,
     handleNextStep,
     handlePrevStep,
     isNextEnabled,
@@ -68,6 +69,7 @@ const CheckoutCoupon = () => {
               isValidatingCoupon={isValidatingCoupon}
               couponMessage={couponMessage}
               couponValid={couponValid}
+              removeCoupon={removeCoupon}
             />
           </div>
 

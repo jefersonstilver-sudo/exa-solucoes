@@ -13,6 +13,7 @@ interface CouponStepProps {
   isValidatingCoupon: boolean;
   couponMessage: string;
   couponValid: boolean;
+  removeCoupon: () => void;
 }
 
 const CouponStep: React.FC<CouponStepProps> = ({
@@ -21,7 +22,8 @@ const CouponStep: React.FC<CouponStepProps> = ({
   validateCoupon,
   isValidatingCoupon,
   couponMessage,
-  couponValid
+  couponValid,
+  removeCoupon
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,19 +77,29 @@ const CouponStep: React.FC<CouponStepProps> = ({
             className="uppercase"
             disabled={isValidatingCoupon || couponValid}
           />
-          <Button 
-            type="submit" 
-            disabled={!couponCode || isValidatingCoupon || couponValid}
-            className="min-w-[90px] bg-[#3C1361] hover:bg-[#3C1361]/90 transition-colors"
-          >
-            {isValidatingCoupon ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : couponValid ? (
-              <CheckCircle className="h-4 w-4" />
-            ) : (
-              'Aplicar'
-            )}
-          </Button>
+          {couponValid ? (
+            <Button 
+              type="button" 
+              variant="destructive"
+              onClick={removeCoupon}
+              className="min-w-[90px] transition-colors"
+            >
+              <XCircle className="h-4 w-4" />
+              Remover
+            </Button>
+          ) : (
+            <Button 
+              type="submit" 
+              disabled={!couponCode || isValidatingCoupon}
+              className="min-w-[90px] bg-[#3C1361] hover:bg-[#3C1361]/90 transition-colors"
+            >
+              {isValidatingCoupon ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Aplicar'
+              )}
+            </Button>
+          )}
         </div>
         
         {couponMessage && (
