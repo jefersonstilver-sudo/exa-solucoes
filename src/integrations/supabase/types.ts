@@ -480,6 +480,39 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_security_events: {
+        Row: {
+          coupon_code: string | null
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cupom_usos: {
         Row: {
           created_at: string
@@ -1517,6 +1550,10 @@ export type Database = {
         Args: { p_user_id: string; p_new_role: string; p_admin_id?: string }
         Returns: Json
       }
+      apply_coupon_secure: {
+        Args: { p_codigo: string; p_pedido_id: string }
+        Returns: Json
+      }
       approve_video: {
         Args: { p_pedido_video_id: string; p_approved_by: string }
         Returns: boolean
@@ -1883,6 +1920,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      monitor_coupon_security: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       monitor_system_health: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1957,6 +1998,10 @@ export type Database = {
       }
       update_expired_contracts_daily: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      validate_coupon_secure: {
+        Args: { p_codigo: string; p_valor_pedido?: number }
         Returns: Json
       }
       validate_cupom: {
