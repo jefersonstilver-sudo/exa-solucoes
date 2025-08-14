@@ -11,10 +11,18 @@ export const getUserProfile = async () => {
     return null;
   }
   
+  // Buscar dados adicionais da tabela users
+  const { data: userData } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', data.session.user.id)
+    .single();
+  
   return {
     id: data.session.user.id,
     email: data.session.user.email,
-    ...data.session.user.user_metadata
+    ...data.session.user.user_metadata,
+    ...userData
   };
 };
 

@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import AdvertiserDesktopSidebar from './layout/AdvertiserDesktopSidebar';
 import AdvertiserMobileSidebar from './layout/AdvertiserMobileSidebar';
 import AdvertiserMobileHeader from './layout/AdvertiserMobileHeader';
+import { ProfileIncompleteAlert } from './ProfileIncompleteAlert';
 
 const AdvertiserLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,6 +27,7 @@ const AdvertiserLayout = () => {
 
         {/* Page Content */}
         <main className="flex-1 p-6">
+          <ProfileIncompleteAlert />
           <Outlet />
         </main>
       </div>
