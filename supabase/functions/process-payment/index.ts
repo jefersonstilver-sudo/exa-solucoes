@@ -81,7 +81,7 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
         category_id: "digital_goods"
       }],
       payer: {
-        email: userEmail || 'cliente@exemplo.com'
+        email: userEmail || 'contato@indexa.com.br'
       },
       payment_methods: {
         excluded_payment_types: [
@@ -111,7 +111,7 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       description: `Campanha publicitária digital - Pedido ${pedidoId}`,
       payment_method_id: 'pix',
       payer: {
-        email: userEmail || 'cliente@exemplo.com'
+        email: userEmail || 'contato@indexa.com.br'
       },
       external_reference: pedidoId,
       metadata: {
