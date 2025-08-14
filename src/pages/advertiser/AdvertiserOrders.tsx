@@ -4,7 +4,6 @@ import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
-import { useOrderStatusSync } from '@/hooks/useOrderStatusSync';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import { 
   Loader2, 
@@ -30,7 +29,6 @@ const AdvertiserOrders = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
-  const { syncOrderStatuses, syncing } = useOrderStatusSync(userProfile?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [videoDisplayPopup, setVideoDisplayPopup] = useState<{ isOpen: boolean; orderId: string | null }>({
@@ -61,88 +59,39 @@ const AdvertiserOrders = () => {
   const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
   const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
   
-  // Verificar se um pedido deve ser exibido (PRIORIZA VÍDEOS APROVADOS)
-  const shouldDisplayOrder = (order: any) => {
-    console.log(`🔍 Debug pedido ${order.id.substring(0, 8)}:`, {
-      status: order.status,
-      data_inicio: order.data_inicio,
-      data_fim: order.data_fim,
-      type: order.type
-    });
-    
-    // PRIORIDADE 1: Pedidos com vídeo aprovado ou ativo SEMPRE aparecem
-    if (['video_aprovado', 'ativo'].includes(order.status)) {
-      console.log(`✅ Pedido ${order.id.substring(0, 8)} mantido - vídeo aprovado/ativo`);
-      return true;
-    }
-    
-    // PRIORIDADE 2: Pedidos pagos sempre aparecem (independente de data)
-    if (['pago', 'pago_pendente_video', 'video_enviado'].includes(order.status)) {
-      console.log(`✅ Pedido ${order.id.substring(0, 8)} mantido - status pago`);
-      return true;
-    }
-    
-    // PRIORIDADE 3: Para outros status, verificar período se houver datas
-    if (order.data_inicio && order.data_fim) {
-      const today = new Date();
-      const startDate = new Date(order.data_inicio + 'T00:00:00');
-      const endDate = new Date(order.data_fim + 'T23:59:59');
-      const withinPeriod = today >= startDate && today <= endDate;
-      
-      console.log(`📅 Pedido ${order.id.substring(0, 8)} período:`, {
-        hoje: today.toISOString(),
-        inicio: startDate.toISOString(),
-        fim: endDate.toISOString(),
-        dentroPeríodo: withinPeriod
-      });
-      
-      return withinPeriod;
-    }
-    
-    // Se não tem datas, manter apenas se não for cancelado/expirado
-    const shouldShow = !['cancelado', 'expirado'].includes(order.status);
-    console.log(`⚠️ Pedido ${order.id.substring(0, 8)} sem datas - mostrando: ${shouldShow}`);
-    return shouldShow;
+  // Verificar se um pedido está dentro do período ativo
+  const isWithinActivePeriod = (order: any) => {
+    if (!order.data_inicio || !order.data_fim) return false;
+    const today = new Date();
+    const startDate = new Date(order.data_inicio);
+    const endDate = new Date(order.data_fim);
+    return today >= startDate && today <= endDate;
   };
   
   const stats = {
-    // Pedidos ativos: vídeo aprovado/ativo OU pagos válidos
+    // Pedidos ativos: pagos, com vídeo aprovado/ativo e dentro do período
     pedidosAtivos: orders.filter(order => 
-      ['video_aprovado', 'ativo', 'pago', 'pago_pendente_video', 'video_enviado'].includes(order.status) &&
-      shouldDisplayOrder(order)
+      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
+      isWithinActivePeriod(order)
     ).length,
     
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
     
-    // Aguardando Vídeo: pedidos pagos mas ainda aguardando envio de vídeo
+    // Aguardando Vídeo: pedidos pagos mas aguardando envio de vídeo
     aguardandoVideo: orders.filter(order => 
       ['pago', 'pago_pendente_video'].includes(order.status)
     ).length,
     
-    // Pedidos finalizados: apenas cancelados ou expirados explicitamente
+    // Pedidos finalizados: expirados ou fora do período
     pedidosFinalizados: orders.filter(order => 
-      ['cancelado', 'expirado'].includes(order.status) || 
-      !shouldDisplayOrder(order)
+      order.status === 'expirado' || 
+      (['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) && !isWithinActivePeriod(order))
     ).length
   };
-  
-  // Log das estatísticas para debug
-  console.log('📊 Stats calculadas:', stats);
-  console.log('📋 Todos os pedidos:', orders.map(o => ({ id: o.id.substring(0, 8), status: o.status })));
 
-  // Filtrar itens COM PROTEÇÃO PARA VÍDEOS APROVADOS
+  // Filtrar itens
   const filteredItems = userOrdersAndAttempts.filter(item => {
-    // SEMPRE incluir pedidos com vídeo aprovado (proteção adicional)
-    if (item.type === 'order' && ['video_aprovado', 'ativo'].includes(item.status)) {
-      console.log(`🛡️ PROTEGIDO: Pedido ${item.id.substring(0, 8)} com vídeo aprovado nunca será filtrado`);
-      const matchesSearch = 
-        item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.valor_total.toString().includes(searchTerm);
-      return matchesSearch; // Só aplicar filtro de busca, ignorar filtro de status
-    }
-    
-    // Para outros itens, aplicar filtros normalmente
     const matchesSearch = 
       item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.valor_total.toString().includes(searchTerm);
@@ -151,11 +100,6 @@ const AdvertiserOrders = () => {
       statusFilter === 'todos' || 
       (item.type === 'order' && item.status === statusFilter) ||
       (item.type === 'attempt' && statusFilter === 'tentativa');
-
-    // Aplicar filtro de exibição apenas para pedidos
-    if (item.type === 'order') {
-      return matchesSearch && matchesStatus && shouldDisplayOrder(item);
-    }
 
     return matchesSearch && matchesStatus;
   });
@@ -287,25 +231,10 @@ const AdvertiserOrders = () => {
           <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos</h1>
           <p className="text-gray-600 mt-1">Acompanhe o status e histórico de todas as suas campanhas e tentativas</p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={syncOrderStatuses} 
-            variant="outline" 
-            disabled={syncing}
-            className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
-          >
-            {syncing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <CheckCircle className="h-4 w-4 mr-2" />
-            )}
-            {syncing ? 'Sincronizando...' : 'Sincronizar Status'}
-          </Button>
-          <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
-            <ShoppingBag className="h-4 w-4 mr-2" />
-            Novo Pedido
-          </Button>
-        </div>
+        <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
+          <ShoppingBag className="h-4 w-4 mr-2" />
+          Novo Pedido
+        </Button>
       </div>
 
       {/* Stats Cards */}
