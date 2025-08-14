@@ -23,12 +23,15 @@ const ComingSoonPage = () => {
   
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
     console.log('🚀 Password submission started');
     
-    const success = authenticateUser(password);
+    const success = await authenticateUser(password);
     
     if (success) {
       console.log('🎉 Authentication successful');
@@ -47,6 +50,7 @@ const ComingSoonPage = () => {
       setPassword('');
       setTimeout(() => setError(''), 3000);
     }
+    setLoading(false);
   };
 
   return (
@@ -157,9 +161,10 @@ const ComingSoonPage = () => {
                 <div className="flex gap-2">
                   <Button 
                     type="submit" 
-                    className="bg-indexa-mint hover:bg-indexa-mint/90 text-black font-semibold flex-1"
+                    disabled={loading}
+                    className="bg-indexa-mint hover:bg-indexa-mint/90 text-black font-semibold flex-1 disabled:opacity-50"
                   >
-                    Entrar
+                    {loading ? 'Validando...' : 'Entrar'}
                   </Button>
                   <Button 
                     type="button"
