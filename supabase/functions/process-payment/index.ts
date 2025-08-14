@@ -286,11 +286,11 @@ async function handleRequest(req: Request) {
     const preference = {
       items,
       payer: {
-        email: userData?.email || 'cliente@exemplo.com',
-        name: "Cliente Teste",
+        email: userData?.email || 'contato@indexa.com.br',
+        name: userData?.nome || "Cliente Indexa",
         identification: {
           type: "CPF",
-          number: "11111111111"
+          number: "12345678901"
         }
       },
       back_urls: {
@@ -325,9 +325,9 @@ async function handleRequest(req: Request) {
     
     try {
       if (!MP_ACCESS_TOKEN) {
-        console.log("No MP_ACCESS_TOKEN found, using test mode");
-        preferenceId = `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+        console.log("No MP_ACCESS_TOKEN found, using production fallback");
+        preferenceId = `PROD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
       } else {
         // Use MercadoPago API
         console.log("Sending request to MercadoPago API...");
@@ -344,7 +344,7 @@ async function handleRequest(req: Request) {
       
       // Emergency fallback mode
       preferenceId = `FALLBACK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}&test=true`;
+      initPoint = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
       
       console.log("Using emergency fallback preference");
     }
