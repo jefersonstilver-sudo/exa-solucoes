@@ -4,6 +4,7 @@ import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
+import { useOrderStatusSync } from '@/hooks/useOrderStatusSync';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import { 
   Loader2, 
@@ -29,6 +30,7 @@ const AdvertiserOrders = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
+  const { syncOrderStatuses, syncing } = useOrderStatusSync(userProfile?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [videoDisplayPopup, setVideoDisplayPopup] = useState<{ isOpen: boolean; orderId: string | null }>({
@@ -59,36 +61,72 @@ const AdvertiserOrders = () => {
   const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
   const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
   
-  // Verificar se um pedido está dentro do período ativo
+  // Verificar se um pedido está dentro do período ativo OU tem vídeos aprovados
   const isWithinActivePeriod = (order: any) => {
-    if (!order.data_inicio || !order.data_fim) return false;
+    // Log de debug para investigar o problema
+    console.log(`🔍 Debug pedido ${order.id.substring(0, 8)}:`, {
+      status: order.status,
+      data_inicio: order.data_inicio,
+      data_fim: order.data_fim,
+      type: order.type
+    });
+    
+    // Se é pedido com vídeo aprovado ou ativo, sempre mostrar
+    if (['video_aprovado', 'ativo'].includes(order.status)) {
+      console.log(`✅ Pedido ${order.id.substring(0, 8)} mantido - vídeo aprovado/ativo`);
+      return true;
+    }
+    
+    // Para outros status, verificar período
+    if (!order.data_inicio || !order.data_fim) {
+      console.log(`⚠️ Pedido ${order.id.substring(0, 8)} sem datas definidas`);
+      return false;
+    }
+    
     const today = new Date();
     const startDate = new Date(order.data_inicio);
     const endDate = new Date(order.data_fim);
-    return today >= startDate && today <= endDate;
+    const withinPeriod = today >= startDate && today <= endDate;
+    
+    console.log(`📅 Pedido ${order.id.substring(0, 8)} período:`, {
+      hoje: today.toDateString(),
+      inicio: startDate.toDateString(),
+      fim: endDate.toDateString(),
+      dentroPeríodo: withinPeriod
+    });
+    
+    return withinPeriod;
   };
   
   const stats = {
-    // Pedidos ativos: pagos, com vídeo aprovado/ativo e dentro do período
-    pedidosAtivos: orders.filter(order => 
-      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
-      isWithinActivePeriod(order)
-    ).length,
+    // Pedidos ativos: com vídeo aprovado/ativo OU dentro do período válido
+    pedidosAtivos: orders.filter(order => {
+      // Sempre incluir pedidos com vídeo aprovado ou ativo
+      if (['video_aprovado', 'ativo'].includes(order.status)) {
+        return true;
+      }
+      // Para outros status pagos, verificar período
+      return ['pago', 'pago_pendente_video'].includes(order.status) && isWithinActivePeriod(order);
+    }).length,
     
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
     
-    // Aguardando Vídeo: pedidos pagos mas aguardando envio de vídeo
+    // Aguardando Vídeo: pedidos pagos mas ainda aguardando envio de vídeo
     aguardandoVideo: orders.filter(order => 
       ['pago', 'pago_pendente_video'].includes(order.status)
     ).length,
     
-    // Pedidos finalizados: expirados ou fora do período
+    // Pedidos finalizados: apenas cancelados ou expirados explicitamente
     pedidosFinalizados: orders.filter(order => 
-      order.status === 'expirado' || 
-      (['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) && !isWithinActivePeriod(order))
+      ['cancelado', 'expirado'].includes(order.status) || 
+      (['pago', 'pago_pendente_video'].includes(order.status) && !isWithinActivePeriod(order))
     ).length
   };
+  
+  // Log das estatísticas para debug
+  console.log('📊 Stats calculadas:', stats);
+  console.log('📋 Todos os pedidos:', orders.map(o => ({ id: o.id.substring(0, 8), status: o.status })));
 
   // Filtrar itens
   const filteredItems = userOrdersAndAttempts.filter(item => {
@@ -231,10 +269,25 @@ const AdvertiserOrders = () => {
           <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos</h1>
           <p className="text-gray-600 mt-1">Acompanhe o status e histórico de todas as suas campanhas e tentativas</p>
         </div>
-        <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
-          <ShoppingBag className="h-4 w-4 mr-2" />
-          Novo Pedido
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={syncOrderStatuses} 
+            variant="outline" 
+            disabled={syncing}
+            className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+          >
+            {syncing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4 mr-2" />
+            )}
+            {syncing ? 'Sincronizando...' : 'Sincronizar Status'}
+          </Button>
+          <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            Novo Pedido
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
