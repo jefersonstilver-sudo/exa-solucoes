@@ -66,10 +66,7 @@ export const useOrderStatus = (order: any) => {
             label: 'Pagar com PIX',
             variant: 'default',
             onClick: () => {
-              // Disparar evento customizado para abrir modal PIX
-              window.dispatchEvent(new CustomEvent('openPixPayment', { 
-                detail: { orderId: order.id } 
-              }));
+              console.log('Abrir PIX para pedido:', order.id);
             }
           }
         };

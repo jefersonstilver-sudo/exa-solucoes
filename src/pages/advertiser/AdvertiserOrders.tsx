@@ -5,9 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
-import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
-import { usePixPaymentForPendingOrders } from '@/hooks/usePixPaymentForPendingOrders';
-import { useUserSession } from '@/hooks/useUserSession';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -38,39 +35,20 @@ const AdvertiserOrders = () => {
     isOpen: false,
     orderId: null
   });
-  const [showPixModal, setShowPixModal] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  
-  const { user } = useUserSession();
-  const { 
-    isLoading: isPixLoading, 
-    paymentData, 
-    generatePixForPendingOrder, 
-    refreshPaymentStatus 
-  } = usePixPaymentForPendingOrders();
 
-  // Listen for popup events
+  // Listen for video display popup events
   useEffect(() => {
     const handleOpenVideoDisplay = (event: CustomEvent) => {
       const { orderId } = event.detail;
       setVideoDisplayPopup({ isOpen: true, orderId });
     };
 
-    const handlePixPayment = (event: CustomEvent) => {
-      const { orderId } = event.detail;
-      setSelectedOrderId(orderId);
-      setShowPixModal(true);
-      generatePixForPendingOrder(orderId);
-    };
-
     window.addEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
-    window.addEventListener('openPixPayment', handlePixPayment as EventListener);
     
     return () => {
       window.removeEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
-      window.removeEventListener('openPixPayment', handlePixPayment as EventListener);
     };
-  }, [generatePixForPendingOrder]);
+  }, []);
 
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
   if (isMobile) {
@@ -378,22 +356,6 @@ const AdvertiserOrders = () => {
           onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
         />
       )}
-
-      {/* PIX Payment Modal */}
-      <PixQrCodeDialog
-        isOpen={showPixModal}
-        onClose={() => {
-          setShowPixModal(false);
-          setSelectedOrderId(null);
-        }}
-        qrCodeBase64={paymentData?.qrCodeBase64 || ''}
-        qrCodeText={paymentData?.qrCodeText || ''}
-        paymentLink={paymentData?.paymentLink}
-        pix_url={paymentData?.pix_url}
-        pix_base64={paymentData?.pix_base64}
-        userId={user?.id || ''}
-        pedidoId={selectedOrderId || ''}
-      />
     </div>
   );
 };
