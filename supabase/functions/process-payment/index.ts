@@ -28,7 +28,7 @@ function configureMercadoPago() {
   const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
   MercadoPago.configure({
     access_token: MP_ACCESS_TOKEN,
-    sandbox: true
+    sandbox: false
   });
   return MP_ACCESS_TOKEN;
 }
@@ -310,7 +310,6 @@ async function handleRequest(req: Request) {
         pedido_id: pedidoId,
         user_id: userId,
         payment_method: payment_method,
-        test: true,
         email: userData?.email,
         payment_key: payment_key,
         idempotency_key: idempotency_key,
@@ -337,10 +336,6 @@ async function handleRequest(req: Request) {
         preferenceId = response.body.id;
         initPoint = response.body.init_point;
         
-        // Force test parameter
-        if (initPoint && !initPoint.includes('test=')) {
-          initPoint = `${initPoint}${initPoint.includes('?') ? '&' : '?'}test=true`;
-        }
         
         console.log("MercadoPago preference created successfully");
       }
@@ -369,7 +364,6 @@ async function handleRequest(req: Request) {
           payment_key: payment_key,
           idempotency_key: idempotency_key,
           anti_duplicate_processed: true,
-          test: true,
           timestamp: new Date().toISOString()
         }
       })
@@ -394,8 +388,7 @@ async function handleRequest(req: Request) {
         pedido_id: pedidoId,
         payment_method: payment_method,
         corrected_total_amount: correctedTotalAmount,
-        anti_duplicate_check: 'passed',
-        test: true
+        anti_duplicate_check: 'passed'
       }),
       {
         headers: {
