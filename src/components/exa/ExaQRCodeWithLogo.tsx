@@ -69,11 +69,14 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
             }}
             onError={(e) => {
               console.error('❌ Erro ao carregar logo, usando fallback texto');
-              // Fallback direto para texto
+              // Secure fallback without innerHTML
               e.currentTarget.style.display = 'none';
               const parent = e.currentTarget.parentElement;
               if (parent) {
-                parent.innerHTML = '<div class="flex items-center justify-center w-full h-full text-purple-600 font-bold text-sm">INDEXA</div>';
+                const fallbackDiv = document.createElement('div');
+                fallbackDiv.className = 'flex items-center justify-center w-full h-full text-purple-600 font-bold text-sm';
+                fallbackDiv.textContent = 'INDEXA';
+                parent.appendChild(fallbackDiv);
               }
             }}
           />

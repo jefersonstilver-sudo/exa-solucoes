@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-const DEVELOPER_PASSWORD = '573039';
+// Secure developer authentication using token-based system
 const AUTH_KEY = 'indexa_dev_auth';
 
 export const useDeveloperAuth = () => {
@@ -23,33 +24,46 @@ export const useDeveloperAuth = () => {
     console.log('🔐 Auth state changed:', isAuthenticated);
   }, [isAuthenticated]);
 
-  const authenticateUser = useCallback((inputPassword: string) => {
-    console.log('🔐 Attempting authentication...');
-    console.log('🔐 Input password:', inputPassword);
-    console.log('🔐 Expected password:', DEVELOPER_PASSWORD);
-    console.log('🔐 Password match:', inputPassword === DEVELOPER_PASSWORD);
+  const authenticateUser = useCallback(async (inputToken: string) => {
+    console.log('🔐 Attempting secure token authentication...');
     
-    if (inputPassword === DEVELOPER_PASSWORD) {
-      console.log('✅ Password correct! Setting authentication...');
+    try {
+      // Validate token using secure database function
+      const { data, error } = await supabase.rpc('validate_developer_token', {
+        p_token: inputToken
+      });
       
-      // Primeiro: Atualizar sessionStorage
-      try {
-        sessionStorage.setItem('indexa_dev_session', 'true');
-        console.log('✅ SessionStorage updated successfully');
-      } catch (error) {
-        console.error('❌ Failed to update sessionStorage:', error);
+      if (error) {
+        console.error('❌ Token validation error:', error);
         return false;
       }
       
-      // Segundo: Atualizar estado React
-      setIsAuthenticated(true);
-      console.log('✅ React state updated to authenticated');
+      if (data === true) {
+        console.log('✅ Token valid! Setting authentication...');
+        
+        // Update sessionStorage
+        try {
+          sessionStorage.setItem('indexa_dev_session', 'true');
+          console.log('✅ SessionStorage updated successfully');
+        } catch (error) {
+          console.error('❌ Failed to update sessionStorage:', error);
+          return false;
+        }
+        
+        // Update React state
+        setIsAuthenticated(true);
+        console.log('✅ React state updated to authenticated');
+        
+        return true;
+      }
       
-      return true;
+      console.log('❌ Token invalid or expired');
+      return false;
+      
+    } catch (error) {
+      console.error('❌ Authentication error:', error);
+      return false;
     }
-    
-    console.log('❌ Password incorrect');
-    return false;
   }, []);
 
   const logout = () => {

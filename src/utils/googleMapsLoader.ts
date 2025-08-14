@@ -1,6 +1,10 @@
 // Utility to load Google Maps JS API once and provide a Promise-based loader
-// Public browser key provided by the user (domain-restricted recommended)
-const GOOGLE_MAPS_API_KEY = 'AIzaSyA2dsrmO1bZLL27oiNbKr3Xh9DU8zUva9Y';
+// API key should be provided via environment or secure method
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
+
+if (!GOOGLE_MAPS_API_KEY && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️ Google Maps API key not configured');
+}
 
 let googleMapsPromise: Promise<typeof google.maps> | null = null;
 
