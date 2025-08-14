@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { 
   Clock, 
   DollarSign, 
@@ -12,8 +12,6 @@ import {
   Eye,
   Monitor
 } from 'lucide-react';
-import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
-import { usePixPayment } from '@/hooks/payment/usePixPayment';
 
 export interface OrderStatusInfo {
   label: string;
@@ -30,9 +28,6 @@ export interface OrderStatusInfo {
 }
 
 export const useOrderStatus = (order: any) => {
-  const [isPixDialogOpen, setIsPixDialogOpen] = useState(false);
-  const { paymentData, isLoading } = usePixPayment(isPixDialogOpen ? order?.id : null);
-
   const statusInfo = useMemo((): OrderStatusInfo => {
     // CORREÇÃO: Verificar se é uma tentativa de compra primeiro
     if (order?.type === 'attempt') {
@@ -71,8 +66,7 @@ export const useOrderStatus = (order: any) => {
             label: 'Pagar com PIX',
             variant: 'default',
             onClick: () => {
-              console.log('Abrindo PIX para pedido específico:', order.id);
-              setIsPixDialogOpen(true);
+              console.log('Abrir PIX para pedido:', order.id);
             }
           }
         };
@@ -202,27 +196,5 @@ export const useOrderStatus = (order: any) => {
     }
   }, [order?.status, order?.videos, order?.id, order?.type]);
 
-  const pixDialogProps = {
-    isOpen: isPixDialogOpen,
-    onClose: () => setIsPixDialogOpen(false),
-    qrCodeBase64: paymentData?.qrCodeBase64,
-    qrCodeText: paymentData?.qrCode,
-    status: paymentData?.status === 'approved' ? 'approved' : 'pending',
-    paymentId: paymentData?.paymentId,
-    userId: order?.client_id,
-    pedidoId: order?.id,
-    createdAt: paymentData?.createdAt,
-    onRefreshStatus: async () => {
-      // Implementar refresh se necessário
-    }
-  };
-
-  return {
-    ...statusInfo,
-    pixDialog: {
-      isOpen: isPixDialogOpen,
-      component: PixQrCodeDialog,
-      props: pixDialogProps
-    }
-  };
+  return statusInfo;
 };

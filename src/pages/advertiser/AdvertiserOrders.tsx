@@ -61,48 +61,19 @@ const AdvertiserOrders = () => {
   
   // Verificar se um pedido está dentro do período ativo
   const isWithinActivePeriod = (order: any) => {
-    if (!order.data_inicio || !order.data_fim) {
-      console.log(`⚠️ Pedido ${order.id.substring(0, 8)} sem datas definidas`);
-      return false;
-    }
-    
+    if (!order.data_inicio || !order.data_fim) return false;
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Zerar horas para comparação apenas de data
-    
     const startDate = new Date(order.data_inicio);
-    startDate.setHours(0, 0, 0, 0);
-    
     const endDate = new Date(order.data_fim);
-    endDate.setHours(23, 59, 59, 999); // Final do dia
-    
-    const isActive = today >= startDate && today <= endDate;
-    console.log(`📅 Pedido ${order.id.substring(0, 8)}: ${order.data_inicio} até ${order.data_fim}, hoje: ${today.toISOString().split('T')[0]}, ativo: ${isActive}`);
-    
-    return isActive;
+    return today >= startDate && today <= endDate;
   };
   
-  // Debug logs para investigar pedidos
-  console.log('📊 [AdvertiserOrders] Total de itens carregados:', userOrdersAndAttempts.length);
-  console.log('📊 [AdvertiserOrders] Pedidos encontrados:', orders.length);
-  console.log('📊 [AdvertiserOrders] Tentativas encontradas:', attempts.length);
-  
-  orders.forEach(order => {
-    console.log(`📋 [AdvertiserOrders] Pedido ${order.id.substring(0, 8)}: status=${order.status}, data_inicio=${order.data_inicio}, data_fim=${order.data_fim}`);
-  });
-
   const stats = {
     // Pedidos ativos: pagos, com vídeo aprovado/ativo e dentro do período
-    pedidosAtivos: orders.filter(order => {
-      const isValidStatus = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status);
-      const isInPeriod = isWithinActivePeriod(order);
-      const isActive = isValidStatus && isInPeriod;
-      
-      if (isValidStatus) {
-        console.log(`🔍 Pedido ${order.id.substring(0, 8)}: status válido=${isValidStatus}, no período=${isInPeriod}, ativo=${isActive}`);
-      }
-      
-      return isActive;
-    }).length,
+    pedidosAtivos: orders.filter(order => 
+      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
+      isWithinActivePeriod(order)
+    ).length,
     
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
@@ -145,8 +116,8 @@ const AdvertiserOrders = () => {
   };
 
   const OrderCard = ({ item }: { item: any }) => {
-    const orderStatus = useOrderStatus(item);
-    const StatusIcon = orderStatus.icon;
+    const statusInfo = useOrderStatus(item);
+    const StatusIcon = statusInfo.icon;
     const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
 
     return (
@@ -164,7 +135,7 @@ const AdvertiserOrders = () => {
                 )}>
                   <StatusIcon className={cn(
                     'h-5 w-5',
-                    item.type === 'attempt' ? 'text-orange-500' : orderStatus.color.replace('text-', '')
+                    item.type === 'attempt' ? 'text-orange-500' : statusInfo.color.replace('text-', '')
                   )} />
                 </div>
                 <div>
@@ -208,23 +179,22 @@ const AdvertiserOrders = () => {
             </div>
 
             <div className="flex flex-col lg:items-end space-y-3">
-              <Badge className={cn('border flex items-center space-x-1', orderStatus.bgColor)}>
+              <Badge className={cn('border flex items-center space-x-1', statusInfo.bgColor)}>
                 <StatusIcon className="h-3 w-3" />
-                <span>{orderStatus.label}</span>
+                <span>{statusInfo.label}</span>
               </Badge>
 
               <div className="flex space-x-2">
-                {orderStatus.action && (
+                {statusInfo.action && (
                   <Button
-                    variant={orderStatus.action.variant}
+                    variant={statusInfo.action.variant}
                     size="sm"
-                    onClick={orderStatus.action.onClick}
+                    onClick={statusInfo.action.onClick}
                     className="mr-2"
                   >
-                    {orderStatus.action.label}
+                    {statusInfo.action.label}
                   </Button>
                 )}
-                
                 
                 {item.type === 'order' && (
                   <Button
@@ -386,21 +356,6 @@ const AdvertiserOrders = () => {
           onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
         />
       )}
-
-      {/* PIX Dialogs */}
-      {userOrdersAndAttempts.map((item) => {
-        if (item.type !== 'order') return null;
-        const orderStatus = useOrderStatus(item);
-        if (!orderStatus.pixDialog || !orderStatus.pixDialog.isOpen) return null;
-        
-        const PixComponent = orderStatus.pixDialog.component;
-        return (
-          <PixComponent 
-            key={`pix-${item.id}`}
-            {...orderStatus.pixDialog.props}
-          />
-        );
-      })}
     </div>
   );
 };

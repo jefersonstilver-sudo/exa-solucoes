@@ -56,62 +56,18 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
 
       console.log('✅ Pedidos do usuário encontrados:', orders?.length || 0);
 
-      // Buscar informações de vídeos dos pedidos para atualizar status
-      const orderIds = (orders || []).map(order => order.id);
-      let videoStatusMap: Record<string, { hasApprovedVideos: boolean; hasActiveVideos: boolean }> = {};
-      
-      if (orderIds.length > 0) {
-        try {
-          const { data: pedidoVideos, error: videosError } = await supabase
-            .from('pedido_videos')
-            .select('pedido_id, approval_status, is_active, selected_for_display')
-            .in('pedido_id', orderIds);
-          
-          if (!videosError && pedidoVideos) {
-            // Mapear status dos vídeos por pedido
-            pedidoVideos.forEach(pv => {
-              if (!videoStatusMap[pv.pedido_id]) {
-                videoStatusMap[pv.pedido_id] = { hasApprovedVideos: false, hasActiveVideos: false };
-              }
-              if (pv.approval_status === 'approved') {
-                videoStatusMap[pv.pedido_id].hasApprovedVideos = true;
-              }
-              if (pv.is_active && pv.selected_for_display) {
-                videoStatusMap[pv.pedido_id].hasActiveVideos = true;
-              }
-            });
-          }
-        } catch (error) {
-          console.warn('Erro ao buscar vídeos dos pedidos (não crítico):', error);
-        }
-      }
-
-      // Processar pedidos completos com status atualizado
-      const processedOrders: UserCompleteOrder[] = (orders || []).map(order => {
-        let finalStatus = order.status;
-        const videoInfo = videoStatusMap[order.id];
-        
-        // Atualizar status baseado nos vídeos
-        if (order.status === 'pago' && videoInfo?.hasApprovedVideos) {
-          finalStatus = 'video_aprovado';
-        } else if (['pago', 'video_aprovado'].includes(order.status) && videoInfo?.hasActiveVideos) {
-          finalStatus = 'ativo';
-        }
-        
-        console.log(`📋 Pedido ${order.id.substring(0, 8)}: status original=${order.status}, status final=${finalStatus}, vídeos aprovados=${videoInfo?.hasApprovedVideos}, vídeos ativos=${videoInfo?.hasActiveVideos}`);
-        
-        return {
-          id: order.id,
-          created_at: order.created_at,
-          status: finalStatus,
-          valor_total: order.valor_total || 0,
-          lista_paineis: order.lista_paineis || [],
-          plano_meses: order.plano_meses,
-          data_inicio: order.data_inicio,
-          data_fim: order.data_fim,
-          type: 'order' as const
-        };
-      });
+      // Processar pedidos completos
+      const processedOrders: UserCompleteOrder[] = (orders || []).map(order => ({
+        id: order.id,
+        created_at: order.created_at,
+        status: order.status,
+        valor_total: order.valor_total || 0,
+        lista_paineis: order.lista_paineis || [],
+        plano_meses: order.plano_meses,
+        data_inicio: order.data_inicio,
+        data_fim: order.data_fim,
+        type: 'order' as const
+      }));
 
       // Buscar tentativas de compra do usuário (sem foreign key problemática)
       let processedAttempts: UserOrderAttempt[] = [];
