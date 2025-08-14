@@ -78,7 +78,7 @@ export class LinkGenerator {
       
       // Tentar gerar link com o tipo principal
         // Detectar URL base dinamicamente
-        const siteUrl = Deno.env.get('SITE_URL') || 'https://loving-bough-1xb6c3h.lovableproject.com';
+        const siteUrl = Deno.env.get('SITE_URL') || 'https://indexamidia.com.br';
         const redirectUrl = `${siteUrl}/confirmacao`;
         
         console.log(`🌐 [LINK-GENERATOR] URL de redirecionamento: ${redirectUrl}`);

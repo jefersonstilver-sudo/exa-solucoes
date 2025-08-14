@@ -95,7 +95,7 @@ serve(async (req) => {
 
     // Construir URL de confirmação com fallback
     const baseUrl = 'https://aakenoljsycyrcrchgxj.supabase.co'
-    const redirectTo = email_data.redirect_to || 'https://loving-bough-1xb6c3h.lovableproject.com/'
+    const redirectTo = email_data.redirect_to || 'https://indexamidia.com.br/'
     const confirmationUrl = `${baseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`
 
     console.log('🔗 [SEND-CONFIRMATION] URL de confirmação construída:', {
