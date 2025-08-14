@@ -1724,6 +1724,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      detect_duplicate_payments: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          client_id: string
+          created_at: string
+          external_reference: string
+          payment_id: string
+          pedido_id: string
+          status: string
+          suspicious_reason: string
+          valor_total: number
+        }[]
+      }
       detect_financial_anomalies: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -2110,6 +2123,10 @@ export type Database = {
       }
       resolve_email_conflicts: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      revert_suspicious_payment: {
+        Args: { p_pedido_id: string; p_reason?: string }
         Returns: Json
       }
       safe_create_admin_user: {
