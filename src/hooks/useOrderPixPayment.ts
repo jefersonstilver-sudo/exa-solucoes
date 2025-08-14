@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { sendPixPaymentWebhook } from '@/services/pixWebhookService';
+import { getUserInfo } from '@/services/userInfoService';
 import { toast } from 'sonner';
 
 interface OrderPixPaymentData {
@@ -26,6 +27,7 @@ export const useOrderPixPayment = () => {
       orderId: order.id,
       status: order.status,
       valor: order.valor_total,
+      client_id: order.client_id,
       timestamp: new Date().toISOString()
     });
 
@@ -37,16 +39,31 @@ export const useOrderPixPayment = () => {
       return { success: false, error: "Pedido não está pendente de pagamento" };
     }
 
+    if (!order.client_id) {
+      return { success: false, error: "Client ID não encontrado no pedido" };
+    }
+
     setIsProcessing(true);
 
     try {
+      // Buscar informações reais do usuário
+      console.log('[useOrderPixPayment] Buscando dados do usuário:', order.client_id);
+      const userInfo = await getUserInfo(order.client_id);
+      
+      if (!userInfo) {
+        console.error('[useOrderPixPayment] Usuário não encontrado:', order.client_id);
+        return { success: false, error: "Dados do usuário não encontrados" };
+      }
+
+      console.log('[useOrderPixPayment] Dados do usuário obtidos:', userInfo);
+
       // Preparar dados do webhook baseados no pedido existente
       const webhookData = {
         cliente_id: order.client_id,
         pedido_id: order.id,
-        transaction_id: order.transaction_id || '',
-        email: order.email || 'cliente@email.com',
-        nome: order.email || 'Cliente',
+        transaction_id: order.transaction_id || `order_${order.id}`,
+        email: userInfo.email || 'cliente@email.com',
+        nome: userInfo.nome || 'Cliente',
         plano_escolhido: `Plano ${order.plano_meses} ${order.plano_meses === 1 ? 'mês' : 'meses'}`,
         periodo_meses: order.plano_meses,
         predios_selecionados: (order.lista_paineis || []).map((panelId: string, index: number) => ({

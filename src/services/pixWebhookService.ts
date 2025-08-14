@@ -12,18 +12,28 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
   });
   
   try {
-    // Validar dados antes de enviar
-    if (!data.cliente_id || !data.email || !data.nome) {
-      throw new Error("Dados obrigatórios do cliente estão faltando");
+    // Validar dados essenciais antes de enviar
+    if (!data.cliente_id) {
+      throw new Error("ID do cliente é obrigatório");
+    }
+
+    if (!data.valor_total || parseFloat(data.valor_total) <= 0) {
+      throw new Error("Valor do pedido deve ser maior que zero");
     }
 
     if (!data.predios_selecionados || data.predios_selecionados.length === 0) {
       throw new Error("Nenhum prédio foi selecionado para a campanha");
     }
 
+    // Garantir dados mínimos para email e nome
+    const emailToUse = data.email || 'cliente@email.com';
+    const nomeToUse = data.nome || 'Cliente';
+
     // Dados completos com timestamp para rastreamento
     const webhookPayload = {
       ...data,
+      email: emailToUse,
+      nome: nomeToUse,
       timestamp,
       webhook_version: "2.0",
       source: "indexa-app",
