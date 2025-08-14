@@ -5,8 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
-import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
-import { usePixPayment } from '@/hooks/payment/usePixPayment';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -37,13 +35,6 @@ const AdvertiserOrders = () => {
     isOpen: false,
     orderId: null
   });
-  const [pixPaymentPopup, setPixPaymentPopup] = useState<{ isOpen: boolean; orderId: string | null }>({
-    isOpen: false,
-    orderId: null
-  });
-
-  // Hook para buscar dados PIX quando o popup for aberto
-  const { paymentData, isLoading: pixLoading } = usePixPayment(pixPaymentPopup.orderId || undefined);
 
   // Listen for video display popup events
   useEffect(() => {
@@ -52,17 +43,10 @@ const AdvertiserOrders = () => {
       setVideoDisplayPopup({ isOpen: true, orderId });
     };
 
-    const handleOpenPixPayment = (event: CustomEvent) => {
-      const { orderId } = event.detail;
-      setPixPaymentPopup({ isOpen: true, orderId });
-    };
-
     window.addEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
-    window.addEventListener('openPixPayment', handleOpenPixPayment as EventListener);
     
     return () => {
       window.removeEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
-      window.removeEventListener('openPixPayment', handleOpenPixPayment as EventListener);
     };
   }, []);
 
@@ -370,18 +354,6 @@ const AdvertiserOrders = () => {
           orderId={videoDisplayPopup.orderId}
           isOpen={videoDisplayPopup.isOpen}
           onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
-        />
-      )}
-
-      {/* PIX Payment Popup */}
-      {pixPaymentPopup.orderId && (
-        <PixQrCodeDialog
-          isOpen={pixPaymentPopup.isOpen}
-          onClose={() => setPixPaymentPopup({ isOpen: false, orderId: null })}
-          qrCodeBase64={paymentData?.qrCodeBase64}
-          qrCodeText={paymentData?.qrCode}
-          userId={userProfile?.id}
-          pedidoId={pixPaymentPopup.orderId}
         />
       )}
     </div>
