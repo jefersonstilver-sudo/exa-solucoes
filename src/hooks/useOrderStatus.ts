@@ -66,7 +66,7 @@ export const useOrderStatus = (order: any) => {
             label: 'Pagar com PIX',
             variant: 'default',
             onClick: () => {
-              window.location.href = `/pix-payment?pedido=${order.id}`;
+              console.log('Abrir PIX para pedido:', order.id);
             }
           }
         };
