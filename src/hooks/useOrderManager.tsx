@@ -33,8 +33,9 @@ export const useOrderManager = () => {
         throw new Error('Carrinho vazio - não é possível criar pedido');
       }
 
-      if (totalPrice <= 0) {
-        throw new Error('Valor total inválido - não é possível criar pedido');
+      // ATUALIZADO: Permitir valor zero para cupons de 100%
+      if (totalPrice < 0) {
+        throw new Error('Valor total negativo - não é possível criar pedido');
       }
 
       // Gerar transaction_id único para rastreamento
@@ -146,8 +147,91 @@ export const useOrderManager = () => {
     }
   };
 
+  // Nova função para criar pedidos já pagos (cupons 100%)
+  const createPaidOrder = async (params: CreateOrderParams): Promise<OrderResult> => {
+    const { clientId, cartItems, selectedPlan, couponId } = params;
+    
+    setIsCreating(true);
+    
+    try {
+      // Validações essenciais
+      if (!cartItems || cartItems.length === 0) {
+        throw new Error('Carrinho vazio - não é possível criar pedido');
+      }
+
+      // Gerar transaction_id único para rastreamento
+      const transactionId = uuidv4();
+      
+      // Extrair IDs dos painéis e prédios
+      const listaPaineis = cartItems
+        .map(item => item.panel?.id)
+        .filter(Boolean);
+      
+      const listaPredios = cartItems
+        .map(item => item.panel?.buildings?.id || item.panel?.building_id)
+        .filter(Boolean)
+        .filter((id, index, arr) => arr.indexOf(id) === index);
+      
+      if (listaPaineis.length === 0 || listaPredios.length === 0) {
+        throw new Error('Não foi possível extrair dados dos painéis ou prédios');
+      }
+
+      // Calcular datas do período
+      const dataInicio = new Date();
+      const dataFim = new Date();
+      dataFim.setMonth(dataInicio.getMonth() + selectedPlan);
+
+      // Criar pedido diretamente como pago
+      const { data: pedido, error } = await supabase
+        .from('pedidos')
+        .insert({
+          client_id: clientId,
+          transaction_id: transactionId,
+          valor_total: 0.01, // Valor simbólico
+          plano_meses: selectedPlan,
+          status: 'pago',
+          lista_paineis: listaPaineis,
+          lista_predios: listaPredios,
+          data_inicio: dataInicio.toISOString().split('T')[0],
+          data_fim: dataFim.toISOString().split('T')[0],
+          termos_aceitos: true,
+          cupom_id: couponId,
+          log_pagamento: {
+            created_via: 'free_coupon',
+            payment_method: 'free_coupon',
+            payment_status: 'approved',
+            created_at: new Date().toISOString(),
+            transaction_id: transactionId,
+            free_order: true,
+            coupon_discount: '100%'
+          }
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Erro ao criar pedido pago: ${error.message}`);
+      }
+
+      return {
+        success: true,
+        pedidoId: pedido.id,
+        transactionId: pedido.transaction_id
+      };
+
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Erro desconhecido ao criar pedido pago'
+      };
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return {
     createPendingOrder,
+    createPaidOrder,
     updateOrderStatus,
     isCreating
   };

@@ -103,8 +103,11 @@ const CheckoutSummary = () => {
   });
 
   const pixDiscount = 5; // 5% desconto PIX
-  const pixTotal = baseTotal * (1 - pixDiscount / 100);
-  const cardTotal = baseTotal; // Cartão sem desconto
+  const pixTotal = Math.max(0, baseTotal * (1 - pixDiscount / 100));
+  const cardTotal = Math.max(0, baseTotal); // Cartão sem desconto
+  
+  // Detectar se é pedido gratuito (cupom 100%)
+  const isFreeOrder = pixTotal <= 0;
 
   const handleBack = () => {
     navigate('/checkout/cupom');
@@ -266,23 +269,36 @@ const CheckoutSummary = () => {
                 <div className="bg-white rounded-2xl shadow-lg border p-6">
                   <h3 className="text-xl font-bold text-[#3C1361] mb-4">Formas de Pagamento</h3>
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
-                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="font-medium text-green-800">PIX - 5% de desconto</p>
-                        <p className="text-sm text-green-600">Pagamento instantâneo aprovado</p>
+                    {isFreeOrder ? (
+                      <div className="flex items-center space-x-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="font-medium text-green-800">Pedido Gratuito - Cupom 100%</p>
+                          <p className="text-sm text-green-600">Acesso liberado imediatamente</p>
+                        </div>
+                        <p className="font-bold text-green-700">R$ 0,00</p>
                       </div>
-                      <p className="font-bold text-green-700">R$ {pixTotal.toFixed(2)}</p>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="font-medium text-blue-800">Cartão de Crédito</p>
-                        <p className="text-sm text-blue-600">Parcelamento em até 12x</p>
-                      </div>
-                      <p className="font-bold text-blue-700">R$ {cardTotal.toFixed(2)}</p>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center space-x-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                          <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                          <div className="flex-1">
+                            <p className="font-medium text-green-800">PIX - 5% de desconto</p>
+                            <p className="text-sm text-green-600">Pagamento instantâneo aprovado</p>
+                          </div>
+                          <p className="font-bold text-green-700">R$ {pixTotal.toFixed(2)}</p>
+                        </div>
+                        
+                        <div className="flex items-center space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                          <div className="flex-1">
+                            <p className="font-medium text-blue-800">Cartão de Crédito</p>
+                            <p className="text-sm text-blue-600">Parcelamento em até 12x</p>
+                          </div>
+                          <p className="font-bold text-blue-700">R$ {cardTotal.toFixed(2)}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -330,19 +346,42 @@ const CheckoutSummary = () => {
 
               {/* Payment Buttons */}
               <div className="space-y-4">
-                {/* PIX Payment Button */}
-                <PixPaymentButton
-                  totalAmount={pixTotal}
-                  onPaymentInitiate={handlePixPayment}
-                  disabled={!cartItems || cartItems.length === 0 || isPixProcessing}
-                />
+                {isFreeOrder ? (
+                  /* Botão para Pedido Gratuito */
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handlePixPayment}
+                    disabled={!cartItems || cartItems.length === 0 || isPixProcessing}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-lg font-bold">Finalizar Pedido Gratuito</div>
+                        <div className="text-sm opacity-90">Cupom de 100% aplicado - R$ 0,00</div>
+                      </div>
+                    </div>
+                  </motion.button>
+                ) : (
+                  <>
+                    {/* PIX Payment Button */}
+                    <PixPaymentButton
+                      totalAmount={pixTotal}
+                      onPaymentInitiate={handlePixPayment}
+                      disabled={!cartItems || cartItems.length === 0 || isPixProcessing}
+                    />
 
-                {/* Credit Card Payment Button */}
-                <CreditCardPaymentButton
-                  totalAmount={cardTotal}
-                  onPaymentInitiate={handleCardPayment}
-                  disabled={!cartItems || cartItems.length === 0 || isCardProcessing}
-                />
+                    {/* Credit Card Payment Button */}
+                    <CreditCardPaymentButton
+                      totalAmount={cardTotal}
+                      onPaymentInitiate={handleCardPayment}
+                      disabled={!cartItems || cartItems.length === 0 || isCardProcessing}
+                    />
+                  </>
+                )}
               </div>
 
               {/* Back Button */}
