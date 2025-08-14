@@ -52,19 +52,86 @@ serve(async (req) => {
     if (paymentStatus === 'payment.approved' || paymentStatus === 'approved') {
       console.log("✅ [MercadoPago Webhook] Pagamento aprovado detectado");
 
-      // 🔥 BUSCA APRIMORADA: Priorizar transaction_id
+      // 🔒 VERIFICAÇÃO CRÍTICA: Evitar processamento duplicado
+      if (!paymentId) {
+        console.error("❌ [MercadoPago Webhook] Payment ID ausente - rejeitando");
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Payment ID é obrigatório para evitar duplicatas" 
+          }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Verificar se payment_id já foi processado
+      const { data: alreadyProcessed, error: checkError } = await supabase
+        .rpc('check_payment_already_processed', { p_payment_id: paymentId.toString() });
+
+      if (checkError) {
+        console.error("❌ [MercadoPago Webhook] Erro ao verificar duplicata:", checkError);
+        throw checkError;
+      }
+
+      if (alreadyProcessed) {
+        console.warn("🚫 [MercadoPago Webhook] Payment ID já processado:", paymentId);
+        
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'WEBHOOK_DUPLICADO_BLOQUEADO',
+            descricao: `Tentativa de reprocessamento bloqueada: payment_id=${paymentId}, external_reference=${externalReference}, amount=${amount}`
+          });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "Payment já processado anteriormente",
+            payment_id: paymentId,
+            duplicate_blocked: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // 🔥 BUSCA RESTRITIVA: Apenas por transaction_id (sem fallback perigoso)
       let pedidoQuery = supabase.from('pedidos').select('*');
       
       if (externalReference) {
-        // Buscar por transaction_id (método preferencial)
+        // Buscar por transaction_id (método preferencial e mais seguro)
         console.log("🔍 Buscando pedido por transaction_id:", externalReference);
         pedidoQuery = pedidoQuery.eq('transaction_id', externalReference);
       } else {
-        // Fallback: buscar por valor e status
-        console.log("🔍 Fallback: Buscando por valor e status pendente");
+        // ⚠️ FALLBACK MUITO RESTRITIVO: apenas para casos específicos
+        console.warn("⚠️ [MercadoPago Webhook] External reference ausente - aplicando fallback restritivo");
+        
+        // Só permitir fallback para valores altos (evitar conflitos com testes de R$0.11)
+        if (!amount || amount < 1.00) {
+          console.error("❌ [MercadoPago Webhook] Fallback negado: valor muito baixo ou ausente");
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "External reference obrigatória para valores baixos",
+              payment_id: paymentId,
+              amount: amount
+            }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
+        // Fallback super restritivo: valor, status E criado nas últimas 24h
+        console.log("🔍 Fallback restritivo: Buscando por valor, status e tempo");
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         pedidoQuery = pedidoQuery
           .eq('valor_total', amount)
           .eq('status', 'pendente')
+          .gte('created_at', oneDayAgo)
           .order('created_at', { ascending: false })
           .limit(1);
       }
@@ -160,12 +227,34 @@ serve(async (req) => {
         listaPaineis: pedido.lista_paineis?.length || 0
       });
 
+      // 🔒 REGISTRAR CONTROLE DE PROCESSAMENTO (evitar duplicatas futuras)
+      const { data: controlId, error: controlError } = await supabase
+        .rpc('register_payment_processing', {
+          p_payment_id: paymentId.toString(),
+          p_pedido_id: pedido.id,
+          p_external_reference: externalReference,
+          p_amount: amount,
+          p_details: {
+            webhook_source: 'mercadopago-pix-completo',
+            found_by_method: externalReference ? 'transaction_id' : 'valor_fallback',
+            transaction_id: pedido.transaction_id,
+            lista_paineis: pedido.lista_paineis
+          }
+        });
+
+      if (controlError) {
+        console.error("⚠️ [MercadoPago Webhook] Erro ao registrar controle:", controlError);
+        // Não falhar o webhook por isso, apenas logar
+      } else {
+        console.log("🔒 [MercadoPago Webhook] Controle de processamento registrado:", controlId);
+      }
+
       // Log de sucesso do sistema PIX completo
       await supabase
         .from('log_eventos_sistema')
         .insert({
           tipo_evento: 'PIX_COMPLETO_CONFIRMADO',
-          descricao: `Sistema PIX completo: Pedido ${pedido.id} confirmado via webhook. Transaction: ${pedido.transaction_id}, Valor: ${pedido.valor_total}, Painéis: ${pedido.lista_paineis?.length || 0}`
+          descricao: `Sistema PIX completo: Pedido ${pedido.id} confirmado via webhook. Transaction: ${pedido.transaction_id}, Valor: ${pedido.valor_total}, Painéis: ${pedido.lista_paineis?.length || 0}, Control ID: ${controlId}`
         });
 
       return new Response(
@@ -174,7 +263,8 @@ serve(async (req) => {
           message: "Sistema PIX completo - Pagamento processado com sucesso",
           pedido_id: pedido.id,
           status: 'pago_pendente_video',
-          paineis_count: pedido.lista_paineis?.length || 0
+          paineis_count: pedido.lista_paineis?.length || 0,
+          payment_control_id: controlId
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

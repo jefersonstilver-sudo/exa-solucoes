@@ -1038,6 +1038,50 @@ export type Database = {
           },
         ]
       }
+      payment_processing_control: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          details: Json | null
+          external_reference: string | null
+          id: string
+          payment_id: string
+          pedido_id: string | null
+          processed_at: string | null
+          webhook_source: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          details?: Json | null
+          external_reference?: string | null
+          id?: string
+          payment_id: string
+          pedido_id?: string | null
+          processed_at?: string | null
+          webhook_source?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          details?: Json | null
+          external_reference?: string | null
+          id?: string
+          payment_id?: string
+          pedido_id?: string | null
+          processed_at?: string | null
+          webhook_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_processing_control_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_status_tracking: {
         Row: {
           created_at: string | null
@@ -1650,6 +1694,10 @@ export type Database = {
         Args: { p_end_date: string; p_panel_id: string; p_start_date: string }
         Returns: boolean
       }
+      check_payment_already_processed: {
+        Args: { p_payment_id: string }
+        Returns: boolean
+      }
       check_user_data_integrity: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2041,6 +2089,16 @@ export type Database = {
       recover_lost_transactions: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      register_payment_processing: {
+        Args: {
+          p_amount?: number
+          p_details?: Json
+          p_external_reference?: string
+          p_payment_id: string
+          p_pedido_id: string
+        }
+        Returns: string
       }
       reject_video: {
         Args: {
