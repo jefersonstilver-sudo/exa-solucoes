@@ -43,29 +43,21 @@ export const usePixPaymentForPendingOrders = () => {
 
       console.log('[usePixPaymentForPendingOrders] Dados do pedido:', pedido);
 
-      // Buscar dados dos painéis/prédios
-      const { data: paineis, error: paineisError } = await supabase
-        .from('painels')
-        .select(`
-          id,
-          building_id,
-          buildings!inner(id, nome, preco_base)
-        `)
-        .in('id', pedido.lista_paineis || []);
+      // Buscar dados dos prédios diretamente
+      const { data: predios, error: prediosError } = await supabase
+        .from('buildings')
+        .select('id, nome, preco_base')
+        .in('id', pedido.lista_predios || pedido.lista_paineis || []);
 
-      if (paineisError) {
-        console.error('[usePixPaymentForPendingOrders] Erro ao buscar painéis:', paineisError);
+      if (prediosError) {
+        console.error('[usePixPaymentForPendingOrders] Erro ao buscar prédios:', prediosError);
       }
 
       // Preparar dados para o webhook (mesmo formato do checkout)
-      const predioIds = paineis?.map(p => p.buildings.id).filter(Boolean) || [];
-      const prediosData = predioIds.map(id => {
-        const painel = paineis?.find(p => p.buildings.id === id);
-        return {
-          id: String(id),
-          nome: painel?.buildings?.nome || 'Prédio'
-        };
-      });
+      const prediosData = predios?.map(predio => ({
+        id: String(predio.id),
+        nome: predio.nome || 'Prédio'
+      })) || [];
 
       const webhookData = {
         cliente_id: pedido.client_id,
