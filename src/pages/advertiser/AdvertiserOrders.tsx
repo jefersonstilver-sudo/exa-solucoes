@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import { usePixForPendingOrder } from '@/hooks/usePixForPendingOrder';
 import { 
   Loader2, 
   ShoppingBag, 
@@ -35,20 +37,56 @@ const AdvertiserOrders = () => {
     isOpen: false,
     orderId: null
   });
+  const [pixPaymentDialog, setPixPaymentDialog] = useState<{
+    isOpen: boolean;
+    orderId: string | null;
+    qrCodeBase64?: string;
+    qrCodeText?: string;
+    pix_url?: string;
+    pix_base64?: string;
+  }>({
+    isOpen: false,
+    orderId: null
+  });
+  
+  const { generatePixForOrder, isGeneratingPix } = usePixForPendingOrder();
 
-  // Listen for video display popup events
+  // Listen for video display and PIX payment popup events
   useEffect(() => {
     const handleOpenVideoDisplay = (event: CustomEvent) => {
       const { orderId } = event.detail;
       setVideoDisplayPopup({ isOpen: true, orderId });
     };
 
+    const handleOpenPixPayment = async (event: CustomEvent) => {
+      const { orderId } = event.detail;
+      
+      try {
+        const pixResponse = await generatePixForOrder(orderId);
+        
+        if (pixResponse?.success) {
+          setPixPaymentDialog({
+            isOpen: true,
+            orderId,
+            qrCodeBase64: pixResponse.qrCodeBase64 || pixResponse.pix_base64,
+            qrCodeText: pixResponse.qrCodeText || pixResponse.pix_url,
+            pix_url: pixResponse.pix_url,
+            pix_base64: pixResponse.pix_base64
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao gerar PIX:', error);
+      }
+    };
+
     window.addEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
+    window.addEventListener('openPixPayment', handleOpenPixPayment as EventListener);
     
     return () => {
       window.removeEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
+      window.removeEventListener('openPixPayment', handleOpenPixPayment as EventListener);
     };
-  }, []);
+  }, [generatePixForOrder]);
 
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
   if (isMobile) {
@@ -356,6 +394,18 @@ const AdvertiserOrders = () => {
           onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
         />
       )}
+
+      {/* PIX Payment Dialog */}
+      <PixQrCodeDialog
+        isOpen={pixPaymentDialog.isOpen}
+        onClose={() => setPixPaymentDialog({ isOpen: false, orderId: null })}
+        qrCodeBase64={pixPaymentDialog.qrCodeBase64}
+        qrCodeText={pixPaymentDialog.qrCodeText}
+        pix_url={pixPaymentDialog.pix_url}
+        pix_base64={pixPaymentDialog.pix_base64}
+        userId={userProfile?.id}
+        pedidoId={pixPaymentDialog.orderId}
+      />
     </div>
   );
 };
