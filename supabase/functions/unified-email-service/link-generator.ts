@@ -24,7 +24,7 @@ export class LinkGenerator {
       // Se temos um token original válido, tentar usá-lo primeiro
       if (originalToken) {
         console.log('🔄 [LINK-GENERATOR] Tentando usar token original fornecido');
-        const siteUrl = Deno.env.get('SITE_URL') || 'https://loving-bough-1xb6c3h.lovableproject.com';
+        const siteUrl = Deno.env.get('SITE_URL') || 'https://indexamidia.com.br';
         const directLink = `${siteUrl}/confirmacao#access_token=${originalToken}&type=signup`;
         
         // Verificar se o token ainda é válido (teste simples)
