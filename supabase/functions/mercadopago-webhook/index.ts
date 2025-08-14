@@ -60,13 +60,30 @@ serve(async (req) => {
         console.log("🔍 Buscando pedido por transaction_id:", externalReference);
         pedidoQuery = pedidoQuery.eq('transaction_id', externalReference);
       } else {
-        // Fallback: buscar por valor e status
-        console.log("🔍 Fallback: Buscando por valor e status pendente");
-        pedidoQuery = pedidoQuery
-          .eq('valor_total', amount)
-          .eq('status', 'pendente')
-          .order('created_at', { ascending: false })
-          .limit(1);
+        // 🚨 FALLBACK RESTRITIVO: Evitar aprovações múltiplas
+        console.log("⚠️ ATENÇÃO: external_reference ausente! Usando fallback restritivo");
+        
+        // Não processar sem transaction_id para evitar aprovações múltiplas
+        console.error("❌ Rejeitando webhook sem external_reference para evitar aprovações múltiplas");
+        
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'WEBHOOK_REJEITADO_SEM_TRANSACTION_ID',
+            descricao: `Webhook rejeitado para evitar aprovações múltiplas: paymentId=${paymentId}, amount=${amount}, status=${paymentStatus}`
+          });
+
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: "Webhook rejeitado: external_reference obrigatório para evitar aprovações múltiplas",
+            details: { paymentId, amount, paymentStatus }
+          }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       const { data: pedidos, error: pedidoError } = await pedidoQuery;
