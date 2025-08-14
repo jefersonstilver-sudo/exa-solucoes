@@ -145,8 +145,8 @@ const AdvertiserOrders = () => {
   };
 
   const OrderCard = ({ item }: { item: any }) => {
-    const statusInfo = useOrderStatus(item);
-    const StatusIcon = statusInfo.icon;
+    const orderStatus = useOrderStatus(item);
+    const StatusIcon = orderStatus.icon;
     const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
 
     return (
@@ -164,7 +164,7 @@ const AdvertiserOrders = () => {
                 )}>
                   <StatusIcon className={cn(
                     'h-5 w-5',
-                    item.type === 'attempt' ? 'text-orange-500' : statusInfo.color.replace('text-', '')
+                    item.type === 'attempt' ? 'text-orange-500' : orderStatus.color.replace('text-', '')
                   )} />
                 </div>
                 <div>
@@ -208,22 +208,23 @@ const AdvertiserOrders = () => {
             </div>
 
             <div className="flex flex-col lg:items-end space-y-3">
-              <Badge className={cn('border flex items-center space-x-1', statusInfo.bgColor)}>
+              <Badge className={cn('border flex items-center space-x-1', orderStatus.bgColor)}>
                 <StatusIcon className="h-3 w-3" />
-                <span>{statusInfo.label}</span>
+                <span>{orderStatus.label}</span>
               </Badge>
 
               <div className="flex space-x-2">
-                {statusInfo.action && (
+                {orderStatus.action && (
                   <Button
-                    variant={statusInfo.action.variant}
+                    variant={orderStatus.action.variant}
                     size="sm"
-                    onClick={statusInfo.action.onClick}
+                    onClick={orderStatus.action.onClick}
                     className="mr-2"
                   >
-                    {statusInfo.action.label}
+                    {orderStatus.action.label}
                   </Button>
                 )}
+                
                 
                 {item.type === 'order' && (
                   <Button
@@ -385,6 +386,21 @@ const AdvertiserOrders = () => {
           onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
         />
       )}
+
+      {/* PIX Dialogs */}
+      {userOrdersAndAttempts.map((item) => {
+        if (item.type !== 'order') return null;
+        const orderStatus = useOrderStatus(item);
+        if (!orderStatus.pixDialog || !orderStatus.pixDialog.isOpen) return null;
+        
+        const PixComponent = orderStatus.pixDialog.component;
+        return (
+          <PixComponent 
+            key={`pix-${item.id}`}
+            {...orderStatus.pixDialog.props}
+          />
+        );
+      })}
     </div>
   );
 };
