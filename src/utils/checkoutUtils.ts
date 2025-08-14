@@ -4,6 +4,7 @@
 import { Panel } from '@/types/panel';
 import { PlanKey } from '@/types/checkout';
 import { logPriceCalculation } from './auditLogger';
+import { MINIMUM_ORDER_VALUE } from './priceCalculator';
 
 interface CartItem {
   panel: Panel;
@@ -105,14 +106,18 @@ export const calculateTotalPrice = (
     });
   }
 
+  // CORREÇÃO CRÍTICA: Aplicar valor mínimo (nunca menos que R$ 0,05)
+  finalPrice = Math.max(finalPrice, MINIMUM_ORDER_VALUE);
+  
   // Arredondar para 2 casas decimais
   finalPrice = Math.round(finalPrice * 100) / 100;
 
-  console.log("💰 [CheckoutUtils] RESULTADO FINAL BASEADO NOS PRÉDIOS:", {
+  console.log("💰 [CheckoutUtils] RESULTADO FINAL COM VALOR MÍNIMO:", {
     selectedPlan,
     cartItemsCount: cartItems.length,
     finalPrice,
-    withDiscount: couponValid && couponDiscount > 0
+    withDiscount: couponValid && couponDiscount > 0,
+    minimumApplied: finalPrice === MINIMUM_ORDER_VALUE
   });
 
   return finalPrice;
