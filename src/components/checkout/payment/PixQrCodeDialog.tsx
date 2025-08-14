@@ -97,8 +97,8 @@ const PixQrCodeDialog = ({
     navigate('/anunciante/pedidos');
   };
   const handleClose = () => {
-    console.log("❌ [PixQrCodeDialog] Botão fechar clicado");
-    redirectToOrders();
+    console.log("❌ [PixQrCodeDialog] Modal fechado");
+    onClose();
   };
   const handlePaymentConfirmed = () => {
     console.log("✅ [PixQrCodeDialog] Pagamento confirmado pelo usuário");
@@ -133,7 +133,7 @@ const PixQrCodeDialog = ({
               <Button onClick={() => window.location.reload()} variant="outline" className="h-12 rounded-2xl border-2 hover:bg-gray-50 font-semibold">
                 Tentar Novamente
               </Button>
-              <Button onClick={handleClose} className="h-12 bg-blue-600 hover:bg-blue-700 rounded-2xl font-semibold">
+              <Button onClick={redirectToOrders} className="h-12 bg-blue-600 hover:bg-blue-700 rounded-2xl font-semibold">
                 Ver Meus Pedidos
               </Button>
             </div>
