@@ -73,7 +73,10 @@ export const calculatePrice = (
   
   // Aplicar desconto PIX se solicitado
   const pixDiscount = applyPixDiscount ? afterCoupon * PIX_DISCOUNT_RATE : 0;
-  const finalPrice = afterCoupon - pixDiscount;
+  let finalPrice = afterCoupon - pixDiscount;
+  
+  // GARANTIR valor mínimo - nunca menos que R$ 0,05
+  finalPrice = Math.max(finalPrice, MINIMUM_ORDER_VALUE);
   
   const calculation = `${cartItems.length} painéis × ${selectedPlan} meses (R$ ${subtotal.toFixed(2)})${couponDiscountPercent > 0 ? ` - ${couponDiscountPercent}% cupom` : ''}${applyPixDiscount ? ` - 5% PIX` : ''} = R$ ${finalPrice.toFixed(2)}`;
   

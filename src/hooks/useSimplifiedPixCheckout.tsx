@@ -30,73 +30,7 @@ export const useSimplifiedPixCheckout = () => {
   const { createPendingOrder } = useOrderManager();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Função para processar pedidos gratuitos (cupom 100%)
-  const processFreeOrder = async (couponId?: string): Promise<PixPaymentResult> => {
-    console.log('[useSimplifiedPixCheckout] PROCESSANDO PEDIDO GRATUITO (CUPOM 100%):', {
-      userId: user?.id,
-      cartItemsCount: cartItems?.length || 0,
-      selectedPlan,
-      couponId
-    });
-
-    try {
-      // Criar pedido diretamente como pago
-      const orderResult = await createPendingOrder({
-        clientId: user.id,
-        cartItems,
-        selectedPlan,
-        totalPrice: MINIMUM_ORDER_VALUE, // Valor mínimo para ativação (5 centavos)
-        couponId
-      });
-
-      if (!orderResult.success) {
-        throw new Error(orderResult.error || "Erro ao criar pedido gratuito");
-      }
-
-      // Atualizar status para pago imediatamente
-      await supabase
-        .from('pedidos')
-        .update({
-          status: 'pago',
-          log_pagamento: {
-            payment_method: 'free_coupon',
-            payment_status: 'approved',
-            coupon_discount: '100%',
-            processed_at: new Date().toISOString(),
-            free_order: true,
-            symbolic_value: MINIMUM_ORDER_VALUE
-          }
-        })
-        .eq('id', orderResult.pedidoId);
-
-      // Limpar carrinho
-      handleClearCart();
-      localStorage.removeItem('selectedPlan');
-
-      // Log do evento
-      await supabase.from('log_eventos_sistema').insert({
-        tipo_evento: 'FREE_ORDER_COMPLETED',
-        descricao: `Pedido gratuito completado: ID=${orderResult.pedidoId}, Cupom 100%`
-      });
-
-      return {
-        success: true,
-        pixData: {
-          pedido_id: orderResult.pedidoId,
-          transaction_id: orderResult.transactionId,
-          qrCodeText: 'PEDIDO_GRATUITO',
-          paymentLink: `/success?pedido=${orderResult.pedidoId}`
-        }
-      };
-
-    } catch (error: any) {
-      console.error('[useSimplifiedPixCheckout] ERRO no pedido gratuito:', error);
-      return {
-        success: false,
-        error: `Erro no pedido gratuito: ${error.message}`
-      };
-    }
-  };
+  // REMOVIDO: Não existem mais pedidos gratuitos - todos geram PIX
 
   const processPixPayment = async (couponId?: string, couponDiscountPercent: number = 0): Promise<PixPaymentResult> => {
     console.log('[useSimplifiedPixCheckout] INICIANDO PROCESSO PIX COM CORREÇÃO:', {
@@ -143,12 +77,8 @@ export const useSimplifiedPixCheckout = () => {
         }))
       });
       
-      // NOVA LÓGICA: Se cupom é 100% (valor final <= valor mínimo), processar como pedido gratuito
-      if (finalPrice <= MINIMUM_ORDER_VALUE) {
-        console.log('[useSimplifiedPixCheckout] DETECTADO CUPOM 100% - Processando como pedido gratuito');
-        toast.info("Cupom de 100% aplicado! Processando pedido gratuito...");
-        return await processFreeOrder(couponId);
-      }
+      // TODOS OS PEDIDOS geram PIX - mesmo cupom 100% paga R$ 0,05
+      console.log('[useSimplifiedPixCheckout] Valor final após descontos:', finalPrice);
 
       console.log('[useSimplifiedPixCheckout] Criando pedido:', {
         clientId: user.id,
@@ -265,7 +195,6 @@ export const useSimplifiedPixCheckout = () => {
 
   return {
     processPixPayment,
-    processFreeOrder,
     navigateToPixPayment: (pedidoId: string) => navigate(`/pix-payment?pedido=${pedidoId}`),
     isProcessing,
     canProcess: !!user?.id && !!selectedPlan && cartItems.length > 0
