@@ -13,7 +13,7 @@ export class EmailService {
     const html = EmailTemplates.createConfirmationHTML(userName, confirmationUrl);
 
     return await this.resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com>',
+      from: 'Indexa <noreply@indexamidia.com.br>',
       to: [userEmail],
       subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
       html,
@@ -24,7 +24,7 @@ export class EmailService {
     const html = EmailTemplates.createResendHTML(userName, confirmationUrl);
 
     return await this.resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com>',
+      from: 'Indexa <noreply@indexamidia.com.br>',
       to: [userEmail],
       subject: '🎯 Confirme seu email na Indexa (Reenviado)',
       html,

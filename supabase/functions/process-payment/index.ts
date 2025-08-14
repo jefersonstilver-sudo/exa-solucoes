@@ -275,7 +275,7 @@ async function handleRequest(req: Request) {
     }];
     
     // Prepare return URLs
-    const originUrl = returnUrl || 'https://app.indexamidia.com';
+    const originUrl = returnUrl || 'https://app.indexamidia.com.br';
     const returnUrls = {
       successUrl: `${originUrl}/pedido-confirmado?id=${pedidoId}&status=approved`,
       failureUrl: `${originUrl}/checkout?error=payment_failed&id=${pedidoId}`,

@@ -151,7 +151,7 @@ serve(async (req) => {
     
     try {
       const emailResult = await resend.emails.send({
-        from: 'Indexa <onboarding@resend.dev>', // Usando domínio verificado temporariamente
+        from: 'Indexa <noreply@indexamidia.com.br>',
         to: [user.email],
         subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
         html: htmlTemplate,
