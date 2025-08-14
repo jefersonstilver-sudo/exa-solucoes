@@ -70,36 +70,44 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
   ];
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 relative overflow-hidden">
+      {/* Background patterns */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-indexa-mint to-indexa-purple rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+      </div>
+      
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 relative z-10">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-          <h2 className="mb-4 sm:mb-6 text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-gray-900">
-            Ainda tem <span className="text-[#00B377]">dúvidas?</span> Entendemos.
+          <h2 className="mb-6 sm:mb-8 text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-white">
+            Ainda tem <span className="bg-gradient-to-r from-indexa-mint to-indexa-purple bg-clip-text text-transparent">dúvidas?</span> Entendemos.
           </h2>
-          <p className="mb-6 sm:mb-8 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600">
-            Respondemos as principais objeções de empresários sobre campanhas de marketing estratégico
-          </p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/20">
+            <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-white/90">
+              Respondemos as principais objeções de empresários sobre campanhas de marketing estratégico
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white shadow-lg rounded-xl sm:rounded-2xl border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white/10 backdrop-blur-sm shadow-2xl rounded-xl sm:rounded-2xl border border-white/20 p-4 sm:p-6">
           <Accordion type="single" collapsible className="w-full space-y-3 sm:space-y-4">
             {objections.map((objection) => (
               <AccordionItem 
                 key={objection.id} 
                 value={objection.id}
-                className="border border-gray-200 rounded-lg bg-gray-50 px-3 sm:px-4"
+                className="border border-white/20 rounded-lg bg-white/5 px-3 sm:px-4 hover:bg-white/10 transition-all duration-300"
               >
                 <AccordionTrigger className="text-left hover:no-underline py-4 sm:py-6">
-                  <h6 className="pr-4 text-left text-sm sm:text-base md:text-lg lg:text-xl font-medium leading-normal text-gray-900">
+                  <h6 className="pr-4 text-left text-sm sm:text-base md:text-lg lg:text-xl font-medium leading-normal text-white">
                     "{objection.objection}"
                   </h6>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4 sm:pb-6">
-                  <div className="pt-3 sm:pt-4 border-t border-[#00B377]/20">
-                    <h6 className="text-[#00B377] mb-2 sm:mb-3 text-sm font-medium leading-normal">
+                  <div className="pt-3 sm:pt-4 border-t border-indexa-mint/30">
+                    <h6 className="text-indexa-mint mb-2 sm:mb-3 text-sm font-medium leading-normal">
                       ✓ Nossa resposta:
                     </h6>
-                    <p className="leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-gray-600">
+                    <p className="leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-white/80">
                       {objection.answer}
                     </p>
                   </div>
@@ -111,17 +119,19 @@ const ObjectionsSection: React.FC<ObjectionsSectionProps> = ({ onScrollToForm })
 
         {/* CTA da Seção */}
         <div className="text-center mt-12 sm:mt-16">
-          <div className="bg-gradient-to-r from-gray-50 to-[#00FFAB]/10 shadow-lg p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-[#00FFAB]/30">
-            <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-[#00FFAB] mx-auto mb-3 sm:mb-4" />
-            <h3 className="mb-3 sm:mb-4 text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-tight text-center text-gray-900">
+          <div className="bg-gradient-to-r from-indexa-mint/20 to-indexa-purple/20 backdrop-blur-sm shadow-2xl p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-indexa-mint/30">
+            <div className="bg-gradient-to-br from-indexa-mint to-indexa-purple p-3 sm:p-4 rounded-full w-fit mx-auto mb-4 sm:mb-6 shadow-lg shadow-indexa-mint/30">
+              <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+            </div>
+            <h3 className="mb-3 sm:mb-4 text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-tight text-center text-white">
               Sua dúvida não está aqui?
             </h3>
-            <p className="mb-4 sm:mb-6 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600">
+            <p className="mb-4 sm:mb-6 text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-white/90">
               Agende uma reunião estratégica e esclarecemos tudo pessoalmente
             </p>
             <button
               onClick={onScrollToForm}
-              className="bg-gradient-to-r from-[#00FFAB] to-[#3C1361] text-white hover:scale-105 h-14 px-6 text-base rounded-full font-medium transition-all duration-200 w-full sm:w-auto"
+              className="bg-gradient-to-r from-indexa-mint to-indexa-purple text-white hover:scale-105 hover:shadow-2xl hover:shadow-indexa-mint/50 h-14 px-8 text-base rounded-full font-medium transition-all duration-300 w-full sm:w-auto"
             >
               Solicitar Diagnóstico Empresarial
             </button>

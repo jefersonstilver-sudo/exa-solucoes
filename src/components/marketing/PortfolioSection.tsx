@@ -22,15 +22,23 @@ const PortfolioSection: React.FC = () => {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-6xl mx-auto px-4">
+    <section className="py-20 bg-gradient-to-br from-indigo-900 via-purple-900 to-purple-800 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-br from-indexa-mint to-indexa-purple rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-56 h-56 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+      </div>
+      
+      <div className="max-w-6xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Portfólio de <span className="text-[#00B377]">Campanhas Estratégicas</span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-8 text-white">
+            Portfólio de <span className="bg-gradient-to-r from-indexa-mint to-indexa-purple bg-clip-text text-transparent">Campanhas Estratégicas</span>
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Empresas que já dominam o mercado com nossa metodologia
-          </p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-8">
+            <p className="text-xl text-white/90">
+              Empresas que já dominam o mercado com nossa metodologia
+            </p>
+          </div>
 
           {/* Filtros por categoria */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -41,8 +49,8 @@ const PortfolioSection: React.FC = () => {
                 onClick={() => setSelectedCategory(category)}
                 className={`${
                   selectedCategory === category 
-                    ? 'bg-[#00B377] text-white hover:bg-[#00B377]/90' 
-                    : 'border-[#00B377] text-[#00B377] hover:bg-[#00B377]/10'
+                    ? 'bg-gradient-to-r from-indexa-mint to-indexa-purple text-white hover:shadow-lg hover:shadow-indexa-mint/30' 
+                    : 'border-indexa-mint text-indexa-mint hover:bg-indexa-mint/10 bg-white/10 backdrop-blur-sm'
                 }`}
               >
                 {category}
@@ -53,9 +61,9 @@ const PortfolioSection: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCampanhas.slice(0, 9).map((campanha) => (
-            <Card key={campanha.id} className="bg-white border-gray-200 text-gray-900 hover:scale-105 hover:shadow-lg transition-all duration-300 group">
+            <Card key={campanha.id} className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:scale-105 hover:shadow-2xl hover:bg-white/20 transition-all duration-300 group">
               <CardContent className="p-6">
-                <div className="aspect-video bg-gradient-to-br from-[#3C1361] to-[#00FFAB] rounded-lg mb-4 flex items-center justify-center relative overflow-hidden">
+                <div className="aspect-video bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-lg mb-4 flex items-center justify-center relative overflow-hidden shadow-lg">
                   {campanha.url_video ? (
                     <video
                       className="w-full h-full object-cover"
@@ -72,13 +80,13 @@ const PortfolioSection: React.FC = () => {
                     <Play className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold mb-2">{campanha.titulo}</h3>
-                <p className="text-[#00B377] font-semibold mb-2">{campanha.cliente}</p>
-                <Badge variant="outline" className="border-[#00B377] text-[#00B377] mb-3">
+                <h3 className="text-xl font-bold mb-2 text-white">{campanha.titulo}</h3>
+                <p className="text-indexa-mint font-semibold mb-2">{campanha.cliente}</p>
+                <Badge variant="outline" className="border-indexa-mint text-indexa-mint mb-3 bg-white/10 backdrop-blur-sm">
                   {campanha.categoria}
                 </Badge>
                 {campanha.descricao && (
-                  <p className="text-gray-600 text-sm line-clamp-2">{campanha.descricao}</p>
+                  <p className="text-white/80 text-sm line-clamp-2">{campanha.descricao}</p>
                 )}
               </CardContent>
             </Card>

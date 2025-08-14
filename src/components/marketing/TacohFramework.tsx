@@ -67,19 +67,29 @@ const TacohFramework: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 relative overflow-hidden">
+      {/* Background patterns */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-indexa-mint to-indexa-purple rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 relative z-10">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-          <div className="flex items-center justify-center mb-4 sm:mb-6">
-            <Puzzle className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-[#00FFAB] mr-3 sm:mr-4 animate-pulse" />
-            <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-gray-900">
-              Estratégia como <span className="text-[#00B377]">Quebra-Cabeça</span>
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
+            <div className="bg-gradient-to-br from-indexa-mint to-indexa-purple p-3 sm:p-4 rounded-full mr-4 sm:mr-6 shadow-2xl shadow-indexa-mint/30 animate-pulse">
+              <Puzzle className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-white" />
+            </div>
+            <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-center text-white">
+              Estratégia como <span className="bg-gradient-to-r from-indexa-mint to-indexa-purple bg-clip-text text-transparent">Quebra-Cabeça</span>
             </h2>
           </div>
-          <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-gray-600 max-w-4xl mx-auto">
-            Cada campanha é construída considerando todos os elementos estratégicos essenciais. 
-            Como um quebra-cabeça, cada peça tem seu lugar e propósito para formar o resultado completo.
-          </p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/20 max-w-4xl mx-auto">
+            <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-center text-white/90">
+              Cada campanha é construída considerando todos os elementos estratégicos essenciais. 
+              Como um quebra-cabeça, cada peça tem seu lugar e propósito para formar o resultado completo.
+            </p>
+          </div>
         </div>
 
         {/* Animação Central do Quebra-Cabeça - Responsivo */}
@@ -87,13 +97,13 @@ const TacohFramework: React.FC = () => {
           <div className="relative">
             <div className="grid grid-cols-3 grid-rows-2 gap-1 sm:gap-2 w-32 h-20 sm:w-40 sm:h-24 md:w-48 md:h-32">
               {strategyElements.map((element, index) => (
-                <div
-                  key={index}
-                  className={`bg-gradient-to-br from-[#3C1361] to-[#00FFAB] rounded-md sm:rounded-lg border border-[#00FFAB]/50 flex items-center justify-center transition-all duration-500 transform ${
-                    animatedPieces.includes(element.piece) 
-                      ? 'opacity-100 scale-100 rotate-0' 
-                      : 'opacity-30 scale-75 rotate-12'
-                  }`}
+                 <div
+                   key={index}
+                   className={`bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-md sm:rounded-lg border border-indexa-mint/50 flex items-center justify-center transition-all duration-500 transform shadow-lg ${
+                     animatedPieces.includes(element.piece) 
+                       ? 'opacity-100 scale-100 rotate-0 shadow-indexa-mint/50' 
+                       : 'opacity-30 scale-75 rotate-12'
+                   }`}
                   style={{
                     animationDelay: `${index * 200}ms`
                   }}
@@ -110,30 +120,32 @@ const TacohFramework: React.FC = () => {
           {strategyElements.map((element, index) => (
             <Card 
               key={index} 
-              className={`bg-white border-gray-200 text-gray-900 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden group ${
-                animatedPieces.includes(element.piece) ? 'ring-2 ring-[#00FFAB]/30' : ''
+              className={`bg-white/10 backdrop-blur-sm border-white/20 text-white hover:scale-105 hover:shadow-2xl hover:bg-white/20 transition-all duration-300 cursor-pointer overflow-hidden group ${
+                animatedPieces.includes(element.piece) ? 'ring-2 ring-indexa-mint/50 shadow-2xl shadow-indexa-mint/30' : ''
               }`}
             >
               <CardContent className="p-4 sm:p-6 h-full flex flex-col">
                 <div className="flex items-center mb-3 sm:mb-4">
                   {element.icon}
-                  <h5 className="ml-2 sm:ml-3 text-[#00B377] text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-medium leading-normal">
-                    {element.title}
-                  </h5>
-                </div>
-                <p className="flex-1 leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-gray-600">
-                  {element.description}
-                </p>
+                  <h5 className="ml-2 sm:ml-3 text-indexa-mint text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-medium leading-normal">
+                     {element.title}
+                   </h5>
+                 </div>
+                 <p className="flex-1 leading-relaxed text-xs xs:text-sm sm:text-sm md:text-base lg:text-lg leading-normal text-white/80">
+                   {element.description}
+                 </p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="text-center mt-8 sm:mt-12">
-          <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-gray-600">
-            <span className="text-[#00B377] font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
-          </p>
-        </div>
+         <div className="text-center mt-8 sm:mt-12">
+           <div className="bg-gradient-to-r from-indexa-mint/20 to-indexa-purple/20 backdrop-blur-sm rounded-xl p-6 border border-indexa-mint/30 inline-block">
+             <p className="text-sm xs:text-base sm:text-base md:text-lg lg:text-xl leading-relaxed text-white">
+               <span className="text-indexa-mint font-semibold">Resultado:</span> Campanhas completas que conectam, convencem e convertem.
+             </p>
+           </div>
+         </div>
       </div>
     </section>
   );

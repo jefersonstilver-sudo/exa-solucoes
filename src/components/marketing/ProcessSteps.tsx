@@ -50,28 +50,38 @@ const ProcessSteps: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-6xl mx-auto px-4">
+    <section className="py-20 bg-gradient-to-br from-indigo-900 via-purple-900 to-purple-800 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-20 left-20 w-56 h-56 bg-gradient-to-br from-indexa-mint to-indexa-purple rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-gradient-to-br from-indexa-purple to-indexa-mint rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+      
+      <div className="max-w-6xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Jornada de Campanha <span className="text-[#00B377]">Indexa</span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+            Jornada de Campanha <span className="bg-gradient-to-r from-indexa-mint to-indexa-purple bg-clip-text text-transparent">Indexa</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Processo estratégico em 6 etapas para campanhas que geram resultados reais
-          </p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 max-w-3xl mx-auto">
+            <p className="text-xl text-white/90">
+              Processo estratégico em 6 etapas para campanhas que geram resultados reais
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {processSteps.map((step, index) => (
             <div key={index} className="text-center group">
-              <div className="bg-gradient-to-br from-[#3C1361] to-[#00FFAB] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div className="bg-gradient-to-br from-indexa-purple to-indexa-mint w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-indexa-mint/50 transition-all duration-300 shadow-lg">
                 <span className="text-white font-bold text-xl">{step.number}</span>
               </div>
-              <div className="mb-3">
-                {step.icon}
+              <div className="mb-4 flex justify-center">
+                <div className="bg-white/10 backdrop-blur-sm p-3 rounded-full border border-white/20">
+                  {step.icon}
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-[#00B377]">{step.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{step.description}</p>
+              <h3 className="text-xl font-bold mb-4 text-indexa-mint">{step.title}</h3>
+              <p className="text-white/80 leading-relaxed">{step.description}</p>
             </div>
           ))}
         </div>
