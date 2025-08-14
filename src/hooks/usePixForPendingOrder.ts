@@ -53,27 +53,16 @@ export const usePixForPendingOrder = () => {
         throw new Error('Nenhum prédio selecionado no pedido');
       }
       
-      // Usar função pública para contornar RLS
-      const { data: allPrediosData, error: prediosError } = await supabase
-        .rpc('get_public_buildings');
+      const { data: prediosData, error: prediosError } = await supabase
+        .from('buildings')
+        .select('id, nome, preco_base')
+        .in('id', prediosIds);
       
-      console.log('[usePixForPendingOrder] Todos os prédios públicos:', allPrediosData, 'Error:', prediosError);
+      console.log('[usePixForPendingOrder] Dados dos prédios:', prediosData, 'Error:', prediosError);
       
-      if (prediosError) {
+      if (prediosError || !prediosData?.length) {
         console.error('[usePixForPendingOrder] Erro ao buscar prédios:', prediosError);
-        throw new Error('Erro ao acessar dados dos prédios');
-      }
-      
-      // Filtrar apenas os prédios selecionados
-      const prediosData = allPrediosData?.filter(predio => 
-        prediosIds.includes(predio.id) || prediosIds.includes(predio.id.toString())
-      ) || [];
-      
-      console.log('[usePixForPendingOrder] Prédios filtrados:', prediosData);
-      
-      if (!prediosData?.length) {
-        console.error('[usePixForPendingOrder] Nenhum prédio encontrado com os IDs:', prediosIds);
-        throw new Error('Prédios selecionados não encontrados');
+        throw new Error('Dados dos prédios não encontrados');
       }
       
       // Validar dados obrigatórios
