@@ -23,6 +23,7 @@ export interface UserCompleteOrder {
   plano_meses: number;
   data_inicio?: string;
   data_fim?: string;
+  client_id: string;
   type: 'order';
 }
 
@@ -66,6 +67,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         plano_meses: order.plano_meses,
         data_inicio: order.data_inicio,
         data_fim: order.data_fim,
+        client_id: order.client_id,
         type: 'order' as const
       }));
 
