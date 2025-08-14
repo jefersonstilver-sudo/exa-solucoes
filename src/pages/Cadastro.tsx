@@ -160,10 +160,10 @@ export default function Cadastro() {
                   </div>
                 )}
                 
-                {/* Layout de duas colunas: Formulário + Termos */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                  {/* Coluna esquerda: Formulário (40%) */}
-                  <div className="lg:col-span-2 space-y-6">
+                {/* Layout responsivo: Formulário + Termos lado a lado em desktop */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  {/* Coluna: Formulário */}
+                  <div className="space-y-6">
                     <div className="space-y-5">
                       <div className="space-y-2">
                         <Label htmlFor="name" className="flex items-center text-gray-900">
@@ -280,8 +280,8 @@ export default function Cadastro() {
                     </div>
                   </div>
                   
-                  {/* Coluna direita: Visualização dos termos (60%) */}
-                  <div className="lg:col-span-3">
+                  {/* Coluna: Visualização compacta dos termos */}
+                  <div className="xl:order-first">
                     <TermsScrollViewer
                       onScrollToBottom={setHasReadTermsCompletely}
                       hasScrolledToBottom={hasReadTermsCompletely}

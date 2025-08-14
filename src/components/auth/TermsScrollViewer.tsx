@@ -92,28 +92,27 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
         </div>
       </div>
 
-      {/* Área de scroll com termos */}
-      <div className="flex-1 relative">
-        <ScrollArea className="h-full border rounded-lg bg-white" ref={scrollAreaRef}>
+      {/* Área de scroll compacta com termos */}
+      <div className="flex-1">
+        <ScrollArea className="h-80 border rounded-lg bg-white shadow-sm" ref={scrollAreaRef}>
           <div 
             ref={viewportRef}
-            className="p-6 space-y-6 text-sm leading-relaxed"
+            className="p-4 space-y-4 text-xs leading-relaxed"
           >
-            <div className="text-center border-b pb-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <div className="text-center border-b pb-3">
+              <h2 className="text-sm font-bold text-gray-900 mb-1">
                 Termos de Uso – EXA Publicidade
               </h2>
-              <p className="text-gray-600">Última atualização: 14/08/2025</p>
-              <div className="text-xs text-gray-600 mt-2 space-y-1">
-                <p><strong>Razão Social / CNPJ:</strong> Indexa Midia LTDA – 38.142.638/0001-30</p>
-                <p><strong>Contato Comercial:</strong> comercial@exapublicidade.com.br</p>
-                <p><strong>Contato LGPD:</strong> comercial@exapublicidade.com.br</p>
+              <p className="text-gray-600 text-xs">Última atualização: 14/08/2025</p>
+              <div className="text-xs text-gray-600 mt-1">
+                <p><strong>Indexa Midia LTDA</strong> – 38.142.638/0001-30</p>
+                <p>comercial@exapublicidade.com.br</p>
               </div>
             </div>
 
             <section>
-              <h3 className="font-semibold text-gray-900 mb-3">1. Objeto e Aceitação</h3>
-              <div className="space-y-3 text-gray-700">
+              <h3 className="font-semibold text-gray-900 mb-2 text-xs">1. Objeto e Aceitação</h3>
+              <div className="space-y-2 text-gray-700">
                 <p><strong>1.1.</strong> Estes Termos de Uso regem o uso da plataforma EXA Publicidade, por meio da qual Anunciantes adquirem espaços e submetem materiais publicitários para veiculação em painéis digitais instalados em elevadores residenciais e áreas de circulação.</p>
                 <p><strong>1.2.</strong> Ao se cadastrar, contratar, enviar Peças ou utilizar a Plataforma, o Usuário declara ciência e aceitação integral destes Termos, da Política de Privacidade (LGPD) e das Políticas de Conteúdo e Veiculação.</p>
                 <p><strong>1.3.</strong> Se o Usuário não concordar, não deverá utilizar a Plataforma.</p>
@@ -121,8 +120,8 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
             </section>
 
             <section>
-              <h3 className="font-semibold text-gray-900 mb-3">2. Elegibilidade e Cadastro</h3>
-              <div className="space-y-3 text-gray-700">
+              <h3 className="font-semibold text-gray-900 mb-2 text-xs">2. Elegibilidade e Cadastro</h3>
+              <div className="space-y-2 text-gray-700">
                 <p><strong>2.1.</strong> O uso é restrito a maiores de 18 anos com plena capacidade civil e pessoas jurídicas regularmente constituídas.</p>
                 <p><strong>2.2.</strong> O Usuário declara que todas as informações de cadastro são verdadeiras, completas e atualizadas, responsabilizando-se por sua exatidão.</p>
                 <p><strong>2.3.</strong> A EXA poderá solicitar documentos adicionais de identidade, titularidade da marca, licenças, alvarás, autorizações e comprovações legais pertinentes ao segmento anunciado.</p>
@@ -130,21 +129,21 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
             </section>
 
             <section>
-              <h3 className="font-semibold text-gray-900 mb-3">3. Regras de Conteúdo e CONAR</h3>
-              <div className="space-y-3 text-gray-700">
+              <h3 className="font-semibold text-gray-900 mb-2 text-xs">3. Regras de Conteúdo e CONAR</h3>
+              <div className="space-y-2 text-gray-700">
                 <p><strong>3.1.</strong> Toda veiculação deve respeitar o Código Brasileiro de Autorregulamentação Publicitária (CONAR) e a legislação aplicável (inclusive Código de Defesa do Consumidor, Marco Civil da Internet, LGPD – Lei 13.709/2018, ECA – Estatuto da Criança e do Adolescente, legislação eleitoral, sanitária, regulatória setorial e de direitos autorais/imagem).</p>
                 <p><strong>3.2.</strong> É estritamente proibida a submissão/veiculação de conteúdos que:</p>
-                <ul className="list-disc pl-6 space-y-1">
-                  <li>promovam discriminação, racismo, xenofobia, LGBTQIA+fobia, misoginia, capacitismo, ou discurso de ódio em qualquer forma;</li>
+                <ul className="list-disc pl-4 space-y-1 text-xs">
+                  <li>promovam discriminação, racismo, xenofobia, LGBTQIA+fobia, misoginia, capacitismo;</li>
                   <li>contenham violência, ameaças, assédio, bullying ou incitem atividades ilegais;</li>
-                  <li>possuam nudez, erotização, sexualização ou apelo sexual inadequado para ambiente familiar;</li>
-                  <li>envolvam crianças ou adolescentes em situação de vulnerabilidade, exponham menores sem autorização expressa do responsável legal;</li>
-                  <li>configurem propaganda política, partidária ou religiosa, proselitismo, pedido de votos;</li>
-                  <li>divulguem medicamentos, procedimentos de saúde, bebidas alcoólicas, tabaco, jogos de azar, armas, explosivos;</li>
-                  <li>façam afirmações enganosas, promessas irrealistas, claims de ganho financeiro ou de saúde sem base científica;</li>
-                  <li>infrinjam direitos autorais, de marca, patentes, segredos de negócio, imagem e voz de terceiros;</li>
-                  <li>contenham malware, phishing, QR codes ou links que direcionem a páginas inseguras, ilegais ou enganosas;</li>
-                  <li>utilizem linguagem chula, gestos ofensivos, sons estridentes ou efeitos que possam gerar desconforto.</li>
+                  <li>possuam nudez, erotização, sexualização inadequada para ambiente familiar;</li>
+                  <li>envolvam crianças em situação de vulnerabilidade sem autorização;</li>
+                  <li>configurem propaganda política, partidária ou religiosa, proselitismo;</li>
+                  <li>divulguem medicamentos, bebidas alcoólicas, tabaco, jogos de azar, armas;</li>
+                  <li>façam afirmações enganosas, promessas irrealistas sem base científica;</li>
+                  <li>infrinjam direitos autorais, de marca, patentes, imagem e voz de terceiros;</li>
+                  <li>contenham malware, phishing, QR codes maliciosos;</li>
+                  <li>utilizem linguagem chula, gestos ofensivos, sons estridentes.</li>
                 </ul>
                 <p><strong>3.3.</strong> A classificação de conteúdo é "livre/familiar".</p>
                 <p><strong>3.4.</strong> A EXA poderá exigir comprovantes de licenças e autorizações (música, atores, locações, uso de imagem, marcas, etc.).</p>
