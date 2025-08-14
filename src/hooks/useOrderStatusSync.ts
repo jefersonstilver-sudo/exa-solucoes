@@ -80,9 +80,13 @@ export const useOrderStatusSync = (userId?: string) => {
   // Executar sincronização automaticamente quando o hook é usado
   useEffect(() => {
     if (userId) {
-      // Pequeno delay para não interferir com carregamento inicial
-      const timer = setTimeout(syncOrderStatuses, 2000);
-      return () => clearTimeout(timer);
+      // Sincronização inicial imediata
+      syncOrderStatuses();
+      
+      // Configurar sincronização periódica a cada 30 segundos
+      const interval = setInterval(syncOrderStatuses, 30000);
+      
+      return () => clearInterval(interval);
     }
   }, [userId]);
 

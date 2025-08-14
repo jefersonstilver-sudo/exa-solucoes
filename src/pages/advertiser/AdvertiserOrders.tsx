@@ -61,9 +61,8 @@ const AdvertiserOrders = () => {
   const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
   const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
   
-  // Verificar se um pedido está dentro do período ativo OU tem vídeos aprovados
-  const isWithinActivePeriod = (order: any) => {
-    // Log de debug para investigar o problema
+  // Verificar se um pedido deve ser exibido (PRIORIZA VÍDEOS APROVADOS)
+  const shouldDisplayOrder = (order: any) => {
     console.log(`🔍 Debug pedido ${order.id.substring(0, 8)}:`, {
       status: order.status,
       data_inicio: order.data_inicio,
@@ -71,43 +70,47 @@ const AdvertiserOrders = () => {
       type: order.type
     });
     
-    // Se é pedido com vídeo aprovado ou ativo, sempre mostrar
+    // PRIORIDADE 1: Pedidos com vídeo aprovado ou ativo SEMPRE aparecem
     if (['video_aprovado', 'ativo'].includes(order.status)) {
       console.log(`✅ Pedido ${order.id.substring(0, 8)} mantido - vídeo aprovado/ativo`);
       return true;
     }
     
-    // Para outros status, verificar período
-    if (!order.data_inicio || !order.data_fim) {
-      console.log(`⚠️ Pedido ${order.id.substring(0, 8)} sem datas definidas`);
-      return false;
+    // PRIORIDADE 2: Pedidos pagos sempre aparecem (independente de data)
+    if (['pago', 'pago_pendente_video', 'video_enviado'].includes(order.status)) {
+      console.log(`✅ Pedido ${order.id.substring(0, 8)} mantido - status pago`);
+      return true;
     }
     
-    const today = new Date();
-    const startDate = new Date(order.data_inicio);
-    const endDate = new Date(order.data_fim);
-    const withinPeriod = today >= startDate && today <= endDate;
+    // PRIORIDADE 3: Para outros status, verificar período se houver datas
+    if (order.data_inicio && order.data_fim) {
+      const today = new Date();
+      const startDate = new Date(order.data_inicio + 'T00:00:00');
+      const endDate = new Date(order.data_fim + 'T23:59:59');
+      const withinPeriod = today >= startDate && today <= endDate;
+      
+      console.log(`📅 Pedido ${order.id.substring(0, 8)} período:`, {
+        hoje: today.toISOString(),
+        inicio: startDate.toISOString(),
+        fim: endDate.toISOString(),
+        dentroPeríodo: withinPeriod
+      });
+      
+      return withinPeriod;
+    }
     
-    console.log(`📅 Pedido ${order.id.substring(0, 8)} período:`, {
-      hoje: today.toDateString(),
-      inicio: startDate.toDateString(),
-      fim: endDate.toDateString(),
-      dentroPeríodo: withinPeriod
-    });
-    
-    return withinPeriod;
+    // Se não tem datas, manter apenas se não for cancelado/expirado
+    const shouldShow = !['cancelado', 'expirado'].includes(order.status);
+    console.log(`⚠️ Pedido ${order.id.substring(0, 8)} sem datas - mostrando: ${shouldShow}`);
+    return shouldShow;
   };
   
   const stats = {
-    // Pedidos ativos: com vídeo aprovado/ativo OU dentro do período válido
-    pedidosAtivos: orders.filter(order => {
-      // Sempre incluir pedidos com vídeo aprovado ou ativo
-      if (['video_aprovado', 'ativo'].includes(order.status)) {
-        return true;
-      }
-      // Para outros status pagos, verificar período
-      return ['pago', 'pago_pendente_video'].includes(order.status) && isWithinActivePeriod(order);
-    }).length,
+    // Pedidos ativos: vídeo aprovado/ativo OU pagos válidos
+    pedidosAtivos: orders.filter(order => 
+      ['video_aprovado', 'ativo', 'pago', 'pago_pendente_video', 'video_enviado'].includes(order.status) &&
+      shouldDisplayOrder(order)
+    ).length,
     
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
@@ -120,7 +123,7 @@ const AdvertiserOrders = () => {
     // Pedidos finalizados: apenas cancelados ou expirados explicitamente
     pedidosFinalizados: orders.filter(order => 
       ['cancelado', 'expirado'].includes(order.status) || 
-      (['pago', 'pago_pendente_video'].includes(order.status) && !isWithinActivePeriod(order))
+      !shouldDisplayOrder(order)
     ).length
   };
   
@@ -128,8 +131,18 @@ const AdvertiserOrders = () => {
   console.log('📊 Stats calculadas:', stats);
   console.log('📋 Todos os pedidos:', orders.map(o => ({ id: o.id.substring(0, 8), status: o.status })));
 
-  // Filtrar itens
+  // Filtrar itens COM PROTEÇÃO PARA VÍDEOS APROVADOS
   const filteredItems = userOrdersAndAttempts.filter(item => {
+    // SEMPRE incluir pedidos com vídeo aprovado (proteção adicional)
+    if (item.type === 'order' && ['video_aprovado', 'ativo'].includes(item.status)) {
+      console.log(`🛡️ PROTEGIDO: Pedido ${item.id.substring(0, 8)} com vídeo aprovado nunca será filtrado`);
+      const matchesSearch = 
+        item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.valor_total.toString().includes(searchTerm);
+      return matchesSearch; // Só aplicar filtro de busca, ignorar filtro de status
+    }
+    
+    // Para outros itens, aplicar filtros normalmente
     const matchesSearch = 
       item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.valor_total.toString().includes(searchTerm);
@@ -138,6 +151,11 @@ const AdvertiserOrders = () => {
       statusFilter === 'todos' || 
       (item.type === 'order' && item.status === statusFilter) ||
       (item.type === 'attempt' && statusFilter === 'tentativa');
+
+    // Aplicar filtro de exibição apenas para pedidos
+    if (item.type === 'order') {
+      return matchesSearch && matchesStatus && shouldDisplayOrder(item);
+    }
 
     return matchesSearch && matchesStatus;
   });
