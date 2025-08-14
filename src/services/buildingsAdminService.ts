@@ -39,11 +39,8 @@ export const fetchAllBuildingsForAdmin = async () => {
   try {
     console.log('🏢 [ADMIN BUILDINGS SERVICE] Iniciando busca de TODOS os prédios para administração...');
     
-    // Query para buscar TODOS os prédios (ativos E inativos) para administração
-    const buildingsPromise = supabase
-      .from('buildings')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Use secure function that excludes sensitive contact information by default
+    const buildingsPromise = supabase.rpc('get_admin_buildings_safe');
 
     const panelsPromise = supabase
       .from('painels')

@@ -1537,6 +1537,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      can_access_building_contacts: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       can_access_order: {
         Args: { p_pedido_id: string }
         Returns: boolean
@@ -1603,6 +1607,35 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_admin_buildings_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          nome: string
+          endereco: string
+          bairro: string
+          status: string
+          venue_type: string
+          monthly_traffic: number
+          latitude: number
+          longitude: number
+          numero_unidades: number
+          publico_estimado: number
+          preco_base: number
+          image_urls: string[]
+          amenities: string[]
+          padrao_publico: string
+          quantidade_telas: number
+          visualizacoes_mes: number
+          imagem_principal: string
+          imagem_2: string
+          imagem_3: string
+          imagem_4: string
+          caracteristicas: string[]
+          created_at: string
+          codigo_predio: string
+        }[]
+      }
       get_approvals_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1610,6 +1643,18 @@ export type Database = {
           video_enviado: number
           video_aprovado: number
           video_rejeitado: number
+        }[]
+      }
+      get_building_contact_info: {
+        Args: { building_id: string }
+        Returns: {
+          id: string
+          nome_sindico: string
+          contato_sindico: string
+          nome_vice_sindico: string
+          contato_vice_sindico: string
+          nome_contato_predio: string
+          numero_contato_predio: string
         }[]
       }
       get_buildings_current_video_count: {

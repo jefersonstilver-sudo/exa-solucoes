@@ -11,6 +11,8 @@ export const useBuildingDetailsState = () => {
   const [actionLogs, setActionLogs] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
   const [panels, setPanels] = useState<any[]>([]);
+  const [contactInfo, setContactInfo] = useState<any>(null);
+  const [canAccessContacts, setCanAccessContacts] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const updateAllData = useCallback((data: BuildingDetailsData) => {
@@ -29,11 +31,22 @@ export const useBuildingDetailsState = () => {
     setLoading(isLoading);
   }, []);
 
+  const updateContactData = useCallback((contactData: any, hasAccess: boolean) => {
+    console.log('🔒 [BUILDING DETAILS STATE] Atualizando dados de contato:', {
+      hasData: !!contactData,
+      hasAccess
+    });
+    setContactInfo(contactData);
+    setCanAccessContacts(hasAccess);
+  }, []);
+
   const clearData = useCallback(() => {
     console.log('🧹 [BUILDING DETAILS STATE] Limpando dados');
     setActionLogs([]);
     setSales([]);
     setPanels([]);
+    setContactInfo(null);
+    setCanAccessContacts(false);
     setLoading(false);
   }, []);
 
@@ -41,8 +54,11 @@ export const useBuildingDetailsState = () => {
     actionLogs,
     sales,
     panels,
+    contactInfo,
+    canAccessContacts,
     loading,
     updateAllData,
+    updateContactData,
     setLoadingState,
     clearData
   };

@@ -13,6 +13,8 @@ interface BuildingDetailsTabsContentProps {
   sales: any[];
   actionLogs: any[];
   panels: any[];
+  contactInfo?: any;
+  canAccessContacts?: boolean;
   loading: boolean;
   onRefresh: () => void;
 }
@@ -22,6 +24,8 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
   sales,
   actionLogs,
   panels,
+  contactInfo,
+  canAccessContacts,
   loading,
   onRefresh
 }) => {
@@ -50,7 +54,12 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
       </TabsList>
 
       <TabsContent value="overview" className="space-y-6">
-        <BuildingOverviewTab building={building} panels={panels} />
+        <BuildingOverviewTab 
+          building={building} 
+          panels={panels}
+          contactInfo={contactInfo}
+          canAccessContacts={canAccessContacts}
+        />
       </TabsContent>
 
       <TabsContent value="campaigns" className="space-y-6">

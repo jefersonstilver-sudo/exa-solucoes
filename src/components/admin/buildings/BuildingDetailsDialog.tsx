@@ -26,6 +26,8 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
     actionLogs,
     sales,
     panels,
+    contactInfo,
+    canAccessContacts,
     loading,
     fetchBuildingData
   } = useBuildingDetailsData({ building, open });
@@ -64,6 +66,8 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
           sales={sales}
           actionLogs={actionLogs}
           panels={panels}
+          contactInfo={contactInfo}
+          canAccessContacts={canAccessContacts}
           loading={loading}
           onRefresh={handleRefresh}
         />
