@@ -132,29 +132,8 @@ const ModernCartLayout = ({
                 </Button>
               </div>
 
-              {/* Duration Selector */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onChangeDuration(item.id, Math.max(7, item.duration - 7))}
-                    disabled={item.duration <= 7}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="text-sm font-medium min-w-[60px] text-center">
-                    {item.duration} dias
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onChangeDuration(item.id, Math.min(365, item.duration + 7))}
-                    disabled={item.duration >= 365}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
+              {/* Price */}
+              <div className="flex justify-end">
                 <div className="text-lg font-semibold text-[#3C1361]">
                   {formatCurrency(item.price || 0)}
                 </div>
@@ -165,7 +144,7 @@ const ModernCartLayout = ({
       </div>
 
       {/* Footer with Total and Checkout */}
-      <div className="border-t bg-white p-4 space-y-4">
+      <div className="border-t bg-white p-4 space-y-4 mt-auto sticky bottom-0">
         <div className="flex justify-between items-center">
           <span className="text-lg font-medium">Total:</span>
           <span className="text-2xl font-bold text-[#3C1361]">

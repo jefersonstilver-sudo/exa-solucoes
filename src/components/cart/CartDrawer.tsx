@@ -61,7 +61,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
               damping: 30, 
               stiffness: 300 
             }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -79,7 +79,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
             </div>
 
             {/* Cart Content */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
               <PanelCart
                 cartItems={cartItems}
                 onRemove={onRemoveFromCart || (() => {})}
