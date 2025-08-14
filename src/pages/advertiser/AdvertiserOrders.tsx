@@ -411,6 +411,7 @@ const AdvertiserOrders = () => {
         pix_base64={pixPaymentDialog.pix_base64}
         userId={userProfile?.id}
         pedidoId={pixPaymentDialog.orderId}
+        context="orders"
       />
     </div>
   );

@@ -18,6 +18,7 @@ interface PixQrCodeDialogProps {
   pix_base64?: string;
   userId?: string;
   pedidoId?: string;
+  context?: 'store' | 'orders'; // Adicionar contexto para distinguir comportamento
 }
 const PixQrCodeDialog = ({
   isOpen,
@@ -28,7 +29,8 @@ const PixQrCodeDialog = ({
   pix_url,
   pix_base64,
   userId,
-  pedidoId
+  pedidoId,
+  context = 'store' // Default para comportamento original da loja
 }: PixQrCodeDialogProps) => {
   const navigate = useNavigate();
 
@@ -52,7 +54,11 @@ const PixQrCodeDialog = ({
 
       // Fechar popup após breve delay para mostrar o sucesso
       setTimeout(() => {
-        handleClose();
+        if (context === 'store') {
+          redirectToOrders();
+        } else {
+          onClose(); // No contexto de pedidos, apenas fechar o modal
+        }
       }, 2000);
     }
   });
@@ -98,7 +104,11 @@ const PixQrCodeDialog = ({
   };
   const handleClose = () => {
     console.log("❌ [PixQrCodeDialog] Botão fechar clicado");
-    redirectToOrders();
+    if (context === 'store') {
+      redirectToOrders();
+    } else {
+      onClose(); // No contexto de pedidos, apenas fechar o modal
+    }
   };
   const handlePaymentConfirmed = () => {
     console.log("✅ [PixQrCodeDialog] Pagamento confirmado pelo usuário");
@@ -106,7 +116,11 @@ const PixQrCodeDialog = ({
       isTestMode,
       timestamp: new Date().toISOString()
     });
-    redirectToOrders();
+    if (context === 'store') {
+      redirectToOrders();
+    } else {
+      onClose(); // No contexto de pedidos, apenas fechar o modal
+    }
   };
 
   // Se não há dados do QR Code, mostrar erro com opções
