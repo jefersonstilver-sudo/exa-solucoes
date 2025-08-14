@@ -1670,6 +1670,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      ensure_video_consistency: {
+        Args: { p_pedido_id: string }
+        Returns: Json
+      }
       extract_compliance_data: {
         Args: { payment_data: Json }
         Returns: Json
