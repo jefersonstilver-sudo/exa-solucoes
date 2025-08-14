@@ -43,46 +43,41 @@ const items = [
 
 const LinkaeDeliverables: React.FC = () => {
   return (
-    <section className="bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Enhanced background patterns */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_80%_20%,hsl(var(--linkae-accent))_0%,transparent_50%)] opacity-25"></div>
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--linkae-cyan))_0%,transparent_25%,transparent_75%,hsl(var(--linkae-primary))_100%)] opacity-20"></div>
-      
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-20 relative z-10">
-        <header className="text-center mb-12 md:mb-16 animate-fade-in">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-linkae-accent via-linkae-cyan to-white bg-clip-text text-transparent font-orbitron mb-6">
+    <section className="bg-background section-bg-soft-linkae">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-16">
+        <header className="text-center mb-8 md:mb-12 animate-fade-in">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight gradient-text-linkae">
             O que a Linkaê entrega
           </h2>
-          <p className="text-slate-300 text-lg md:text-xl mt-4 max-w-3xl mx-auto leading-relaxed font-exo-2">
+          <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
             Conteúdo com intenção, campanhas que fazem sentido e uma presença online que se impõe.
           </p>
-          <div className="w-32 h-1 bg-gradient-to-r from-linkae-accent to-linkae-cyan mx-auto mt-6 rounded-full"></div>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {items.map(({ icon: Icon, title, desc, highlight }) => (
             <Card
               key={title}
-              className={`backdrop-blur-sm bg-white/10 border border-white/20 hover:bg-white/15 transition-all duration-500 hover:scale-105 hover:-translate-y-2 animate-fade-in hover:shadow-2xl hover:border-linkae-accent/50 hover:glow-linkae ${
-                highlight ? "ring-2 ring-linkae-accent/50 bg-gradient-to-br from-linkae-accent/20 to-linkae-cyan/20" : ""
+              className={`border-border/60 bg-card hover-scale animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30 ${
+                highlight ? "ring-1 ring-linkae-accent/30" : ""
               }`}
             >
-              <CardHeader className="flex flex-row items-center gap-4">
-                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-linkae-accent to-linkae-cyan text-white shadow-lg`}> 
-                  <Icon className="h-6 w-6" aria-hidden="true" />
+              <CardHeader className="flex flex-row items-center gap-3">
+                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-md bg-linkae-primary/10 text-linkae-primary`}> 
+                  <Icon className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-lg md:text-xl text-white font-montserrat font-bold">
+                  <CardTitle className="text-base md:text-lg text-foreground">
                     {title}
                   </CardTitle>
                   {highlight && (
-                    <span className="mt-2 inline-flex text-xs uppercase tracking-widest text-linkae-accent font-bold bg-linkae-accent/20 px-2 py-1 rounded-full">
-                      ✨ Destaque
+                    <span className="mt-1 inline-flex text-[10px] uppercase tracking-wide text-linkae-accent">
+                      Destaque
                     </span>
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="pt-3">
-                <p className="text-base text-slate-300 leading-relaxed font-exo-2">{desc}</p>
+              <CardContent className="pt-2">
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
               </CardContent>
             </Card>
           ))}
