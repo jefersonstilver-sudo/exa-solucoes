@@ -7,13 +7,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, User, Bell, Shield, Save } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Loader2, User, Bell, Shield, Save, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { useDocumentValidation } from '@/hooks/useDocumentValidation';
+import AvatarUpload from '@/components/ui/avatar-upload';
+import DocumentUpload from '@/components/ui/document-upload';
 
 interface UserSettings {
   email: string;
   name: string;
   phone: string;
+  cpf: string;
+  documento_estrangeiro: string;
+  documento_frente_url: string;
+  documento_verso_url: string;
+  avatar_url: string;
+  tipo_documento: 'cpf' | 'documento_estrangeiro';
   notifications: {
     email: boolean;
     sms: boolean;
@@ -23,10 +33,17 @@ interface UserSettings {
 
 const AdvertiserSettings = () => {
   const { userProfile } = useAuth();
+  const { formatDocument, validateDocument } = useDocumentValidation();
   const [settings, setSettings] = useState<UserSettings>({
     email: '',
     name: '',
     phone: '',
+    cpf: '',
+    documento_estrangeiro: '',
+    documento_frente_url: '',
+    documento_verso_url: '',
+    avatar_url: '',
+    tipo_documento: 'cpf',
     notifications: {
       email: true,
       sms: false,
@@ -46,16 +63,29 @@ const AdvertiserSettings = () => {
     try {
       setLoading(true);
 
-      // Buscar dados do usuário do auth
-      const { data: authUser, error } = await supabase.auth.getUser();
-      
-      if (error) throw error;
+      // Buscar dados do usuário do auth e da tabela users
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.user?.id)
+        .single();
+
+      if (userError && userError.code !== 'PGRST116') throw userError;
 
       if (authUser.user) {
         setSettings({
           email: authUser.user.email || '',
           name: authUser.user.user_metadata?.name || authUser.user.user_metadata?.full_name || '',
           phone: authUser.user.user_metadata?.phone || '',
+          cpf: userData?.cpf || '',
+          documento_estrangeiro: userData?.documento_estrangeiro || '',
+          documento_frente_url: userData?.documento_frente_url || '',
+          documento_verso_url: userData?.documento_verso_url || '',
+          avatar_url: userData?.avatar_url || '',
+          tipo_documento: (userData?.tipo_documento as 'cpf' | 'documento_estrangeiro') || 'cpf',
           notifications: {
             email: authUser.user.user_metadata?.notifications?.email ?? true,
             sms: authUser.user.user_metadata?.notifications?.sms ?? false,
@@ -75,8 +105,28 @@ const AdvertiserSettings = () => {
     try {
       setSaving(true);
 
-      // Atualizar metadados do usuário
-      const { error } = await supabase.auth.updateUser({
+      // Validações
+      if (settings.tipo_documento === 'cpf' && !validateDocument(settings.cpf, 'cpf')) {
+        toast.error('Por favor, informe um CPF válido');
+        return;
+      }
+
+      if (settings.tipo_documento === 'documento_estrangeiro') {
+        if (!settings.documento_estrangeiro.trim()) {
+          toast.error('Por favor, informe o número do documento estrangeiro');
+          return;
+        }
+        if (!settings.documento_frente_url || !settings.documento_verso_url) {
+          toast.error('Por favor, faça upload da frente e verso do documento');
+          return;
+        }
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Atualizar metadados do usuário no auth
+      const { error: authError } = await supabase.auth.updateUser({
         data: {
           name: settings.name,
           phone: settings.phone,
@@ -84,7 +134,31 @@ const AdvertiserSettings = () => {
         }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+
+      // Buscar role atual do usuário
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      // Atualizar dados na tabela users
+      const { error: userError } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email!,
+          role: existingUser?.role || 'client',
+          cpf: settings.tipo_documento === 'cpf' ? settings.cpf : null,
+          documento_estrangeiro: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_estrangeiro : null,
+          documento_frente_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_frente_url : null,
+          documento_verso_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_verso_url : null,
+          avatar_url: settings.avatar_url,
+          tipo_documento: settings.tipo_documento
+        });
+
+      if (userError) throw userError;
 
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
@@ -96,6 +170,9 @@ const AdvertiserSettings = () => {
   };
 
   const handleInputChange = (field: keyof UserSettings, value: string) => {
+    if (field === 'cpf') {
+      value = formatDocument(value, 'cpf');
+    }
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
@@ -103,6 +180,18 @@ const AdvertiserSettings = () => {
     setSettings(prev => ({
       ...prev,
       notifications: { ...prev.notifications, [type]: value }
+    }));
+  };
+
+  const handleDocumentTypeChange = (type: 'cpf' | 'documento_estrangeiro') => {
+    setSettings(prev => ({
+      ...prev,
+      tipo_documento: type,
+      // Limpar campos do tipo anterior
+      cpf: type === 'cpf' ? prev.cpf : '',
+      documento_estrangeiro: type === 'documento_estrangeiro' ? prev.documento_estrangeiro : '',
+      documento_frente_url: type === 'documento_estrangeiro' ? prev.documento_frente_url : '',
+      documento_verso_url: type === 'documento_estrangeiro' ? prev.documento_verso_url : ''
     }));
   };
 
@@ -119,8 +208,8 @@ const AdvertiserSettings = () => {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
-        <p className="text-gray-600 mt-1">Gerencie suas informações pessoais e preferências</p>
+        <h1 className="text-3xl font-bold text-gray-900">Perfil</h1>
+        <p className="text-gray-600 mt-1">Gerencie suas informações pessoais e documentação</p>
       </div>
 
       {/* Dados Pessoais */}
@@ -131,7 +220,14 @@ const AdvertiserSettings = () => {
             Dados Pessoais
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Foto de Perfil */}
+          <AvatarUpload
+            value={settings.avatar_url}
+            onChange={(url) => setSettings(prev => ({ ...prev, avatar_url: url || '' }))}
+            userName={settings.name}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -165,6 +261,82 @@ const AdvertiserSettings = () => {
               placeholder="(11) 99999-9999"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Documentação */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            Documentação
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Tipo de Documento */}
+          <div className="space-y-3">
+            <Label>Tipo de Documento</Label>
+            <RadioGroup
+              value={settings.tipo_documento}
+              onValueChange={handleDocumentTypeChange}
+              className="flex flex-col space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="cpf" id="cpf" />
+                <Label htmlFor="cpf">CPF (Brasileiro)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="documento_estrangeiro" id="documento_estrangeiro" />
+                <Label htmlFor="documento_estrangeiro">Documento de Identificação Estrangeiro</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Campo CPF */}
+          {settings.tipo_documento === 'cpf' && (
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF *</Label>
+              <Input
+                id="cpf"
+                value={settings.cpf}
+                onChange={(e) => handleInputChange('cpf', e.target.value)}
+                placeholder="000.000.000-00"
+                maxLength={14}
+              />
+              {settings.cpf && !validateDocument(settings.cpf, 'cpf') && (
+                <p className="text-xs text-red-500">CPF inválido</p>
+              )}
+            </div>
+          )}
+
+          {/* Documento Estrangeiro */}
+          {settings.tipo_documento === 'documento_estrangeiro' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="documento_estrangeiro">Número do Documento *</Label>
+                <Input
+                  id="documento_estrangeiro"
+                  value={settings.documento_estrangeiro}
+                  onChange={(e) => handleInputChange('documento_estrangeiro', e.target.value)}
+                  placeholder="Número do documento de identificação"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DocumentUpload
+                  label="Frente do Documento *"
+                  value={settings.documento_frente_url}
+                  onChange={(url) => setSettings(prev => ({ ...prev, documento_frente_url: url || '' }))}
+                />
+                
+                <DocumentUpload
+                  label="Verso do Documento *"
+                  value={settings.documento_verso_url}
+                  onChange={(url) => setSettings(prev => ({ ...prev, documento_verso_url: url || '' }))}
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

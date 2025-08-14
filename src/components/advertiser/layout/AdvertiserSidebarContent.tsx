@@ -80,18 +80,6 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       href: '/anunciante/perfil',
       icon: User,
       section: 'settings'
-    },
-    {
-      title: 'Configurações',
-      href: '/anunciante/configuracoes',
-      icon: Settings,
-      section: 'settings'
-    },
-    {
-      title: 'Suporte',
-      href: '/anunciante/suporte',
-      icon: HelpCircle,
-      section: 'settings'
     }
   ];
 
@@ -172,14 +160,6 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={() => navigate('/anunciante/configuracoes')}
-                    className="text-gray-700 hover:bg-gray-100"
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configurações</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
                     onClick={handleSignOut}
                     className="text-gray-700 hover:bg-gray-100"
                   >
@@ -214,14 +194,6 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                     Portal do Anunciante
                   </p>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => navigate('/anunciante/configuracoes')}
-                  className="text-gray-700 hover:bg-gray-100"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configurações</span>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleSignOut}

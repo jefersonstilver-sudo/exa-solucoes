@@ -1413,31 +1413,49 @@ export type Database = {
       }
       users: {
         Row: {
+          avatar_url: string | null
+          cpf: string | null
           data_criacao: string | null
+          documento_estrangeiro: string | null
+          documento_frente_url: string | null
+          documento_verso_url: string | null
           email: string
           email_verified_at: string | null
           id: string
           privacy_accepted_at: string | null
           role: string
           terms_accepted_at: string | null
+          tipo_documento: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          cpf?: string | null
           data_criacao?: string | null
+          documento_estrangeiro?: string | null
+          documento_frente_url?: string | null
+          documento_verso_url?: string | null
           email: string
           email_verified_at?: string | null
           id: string
           privacy_accepted_at?: string | null
           role: string
           terms_accepted_at?: string | null
+          tipo_documento?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          cpf?: string | null
           data_criacao?: string | null
+          documento_estrangeiro?: string | null
+          documento_frente_url?: string | null
+          documento_verso_url?: string | null
           email?: string
           email_verified_at?: string | null
           id?: string
           privacy_accepted_at?: string | null
           role?: string
           terms_accepted_at?: string | null
+          tipo_documento?: string | null
         }
         Relationships: []
       }
