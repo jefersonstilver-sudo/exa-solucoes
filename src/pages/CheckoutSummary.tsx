@@ -33,6 +33,7 @@ const CheckoutSummary = () => {
     selectedPlan,
     calculateTotalPrice,
     couponValid,
+    couponId,
     couponDiscount
   } = useCheckout();
 
@@ -123,7 +124,7 @@ const CheckoutSummary = () => {
 
     try {
       const result = await processPixPayment(
-        couponValid ? undefined : undefined, 
+        couponValid ? couponId : undefined, 
         couponDiscount || 0
       );
 

@@ -125,6 +125,7 @@ export const useCheckout = () => {
     couponMessage,
     isValidatingCoupon,
     validationResult,
+    couponId: validationResult?.couponId, // EXPORTAR couponId
     couponDiscount: validationResult?.discountPercent || 0, // GARANTIR que sempre retorna número
     
     // Estados do checkout

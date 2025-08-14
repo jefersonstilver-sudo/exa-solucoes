@@ -142,8 +142,8 @@ export const useSimplifiedPixCheckout = () => {
         }))
       });
       
-      // NOVA LÓGICA: Se cupom é 100% (valor final <= 0), processar como pedido gratuito
-      if (finalPrice <= 0) {
+      // NOVA LÓGICA: Se cupom é 100% (valor final <= 0.01), processar como pedido gratuito
+      if (finalPrice <= 0.01) {
         console.log('[useSimplifiedPixCheckout] DETECTADO CUPOM 100% - Processando como pedido gratuito');
         toast.info("Cupom de 100% aplicado! Processando pedido gratuito...");
         return await processFreeOrder(couponId);
