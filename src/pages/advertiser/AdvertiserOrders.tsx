@@ -61,19 +61,48 @@ const AdvertiserOrders = () => {
   
   // Verificar se um pedido está dentro do período ativo
   const isWithinActivePeriod = (order: any) => {
-    if (!order.data_inicio || !order.data_fim) return false;
+    if (!order.data_inicio || !order.data_fim) {
+      console.log(`⚠️ Pedido ${order.id.substring(0, 8)} sem datas definidas`);
+      return false;
+    }
+    
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Zerar horas para comparação apenas de data
+    
     const startDate = new Date(order.data_inicio);
+    startDate.setHours(0, 0, 0, 0);
+    
     const endDate = new Date(order.data_fim);
-    return today >= startDate && today <= endDate;
+    endDate.setHours(23, 59, 59, 999); // Final do dia
+    
+    const isActive = today >= startDate && today <= endDate;
+    console.log(`📅 Pedido ${order.id.substring(0, 8)}: ${order.data_inicio} até ${order.data_fim}, hoje: ${today.toISOString().split('T')[0]}, ativo: ${isActive}`);
+    
+    return isActive;
   };
   
+  // Debug logs para investigar pedidos
+  console.log('📊 [AdvertiserOrders] Total de itens carregados:', userOrdersAndAttempts.length);
+  console.log('📊 [AdvertiserOrders] Pedidos encontrados:', orders.length);
+  console.log('📊 [AdvertiserOrders] Tentativas encontradas:', attempts.length);
+  
+  orders.forEach(order => {
+    console.log(`📋 [AdvertiserOrders] Pedido ${order.id.substring(0, 8)}: status=${order.status}, data_inicio=${order.data_inicio}, data_fim=${order.data_fim}`);
+  });
+
   const stats = {
     // Pedidos ativos: pagos, com vídeo aprovado/ativo e dentro do período
-    pedidosAtivos: orders.filter(order => 
-      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
-      isWithinActivePeriod(order)
-    ).length,
+    pedidosAtivos: orders.filter(order => {
+      const isValidStatus = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status);
+      const isInPeriod = isWithinActivePeriod(order);
+      const isActive = isValidStatus && isInPeriod;
+      
+      if (isValidStatus) {
+        console.log(`🔍 Pedido ${order.id.substring(0, 8)}: status válido=${isValidStatus}, no período=${isInPeriod}, ativo=${isActive}`);
+      }
+      
+      return isActive;
+    }).length,
     
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
