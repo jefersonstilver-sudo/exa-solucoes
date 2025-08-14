@@ -22,6 +22,8 @@ export const usePixForPendingOrder = () => {
         .eq('id', orderId)
         .single();
       
+      console.log('[usePixForPendingOrder] Dados do pedido:', pedido, 'Error:', pedidoError);
+      
       if (pedidoError || !pedido) {
         throw new Error('Pedido não encontrado');
       }
@@ -37,14 +39,17 @@ export const usePixForPendingOrder = () => {
         .eq('id', pedido.client_id)
         .single();
       
+      console.log('[usePixForPendingOrder] Dados do usuário:', userData, 'Error:', userError);
+      
       if (userError || !userData) {
         throw new Error('Dados do cliente não encontrados');
       }
       
       // Buscar dados dos prédios selecionados
       const prediosIds = pedido.lista_predios || pedido.lista_paineis || [];
+      console.log('[usePixForPendingOrder] IDs dos prédios:', prediosIds);
       
-      if (!prediosIds.length) {
+      if (!prediosIds || prediosIds.length === 0) {
         throw new Error('Nenhum prédio selecionado no pedido');
       }
       
@@ -53,8 +58,20 @@ export const usePixForPendingOrder = () => {
         .select('id, nome, preco_base')
         .in('id', prediosIds);
       
+      console.log('[usePixForPendingOrder] Dados dos prédios:', prediosData, 'Error:', prediosError);
+      
       if (prediosError || !prediosData?.length) {
+        console.error('[usePixForPendingOrder] Erro ao buscar prédios:', prediosError);
         throw new Error('Dados dos prédios não encontrados');
+      }
+      
+      // Validar dados obrigatórios
+      if (!pedido.plano_meses) {
+        throw new Error('Plano de meses não definido no pedido');
+      }
+      
+      if (!pedido.valor_total) {
+        throw new Error('Valor total não definido no pedido');
       }
       
       // Montar dados para o webhook
@@ -72,7 +89,7 @@ export const usePixForPendingOrder = () => {
         })),
         periodo_exibicao: {
           inicio: pedido.data_inicio || new Date().toISOString().split('T')[0],
-          fim: pedido.data_fim || new Date(Date.now() + pedido.plano_meses * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          fim: pedido.data_fim || new Date(Date.now() + (pedido.plano_meses * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
         }
       };
       

@@ -62,7 +62,10 @@ const AdvertiserOrders = () => {
       const { orderId } = event.detail;
       
       try {
+        console.log('[AdvertiserOrders] Iniciando geração de PIX para pedido:', orderId);
+        
         const pixResponse = await generatePixForOrder(orderId);
+        console.log('[AdvertiserOrders] Resposta do PIX:', pixResponse);
         
         if (pixResponse?.success) {
           setPixPaymentDialog({
@@ -73,9 +76,12 @@ const AdvertiserOrders = () => {
             pix_url: pixResponse.pix_url,
             pix_base64: pixResponse.pix_base64
           });
+          console.log('[AdvertiserOrders] Modal PIX aberto com sucesso');
+        } else {
+          console.error('[AdvertiserOrders] Falha na geração do PIX:', pixResponse);
         }
       } catch (error) {
-        console.error('Erro ao gerar PIX:', error);
+        console.error('[AdvertiserOrders] Erro ao gerar PIX:', error);
       }
     };
 
