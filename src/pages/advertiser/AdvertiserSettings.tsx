@@ -233,12 +233,9 @@ const AdvertiserSettings = () => {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Excluir Conta</Label>
-              <p className="text-sm text-gray-500">Remova permanentemente sua conta e todos os dados</p>
+              <Label>Cancelamento de Conta</Label>
+              <p className="text-sm text-gray-500">Para cancelar sua conta, entre em contato por email: suporte@indexa.com.br</p>
             </div>
-            <Button variant="destructive" onClick={() => toast.info('Funcionalidade em desenvolvimento')}>
-              Excluir Conta
-            </Button>
           </div>
         </CardContent>
       </Card>
