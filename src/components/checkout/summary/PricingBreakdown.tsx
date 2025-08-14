@@ -43,12 +43,14 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
     );
   }
 
-  // Calcular valores usando funções centralizadas
+  // CORREÇÃO: Usar funções centralizadas que aplicam valor mínimo
   const baseTotal = calculateTotalPrice(selectedPlan, cartItems, 0, false);
   const couponDiscountAmount = couponValid && couponDiscount > 0 ? (baseTotal * couponDiscount) / 100 : 0;
   const totalAfterCoupon = baseTotal - couponDiscountAmount;
   const pixDiscountAmount = paymentMethod === 'pix' ? (totalAfterCoupon * pixDiscount) / 100 : 0;
-  const finalTotal = totalAfterCoupon - pixDiscountAmount;
+  
+  // CRÍTICO: Usar calculateTotalPrice para garantir valor mínimo de R$ 0,05
+  const finalTotal = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
   
   const totalSavings = couponDiscountAmount + pixDiscountAmount;
 
