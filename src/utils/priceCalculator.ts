@@ -15,6 +15,9 @@ const PLAN_PRICES: Record<PlanKey, number> = {
 // PIX tem 5% de desconto sobre o total
 const PIX_DISCOUNT_RATE = 0.05;
 
+// Valor mínimo para ativação de pedidos (5 centavos)
+export const MINIMUM_ORDER_VALUE = 0.05;
+
 interface PriceCalculationResult {
   subtotal: number;
   pixDiscount: number;
@@ -116,7 +119,7 @@ export const calculateRegularPrice = (
 
 // Validar se o preço está correto
 export const validatePrice = (price: number): boolean => {
-  return price > 0 && price >= 10; // Preço mínimo de R$ 10
+  return price > 0 && price >= MINIMUM_ORDER_VALUE; // Preço mínimo de R$ 0,05
 };
 
 // NOVA FUNÇÃO: Obter preços dos planos para exibição

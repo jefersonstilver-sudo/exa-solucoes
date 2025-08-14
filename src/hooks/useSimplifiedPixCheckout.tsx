@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useOrderManager } from '@/hooks/useOrderManager';
-import { calculatePixPrice } from '@/utils/priceCalculator';
+import { calculatePixPrice, MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
 import { sendPixPaymentWebhook } from '@/services/pixWebhookService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -45,7 +45,7 @@ export const useSimplifiedPixCheckout = () => {
         clientId: user.id,
         cartItems,
         selectedPlan,
-        totalPrice: 0.01, // Valor mínimo para evitar problemas no sistema
+        totalPrice: MINIMUM_ORDER_VALUE, // Valor mínimo para ativação (5 centavos)
         couponId
       });
 
@@ -63,7 +63,8 @@ export const useSimplifiedPixCheckout = () => {
             payment_status: 'approved',
             coupon_discount: '100%',
             processed_at: new Date().toISOString(),
-            free_order: true
+            free_order: true,
+            symbolic_value: MINIMUM_ORDER_VALUE
           }
         })
         .eq('id', orderResult.pedidoId);
@@ -142,8 +143,8 @@ export const useSimplifiedPixCheckout = () => {
         }))
       });
       
-      // NOVA LÓGICA: Se cupom é 100% (valor final <= 0.01), processar como pedido gratuito
-      if (finalPrice <= 0.01) {
+      // NOVA LÓGICA: Se cupom é 100% (valor final <= valor mínimo), processar como pedido gratuito
+      if (finalPrice <= MINIMUM_ORDER_VALUE) {
         console.log('[useSimplifiedPixCheckout] DETECTADO CUPOM 100% - Processando como pedido gratuito');
         toast.info("Cupom de 100% aplicado! Processando pedido gratuito...");
         return await processFreeOrder(couponId);
