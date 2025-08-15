@@ -38,25 +38,50 @@ export const useTentativaHelper = () => {
       if (prediosSelecionados.length === 0) {
         throw new Error('Não foi possível extrair prédios do carrinho');
       }
-      
+
+      // Buscar dados do usuário para construir credencial
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !userData) {
+        throw new Error('Erro ao buscar dados do usuário');
+      }
+
+      // Buscar nome do primeiro prédio
+      const firstBuildingId = prediosSelecionados[0];
+      const { data: buildingData, error: buildingError } = await supabase
+        .from('buildings')
+        .select('nome')
+        .eq('id', firstBuildingId)
+        .single();
+
+      if (buildingError || !buildingData) {
+        throw new Error('Erro ao buscar dados do prédio');
+      }
+
       const transactionId = uuidv4();
       
-      // Criar tentativa na tabela tentativas_compra
+      // Gerar número único do cliente (usando timestamp)
+      const clientNumber = Date.now().toString().slice(-4);
+      
+      // Construir credencial no formato histórico
+      const credencial = `CLIENTE${clientNumber}/${userData.email}/Plano ${selectedPlan} mês/Edificio ${buildingData.nome}/${totalPrice}`;
+      
+      // Criar tentativa na tabela tentativas_compra seguindo formato histórico
       const { data: tentativa, error } = await supabase
         .from('tentativas_compra')
         .insert({
           id_user: userId,
           transaction_id: transactionId,
           valor_total: totalPrice,
-          predios_selecionados: prediosSelecionados,
-          price_locked: true,
-          price_calculation_log: {
-            plan_months: selectedPlan,
-            panel_count: cartItems.length,
-            building_count: prediosSelecionados.length,
-            final_price: totalPrice,
-            calculated_at: new Date().toISOString()
-          }
+          credencial: credencial,
+          predio: buildingData.nome,
+          predios_selecionados: [], // Array vazio conforme formato histórico
+          price_locked: false, // false conforme formato histórico
+          price_calculation_log: {} // Objeto vazio conforme formato histórico
         })
         .select()
         .single();
