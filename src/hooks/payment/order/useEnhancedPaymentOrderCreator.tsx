@@ -37,7 +37,8 @@ export const useEnhancedPaymentOrderCreator = () => {
       totalPrice,
       couponId,
       startDate,
-      endDate
+      endDate,
+      mercadopago_transaction_id
     } = params;
 
     try {
@@ -54,27 +55,23 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error('Tentativa de pagamento duplicada detectada');
       }
 
-      // Salvar tentativa de compra ANTES de criar o pedido
-      let tentativaTransactionId = null;
+      // CRÍTICO: Salvar tentativa de compra COM o transaction_id do MercadoPago
+      let tentativaTransactionId = mercadopago_transaction_id;
       try {
-        await saveCompletePurchaseAttempt(sessionUser.id, cartItems, totalPrice);
-        console.log('✅ [ENHANCED_ORDER_CREATOR] Tentativa de compra salva');
+        const savedAttempt = await saveCompletePurchaseAttempt(
+          sessionUser.id, 
+          cartItems, 
+          totalPrice,
+          mercadopago_transaction_id // CRÍTICO: Passar o transaction_id do MercadoPago
+        );
+        console.log('✅ [ENHANCED_ORDER_CREATOR] Tentativa de compra salva com transaction_id:', mercadopago_transaction_id);
         
-        // Buscar a tentativa recém-criada para obter o transaction_id do MercadoPago
-        const { data: tentativa } = await supabase
-          .from('tentativas_compra')
-          .select('transaction_id')
-          .eq('id_user', sessionUser.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        
-        if (tentativa?.transaction_id) {
-          tentativaTransactionId = tentativa.transaction_id;
-          console.log('✅ [ENHANCED_ORDER_CREATOR] Transaction ID da tentativa obtido:', tentativaTransactionId);
-        }
+        // Usar o transaction_id passado como parâmetro ou o retornado pela tentativa
+        tentativaTransactionId = mercadopago_transaction_id || savedAttempt?.transaction_id;
+        console.log('✅ [ENHANCED_ORDER_CREATOR] Transaction ID confirmado:', tentativaTransactionId);
       } catch (attemptError) {
         console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Erro ao salvar tentativa (continuando):', attemptError);
+        tentativaTransactionId = mercadopago_transaction_id; // Garantir que sempre temos o ID
       }
 
       // CRITICAL: Validate payment uniqueness to prevent duplicates
@@ -193,7 +190,7 @@ export const useEnhancedPaymentOrderCreator = () => {
         data_fim: endDate.toISOString().split('T')[0],
         status: 'pendente',
         transaction_id: transactionId,
-        mercadopago_transaction_id: tentativaTransactionId, // Usar o ID do MercadoPago da tentativa
+        mercadopago_transaction_id: tentativaTransactionId, // CRÍTICO: Usar o transaction_id correto do MercadoPago
         termos_aceitos: true,
         duracao: 30,
         log_pagamento: {

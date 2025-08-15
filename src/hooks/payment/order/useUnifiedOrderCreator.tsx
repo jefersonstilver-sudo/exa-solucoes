@@ -53,7 +53,7 @@ export const useUnifiedOrderCreator = () => {
         return { success: true, pedidoId: existingOrder.id };
       }
 
-      // Buscar o transaction_id do MercadoPago da tentativa
+      // CRÍTICO: Buscar transaction_id da tentativa específica
       let mercadopagoTransactionId = null;
       try {
         const { data: tentativa } = await supabase
@@ -64,10 +64,12 @@ export const useUnifiedOrderCreator = () => {
         
         if (tentativa?.transaction_id) {
           mercadopagoTransactionId = tentativa.transaction_id;
-          console.log('✅ [UnifiedOrderCreator] Transaction ID do MercadoPago obtido:', mercadopagoTransactionId);
+          console.log('✅ [UnifiedOrderCreator] Transaction ID do MercadoPago obtido da tentativa específica:', mercadopagoTransactionId);
+        } else {
+          console.warn('⚠️ [UnifiedOrderCreator] Tentativa encontrada mas sem transaction_id');
         }
       } catch (error) {
-        console.warn('⚠️ [UnifiedOrderCreator] Não foi possível obter transaction_id da tentativa:', error);
+        console.error('❌ [UnifiedOrderCreator] Erro ao buscar transaction_id da tentativa:', error);
       }
 
       // Preparar dados do pedido
@@ -95,7 +97,7 @@ export const useUnifiedOrderCreator = () => {
         .insert({
           client_id: user.id,
           transaction_id: transactionId,
-          mercadopago_transaction_id: mercadopagoTransactionId,
+          mercadopago_transaction_id: mercadopagoTransactionId, // CRÍTICO: Usar transaction_id da tentativa específica
           source_tentativa_id: tentativaId,
           lista_paineis: painelIds,
           lista_predios: predioIds,

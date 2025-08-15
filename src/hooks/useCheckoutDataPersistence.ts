@@ -55,7 +55,8 @@ export const useCheckoutDataPersistence = () => {
   const saveCompletePurchaseAttempt = async (
     userId: string, 
     cartItems: any[], 
-    totalPrice: number
+    totalPrice: number,
+    transactionId?: string
   ) => {
     try {
       console.log('💾 [CHECKOUT_PERSISTENCE] Salvando tentativa de compra...');
@@ -90,6 +91,7 @@ export const useCheckoutDataPersistence = () => {
         id_user: userId,
         valor_total: totalPrice,
         predios_selecionados: buildingIds.map(id => String(id)), // Converter para string[]
+        transaction_id: transactionId, // CRÍTICO: Salvar o transaction_id do MercadoPago
         credencial: JSON.stringify({
           panel_ids: panelIds,
           building_ids: buildingIds,

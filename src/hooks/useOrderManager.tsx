@@ -10,6 +10,7 @@ interface CreateOrderParams {
   selectedPlan: number;
   totalPrice: number;
   couponId?: string | null;
+  mercadopago_transaction_id?: string; // CRÍTICO: Adicionar campo para transaction_id
 }
 
 interface OrderResult {
@@ -23,7 +24,7 @@ export const useOrderManager = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   const createPendingOrder = async (params: CreateOrderParams): Promise<OrderResult> => {
-    const { clientId, cartItems, selectedPlan, totalPrice, couponId } = params;
+    const { clientId, cartItems, selectedPlan, totalPrice, couponId, mercadopago_transaction_id } = params;
     
     setIsCreating(true);
     
@@ -41,23 +42,29 @@ export const useOrderManager = () => {
       // Gerar transaction_id único para rastreamento
       const transactionId = uuidv4();
       
-      // Buscar o transaction_id do MercadoPago da tentativa mais recente
-      let mercadopagoTransactionId = null;
-      try {
-        const { data: tentativa } = await supabase
-          .from('tentativas_compra')
-          .select('transaction_id')
-          .eq('id_user', clientId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        
-        if (tentativa?.transaction_id) {
-          mercadopagoTransactionId = tentativa.transaction_id;
-          console.log('✅ [ORDER_MANAGER] Transaction ID do MercadoPago obtido:', mercadopagoTransactionId);
+      // CRÍTICO: Usar transaction_id passado como parâmetro ou buscar da tentativa
+      let mercadopagoTransactionId = mercadopago_transaction_id;
+      
+      if (!mercadopagoTransactionId) {
+        console.warn('🔍 [ORDER_MANAGER] Transaction ID não fornecido, buscando da tentativa mais recente...');
+        try {
+          const { data: tentativa } = await supabase
+            .from('tentativas_compra')
+            .select('transaction_id')
+            .eq('id_user', clientId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (tentativa?.transaction_id) {
+            mercadopagoTransactionId = tentativa.transaction_id;
+            console.log('✅ [ORDER_MANAGER] Transaction ID obtido do fallback:', mercadopagoTransactionId);
+          }
+        } catch (error) {
+          console.warn('⚠️ [ORDER_MANAGER] Não foi possível obter transaction_id da tentativa:', error);
         }
-      } catch (error) {
-        console.warn('⚠️ [ORDER_MANAGER] Não foi possível obter transaction_id da tentativa:', error);
+      } else {
+        console.log('✅ [ORDER_MANAGER] Usando transaction_id fornecido:', mercadopagoTransactionId);
       }
       
       // CORREÇÃO: Extrair corretamente IDs dos painéis e prédios
@@ -90,7 +97,7 @@ export const useOrderManager = () => {
         .insert({
           client_id: clientId,
           transaction_id: transactionId,
-          mercadopago_transaction_id: mercadopagoTransactionId,
+          mercadopago_transaction_id: mercadopago_transaction_id || mercadopagoTransactionId, // CRÍTICO: Usar o ID correto
           valor_total: totalPrice,
           plano_meses: selectedPlan,
           status: 'pendente',
@@ -169,7 +176,7 @@ export const useOrderManager = () => {
 
   // Nova função para criar pedidos já pagos (cupons 100%)
   const createPaidOrder = async (params: CreateOrderParams): Promise<OrderResult> => {
-    const { clientId, cartItems, selectedPlan, couponId } = params;
+    const { clientId, cartItems, selectedPlan, couponId, mercadopago_transaction_id } = params;
     
     setIsCreating(true);
     
@@ -182,23 +189,29 @@ export const useOrderManager = () => {
       // Gerar transaction_id único para rastreamento
       const transactionId = uuidv4();
       
-      // Buscar o transaction_id do MercadoPago da tentativa mais recente
-      let mercadopagoTransactionId = null;
-      try {
-        const { data: tentativa } = await supabase
-          .from('tentativas_compra')
-          .select('transaction_id')
-          .eq('id_user', clientId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        
-        if (tentativa?.transaction_id) {
-          mercadopagoTransactionId = tentativa.transaction_id;
-          console.log('✅ [ORDER_MANAGER] Transaction ID do MercadoPago obtido (cupom grátis):', mercadopagoTransactionId);
+      // CRÍTICO: Usar transaction_id passado como parâmetro ou buscar da tentativa
+      let mercadopagoTransactionId = mercadopago_transaction_id;
+      
+      if (!mercadopagoTransactionId) {
+        console.warn('🔍 [PAID_ORDER] Transaction ID não fornecido, buscando da tentativa mais recente...');
+        try {
+          const { data: tentativa } = await supabase
+            .from('tentativas_compra')
+            .select('transaction_id')
+            .eq('id_user', clientId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (tentativa?.transaction_id) {
+            mercadopagoTransactionId = tentativa.transaction_id;
+            console.log('✅ [PAID_ORDER] Transaction ID obtido do fallback (cupom grátis):', mercadopagoTransactionId);
+          }
+        } catch (error) {
+          console.warn('⚠️ [PAID_ORDER] Não foi possível obter transaction_id da tentativa (cupom grátis):', error);
         }
-      } catch (error) {
-        console.warn('⚠️ [ORDER_MANAGER] Não foi possível obter transaction_id da tentativa (cupom grátis):', error);
+      } else {
+        console.log('✅ [PAID_ORDER] Usando transaction_id fornecido (cupom grátis):', mercadopagoTransactionId);
       }
       
       // Extrair IDs dos painéis e prédios
@@ -226,7 +239,7 @@ export const useOrderManager = () => {
         .insert({
           client_id: clientId,
           transaction_id: transactionId,
-          mercadopago_transaction_id: mercadopagoTransactionId,
+          mercadopago_transaction_id: mercadopago_transaction_id || mercadopagoTransactionId, // CRÍTICO: Usar o ID correto
           valor_total: 0.01, // Valor simbólico
           plano_meses: selectedPlan,
           status: 'pago',
