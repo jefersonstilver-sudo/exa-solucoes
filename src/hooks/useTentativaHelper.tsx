@@ -39,28 +39,64 @@ export const useTentativaHelper = () => {
         throw new Error('Não foi possível extrair prédios do carrinho');
       }
 
+      console.log('🔍 [TentativaHelper] Predios selecionados:', prediosSelecionados);
+
       // Buscar dados do usuário para construir credencial
+      let userEmail = '';
+      
+      // Primeiro tentar na tabela users
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('email')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (userError || !userData) {
-        throw new Error('Erro ao buscar dados do usuário');
+      if (userData?.email) {
+        userEmail = userData.email;
+        console.log('✅ [TentativaHelper] Email encontrado na tabela users:', userEmail);
+      } else {
+        console.log('⚠️ [TentativaHelper] Usuário não encontrado na tabela users, buscando no auth.users');
+        
+        // Se não encontrar na tabela users, buscar no auth.users
+        const { data: authUser, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !authUser.user?.email) {
+          console.error('❌ [TentativaHelper] Erro ao buscar dados do auth.users:', authError);
+          throw new Error('Erro ao buscar dados do usuário autenticado');
+        }
+        
+        userEmail = authUser.user.email;
+        console.log('✅ [TentativaHelper] Email encontrado no auth.users:', userEmail);
       }
 
       // Buscar nome do primeiro prédio
       const firstBuildingId = prediosSelecionados[0];
+      console.log('🔍 [TentativaHelper] Buscando prédio com ID:', firstBuildingId);
+      
+      // Verificar se é um UUID válido
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(firstBuildingId)) {
+        console.error('❌ [TentativaHelper] ID do prédio não é um UUID válido:', firstBuildingId);
+        throw new Error(`ID do prédio inválido: ${firstBuildingId}`);
+      }
+
       const { data: buildingData, error: buildingError } = await supabase
         .from('buildings')
         .select('nome')
         .eq('id', firstBuildingId)
-        .single();
+        .maybeSingle();
 
-      if (buildingError || !buildingData) {
-        throw new Error('Erro ao buscar dados do prédio');
+      if (buildingError) {
+        console.error('❌ [TentativaHelper] Erro ao buscar prédio:', buildingError);
+        throw new Error(`Erro ao buscar dados do prédio: ${buildingError.message}`);
       }
+
+      if (!buildingData) {
+        console.error('❌ [TentativaHelper] Prédio não encontrado:', firstBuildingId);
+        throw new Error(`Prédio não encontrado com ID: ${firstBuildingId}`);
+      }
+
+      console.log('✅ [TentativaHelper] Prédio encontrado:', buildingData.nome);
 
       const transactionId = uuidv4();
       
@@ -68,7 +104,7 @@ export const useTentativaHelper = () => {
       const clientNumber = Date.now().toString().slice(-4);
       
       // Construir credencial no formato histórico
-      const credencial = `CLIENTE${clientNumber}/${userData.email}/Plano ${selectedPlan} mês/Edificio ${buildingData.nome}/${totalPrice}`;
+      const credencial = `CLIENTE${clientNumber}/${userEmail}/Plano ${selectedPlan} mês/Edificio ${buildingData.nome}/${totalPrice}`;
       
       // Criar tentativa na tabela tentativas_compra seguindo formato histórico
       const { data: tentativa, error } = await supabase
