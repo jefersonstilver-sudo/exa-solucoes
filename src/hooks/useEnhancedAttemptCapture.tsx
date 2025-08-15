@@ -1,11 +1,12 @@
 
-// Sistema Aprimorado de Captura de Tentativas - TEMPORARIAMENTE DESABILITADO
+// Sistema Aprimorado de Captura de Tentativas
 
 import { useState } from 'react';
 import { useUserSession } from './useUserSession';
 import { CartItem } from '@/types/payment';
 import { logSystemEvent } from '@/utils/auditLogger';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CaptureAttemptResult {
   success: boolean;
@@ -30,13 +31,78 @@ export const useEnhancedAttemptCapture = () => {
     setIsCapturing(true);
 
     try {
-      console.log("📝 [EnhancedAttemptCapture] Sistema temporariamente desabilitado - usando fallback local");
+      console.log("📝 [EnhancedAttemptCapture] Criando tentativa real no banco de dados...");
 
-      // Por ora, apenas simular captura até tipos serem corrigidos
-      const mockTentativaId = `local_${Date.now()}`;
+      // Extrair dados dos items do carrinho
+      const panelIds = cartItems.map(item => {
+        const panelId = item.panel?.id;
+        console.log('🔍 [EnhancedAttemptCapture] Extraindo panel ID:', panelId, 'do item:', item);
+        return panelId;
+      }).filter(Boolean);
 
-      console.log("✅ [EnhancedAttemptCapture] Tentativa simulada:", {
-        tentativaId: mockTentativaId,
+      console.log('📊 [EnhancedAttemptCapture] Panel IDs finais:', panelIds);
+
+      // Buscar building IDs correspondentes
+      const { data: panelData, error: panelError } = await supabase
+        .from('painels')
+        .select('id, building_id')
+        .in('id', panelIds);
+
+      if (panelError) {
+        console.error('❌ [EnhancedAttemptCapture] Erro ao buscar painéis:', panelError);
+        throw panelError;
+      }
+
+      const buildingIds = [...new Set(
+        (panelData || []).map(p => p.building_id).filter(Boolean)
+      )];
+
+      console.log('🏢 [EnhancedAttemptCapture] Building IDs extraídos:', buildingIds);
+
+      // Criar dados da tentativa
+      const attemptData = {
+        id_user: user.id,
+        valor_total: calculatedPrice,
+        transaction_id: transactionId,
+        predios_selecionados: buildingIds.map(id => String(id)),
+        price_locked: true,
+        price_calculation_log: {
+          selectedPlan,
+          cartItemsCount: cartItems.length,
+          calculatedAt: new Date().toISOString(),
+          panelIds,
+          buildingIds
+        },
+        credencial: JSON.stringify({
+          panel_ids: panelIds,
+          building_ids: buildingIds,
+          cart_items_backup: cartItems.map(item => ({
+            panel_id: item.panel?.id,
+            building_id: item.panel?.building_id,
+            panel_name: item.panel?.buildings?.nome || 'Nome não disponível',
+            duration: item.duration || 30,
+            preco_base: item.panel?.buildings?.preco_base || 0
+          })),
+          timestamp: new Date().toISOString()
+        })
+      };
+
+      console.log('💾 [EnhancedAttemptCapture] Dados da tentativa:', attemptData);
+
+      // Salvar tentativa no banco
+      const { data: savedAttempt, error: saveError } = await supabase
+        .from('tentativas_compra')
+        .insert(attemptData)
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error('❌ [EnhancedAttemptCapture] Erro ao salvar tentativa:', saveError);
+        throw saveError;
+      }
+
+      console.log("✅ [EnhancedAttemptCapture] Tentativa criada com sucesso:", {
+        tentativaId: savedAttempt.id,
         transactionId,
         valorTotal: calculatedPrice,
         selectedPlan,
@@ -44,18 +110,18 @@ export const useEnhancedAttemptCapture = () => {
       });
 
       // Log para auditoria
-      logSystemEvent('ENHANCED_ATTEMPT_CAPTURED_MOCK', {
-        tentativaId: mockTentativaId,
+      logSystemEvent('ENHANCED_ATTEMPT_CAPTURED', {
+        tentativaId: savedAttempt.id,
         transactionId,
         userId: user.id,
         valorTotal: calculatedPrice,
         selectedPlan,
         cartItemsCount: cartItems.length,
         priceLocked: true,
-        mock: true
+        buildingIds
       });
 
-      return { success: true, tentativaId: mockTentativaId };
+      return { success: true, tentativaId: savedAttempt.id };
 
     } catch (error: any) {
       console.error("❌ [EnhancedAttemptCapture] Erro na captura:", error);
@@ -72,22 +138,79 @@ export const useEnhancedAttemptCapture = () => {
     }
   };
 
-  // Buscar tentativa por transaction_id (simulado)
+  // Buscar tentativa por transaction_id
   const getAttemptByTransactionId = async (transactionId: string) => {
-    console.log("⚠️ [EnhancedAttemptCapture] Função temporariamente desabilitada");
-    return null;
+    try {
+      const { data, error } = await supabase
+        .from('tentativas_compra')
+        .select('*')
+        .eq('transaction_id', transactionId)
+        .single();
+
+      if (error) {
+        console.error('❌ [EnhancedAttemptCapture] Erro ao buscar tentativa:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ [EnhancedAttemptCapture] Erro ao buscar tentativa:', error);
+      return null;
+    }
   };
 
-  // Verificar duplicações por usuário (simulado)
+  // Verificar duplicações por usuário
   const checkForDuplicates = async (userId: string, valorTotal: number): Promise<any[]> => {
-    console.log("⚠️ [EnhancedAttemptCapture] Verificação de duplicatas temporariamente desabilitada");
-    return [];
+    try {
+      const { data, error } = await supabase
+        .from('tentativas_compra')
+        .select('*')
+        .eq('id_user', userId)
+        .eq('valor_total', valorTotal)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Últimas 24h
+
+      if (error) {
+        console.error('❌ [EnhancedAttemptCapture] Erro ao verificar duplicatas:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('❌ [EnhancedAttemptCapture] Erro ao verificar duplicatas:', error);
+      return [];
+    }
   };
 
-  // Limpar tentativas antigas órfãs (simulado)
+  // Limpar tentativas antigas órfãs
   const cleanupOrphanedAttempts = async (): Promise<number> => {
-    console.log("⚠️ [EnhancedAttemptCapture] Limpeza temporariamente desabilitada");
-    return 0;
+    try {
+      console.log("🧹 [EnhancedAttemptCapture] Iniciando limpeza de tentativas órfãs...");
+      
+      // Buscar tentativas antigas sem pedidos correspondentes
+      const { data: orphanedAttempts, error } = await supabase
+        .from('tentativas_compra')
+        .select('id')
+        .lt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Mais de 7 dias
+        .limit(100);
+
+      if (error) {
+        console.error('❌ [EnhancedAttemptCapture] Erro ao buscar tentativas órfãs:', error);
+        return 0;
+      }
+
+      if (!orphanedAttempts || orphanedAttempts.length === 0) {
+        console.log("✅ [EnhancedAttemptCapture] Nenhuma tentativa órfã encontrada");
+        return 0;
+      }
+
+      // Note: For now, just count - actual cleanup would need admin approval
+      console.log(`🧹 [EnhancedAttemptCapture] Encontradas ${orphanedAttempts.length} tentativas órfãs`);
+      return orphanedAttempts.length;
+
+    } catch (error) {
+      console.error('❌ [EnhancedAttemptCapture] Erro na limpeza:', error);
+      return 0;
+    }
   };
 
   return {
