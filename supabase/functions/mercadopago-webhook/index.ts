@@ -105,35 +105,29 @@ serve(async (req) => {
         console.log("🔍 Buscando pedido por transaction_id:", externalReference);
         pedidoQuery = pedidoQuery.eq('transaction_id', externalReference);
       } else {
-        // ⚠️ FALLBACK MUITO RESTRITIVO: apenas para casos específicos
-        console.warn("⚠️ [MercadoPago Webhook] External reference ausente - aplicando fallback restritivo");
+        // 🚫 FALLBACK COMPLETAMENTE DESABILITADO - EXTERNAL REFERENCE OBRIGATÓRIA
+        console.error("❌ [MercadoPago Webhook] External reference ausente - REJEITANDO PAGAMENTO");
         
-        // Só permitir fallback para valores altos (evitar conflitos com testes de R$0.11)
-        if (!amount || amount < 1.00) {
-          console.error("❌ [MercadoPago Webhook] Fallback negado: valor muito baixo ou ausente");
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: "External reference obrigatória para valores baixos",
-              payment_id: paymentId,
-              amount: amount
-            }),
-            { 
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
-        }
+        await supabase
+          .from('log_eventos_sistema')
+          .insert({
+            tipo_evento: 'WEBHOOK_REJECTED_NO_EXTERNAL_REFERENCE',
+            descricao: `Pagamento rejeitado - External reference obrigatória: payment_id=${paymentId}, amount=${amount}`
+          });
 
-        // Fallback super restritivo: valor, status E criado nas últimas 24h
-        console.log("🔍 Fallback restritivo: Buscando por valor, status e tempo");
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        pedidoQuery = pedidoQuery
-          .eq('valor_total', amount)
-          .eq('status', 'pendente')
-          .gte('created_at', oneDayAgo)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "External reference (transaction_id) é obrigatória para evitar pagamentos duplicados",
+            payment_id: paymentId,
+            amount: amount,
+            security_level: "HIGH_SECURITY_MODE"
+          }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       const { data: pedidos, error: pedidoError } = await pedidoQuery;

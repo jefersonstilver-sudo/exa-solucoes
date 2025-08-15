@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useOrderManager } from '@/hooks/useOrderManager';
+import { useTentativaManager } from '@/hooks/useTentativaManager';
 import { calculatePixPrice, MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
 import { sendPixPaymentWebhook } from '@/services/pixWebhookService';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,7 @@ export const useSimplifiedPixCheckout = () => {
   const { user } = useUserSession();
   const { cartItems, selectedPlan, handleClearCart } = useCartManager();
   const { createPendingOrder } = useOrderManager();
+  const { createTentativa } = useTentativaManager();
   const [isProcessing, setIsProcessing] = useState(false);
 
   // REMOVIDO: Não existem mais pedidos gratuitos - todos geram PIX
@@ -80,20 +82,40 @@ export const useSimplifiedPixCheckout = () => {
       // TODOS OS PEDIDOS geram PIX - mesmo cupom 100% paga R$ 0,05
       console.log('[useSimplifiedPixCheckout] Valor final após descontos:', finalPrice);
 
-      console.log('[useSimplifiedPixCheckout] Criando pedido:', {
+      // 🔥 CRIAR TENTATIVA PRIMEIRO
+      const prediosSelecionados = cartItems
+        .map(item => item.panel?.buildings?.id || item.panel?.building_id)
+        .filter(Boolean)
+        .filter((id, index, arr) => arr.indexOf(id) === index);
+
+      const tentativaResult = await createTentativa({
+        userId: user.id,
+        prediosSelecionados,
+        cartItems,
+        selectedPlan,
+        valorTotal: finalPrice
+      });
+
+      if (!tentativaResult.success) {
+        throw new Error(tentativaResult.error || 'Erro ao criar tentativa');
+      }
+
+      console.log('[useSimplifiedPixCheckout] Criando pedido vinculado à tentativa:', {
         clientId: user.id,
         cartItemsCount: cartItems.length,
         selectedPlan,
-        finalPrice
+        finalPrice,
+        tentativaId: tentativaResult.tentativaId
       });
 
-      // Criar pedido pendente
+      // Criar pedido pendente vinculado à tentativa
       const orderResult = await createPendingOrder({
         clientId: user.id,
         cartItems,
         selectedPlan,
         totalPrice: finalPrice,
-        couponId
+        couponId,
+        tentativaId: tentativaResult.tentativaId // 🔥 VINCULAR TENTATIVA
       });
 
       if (!orderResult.success) {

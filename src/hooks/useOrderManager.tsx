@@ -10,6 +10,7 @@ interface CreateOrderParams {
   selectedPlan: number;
   totalPrice: number;
   couponId?: string | null;
+  tentativaId?: string; // 🔥 ADICIONAR SUPORTE A TENTATIVA
 }
 
 interface OrderResult {
@@ -23,7 +24,7 @@ export const useOrderManager = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   const createPendingOrder = async (params: CreateOrderParams): Promise<OrderResult> => {
-    const { clientId, cartItems, selectedPlan, totalPrice, couponId } = params;
+    const { clientId, cartItems, selectedPlan, totalPrice, couponId, tentativaId } = params;
     
     setIsCreating(true);
     
@@ -80,6 +81,7 @@ export const useOrderManager = () => {
           data_fim: dataFim.toISOString().split('T')[0],
           termos_aceitos: true,
           cupom_id: couponId,
+          source_tentativa_id: tentativaId, // 🔥 VINCULAR TENTATIVA
           log_pagamento: {
             created_via: 'pix_button',
             payment_method: 'pix',

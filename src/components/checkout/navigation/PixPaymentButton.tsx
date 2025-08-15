@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { sendPixPaymentWebhook, getUserInfo, PixWebhookData, PixWebhookResponse } from '@/utils/paymentWebhooks';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { useOrderManager } from '@/hooks/useOrderManager';
+import { useTentativaManager } from '@/hooks/useTentativaManager';
 import { findCartItems } from '@/utils/cartUtils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 
@@ -81,7 +82,27 @@ const PixPaymentButton = ({
       const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
       const discountedTotal = totalPrice * 0.95; // 5% desconto PIX
 
-      // PASSO 3: Criar pedido pendente
+      // PASSO 3: 🔥 CRIAR TENTATIVA PRIMEIRO
+      console.log("📝 [PixPaymentButton] Criando tentativa");
+      const prediosSelecionados = cartResult.cartItems
+        .map(item => item.panel?.buildings?.id || item.panel?.building_id)
+        .filter(Boolean)
+        .filter((id, index, arr) => arr.indexOf(id) === index);
+
+      const { createTentativa } = useTentativaManager();
+      const tentativaResult = await createTentativa({
+        userId: user.id,
+        prediosSelecionados,
+        cartItems: cartResult.cartItems,
+        selectedPlan,
+        valorTotal: discountedTotal
+      });
+
+      if (!tentativaResult.success) {
+        throw new Error(tentativaResult.error || 'Erro ao criar tentativa');
+      }
+
+      // PASSO 4: Criar pedido pendente vinculado à tentativa
       console.log("🏗️ [PixPaymentButton] Criando pedido pendente");
       toast.info("Criando seu pedido...", { duration: 2000 });
       
@@ -90,7 +111,8 @@ const PixPaymentButton = ({
         cartItems: cartResult.cartItems,
         selectedPlan,
         totalPrice: discountedTotal,
-        couponId: null
+        couponId: null,
+        tentativaId: tentativaResult.tentativaId // 🔥 VINCULAR TENTATIVA
       });
 
       if (!orderResult.success) {
