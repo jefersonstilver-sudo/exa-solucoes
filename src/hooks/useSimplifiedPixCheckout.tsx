@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useOrderManager } from '@/hooks/useOrderManager';
-import { useTentativaManager } from '@/hooks/useTentativaManager';
 import { calculatePixPrice, MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
 import { sendPixPaymentWebhook } from '@/services/pixWebhookService';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +28,6 @@ export const useSimplifiedPixCheckout = () => {
   const { user } = useUserSession();
   const { cartItems, selectedPlan, handleClearCart } = useCartManager();
   const { createPendingOrder } = useOrderManager();
-  const { createTentativa } = useTentativaManager();
   const [isProcessing, setIsProcessing] = useState(false);
 
   // REMOVIDO: Não existem mais pedidos gratuitos - todos geram PIX
@@ -82,55 +80,20 @@ export const useSimplifiedPixCheckout = () => {
       // TODOS OS PEDIDOS geram PIX - mesmo cupom 100% paga R$ 0,05
       console.log('[useSimplifiedPixCheckout] Valor final após descontos:', finalPrice);
 
-      // 🔥 CRIAR TENTATIVA PRIMEIRO COM VALIDAÇÕES
-      const prediosSelecionados = cartItems
-        .map(item => item.panel?.buildings?.id || item.panel?.building_id)
-        .filter(Boolean)
-        .filter((id, index, arr) => arr.indexOf(id) === index);
-
-      console.log('[useSimplifiedPixCheckout] VALIDAÇÃO DOS PRÉDIOS:', {
-        totalCartItems: cartItems.length,
-        prediosEncontrados: prediosSelecionados.length,
-        prediosList: prediosSelecionados,
-        cartItemsDebug: cartItems.map(item => ({
-          panelId: item.panel?.id,
-          buildingId: item.panel?.buildings?.id || item.panel?.building_id,
-          buildingName: item.panel?.buildings?.nome
-        }))
-      });
-
-      if (prediosSelecionados.length === 0) {
-        throw new Error('Nenhum prédio válido encontrado no carrinho. Verifique os itens selecionados.');
-      }
-
-      const tentativaResult = await createTentativa({
-        userId: user.id,
-        prediosSelecionados,
-        cartItems,
-        selectedPlan,
-        valorTotal: finalPrice
-      });
-
-      if (!tentativaResult.success) {
-        throw new Error(tentativaResult.error || 'Erro ao criar tentativa');
-      }
-
-      console.log('[useSimplifiedPixCheckout] Criando pedido vinculado à tentativa:', {
+      console.log('[useSimplifiedPixCheckout] Criando pedido:', {
         clientId: user.id,
         cartItemsCount: cartItems.length,
         selectedPlan,
-        finalPrice,
-        tentativaId: tentativaResult.tentativaId
+        finalPrice
       });
 
-      // Criar pedido pendente vinculado à tentativa
+      // Criar pedido pendente
       const orderResult = await createPendingOrder({
         clientId: user.id,
         cartItems,
         selectedPlan,
         totalPrice: finalPrice,
-        couponId,
-        tentativaId: tentativaResult.tentativaId // 🔥 VINCULAR TENTATIVA
+        couponId
       });
 
       if (!orderResult.success) {

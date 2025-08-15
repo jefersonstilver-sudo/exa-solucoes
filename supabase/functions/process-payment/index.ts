@@ -65,7 +65,7 @@ async function checkDuplicateProcessing(supabase: any, paymentKey: string, pedid
 }
 
 // Generate PIX payment with MercadoPago
-async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string, requestData: any = {}) {
+async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string) {
   try {
     console.log(`🎯 [PIX] Gerando pagamento PIX para pedido: ${pedidoId}, valor: ${totalAmount}`);
     
@@ -99,9 +99,6 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       }
     };
 
-    // Get requestData for transaction_id
-    const requestData = arguments[3] || {};
-    
     // Create preference in MercadoPago
     const response = await MercadoPago.preferences.create(preference);
     const preferenceId = response.body.id;
@@ -116,10 +113,9 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       payer: {
         email: userEmail || 'contato@indexa.com.br'
       },
-      external_reference: requestData.transaction_id || pedidoId, // 🔥 USAR TRANSACTION_ID COMO EXTERNAL_REFERENCE
+      external_reference: pedidoId,
       metadata: {
-        pedido_id: pedidoId,
-        transaction_id: requestData.transaction_id
+        pedido_id: pedidoId
       }
     };
 
@@ -238,7 +234,7 @@ async function handleRequest(req: Request) {
     // CORREÇÃO ESPECÍFICA PARA PIX
     if (payment_method === 'pix') {
       console.log("🎯 [PAYMENT-REAL] Processando PIX com integração real");
-      const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userData?.email, requestData);
+      const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userData?.email);
       
       return new Response(
         JSON.stringify({
