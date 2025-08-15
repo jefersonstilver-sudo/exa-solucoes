@@ -82,11 +82,26 @@ export const useSimplifiedPixCheckout = () => {
       // TODOS OS PEDIDOS geram PIX - mesmo cupom 100% paga R$ 0,05
       console.log('[useSimplifiedPixCheckout] Valor final após descontos:', finalPrice);
 
-      // 🔥 CRIAR TENTATIVA PRIMEIRO
+      // 🔥 CRIAR TENTATIVA PRIMEIRO COM VALIDAÇÕES
       const prediosSelecionados = cartItems
         .map(item => item.panel?.buildings?.id || item.panel?.building_id)
         .filter(Boolean)
         .filter((id, index, arr) => arr.indexOf(id) === index);
+
+      console.log('[useSimplifiedPixCheckout] VALIDAÇÃO DOS PRÉDIOS:', {
+        totalCartItems: cartItems.length,
+        prediosEncontrados: prediosSelecionados.length,
+        prediosList: prediosSelecionados,
+        cartItemsDebug: cartItems.map(item => ({
+          panelId: item.panel?.id,
+          buildingId: item.panel?.buildings?.id || item.panel?.building_id,
+          buildingName: item.panel?.buildings?.nome
+        }))
+      });
+
+      if (prediosSelecionados.length === 0) {
+        throw new Error('Nenhum prédio válido encontrado no carrinho. Verifique os itens selecionados.');
+      }
 
       const tentativaResult = await createTentativa({
         userId: user.id,

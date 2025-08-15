@@ -82,12 +82,30 @@ const PixPaymentButton = ({
       const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
       const discountedTotal = totalPrice * 0.95; // 5% desconto PIX
 
-      // PASSO 3: 🔥 CRIAR TENTATIVA PRIMEIRO
+      // PASSO 3: 🔥 CRIAR TENTATIVA PRIMEIRO COM VALIDAÇÕES
       console.log("📝 [PixPaymentButton] Criando tentativa");
+      
+      // 🔥 VALIDAÇÃO CRÍTICA: Verificar se há prédios válidos no carrinho
       const prediosSelecionados = cartResult.cartItems
         .map(item => item.panel?.buildings?.id || item.panel?.building_id)
         .filter(Boolean)
         .filter((id, index, arr) => arr.indexOf(id) === index);
+
+      console.log('🏢 [PixPaymentButton] Prédios extraídos do carrinho:', {
+        totalCartItems: cartResult.cartItems.length,
+        prediosEncontrados: prediosSelecionados.length,
+        prediosList: prediosSelecionados,
+        cartItemsDebug: cartResult.cartItems.map(item => ({
+          itemId: item.id,
+          panelId: item.panel?.id,
+          buildingId: item.panel?.buildings?.id || item.panel?.building_id,
+          buildingName: item.panel?.buildings?.nome || 'Nome não disponível'
+        }))
+      });
+
+      if (prediosSelecionados.length === 0) {
+        throw new Error('Nenhum prédio válido encontrado no carrinho. Verifique os itens selecionados.');
+      }
 
       const { createTentativa } = useTentativaManager();
       const tentativaResult = await createTentativa({
