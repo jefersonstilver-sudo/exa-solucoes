@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { sendPixPaymentWebhook, getUserInfo, PixWebhookData, PixWebhookResponse } from '@/utils/paymentWebhooks';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { useOrderManager } from '@/hooks/useOrderManager';
-import { useTentativaHelper } from '@/hooks/useTentativaHelper';
 import { findCartItems } from '@/utils/cartUtils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 
@@ -25,7 +24,6 @@ const PixPaymentButton = ({
 }: PixPaymentButtonProps) => {
   const { user } = useUserSession();
   const { createPendingOrder, isCreating } = useOrderManager();
-  const { createTentativa } = useTentativaHelper();
   const [isLoading, setIsLoading] = useState(false);
   const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<PixWebhookResponse | null>(null);
@@ -83,22 +81,7 @@ const PixPaymentButton = ({
       const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
       const discountedTotal = totalPrice * 0.95; // 5% desconto PIX
 
-      // PASSO 3: Criar tentativa primeiro
-      console.log("📝 [PixPaymentButton] Criando tentativa de compra");
-      const tentativaResult = await createTentativa({
-        userId: user.id,
-        cartItems: cartResult.cartItems,
-        selectedPlan,
-        totalPrice: discountedTotal
-      });
-
-      if (!tentativaResult.success) {
-        throw new Error(`Erro ao criar tentativa: ${tentativaResult.error}`);
-      }
-
-      console.log("✅ [PixPaymentButton] Tentativa criada:", tentativaResult.tentativaId);
-
-      // PASSO 4: Criar pedido pendente com tentativaId
+      // PASSO 3: Criar pedido pendente
       console.log("🏗️ [PixPaymentButton] Criando pedido pendente");
       toast.info("Criando seu pedido...", { duration: 2000 });
       
@@ -107,8 +90,7 @@ const PixPaymentButton = ({
         cartItems: cartResult.cartItems,
         selectedPlan,
         totalPrice: discountedTotal,
-        couponId: null,
-        tentativaId: tentativaResult.tentativaId
+        couponId: null
       });
 
       if (!orderResult.success) {
@@ -120,7 +102,7 @@ const PixPaymentButton = ({
         transactionId: orderResult.transactionId
       });
 
-      // PASSO 5: Preparar dados para webhook N8N
+      // PASSO 4: Preparar dados para webhook N8N
       const formattedPredios = cartResult.cartItems.map((item: any, index: number) => ({
         id: item.panel?.id || item.id || `panel_${index}`,
         nome: item.panel?.buildings?.nome || `Painel ${index + 1}`, // CORRIGIDO
@@ -151,7 +133,7 @@ const PixPaymentButton = ({
         }
       };
 
-      // PASSO 6: Gerar PIX via N8N
+      // PASSO 5: Gerar PIX via N8N
       console.log("💳 [PixPaymentButton] Gerando QR Code PIX via N8N");
       toast.info("Gerando QR Code PIX...", { duration: 2000 });
       
