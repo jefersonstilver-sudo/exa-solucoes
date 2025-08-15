@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { sendPixPaymentWebhook, getUserInfo, PixWebhookData, PixWebhookResponse } from '@/utils/paymentWebhooks';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { useOrderManager } from '@/hooks/useOrderManager';
-import { useTentativaManager } from '@/hooks/useTentativaManager';
 import { findCartItems } from '@/utils/cartUtils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 
@@ -25,7 +24,6 @@ const PixPaymentButton = ({
 }: PixPaymentButtonProps) => {
   const { user } = useUserSession();
   const { createPendingOrder, isCreating } = useOrderManager();
-  const { createTentativa, isCreating: isCreatingTentativa } = useTentativaManager();
   const [isLoading, setIsLoading] = useState(false);
   const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<PixWebhookResponse | null>(null);
@@ -83,24 +81,7 @@ const PixPaymentButton = ({
       const selectedPlan = parseInt(localStorage.getItem('selectedPlan') || '1');
       const discountedTotal = totalPrice * 0.95; // 5% desconto PIX
 
-      // PASSO 3: Criar tentativa de compra
-      console.log("📝 [PixPaymentButton] Criando tentativa de compra");
-      toast.info("Registrando tentativa...", { duration: 1500 });
-      
-      const tentativaResult = await createTentativa({
-        userId: user.id,
-        cartItems: cartResult.cartItems,
-        selectedPlan,
-        valorTotal: discountedTotal
-      });
-
-      if (!tentativaResult.success) {
-        throw new Error(`Erro ao criar tentativa: ${tentativaResult.error}`);
-      }
-
-      console.log("✅ [PixPaymentButton] Tentativa criada:", tentativaResult.tentativaId);
-
-      // PASSO 4: Criar pedido pendente com referência à tentativa
+      // PASSO 3: Criar pedido pendente
       console.log("🏗️ [PixPaymentButton] Criando pedido pendente");
       toast.info("Criando seu pedido...", { duration: 2000 });
       
@@ -109,8 +90,7 @@ const PixPaymentButton = ({
         cartItems: cartResult.cartItems,
         selectedPlan,
         totalPrice: discountedTotal,
-        couponId: null,
-        tentativaId: tentativaResult.tentativaId
+        couponId: null
       });
 
       if (!orderResult.success) {
@@ -122,7 +102,7 @@ const PixPaymentButton = ({
         transactionId: orderResult.transactionId
       });
 
-      // PASSO 5: Preparar dados para webhook N8N
+      // PASSO 4: Preparar dados para webhook N8N
       const formattedPredios = cartResult.cartItems.map((item: any, index: number) => ({
         id: item.panel?.id || item.id || `panel_${index}`,
         nome: item.panel?.buildings?.nome || `Painel ${index + 1}`, // CORRIGIDO
@@ -153,7 +133,7 @@ const PixPaymentButton = ({
         }
       };
 
-      // PASSO 6: Gerar PIX via N8N
+      // PASSO 5: Gerar PIX via N8N
       console.log("💳 [PixPaymentButton] Gerando QR Code PIX via N8N");
       toast.info("Gerando QR Code PIX...", { duration: 2000 });
       
@@ -217,16 +197,15 @@ const PixPaymentButton = ({
     <>
       <Button
         onClick={handlePayWithPix}
-        disabled={isDisabled || isLoading || externalIsLoading || isCreating || isCreatingTentativa}
+        disabled={isDisabled || isLoading || externalIsLoading || isCreating}
         className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
         size="lg"
       >
-        {isLoading || externalIsLoading || isCreating || isCreatingTentativa ? (
+        {isLoading || externalIsLoading || isCreating ? (
           <div className="flex items-center space-x-2">
             <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             <span>
-              {isCreatingTentativa ? "Registrando tentativa..." : 
-               isCreating ? "Criando pedido..." : "Gerando QR Code PIX..."}
+              {isCreating ? "Criando pedido..." : "Gerando QR Code PIX..."}
             </span>
           </div>
         ) : (

@@ -10,7 +10,6 @@ interface CreateOrderParams {
   selectedPlan: number;
   totalPrice: number;
   couponId?: string | null;
-  tentativaId?: string | null;
 }
 
 interface OrderResult {
@@ -24,7 +23,7 @@ export const useOrderManager = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   const createPendingOrder = async (params: CreateOrderParams): Promise<OrderResult> => {
-    const { clientId, cartItems, selectedPlan, totalPrice, couponId, tentativaId } = params;
+    const { clientId, cartItems, selectedPlan, totalPrice, couponId } = params;
     
     setIsCreating(true);
     
@@ -81,7 +80,6 @@ export const useOrderManager = () => {
           data_fim: dataFim.toISOString().split('T')[0],
           termos_aceitos: true,
           cupom_id: couponId,
-          source_tentativa_id: tentativaId,
           log_pagamento: {
             created_via: 'pix_button',
             payment_method: 'pix',
@@ -151,7 +149,7 @@ export const useOrderManager = () => {
 
   // Nova função para criar pedidos já pagos (cupons 100%)
   const createPaidOrder = async (params: CreateOrderParams): Promise<OrderResult> => {
-    const { clientId, cartItems, selectedPlan, couponId, tentativaId } = params;
+    const { clientId, cartItems, selectedPlan, couponId } = params;
     
     setIsCreating(true);
     
@@ -198,7 +196,6 @@ export const useOrderManager = () => {
           data_fim: dataFim.toISOString().split('T')[0],
           termos_aceitos: true,
           cupom_id: couponId,
-          source_tentativa_id: tentativaId,
           log_pagamento: {
             created_via: 'free_coupon',
             payment_method: 'free_coupon',
