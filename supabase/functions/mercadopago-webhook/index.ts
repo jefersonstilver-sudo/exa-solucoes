@@ -111,12 +111,42 @@ serve(async (req) => {
         if (pedidosPorMercadoPago && pedidosPorMercadoPago.length > 0) {
           // Encontrou por mercadopago_transaction_id
           const pedido = pedidosPorMercadoPago[0];
-          console.log("🎯 [MercadoPago Webhook] Pedido encontrado por mercadopago_transaction_id:", {
-            id: pedido.id,
-            mercadopago_transaction_id: pedido.mercadopago_transaction_id,
-            valor_total: pedido.valor_total,
-            status_atual: pedido.status
-          });
+      console.log("🎯 [MercadoPago Webhook] Pedido encontrado por mercadopago_transaction_id:", {
+        id: pedido.id,
+        mercadopago_transaction_id: pedido.mercadopago_transaction_id,
+        valor_total: pedido.valor_total,
+        status_atual: pedido.status
+      });
+
+      // CRÍTICO: Atualizar mercadopago_transaction_id no pedido se necessário
+      if (!pedido.mercadopago_transaction_id || pedido.mercadopago_transaction_id !== paymentId.toString()) {
+        console.log("🔄 Atualizando mercadopago_transaction_id no pedido:", paymentId);
+        await supabase
+          .from('pedidos')
+          .update({ mercadopago_transaction_id: paymentId.toString() })
+          .eq('id', pedido.id);
+      }
+
+      // CRÍTICO: Sincronizar transaction_id nas tentativas_compra relacionadas
+      const { data: tentativasRelacionadas } = await supabase
+        .from('tentativas_compra')
+        .select('*')
+        .eq('id_user', pedido.client_id)
+        .eq('valor_total', pedido.valor_total)
+        .is('transaction_id', null)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (tentativasRelacionadas && tentativasRelacionadas.length > 0) {
+        console.log(`🔄 Atualizando ${tentativasRelacionadas.length} tentativas com transaction_id:`, paymentId);
+        
+        for (const tentativa of tentativasRelacionadas) {
+          await supabase
+            .from('tentativas_compra')
+            .update({ transaction_id: paymentId.toString() })
+            .eq('id', tentativa.id);
+        }
+      }
           
           // Atualizar diretamente e retornar
           const updatedLogPagamento = {

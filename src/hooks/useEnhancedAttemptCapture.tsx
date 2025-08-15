@@ -21,7 +21,8 @@ export const useEnhancedAttemptCapture = () => {
     transactionId: string,
     cartItems: CartItem[],
     selectedPlan: number,
-    calculatedPrice: number
+    calculatedPrice: number,
+    mercadopagoTransactionId?: string
   ): Promise<CaptureAttemptResult> => {
     if (!user?.id) {
       return { success: false, error: 'Usuário não autenticado' };
@@ -30,38 +31,72 @@ export const useEnhancedAttemptCapture = () => {
     setIsCapturing(true);
 
     try {
-      console.log("📝 [EnhancedAttemptCapture] Sistema temporariamente desabilitado - usando fallback local");
+      // Usar a função de persistência diretamente via import dinâmico
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      console.log("📝 [EnhancedAttemptCapture] Salvando tentativa real com transaction_id:", mercadopagoTransactionId);
 
-      // Por ora, apenas simular captura até tipos serem corrigidos
-      const mockTentativaId = `local_${Date.now()}`;
+      // Extrair IDs dos prédios e painéis dos itens do carrinho
+      const panelIds = cartItems.map(item => item.panel.id);
+      const buildingIds = cartItems.map(item => item.panel.building_id);
 
-      console.log("✅ [EnhancedAttemptCapture] Tentativa simulada:", {
-        tentativaId: mockTentativaId,
+      // Inserir tentativa na tabela
+      const { data: savedAttempt, error } = await supabase
+        .from('tentativas_compra')
+        .insert({
+          id_user: user.id,
+          valor_total: calculatedPrice,
+          predios_selecionados: Array.from(new Set(buildingIds)).map(id => String(id)),
+          transaction_id: mercadopagoTransactionId, // CRÍTICO: Salvar o transaction_id do MercadoPago
+          credencial: JSON.stringify({
+            panel_ids: panelIds,
+            building_ids: Array.from(new Set(buildingIds)),
+            selected_plan: selectedPlan,
+            cart_items: cartItems,
+            calculated_price: calculatedPrice,
+            transaction_id: transactionId
+          })
+        })
+        .select('*')
+        .single();
+
+      if (error) {
+        throw new Error(`Falha ao salvar tentativa de compra: ${error.message}`);
+      }
+
+      if (!savedAttempt?.id) {
+        throw new Error('Falha ao salvar tentativa de compra');
+      }
+
+      console.log("✅ [EnhancedAttemptCapture] Tentativa salva:", {
+        tentativaId: savedAttempt.id,
         transactionId,
+        mercadopagoTransactionId,
         valorTotal: calculatedPrice,
         selectedPlan,
         cartItemsCount: cartItems.length
       });
 
       // Log para auditoria
-      logSystemEvent('ENHANCED_ATTEMPT_CAPTURED_MOCK', {
-        tentativaId: mockTentativaId,
+      logSystemEvent('ENHANCED_ATTEMPT_CAPTURED_REAL', {
+        tentativaId: savedAttempt.id,
         transactionId,
+        mercadopagoTransactionId,
         userId: user.id,
         valorTotal: calculatedPrice,
         selectedPlan,
         cartItemsCount: cartItems.length,
-        priceLocked: true,
-        mock: true
+        priceLocked: true
       });
 
-      return { success: true, tentativaId: mockTentativaId };
+      return { success: true, tentativaId: savedAttempt.id };
 
     } catch (error: any) {
       console.error("❌ [EnhancedAttemptCapture] Erro na captura:", error);
       
       logSystemEvent('ATTEMPT_CAPTURE_ERROR', {
         transactionId,
+        mercadopagoTransactionId,
         error: error.message,
         userId: user.id
       }, 'ERROR');

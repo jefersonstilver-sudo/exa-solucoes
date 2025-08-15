@@ -69,11 +69,13 @@ export const useUnifiedCheckout = () => {
       setCurrentStep('attempt');
 
       // Passo 2: Capturar tentativa com preço bloqueado
+      // NOTA: O mercadopagoTransactionId será obtido depois do pagamento
       const attemptResult = await captureAttempt(
         sessionResult.transactionId,
         cartItems,
         planKey,
-        sessionResult.price
+        sessionResult.price,
+        undefined // mercadopagoTransactionId será definido após processo de pagamento
       );
 
       if (!attemptResult.success) {
