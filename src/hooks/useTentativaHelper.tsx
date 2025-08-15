@@ -85,36 +85,8 @@ export const useTentativaHelper = () => {
       };
     }
   };
-
-  const updateTentativaTransactionId = async (tentativaId: string, mercadopagoTransactionId: string): Promise<boolean> => {
-    try {
-      console.log('🔄 [TentativaHelper] Atualizando transaction_id:', {
-        tentativaId,
-        mercadopagoTransactionId
-      });
-
-      const { error } = await supabase
-        .from('tentativas_compra')
-        .update({
-          transaction_id: mercadopagoTransactionId
-        })
-        .eq('id', tentativaId);
-
-      if (error) {
-        console.error('❌ [TentativaHelper] Erro ao atualizar transaction_id:', error);
-        return false;
-      }
-
-      console.log('✅ [TentativaHelper] Transaction_id atualizado com sucesso');
-      return true;
-    } catch (error: any) {
-      console.error('❌ [TentativaHelper] Erro ao atualizar transaction_id:', error);
-      return false;
-    }
-  };
   
   return {
-    createTentativa,
-    updateTentativaTransactionId
+    createTentativa
   };
 };
