@@ -55,9 +55,24 @@ export const useEnhancedPaymentOrderCreator = () => {
       }
 
       // Salvar tentativa de compra ANTES de criar o pedido
+      let tentativaTransactionId = null;
       try {
         await saveCompletePurchaseAttempt(sessionUser.id, cartItems, totalPrice);
         console.log('✅ [ENHANCED_ORDER_CREATOR] Tentativa de compra salva');
+        
+        // Buscar a tentativa recém-criada para obter o transaction_id do MercadoPago
+        const { data: tentativa } = await supabase
+          .from('tentativas_compra')
+          .select('transaction_id')
+          .eq('id_user', sessionUser.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (tentativa?.transaction_id) {
+          tentativaTransactionId = tentativa.transaction_id;
+          console.log('✅ [ENHANCED_ORDER_CREATOR] Transaction ID da tentativa obtido:', tentativaTransactionId);
+        }
       } catch (attemptError) {
         console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Erro ao salvar tentativa (continuando):', attemptError);
       }
@@ -178,7 +193,7 @@ export const useEnhancedPaymentOrderCreator = () => {
         data_fim: endDate.toISOString().split('T')[0],
         status: 'pendente',
         transaction_id: transactionId,
-        mercadopago_transaction_id: transactionId, // Adicionar o ID do MercadoPago
+        mercadopago_transaction_id: tentativaTransactionId, // Usar o ID do MercadoPago da tentativa
         termos_aceitos: true,
         duracao: 30,
         log_pagamento: {

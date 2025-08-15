@@ -41,6 +41,25 @@ export const useOrderManager = () => {
       // Gerar transaction_id único para rastreamento
       const transactionId = uuidv4();
       
+      // Buscar o transaction_id do MercadoPago da tentativa mais recente
+      let mercadopagoTransactionId = null;
+      try {
+        const { data: tentativa } = await supabase
+          .from('tentativas_compra')
+          .select('transaction_id')
+          .eq('id_user', clientId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (tentativa?.transaction_id) {
+          mercadopagoTransactionId = tentativa.transaction_id;
+          console.log('✅ [ORDER_MANAGER] Transaction ID do MercadoPago obtido:', mercadopagoTransactionId);
+        }
+      } catch (error) {
+        console.warn('⚠️ [ORDER_MANAGER] Não foi possível obter transaction_id da tentativa:', error);
+      }
+      
       // CORREÇÃO: Extrair corretamente IDs dos painéis e prédios
       const listaPaineis = cartItems
         .map(item => item.panel?.id)
@@ -71,6 +90,7 @@ export const useOrderManager = () => {
         .insert({
           client_id: clientId,
           transaction_id: transactionId,
+          mercadopago_transaction_id: mercadopagoTransactionId,
           valor_total: totalPrice,
           plano_meses: selectedPlan,
           status: 'pendente',
@@ -162,6 +182,25 @@ export const useOrderManager = () => {
       // Gerar transaction_id único para rastreamento
       const transactionId = uuidv4();
       
+      // Buscar o transaction_id do MercadoPago da tentativa mais recente
+      let mercadopagoTransactionId = null;
+      try {
+        const { data: tentativa } = await supabase
+          .from('tentativas_compra')
+          .select('transaction_id')
+          .eq('id_user', clientId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (tentativa?.transaction_id) {
+          mercadopagoTransactionId = tentativa.transaction_id;
+          console.log('✅ [ORDER_MANAGER] Transaction ID do MercadoPago obtido (cupom grátis):', mercadopagoTransactionId);
+        }
+      } catch (error) {
+        console.warn('⚠️ [ORDER_MANAGER] Não foi possível obter transaction_id da tentativa (cupom grátis):', error);
+      }
+      
       // Extrair IDs dos painéis e prédios
       const listaPaineis = cartItems
         .map(item => item.panel?.id)
@@ -187,6 +226,7 @@ export const useOrderManager = () => {
         .insert({
           client_id: clientId,
           transaction_id: transactionId,
+          mercadopago_transaction_id: mercadopagoTransactionId,
           valor_total: 0.01, // Valor simbólico
           plano_meses: selectedPlan,
           status: 'pago',
