@@ -97,12 +97,107 @@ serve(async (req) => {
         );
       }
 
-      // 🔥 BUSCA RESTRITIVA: Apenas por transaction_id (sem fallback perigoso)
+      // 🔥 BUSCA RESTRITIVA: Primeiro por mercadopago_transaction_id, depois transaction_id
       let pedidoQuery = supabase.from('pedidos').select('*');
       
       if (externalReference) {
-        // Buscar por transaction_id (método preferencial e mais seguro)
-        console.log("🔍 Buscando pedido por transaction_id:", externalReference);
+        // Buscar primeiro por mercadopago_transaction_id (método mais específico)
+        console.log("🔍 Buscando pedido por mercadopago_transaction_id:", externalReference);
+        const { data: pedidosPorMercadoPago } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('mercadopago_transaction_id', externalReference);
+        
+        if (pedidosPorMercadoPago && pedidosPorMercadoPago.length > 0) {
+          // Encontrou por mercadopago_transaction_id
+          const pedido = pedidosPorMercadoPago[0];
+          console.log("🎯 [MercadoPago Webhook] Pedido encontrado por mercadopago_transaction_id:", {
+            id: pedido.id,
+            mercadopago_transaction_id: pedido.mercadopago_transaction_id,
+            valor_total: pedido.valor_total,
+            status_atual: pedido.status
+          });
+          
+          // Atualizar diretamente e retornar
+          const updatedLogPagamento = {
+            ...(pedido.log_pagamento || {}),
+            payment_confirmed_at: new Date().toISOString(),
+            mercadopago_payment_id: paymentId,
+            external_reference: externalReference,
+            payment_status: 'approved',
+            webhook_processed: true,
+            sistema_pix_completo: true,
+            found_by_method: 'mercadopago_transaction_id'
+          };
+
+          const { error: updateError } = await supabase
+            .from('pedidos')
+            .update({
+              status: 'pago_pendente_video',
+              log_pagamento: updatedLogPagamento
+            })
+            .eq('id', pedido.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          // Tracking do status
+          await supabase
+            .from('payment_status_tracking')
+            .insert({
+              pedido_id: pedido.id,
+              status_anterior: pedido.status,
+              status_novo: 'pago_pendente_video',
+              origem: 'mercadopago_webhook_pix_completo',
+              detalhes: {
+                payment_id: paymentId,
+                external_reference: externalReference,
+                amount: amount,
+                mercadopago_transaction_id: pedido.mercadopago_transaction_id,
+                lista_paineis: pedido.lista_paineis
+              }
+            });
+
+          // Registrar controle de processamento
+          const { data: controlId, error: controlError } = await supabase
+            .rpc('register_payment_processing', {
+              p_payment_id: paymentId.toString(),
+              p_pedido_id: pedido.id,
+              p_external_reference: externalReference,
+              p_amount: amount,
+              p_details: {
+                webhook_source: 'mercadopago-pix-completo',
+                found_by_method: 'mercadopago_transaction_id',
+                mercadopago_transaction_id: pedido.mercadopago_transaction_id,
+                lista_paineis: pedido.lista_paineis
+              }
+            });
+
+          // Log de sucesso
+          await supabase
+            .from('log_eventos_sistema')
+            .insert({
+              tipo_evento: 'PIX_COMPLETO_CONFIRMADO',
+              descricao: `Sistema PIX completo: Pedido ${pedido.id} confirmado via webhook por mercadopago_transaction_id. MercadoPago ID: ${pedido.mercadopago_transaction_id}, Valor: ${pedido.valor_total}, Control ID: ${controlId}`
+            });
+
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: "Sistema PIX completo - Pagamento processado com sucesso via mercadopago_transaction_id",
+              pedido_id: pedido.id,
+              status: 'pago_pendente_video',
+              paineis_count: pedido.lista_paineis?.length || 0,
+              payment_control_id: controlId,
+              found_by: 'mercadopago_transaction_id'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Fallback para transaction_id (compatibilidade)
+        console.log("🔍 Fallback: Buscando pedido por transaction_id:", externalReference);
         pedidoQuery = pedidoQuery.eq('transaction_id', externalReference);
       } else {
         // ⚠️ FALLBACK MUITO RESTRITIVO: apenas para casos específicos

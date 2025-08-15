@@ -177,6 +177,8 @@ export const useEnhancedPaymentOrderCreator = () => {
         data_inicio: startDate.toISOString().split('T')[0],
         data_fim: endDate.toISOString().split('T')[0],
         status: 'pendente',
+        transaction_id: transactionId,
+        mercadopago_transaction_id: transactionId, // Adicionar o ID do MercadoPago
         termos_aceitos: true,
         duracao: 30,
         log_pagamento: {
