@@ -25,7 +25,7 @@ const PixPaymentButton = ({
 }: PixPaymentButtonProps) => {
   const { user } = useUserSession();
   const { createPendingOrder, isCreating } = useOrderManager();
-  const { createTentativa } = useTentativaHelper();
+  const { createTentativa, updateTentativaTransactionId } = useTentativaHelper();
   const [isLoading, setIsLoading] = useState(false);
   const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<PixWebhookResponse | null>(null);
@@ -166,6 +166,23 @@ const PixPaymentButton = ({
         
         console.log("🎉 [PixPaymentButton] QR Code gerado com sucesso!");
         toast.success("QR Code PIX gerado com sucesso!");
+
+        // CAPTURAR E SALVAR O TRANSACTION_ID DO MERCADO PAGO
+        if (response.id_transacao && tentativaResult.tentativaId) {
+          console.log("💾 [PixPaymentButton] Salvando transaction_id do Mercado Pago:", response.id_transacao);
+          const updateSuccess = await updateTentativaTransactionId(tentativaResult.tentativaId, response.id_transacao);
+          
+          if (updateSuccess) {
+            console.log("✅ [PixPaymentButton] Transaction_id do Mercado Pago salvo com sucesso!");
+          } else {
+            console.warn("⚠️ [PixPaymentButton] Falha ao salvar transaction_id do Mercado Pago");
+          }
+        } else {
+          console.warn("⚠️ [PixPaymentButton] N8N não retornou id_transacao:", {
+            hasIdTransacao: !!response.id_transacao,
+            hasTentativaId: !!tentativaResult.tentativaId
+          });
+        }
         
         logCheckoutEvent(
           CheckoutEvent.PAYMENT_EVENT,
@@ -174,6 +191,7 @@ const PixPaymentButton = ({
           { 
             pedidoId: orderResult.pedidoId,
             transactionId: orderResult.transactionId,
+            mercadopagoTransactionId: response.id_transacao,
             hasQrCode: !!(response.qrCodeBase64 || response.pix_base64),
             cartSource: cartResult.usedKey
           }

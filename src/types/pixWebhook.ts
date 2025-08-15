@@ -32,6 +32,7 @@ export interface PixWebhookResponse {
   pedido_id?: string;
   transaction_id?: string;
   external_reference?: string;
+  id_transacao?: string;
   message?: string;
   error?: string;
 }
