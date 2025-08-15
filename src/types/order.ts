@@ -14,7 +14,6 @@ export interface CreatePaymentOrderParams {
   couponId: string | null;
   startDate: Date;
   endDate: Date;
-  mercadopago_transaction_id?: string; // CRÍTICO: Adicionar campo para transaction_id
 }
 
 export interface ProcessPaymentParams {
