@@ -37,7 +37,7 @@ export const useUnifiedCheckout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<'session' | 'attempt' | 'order' | 'payment' | 'completed'>('session');
 
-  const initializeUnifiedCheckout = async (): Promise<{ success: boolean; transactionId?: string; price?: number }> => {
+  const initializeUnifiedCheckout = async (): Promise<{ success: boolean; transactionId?: string; price?: number; pedidoId?: string }> => {
     if (!user?.id) {
       toast.error("Usuário não autenticado");
       return { success: false };
@@ -119,7 +119,8 @@ export const useUnifiedCheckout = () => {
       return {
         success: true,
         transactionId: sessionResult.transactionId,
-        price: sessionResult.price
+        price: sessionResult.price,
+        pedidoId: orderResult.pedidoId
       };
 
     } catch (error: any) {

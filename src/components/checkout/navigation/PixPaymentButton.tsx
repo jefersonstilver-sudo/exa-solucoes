@@ -32,6 +32,7 @@ const PixPaymentButton = ({
   const [isLoading, setIsLoading] = useState(false);
   const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<PixWebhookResponse | null>(null);
+  const [currentPedidoId, setCurrentPedidoId] = useState<string | null>(null);
   
   const handlePayWithPix = async () => {
     try {
@@ -67,13 +68,17 @@ const PixPaymentButton = ({
       
       const checkoutResult = await initializeUnifiedCheckout();
 
-      if (!checkoutResult.success) {
-        throw new Error("Erro no checkout unificado");
+      if (!checkoutResult.success || !checkoutResult.pedidoId) {
+        throw new Error("Erro no checkout unificado ou pedido não criado");
       }
 
+      // Armazenar o pedidoId retornado
+      setCurrentPedidoId(checkoutResult.pedidoId);
+
       console.log("✅ [PixPaymentButton] Checkout inicializado:", {
-        transactionId: currentTransactionId,
-        sessionPrice: sessionPrice
+        transactionId: checkoutResult.transactionId,
+        pedidoId: checkoutResult.pedidoId,
+        sessionPrice: checkoutResult.price
       });
 
       // PASSO 3: Buscar dados do usuário
@@ -85,7 +90,7 @@ const PixPaymentButton = ({
       }
 
       // PASSO 4: Preparar dados para webhook N8N
-      const discountedTotal = (sessionPrice || totalPrice) * 0.95; // 5% desconto PIX
+      const discountedTotal = (checkoutResult.price || totalPrice) * 0.95; // 5% desconto PIX
       
       const formattedPredios = cartResult.cartItems.map((item: any, index: number) => ({
         id: item.panel?.id || item.id || `panel_${index}`,
@@ -101,13 +106,13 @@ const PixPaymentButton = ({
         return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
       };
 
-      // OBTER O PEDIDO_ID do currentTransactionId
-      const pedidoId = currentTransactionId;
+      // USAR O PEDIDO_ID CORRETO retornado pelo checkout unificado
+      const pedidoId = checkoutResult.pedidoId;
       
       const webhookData: PixWebhookData = {
         cliente_id: user.id,
-        pedido_id: pedidoId!,
-        transaction_id: currentTransactionId!,
+        pedido_id: pedidoId,
+        transaction_id: checkoutResult.transactionId!,
         email: userInfo.email,
         nome: userInfo.nome,
         plano_escolhido: `${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`,
@@ -141,9 +146,11 @@ const PixPaymentButton = ({
           LogLevel.SUCCESS,
           "Fluxo PIX unificado executado com sucesso - source_tentativa_id preenchido",
           { 
-            transactionId: currentTransactionId,
+            transactionId: checkoutResult.transactionId,
+            pedidoId: checkoutResult.pedidoId,
             hasQrCode: !!(response.qrCodeBase64 || response.pix_base64),
-            cartSource: cartResult.usedKey
+            cartSource: cartResult.usedKey,
+            sourceTentativaLinked: true
           }
         );
       } else {
