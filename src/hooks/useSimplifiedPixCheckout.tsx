@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useOrderManager } from '@/hooks/useOrderManager';
+import { useTentativaHelper } from '@/hooks/useTentativaHelper';
 import { calculatePixPrice, MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
 import { sendPixPaymentWebhook } from '@/services/pixWebhookService';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,7 @@ export const useSimplifiedPixCheckout = () => {
   const { user } = useUserSession();
   const { cartItems, selectedPlan, handleClearCart } = useCartManager();
   const { createPendingOrder } = useOrderManager();
+  const { createTentativa } = useTentativaHelper();
   const [isProcessing, setIsProcessing] = useState(false);
 
   // REMOVIDO: Não existem mais pedidos gratuitos - todos geram PIX
@@ -80,20 +82,37 @@ export const useSimplifiedPixCheckout = () => {
       // TODOS OS PEDIDOS geram PIX - mesmo cupom 100% paga R$ 0,05
       console.log('[useSimplifiedPixCheckout] Valor final após descontos:', finalPrice);
 
+      // Criar tentativa primeiro
+      console.log('[useSimplifiedPixCheckout] Criando tentativa de compra');
+      const tentativaResult = await createTentativa({
+        userId: user.id,
+        cartItems,
+        selectedPlan,
+        totalPrice: finalPrice
+      });
+
+      if (!tentativaResult.success) {
+        throw new Error(`Erro ao criar tentativa: ${tentativaResult.error}`);
+      }
+
+      console.log('[useSimplifiedPixCheckout] Tentativa criada:', tentativaResult.tentativaId);
+
       console.log('[useSimplifiedPixCheckout] Criando pedido:', {
         clientId: user.id,
         cartItemsCount: cartItems.length,
         selectedPlan,
-        finalPrice
+        finalPrice,
+        tentativaId: tentativaResult.tentativaId
       });
 
-      // Criar pedido pendente
+      // Criar pedido pendente com tentativa
       const orderResult = await createPendingOrder({
         clientId: user.id,
         cartItems,
         selectedPlan,
         totalPrice: finalPrice,
-        couponId
+        couponId,
+        tentativaId: tentativaResult.tentativaId
       });
 
       if (!orderResult.success) {
