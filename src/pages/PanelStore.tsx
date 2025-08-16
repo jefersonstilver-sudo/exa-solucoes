@@ -10,8 +10,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import PromotionBanner from '@/components/panel-store/PromotionBanner';
 import StoreLayout from '@/components/panel-store/StoreLayout';
-import SimpleBuildingGrid from '@/components/building-store/SimpleBuildingGrid';
-import MobileBuildingGrid from '@/components/building-store/MobileBuildingGrid';
+import PanelStoreLayout from '@/components/panel-store/PanelStoreLayout';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
 export default function PanelStore() {
@@ -164,30 +163,12 @@ export default function PanelStore() {
             onAddToCart={handleAddToCart}
           />
         ) : (
-          // Show building selection (main store view) - MOBILE-FIRST
-          <div className="space-y-6">
-            <div className={`text-center ${isMobile ? 'px-2' : ''}`}>
-              <h1 className={`font-bold text-[#3C1361] mb-2 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
-                {isMobile ? 'Prédios Disponíveis' : 'Loja de Prédios'}
-              </h1>
-              <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>
-                {isMobile ? 'Toque para ver os painéis' : 'Selecione um prédio para ver os painéis disponíveis'}
-              </p>
-            </div>
-            
-            {/* Mobile-first grid */}
-            {isMobile ? (
-              <MobileBuildingGrid 
-                buildings={buildings.map(adaptBuildingForMobileGrid)}
-                isLoading={buildingsLoading}
-              />
-            ) : (
-              <SimpleBuildingGrid 
-                buildings={buildings}
-                isLoading={buildingsLoading}
-              />
-            )}
-          </div>
+          // Show building selection with map integration
+          <PanelStoreLayout
+            buildings={buildings}
+            isLoading={buildingsLoading}
+            adaptBuildingForMobileGrid={adaptBuildingForMobileGrid}
+          />
         )}
       </motion.div>
     </Layout>
