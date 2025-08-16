@@ -98,9 +98,7 @@ const ExaHeroSection: React.FC = () => {
               </div>
 
               {/* Marca INDEXA no Painel */}
-              <div className="absolute bottom-2 right-2 text-gray-400 text-xs font-mono">
-                INDEXA
-              </div>
+              <div className="absolute bottom-2 right-2 text-gray-400 text-xs font-mono">EXA</div>
             </div>
           </div>
         </div>
