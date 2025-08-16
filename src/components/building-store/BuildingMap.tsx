@@ -233,6 +233,14 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
+          
+          // Mobile click handler - trigger mobile card
+          if (window.innerWidth <= 768) {
+            const event = new CustomEvent('showMobileBuildingCard', { 
+              detail: { building: b } 
+            });
+            window.dispatchEvent(event);
+          }
         });
 
         marker.setMap(map);

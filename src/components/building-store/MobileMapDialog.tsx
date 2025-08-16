@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Map, Maximize2, Minimize2, Navigation, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import BuildingMap from './BuildingMap';
+import MobileBuildingInfoCard from './MobileBuildingInfoCard';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
+import { BuildingStore } from '@/services/buildingStoreService';
 
 interface MobileMapDialogProps {
   buildingsCount: number;
@@ -14,10 +16,28 @@ interface MobileMapDialogProps {
 const MobileMapDialog: React.FC<MobileMapDialogProps> = ({ buildingsCount, className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildingStore | null>(null);
   const { buildings, selectedLocation } = useBuildingStore();
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  // Listen for mobile building card events
+  useEffect(() => {
+    const handleShowMobileCard = (event: CustomEvent) => {
+      setSelectedBuilding(event.detail.building);
+    };
+
+    window.addEventListener('showMobileBuildingCard', handleShowMobileCard as EventListener);
+    
+    return () => {
+      window.removeEventListener('showMobileBuildingCard', handleShowMobileCard as EventListener);
+    };
+  }, []);
+
+  const handleCloseBuildingCard = () => {
+    setSelectedBuilding(null);
   };
 
   return (
@@ -129,6 +149,14 @@ const MobileMapDialog: React.FC<MobileMapDialogProps> = ({ buildingsCount, class
             </div>
           )}
         </div>
+
+        {/* Mobile Building Info Card */}
+        {selectedBuilding && (
+          <MobileBuildingInfoCard 
+            building={selectedBuilding}
+            onClose={handleCloseBuildingCard}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
