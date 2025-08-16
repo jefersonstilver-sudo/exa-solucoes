@@ -43,6 +43,7 @@ interface StepRendererProps {
   totalPrice: number;
   paymentMethod?: string;
   setPaymentMethod?: (method: string) => void;
+  onContinue: () => void;
 }
 
 const StepRenderer: React.FC<StepRendererProps> = ({
@@ -63,7 +64,8 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   setAcceptTerms,
   totalPrice,
   paymentMethod,
-  setPaymentMethod
+  setPaymentMethod,
+  onContinue
 }) => {
   // Variantes de animação para transições de página
   const pageVariants = {
@@ -133,6 +135,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
               plans={PLANS}
               panelCount={cartItems.length}
               cartItems={cartItems}
+              onContinue={onContinue}
             />
           </div>
           <TrustIndicators />

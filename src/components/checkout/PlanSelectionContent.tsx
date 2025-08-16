@@ -96,15 +96,6 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
           </div>
         </div>
 
-        {/* Continue Button - Integrated into cart summary */}
-        {selectedPlan && panelCount > 0 && (
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <PlanContinueButton 
-              onContinue={onContinue}
-              selectedPlan={selectedPlan}
-            />
-          </div>
-        )}
       </motion.div>
 
       {/* Plan Selector */}
@@ -120,6 +111,7 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
           plans={plans}
           panelCount={panelCount}
           cartItems={cartItems}
+          onContinue={onContinue}
         />
       </motion.div>
     </div>

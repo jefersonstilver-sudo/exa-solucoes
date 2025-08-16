@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import PlanCard from './PlanCard';
+import PlanContinueButton from './PlanContinueButton';
 import { Plan, PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 
@@ -16,6 +17,7 @@ interface PlanSelectorProps {
   plans: Record<number, Plan>;
   panelCount: number;
   cartItems: CartItem[];
+  onContinue: () => void;
 }
 
 const PlanSelector: React.FC<PlanSelectorProps> = ({ 
@@ -23,7 +25,8 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   onSelectPlan, 
   plans, 
   panelCount,
-  cartItems 
+  cartItems,
+  onContinue
 }) => {
   const planKeys = Object.keys(plans).map(Number) as PlanKey[];
 
@@ -69,6 +72,21 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
           />
         ))}
       </motion.div>
+
+      {/* Continue Button - Below plan selection */}
+      {selectedPlan && cartItems.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mt-8"
+        >
+          <PlanContinueButton 
+            onContinue={onContinue}
+            selectedPlan={selectedPlan}
+          />
+        </motion.div>
+      )}
 
       {/* Help text when cart is empty */}
       {cartItems.length === 0 && (
