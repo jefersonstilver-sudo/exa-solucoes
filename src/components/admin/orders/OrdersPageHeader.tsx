@@ -1,27 +1,21 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Download } from 'lucide-react';
-
 interface OrdersPageHeaderProps {
   onRefresh: () => void;
   loading: boolean;
 }
-
-const OrdersPageHeader: React.FC<OrdersPageHeaderProps> = ({ onRefresh, loading }) => {
-  return (
-    <div className="flex items-center justify-between">
+const OrdersPageHeader: React.FC<OrdersPageHeaderProps> = ({
+  onRefresh,
+  loading
+}) => {
+  return <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Gerenciar Todos os Pedidos</h1>
-        <p className="text-gray-800 font-medium">Sistema completo incluindo pedidos concluídos e tentativas de compra para CRM</p>
+        <h1 className="text-3xl font-bold text-gray-900">Pedidos</h1>
+        
       </div>
       <div className="flex items-center space-x-3">
-        <Button 
-          variant="outline" 
-          onClick={onRefresh} 
-          disabled={loading}
-          className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-        >
+        <Button variant="outline" onClick={onRefresh} disabled={loading} className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium">
           <RefreshCw className="h-4 w-4 mr-2" />
           Atualizar
         </Button>
@@ -30,8 +24,6 @@ const OrdersPageHeader: React.FC<OrdersPageHeaderProps> = ({ onRefresh, loading 
           Exportar Relatório
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default OrdersPageHeader;
