@@ -68,6 +68,8 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="manutenção">Manutenção</SelectItem>
+                <SelectItem value="instalação">Instalação</SelectItem>
                 <SelectItem value="inativo">Inativo</SelectItem>
               </SelectContent>
             </Select>

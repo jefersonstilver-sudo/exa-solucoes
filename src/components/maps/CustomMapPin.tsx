@@ -1,24 +1,23 @@
 import React from 'react';
 
 interface CustomMapPinProps {
-  status?: 'ativo' | 'manutenção' | 'inativo';
+  status?: 'ativo' | 'manutenção' | 'instalação' | 'inativo';
   isHovered?: boolean;
   isSelected?: boolean;
-  panelCount?: number;
 }
 
 const CustomMapPin: React.FC<CustomMapPinProps> = ({
   status = 'ativo',
   isHovered = false,
-  isSelected = false,
-  panelCount = 0
+  isSelected = false
 }) => {
   const getStatusColor = () => {
     switch (status) {
-      case 'ativo': return '#3C1361';
-      case 'manutenção': return '#f59e0b';
-      case 'inativo': return '#6b7280';
-      default: return '#3C1361';
+      case 'ativo': return '#10B981'; // Verde
+      case 'manutenção': return '#f59e0b'; // Laranja
+      case 'instalação': return '#3B82F6'; // Azul
+      case 'inativo': return '#6b7280'; // Cinza
+      default: return '#10B981';
     }
   };
 
@@ -124,45 +123,6 @@ const CustomMapPin: React.FC<CustomMapPinProps> = ({
           opacity="0.7"
         />
         
-        {/* Panel Count Badge with 3D effect */}
-        {panelCount > 0 && (
-          <>
-            <circle
-              cx="25"
-              cy="7"
-              r="7"
-              fill="linear-gradient(135deg, #10B981 0%, #059669 100%)"
-              stroke="rgba(255,255,255,0.9)"
-              strokeWidth="2"
-              filter="url(#pinShadow3D)"
-            />
-            <circle
-              cx="25"
-              cy="7"
-              r="7"
-              fill="url(#pinGradient-badge)"
-            />
-            <text
-              x="25"
-              y="10"
-              textAnchor="middle"
-              fontSize="9"
-              fontWeight="bold"
-              fill="white"
-              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
-            >
-              {panelCount > 9 ? '9+' : panelCount}
-            </text>
-          </>
-        )}
-        
-        {/* Badge Gradient */}
-        <defs>
-          <linearGradient id="pinGradient-badge" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#10B981" />
-            <stop offset="100%" stopColor="#059669" />
-          </linearGradient>
-        </defs>
       </svg>
       
       {/* Enhanced Pulse Animation for Active Status */}

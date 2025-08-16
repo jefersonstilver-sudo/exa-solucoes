@@ -31,6 +31,8 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
   );
 
   const activeBuildings = filteredBuildings.filter(b => b.status === 'ativo');
+  const maintenanceBuildings = filteredBuildings.filter(b => b.status === 'manutenção');
+  const installationBuildings = filteredBuildings.filter(b => b.status === 'instalação');
   const inactiveBuildings = filteredBuildings.filter(b => b.status === 'inativo');
   const buildingIds = filteredBuildings.map(b => b.id);
   const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);

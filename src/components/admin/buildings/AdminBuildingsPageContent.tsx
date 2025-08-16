@@ -54,6 +54,8 @@ const AdminBuildingsPageContent: React.FC<AdminBuildingsPageContentProps> = ({
       <AdminBuildingsConnectionStatus
         buildingsCount={buildings.length}
         activeCount={buildings.filter(b => b.status === 'ativo').length}
+        maintenanceCount={buildings.filter(b => b.status === 'manutenção').length}
+        installationCount={buildings.filter(b => b.status === 'instalação').length}
         inactiveCount={buildings.filter(b => b.status === 'inativo').length}
         userEmail={userProfile?.email}
       />

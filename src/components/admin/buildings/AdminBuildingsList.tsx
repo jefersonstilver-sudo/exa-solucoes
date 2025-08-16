@@ -22,6 +22,8 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
   onViewCampaigns
 }) => {
   const activeBuildings = buildings.filter(b => b.status === 'ativo');
+  const maintenanceBuildings = buildings.filter(b => b.status === 'manutenção');
+  const installationBuildings = buildings.filter(b => b.status === 'instalação');
   const inactiveBuildings = buildings.filter(b => b.status === 'inativo');
 
   return (
@@ -29,7 +31,7 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
       <CardHeader>
         <CardTitle>Prédios Cadastrados ({buildings.length})</CardTitle>
         <CardDescription>
-          Sistema administrativo completo - {activeBuildings.length} ativos, {inactiveBuildings.length} inativos
+          Sistema administrativo completo - {activeBuildings.length} ativos, {maintenanceBuildings.length} em manutenção, {installationBuildings.length} em instalação, {inactiveBuildings.length} inativos
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -34,18 +34,31 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'ativo') {
-      return (
-        <Badge className="bg-green-500 text-white">
-          ✅ Ativo
-        </Badge>
-      );
-    } else {
-      return (
-        <Badge className="bg-orange-500 text-white">
-          ⚠️ Inativo
-        </Badge>
-      );
+    switch (status) {
+      case 'ativo':
+        return (
+          <Badge className="bg-green-500 text-white">
+            ✅ Ativo
+          </Badge>
+        );
+      case 'manutenção':
+        return (
+          <Badge className="bg-orange-500 text-white">
+            🔧 Manutenção
+          </Badge>
+        );
+      case 'instalação':
+        return (
+          <Badge className="bg-blue-500 text-white">
+            🔨 Instalação
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className="bg-gray-500 text-white">
+            ⚠️ Inativo
+          </Badge>
+        );
     }
   };
 
@@ -58,7 +71,10 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
 
   return (
     <Card className={`transition-all duration-200 hover:shadow-lg ${
-      building.status === 'inativo' ? 'border-orange-200 bg-orange-50/30' : 'border-gray-200'
+      building.status === 'manutenção' ? 'border-orange-200 bg-orange-50/30' : 
+      building.status === 'instalação' ? 'border-blue-200 bg-blue-50/30' : 
+      building.status === 'inativo' ? 'border-gray-200 bg-gray-50/30' : 
+      'border-gray-200'
     }`}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
@@ -71,9 +87,19 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             {getStatusBadge(building.status)}
-            {building.status === 'inativo' && (
+            {building.status === 'manutenção' && (
               <Badge variant="outline" className="text-orange-600 border-orange-300">
-                Em Manutenção na Loja
+                Indisponível Temporariamente
+              </Badge>
+            )}
+            {building.status === 'instalação' && (
+              <Badge variant="outline" className="text-blue-600 border-blue-300">
+                Em Breve Disponível
+              </Badge>
+            )}
+            {building.status === 'inativo' && (
+              <Badge variant="outline" className="text-gray-600 border-gray-300">
+                Fora de Operação
               </Badge>
             )}
           </div>

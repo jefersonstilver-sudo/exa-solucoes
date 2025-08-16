@@ -148,7 +148,6 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
                 status={building.status}
                 isHovered={isHovered}
                 isSelected={isSelected}
-                panelCount={building.quantidade_telas || 0}
               />
             </div>
           </BuildingHoverCard>
