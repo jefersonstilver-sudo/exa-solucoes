@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,6 @@ import { toast } from 'sonner';
 import IndexaTeamSection from '@/components/admin/users/IndexaTeamSection';
 import ClientsSection from '@/components/admin/users/ClientsSection';
 import SystemHealthDashboard from '@/components/admin/users/SystemHealthDashboard';
-
 interface User {
   id: string;
   email: string;
@@ -19,23 +17,22 @@ interface User {
   raw_user_meta_data?: any;
   banned_until?: string;
 }
-
 const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('indexa');
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
       console.log('👥 USERS PAGE: Buscando todos os usuários do Supabase...');
-      
-      // Buscar dados da tabela users (nossa tabela)
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('*')
-        .order('data_criacao', { ascending: false });
 
+      // Buscar dados da tabela users (nossa tabela)
+      const {
+        data: usersData,
+        error: usersError
+      } = await supabase.from('users').select('*').order('data_criacao', {
+        ascending: false
+      });
       if (usersError) {
         console.error('❌ ERRO ao buscar usuários:', usersError);
         toast.error('Erro ao carregar usuários');
@@ -43,31 +40,14 @@ const UsersPage = () => {
       }
 
       // Buscar dados adicionais do auth.users para cada usuário
-      const enrichedUsers = await Promise.all(
-        (usersData || []).map(async (user) => {
-          try {
-            const { data: authData, error: authError } = await supabase.auth.admin.getUserById(user.id);
-            
-            if (authError) {
-              console.warn(`Erro ao buscar dados auth para ${user.email}:`, authError);
-              return {
-                ...user,
-                email_confirmed_at: null,
-                last_sign_in_at: null,
-                raw_user_meta_data: {},
-                banned_until: null
-              };
-            }
-
-            return {
-              ...user,
-              email_confirmed_at: authData.user?.email_confirmed_at,
-              last_sign_in_at: authData.user?.last_sign_in_at,
-              raw_user_meta_data: authData.user?.user_metadata || {},
-              banned_until: authData.user?.user_metadata?.banned_until
-            };
-          } catch (error) {
-            console.warn(`Erro ao enriquecer dados para ${user.email}:`, error);
+      const enrichedUsers = await Promise.all((usersData || []).map(async user => {
+        try {
+          const {
+            data: authData,
+            error: authError
+          } = await supabase.auth.admin.getUserById(user.id);
+          if (authError) {
+            console.warn(`Erro ao buscar dados auth para ${user.email}:`, authError);
             return {
               ...user,
               email_confirmed_at: null,
@@ -76,9 +56,24 @@ const UsersPage = () => {
               banned_until: null
             };
           }
-        })
-      );
-
+          return {
+            ...user,
+            email_confirmed_at: authData.user?.email_confirmed_at,
+            last_sign_in_at: authData.user?.last_sign_in_at,
+            raw_user_meta_data: authData.user?.user_metadata || {},
+            banned_until: authData.user?.user_metadata?.banned_until
+          };
+        } catch (error) {
+          console.warn(`Erro ao enriquecer dados para ${user.email}:`, error);
+          return {
+            ...user,
+            email_confirmed_at: null,
+            last_sign_in_at: null,
+            raw_user_meta_data: {},
+            banned_until: null
+          };
+        }
+      }));
       console.log('✅ USUÁRIOS CARREGADOS E ENRIQUECIDOS:', enrichedUsers.length, enrichedUsers);
       setUsers(enrichedUsers);
       toast.success(`${enrichedUsers.length} usuários carregados com sucesso`);
@@ -89,26 +84,18 @@ const UsersPage = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchUsers();
   }, []);
-
-  const indexaTeam = users.filter(user => 
-    user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing'
-  );
-  
+  const indexaTeam = users.filter(user => user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing');
   const clients = users.filter(user => user.role === 'client');
-
   const totalStats = {
     total: users.length,
     indexaTeam: indexaTeam.length,
     clients: clients.length,
-    verified: users.filter(u => u.email_confirmed_at).length,
+    verified: users.filter(u => u.email_confirmed_at).length
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header Principal */}
       <div className="flex items-center justify-between">
         <div>
@@ -124,19 +111,7 @@ const UsersPage = () => {
 
       {/* Status da Conexão e Estatísticas Gerais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-green-50 border-green-200">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-              <div>
-                <h3 className="font-semibold text-green-800">Sistema Online</h3>
-                <p className="text-green-700 text-sm">
-                  Conectado ao Supabase
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -194,23 +169,13 @@ const UsersPage = () => {
         </TabsContent>
 
         <TabsContent value="indexa" className="mt-6">
-          <IndexaTeamSection 
-            users={users} 
-            loading={loading} 
-            onRefresh={fetchUsers} 
-          />
+          <IndexaTeamSection users={users} loading={loading} onRefresh={fetchUsers} />
         </TabsContent>
 
         <TabsContent value="clients" className="mt-6">
-          <ClientsSection 
-            users={users} 
-            loading={loading} 
-            onRefresh={fetchUsers} 
-          />
+          <ClientsSection users={users} loading={loading} onRefresh={fetchUsers} />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
-
 export default UsersPage;
