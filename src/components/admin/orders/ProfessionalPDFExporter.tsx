@@ -165,8 +165,9 @@ export class ProfessionalPDFExporter {
     try {
       const logoUrl = '/exa-logo.png';
       const dataUrl = await this.loadImageAsDataURL(logoUrl);
-      const logoH = 20;
-      const logoW = 60; // Ajustar proporção conforme necessário
+      // Calcular proporção correta da logo para evitar distorção
+      const logoH = 18;
+      const logoW = logoH * 3.5; // Proporção aproximada da logo EXA
       this.doc.addImage(dataUrl, 'PNG', this.margin, 18, logoW, logoH);
       drewLogo = true;
     } catch (error) {
@@ -176,7 +177,7 @@ export class ProfessionalPDFExporter {
     if (!drewLogo) {
       // Fallback - texto EXA
       this.doc.setTextColor(255, 255, 255);
-      this.doc.setFontSize(28);
+      this.doc.setFontSize(24);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text('EXA', this.margin, 32);
     }
@@ -385,7 +386,7 @@ export class ProfessionalPDFExporter {
     const totalPages = this.doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       this.doc.setPage(i);
-      const footerY = this.pageHeight - 35;
+      const footerY = this.pageHeight - 40; // Aumentar margem inferior
       
       // Linha separadora
       this.doc.setDrawColor(229, 231, 235);
@@ -397,14 +398,28 @@ export class ProfessionalPDFExporter {
       this.doc.setFontSize(8);
       this.doc.setFont('helvetica', 'normal');
       
-      this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 8);
-      this.doc.text('contato@exa.com.br | www.exa.com.br', this.margin, footerY + 15);
-      this.doc.text(`Emitido em: ${this.emittedAt}`, this.margin, footerY + 22);
+      // Primeira linha - nome da empresa
+      this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 10);
       
-      // Paginação
+      // Segunda linha - contatos (verificar se cabem na página)
+      const contactText = 'contato@exa.com.br | www.exa.com.br';
+      const contactWidth = this.doc.getTextWidth(contactText);
+      if (this.margin + contactWidth <= this.pageWidth - this.margin) {
+        this.doc.text(contactText, this.margin, footerY + 18);
+      } else {
+        // Se não caber, quebrar em duas linhas
+        this.doc.text('contato@exa.com.br', this.margin, footerY + 18);
+        this.doc.text('www.exa.com.br', this.margin, footerY + 26);
+      }
+      
+      // Data de emissão
+      const emittedText = `Emitido em: ${this.emittedAt}`;
+      this.doc.text(emittedText, this.margin, footerY + 26);
+      
+      // Paginação - lado direito
       const pageText = `Página ${i} de ${totalPages}`;
       const pageWidth = this.doc.getTextWidth(pageText);
-      this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 8);
+      this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 10);
     }
   }
 
