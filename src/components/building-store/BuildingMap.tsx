@@ -12,9 +12,17 @@ interface BuildingMapProps {
   scrollwheel?: boolean;
   defaultZoom?: number;
   requirePreciseGeocode?: boolean;
+  enableClustering?: boolean;
 }
 
-const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, scrollwheel = false, defaultZoom = 14, requirePreciseGeocode = true }) => {
+const BuildingMap: React.FC<BuildingMapProps> = ({ 
+  buildings, 
+  selectedLocation, 
+  scrollwheel = false, 
+  defaultZoom = 14, 
+  requirePreciseGeocode = true,
+  enableClustering = true 
+}) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -22,6 +30,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const mapReadyRef = useRef<boolean>(false);
   const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId } = useBuildingStore();
   const { toast } = useToast();
 
@@ -30,13 +39,21 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
     let isMounted = true;
 
     async function init() {
+      console.log('🗺️ [BUILDING MAP] === INICIALIZANDO MAPA ===');
+      console.log('🗺️ [BUILDING MAP] Buildings recebidos:', buildings?.length || 0);
+      
       const maps = await loadGoogleMaps();
-      if (!isMounted || !mapRef.current) return;
+      if (!isMounted || !mapRef.current) {
+        console.log('🗺️ [BUILDING MAP] ❌ Componente desmontado ou ref null');
+        return;
+      }
 
       // Determine center
       const defaultCenter = { lat: -25.5163, lng: -54.5854 }; // Foz do Iguaçu default
       const firstWithCoords = buildings?.find(b => !!b.latitude && !!b.longitude);
       const center = selectedLocation || (firstWithCoords ? { lat: firstWithCoords.latitude, lng: firstWithCoords.longitude } : defaultCenter);
+
+      console.log('🗺️ [BUILDING MAP] Centro do mapa:', center);
 
       const map = new maps.Map(mapRef.current, {
         center,
@@ -54,23 +71,37 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
       mapInstanceRef.current = map;
       infoWindowRef.current = new maps.InfoWindow();
       geocoderRef.current = new maps.Geocoder();
+      mapReadyRef.current = true;
+      
+      console.log('🗺️ [BUILDING MAP] ✅ Mapa inicializado');
+      console.log('🗺️ [BUILDING MAP] Geocoder disponível:', !!geocoderRef.current);
     }
 
     init();
 
     return () => {
       isMounted = false;
+      mapReadyRef.current = false;
     };
   }, [buildings, selectedLocation]);
 
   // Update markers (with geocoding fallback)
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map || !mapReadyRef.current) {
+      console.log('🗺️ [MARKERS] ⏳ Aguardando mapa ficar pronto...');
+      return;
+    }
 
     let cancelled = false;
 
     async function updateMarkers() {
+      console.log('🗺️ [MARKERS] === INICIANDO ATUALIZAÇÃO DE MARCADORES ===');
+      console.log('🗺️ [MARKERS] Buildings para processar:', buildings?.length || 0);
+      console.log('🗺️ [MARKERS] requirePreciseGeocode:', requirePreciseGeocode);
+      console.log('🗺️ [MARKERS] enableClustering:', enableClustering);
+      console.log('🗺️ [MARKERS] Geocoder disponível:', !!geocoderRef.current);
+      
       // Clear previous markers and cluster
       markersRef.current.forEach(m => m.setMap(null));
       markersRef.current = [];
@@ -163,7 +194,11 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
 
       for (const b of buildings || []) {
         if (cancelled) break;
+        
+        console.log(`🗺️ [MARKERS] Processando prédio: ${b.nome} (ID: ${b.id})`);
+        
         if (b.latitude && b.longitude) {
+          console.log(`🗺️ [MARKERS] ✅ Coords diretas: ${b.latitude}, ${b.longitude}`);
           hasAny = true;
           addMarker({ lat: b.latitude, lng: b.longitude }, b);
           continue;
@@ -172,6 +207,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
         // Try cache first
         const cached = getCached(b);
         if (cached) {
+          console.log(`🗺️ [MARKERS] ✅ Cache local encontrado: ${cached.lat}, ${cached.lng}`);
           hasAny = true;
           addMarker(cached, b);
           continue;
@@ -179,66 +215,128 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
 
         // Build address string
         const parts = [b.endereco, b.bairro, (b as any).cidade || 'Foz do Iguaçu', (b as any).estado || 'PR'].filter(Boolean);
-        if (!parts.length) continue;
+        if (!parts.length) {
+          console.log(`🗺️ [MARKERS] ❌ Sem endereço para ${b.nome}`);
+          continue;
+        }
 
         const address = parts.join(', ');
+        console.log(`🗺️ [MARKERS] Endereço montado: ${address}`);
 
         // Try persistent geocode (Supabase Edge + DB cache)
         try {
+          console.log(`🗺️ [MARKERS] 🔍 Tentando geocode persistente...`);
           const persisted = await getPersistentGeocode({ address, buildingId: b.id });
           if (persisted?.coords) {
-            hasAny = true;
-            setCached(b, persisted.coords);
-            addMarker(persisted.coords, b);
-            await sleep(120);
-            continue;
+            console.log(`🗺️ [MARKERS] ✅ Geocode persistente: ${persisted.coords.lat}, ${persisted.coords.lng} (preciso: ${persisted.precise})`);
+            
+            if (persisted.precise || !requirePreciseGeocode) {
+              hasAny = true;
+              setCached(b, persisted.coords);
+              addMarker(persisted.coords, b);
+              await sleep(120);
+              continue;
+            } else {
+              console.log(`🗺️ [MARKERS] ⚠️ Geocode impreciso rejeitado (requirePreciseGeocode=true)`);
+            }
+          } else {
+            console.log(`🗺️ [MARKERS] ❌ Geocode persistente falhou`);
           }
-        } catch {}
+        } catch (err) {
+          console.log(`🗺️ [MARKERS] ❌ Erro no geocode persistente:`, err);
+        }
 
-        // If Google Geocoder available, use as fallback (precise only)
-        if (!geocoderRef.current) continue;
-        const result = await new Promise<{ coords: { lat: number; lng: number } | null; precise: boolean }>((resolve) => {
+        // If Google Geocoder available, use as fallback
+        if (!geocoderRef.current) {
+          console.log(`🗺️ [MARKERS] ❌ Geocoder não disponível para ${b.nome}`);
+          continue;
+        }
+        
+        console.log(`🗺️ [MARKERS] 🔍 Tentando Google Geocoder...`);
+        const result = await new Promise<{ coords: { lat: number; lng: number } | null; precise: boolean; status: string }>((resolve) => {
           geocoderRef.current!.geocode({ address }, (results, status) => {
+            console.log(`🗺️ [MARKERS] Google Geocoder status: ${status}`);
+            
+            if (status === 'REQUEST_DENIED') {
+              console.error(`🗺️ [MARKERS] ❌ REQUEST_DENIED - Verifique: 1) Geocoding API habilitada 2) Billing ativo 3) Restrições de domínio`);
+              toast({
+                title: 'Google Maps: REQUEST_DENIED',
+                description: 'Habilite Geocoding API e Billing no Google Cloud Console',
+                variant: 'destructive'
+              });
+            } else if (status === 'OVER_QUERY_LIMIT') {
+              console.error(`🗺️ [MARKERS] ❌ OVER_QUERY_LIMIT - Cota excedida`);
+              toast({
+                title: 'Google Maps: Cota excedida',
+                description: 'Limite de consultas atingido',
+                variant: 'destructive'
+              });
+            }
+            
             if (status === 'OK' && results && results[0]) {
               const r = results[0];
               const lt = r.geometry.location_type;
               const types = r.types || [];
               const isPrecise = lt === 'ROOFTOP' || types.includes('street_address') || types.includes('premise');
               const loc = r.geometry.location;
-              resolve({ coords: { lat: loc.lat(), lng: loc.lng() }, precise: isPrecise });
+              console.log(`🗺️ [MARKERS] Google result: location_type=${lt}, types=${types.join(',')}, precise=${isPrecise}`);
+              resolve({ coords: { lat: loc.lat(), lng: loc.lng() }, precise: isPrecise, status });
             } else {
-              resolve({ coords: null, precise: false });
+              resolve({ coords: null, precise: false, status });
             }
           });
         });
 
         if (result.coords && (result.precise || !requirePreciseGeocode)) {
+          console.log(`🗺️ [MARKERS] ✅ Google Geocoder sucesso: ${result.coords.lat}, ${result.coords.lng} (preciso: ${result.precise})`);
           setCached(b, result.coords);
           hasAny = true;
           addMarker(result.coords, b);
           await sleep(120); // gentle pacing
         } else {
+          console.log(`🗺️ [MARKERS] ❌ Google Geocoder rejeitado - coords: ${!!result.coords}, precise: ${result.precise}, requirePrecise: ${requirePreciseGeocode}`);
           imprecise.push(b.nome || address);
         }
       }
 
+      console.log(`🗺️ [MARKERS] === FINALIZAÇÃO ===`);
+      console.log(`🗺️ [MARKERS] Total de marcadores criados: ${markersRef.current.length}`);
+      console.log(`🗺️ [MARKERS] Endereços imprecisos: ${imprecise.length}`);
+
       // Apply clustering to avoid overlap
-      if (markersRef.current.length > 0) {
+      if (enableClustering && markersRef.current.length > 0) {
+        console.log(`🗺️ [MARKERS] ✅ Aplicando clustering...`);
         clustererRef.current = new MarkerClusterer({ markers: markersRef.current, map });
+      } else if (markersRef.current.length > 0) {
+        console.log(`🗺️ [MARKERS] ⚠️ Clustering desabilitado`);
       }
 
       // Center on selected location or fit bounds
       if (selectedLocation) {
+        console.log(`🗺️ [MARKERS] 🎯 Centralizando na localização selecionada`);
         map.setCenter(selectedLocation);
         map.setZoom(defaultZoom);
       } else if (hasAny) {
+        console.log(`🗺️ [MARKERS] 📍 Ajustando bounds para todos os marcadores`);
         map.fitBounds(bounds, 40);
+      } else {
+        console.log(`🗺️ [MARKERS] ❌ Nenhum marcador para exibir - adicionando fallback`);
+        // Add fallback center marker for Foz do Iguaçu when no pins are available
+        const fallbackCenter = { lat: -25.5163, lng: -54.5854 };
+        map.setCenter(fallbackCenter);
+        map.setZoom(12);
+        
+        toast({
+          title: 'Mapa sem localizações',
+          description: 'Nenhum endereço pôde ser localizado no mapa. Verifique os dados dos prédios.',
+          variant: 'destructive'
+        });
       }
 
-      if (imprecise.length) {
+      if (imprecise.length && requirePreciseGeocode) {
         toast({
-          title: 'Endereço impreciso — revise',
-          description: `${imprecise.length} endereço(s) não foram mapeados com precisão (ROOFTOP).`,
+          title: 'Endereços imprecisos filtrados',
+          description: `${imprecise.length} endereço(s) foram filtrados por baixa precisão.`,
           variant: 'destructive'
         });
       }
@@ -249,7 +347,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
     return () => {
       cancelled = true;
     };
-  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode]);
+  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, mapReadyRef.current]);
 
   // Sync card → marker visuals (hover/selection)
   useEffect(() => {

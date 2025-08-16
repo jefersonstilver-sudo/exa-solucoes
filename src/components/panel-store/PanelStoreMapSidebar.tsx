@@ -160,6 +160,7 @@ const PanelStoreMapSidebar: React.FC<PanelStoreMapSidebarProps> = ({
               scrollwheel={false}
               defaultZoom={13}
               requirePreciseGeocode={false}
+              enableClustering={false}
             />
               <div className="absolute top-2 right-2 z-10">
                 <Button
@@ -186,6 +187,7 @@ const PanelStoreMapSidebar: React.FC<PanelStoreMapSidebarProps> = ({
               scrollwheel={true} 
               defaultZoom={15} 
               requirePreciseGeocode={false}
+              enableClustering={false}
             />
           </div>
         </DialogContent>
