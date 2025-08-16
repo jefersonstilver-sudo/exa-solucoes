@@ -147,7 +147,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
                     target.style.display = 'none';
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#3C1361]/60 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center">

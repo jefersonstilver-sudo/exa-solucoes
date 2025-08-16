@@ -5,8 +5,10 @@ import { SimpleCartContext } from '@/contexts/SimpleCartContext';
 export const useCartOptional = () => {
   try {
     const context = useContext(SimpleCartContext);
+    console.log('Cart context:', context); // Debug log
     return context || null;
-  } catch {
+  } catch (error) {
+    console.log('Cart context error:', error); // Debug log
     // Return null if context is not available
     return null;
   }

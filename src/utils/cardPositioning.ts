@@ -22,7 +22,7 @@ interface ViewportPosition {
 export const getOptimalCardSide = (
   element: HTMLElement,
   cardWidth = 320,
-  cardHeight = 400
+  cardHeight = 280
 ): CardSide => {
   const rect = element.getBoundingClientRect();
   const viewport = {
@@ -36,18 +36,26 @@ export const getOptimalCardSide = (
   const distanceFromLeft = rect.left;
   const distanceFromRight = viewport.width - rect.right;
 
-  // Check if there's enough space for each direction
-  const spaceTop = distanceFromTop >= cardHeight + 20; // 20px buffer
-  const spaceBottom = distanceFromBottom >= cardHeight + 20;
-  const spaceLeft = distanceFromLeft >= cardWidth + 20;
-  const spaceRight = distanceFromRight >= cardWidth + 20;
+  // Check if there's enough space for each direction with larger buffer
+  const buffer = 30; // Increased buffer
+  const spaceTop = distanceFromTop >= cardHeight + buffer;
+  const spaceBottom = distanceFromBottom >= cardHeight + buffer;
+  const spaceLeft = distanceFromLeft >= cardWidth + buffer;
+  const spaceRight = distanceFromRight >= cardWidth + buffer;
 
-  // Priority order based on UX best practices:
-  // 1. Top (most common for map pins)
-  // 2. Bottom 
-  // 3. Right
-  // 4. Left
+  // Determine position based on viewport thirds
+  const isInTopThird = rect.top < viewport.height / 3;
+  const isInBottomThird = rect.bottom > (viewport.height * 2) / 3;
+  const isInLeftThird = rect.left < viewport.width / 3;
+  const isInRightThird = rect.right > (viewport.width * 2) / 3;
 
+  // Priority-based positioning to avoid cutoffs
+  if (isInTopThird && spaceBottom) return 'bottom';
+  if (isInBottomThird && spaceTop) return 'top';
+  if (isInLeftThird && spaceRight) return 'right';
+  if (isInRightThird && spaceLeft) return 'left';
+
+  // Fallback: use best available space
   if (spaceTop) return 'top';
   if (spaceBottom) return 'bottom';
   if (spaceRight) return 'right';
