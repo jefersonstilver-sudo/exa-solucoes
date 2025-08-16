@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,21 +17,32 @@ import { getImageUrl } from '@/services/buildingStoreService';
 import { convertBuildingToPanel } from '@/services/buildingToPanelService';
 import { useCartOptional } from '@/hooks/useCartOptional';
 import { toast } from 'sonner';
+import { getOptimalCardSide, getDynamicSideOffset, type CardSide } from '@/utils/cardPositioning';
 
 interface BuildingHoverCardProps {
   building: BuildingStore;
   children: React.ReactNode;
-  side?: 'top' | 'right' | 'bottom' | 'left';
+  side?: CardSide;
 }
 
 const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   building,
   children,
-  side = 'top'
+  side
 }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [dynamicSide, setDynamicSide] = useState<CardSide>(side || 'top');
+  const triggerRef = useRef<HTMLDivElement>(null);
   const cart = useCartOptional();
   const inCart = cart ? cart.isItemInCart(building.id) : false;
+
+  // Smart positioning when hover card opens
+  const handleOpenChange = useCallback((open: boolean) => {
+    if (open && triggerRef.current && !side) {
+      const optimalSide = getOptimalCardSide(triggerRef.current);
+      setDynamicSide(optimalSide);
+    }
+  }, [side]);
 
   const getStatusVariant = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -68,6 +79,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
       setIsAdding(true);
       const panel = convertBuildingToPanel(building);
       await cart.addToCart(panel, 30);
+      toast.success(`${building.nome} adicionado ao carrinho!`);
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error(`Erro ao adicionar ${building.nome} ao carrinho`);
@@ -105,13 +117,15 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   };
 
   return (
-    <HoverCard openDelay={300} closeDelay={150}>
+    <HoverCard openDelay={300} closeDelay={150} onOpenChange={handleOpenChange}>
       <HoverCardTrigger asChild>
-        {children}
+        <div ref={triggerRef}>
+          {children}
+        </div>
       </HoverCardTrigger>
       <HoverCardContent 
-        side={side} 
-        sideOffset={12}
+        side={side || dynamicSide} 
+        sideOffset={getDynamicSideOffset()}
         className="w-72 sm:w-80 p-0 bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 shadow-2xl shadow-purple-500/20 rounded-xl backdrop-blur-sm overflow-hidden"
       >
         <div className="relative">
@@ -126,14 +140,14 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
                 <img 
                   src={getImageUrl(building.imagem_principal)} 
                   alt={building.nome}
-                  className="w-full h-full object-cover mix-blend-overlay opacity-80"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#3C1361]/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3C1361]/60 via-transparent to-transparent" />
               </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -216,10 +230,10 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               </div>
             </div>
 
-            {/* Action Button with 3D effect - Show with cart fallback */}
+            {/* Action Button with 3D effect */}
             <Button
-              onClick={cart ? handleAddToCart : () => toast.info('Funcionalidade de carrinho não disponível')}
-              disabled={cart ? (inCart || isAdding) : false}
+              onClick={handleAddToCart}
+              disabled={!cart || inCart || isAdding}
               className={`w-full py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
                 !cart 
                   ? 'bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed' 
@@ -233,7 +247,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               {!cart ? (
                 <>
                   <Plus className="h-3 w-3 mr-2" />
-                  Indisponível
+                  Carrinho Indisponível
                 </>
               ) : (
                 getButtonContent()
