@@ -10,7 +10,8 @@ import {
   ShoppingCart,
   Plus,
   Check,
-  Loader2
+  Loader2,
+  Navigation
 } from 'lucide-react';
 import type { BuildingStore } from '@/services/buildingStoreService';
 import { getImageUrl } from '@/services/buildingStoreService';
@@ -18,17 +19,20 @@ import { convertBuildingToPanel } from '@/services/buildingToPanelService';
 import { useCartOptional } from '@/hooks/useCartOptional';
 import { toast } from 'sonner';
 import { getOptimalCardSide, getDynamicSideOffset, type CardSide } from '@/utils/cardPositioning';
+import { calculateDistance, formatDistance } from '@/utils/distanceCalculator';
 
 interface BuildingHoverCardProps {
   building: BuildingStore;
   children: React.ReactNode;
   side?: CardSide;
+  businessLocation?: { lat: number; lng: number } | null;
 }
 
 const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   building,
   children,
-  side
+  side,
+  businessLocation
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [dynamicSide, setDynamicSide] = useState<CardSide>(side || 'top');
@@ -99,6 +103,30 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
       maximumFractionDigits: 0,
     }).format(price);
   };
+
+  // Calculate distance to business location
+  const getBuildingDistance = () => {
+    if (!businessLocation) return null;
+    
+    // Get building coordinates (manual takes priority)
+    const buildingLat = building.manual_latitude || building.latitude;
+    const buildingLng = building.manual_longitude || building.longitude;
+    
+    if (!buildingLat || !buildingLng || buildingLat === 0 || buildingLng === 0) {
+      return null;
+    }
+    
+    const distance = calculateDistance(
+      businessLocation.lat,
+      businessLocation.lng,
+      buildingLat,
+      buildingLng
+    );
+    
+    return formatDistance(distance);
+  };
+
+  const distance = getBuildingDistance();
 
   const handleAddToCart = async () => {
     if (inCartLocal || isAdding) return;
@@ -220,11 +248,23 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               <h3 className="font-bold text-lg mb-1 drop-shadow-sm">
                 {building.nome}
               </h3>
-              <div className="flex items-center text-white/90 text-sm">
-                <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
-                <span className="truncate">
-                  {building.endereco}{building.bairro && `, ${building.bairro}`}
-                </span>
+              <div className="flex items-center justify-between text-white/90 text-sm">
+                <div className="flex items-center flex-1 min-w-0">
+                  <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span className="truncate">
+                    {building.endereco}{building.bairro && `, ${building.bairro}`}
+                  </span>
+                </div>
+                
+                {/* Distance indicator */}
+                {distance && (
+                  <div className="flex items-center ml-2 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg">
+                    <Navigation className="h-3 w-3 mr-1" />
+                    <span className="text-xs font-medium whitespace-nowrap">
+                      {distance}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

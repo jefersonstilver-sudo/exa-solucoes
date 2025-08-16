@@ -176,7 +176,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         const isSelected = selectedBuildingId === building.id;
         
         const CustomMarkerComponent = () => (
-          <BuildingHoverCard building={building}>
+          <BuildingHoverCard building={building} businessLocation={businessLocation}>
             <div>
               <CustomMapPin
                 status={building.status}
