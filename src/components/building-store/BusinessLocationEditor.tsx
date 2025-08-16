@@ -70,16 +70,7 @@ const BusinessLocationEditor: React.FC<BusinessLocationEditorProps> = ({
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
-          {!isEditing ? <Button variant="outline" size="sm" onClick={handleEditToggle} className="flex items-center gap-2">
-              <Edit3 className="w-4 h-4" />
-              Ajustar
-            </Button> : <div className="flex items-center gap-2">
-              
-              
-              
-            </div>}
-        </div>
+        
       </div>
       
       {isEditing}
