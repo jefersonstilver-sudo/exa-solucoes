@@ -122,37 +122,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
         </div>
 
         {/* Localização selecionada */}
-        {selectedLocation && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                Sua empresa localizada
-              </span>
-            </div>
-            <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-              📍 {businessAddress || searchLocation}
-            </p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-green-600 dark:text-green-400">
-                {buildingsCount} prédio{buildingsCount !== 1 ? 's' : ''} próximo{buildingsCount !== 1 ? 's' : ''} • ordenados por distância
-              </span>
-              <button
-                onClick={handleClearLocation}
-                className="text-xs text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 underline"
-              >
-                Limpar busca
-              </button>
-            </div>
-            <div className="mt-2 text-xs text-green-600 dark:text-green-400">
-              💡 Use o botão "Ajustar" no mapa para corrigir a posição se necessário
-            </div>
-          </motion.div>
-        )}
+        {selectedLocation}
       </motion.div>
     </div>;
 };
