@@ -193,6 +193,18 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               </div>
             )}
             
+            {/* Público Badge - canto superior esquerdo */}
+            <div className="absolute top-4 left-4">
+              <div className="bg-white/90 backdrop-blur-sm text-purple-900 px-2 py-1 rounded-lg shadow-lg border border-white/50 flex items-center">
+                <Users className="h-3 w-3 mr-1" />
+                <span className="text-xs font-medium">
+                  {building.publico_estimado ? 
+                    building.publico_estimado.toLocaleString('pt-BR') : 
+                    building.padrao_publico || 'Público Geral'}
+                </span>
+              </div>
+            </div>
+
             {/* Status Badge */}
             <div className="absolute top-4 right-4">
               <Badge 
@@ -219,23 +231,6 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
 
           {/* Content with 3D effect */}
           <div className="p-5 bg-gradient-to-b from-white to-gray-50/50">
-            {/* Público impactado - pequeno e centralizado */}
-            <div className="flex justify-center mb-4">
-              <div className="bg-white rounded-lg px-3 py-2 shadow-md border border-gray-100">
-                <div className="flex items-center">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                    <Users className="h-3 w-3 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-900 font-medium">
-                      {building.publico_estimado ? 
-                        building.publico_estimado.toLocaleString('pt-BR') : 
-                        building.padrao_publico || 'Público Geral'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Price Section with 3D effect */}
             <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-4 shadow-inner border border-purple-200">
