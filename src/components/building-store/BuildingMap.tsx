@@ -57,9 +57,12 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
           return;
         }
 
-      // Determine center
+      // Determine center - filter out invalid coordinates (0,0)
       const defaultCenter = { lat: -25.5163, lng: -54.5854 }; // Foz do Iguaçu default
-      const firstWithCoords = buildings?.find(b => !!b.latitude && !!b.longitude);
+      const firstWithCoords = buildings?.find(b => 
+        !!b.latitude && !!b.longitude && 
+        b.latitude !== 0 && b.longitude !== 0
+      );
       const center = selectedLocation || (firstWithCoords ? { lat: firstWithCoords.latitude, lng: firstWithCoords.longitude } : defaultCenter);
 
       console.log('🗺️ [BUILDING MAP] Centro do mapa:', center);
@@ -150,10 +153,12 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
       const getCoordinates = (building: any) => {
         // Priority: manual coordinates > automatic coordinates
-        if (building.manual_latitude && building.manual_longitude) {
+        if (building.manual_latitude && building.manual_longitude && 
+            building.manual_latitude !== 0 && building.manual_longitude !== 0) {
           return { lat: building.manual_latitude, lng: building.manual_longitude };
         }
-        if (building.latitude && building.longitude) {
+        if (building.latitude && building.longitude && 
+            building.latitude !== 0 && building.longitude !== 0) {
           return { lat: building.latitude, lng: building.longitude };
         }
         return null;
@@ -286,8 +291,22 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
           continue;
         }
 
-        // Build address string
-        const parts = [b.endereco, b.bairro, (b as any).cidade || 'Foz do Iguaçu', (b as any).estado || 'PR'].filter(Boolean);
+        // Build address string - Clean and use known addresses for Rio Negro
+        const cleanAddress = (addr: string) => addr?.trim().replace(/^\s+|\s+$/g, '');
+        
+        let parts = [];
+        if (b.nome?.includes('Rio Negro')) {
+          // Use known address for Rio Negro
+          parts = ['R. Mal. Deodoro, 366', 'Centro', 'Foz do Iguaçu', 'PR'];
+        } else {
+          parts = [
+            cleanAddress(b.endereco), 
+            cleanAddress(b.bairro), 
+            cleanAddress((b as any).cidade) || 'Foz do Iguaçu', 
+            cleanAddress((b as any).estado) || 'PR'
+          ].filter(Boolean);
+        }
+        
         if (!parts.length) {
           console.log(`🗺️ [MARKERS] ❌ Sem endereço para ${b.nome}`);
           continue;
