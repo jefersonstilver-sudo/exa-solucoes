@@ -30,6 +30,8 @@ interface OrderVideo {
   approval_status: 'pending' | 'approved' | 'rejected';
   is_active: boolean;
   selected_for_display: boolean;
+  created_at?: string;
+  uploaded_at?: string;
   video_data?: {
     nome: string;
     duracao: number;
@@ -45,9 +47,48 @@ export class ProfessionalPDFExporter {
   private readonly margin = 25;
   private readonly contentWidth = this.pageWidth - (this.margin * 2);
   private readonly maxTextWidth = this.contentWidth - 10;
+  private emittedAt: string = '';
 
   constructor() {
     this.doc = new jsPDF();
+    this.emittedAt = this.getNowPTBR();
+  }
+
+  private getNowPTBR(): string {
+    return new Date().toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  private timestampFileSuffix(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}${month}${day}-${hours}${minutes}`;
+  }
+
+  private async loadImageAsDataURL(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
   }
 
   private formatCurrency(value: number): string {
@@ -77,7 +118,7 @@ export class ProfessionalPDFExporter {
   }
 
   private checkPageBreak(height: number): void {
-    if (this.yPosition + height > this.pageHeight - this.margin - 15) {
+    if (this.yPosition + height > this.pageHeight - this.margin - 25) {
       this.doc.addPage();
       this.yPosition = this.margin;
     }
@@ -114,54 +155,74 @@ export class ProfessionalPDFExporter {
     return lines.length > 0 ? lines : [text];
   }
 
-  private drawHeader(): void {
-    // Fundo do header com gradiente simulado
-    this.doc.setFillColor(60, 19, 97); // EXA purple
+  private async drawHeader(): Promise<void> {
+    // Fundo do header
+    this.doc.setFillColor(60, 19, 97);
     this.doc.rect(0, 0, this.pageWidth, 55, 'F');
     
-    // Logo EXA (texto estilizado)
-    this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(32);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text('EXA', this.margin, 28);
+    // Tentar carregar logo EXA
+    let drewLogo = false;
+    try {
+      const logoUrl = '/exa-logo.png';
+      const dataUrl = await this.loadImageAsDataURL(logoUrl);
+      const logoH = 20;
+      const logoW = 60; // Ajustar proporção conforme necessário
+      this.doc.addImage(dataUrl, 'PNG', this.margin, 18, logoW, logoH);
+      drewLogo = true;
+    } catch (error) {
+      console.log('Logo não carregada, usando fallback');
+    }
+    
+    if (!drewLogo) {
+      // Fallback - texto EXA
+      this.doc.setTextColor(255, 255, 255);
+      this.doc.setFontSize(28);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text('EXA', this.margin, 32);
+    }
     
     // Subtitle
-    this.doc.setFontSize(11);
+    this.doc.setTextColor(255, 255, 255);
+    this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Publicidade Inteligente', this.margin, 40);
+    this.doc.text('Publicidade Inteligente', this.margin, drewLogo ? 45 : 42);
     
-    // Título do documento - posicionamento corrigido
+    // Título do documento
+    this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     const titleText = 'RELATÓRIO DETALHADO DO PEDIDO';
     const titleWidth = this.doc.getTextWidth(titleText);
-    this.doc.text(titleText, this.pageWidth - this.margin - titleWidth, 28);
+    this.doc.text(titleText, this.pageWidth - this.margin - titleWidth, 26);
     
-    // Data de geração - posicionamento corrigido
+    // Data de emissão
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'normal');
-    const dateText = `Gerado em: ${new Date().toLocaleString('pt-BR')}`;
-    const dateWidth = this.doc.getTextWidth(dateText);
-    this.doc.text(dateText, this.pageWidth - this.margin - dateWidth, 40);
+    const emittedText = `Emitido em: ${this.emittedAt}`;
+    const emittedWidth = this.doc.getTextWidth(emittedText);
+    this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, 40);
     
     this.yPosition = 65;
   }
 
-  private drawSection(title: string, icon: string = ''): void {
-    this.checkPageBreak(25);
+  private drawSection(title: string): void {
+    this.checkPageBreak(28);
     
     // Fundo da seção
     this.doc.setFillColor(248, 249, 250);
-    this.doc.rect(this.margin, this.yPosition - 3, this.contentWidth, 18, 'F');
+    this.doc.rect(this.margin, this.yPosition - 4, this.contentWidth, 20, 'F');
+    
+    // Barra vertical roxa como marcador
+    this.doc.setFillColor(60, 19, 97);
+    this.doc.rect(this.margin + 2, this.yPosition - 2, 3, 16, 'F');
     
     // Título da seção
     this.doc.setTextColor(60, 19, 97);
     this.doc.setFontSize(13);
     this.doc.setFont('helvetica', 'bold');
-    const sectionTitle = `${icon} ${title}`;
-    this.doc.text(sectionTitle, this.margin + 5, this.yPosition + 8);
+    this.doc.text(title, this.margin + 8, this.yPosition + 9);
     
-    this.yPosition += 25;
+    this.yPosition += 26;
   }
 
   private drawInfoRow(label: string, value: string, isHighlight: boolean = false): void {
@@ -320,27 +381,31 @@ export class ProfessionalPDFExporter {
     this.yPosition += 48;
   }
 
-  private drawFooter(): void {
-    const footerY = this.pageHeight - 35;
-    
-    // Linha separadora
-    this.doc.setDrawColor(229, 231, 235);
-    this.doc.setLineWidth(0.5);
-    this.doc.line(this.margin, footerY, this.pageWidth - this.margin, footerY);
-    
-    // Informações da empresa
-    this.doc.setTextColor(107, 114, 128);
-    this.doc.setFontSize(8);
-    this.doc.setFont('helvetica', 'normal');
-    
-    this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 8);
-    this.doc.text('contato@exa.com.br | www.exa.com.br', this.margin, footerY + 15);
-    this.doc.text('Este documento foi gerado automaticamente pelo sistema', this.margin, footerY + 22);
-    
-    // Número da página - posicionamento corrigido
-    const pageText = `Página ${this.doc.getNumberOfPages()}`;
-    const pageWidth = this.doc.getTextWidth(pageText);
-    this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 8);
+  private addFootersOnAllPages(): void {
+    const totalPages = this.doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      this.doc.setPage(i);
+      const footerY = this.pageHeight - 35;
+      
+      // Linha separadora
+      this.doc.setDrawColor(229, 231, 235);
+      this.doc.setLineWidth(0.5);
+      this.doc.line(this.margin, footerY, this.pageWidth - this.margin, footerY);
+      
+      // Informações da empresa
+      this.doc.setTextColor(107, 114, 128);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      
+      this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 8);
+      this.doc.text('contato@exa.com.br | www.exa.com.br', this.margin, footerY + 15);
+      this.doc.text(`Emitido em: ${this.emittedAt}`, this.margin, footerY + 22);
+      
+      // Paginação
+      const pageText = `Página ${i} de ${totalPages}`;
+      const pageWidth = this.doc.getTextWidth(pageText);
+      this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 8);
+    }
   }
 
   public async generateReport(
@@ -350,10 +415,10 @@ export class ProfessionalPDFExporter {
   ): Promise<void> {
     try {
       // Header
-      this.drawHeader();
+      await this.drawHeader();
       
       // Informações do Pedido
-      this.drawSection('INFORMAÇÕES DO PEDIDO', '📋');
+      this.drawSection('INFORMAÇÕES DO PEDIDO');
       this.drawInfoRow('ID do Pedido', `#${order.id.substring(0, 8)}`, true);
       this.drawInfoRow('Data de Criação', this.formatDate(order.created_at));
       this.drawInfoRow('Status', '');
@@ -364,8 +429,8 @@ export class ProfessionalPDFExporter {
       
       this.yPosition += 10;
       
-      // Informações do Cliente
-      this.drawSection('DADOS DO CLIENTE', '👤');
+      // Dados do Cliente
+      this.drawSection('DADOS DO CLIENTE');
       this.drawInfoRow('Nome', order.client_name, true);
       this.drawInfoRow('Email', order.client_email);
       this.drawInfoRow('Termos Aceitos', order.termos_aceitos ? 'Sim' : 'Não');
@@ -377,7 +442,7 @@ export class ProfessionalPDFExporter {
       
       // Informações de Pagamento
       if (order.log_pagamento) {
-        this.drawSection('INFORMAÇÕES DE PAGAMENTO', '💳');
+        this.drawSection('INFORMAÇÕES DE PAGAMENTO');
         this.drawInfoRow('Método', order.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito');
         this.drawInfoRow('Status', order.log_pagamento.payment_status || 'N/A');
         if (order.log_pagamento.processed_at) {
@@ -388,7 +453,7 @@ export class ProfessionalPDFExporter {
       
       // Locais Contratados
       if (panels.length > 0) {
-        this.drawSection('LOCAIS CONTRATADOS', '🏢');
+        this.drawSection('LOCAIS CONTRATADOS');
         const panelRows = panels.map(building => [
           building.id.substring(0, 8),
           building.nome,
@@ -398,25 +463,45 @@ export class ProfessionalPDFExporter {
         this.drawTable(['ID', 'Nome', 'Endereço', 'Bairro'], panelRows);
       }
       
-      // Gestão de Vídeos
-      if (videos.length > 0) {
-        this.drawSection('GESTÃO DE VÍDEOS', '🎬');
+      // Relatório de Vídeos Enviados - SEMPRE PRESENTE
+      this.drawSection('RELATÓRIO DE VÍDEOS ENVIADOS');
+      if (videos.length === 0) {
+        this.doc.setTextColor(107, 114, 128);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.setFontSize(10);
+        this.doc.text('Nenhum vídeo enviado até o momento.', this.margin + 6, this.yPosition + 6);
+        this.yPosition += 16;
+      } else {
         const videoRows = videos.map(video => [
           `Slot ${video.slot_position}`,
           video.video_data?.nome || 'N/A',
+          video.uploaded_at ? this.formatDate(video.uploaded_at) : 
+          video.created_at ? this.formatDate(video.created_at) : 'N/A',
+          video.video_data?.duracao != null ? `${video.video_data?.duracao}s` : 'N/A',
+          video.video_data?.orientacao || 'N/A',
           video.approval_status === 'approved' ? 'Aprovado' : 
           video.approval_status === 'rejected' ? 'Rejeitado' : 'Pendente',
           video.is_active ? 'Ativo' : 'Inativo',
           video.selected_for_display ? 'Sim' : 'Não'
         ]);
-        this.drawTable(['Slot', 'Nome do Vídeo', 'Status', 'Ativo', 'Em Exibição'], videoRows);
+        this.drawTable([
+          'Slot',
+          'Nome do Vídeo',
+          'Enviado em',
+          'Duração',
+          'Orientação',
+          'Status',
+          'Ativo',
+          'Exibição'
+        ], videoRows);
       }
       
-      // Footer
-      this.drawFooter();
+      // Adicionar rodapés em todas as páginas
+      this.addFootersOnAllPages();
       
-      // Salvar o PDF
-      this.doc.save(`relatorio-pedido-${order.id.substring(0, 8)}.pdf`);
+      // Salvar o PDF com nome padronizado
+      const filename = `relatorio-pedido-${order.id.substring(0, 8)}-${this.timestampFileSuffix()}.pdf`;
+      this.doc.save(filename);
       
       toast.success('Relatório profissional exportado com sucesso!');
     } catch (error) {
