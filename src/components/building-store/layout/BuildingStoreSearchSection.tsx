@@ -16,7 +16,7 @@ interface BuildingStoreSearchSectionProps {
   buildings: BuildingStore[] | undefined;
 }
 
-const BuildingStoreSearchSection: React.FC<BuildingStoreSearchSectionProps> = ({
+const BuildingStoreSearchSection: React.FC<BuildingStoreSearchSectionProps> = React.memo(({
   searchLocation,
   setSearchLocation,
   selectedLocation,
@@ -27,19 +27,24 @@ const BuildingStoreSearchSection: React.FC<BuildingStoreSearchSectionProps> = ({
   handleClearLocation,
   buildings
 }) => {
+  const memoizedHandleSearch = React.useCallback(handleSearch, [handleSearch]);
+  const memoizedHandleClearLocation = React.useCallback(handleClearLocation, [handleClearLocation]);
+  const memoizedSetSearchLocation = React.useCallback(setSearchLocation, [setSearchLocation]);
+  const memoizedHandleFilterChange = React.useCallback(handleFilterChange, [handleFilterChange]);
+
   return (
     <BuildingSearchSection 
       searchLocation={searchLocation}
-      setSearchLocation={setSearchLocation}
+      setSearchLocation={memoizedSetSearchLocation}
       selectedLocation={selectedLocation}
       isSearching={isSearching}
-      handleSearch={handleSearch}
-      handleClearLocation={handleClearLocation}
+      handleSearch={memoizedHandleSearch}
+      handleClearLocation={memoizedHandleClearLocation}
       filters={filters}
-      handleFilterChange={handleFilterChange}
+      handleFilterChange={memoizedHandleFilterChange}
       buildingsCount={buildings?.length || 0}
     />
   );
-};
+});
 
 export default BuildingStoreSearchSection;

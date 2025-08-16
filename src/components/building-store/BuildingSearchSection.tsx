@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
+import { shallow } from 'zustand/shallow';
 interface BuildingSearchSectionProps {
   searchLocation: string;
   setSearchLocation: (location: string) => void;
@@ -20,7 +21,7 @@ interface BuildingSearchSectionProps {
   handleFilterChange: (filters: Partial<BuildingFilters>) => void;
   buildingsCount: number;
 }
-const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
+const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo(({
   searchLocation,
   setSearchLocation,
   selectedLocation,
@@ -30,16 +31,49 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
   buildingsCount
 }) => {
   const isMobile = useIsMobile();
-  const {
-    businessLocation,
-    businessAddress
-  } = useBuildingStore();
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  // Estado local para debounce
+  const [localSearchValue, setLocalSearchValue] = useState(searchLocation);
+  
+  // Seletores otimizados do Zustand
+  const businessLocation = useBuildingStore(s => s.businessLocation);
+  const businessAddress = useBuildingStore(s => s.businessAddress);
+
+  // Sincronizar valor local com prop quando ela muda externamente
+  useEffect(() => {
+    setLocalSearchValue(searchLocation);
+  }, [searchLocation]);
+
+  // Debounce: atualizar store apenas após 300ms sem digitação
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localSearchValue !== searchLocation) {
+        setSearchLocation(localSearchValue);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [localSearchValue, searchLocation, setSearchLocation]);
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (searchLocation.trim()) {
-      handleSearch(searchLocation);
+    const valueToSearch = localSearchValue.trim() || searchLocation.trim();
+    if (valueToSearch) {
+      // Sincronizar imediatamente antes de buscar
+      if (localSearchValue !== searchLocation) {
+        setSearchLocation(localSearchValue);
+      }
+      handleSearch(valueToSearch);
     }
-  };
+  }, [localSearchValue, searchLocation, setSearchLocation, handleSearch]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalSearchValue(e.target.value);
+  }, []);
+
+  const handleClearLocationLocal = useCallback(() => {
+    setLocalSearchValue('');
+    handleClearLocation();
+  }, [handleClearLocation]);
   return <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section">
       <motion.div initial={{
       opacity: 0,
@@ -95,13 +129,13 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                       <div className={`flex items-stretch gap-3 ${isMobile ? 'flex-col' : 'flex-col'}`}>
                         <div className="flex-1 relative">
                           <MapPin className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-[#3C1361] z-10 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
-                          <Input type="text" placeholder={isMobile ? "Digite o endereço da sua empresa..." : "Digite o endereço da sua empresa ou negócio..."} value={searchLocation} onChange={e => setSearchLocation(e.target.value)} className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#3C1361] focus:ring-2 focus:ring-[#3C1361]/10 bg-white transition-all duration-300 shadow-lg ${isMobile ? 'pl-12 pr-4 py-3 text-base h-12' : 'pl-14 pr-4 py-3 text-lg h-12'}`} />
-                          {selectedLocation && <button type="button" onClick={handleClearLocation} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10">
+                           <Input type="text" placeholder={isMobile ? "Digite o endereço da sua empresa..." : "Digite o endereço da sua empresa ou negócio..."} value={localSearchValue} onChange={handleInputChange} className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#3C1361] focus:ring-2 focus:ring-[#3C1361]/10 bg-white transition-all duration-300 shadow-lg ${isMobile ? 'pl-12 pr-4 py-3 text-base h-12' : 'pl-14 pr-4 py-3 text-lg h-12'}`} />
+                           {selectedLocation && <button type="button" onClick={handleClearLocationLocal} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10">
                               ✕
                             </button>}
                         </div>
                         
-                        <Button type="submit" disabled={isSearching || !searchLocation.trim()} className={`bg-gradient-to-r from-[#3C1361] to-[#4A1B7D] hover:from-[#4A1B7D] hover:to-[#3C1361] text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${isMobile ? 'px-8 py-3 h-12 w-full' : 'px-10 py-3 h-12 w-full'}`}>
+                        <Button type="submit" disabled={isSearching || !localSearchValue.trim()} className={`bg-gradient-to-r from-[#3C1361] to-[#4A1B7D] hover:from-[#4A1B7D] hover:to-[#3C1361] text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${isMobile ? 'px-8 py-3 h-12 w-full' : 'px-10 py-3 h-12 w-full'}`}>
                           {isSearching ? <div className="flex items-center justify-center">
                               <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin mr-2"></div>
                               Buscando...
@@ -123,5 +157,6 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
 
       </motion.div>
     </div>;
-};
+});
+
 export default BuildingSearchSection;
