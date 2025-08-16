@@ -45,7 +45,7 @@ const MobileMapDialog: React.FC<MobileMapDialogProps> = ({ buildingsCount, class
             : 'max-w-[95vw] w-[95vw] max-h-[85vh] h-[80vh] rounded-lg'
         } transition-all duration-300 ease-in-out`}
       >
-        <div className="w-full h-full bg-white rounded-lg overflow-hidden shadow-2xl">
+        <div className="w-full h-full bg-white rounded-lg overflow-hidden shadow-2xl flex flex-col min-h-0">
           {/* Header */}
           <DialogHeader className="p-4 border-b bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center justify-between">
@@ -86,7 +86,7 @@ const MobileMapDialog: React.FC<MobileMapDialogProps> = ({ buildingsCount, class
           </DialogHeader>
 
           {/* Map Content */}
-          <div className="flex-1 bg-gray-100">
+          <div className="flex-1 min-h-0 bg-gray-100">
             <div className="w-full h-full relative">
               {buildings && buildings.length > 0 ? (
                 <BuildingMap 
