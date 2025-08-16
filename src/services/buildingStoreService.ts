@@ -13,6 +13,9 @@ export interface BuildingStore {
   status: string;
   latitude: number;
   longitude: number;
+  manual_latitude?: number;
+  manual_longitude?: number;
+  position_validated?: boolean;
   publico_estimado: number;
   visualizacoes_mes: number;
   preco_base: number;
@@ -75,6 +78,9 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       status: building.status,
       latitude: building.latitude,
       longitude: building.longitude,
+      manual_latitude: building.manual_latitude || undefined,
+      manual_longitude: building.manual_longitude || undefined,
+      position_validated: building.position_validated || false,
       publico_estimado: building.publico_estimado || 0,
       visualizacoes_mes: building.visualizacoes_mes || 0,
       preco_base: building.preco_base || 280,

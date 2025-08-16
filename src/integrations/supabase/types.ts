@@ -2027,10 +2027,13 @@ export type Database = {
           imagem_principal: string
           latitude: number
           longitude: number
+          manual_latitude: number
+          manual_longitude: number
           monthly_traffic: number
           nome: string
           numero_unidades: number
           padrao_publico: string
+          position_validated: boolean
           preco_base: number
           publico_estimado: number
           quantidade_telas: number
