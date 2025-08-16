@@ -9,6 +9,7 @@ import BuildingCardHeader from './card/BuildingCardHeader';
 import BuildingCardMetrics from './card/BuildingCardMetrics';
 import BuildingCardAmenities from './card/BuildingCardAmenities';
 import BuildingCardActions from './card/BuildingCardActions';
+import BuildingCardDistance from './card/BuildingCardDistance';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 
 interface BuildingStoreCardProps {
@@ -21,7 +22,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   wideMode = false
 }) => {
   const isMobile = useIsMobile();
-  const { setHoveredBuilding, setSelectedBuildingId } = useBuildingStore();
+  const { setHoveredBuilding, setSelectedBuildingId, businessLocation } = useBuildingStore();
 
   console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD ===');
   console.log('🏢 [BUILDING STORE CARD] isMobile:', isMobile);
@@ -36,6 +37,12 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
             {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
             <div className="p-4 pb-2">
               <BuildingCardHeader building={building} />
+              {/* Badge de distância no mobile */}
+              {businessLocation && (
+                <div className="mt-2">
+                  <BuildingCardDistance building={building} businessLocation={businessLocation} />
+                </div>
+              )}
             </div>
 
             {/* Imagem Principal - Mobile: Menor altura */}
@@ -125,6 +132,12 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
               {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
               <div className="mb-4">
                 <BuildingCardHeader building={building} />
+                {/* Badge de distância no desktop */}
+                {businessLocation && (
+                  <div className="mt-2">
+                    <BuildingCardDistance building={building} businessLocation={businessLocation} />
+                  </div>
+                )}
               </div>
 
               {/* Conteúdo flexível */}

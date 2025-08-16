@@ -24,6 +24,10 @@ export interface BuildingStoreState {
   selectedLocation: { lat: number; lng: number } | null;
   isSearching: boolean;
   
+  // Localização da empresa do cliente
+  businessLocation: { lat: number; lng: number } | null;
+  businessAddress: string;
+  
   // Filtros
   filters: BuildingFilters;
   disableFilters: boolean;
@@ -46,6 +50,7 @@ export interface BuildingStoreState {
   // Ações de busca
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
+  setBusinessLocation: (location: { lat: number; lng: number } | null, address?: string) => void;
   
   // Ações de dados
   initializeStore: () => Promise<void>;

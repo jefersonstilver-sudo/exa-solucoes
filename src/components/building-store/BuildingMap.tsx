@@ -8,6 +8,7 @@ import { getPersistentGeocode } from '@/services/geocodingCache';
 import CustomMapPin from '@/components/maps/CustomMapPin';
 import BuildingHoverCard from '@/components/maps/BuildingHoverCard';
 import { createRoot } from 'react-dom/client';
+import BusinessLocationPin from '@/components/maps/BusinessLocationPin';
 
 interface BuildingMapProps {
   buildings: BuildingStore[];
@@ -33,8 +34,9 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const businessMarkerRef = useRef<google.maps.OverlayView | null>(null);
   const [isReady, setIsReady] = useState<boolean>(false);
-  const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId } = useBuildingStore();
+  const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId, businessLocation, businessAddress } = useBuildingStore();
   const { toast } = useToast();
 
   // Initialize map
@@ -392,6 +394,73 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       cancelled = true;
     };
   }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, isReady]);
+
+  // Handle business location marker
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isReady) return;
+
+    // Remove existing business marker
+    if (businessMarkerRef.current) {
+      businessMarkerRef.current.setMap(null);
+      businessMarkerRef.current = null;
+    }
+
+    // Add business location marker if we have coordinates
+    if (businessLocation) {
+      console.log('🗺️ [BUSINESS MARKER] Adicionando pin da empresa:', businessLocation);
+      
+      const createBusinessMarker = () => {
+        const mapDiv = document.createElement('div');
+        mapDiv.style.position = 'absolute';
+        mapDiv.style.cursor = 'pointer';
+        mapDiv.style.pointerEvents = 'all';
+        mapDiv.style.zIndex = '1000'; // Higher z-index than building markers
+        
+        const root = createRoot(mapDiv);
+        root.render(
+          <BusinessLocationPin 
+            isSelected={true}
+            address={businessAddress}
+          />
+        );
+        
+        return mapDiv;
+      };
+
+      const businessMarkerDiv = createBusinessMarker();
+      
+      const marker = new (window as any).google.maps.OverlayView();
+      marker.onAdd = function() {
+        const panes = this.getPanes();
+        if (panes?.overlayMouseTarget) {
+          panes.overlayMouseTarget.appendChild(businessMarkerDiv);
+        }
+      };
+      
+      marker.draw = function() {
+        const projection = this.getProjection();
+        if (projection) {
+          const point = projection.fromLatLngToDivPixel(
+            new (window as any).google.maps.LatLng(businessLocation.lat, businessLocation.lng)
+          );
+          if (point) {
+            businessMarkerDiv.style.left = (point.x - 16) + 'px';
+            businessMarkerDiv.style.top = (point.y - 32) + 'px';
+          }
+        }
+      };
+      
+      marker.onRemove = function() {
+        if (businessMarkerDiv.parentNode) {
+          businessMarkerDiv.parentNode.removeChild(businessMarkerDiv);
+        }
+      };
+
+      marker.setMap(map);
+      businessMarkerRef.current = marker;
+    }
+  }, [businessLocation, businessAddress, isReady]);
 
   // Sync card → marker visuals (hover/selection)
   useEffect(() => {

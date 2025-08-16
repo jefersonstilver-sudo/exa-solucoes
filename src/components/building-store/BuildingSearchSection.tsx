@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
+import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 
 
 interface BuildingSearchSectionProps {
@@ -26,9 +27,11 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
   selectedLocation,
   isSearching,
   handleSearch,
-  handleClearLocation
+  handleClearLocation,
+  buildingsCount
 }) => {
   const isMobile = useIsMobile();
+  const { businessLocation, businessAddress } = useBuildingStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,9 +67,9 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                       </>
                     )}
                     
-                    {/* Header com título principal - SEMPRE VISÍVEL */}
+                     {/* Header com título principal - SEMPRE VISÍVEL */}
                     <motion.div 
-                      className={`text-center relative z-30 ${isMobile ? 'mb-6' : 'mb-6'}`}
+                      className={`text-center relative z-30 ${isMobile ? 'mb-4' : 'mb-4'}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
@@ -74,6 +77,23 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                       <h1 className={`font-bold text-[#3C1361] ${isMobile ? 'text-2xl mb-3' : 'text-3xl mb-4'}`}>
                         Encontre prédios para publicidade
                       </h1>
+                      {businessLocation && businessAddress && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4"
+                        >
+                          <div className="flex items-center justify-center text-red-600">
+                            <Building className="w-4 h-4 mr-2" />
+                            <span className="text-sm font-medium">
+                              Sua empresa: {businessAddress}
+                            </span>
+                          </div>
+                          <p className="text-xs text-red-500 mt-1">
+                            {buildingsCount} prédio{buildingsCount !== 1 ? 's' : ''} ordenado{buildingsCount !== 1 ? 's' : ''} por proximidade
+                          </p>
+                        </motion.div>
+                      )}
                     </motion.div>
 
                     {/* Barra de busca com z-index alto */}
@@ -89,7 +109,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
                           <MapPin className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-[#3C1361] z-10 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
                           <Input
                             type="text"
-                            placeholder={isMobile ? "Digite endereço ou bairro..." : "Digite o endereço, bairro ou cidade..."}
+                            placeholder={isMobile ? "Digite o endereço da sua empresa..." : "Digite o endereço da sua empresa ou negócio..."}
                             value={searchLocation}
                             onChange={(e) => setSearchLocation(e.target.value)}
                             className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#3C1361] focus:ring-2 focus:ring-[#3C1361]/10 bg-white transition-all duration-300 shadow-lg ${

@@ -14,6 +14,8 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   searchLocation: '',
   selectedLocation: null,
   isSearching: false,
+  businessLocation: null,
+  businessAddress: '',
   filters: { ...defaultFilters },
   disableFilters: false,
   initialized: false,

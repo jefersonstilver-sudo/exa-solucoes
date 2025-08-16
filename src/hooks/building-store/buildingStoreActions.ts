@@ -3,6 +3,7 @@ import { BuildingStore, fetchBuildingsForStore } from '@/services/buildingStoreS
 import { getLocationCoordinates } from '@/services/geocoding';
 import { BuildingFilters } from './types';
 import { toast } from 'sonner';
+import { sortBuildingsByDistance } from '@/services/distanceCalculation';
 
 export const createBuildingStoreActions = (set: any, get: any) => ({
   initializeStore: async () => {
@@ -118,10 +119,32 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
     }
   },
   
+  setBusinessLocation: (location: { lat: number; lng: number } | null, address: string = '') => {
+    console.log('🏢 [BUILDING STORE] Definindo localização da empresa:', location, address);
+    set({ 
+      businessLocation: location,
+      businessAddress: address
+    });
+    
+    // Reordenar prédios por distância se temos localização da empresa
+    if (location) {
+      const state = get();
+      const sortedBuildings = sortBuildingsByDistance(state.buildings, location);
+      set({ buildings: sortedBuildings });
+      console.log('📍 [BUILDING STORE] Prédios reordenados por distância');
+      
+      toast.success('Localização da empresa definida!', {
+        description: `Prédios ordenados por proximidade a ${address || 'sua localização'}`
+      });
+    }
+  },
+
   handleSearch: async (location: string) => {
     if (!location.trim()) {
       console.log('🔍 [BUILDING STORE] Busca sem localização - carregando todos os prédios');
       await get().fetchBuildings();
+      // Limpar localização da empresa
+      get().setBusinessLocation(null, '');
       return;
     }
     
@@ -135,6 +158,9 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
         console.warn('⚠️ [BUILDING STORE] Coordenadas não encontradas - carregando todos os prédios');
         await get().fetchBuildings();
         set({ isSearching: false });
+        toast.error('Localização não encontrada', {
+          description: 'Tente um endereço mais específico'
+        });
         return;
       }
       
@@ -144,14 +170,22 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
         searchLocation: location
       });
       
+      // Definir como localização da empresa
+      get().setBusinessLocation(coordinates, location);
+      
       // CORREÇÃO: Chamar sem argumentos
       await get().fetchBuildings();
       set({ isSearching: false });
+      
+      toast.success('Localização encontrada!', {
+        description: 'Veja os prédios próximos à sua empresa'
+      });
       
     } catch (error) {
       console.error("❌ [BUILDING STORE] Erro na busca:", error);
       await get().fetchBuildings();
       set({ isSearching: false });
+      toast.error('Erro na busca de localização');
     }
   },
   
@@ -159,8 +193,14 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
     console.log('🧹 [BUILDING STORE] Limpando localização e recarregando todos os prédios');
     set({ 
       selectedLocation: null,
-      searchLocation: ''
+      searchLocation: '',
+      businessLocation: null,
+      businessAddress: ''
     });
     get().fetchBuildings();
+    
+    toast.info('Localização removida', {
+      description: 'Visualizando todos os prédios disponíveis'
+    });
   }
 });
