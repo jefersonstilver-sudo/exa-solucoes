@@ -1196,6 +1196,7 @@ export type Database = {
           lista_paineis: string[] | null
           lista_predios: string[] | null
           log_pagamento: Json | null
+          mercadopago_transaction_id: string | null
           plano_meses: number
           price_sync_verified: boolean | null
           source_tentativa_id: string | null
@@ -1216,6 +1217,7 @@ export type Database = {
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
+          mercadopago_transaction_id?: string | null
           plano_meses?: number
           price_sync_verified?: boolean | null
           source_tentativa_id?: string | null
@@ -1236,6 +1238,7 @@ export type Database = {
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
+          mercadopago_transaction_id?: string | null
           plano_meses?: number
           price_sync_verified?: boolean | null
           source_tentativa_id?: string | null
