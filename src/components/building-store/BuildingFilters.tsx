@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -26,6 +26,14 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
   loading = false,
   compact = false
 }) => {
+  // Local state for radius slider to prevent flickering
+  const [localRadius, setLocalRadius] = useState(filters.radius);
+
+  // Sync local radius with filter changes from external sources
+  useEffect(() => {
+    setLocalRadius(filters.radius);
+  }, [filters.radius]);
+
   const venueTypes = [
     { value: 'Residencial', label: 'Residencial', icon: Building2 },
     { value: 'Comercial', label: 'Comercial', icon: Building2 }
@@ -34,7 +42,7 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
   const FilterSection = ({ title, icon: Icon, children, delay = 0 }: { title: string, icon: any, children: React.ReactNode, delay?: number }) => (
     <motion.div 
       className="space-y-4"
-      initial={{ opacity: 0, y: 10 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
     >
@@ -60,16 +68,17 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600 font-medium">Distância máxima</span>
             <Badge variant="secondary" className="bg-gradient-to-r from-[#3C1361]/10 to-[#3C1361]/20 text-[#3C1361] border-0 shadow-sm">
-              {filters.radius/1000}km
+              {localRadius/1000}km
             </Badge>
           </div>
           <div className="px-2">
             <Slider
-              value={[filters.radius]}
-              onValueChange={(value) => onFilterChange({ radius: value[0] })}
+              value={[localRadius]}
+              onValueChange={(value) => setLocalRadius(value[0])}
+              onValueCommit={(value) => onFilterChange({ radius: value[0] })}
               max={20000}
               min={1000}
-              step={1000}
+              step={500}
               className="w-full"
               disabled={loading}
             />
