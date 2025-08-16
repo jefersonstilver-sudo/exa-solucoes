@@ -1,13 +1,12 @@
-
 import React from 'react';
 import { Users, Eye, Building2 } from 'lucide-react';
 import { BuildingStore } from '@/services/buildingStoreService';
-
 interface BuildingCardMetricsProps {
   building: BuildingStore;
 }
-
-const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({ building }) => {
+const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({
+  building
+}) => {
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`;
@@ -17,9 +16,7 @@ const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({ building }) =
     }
     return num.toString();
   };
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+  return <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
       <div className="bg-blue-50 p-3 rounded-lg">
         <div className="flex items-center mb-1">
           <Users className="h-4 w-4 text-blue-600 mr-1" />
@@ -40,17 +37,7 @@ const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({ building }) =
         </p>
       </div>
 
-      <div className="bg-purple-50 p-3 rounded-lg col-span-2 lg:col-span-1">
-        <div className="flex items-center mb-1">
-          <Building2 className="h-4 w-4 text-purple-600 mr-1" />
-          <span className="text-xs text-purple-600 font-medium">Painéis</span>
-        </div>
-        <p className="text-lg font-bold text-purple-900">
-          {building.quantidade_telas}
-        </p>
-      </div>
-    </div>
-  );
+      
+    </div>;
 };
-
 export default BuildingCardMetrics;
