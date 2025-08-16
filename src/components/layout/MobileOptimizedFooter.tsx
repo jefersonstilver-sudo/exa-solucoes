@@ -55,11 +55,7 @@ const MobileOptimizedFooter = () => {
   const brandText = isExaPage ? 'EXA' : 'INDEXA';
   
   console.log('🦶 Footer: Renderizando MobileOptimizedFooter ÚNICO - PREVENINDO DUPLICAÇÃO');
-  return <footer id="unique-indexa-footer" className="bg-indexa-purple-dark text-white w-full" style={{
-    position: 'relative',
-    zIndex: 9999,
-    display: 'block'
-  }} data-footer-debug="single-footer">
+  return <footer id="unique-indexa-footer" className="bg-indexa-purple-dark text-white w-full relative" data-footer-debug="single-footer">
       <div className="container mx-auto px-4 lg:px-6">
         
         {/* Desktop Layout - 3 columns */}
