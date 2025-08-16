@@ -9,6 +9,7 @@ import CustomMapPin from '@/components/maps/CustomMapPin';
 import BuildingHoverCard from '@/components/maps/BuildingHoverCard';
 import { createRoot } from 'react-dom/client';
 import BusinessLocationPin from '@/components/maps/BusinessLocationPin';
+import BusinessLocationEditor from '@/components/building-store/BusinessLocationEditor';
 
 interface BuildingMapProps {
   buildings: BuildingStore[];
@@ -36,7 +37,8 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
   const businessMarkerRef = useRef<google.maps.OverlayView | null>(null);
   const [isReady, setIsReady] = useState<boolean>(false);
-  const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId, businessLocation, businessAddress } = useBuildingStore();
+  const [isEditingLocation, setIsEditingLocation] = useState<boolean>(false);
+  const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId, businessLocation, businessAddress, setBusinessLocation } = useBuildingStore();
   const { toast } = useToast();
 
   // Initialize map
@@ -71,6 +73,22 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         styles: [
           { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
         ],
+      });
+
+      // Add click listener for editing business location
+      map.addListener('click', (event: google.maps.MapMouseEvent) => {
+        if (isEditingLocation && event.latLng) {
+          const newLocation = {
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng()
+          };
+          setBusinessLocation(newLocation, businessAddress);
+          toast({
+            title: 'Posição atualizada!',
+            description: 'Clique em "Confirmar" para salvar.',
+            variant: 'default'
+          });
+        }
       });
 
       mapInstanceRef.current = map;
@@ -502,7 +520,19 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   }, [selectedLocation]);
 
   return (
-    <div ref={mapRef} className="w-full h-full" />
+    <div className="relative w-full h-full">
+      <div ref={mapRef} className="w-full h-full rounded-lg" />
+      
+      {/* Business Location Editor */}
+      {businessLocation && (
+        <div className="absolute top-4 left-4 right-4 z-10">
+          <BusinessLocationEditor
+            businessLocation={businessLocation}
+            businessAddress={businessAddress}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 

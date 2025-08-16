@@ -1,6 +1,6 @@
 
 import { BuildingStore, fetchBuildingsForStore } from '@/services/buildingStoreService';
-import { getLocationCoordinates } from '@/services/geocoding';
+import { getLocationCoordinates, getGoogleCoordinates } from '@/services/geocoding';
 import { BuildingFilters } from './types';
 import { toast } from 'sonner';
 import { sortBuildingsByDistance } from '@/services/distanceCalculation';
@@ -152,32 +152,47 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       console.log('🔍 [BUILDING STORE] Buscando localização:', location);
       set({ isSearching: true });
       
-      const coordinates = await getLocationCoordinates(location);
+      // Try OpenStreetMap first
+      let coordinates = await getLocationCoordinates(location);
+      
+      // Try Google as fallback if OSM fails or is imprecise
+      if (!coordinates || !coordinates.precise) {
+        console.log('🔍 [BUILDING STORE] Tentando Google Geocoding como fallback...');
+        const googleResult = await getGoogleCoordinates(location);
+        if (googleResult) {
+          coordinates = googleResult;
+        }
+      }
       
       if (!coordinates) {
         console.warn('⚠️ [BUILDING STORE] Coordenadas não encontradas - carregando todos os prédios');
         await get().fetchBuildings();
         set({ isSearching: false });
-        toast.error('Localização não encontrada', {
-          description: 'Tente um endereço mais específico'
-        });
+        toast.error('Endereço não encontrado. Tente ser mais específico ou inclua o número.');
         return;
       }
       
       console.log('📍 [BUILDING STORE] Coordenadas encontradas:', coordinates);
+      
+      // Show precision warning if not precise
+      if (!coordinates.precise) {
+        toast.warning('Localização encontrada, mas pode não estar exata. Use o botão "Ajustar" se necessário.');
+      }
+      
       set({ 
-        selectedLocation: coordinates,
+        selectedLocation: { lat: coordinates.lat, lng: coordinates.lng },
         searchLocation: location
       });
       
       // Definir como localização da empresa
-      get().setBusinessLocation(coordinates, location);
+      get().setBusinessLocation({ lat: coordinates.lat, lng: coordinates.lng }, coordinates.address || location);
       
       // CORREÇÃO: Chamar sem argumentos
       await get().fetchBuildings();
       set({ isSearching: false });
       
-      toast.success('Localização encontrada!', {
+      const precisionText = coordinates.precise ? 'precisa' : 'aproximada';
+      toast.success(`Localização ${precisionText} encontrada!`, {
         description: 'Veja os prédios próximos à sua empresa'
       });
       
