@@ -1,26 +1,30 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Play, User, RefreshCw, Download, Eye, UserCheck } from 'lucide-react';
+import { CheckCircle, Play, User, RefreshCw, Download, Eye, UserCheck, Shield, Calendar, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface ApprovedVideo {
-  id: string;
-  pedido_id: string;
+  pedido_video_id: string;
   video_id: string;
+  video_name: string;
   slot_position: number;
   approved_at: string;
-  is_active: boolean;
+  pedido_id: string;
+  client_id: string;
   client_email: string;
   client_name: string;
-  pedido_valor: number;
-  video_nome: string;
-  video_url: string;
-  approved_by_email?: string;
-  approved_by_name?: string;
+  valor_total: number;
+  lista_paineis: string[];
+  plano_meses: number;
+  data_inicio: string;
+  data_fim: string;
+  approved_by: string;
+  approver_email: string;
+  approver_name: string;
+  created_at: string;
 }
 
 interface RealApprovedVideosSectionProps {
@@ -31,114 +35,55 @@ interface RealApprovedVideosSectionProps {
 const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ loading, onRefresh }) => {
   const [approvedVideos, setApprovedVideos] = useState<ApprovedVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchApprovedVideos = async () => {
     try {
       setLoadingVideos(true);
-      console.log('✅ Buscando vídeos aprovados com informações do aprovador...');
       
-      // Query direta para buscar vídeos aprovados com informações do aprovador
-      const { data, error } = await supabase
-        .from('pedido_videos')
-        .select(`
-          id,
-          pedido_id,
-          video_id,
-          slot_position,
-          approved_at,
-          is_active,
-          approved_by,
-          videos (
-            nome,
-            url
-          ),
-          pedidos (
-            valor_total,
-            client_id
-          )
-        `)
-        .eq('approval_status', 'approved')
-        .not('approved_at', 'is', null)
-        .order('approved_at', { ascending: false })
-        .limit(20);
+      // Usar função segura do banco para buscar dados completos
+      const { data, error } = await supabase.rpc('get_approved_videos_with_details');
 
       if (error) {
-        console.error('❌ Erro ao buscar vídeos aprovados:', error);
-        throw error;
+        console.error('Erro ao buscar vídeos aprovados:', error);
+        if (error.message.includes('Access denied')) {
+          toast.error('Acesso negado: Apenas super admins podem visualizar esta seção');
+        } else {
+          toast.error('Erro ao carregar vídeos aprovados');
+        }
+        return;
       }
 
-      console.log('📊 Vídeos aprovados encontrados:', data?.length || 0);
-      
-      // Enriquecer com dados do cliente e aprovador
-      const enrichedVideos = await Promise.all(
-        (data || []).map(async (video: any) => {
-          try {
-            // Buscar dados do cliente
-            const { data: clientData } = await supabase
-              .from('users')
-              .select('email')
-              .eq('id', video.pedidos.client_id)
-              .single();
+      if (!data || data.length === 0) {
+        setApprovedVideos([]);
+        return;
+      }
 
-            const { data: clientAuthData } = await supabase.auth.admin.getUserById(video.pedidos.client_id);
+      // Mapear dados da função para o formato esperado
+      const mappedVideos: ApprovedVideo[] = data.map((item: any) => ({
+        pedido_video_id: item.pedido_video_id,
+        video_id: item.video_id,
+        video_name: item.video_name || 'Vídeo sem nome',
+        slot_position: item.slot_position,
+        approved_at: item.approved_at,
+        pedido_id: item.pedido_id,
+        client_id: item.client_id,
+        client_email: item.client_email,
+        client_name: item.client_name,
+        valor_total: item.valor_total,
+        lista_paineis: item.lista_paineis || [],
+        plano_meses: item.plano_meses,
+        data_inicio: item.data_inicio,
+        data_fim: item.data_fim,
+        approved_by: item.approved_by,
+        approver_email: item.approver_email,
+        approver_name: item.approver_name,
+        created_at: item.created_at,
+      }));
 
-            // Buscar dados do aprovador
-            let approvedByEmail = 'Admin não encontrado';
-            let approvedByName = 'Admin não encontrado';
-            
-            if (video.approved_by) {
-              const { data: approverAuthData } = await supabase.auth.admin.getUserById(video.approved_by);
-              if (approverAuthData.user) {
-                approvedByEmail = approverAuthData.user.email || 'Email não encontrado';
-                approvedByName = approverAuthData.user.user_metadata?.full_name || 
-                                approverAuthData.user.user_metadata?.name || 
-                                approverAuthData.user.email || 'Nome não encontrado';
-              }
-            }
-
-            return {
-              id: video.id,
-              pedido_id: video.pedido_id,
-              video_id: video.video_id,
-              slot_position: video.slot_position,
-              approved_at: video.approved_at,
-              is_active: video.is_active,
-              client_email: clientData?.email || clientAuthData.user?.email || 'Email não encontrado',
-              client_name: clientAuthData.user?.user_metadata?.full_name || 
-                          clientAuthData.user?.user_metadata?.name || 
-                          clientAuthData.user?.email || 'Nome não encontrado',
-              pedido_valor: video.pedidos.valor_total,
-              video_nome: video.videos.nome,
-              video_url: video.videos.url,
-              approved_by_email: approvedByEmail,
-              approved_by_name: approvedByName
-            };
-          } catch (error) {
-            console.warn(`Erro ao buscar dados do vídeo ${video.id}:`, error);
-            return {
-              id: video.id,
-              pedido_id: video.pedido_id,
-              video_id: video.video_id,
-              slot_position: video.slot_position,
-              approved_at: video.approved_at,
-              is_active: video.is_active,
-              client_email: 'Email não encontrado',
-              client_name: 'Nome não encontrado',
-              pedido_valor: video.pedidos?.valor_total || 0,
-              video_nome: video.videos?.nome || 'Nome não encontrado',
-              video_url: video.videos?.url || '',
-              approved_by_email: 'Admin não encontrado',
-              approved_by_name: 'Admin não encontrado'
-            };
-          }
-        })
-      );
-
-      console.log('✅ Vídeos aprovados enriquecidos:', enrichedVideos.length);
-      setApprovedVideos(enrichedVideos);
+      setApprovedVideos(mappedVideos);
     } catch (error) {
-      console.error('💥 Erro ao carregar vídeos aprovados:', error);
+      console.error('Erro geral ao buscar vídeos aprovados:', error);
       toast.error('Erro ao carregar vídeos aprovados');
     } finally {
       setLoadingVideos(false);
@@ -149,26 +94,33 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
     fetchApprovedVideos();
   }, []);
 
-  const activateVideo = async (pedidoId: string, videoId: string, clientName: string) => {
+  const activateVideo = async (pedidoId: string, pedidoVideoId: string) => {
     try {
-      setActionLoading(true);
-      console.log(`🔄 Ativando vídeo ${videoId} para pedido ${pedidoId}...`);
+      setActionLoading(pedidoVideoId);
       
-      const { error } = await supabase.rpc('activate_video', {
+      const { data, error } = await supabase.rpc('activate_video', {
         p_pedido_id: pedidoId,
-        p_pedido_video_id: videoId
+        p_pedido_video_id: pedidoVideoId
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao ativar vídeo:', error);
+        toast.error('Erro ao ativar vídeo');
+        return;
+      }
 
-      toast.success(`Vídeo de ${clientName} ativado com sucesso!`);
-      fetchApprovedVideos();
-      onRefresh(); // Refresh parent stats
+      if (data) {
+        toast.success('Vídeo ativado com sucesso!');
+        fetchApprovedVideos(); // Recarregar dados
+        onRefresh(); // Atualizar estatísticas
+      } else {
+        toast.error('Falha ao ativar vídeo');
+      }
     } catch (error) {
       console.error('Erro ao ativar vídeo:', error);
       toast.error('Erro ao ativar vídeo');
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   };
 
@@ -207,11 +159,14 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
       <Card className="bg-white border-gray-200">
         <CardHeader className="border-b border-gray-200">
           <CardTitle className="flex items-center text-gray-900">
-            <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+            <Shield className="h-5 w-5 mr-2 text-green-600" />
             Vídeos Aprovados Recentemente ({approvedVideos.length})
+            <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
+              Auditoria Segura
+            </Badge>
           </CardTitle>
           <CardDescription className="text-gray-600">
-            Vídeos aprovados nos últimos 30 dias - Pronto para ativação
+            Lista dos últimos vídeos aprovados com trilha de auditoria completa
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
@@ -226,92 +181,124 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-6">
               {approvedVideos.map((video) => (
-                <Card key={video.id} className="bg-white border-gray-200">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-2">
-                        <Badge className="bg-green-100 text-green-800 font-semibold">
-                          Aprovado
-                        </Badge>
-                        {video.is_active && (
-                          <Badge className="bg-blue-100 text-blue-800">
-                            ATIVO
+                <Card key={video.pedido_video_id} className="bg-white border-gray-200 hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
+                          <Play className="h-5 w-5 text-blue-600" />
+                          {video.video_name}
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            Slot {video.slot_position}
                           </Badge>
+                        </CardTitle>
+                        
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              <span className="font-medium">Cliente:</span>
+                              <span className="text-gray-900">{video.client_name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-400">@</span>
+                              <span className="text-gray-700">{video.client_email}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span className="font-medium">Aprovado por:</span>
+                              <span className="text-gray-900">{video.approver_name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-400">@</span>
+                              <span className="text-gray-700">{video.approver_email}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-gray-400" />
+                              <span className="font-medium">Valor:</span>
+                              <span className="text-gray-900">{formatCurrency(video.valor_total)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span className="font-medium">Período:</span>
+                              <span className="text-gray-900">{video.plano_meses} meses</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span className="font-medium">Aprovado em:</span>
+                              <span className="text-gray-900">{formatDate(video.approved_at)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {video.data_inicio && video.data_fim && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-sm text-blue-700">
+                              <Calendar className="h-4 w-4" />
+                              <span className="font-medium">Período de Exibição:</span>
+                              <span>{formatDate(video.data_inicio)} até {formatDate(video.data_fim)}</span>
+                            </div>
+                          </div>
                         )}
                       </div>
-                      <span className="text-sm text-gray-600">
-                        {formatDate(video.approved_at)}
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {/* Informações do Cliente */}
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-gray-600" />
-                        <div>
-                          <span className="font-medium text-gray-900">{video.client_name}</span>
-                          <div className="text-xs text-gray-600">{video.client_email}</div>
-                        </div>
-                      </div>
                       
-                      {/* Informações do Aprovador */}
-                      <div className="flex items-center">
-                        <UserCheck className="h-4 w-4 mr-2 text-green-600" />
-                        <div>
-                          <span className="font-medium text-green-600">Aprovado por:</span>
-                          <div className="text-sm text-gray-900">{video.approved_by_name}</div>
-                          <div className="text-xs text-gray-600">{video.approved_by_email}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="text-sm text-gray-700 space-y-1">
-                        <p><strong>Valor:</strong> {formatCurrency(video.pedido_valor)}</p>
-                        <p><strong>Arquivo:</strong> {video.video_nome}</p>
-                        <p><strong>Slot:</strong> {video.slot_position}</p>
-                      </div>
-
-                      {/* Preview do Vídeo */}
-                      <div className="bg-gray-100 rounded-lg aspect-video flex items-center justify-center relative border border-gray-200">
-                        <div className="text-center text-gray-700">
-                          <Play className="h-8 w-8 mx-auto mb-1" />
-                          <p className="text-xs">Vídeo Aprovado</p>
-                        </div>
+                      <div className="flex flex-col gap-2 ml-4">
                         <Button
-                          variant="ghost"
                           size="sm"
-                          onClick={() => window.open(video.video_url, '_blank')}
-                          className="absolute top-2 right-2 text-gray-600 hover:bg-gray-200"
+                          variant="outline"
+                          className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          onClick={() => {
+                            window.open(`/admin/video-preview/${video.video_id}`, '_blank');
+                          }}
                         >
-                          <Eye className="h-3 w-3" />
+                          <Eye className="h-4 w-4 mr-2" />
+                          Visualizar
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `/admin/download-video/${video.video_id}`;
+                            link.download = `${video.video_name}.mp4`;
+                            link.click();
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 text-white hover:bg-blue-700"
+                          disabled={actionLoading === video.pedido_video_id}
+                          onClick={() => activateVideo(video.pedido_id, video.pedido_video_id)}
+                        >
+                          {actionLoading === video.pedido_video_id ? (
+                            <div className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Ativando...
+                            </div>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Ativar Vídeo
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(video.video_url, '_blank')}
-                        className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Download
-                      </Button>
-                      
-                      {!video.is_active && (
-                        <Button
-                          onClick={() => activateVideo(video.pedido_id, video.id, video.client_name)}
-                          disabled={actionLoading}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Ativar Vídeo
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
+                  </CardHeader>
                 </Card>
               ))}
             </div>

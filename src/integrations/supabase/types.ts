@@ -1858,6 +1858,29 @@ export type Database = {
           video_rejeitado: number
         }[]
       }
+      get_approved_videos_with_details: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          approved_at: string
+          approved_by: string
+          approver_email: string
+          approver_name: string
+          client_email: string
+          client_id: string
+          client_name: string
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          lista_paineis: string[]
+          pedido_id: string
+          pedido_video_id: string
+          plano_meses: number
+          slot_position: number
+          valor_total: number
+          video_id: string
+          video_name: string
+        }[]
+      }
       get_building_contact_info: {
         Args: { building_id: string }
         Returns: {
