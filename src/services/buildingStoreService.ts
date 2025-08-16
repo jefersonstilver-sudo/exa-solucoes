@@ -62,7 +62,10 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
         venue_type: building.venue_type,
         publico_estimado: building.publico_estimado,
         quantidade_telas: building.quantidade_telas,
-        preco_base: building.preco_base
+        preco_base: building.preco_base,
+        manual_latitude: building.manual_latitude,
+        manual_longitude: building.manual_longitude,
+        position_validated: building.position_validated
       });
     });
 
@@ -78,9 +81,9 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       status: building.status,
       latitude: building.latitude,
       longitude: building.longitude,
-      manual_latitude: building.manual_latitude || undefined,
-      manual_longitude: building.manual_longitude || undefined,
-      position_validated: building.position_validated || false,
+      manual_latitude: building.manual_latitude,
+      manual_longitude: building.manual_longitude,
+      position_validated: building.position_validated,
       publico_estimado: building.publico_estimado || 0,
       visualizacoes_mes: building.visualizacoes_mes || 0,
       preco_base: building.preco_base || 280,
