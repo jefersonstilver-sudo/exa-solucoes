@@ -3,7 +3,7 @@ import React, { ReactNode, memo } from 'react';
 import Header from './Header';
 import MobileOptimizedFooter from './MobileOptimizedFooter';
 import CartDrawer from '@/components/cart/CartDrawer';
-import { useCart } from '@/contexts/SimpleCartContext';
+import { useCartOptional } from '@/hooks/useCartOptional';
 import '@/styles/components.css';
 
 interface LayoutProps {
@@ -12,38 +12,31 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = memo(({ children, className = '' }) => {
-  const { 
-    cartItems, 
-    isOpen, 
-    toggleCart, 
-    removeFromCart,
-    clearCart,
-    updateDuration,
-    proceedToCheckout,
-    itemCount
-  } = useCart();
+  const cart = useCartOptional();
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 mobile-scroll-fix">
       <Header 
-        cartItemsCount={itemCount}
+        cartItemsCount={cart?.itemCount || 0}
         cartAnimation={false}
-        onToggleCart={toggleCart}
+        onToggleCart={cart?.toggleCart || (() => {})}
       />
       
       <main className={`flex-1 relative mobile-scroll-fix ${className}`}>
         {children}
       </main>
       
-      <CartDrawer
-        cartItems={cartItems}
-        isOpen={isOpen}
-        onClose={toggleCart}
-        onRemoveFromCart={removeFromCart}
-        onClearCart={clearCart}
-        onChangeDuration={updateDuration}
-        onProceedToCheckout={proceedToCheckout}
-      />
+      {cart && (
+        <CartDrawer
+          cartItems={cart.cartItems}
+          isOpen={cart.isOpen}
+          onClose={cart.toggleCart}
+          onRemoveFromCart={cart.removeFromCart}
+          onClearCart={cart.clearCart}
+          onChangeDuration={cart.updateDuration}
+          onProceedToCheckout={cart.proceedToCheckout}
+        />
+      )}
       
       <MobileOptimizedFooter />
     </div>
