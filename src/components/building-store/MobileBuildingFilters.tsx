@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import BuildingFilterSidebar from './BuildingFilterSidebar';
+import MobileMapDialog from './MobileMapDialog';
 
 interface MobileBuildingFiltersProps {
   filters: BuildingFilters;
@@ -27,14 +28,26 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
   const activeFiltersCount = filters.venueType.length;
 
   return (
-    <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-      <div className="flex items-center space-x-3">
+    <div className="space-y-3">
+      {/* Header com contadores e ações */}
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-white to-gray-50 border-b border-gray-200 rounded-t-lg shadow-sm">
+        <div className="text-sm font-medium text-gray-700">
+          {buildingsCount} {buildingsCount === 1 ? 'prédio encontrado' : 'prédios encontrados'}
+        </div>
+        <div className="flex items-center space-x-2">
+          {/* Botão do Mapa Mobile - Componente dedicado */}
+          <MobileMapDialog buildingsCount={buildingsCount} />
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="px-4">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button 
               variant="outline" 
               size="sm"
-              className="flex items-center space-x-2 relative"
+              className="flex items-center space-x-2 relative bg-white border-gray-300 hover:bg-gray-50"
             >
               <Filter className="h-4 w-4" />
               <span>Filtros</span>
@@ -46,21 +59,25 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
             </Button>
           </SheetTrigger>
           
-          <SheetContent side="left" className="w-[300px] p-0">
-            <SheetHeader className="p-4 border-b">
-              <SheetTitle className="flex items-center justify-between">
-                <span>Filtros</span>
+          <SheetContent side="left" className="w-[320px] p-0 overflow-y-auto">
+            <SheetHeader className="p-4 border-b bg-gradient-to-r from-[#3C1361] to-[#4A1B6B]">
+              <SheetTitle className="flex items-center justify-between text-white">
+                <div className="flex items-center space-x-2">
+                  <Filter className="h-5 w-5" />
+                  <span>Filtros Avançados</span>
+                </div>
                 <Button 
                   variant="ghost" 
                   size="sm"
                   onClick={() => setIsOpen(false)}
+                  className="text-white hover:bg-white/20"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </SheetTitle>
             </SheetHeader>
             
-            <div className="p-4">
+            <div className="p-4 bg-gradient-to-b from-white to-gray-50">
               <BuildingFilterSidebar 
                 filters={filters}
                 handleFilterChange={handleFilterChange}
@@ -70,10 +87,6 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
             </div>
           </SheetContent>
         </Sheet>
-      </div>
-
-      <div className="text-sm text-gray-600">
-        {buildingsCount} {buildingsCount === 1 ? 'prédio' : 'prédios'}
       </div>
     </div>
   );

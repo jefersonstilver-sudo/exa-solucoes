@@ -31,11 +31,11 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    // Layout mobile: Stack vertical com filtros em drawer
+    // Layout mobile: Stack vertical com filtros em drawer e mapa responsivo
     return (
-      <div className="w-full space-y-4">
-        {/* Filtros mobile */}
-        <div className="w-full">
+      <div className="w-full space-y-4 pb-6">
+        {/* Filtros mobile com mapa integrado */}
+        <div className="w-full bg-white rounded-lg shadow-sm border border-gray-200">
           <MobileBuildingFilters 
             filters={filters}
             handleFilterChange={handleFilterChange}
@@ -45,8 +45,8 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
           />
         </div>
         
-        {/* Grid de prédios mobile */}
-        <div className="w-full">
+        {/* Grid de prédios mobile - layout melhorado */}
+        <div className="w-full px-1">
           <BuildingStoreGrid 
             buildings={buildings}
             isLoading={isLoading}

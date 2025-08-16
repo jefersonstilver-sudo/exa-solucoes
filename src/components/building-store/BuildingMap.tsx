@@ -38,6 +38,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   const businessMarkerRef = useRef<google.maps.OverlayView | null>(null);
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isEditingLocation, setIsEditingLocation] = useState<boolean>(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId, businessLocation, businessAddress, setBusinessLocation } = useBuildingStore();
   const { toast } = useToast();
 
@@ -49,11 +50,12 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       console.log('🗺️ [BUILDING MAP] === INICIALIZANDO MAPA ===');
       console.log('🗺️ [BUILDING MAP] Buildings recebidos:', buildings?.length || 0);
       
-      const maps = await loadGoogleMaps();
-      if (!isMounted || !mapRef.current) {
-        console.log('🗺️ [BUILDING MAP] ❌ Componente desmontado ou ref null');
-        return;
-      }
+      try {
+        const maps = await loadGoogleMaps();
+        if (!isMounted || !mapRef.current) {
+          console.log('🗺️ [BUILDING MAP] ❌ Componente desmontado ou ref null');
+          return;
+        }
 
       // Determine center
       const defaultCenter = { lat: -25.5163, lng: -54.5854 }; // Foz do Iguaçu default
@@ -62,18 +64,20 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
       console.log('🗺️ [BUILDING MAP] Centro do mapa:', center);
 
-      const map = new maps.Map(mapRef.current, {
-        center,
-        zoom: selectedLocation ? defaultZoom : 12,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false,
-        zoomControl: true,
-        scrollwheel: scrollwheel,
-        styles: [
-          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-        ],
-      });
+        const map = new maps.Map(mapRef.current, {
+          center,
+          zoom: selectedLocation ? defaultZoom : 12,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          streetViewControl: false,
+          zoomControl: true,
+          scrollwheel: scrollwheel,
+          gestureHandling: 'cooperative',
+          styles: [
+            { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+            { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+          ],
+        });
 
       // Add click listener for editing business location
       map.addListener('click', (event: google.maps.MapMouseEvent) => {
@@ -96,8 +100,13 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       geocoderRef.current = new maps.Geocoder();
       setIsReady(true);
       
-      console.log('🗺️ [BUILDING MAP] ✅ Mapa inicializado');
-      console.log('🗺️ [BUILDING MAP] Geocoder disponível:', !!geocoderRef.current);
+        console.log('🗺️ [BUILDING MAP] ✅ Mapa inicializado');
+        console.log('🗺️ [BUILDING MAP] Geocoder disponível:', !!geocoderRef.current);
+        setMapError(null);
+      } catch (error) {
+        console.error('🗺️ [BUILDING MAP] ❌ Erro ao inicializar:', error);
+        setMapError('Erro ao carregar o mapa. Verifique sua conexão.');
+      }
     }
 
     init();
@@ -519,9 +528,40 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
     return () => observer.disconnect();
   }, [selectedLocation]);
 
+  // Error display
+  if (mapError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+        <div className="text-center p-6">
+          <div className="text-gray-400 mb-2">📍</div>
+          <p className="text-gray-600 text-sm">{mapError}</p>
+          <button 
+            onClick={() => {
+              setMapError(null);
+              setIsReady(false);
+            }}
+            className="mt-2 text-blue-600 text-sm hover:underline"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapRef} className="w-full h-full rounded-lg" />
+    <div className="relative w-full h-full bg-gray-100 rounded-lg overflow-hidden">
+      {/* Loading indicator */}
+      {!isReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-600 text-sm">Carregando mapa...</p>
+          </div>
+        </div>
+      )}
+      
+      <div ref={mapRef} className="w-full h-full" />
       
       {/* Business Location Editor */}
       {businessLocation && (
