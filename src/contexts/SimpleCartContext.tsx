@@ -19,6 +19,17 @@ interface SimpleCartProviderProps {
 export const SimpleCartProvider: React.FC<SimpleCartProviderProps> = ({ children }) => {
   const cartState = useSimpleCart();
   
+  // Expose cart globally for out-of-tree renders (e.g., Google Maps markers)
+  React.useEffect(() => {
+    try {
+      (window as any).__simpleCart = cartState;
+      const ids = cartState.cartItems?.map((i: any) => i?.panel?.id) || [];
+      window.dispatchEvent(new CustomEvent('cart:updated', {
+        detail: { itemCount: cartState.itemCount, ids }
+      }));
+    } catch {}
+  }, [cartState, cartState.cartItems, cartState.itemCount]);
+  
   return (
     <SimpleCartContext.Provider value={cartState}>
       {children}

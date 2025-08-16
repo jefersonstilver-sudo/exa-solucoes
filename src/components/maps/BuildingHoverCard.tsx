@@ -32,17 +32,45 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [dynamicSide, setDynamicSide] = useState<CardSide>(side || 'top');
+  const [inCartLocal, setInCartLocal] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const cart = useCartOptional();
-  const inCart = cart ? cart.isItemInCart(building.id) : false;
+
+  // Keep local inCart in sync (works even when rendered outside provider)
+  const computeInCart = useCallback(() => {
+    try {
+      const c: any = cart || (window as any).__simpleCart;
+      if (c?.isItemInCart) {
+        return c.isItemInCart(building.id);
+      }
+      // Fallback: read from storage
+      const raw = localStorage.getItem('simple_cart');
+      if (!raw) return false;
+      const items = JSON.parse(raw) as Array<{ panel: { id: string } } & any>;
+      return Array.isArray(items) && items.some(i => i?.panel?.id === building.id);
+    } catch {
+      return false;
+    }
+  }, [cart, building.id]);
+
+  React.useEffect(() => {
+    setInCartLocal(computeInCart());
+  }, [computeInCart]);
+
+  React.useEffect(() => {
+    const handler = () => setInCartLocal(computeInCart());
+    window.addEventListener('cart:updated' as any, handler);
+    return () => window.removeEventListener('cart:updated' as any, handler);
+  }, [computeInCart]);
 
   // Smart positioning when hover card opens
   const handleOpenChange = useCallback((open: boolean) => {
     if (open && triggerRef.current && !side) {
       const optimalSide = getOptimalCardSide(triggerRef.current);
       setDynamicSide(optimalSide);
+      setInCartLocal(computeInCart());
     }
-  }, [side]);
+  }, [side, computeInCart]);
 
   const getStatusVariant = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -73,12 +101,19 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   };
 
   const handleAddToCart = async () => {
-    if (inCart || isAdding || !cart) return;
+    if (inCartLocal || isAdding) return;
+
+    const targetCart: any = cart || (window as any).__simpleCart;
+    if (!targetCart) {
+      toast.error('Carrinho indisponível no momento');
+      return;
+    }
     
     try {
       setIsAdding(true);
       const panel = convertBuildingToPanel(building);
-      await cart.addToCart(panel, 30);
+      await targetCart.addToCart(panel, 30);
+      setInCartLocal(true);
       toast.success(`${building.nome} adicionado ao carrinho!`);
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -98,7 +133,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
       );
     }
     
-    if (inCart) {
+    if (inCartLocal) {
       return (
         <>
           <Check className="h-3 w-3 mr-2" />
@@ -126,7 +161,10 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
       <HoverCardContent 
         side={side || dynamicSide} 
         sideOffset={getDynamicSideOffset()}
-        className="w-72 sm:w-80 p-0 bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 shadow-2xl shadow-purple-500/20 rounded-xl backdrop-blur-sm overflow-hidden"
+        align="center"
+        avoidCollisions
+        collisionPadding={12}
+        className="w-72 sm:w-80 max-h-[85vh] overflow-auto p-0 bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 shadow-2xl shadow-purple-500/20 rounded-xl backdrop-blur-sm"
       >
         <div className="relative">
           {/* 3D Purple Header with Building Image */}
@@ -233,18 +271,18 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
             {/* Action Button with 3D effect */}
             <Button
               onClick={handleAddToCart}
-              disabled={!cart || inCart || isAdding}
+              disabled={inCartLocal || isAdding}
               className={`w-full py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
-                !cart 
+                !cart && !(window as any).__simpleCart
                   ? 'bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed' 
                   : isAdding 
                     ? 'bg-[#3C1361]/80 text-white cursor-wait' 
-                    : inCart 
+                    : inCartLocal 
                       ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
                       : 'bg-gradient-to-r from-[#3C1361] to-purple-700 hover:from-[#3C1361]/90 hover:to-purple-600 text-white hover:scale-[1.02] active:scale-95'
               }`}
             >
-              {!cart ? (
+              {(!cart && !(window as any).__simpleCart) ? (
                 <>
                   <Plus className="h-3 w-3 mr-2" />
                   Carrinho Indisponível

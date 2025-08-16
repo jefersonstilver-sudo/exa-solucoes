@@ -5,8 +5,16 @@ import { SimpleCartContext } from '@/contexts/SimpleCartContext';
 export const useCartOptional = () => {
   try {
     const context = useContext(SimpleCartContext);
-    console.log('Cart context:', context); // Debug log
-    return context || null;
+    if (context) return context;
+
+    // Fallback: try global cart (for components rendered outside the main React tree)
+    const globalCart = (window as any).__simpleCart;
+    if (globalCart) {
+      console.log('Cart context (global):', globalCart);
+      return globalCart;
+    }
+
+    return null;
   } catch (error) {
     console.log('Cart context error:', error); // Debug log
     // Return null if context is not available
