@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, MapPin, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
@@ -74,6 +75,18 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
     setLocalSearchValue('');
     handleClearLocation();
   }, [handleClearLocation]);
+
+  // Handle place selection from autocomplete
+  const handlePlaceSelect = useCallback((place: { 
+    address: string; 
+    coordinates: { lat: number; lng: number }; 
+    placeId: string 
+  }) => {
+    setLocalSearchValue(place.address);
+    setSearchLocation(place.address);
+    // Trigger search with the selected coordinates
+    handleSearch(place.address);
+  }, [setSearchLocation, handleSearch]);
   return <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section">
       <motion.div initial={{
       opacity: 0,
@@ -128,11 +141,14 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
                   }}>
                       <div className={`flex items-stretch gap-3 ${isMobile ? 'flex-col' : 'flex-col'}`}>
                         <div className="flex-1 relative">
-                          <MapPin className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-[#3C1361] z-10 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
-                           <Input type="text" placeholder={isMobile ? "Digite o endereço da sua empresa..." : "Digite o endereço da sua empresa ou negócio..."} value={localSearchValue} onChange={handleInputChange} className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#3C1361] focus:ring-2 focus:ring-[#3C1361]/10 bg-white transition-all duration-300 shadow-lg ${isMobile ? 'pl-12 pr-4 py-3 text-base h-12' : 'pl-14 pr-4 py-3 text-lg h-12'}`} />
-                           {selectedLocation && <button type="button" onClick={handleClearLocationLocal} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10">
-                              ✕
-                            </button>}
+                           <AddressAutocomplete
+                             value={localSearchValue}
+                             onChange={setLocalSearchValue}
+                             onPlaceSelect={handlePlaceSelect}
+                             onClear={handleClearLocationLocal}
+                             placeholder={isMobile ? "Digite o endereço da sua empresa..." : "Digite o endereço da sua empresa ou negócio..."}
+                             className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#3C1361] focus:ring-2 focus:ring-[#3C1361]/10 bg-white transition-all duration-300 shadow-lg ${isMobile ? 'text-base h-12' : 'text-lg h-12'}`}
+                           />
                         </div>
                         
                         <Button type="submit" disabled={isSearching || !localSearchValue.trim()} className={`bg-gradient-to-r from-[#3C1361] to-[#4A1B7D] hover:from-[#4A1B7D] hover:to-[#3C1361] text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${isMobile ? 'px-8 py-3 h-12 w-full' : 'px-10 py-3 h-12 w-full'}`}>
