@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,13 +28,13 @@ const ApprovalsPage = () => {
 
       {/* Estatísticas Gerais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-[#00FFAB]/20 to-[#00FFAB]/10 border-[#00FFAB]/30">
+        <Card className="bg-gradient-to-br from-blue-200 to-blue-100 border-blue-300">
           <CardContent className="p-6">
             <div className="flex items-center space-x-3">
-              <Clock className="h-6 w-6 text-[#00FFAB]" />
+              <Clock className="h-6 w-6 text-blue-600" />
               <div>
                 <h3 className="font-semibold text-black">Aguardando Vídeo</h3>
-                <p className="text-2xl font-bold text-[#00FFAB]">
+                <p className="text-2xl font-bold text-blue-800">
                   {stats.paidWithoutVideo}
                 </p>
                 <p className="text-gray-600 text-sm">pedidos pagos</p>
