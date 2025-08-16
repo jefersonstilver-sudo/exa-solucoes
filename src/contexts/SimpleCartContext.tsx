@@ -2,7 +2,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useSimpleCart } from '@/hooks/useSimpleCart';
 
-const SimpleCartContext = createContext<ReturnType<typeof useSimpleCart> | undefined>(undefined);
+export const SimpleCartContext = createContext<ReturnType<typeof useSimpleCart> | undefined>(undefined);
 
 export const useCart = () => {
   const context = useContext(SimpleCartContext);

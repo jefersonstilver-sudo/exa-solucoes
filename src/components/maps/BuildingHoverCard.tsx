@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { BuildingStore } from '@/services/buildingStoreService';
 import { convertBuildingToPanel } from '@/services/buildingToPanelService';
-import { useCart } from '@/contexts/SimpleCartContext';
+import { useCartOptional } from '@/hooks/useCartOptional';
 import { toast } from 'sonner';
 
 interface BuildingHoverCardProps {
@@ -29,8 +29,8 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   side = 'top'
 }) => {
   const [isAdding, setIsAdding] = useState(false);
-  const { addToCart, isItemInCart } = useCart();
-  const inCart = isItemInCart(building.id);
+  const cart = useCartOptional();
+  const inCart = cart ? cart.isItemInCart(building.id) : false;
 
   const getStatusVariant = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -61,12 +61,12 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   };
 
   const handleAddToCart = async () => {
-    if (inCart || isAdding) return;
+    if (inCart || isAdding || !cart) return;
     
     try {
       setIsAdding(true);
       const panel = convertBuildingToPanel(building);
-      await addToCart(panel, 30);
+      await cart.addToCart(panel, 30);
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error(`Erro ao adicionar ${building.nome} ao carrinho`);
@@ -214,20 +214,22 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               </div>
             </div>
 
-            {/* Action Button with 3D effect */}
-            <Button
-              onClick={handleAddToCart}
-              disabled={inCart || isAdding}
-              className={`w-full py-3 font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
-                isAdding 
-                  ? 'bg-[#3C1361]/80 text-white cursor-wait' 
-                  : inCart 
-                    ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
-                    : 'bg-gradient-to-r from-[#3C1361] to-purple-700 hover:from-[#3C1361]/90 hover:to-purple-600 text-white hover:scale-[1.02] active:scale-95'
-              }`}
-            >
-              {getButtonContent()}
-            </Button>
+            {/* Action Button with 3D effect - Only show if cart is available */}
+            {cart && (
+              <Button
+                onClick={handleAddToCart}
+                disabled={inCart || isAdding}
+                className={`w-full py-3 font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
+                  isAdding 
+                    ? 'bg-[#3C1361]/80 text-white cursor-wait' 
+                    : inCart 
+                      ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
+                      : 'bg-gradient-to-r from-[#3C1361] to-purple-700 hover:from-[#3C1361]/90 hover:to-purple-600 text-white hover:scale-[1.02] active:scale-95'
+                }`}
+              >
+                {getButtonContent()}
+              </Button>
+            )}
 
             {/* Amenities */}
             {((building.amenities && building.amenities.length > 0) || (building.caracteristicas && building.caracteristicas.length > 0)) && (
