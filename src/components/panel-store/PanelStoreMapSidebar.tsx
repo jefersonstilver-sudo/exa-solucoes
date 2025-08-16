@@ -154,12 +154,13 @@ const PanelStoreMapSidebar: React.FC<PanelStoreMapSidebarProps> = ({
             transition={{ duration: 0.4, ease: "easeInOut" }}
           >
             <div className="absolute inset-0">
-              <BuildingMap 
-                buildings={buildingsForMap} 
-                selectedLocation={selectedLocation} 
-                scrollwheel={false} 
-                defaultZoom={13}
-              />
+            <BuildingMap 
+              buildings={buildingsForMap}
+              selectedLocation={selectedLocation}
+              scrollwheel={false}
+              defaultZoom={13}
+              requirePreciseGeocode={false}
+            />
               <div className="absolute top-2 right-2 z-10">
                 <Button
                   variant="outline"
@@ -184,6 +185,7 @@ const PanelStoreMapSidebar: React.FC<PanelStoreMapSidebarProps> = ({
               selectedLocation={selectedLocation} 
               scrollwheel={true} 
               defaultZoom={15} 
+              requirePreciseGeocode={false}
             />
           </div>
         </DialogContent>

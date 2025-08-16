@@ -11,9 +11,10 @@ interface BuildingMapProps {
   selectedLocation: { lat: number; lng: number } | null;
   scrollwheel?: boolean;
   defaultZoom?: number;
+  requirePreciseGeocode?: boolean;
 }
 
-const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, scrollwheel = false, defaultZoom = 14 }) => {
+const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, scrollwheel = false, defaultZoom = 14, requirePreciseGeocode = true }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -211,7 +212,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
           });
         });
 
-        if (result.coords && result.precise) {
+        if (result.coords && (result.precise || !requirePreciseGeocode)) {
           setCached(b, result.coords);
           hasAny = true;
           addMarker(result.coords, b);
@@ -248,7 +249,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({ buildings, selectedLocation, 
     return () => {
       cancelled = true;
     };
-  }, [buildings, selectedLocation, defaultZoom]);
+  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode]);
 
   // Sync card → marker visuals (hover/selection)
   useEffect(() => {
