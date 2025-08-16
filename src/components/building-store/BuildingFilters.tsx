@@ -11,7 +11,23 @@ import {
   Sparkles
 } from 'lucide-react';
 import type { BuildingFilters } from '@/hooks/useBuildingStore';
-import { motion } from 'framer-motion';
+
+
+// Memoized static filter section to avoid re-renders
+interface FilterSectionProps { title: string; icon: any; children: React.ReactNode }
+const FilterSection = ({ title, icon: Icon, children }: FilterSectionProps) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-3 group">
+      <div className="p-2 rounded-lg bg-[#3C1361]/10 group-hover:bg-[#3C1361]/20 transition-colors duration-200">
+        <Icon className="h-4 w-4 text-[#3C1361]" />
+      </div>
+      <Label className="text-base font-semibold text-gray-900 group-hover:text-[#3C1361] transition-colors duration-200">{title}</Label>
+      <Sparkles className="h-3 w-3 text-[#3C1361]/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+    </div>
+    <div className="pl-4 border-l-2 border-gray-100">{children}</div>
+    <Separator className="my-6 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+  </div>
+);
 
 interface BuildingFiltersProps {
   filters: BuildingFilters;
@@ -31,21 +47,6 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = memo(({
     { value: 'Comercial', label: 'Comercial', icon: Building2 }
   ];
 
-  const FilterSection = memo(({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 group">
-        <div className="p-2 rounded-lg bg-[#3C1361]/10 group-hover:bg-[#3C1361]/20 transition-colors duration-200">
-          <Icon className="h-4 w-4 text-[#3C1361]" />
-        </div>
-        <Label className="text-base font-semibold text-gray-900 group-hover:text-[#3C1361] transition-colors duration-200">{title}</Label>
-        <Sparkles className="h-3 w-3 text-[#3C1361]/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-      </div>
-      <div className="pl-4 border-l-2 border-gray-100">
-        {children}
-      </div>
-      <Separator className="my-6 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-    </div>
-  ));
 
   return (
     <div className={`space-y-6 ${compact ? 'text-sm' : ''}`}>

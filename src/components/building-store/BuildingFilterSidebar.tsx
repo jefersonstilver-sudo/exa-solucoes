@@ -29,9 +29,8 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = memo(({
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
-  const { buildings, selectedLocation } = useBuildingStore(
-    (state) => ({ buildings: state.buildings, selectedLocation: state.selectedLocation })
-  );
+  const buildings = useBuildingStore((state) => state.buildings);
+  const selectedLocation = useBuildingStore((state) => state.selectedLocation);
 
   return (
     <div className={`space-y-3 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-14' : 'w-full'}`}>
