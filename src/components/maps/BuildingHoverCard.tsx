@@ -219,33 +219,18 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
 
           {/* Content with 3D effect */}
           <div className="p-5 bg-gradient-to-b from-white to-gray-50/50">
-            {/* Quick Stats with 3D cards */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-white rounded-lg p-3 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+            {/* Público impactado - pequeno e centralizado */}
+            <div className="flex justify-center mb-4">
+              <div className="bg-white rounded-lg px-3 py-2 shadow-md border border-gray-100">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                    <Users className="h-4 w-4 text-blue-600" />
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                    <Users className="h-3 w-3 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Público</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs text-gray-900 font-medium">
                       {building.publico_estimado ? 
                         building.publico_estimado.toLocaleString('pt-BR') : 
-                        building.padrao_publico || 'Geral'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg p-3 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-2">
-                    <Monitor className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Painéis</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {building.quantidade_telas || 0}
+                        building.padrao_publico || 'Público Geral'}
                     </p>
                   </div>
                 </div>
