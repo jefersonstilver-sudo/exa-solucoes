@@ -165,10 +165,10 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
       {/* Header da Seção */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 flex items-center">
-            <Crown className="h-6 w-6 mr-2 text-indexa-purple" />
-            Equipe INDEXA
-          </h2>
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <Crown className="h-6 w-6 mr-2 text-indexa-purple" />
+              Usuários EXA
+            </h2>
           <p className="text-gray-600 mt-1">
             Administradores e Super Administradores do sistema
           </p>
