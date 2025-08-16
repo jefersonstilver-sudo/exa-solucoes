@@ -52,7 +52,7 @@ const ExaHeroSection: React.FC = () => {
         </p>
         
         <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 sm:p-6 mb-8 sm:mb-10 text-sm sm:text-base md:text-lg">
-          <p className="text-purple-200">atenção onde a vida acontece</p>
+          <p className="text-purple-200">A atenção onde a vida acontece</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start w-full">
