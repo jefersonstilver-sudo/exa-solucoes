@@ -1,8 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Building2, Users, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  MapPin, 
+  Building2, 
+  Users, 
+  Monitor,
+  ShoppingCart,
+  Plus,
+  Check,
+  Loader2
+} from 'lucide-react';
 import type { BuildingStore } from '@/services/buildingStoreService';
+import { convertBuildingToPanel } from '@/services/buildingToPanelService';
+import { useCart } from '@/contexts/SimpleCartContext';
+import { toast } from 'sonner';
 
 interface BuildingHoverCardProps {
   building: BuildingStore;
@@ -15,6 +28,10 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   children,
   side = 'top'
 }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const { addToCart, isItemInCart } = useCart();
+  const inCart = isItemInCart(building.id);
+
   const getStatusVariant = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'ativo': return 'default';
@@ -34,13 +51,56 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   };
 
   const formatPrice = (price: number | null | undefined) => {
-    if (!price) return 'Sob consulta';
+    if (!price) return 'R$ 280';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleAddToCart = async () => {
+    if (inCart || isAdding) return;
+    
+    try {
+      setIsAdding(true);
+      const panel = convertBuildingToPanel(building);
+      await addToCart(panel, 30);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error(`Erro ao adicionar ${building.nome} ao carrinho`);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const getButtonContent = () => {
+    if (isAdding) {
+      return (
+        <>
+          <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+          Adicionando...
+        </>
+      );
+    }
+    
+    if (inCart) {
+      return (
+        <>
+          <Check className="h-3 w-3 mr-2" />
+          No Carrinho
+        </>
+      );
+    }
+    
+    return (
+      <>
+        <Plus className="h-3 w-3 mr-2" />
+        Adicionar
+        <ShoppingCart className="h-3 w-3 ml-1" />
+      </>
+    );
   };
 
   return (
@@ -50,117 +110,141 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
       </HoverCardTrigger>
       <HoverCardContent 
         side={side} 
-        sideOffset={10}
-        className="w-80 p-0 overflow-hidden border-0 shadow-xl bg-card"
+        sideOffset={12}
+        className="w-80 p-0 bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 shadow-2xl shadow-purple-500/20 rounded-xl backdrop-blur-sm overflow-hidden"
       >
         <div className="relative">
-          {/* Building Image */}
-          <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/20 overflow-hidden">
+          {/* 3D Purple Header with Building Image */}
+          <div className="relative h-40 bg-gradient-to-br from-purple-600 via-[#3C1361] to-purple-800 overflow-hidden">
+            {/* 3D Background Pattern */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1)_0%,transparent_50%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.1)_0%,transparent_70%)]" />
+            
             {building.imagem_principal ? (
-              <img
-                src={building.imagem_principal}
-                alt={building.nome}
-                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
+              <div className="relative h-full">
+                <img 
+                  src={building.imagem_principal} 
+                  alt={building.nome}
+                  className="w-full h-full object-cover mix-blend-overlay opacity-80"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3C1361]/80 via-transparent to-transparent" />
+              </div>
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <Building2 className="h-12 w-12 text-primary/40" />
+              <div className="w-full h-full flex items-center justify-center">
+                <Building2 className="h-12 w-12 text-white/60" />
               </div>
             )}
             
-            {/* Status Badge Overlay */}
-            <div className="absolute top-3 right-3">
-              <Badge variant={getStatusVariant(building.status)} className="shadow-sm">
+            {/* Status Badge */}
+            <div className="absolute top-4 right-4">
+              <Badge 
+                variant={getStatusVariant(building.status)} 
+                className="bg-white/90 text-purple-900 border-white/50 shadow-lg backdrop-blur-sm"
+              >
                 {getStatusLabel(building.status)}
               </Badge>
             </div>
-          </div>
 
-          {/* Content */}
-          <div className="p-4 space-y-3">
-            {/* Title and Location */}
-            <div>
-              <h3 className="font-semibold text-lg text-foreground leading-tight mb-1">
+            {/* Building Info Overlay */}
+            <div className="absolute bottom-4 left-4 right-4 text-white">
+              <h3 className="font-bold text-lg mb-1 drop-shadow-sm">
                 {building.nome}
               </h3>
-              <div className="flex items-center text-sm text-muted-foreground">
+              <div className="flex items-center text-white/90 text-sm">
                 <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
                 <span className="truncate">
-                  {building.endereco}
-                  {building.bairro && `, ${building.bairro}`}
+                  {building.endereco}{building.bairro && `, ${building.bairro}`}
                 </span>
               </div>
             </div>
+          </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
-              {/* Audience */}
-              <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Público</p>
-                  <p className="text-sm font-medium">
-                    {building.publico_estimado ? 
-                      building.publico_estimado.toLocaleString('pt-BR') : 
-                      'N/A'}
-                  </p>
+          {/* Content with 3D effect */}
+          <div className="p-5 bg-gradient-to-b from-white to-gray-50/50">
+            {/* Quick Stats with 3D cards */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-white rounded-lg p-3 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Público</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {building.publico_estimado ? 
+                        building.publico_estimado.toLocaleString('pt-BR') : 
+                        building.padrao_publico || 'Geral'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Panel Count */}
-              <div className="flex items-center space-x-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Painéis</p>
-                  <p className="text-sm font-medium">
-                    {building.quantidade_telas || 0}
-                  </p>
+              <div className="bg-white rounded-lg p-3 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                    <Monitor className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Painéis</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {building.quantidade_telas || 0}
+                    </p>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Price */}
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-primary" />
+            {/* Price Section with 3D effect */}
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-4 shadow-inner border border-purple-200">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Preço/mês</p>
-                  <p className="text-sm font-medium text-primary">
+                  <p className="text-xs text-purple-600 mb-1 font-medium">💰 A partir de</p>
+                  <p className="text-2xl font-bold text-[#3C1361]">
                     {formatPrice(building.preco_base)}
+                    <span className="text-sm font-normal text-purple-500">/mês</span>
                   </p>
-                </div>
-              </div>
-
-              {/* Venue Type */}
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Tipo</p>
-                  <p className="text-sm font-medium capitalize">
-                    {building.venue_type || 'Residencial'}
+                  <p className="text-xs text-purple-600 mt-1">
+                    {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
                   </p>
                 </div>
               </div>
             </div>
 
+            {/* Action Button with 3D effect */}
+            <Button
+              onClick={handleAddToCart}
+              disabled={inCart || isAdding}
+              className={`w-full py-3 font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
+                isAdding 
+                  ? 'bg-[#3C1361]/80 text-white cursor-wait' 
+                  : inCart 
+                    ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
+                    : 'bg-gradient-to-r from-[#3C1361] to-purple-700 hover:from-[#3C1361]/90 hover:to-purple-600 text-white hover:scale-[1.02] active:scale-95'
+              }`}
+            >
+              {getButtonContent()}
+            </Button>
+
             {/* Amenities */}
-            {building.amenities && building.amenities.length > 0 && (
-              <div className="pt-2 border-t border-border/50">
-                <p className="text-xs text-muted-foreground mb-2">Comodidades</p>
+            {((building.amenities && building.amenities.length > 0) || (building.caracteristicas && building.caracteristicas.length > 0)) && (
+              <div className="mt-4 pt-3 border-t border-gray-200">
                 <div className="flex flex-wrap gap-1">
-                  {building.amenities.slice(0, 3).map((amenity, index) => (
-                    <Badge key={index} variant="outline" className="text-xs px-2 py-0">
-                      {amenity}
-                    </Badge>
+                  {(building.caracteristicas || building.amenities || []).slice(0, 3).map((item, index) => (
+                    <span 
+                      key={index}
+                      className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full border border-purple-200"
+                    >
+                      {item}
+                    </span>
                   ))}
-                  {building.amenities.length > 3 && (
-                    <Badge variant="outline" className="text-xs px-2 py-0">
-                      +{building.amenities.length - 3}
-                    </Badge>
+                  {(building.caracteristicas || building.amenities || []).length > 3 && (
+                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                      +{(building.caracteristicas || building.amenities || []).length - 3}
+                    </span>
                   )}
                 </div>
               </div>
