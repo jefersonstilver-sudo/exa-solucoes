@@ -9,21 +9,19 @@ import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader
 export default function PainelStore() {
   console.log('🏢 [PAINEL STORE] === INICIALIZANDO LOJA DE PRÉDIOS PROFISSIONAL ===');
 
-  // Building store state usando o hook completo
-  const {
-    buildings,
-    isLoading,
-    error,
-    searchLocation,
-    setSearchLocation,
-    selectedLocation,
-    isSearching,
-    filters,
-    handleFilterChange,
-    handleSearch,
-    handleClearLocation,
-    initializeStore
-  } = useBuildingStore();
+  // Building store state usando seletores individuais otimizados
+  const buildings = useBuildingStore(state => state.buildings);
+  const isLoading = useBuildingStore(state => state.isLoading);
+  const error = useBuildingStore(state => state.error);
+  const searchLocation = useBuildingStore(state => state.searchLocation);
+  const setSearchLocation = useBuildingStore(state => state.setSearchLocation);
+  const selectedLocation = useBuildingStore(state => state.selectedLocation);
+  const isSearching = useBuildingStore(state => state.isSearching);
+  const filters = useBuildingStore(state => state.filters);
+  const handleFilterChange = useBuildingStore(state => state.handleFilterChange);
+  const handleSearch = useBuildingStore(state => state.handleSearch);
+  const handleClearLocation = useBuildingStore(state => state.handleClearLocation);
+  const initializeStore = useBuildingStore(state => state.initializeStore);
 
   // Initialize store on mount
   useEffect(() => {

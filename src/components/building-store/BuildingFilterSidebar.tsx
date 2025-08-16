@@ -20,7 +20,7 @@ interface BuildingFilterSidebarProps {
   onToggle?: () => void;
 }
 
-const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
+const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo(({
   filters,
   handleFilterChange,
   isLoading,
@@ -219,6 +219,8 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
       )}
     </div>
   );
-};
+});
+
+BuildingFilterSidebar.displayName = 'BuildingFilterSidebar';
 
 export default BuildingFilterSidebar;
