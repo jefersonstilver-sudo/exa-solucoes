@@ -177,7 +177,17 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
             
             
 
-            {onViewCampaigns}
+            <Button variant="outline" size="sm" onClick={() => onImageManager(building)} className="flex items-center gap-1">
+              <Image className="h-4 w-4" />
+              Imagens
+            </Button>
+
+            {onViewCampaigns && (
+              <Button variant="outline" size="sm" onClick={() => onViewCampaigns(building)} className="flex items-center gap-1">
+                <Monitor className="h-4 w-4" />
+                Campanhas
+              </Button>
+            )}
             
             <Button variant="destructive" size="sm" onClick={() => onDelete(building)} className="flex items-center gap-1">
               <Trash2 className="h-4 w-4" />
