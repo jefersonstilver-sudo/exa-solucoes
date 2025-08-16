@@ -42,8 +42,9 @@ export class ProfessionalPDFExporter {
   private yPosition: number = 0;
   private readonly pageWidth = 210;
   private readonly pageHeight = 297;
-  private readonly margin = 20;
+  private readonly margin = 25;
   private readonly contentWidth = this.pageWidth - (this.margin * 2);
+  private readonly maxTextWidth = this.contentWidth - 10;
 
   constructor() {
     this.doc = new jsPDF();
@@ -76,77 +77,117 @@ export class ProfessionalPDFExporter {
   }
 
   private checkPageBreak(height: number): void {
-    if (this.yPosition + height > this.pageHeight - this.margin) {
+    if (this.yPosition + height > this.pageHeight - this.margin - 15) {
       this.doc.addPage();
       this.yPosition = this.margin;
     }
   }
 
+  private wrapText(text: string, maxWidth: number, fontSize: number = 10): string[] {
+    this.doc.setFontSize(fontSize);
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = this.doc.getTextWidth(testLine);
+      
+      if (testWidth <= maxWidth) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          // If a single word is too long, split it
+          lines.push(word.substring(0, Math.floor(word.length * maxWidth / testWidth)));
+          currentLine = word.substring(Math.floor(word.length * maxWidth / testWidth));
+        }
+      }
+    }
+    
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    
+    return lines.length > 0 ? lines : [text];
+  }
+
   private drawHeader(): void {
     // Fundo do header com gradiente simulado
-    this.doc.setFillColor(60, 19, 97); // indexa-purple
-    this.doc.rect(0, 0, this.pageWidth, 50, 'F');
+    this.doc.setFillColor(60, 19, 97); // EXA purple
+    this.doc.rect(0, 0, this.pageWidth, 55, 'F');
     
-    // Logo da Indexa (simulado com texto estilizado)
+    // Logo EXA (texto estilizado)
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(28);
+    this.doc.setFontSize(32);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('INDEXA', this.margin, 25);
+    this.doc.text('EXA', this.margin, 28);
     
     // Subtitle
-    this.doc.setFontSize(12);
+    this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Digital Signage Solutions', this.margin, 35);
+    this.doc.text('Publicidade Inteligente', this.margin, 40);
     
-    // Título do documento
-    this.doc.setFontSize(16);
+    // Título do documento - posicionamento corrigido
+    this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('RELATÓRIO DETALHADO DO PEDIDO', this.pageWidth - this.margin - 80, 25);
+    const titleText = 'RELATÓRIO DETALHADO DO PEDIDO';
+    const titleWidth = this.doc.getTextWidth(titleText);
+    this.doc.text(titleText, this.pageWidth - this.margin - titleWidth, 28);
     
-    // Data de geração
-    this.doc.setFontSize(10);
+    // Data de geração - posicionamento corrigido
+    this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, this.pageWidth - this.margin - 60, 35);
+    const dateText = `Gerado em: ${new Date().toLocaleString('pt-BR')}`;
+    const dateWidth = this.doc.getTextWidth(dateText);
+    this.doc.text(dateText, this.pageWidth - this.margin - dateWidth, 40);
     
-    this.yPosition = 60;
+    this.yPosition = 65;
   }
 
   private drawSection(title: string, icon: string = ''): void {
-    this.checkPageBreak(20);
+    this.checkPageBreak(25);
     
     // Fundo da seção
     this.doc.setFillColor(248, 249, 250);
-    this.doc.rect(this.margin, this.yPosition - 5, this.contentWidth, 15, 'F');
+    this.doc.rect(this.margin, this.yPosition - 3, this.contentWidth, 18, 'F');
     
     // Título da seção
     this.doc.setTextColor(60, 19, 97);
-    this.doc.setFontSize(14);
+    this.doc.setFontSize(13);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(`${icon} ${title}`, this.margin + 5, this.yPosition + 5);
+    const sectionTitle = `${icon} ${title}`;
+    this.doc.text(sectionTitle, this.margin + 5, this.yPosition + 8);
     
-    this.yPosition += 20;
+    this.yPosition += 25;
   }
 
   private drawInfoRow(label: string, value: string, isHighlight: boolean = false): void {
-    this.checkPageBreak(8);
+    this.checkPageBreak(10);
     
     if (isHighlight) {
       this.doc.setFillColor(252, 248, 254);
-      this.doc.rect(this.margin, this.yPosition - 2, this.contentWidth, 10, 'F');
+      this.doc.rect(this.margin, this.yPosition - 2, this.contentWidth, 12, 'F');
     }
     
     // Label
     this.doc.setTextColor(75, 85, 99);
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(label + ':', this.margin + 5, this.yPosition + 3);
+    this.doc.text(label + ':', this.margin + 5, this.yPosition + 5);
     
-    // Value
+    // Value - com quebra de linha se necessário
     this.doc.setTextColor(17, 24, 39);
     this.doc.setFont('helvetica', isHighlight ? 'bold' : 'normal');
-    this.doc.text(value, this.margin + 60, this.yPosition + 3);
     
-    this.yPosition += 8;
+    const valueLines = this.wrapText(value, this.maxTextWidth - 65, 10);
+    valueLines.forEach((line, index) => {
+      this.doc.text(line, this.margin + 65, this.yPosition + 5 + (index * 6));
+    });
+    
+    this.yPosition += Math.max(10, valueLines.length * 6 + 4);
   }
 
   private drawStatusBadge(status: string, x: number, y: number): void {
@@ -176,61 +217,83 @@ export class ProfessionalPDFExporter {
   }
 
   private drawTable(headers: string[], rows: string[][]): void {
-    const colWidth = this.contentWidth / headers.length;
+    // Cálculo dinâmico de largura das colunas
+    const baseColWidth = this.contentWidth / headers.length;
+    const minColWidth = 25;
+    const maxColWidth = this.contentWidth * 0.4;
     
-    this.checkPageBreak(15 + (rows.length * 8));
+    const colWidths = headers.map(() => Math.max(minColWidth, Math.min(maxColWidth, baseColWidth)));
+    
+    this.checkPageBreak(20 + (rows.length * 12));
     
     // Header
     this.doc.setFillColor(60, 19, 97);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 10, 'F');
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 12, 'F');
     
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
     
+    let currentX = this.margin;
     headers.forEach((header, index) => {
-      this.doc.text(header, this.margin + (index * colWidth) + 2, this.yPosition + 6);
+      const headerLines = this.wrapText(header, colWidths[index] - 4, 9);
+      headerLines.forEach((line, lineIndex) => {
+        this.doc.text(line, currentX + 2, this.yPosition + 7 + (lineIndex * 4));
+      });
+      currentX += colWidths[index];
     });
     
-    this.yPosition += 10;
+    this.yPosition += 15;
     
     // Rows
     rows.forEach((row, rowIndex) => {
+      const maxLinesInRow = Math.max(...row.map((cell, cellIndex) => 
+        this.wrapText(cell, colWidths[cellIndex] - 4, 8).length
+      ));
+      const rowHeight = Math.max(10, maxLinesInRow * 5 + 2);
+      
+      this.checkPageBreak(rowHeight);
+      
       if (rowIndex % 2 === 0) {
         this.doc.setFillColor(248, 249, 250);
-        this.doc.rect(this.margin, this.yPosition, this.contentWidth, 8, 'F');
+        this.doc.rect(this.margin, this.yPosition, this.contentWidth, rowHeight, 'F');
       }
       
       this.doc.setTextColor(17, 24, 39);
       this.doc.setFontSize(8);
       this.doc.setFont('helvetica', 'normal');
       
+      let currentX = this.margin;
       row.forEach((cell, cellIndex) => {
-        this.doc.text(cell, this.margin + (cellIndex * colWidth) + 2, this.yPosition + 5);
+        const cellLines = this.wrapText(cell, colWidths[cellIndex] - 4, 8);
+        cellLines.forEach((line, lineIndex) => {
+          this.doc.text(line, currentX + 2, this.yPosition + 6 + (lineIndex * 5));
+        });
+        currentX += colWidths[cellIndex];
       });
       
-      this.yPosition += 8;
+      this.yPosition += rowHeight;
     });
     
-    this.yPosition += 5;
+    this.yPosition += 8;
   }
 
   private drawFinancialSummary(order: OrderData): void {
-    this.checkPageBreak(40);
+    this.checkPageBreak(45);
     
     // Caixa destacada para resumo financeiro
     this.doc.setFillColor(252, 248, 254);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 35, 'F');
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 40, 'F');
     
     this.doc.setDrawColor(60, 19, 97);
     this.doc.setLineWidth(1);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 35);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 40);
     
     // Título
     this.doc.setTextColor(60, 19, 97);
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('RESUMO FINANCEIRO', this.margin + 5, this.yPosition + 10);
+    this.doc.text('RESUMO FINANCEIRO', this.margin + 8, this.yPosition + 12);
     
     // Valores
     const subtotal = order.valor_total;
@@ -241,22 +304,24 @@ export class ProfessionalPDFExporter {
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
     
-    this.doc.text(`Subtotal: ${this.formatCurrency(subtotal + desconto)}`, this.margin + 5, this.yPosition + 20);
+    this.doc.text(`Subtotal: ${this.formatCurrency(subtotal + desconto)}`, this.margin + 8, this.yPosition + 22);
     if (desconto > 0) {
-      this.doc.text(`Desconto: -${this.formatCurrency(desconto)}`, this.margin + 5, this.yPosition + 27);
+      this.doc.text(`Desconto: -${this.formatCurrency(desconto)}`, this.margin + 8, this.yPosition + 30);
     }
     
-    // Valor total destacado
-    this.doc.setFontSize(14);
+    // Valor total destacado - posicionamento responsivo
+    this.doc.setFontSize(13);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(60, 19, 97);
-    this.doc.text(`TOTAL: ${this.formatCurrency(valorFinal)}`, this.margin + 100, this.yPosition + 25);
+    const totalText = `TOTAL: ${this.formatCurrency(valorFinal)}`;
+    const totalWidth = this.doc.getTextWidth(totalText);
+    this.doc.text(totalText, this.pageWidth - this.margin - totalWidth - 8, this.yPosition + 30);
     
-    this.yPosition += 40;
+    this.yPosition += 48;
   }
 
   private drawFooter(): void {
-    const footerY = this.pageHeight - 30;
+    const footerY = this.pageHeight - 35;
     
     // Linha separadora
     this.doc.setDrawColor(229, 231, 235);
@@ -268,12 +333,14 @@ export class ProfessionalPDFExporter {
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
     
-    this.doc.text('INDEXA - Digital Signage Solutions', this.margin, footerY + 8);
-    this.doc.text('contato@indexa.com.br | www.indexa.com.br', this.margin, footerY + 15);
+    this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 8);
+    this.doc.text('contato@exa.com.br | www.exa.com.br', this.margin, footerY + 15);
     this.doc.text('Este documento foi gerado automaticamente pelo sistema', this.margin, footerY + 22);
     
-    // Número da página
-    this.doc.text(`Página ${this.doc.getNumberOfPages()}`, this.pageWidth - this.margin - 20, footerY + 8);
+    // Número da página - posicionamento corrigido
+    const pageText = `Página ${this.doc.getNumberOfPages()}`;
+    const pageWidth = this.doc.getTextWidth(pageText);
+    this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 8);
   }
 
   public async generateReport(
