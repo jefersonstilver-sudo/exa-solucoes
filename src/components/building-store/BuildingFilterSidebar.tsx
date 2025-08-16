@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/co
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import BuildingMap from './BuildingMap';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
+import { shallow } from 'zustand/shallow';
 
 interface BuildingFilterSidebarProps {
   filters: BuildingFilters;
@@ -29,7 +30,8 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
-  const { buildings, selectedLocation } = useBuildingStore();
+  const buildings = useBuildingStore(s => s.buildings);
+  const selectedLocation = useBuildingStore(s => s.selectedLocation);
 
   return (
     <div className={`space-y-3 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-14' : 'w-full'}`}>

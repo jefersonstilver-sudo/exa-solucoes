@@ -23,7 +23,7 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   // Sincronização Card ↔ Mapa
   hoveredBuildingId: null,
   selectedBuildingId: null,
-  setHoveredBuilding: (id) => set({ hoveredBuildingId: id }),
+  setHoveredBuilding: (id) => set(state => state.hoveredBuildingId === id ? state : { hoveredBuildingId: id }),
   setSelectedBuildingId: (id) => set({ selectedBuildingId: id }),
   
   // Combine all actions
