@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { Map, Filter, Sparkles, Menu, X, Maximize2 } from 'lucide-react';
@@ -8,8 +8,9 @@ import BuildingFiltersComponent from './BuildingFilters';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import BuildingMap from './BuildingMap';
+import { BuildingStore } from '@/services/buildingStoreService';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
-import { shallow } from 'zustand/shallow';
+
 
 interface BuildingFilterSidebarProps {
   filters: BuildingFilters;
@@ -30,8 +31,16 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
-  const buildings = useBuildingStore(s => s.buildings);
   const selectedLocation = useBuildingStore(s => s.selectedLocation);
+  const [mapBuildings, setMapBuildings] = useState<BuildingStore[]>([]);
+
+  useEffect(() => {
+    if (!mapOpen) return;
+    // Sync buildings only when map is visible to avoid unnecessary re-renders
+    setMapBuildings(useBuildingStore.getState().buildings);
+    const unsub = useBuildingStore.subscribe((state) => setMapBuildings(state.buildings));
+    return () => unsub();
+  }, [mapOpen]);
 
   return (
     <div className={`space-y-3 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-14' : 'w-full'}`}>
@@ -39,7 +48,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       {onToggle && (
         <motion.div 
           className="w-full"
-          initial={{ opacity: 0, y: -10 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
         >
@@ -68,7 +77,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       {!isCollapsed && (
         <motion.div 
           className="w-full"
-          initial={{ opacity: 0, y: -10 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
@@ -89,7 +98,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       {isCollapsed && (
         <motion.div 
           className="w-full"
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={false}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
         >
@@ -114,7 +123,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
             transition={{ duration: 0.4, ease: "easeInOut" }}
           >
             <div className="absolute inset-0">
-              <BuildingMap buildings={buildings} selectedLocation={selectedLocation} scrollwheel={false} />
+              <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={false} />
               <div className="absolute top-2 right-2 z-10">
                 <Button
                   variant="outline"
@@ -134,7 +143,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent className="max-w-[96vw] w-[96vw] p-0">
           <div className="w-full h-[82vh]">
-            <BuildingMap buildings={buildings} selectedLocation={selectedLocation} scrollwheel={true} defaultZoom={15} />
+            <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={true} defaultZoom={15} />
           </div>
         </DialogContent>
       </Dialog>
@@ -177,7 +186,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       {!isCollapsed && (
         <motion.div 
           className="hidden lg:block bg-white rounded-2xl border-2 border-gray-100/50 shadow-lg overflow-hidden backdrop-blur-sm"
-          initial={{ opacity: 0, x: -20 }}
+          initial={false}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
@@ -208,7 +217,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       {isCollapsed && (
         <motion.div 
           className="hidden lg:block space-y-3"
-          initial={{ opacity: 0, x: -20 }}
+          initial={false}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
