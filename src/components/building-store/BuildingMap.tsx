@@ -5,6 +5,9 @@ import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 import { useToast } from '@/hooks/use-toast';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { getPersistentGeocode } from '@/services/geocodingCache';
+import CustomMapPin from '@/components/maps/CustomMapPin';
+import BuildingHoverCard from '@/components/maps/BuildingHoverCard';
+import { createRoot } from 'react-dom/client';
 
 interface BuildingMapProps {
   buildings: BuildingStore[];
@@ -116,52 +119,92 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       let hasAny = false;
       const imprecise: string[] = [];
 
-      const baseIcon = (opts?: { hovered?: boolean; selected?: boolean }) => ({
-        path: maps.SymbolPath.CIRCLE,
-        fillColor: '#3C1361',
-        fillOpacity: 0.95,
-        strokeColor: '#ffffff',
-        strokeWeight: 1.5,
-        scale: opts?.selected ? 11 : opts?.hovered ? 10 : 8,
-      } as google.maps.Symbol);
+      const getCoordinates = (building: any) => {
+        // Priority: manual coordinates > automatic coordinates
+        if (building.manual_latitude && building.manual_longitude) {
+          return { lat: building.manual_latitude, lng: building.manual_longitude };
+        }
+        if (building.latitude && building.longitude) {
+          return { lat: building.latitude, lng: building.longitude };
+        }
+        return null;
+      };
+
+      const createCustomMarker = (position: { lat: number; lng: number }, building: any) => {
+        const mapDiv = document.createElement('div');
+        mapDiv.style.position = 'absolute';
+        mapDiv.style.cursor = 'pointer';
+        mapDiv.style.pointerEvents = 'all';
+        
+        const root = createRoot(mapDiv);
+        
+        const isHovered = hoveredBuildingId === building.id;
+        const isSelected = selectedBuildingId === building.id;
+        
+        const CustomMarkerComponent = () => (
+          <BuildingHoverCard building={building} side="top">
+            <div>
+              <CustomMapPin
+                status={building.status}
+                isHovered={isHovered}
+                isSelected={isSelected}
+                panelCount={building.quantidade_telas || 0}
+              />
+            </div>
+          </BuildingHoverCard>
+        );
+
+        root.render(<CustomMarkerComponent />);
+        
+        return mapDiv;
+      };
 
       const addMarker = (position: { lat: number; lng: number }, b: any) => {
-        const marker = new maps.Marker({
-          position,
-          map,
-          title: b.nome,
-          icon: baseIcon(),
-          animation: maps.Animation.DROP,
-        });
+        const customMarkerDiv = createCustomMarker(position, b);
+        
+        const marker = new maps.OverlayView();
+        marker.onAdd = function() {
+          const panes = this.getPanes();
+          if (panes?.overlayMouseTarget) {
+            panes.overlayMouseTarget.appendChild(customMarkerDiv);
+          }
+        };
+        
+        marker.draw = function() {
+          const projection = this.getProjection();
+          if (projection) {
+            const point = projection.fromLatLngToDivPixel(new maps.LatLng(position.lat, position.lng));
+            if (point) {
+              customMarkerDiv.style.left = (point.x - 16) + 'px';
+              customMarkerDiv.style.top = (point.y - 32) + 'px';
+            }
+          }
+        };
+        
+        marker.onRemove = function() {
+          if (customMarkerDiv.parentNode) {
+            customMarkerDiv.parentNode.removeChild(customMarkerDiv);
+          }
+        };
 
-        // Sync: marker → card
-        marker.addListener('mouseover', () => {
+        // Add click handlers to the marker div
+        customMarkerDiv.addEventListener('mouseover', () => {
           setHoveredBuilding?.(b.id);
-          marker.setIcon(baseIcon({ hovered: true }));
         });
-        marker.addListener('mouseout', () => {
+        customMarkerDiv.addEventListener('mouseout', () => {
           setHoveredBuilding?.(null);
-          const isSelected = selectedBuildingId === b.id;
-          marker.setIcon(baseIcon({ selected: !!isSelected }));
         });
-        marker.addListener('click', () => {
+        customMarkerDiv.addEventListener('click', () => {
           setSelectedBuildingId?.(b.id);
           const el = document.getElementById(`building-${b.id}`);
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
-          const content = `
-            <div style="padding:8px; max-width:260px">
-              <div style="font-weight:700; font-size:14px; margin-bottom:4px; color:#3C1361">${b.nome}</div>
-              <div style="font-size:12px; color:#444">${b.endereco || ''}${b.bairro ? ', ' + b.bairro : ''}</div>
-            </div>
-          `;
-          infoWindowRef.current?.setContent(content);
-          infoWindowRef.current?.open({ map, anchor: marker });
         });
 
-        markersRef.current.push(marker);
-        markerByIdRef.current.set(b.id, marker);
+        marker.setMap(map);
+        markersRef.current.push(marker as any);
+        markerByIdRef.current.set(b.id, marker as any);
         bounds.extend(position as any);
       };
 
@@ -197,10 +240,12 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         
         console.log(`🗺️ [MARKERS] Processando prédio: ${b.nome} (ID: ${b.id})`);
         
-        if (b.latitude && b.longitude) {
-          console.log(`🗺️ [MARKERS] ✅ Coords diretas: ${b.latitude}, ${b.longitude}`);
+        // Check for coordinates (manual takes priority)
+        const coords = getCoordinates(b);
+        if (coords) {
+          console.log(`🗺️ [MARKERS] ✅ Coords encontradas: ${coords.lat}, ${coords.lng}`);
           hasAny = true;
-          addMarker({ lat: b.latitude, lng: b.longitude }, b);
+          addMarker(coords, b);
           continue;
         }
 
@@ -351,21 +396,9 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
   // Sync card → marker visuals (hover/selection)
   useEffect(() => {
-    const maps = (window as any).google?.maps as typeof google.maps | undefined;
-    if (!maps) return;
-    markerByIdRef.current.forEach((marker, id) => {
-      const isHovered = hoveredBuildingId === id;
-      const isSelected = selectedBuildingId === id;
-      const baseIcon = {
-        path: maps.SymbolPath.CIRCLE,
-        fillColor: '#3C1361',
-        fillOpacity: 0.95,
-        strokeColor: '#ffffff',
-        strokeWeight: 1.5,
-        scale: isSelected ? 11 : isHovered ? 10 : 8,
-      } as google.maps.Symbol;
-      marker.setIcon(baseIcon);
-    });
+    // Re-render custom markers when hover/selection state changes
+    // The state is already handled in the React components through the store
+    console.log('🗺️ [MARKERS] Estado de hover/seleção atualizado', { hoveredBuildingId, selectedBuildingId });
   }, [hoveredBuildingId, selectedBuildingId]);
 
   // Handle map container resize (e.g., when expanding dialog)

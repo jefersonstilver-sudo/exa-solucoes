@@ -97,6 +97,42 @@ export type Database = {
         }
         Relationships: []
       }
+      building_pin_adjustments: {
+        Row: {
+          adjusted_by: string
+          building_id: string
+          created_at: string
+          id: string
+          new_latitude: number
+          new_longitude: number
+          old_latitude: number | null
+          old_longitude: number | null
+          reason: string | null
+        }
+        Insert: {
+          adjusted_by: string
+          building_id: string
+          created_at?: string
+          id?: string
+          new_latitude: number
+          new_longitude: number
+          old_latitude?: number | null
+          old_longitude?: number | null
+          reason?: string | null
+        }
+        Update: {
+          adjusted_by?: string
+          building_id?: string
+          created_at?: string
+          id?: string
+          new_latitude?: number
+          new_longitude?: number
+          old_latitude?: number | null
+          old_longitude?: number | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       buildings: {
         Row: {
           amenities: string[] | null
@@ -118,6 +154,8 @@ export type Database = {
           latitude: number | null
           location_type: string
           longitude: number | null
+          manual_latitude: number | null
+          manual_longitude: number | null
           monthly_traffic: number | null
           nome: string
           nome_contato_predio: string | null
@@ -127,6 +165,8 @@ export type Database = {
           numero_unidades: number | null
           padrao_publico: string | null
           peak_hours: string | null
+          position_validated: boolean | null
+          position_validation_date: string | null
           preco_base: number | null
           publico_estimado: number | null
           quantidade_telas: number | null
@@ -154,6 +194,8 @@ export type Database = {
           latitude?: number | null
           location_type?: string
           longitude?: number | null
+          manual_latitude?: number | null
+          manual_longitude?: number | null
           monthly_traffic?: number | null
           nome: string
           nome_contato_predio?: string | null
@@ -163,6 +205,8 @@ export type Database = {
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null
+          position_validated?: boolean | null
+          position_validation_date?: string | null
           preco_base?: number | null
           publico_estimado?: number | null
           quantidade_telas?: number | null
@@ -190,6 +234,8 @@ export type Database = {
           latitude?: number | null
           location_type?: string
           longitude?: number | null
+          manual_latitude?: number | null
+          manual_longitude?: number | null
           monthly_traffic?: number | null
           nome?: string
           nome_contato_predio?: string | null
@@ -199,6 +245,8 @@ export type Database = {
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null
+          position_validated?: boolean | null
+          position_validation_date?: string | null
           preco_base?: number | null
           publico_estimado?: number | null
           quantidade_telas?: number | null
