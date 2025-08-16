@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +28,26 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
 }) => {
   // Local state for radius slider to prevent flickering
   const [localRadius, setLocalRadius] = useState(filters.radius);
+
+  // Debounced update to store
+  const debouncedUpdateRadius = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (value: number) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          onFilterChange({ radius: value });
+        }, 300);
+      };
+    })(),
+    [onFilterChange]
+  );
+
+  // Update local radius and debounce store update
+  const handleRadiusChange = useCallback((value: number) => {
+    setLocalRadius(value);
+    debouncedUpdateRadius(value);
+  }, [debouncedUpdateRadius]);
 
   // Sync local radius with filter changes from external sources
   useEffect(() => {
@@ -74,8 +94,7 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
           <div className="px-2">
             <Slider
               value={[localRadius]}
-              onValueChange={(value) => setLocalRadius(value[0])}
-              onValueCommit={(value) => onFilterChange({ radius: value[0] })}
+              onValueChange={(value) => handleRadiusChange(value[0])}
               max={20000}
               min={1000}
               step={500}
