@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { BuildingStore } from '@/services/buildingStoreService';
 import loadGoogleMaps from '@/utils/googleMapsLoader';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
@@ -30,7 +30,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-  const mapReadyRef = useRef<boolean>(false);
+  const [isReady, setIsReady] = useState<boolean>(false);
   const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId } = useBuildingStore();
   const { toast } = useToast();
 
@@ -71,7 +71,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       mapInstanceRef.current = map;
       infoWindowRef.current = new maps.InfoWindow();
       geocoderRef.current = new maps.Geocoder();
-      mapReadyRef.current = true;
+      setIsReady(true);
       
       console.log('🗺️ [BUILDING MAP] ✅ Mapa inicializado');
       console.log('🗺️ [BUILDING MAP] Geocoder disponível:', !!geocoderRef.current);
@@ -81,14 +81,14 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
     return () => {
       isMounted = false;
-      mapReadyRef.current = false;
+      setIsReady(false);
     };
   }, [buildings, selectedLocation]);
 
   // Update markers (with geocoding fallback)
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !mapReadyRef.current) {
+    if (!map || !isReady) {
       console.log('🗺️ [MARKERS] ⏳ Aguardando mapa ficar pronto...');
       return;
     }
@@ -347,7 +347,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, mapReadyRef.current]);
+  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, isReady]);
 
   // Sync card → marker visuals (hover/selection)
   useEffect(() => {

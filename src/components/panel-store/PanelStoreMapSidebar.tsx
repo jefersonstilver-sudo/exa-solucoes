@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Map, Menu, X, Maximize2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import BuildingMap from '@/components/building-store/BuildingMap';
 // Simple interface for map compatibility
 interface MapBuilding {
@@ -180,6 +180,10 @@ const PanelStoreMapSidebar: React.FC<PanelStoreMapSidebarProps> = ({
       {/* Full-screen Map Dialog */}
       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent className="max-w-[96vw] w-[96vw] p-0">
+          <DialogTitle className="sr-only">Mapa expandido de prédios</DialogTitle>
+          <DialogDescription className="sr-only">
+            Visualização em tela cheia do mapa com todos os prédios disponíveis
+          </DialogDescription>
           <div className="w-full h-[82vh]">
             <BuildingMap 
               buildings={buildingsForMap} 
