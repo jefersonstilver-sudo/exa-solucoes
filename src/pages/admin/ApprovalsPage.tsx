@@ -18,7 +18,7 @@ const ApprovalsPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-black flex items-center">
-            <Video className="h-8 w-8 mr-3 text-[#00FFAB]" />
+            <Video className="h-8 w-8 mr-3 text-[#FF6B35]" />
             Sistema de Aprovações de Vídeos
           </h1>
           <p className="text-gray-600 mt-2">
