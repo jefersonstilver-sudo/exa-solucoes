@@ -1,5 +1,5 @@
 
-import React, { useCallback, useRef } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { BuildingStore } from '@/services/buildingStoreService';
@@ -22,37 +22,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   wideMode = false
 }) => {
   const isMobile = useIsMobile();
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { setHoveredBuilding, setSelectedBuildingId, businessLocation } = useBuildingStore(
-    (state) => ({
-      setHoveredBuilding: state.setHoveredBuilding,
-      setSelectedBuildingId: state.setSelectedBuildingId,
-      businessLocation: state.businessLocation
-    })
-  );
-
-  // Debounce hover functions to reduce store updates
-  const handleMouseEnter = useCallback(() => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredBuilding?.(building.id);
-    }, 50); // 50ms debounce
-  }, [building.id, setHoveredBuilding]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredBuilding?.(null);
-    }, 50); // 50ms debounce
-  }, [setHoveredBuilding]);
-
-  const handleClick = useCallback(() => {
-    setSelectedBuildingId?.(building.id);
-  }, [building.id, setSelectedBuildingId]);
+  const { setHoveredBuilding, setSelectedBuildingId, businessLocation } = useBuildingStore();
 
   console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD ===');
   console.log('🏢 [BUILDING STORE CARD] isMobile:', isMobile);
@@ -61,7 +31,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   if (isMobile) {
     // Layout mobile: Card vertical compacto com título no topo
     return (
-      <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
+      <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
         <CardContent className="p-0 relative">
           <div className="flex flex-col">
             {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
@@ -127,7 +97,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
 
   // Layout desktop: Card horizontal com título no topo
   return (
-    <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
+    <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
       <CardContent className="p-0 relative">
         <div className={`flex flex-col lg:flex-row ${wideMode ? 'min-h-[420px]' : 'min-h-[320px]'}`}>
           {/* Imagem Principal - Desktop: Lado esquerdo */}
