@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { Map, Filter, Sparkles, Menu, X, Maximize2 } from 'lucide-react';
@@ -19,7 +19,7 @@ interface BuildingFilterSidebarProps {
   onToggle?: () => void;
 }
 
-const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
+const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = memo(({
   filters,
   handleFilterChange,
   isLoading,
@@ -29,7 +29,9 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
 }) => {
   const [mapOpen, setMapOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
-  const { buildings, selectedLocation } = useBuildingStore();
+  const { buildings, selectedLocation } = useBuildingStore(
+    (state) => ({ buildings: state.buildings, selectedLocation: state.selectedLocation })
+  );
 
   return (
     <div className={`space-y-3 sticky top-24 transition-all duration-300 ${isCollapsed ? 'w-14' : 'w-full'}`}>
@@ -217,6 +219,8 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = ({
       )}
     </div>
   );
-};
+});
+
+BuildingFilterSidebar.displayName = 'BuildingFilterSidebar';
 
 export default BuildingFilterSidebar;

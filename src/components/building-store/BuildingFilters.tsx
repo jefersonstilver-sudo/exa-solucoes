@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,7 +20,7 @@ interface BuildingFiltersProps {
   compact?: boolean;
 }
 
-const BuildingFilters: React.FC<BuildingFiltersProps> = ({
+const BuildingFilters: React.FC<BuildingFiltersProps> = memo(({
   filters,
   onFilterChange,
   loading = false,
@@ -31,13 +31,8 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
     { value: 'Comercial', label: 'Comercial', icon: Building2 }
   ];
 
-  const FilterSection = ({ title, icon: Icon, children, delay = 0 }: { title: string, icon: any, children: React.ReactNode, delay?: number }) => (
-    <motion.div 
-      className="space-y-4"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.3 }}
-    >
+  const FilterSection = memo(({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
+    <div className="space-y-4">
       <div className="flex items-center gap-3 group">
         <div className="p-2 rounded-lg bg-[#3C1361]/10 group-hover:bg-[#3C1361]/20 transition-colors duration-200">
           <Icon className="h-4 w-4 text-[#3C1361]" />
@@ -49,13 +44,13 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
         {children}
       </div>
       <Separator className="my-6 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-    </motion.div>
-  );
+    </div>
+  ));
 
   return (
     <div className={`space-y-6 ${compact ? 'text-sm' : ''}`}>
       {/* Distância Máxima */}
-      <FilterSection title="Distância Máxima" icon={MapPin} delay={0.1}>
+      <FilterSection title="Distância Máxima" icon={MapPin}>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600 font-medium">Distância máxima</span>
@@ -82,14 +77,12 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
       </FilterSection>
 
       {/* Tipo de Prédio */}
-      <FilterSection title="Tipo de Prédio" icon={Building2} delay={0.2}>
+      <FilterSection title="Tipo de Prédio" icon={Building2}>
         <div className="space-y-3">
           {venueTypes.map((type) => (
-            <motion.label 
+            <label 
               key={type.value} 
               className="flex items-center space-x-3 cursor-pointer hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent p-3 rounded-xl transition-all duration-200 group border border-transparent hover:border-gray-200/50"
-              whileHover={{ x: 4 }}
-              whileTap={{ scale: 0.98 }}
             >
               <Checkbox
                 id={`venue-${type.value}`}
@@ -114,12 +107,14 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
               <span className="text-sm font-medium text-gray-700 group-hover:text-[#3C1361] transition-colors duration-200">
                 {type.label}
               </span>
-            </motion.label>
+            </label>
           ))}
         </div>
       </FilterSection>
     </div>
   );
-};
+});
+
+BuildingFilters.displayName = 'BuildingFilters';
 
 export default BuildingFilters;
