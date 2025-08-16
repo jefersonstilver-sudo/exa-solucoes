@@ -121,8 +121,6 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
           </div>
         </div>
 
-        {/* Localização selecionada */}
-        {selectedLocation}
       </motion.div>
     </div>;
 };
