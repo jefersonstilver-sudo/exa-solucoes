@@ -13,6 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import type { BuildingStore } from '@/services/buildingStoreService';
+import { getImageUrl } from '@/services/buildingStoreService';
 import { convertBuildingToPanel } from '@/services/buildingToPanelService';
 import { useCartOptional } from '@/hooks/useCartOptional';
 import { toast } from 'sonner';
@@ -111,7 +112,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
       <HoverCardContent 
         side={side} 
         sideOffset={12}
-        className="w-80 p-0 bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 shadow-2xl shadow-purple-500/20 rounded-xl backdrop-blur-sm overflow-hidden"
+        className="w-72 sm:w-80 p-0 bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 shadow-2xl shadow-purple-500/20 rounded-xl backdrop-blur-sm overflow-hidden"
       >
         <div className="relative">
           {/* 3D Purple Header with Building Image */}
@@ -123,9 +124,10 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
             {building.imagem_principal ? (
               <div className="relative h-full">
                 <img 
-                  src={building.imagem_principal} 
+                  src={getImageUrl(building.imagem_principal)} 
                   alt={building.nome}
                   className="w-full h-full object-cover mix-blend-overlay opacity-80"
+                  loading="lazy"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -214,22 +216,29 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               </div>
             </div>
 
-            {/* Action Button with 3D effect - Only show if cart is available */}
-            {cart && (
-              <Button
-                onClick={handleAddToCart}
-                disabled={inCart || isAdding}
-                className={`w-full py-3 font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
-                  isAdding 
+            {/* Action Button with 3D effect - Show with cart fallback */}
+            <Button
+              onClick={cart ? handleAddToCart : () => toast.info('Funcionalidade de carrinho não disponível')}
+              disabled={cart ? (inCart || isAdding) : false}
+              className={`w-full py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
+                !cart 
+                  ? 'bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed' 
+                  : isAdding 
                     ? 'bg-[#3C1361]/80 text-white cursor-wait' 
                     : inCart 
                       ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
                       : 'bg-gradient-to-r from-[#3C1361] to-purple-700 hover:from-[#3C1361]/90 hover:to-purple-600 text-white hover:scale-[1.02] active:scale-95'
-                }`}
-              >
-                {getButtonContent()}
-              </Button>
-            )}
+              }`}
+            >
+              {!cart ? (
+                <>
+                  <Plus className="h-3 w-3 mr-2" />
+                  Indisponível
+                </>
+              ) : (
+                getButtonContent()
+              )}
+            </Button>
 
             {/* Amenities */}
             {((building.amenities && building.amenities.length > 0) || (building.caracteristicas && building.caracteristicas.length > 0)) && (

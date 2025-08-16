@@ -2,8 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Camera } from 'lucide-react';
-import { BuildingStore, getBuildingImageUrls } from '@/services/buildingStoreService';
-import { supabase } from '@/integrations/supabase/client';
+import { BuildingStore, getBuildingImageUrls, getImageUrl } from '@/services/buildingStoreService';
 
 interface BuildingCardImageProps {
   building: BuildingStore;
@@ -11,11 +10,6 @@ interface BuildingCardImageProps {
 }
 
 const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 'square' }) => {
-  const getImageUrl = (path: string) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
-  };
 
   const primaryImage = getImageUrl(building.imagem_principal);
   const imageUrls = getBuildingImageUrls(building);

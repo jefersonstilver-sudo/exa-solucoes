@@ -128,7 +128,7 @@ export const buildingToPanel = (building: BuildingStore): Panel => {
   };
 };
 
-const getImageUrl = (path: string) => {
+export const getImageUrl = (path: string) => {
   if (!path) return null;
   if (path.startsWith('http')) return path;
   return `${supabase.storage.from('building-images').getPublicUrl(path).data.publicUrl}`;
