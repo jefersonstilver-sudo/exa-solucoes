@@ -191,11 +191,11 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
   if (loadingVideos || loading) {
     return (
-      <Card className="bg-slate-800/50 border-slate-700/50">
+      <Card className="bg-white border-gray-200">
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-[#00FFAB]" />
-            <span className="ml-3 text-white">Carregando vídeos aprovados...</span>
+            <RefreshCw className="h-8 w-8 animate-spin text-gray-600" />
+            <span className="ml-3 text-gray-900">Carregando vídeos aprovados...</span>
           </div>
         </CardContent>
       </Card>
@@ -204,44 +204,44 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
   return (
     <div className="space-y-6">
-      <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardHeader className="border-b border-slate-700/50">
-          <CardTitle className="flex items-center text-white">
-            <CheckCircle className="h-5 w-5 mr-2 text-[#00FFAB]" />
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="flex items-center text-gray-900">
+            <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
             Vídeos Aprovados Recentemente ({approvedVideos.length})
           </CardTitle>
-          <CardDescription className="text-slate-300">
+          <CardDescription className="text-gray-600">
             Vídeos aprovados nos últimos 30 dias - Pronto para ativação
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
           {approvedVideos.length === 0 ? (
             <div className="text-center py-12">
-              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-              <h3 className="text-lg font-medium text-white mb-2">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Nenhum vídeo aprovado recentemente
               </h3>
-              <p className="text-slate-400">
+              <p className="text-gray-600">
                 Vídeos aprovados aparecerão aqui
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {approvedVideos.map((video) => (
-                <Card key={video.id} className="bg-gradient-to-br from-[#00FFAB]/10 to-slate-800/50 border-[#00FFAB]/30">
+                <Card key={video.id} className="bg-white border-gray-200">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
-                        <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold">
+                        <Badge className="bg-green-100 text-green-800 font-semibold">
                           Aprovado
                         </Badge>
                         {video.is_active && (
-                          <Badge className="bg-[#3C1361] text-white">
+                          <Badge className="bg-blue-100 text-blue-800">
                             ATIVO
                           </Badge>
                         )}
                       </div>
-                      <span className="text-sm text-slate-400">
+                      <span className="text-sm text-gray-600">
                         {formatDate(video.approved_at)}
                       </span>
                     </div>
@@ -249,32 +249,32 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                     <div className="space-y-3">
                       {/* Informações do Cliente */}
                       <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-[#00FFAB]" />
+                        <User className="h-4 w-4 mr-2 text-gray-600" />
                         <div>
-                          <span className="font-medium text-white">{video.client_name}</span>
-                          <div className="text-xs text-slate-400">{video.client_email}</div>
+                          <span className="font-medium text-gray-900">{video.client_name}</span>
+                          <div className="text-xs text-gray-600">{video.client_email}</div>
                         </div>
                       </div>
                       
                       {/* Informações do Aprovador */}
                       <div className="flex items-center">
-                        <UserCheck className="h-4 w-4 mr-2 text-green-400" />
+                        <UserCheck className="h-4 w-4 mr-2 text-green-600" />
                         <div>
-                          <span className="font-medium text-green-400">Aprovado por:</span>
-                          <div className="text-sm text-white">{video.approved_by_name}</div>
-                          <div className="text-xs text-slate-400">{video.approved_by_email}</div>
+                          <span className="font-medium text-green-600">Aprovado por:</span>
+                          <div className="text-sm text-gray-900">{video.approved_by_name}</div>
+                          <div className="text-xs text-gray-600">{video.approved_by_email}</div>
                         </div>
                       </div>
                       
-                      <div className="text-sm text-slate-300 space-y-1">
+                      <div className="text-sm text-gray-700 space-y-1">
                         <p><strong>Valor:</strong> {formatCurrency(video.pedido_valor)}</p>
                         <p><strong>Arquivo:</strong> {video.video_nome}</p>
                         <p><strong>Slot:</strong> {video.slot_position}</p>
                       </div>
 
                       {/* Preview do Vídeo */}
-                      <div className="bg-slate-900 rounded-lg aspect-video flex items-center justify-center relative border border-slate-700/50">
-                        <div className="text-center text-white">
+                      <div className="bg-gray-100 rounded-lg aspect-video flex items-center justify-center relative border border-gray-200">
+                        <div className="text-center text-gray-700">
                           <Play className="h-8 w-8 mx-auto mb-1" />
                           <p className="text-xs">Vídeo Aprovado</p>
                         </div>
@@ -282,19 +282,19 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                           variant="ghost"
                           size="sm"
                           onClick={() => window.open(video.video_url, '_blank')}
-                          className="absolute top-2 right-2 text-white hover:bg-white/20"
+                          className="absolute top-2 right-2 text-gray-600 hover:bg-gray-200"
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
                     
-                    <div className="mt-4 pt-4 border-t border-slate-700/50 space-y-2">
+                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => window.open(video.video_url, '_blank')}
-                        className="w-full border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-[#3C1361]"
+                        className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
                       >
                         <Download className="h-3 w-3 mr-1" />
                         Download
@@ -304,7 +304,7 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                         <Button
                           onClick={() => activateVideo(video.pedido_id, video.id, video.client_name)}
                           disabled={actionLoading}
-                          className="w-full bg-[#00FFAB] hover:bg-[#00FFAB]/80 text-[#3C1361] font-semibold"
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Ativar Vídeo
