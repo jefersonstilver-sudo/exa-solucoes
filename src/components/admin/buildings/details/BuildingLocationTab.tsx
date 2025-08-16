@@ -25,19 +25,54 @@ const BuildingLocationTab: React.FC<BuildingLocationTabProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [draggedPosition, setDraggedPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [savedPositionLocal, setSavedPositionLocal] = useState<{ lat: number; lng: number } | null>(null);
+  
+  // Initialize saved position from building data
+  useEffect(() => {
+    if (building?.manual_latitude && building?.manual_longitude) {
+      const lat = parseFloat(building.manual_latitude.toString());
+      const lng = parseFloat(building.manual_longitude.toString());
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setSavedPositionLocal({ lat, lng });
+      }
+    }
+  }, [building?.manual_latitude, building?.manual_longitude]);
   
   // Check if there are unsaved changes
   const hasUnsavedChanges = draggedPosition !== null;
 
-  // Get current coordinates (manual takes priority over automatic)
+  // Get current coordinates (prioritize dragged > savedLocal > manual > automatic)
   const getCurrentCoords = () => {
+    // 1. If dragging, use dragged position
+    if (draggedPosition) {
+      return { lat: draggedPosition.lat, lng: draggedPosition.lng, isManual: true };
+    }
+    
+    // 2. Use saved local position if available
+    if (savedPositionLocal) {
+      return { lat: savedPositionLocal.lat, lng: savedPositionLocal.lng, isManual: true };
+    }
+    
+    // 3. Use manual coordinates from building (convert to numbers)
     if (building.manual_latitude && building.manual_longitude) {
-      return { lat: building.manual_latitude, lng: building.manual_longitude, isManual: true };
+      const lat = parseFloat(building.manual_latitude.toString());
+      const lng = parseFloat(building.manual_longitude.toString());
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, isManual: true };
+      }
     }
+    
+    // 4. Use automatic coordinates from building (convert to numbers)
     if (building.latitude && building.longitude) {
-      return { lat: building.latitude, lng: building.longitude, isManual: false };
+      const lat = parseFloat(building.latitude.toString());
+      const lng = parseFloat(building.longitude.toString());
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, isManual: false };
+      }
     }
-    return { lat: -25.5163, lng: -54.5854, isManual: false }; // Foz default
+    
+    // 5. Fallback to Foz do Iguaçu default
+    return { lat: -25.5163, lng: -54.5854, isManual: false };
   };
 
   const currentCoords = getCurrentCoords();
@@ -171,6 +206,15 @@ const BuildingLocationTab: React.FC<BuildingLocationTabProps> = ({
         .eq('id', building.id);
 
       if (error) throw error;
+
+      // Save position locally to prevent reversion
+      setSavedPositionLocal(positionToSave);
+      
+      // Update map and marker immediately
+      if (mapInstanceRef.current && markerRef.current) {
+        mapInstanceRef.current.setCenter(positionToSave);
+        markerRef.current.setPosition(positionToSave);
+      }
 
       toast.success('Posição do pin salva com sucesso');
       setIsEditing(false);
