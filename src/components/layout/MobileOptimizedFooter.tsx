@@ -50,10 +50,8 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 const MobileOptimizedFooter = () => {
   const location = useLocation();
   const isExaPage = location.pathname === '/exa';
-  
   const logoUrl = isExaPage ? 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1MzkyNDY3NywiZXhwIjoxNzg1NDYwNjc3fQ.Obullg6SYYcT2j1mmJgZ4MIL-_9lqNDHmImhft_ZbmM' : undefined;
   const brandText = isExaPage ? 'EXA' : 'INDEXA';
-  
   console.log('🦶 Footer: Renderizando MobileOptimizedFooter ÚNICO - PREVENINDO DUPLICAÇÃO');
   return <footer id="unique-indexa-footer" className="bg-indexa-purple-dark text-white w-full relative" data-footer-debug="single-footer">
       <div className="container mx-auto px-4 lg:px-6">
@@ -88,12 +86,7 @@ const MobileOptimizedFooter = () => {
               <ul className="space-y-4">
                 <li className="flex items-center">
                   <Phone className="h-4 w-4 mr-2 text-white/80" />
-                  <a 
-                    href="https://wa.me/554591071566?text=Ol%C3%A1%20quero%20informa%C3%A7%C3%B5es%20sobre%20um%20projeto%20de%20v%C3%ADdeo"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-base text-white/80 hover:text-white transition-colors"
-                  >
+                  <a href="https://wa.me/554591071566?text=Ol%C3%A1%20quero%20informa%C3%A7%C3%B5es%20sobre%20um%20projeto%20de%20v%C3%ADdeo" target="_blank" rel="noopener noreferrer" className="text-base text-white/80 hover:text-white transition-colors">
                     +55 45 9107-1566
                   </a>
                 </li>
@@ -118,7 +111,7 @@ const MobileOptimizedFooter = () => {
           <div className="text-center mb-8 pb-6 border-b border-white/20">
             <div className="flex items-center justify-center space-x-3 mb-4">
               <UnifiedLogo size="custom" linkTo="/" variant="light" className="w-10 h-10" logoUrl={logoUrl} />
-              <span className="text-xl font-bold">{brandText}</span>
+              
             </div>
             <p className="text-white/80 text-sm leading-relaxed px-4">
               Transformando ideias em resultados através do marketing digital, produção audiovisual e publicidade inovadora.
@@ -139,12 +132,7 @@ const MobileOptimizedFooter = () => {
 
             <AccordionSection title="Contato">
               <div className="space-y-4">
-                <a 
-                  href="https://wa.me/554591071566?text=Ol%C3%A1%20quero%20informa%C3%A7%C3%B5es%20sobre%20um%20projeto%20de%20v%C3%ADdeo"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
-                >
+                <a href="https://wa.me/554591071566?text=Ol%C3%A1%20quero%20informa%C3%A7%C3%B5es%20sobre%20um%20projeto%20de%20v%C3%ADdeo" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
                   <div className="w-8 h-8 bg-indexa-mint/20 rounded-full flex items-center justify-center">
                     <Phone className="h-4 w-4 text-indexa-mint" />
                   </div>
