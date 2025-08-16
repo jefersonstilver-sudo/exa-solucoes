@@ -25,6 +25,9 @@ const BuildingLocationTab: React.FC<BuildingLocationTabProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [draggedPosition, setDraggedPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = draggedPosition !== null;
 
   // Get current coordinates (manual takes priority over automatic)
   const getCurrentCoords = () => {
@@ -285,42 +288,58 @@ const BuildingLocationTab: React.FC<BuildingLocationTabProps> = ({
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
-              {!isEditing ? (
-                <>
-                  <Button variant="outline" onClick={handleAutoGeocode}>
-                    <Target className="h-4 w-4 mr-2" />
-                    Auto-localizar
-                  </Button>
-                  <Button onClick={() => setIsEditing(true)}>
-                    <MapPin className="h-4 w-4 mr-2" />
-                    Editar Posição
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" onClick={handleReset}>
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={handleSave} 
-                    disabled={isSaving}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? 'Salvando...' : 'Salvar Posição'}
-                  </Button>
-                </>
+              {/* Always visible buttons */}
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving || !hasUnsavedChanges}
+                className="bg-green-600 hover:bg-green-700 disabled:opacity-50"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? 'Salvando...' : 'Salvar'}
+              </Button>
+              
+              <Button variant="outline" onClick={handleAutoGeocode}>
+                <Target className="h-4 w-4 mr-2" />
+                Auto-localizar
+              </Button>
+              
+              {/* Edit Position Toggle */}
+              <Button 
+                variant={isEditing ? "default" : "outline"}
+                onClick={() => setIsEditing(!isEditing)}
+                className={isEditing ? "bg-blue-600 hover:bg-blue-700" : ""}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                {isEditing ? 'Editando' : 'Editar Posição'}
+              </Button>
+              
+              {/* Reset button when editing or has changes */}
+              {(isEditing || hasUnsavedChanges) && (
+                <Button variant="outline" onClick={handleReset}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
               )}
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Edit Mode Indicator */}
           {isEditing && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex items-center text-blue-800 text-sm">
                 <AlertTriangle className="h-4 w-4 mr-2" />
-                <span>Arraste o pin para a posição exata do prédio e clique em "Salvar Posição"</span>
+                <span>Arraste o pin para a posição exata do prédio e clique em "Salvar"</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Unsaved Changes Indicator */}
+          {hasUnsavedChanges && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <div className="flex items-center text-amber-800 text-sm">
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                <span>Alterações pendentes - clique em "Salvar" para confirmar a nova posição</span>
               </div>
             </div>
           )}
