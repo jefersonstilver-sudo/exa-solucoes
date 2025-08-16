@@ -103,9 +103,7 @@ const UsersPage = () => {
             <Database className="h-8 w-8 mr-3 text-indexa-purple" />
             Sistema de Gestão de Usuários
           </h1>
-          <p className="text-gray-600 mt-2">
-            Gestão completa da equipe INDEXA e base de clientes
-          </p>
+          <p className="text-gray-600 mt-2">Gestão completa da equipe EXA e base de clientes</p>
         </div>
       </div>
 
@@ -126,7 +124,7 @@ const UsersPage = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Equipe INDEXA</CardTitle>
+            <CardTitle className="text-sm font-medium">Equipe EXA</CardTitle>
             <Crown className="h-4 w-4 text-indexa-purple" />
           </CardHeader>
           <CardContent>
