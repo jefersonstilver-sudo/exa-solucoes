@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCheckout } from './useCheckout';
 import { useUnifiedTransaction } from './useUnifiedTransaction';
+import { transactionSessionManager } from '@/services/transactionSessionManager';
 import { useEnhancedAttemptCapture } from './useEnhancedAttemptCapture';
 import { useUnifiedOrderCreator } from './payment/order/useUnifiedOrderCreator';
 import { useUserSession } from './useUserSession';
@@ -19,7 +20,7 @@ export const useUnifiedCheckout = () => {
   const navigate = useNavigate();
   const { user } = useUserSession();
   const { cartItems, selectedPlan } = useCheckout();
-  const { couponId } = useCouponValidator();
+  const { couponId, couponValid, couponDiscount, validationResult } = useCouponValidator();
   const { handleClearCart } = useCartManager();
 
   const {
@@ -59,8 +60,18 @@ export const useUnifiedCheckout = () => {
     try {
       const planKey = selectedPlan as PlanKey;
       
-      // Passo 1: Criar sessão de transação única
-      const sessionResult = await createTransactionSession(cartItems, planKey);
+      // Passo 1: Criar sessão de transação única com cupom
+      const couponState = {
+        valid: couponValid,
+        discountPercent: couponDiscount,
+        couponId: validationResult.couponId
+      };
+      
+      const sessionResult = await transactionSessionManager.createTransactionSession(
+        cartItems, 
+        planKey, 
+        couponState
+      );
       
       if (!sessionResult.success) {
         throw new Error("Falha ao criar sessão de transação");

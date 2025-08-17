@@ -14,6 +14,7 @@ import PixPaymentDetails from './PixPaymentDetails';
 import CreditCardPayment from './CreditCardPayment';
 import PixPaymentDebugger from './PixPaymentDebugger';
 import PixPaymentButton from '../navigation/PixPaymentButton';
+import { useOrderPixPayment } from '@/hooks/payment/useOrderPixPayment';
 
 interface PaymentGatewayProps {
   orderId: string;
@@ -42,6 +43,7 @@ const PaymentGateway = ({
     localStorage.getItem('preferred_payment_method') || 'pix'
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { generatePixForOrder, isGeneratingPix } = useOrderPixPayment();
   
   // Log de montagem do componente
   useEffect(() => {
@@ -91,10 +93,25 @@ const PaymentGateway = ({
     );
   };
   
-  // SISTEMA RESTAURADO: Usar PixPaymentButton que abre popup
-  const handlePixPayment = () => {
-    console.log("🎯 PaymentGateway: SISTEMA RESTAURADO - Usando PixPaymentButton com popup");
-    // O PixPaymentButton vai lidar com a abertura do popup
+  // SISTEMA RESTAURADO: Gerar PIX para pedido existente
+  const handlePixPayment = async () => {
+    console.log("🎯 PaymentGateway: Gerando PIX para pedido existente:", orderId);
+    setIsLoading(true);
+    
+    try {
+      const order = {
+        id: orderId,
+        valor_total: totalAmount,
+        status: 'pendente',
+        client_id: userId || ''
+      };
+      
+      await generatePixForOrder(order);
+    } catch (error) {
+      console.error('Erro ao gerar PIX:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Prosseguir com cartão de crédito
@@ -178,12 +195,14 @@ const PaymentGateway = ({
         {/* SISTEMA RESTAURADO: Botões de pagamento */}
         <div className="mt-8 text-center space-y-4">
           {paymentMethod === 'pix' && !pixData && (
-            <PixPaymentButton
+            <Button
               onClick={handlePixPayment}
-              isDisabled={false}
-              isLoading={isLoading}
-              totalPrice={totalAmount}
-            />
+              disabled={isLoading || isGeneratingPix}
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isLoading || isGeneratingPix ? "Gerando PIX..." : `Gerar PIX R$ ${totalAmount.toFixed(2)}`}
+            </Button>
           )}
           
           {paymentMethod === 'credit_card' && !preferenceId && (

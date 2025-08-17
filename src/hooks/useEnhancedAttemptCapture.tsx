@@ -33,7 +33,7 @@ export const useEnhancedAttemptCapture = () => {
     try {
       console.log("📝 [EnhancedAttemptCapture] Criando tentativa real no banco de dados...");
 
-      // Extrair dados dos items do carrinho
+      // CORREÇÃO RLS: Extrair dados dos items do carrinho (sem SELECT em painels)
       const panelIds = cartItems.map(item => {
         const panelId = item.panel?.id;
         console.log('🔍 [EnhancedAttemptCapture] Extraindo panel ID:', panelId, 'do item:', item);
@@ -42,22 +42,12 @@ export const useEnhancedAttemptCapture = () => {
 
       console.log('📊 [EnhancedAttemptCapture] Panel IDs finais:', panelIds);
 
-      // Buscar building IDs correspondentes
-      const { data: panelData, error: panelError } = await supabase
-        .from('painels')
-        .select('id, building_id')
-        .in('id', panelIds);
-
-      if (panelError) {
-        console.error('❌ [EnhancedAttemptCapture] Erro ao buscar painéis:', panelError);
-        throw panelError;
-      }
-
+      // CORREÇÃO RLS: Extrair building IDs diretamente do cartItems (sem consulta ao banco)
       const buildingIds = [...new Set(
-        (panelData || []).map(p => p.building_id).filter(Boolean)
+        cartItems.map(item => item.panel.buildings?.id).filter(Boolean)
       )];
 
-      console.log('🏢 [EnhancedAttemptCapture] Building IDs extraídos:', buildingIds);
+      console.log('🏢 [EnhancedAttemptCapture] Building IDs extraídos (RLS-safe):', buildingIds);
 
       // Criar dados da tentativa
       const attemptData = {
@@ -78,11 +68,16 @@ export const useEnhancedAttemptCapture = () => {
           building_ids: buildingIds,
           cart_items_backup: cartItems.map(item => ({
             panel_id: item.panel?.id,
-            building_id: item.panel?.building_id,
-            panel_name: item.panel?.buildings?.nome || 'Nome não disponível',
-            duration: item.duration || 30,
-            preco_base: item.panel?.buildings?.preco_base || 0
+            building_id: item.panel.buildings?.id,
+            building_name: item.panel?.buildings?.nome || 'Nome não disponível',
+            duration: selectedPlan, // Usar selectedPlan em vez de item.duration
+            preco_base: item.panel?.buildings?.preco_base || 0,
+            panel_code: item.panel?.code,
+            panel_location: item.panel?.localizacao
           })),
+          capture_method: 'enhanced_rls_safe',
+          version: '2.1',
+          snapshot_complete: true,
           timestamp: new Date().toISOString()
         })
       };

@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
 import { AutoPaymentVerifier } from '@/components/admin/AutoPaymentVerifier';
 import { OrderVideoThumbnail } from '@/components/video-management/OrderVideoThumbnail';
+import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 
 const Pedidos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,8 +27,18 @@ const Pedidos: React.FC = () => {
   const { userOrdersAndAttempts, loading, refetch } = useUserOrdersAndAttempts(user?.id);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { finalizeAttemptToOrder, isProcessing: isProcessingAttempt } = useAttemptFinalizer();
 
   const isAdmin = hasRole('admin') || hasRole('super_admin');
+
+  // Handler para finalizar tentativa
+  const handleFinalizeAttempt = async (attemptId: string) => {
+    console.log('🎯 [Pedidos] Finalizando tentativa:', attemptId);
+    const result = await finalizeAttemptToOrder(attemptId);
+    if (result.success) {
+      toast.success('Tentativa convertida em pedido! Redirecionando para pagamento...');
+    }
+  };
 
   // LOGS DE DEBUG para diagnóstico
   console.log('📋 Pedidos: Componente renderizado');
@@ -180,14 +191,12 @@ const Pedidos: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              toast.info('Esta foi uma tentativa não finalizada. Experimente fazer um novo pedido!');
-              navigate('/paineis-digitais/loja');
-            }}
+            onClick={() => handleFinalizeAttempt(item.id)}
+            disabled={isProcessingAttempt}
             className="w-full mt-3 border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
           >
             <AlertTriangle className="h-3 w-3 mr-1" />
-            Finalizar Compra
+            {isProcessingAttempt ? 'Processando...' : 'Finalizar Compra'}
           </Button>
         )}
       </Card>
@@ -384,20 +393,18 @@ const Pedidos: React.FC = () => {
                                     >
                                       Detalhes
                                     </Button>
-                                  ) : (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        toast.info('Tentativa não finalizada. Experimente fazer um novo pedido!');
-                                        navigate('/paineis-digitais/loja');
-                                      }}
-                                      className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
-                                    >
-                                      <AlertTriangle className="h-3 w-3 mr-1" />
-                                      Finalizar
-                                    </Button>
-                                  )}
+                                   ) : (
+                                     <Button
+                                       variant="outline"
+                                       size="sm"
+                                       onClick={() => handleFinalizeAttempt(item.id)}
+                                       disabled={isProcessingAttempt}
+                                       className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
+                                     >
+                                       <AlertTriangle className="h-3 w-3 mr-1" />
+                                       {isProcessingAttempt ? 'Processando...' : 'Finalizar'}
+                                     </Button>
+                                   )}
                                   
                                   {isPendingPix && (
                                     <Button

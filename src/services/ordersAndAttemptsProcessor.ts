@@ -75,10 +75,10 @@ export const filterOrphanedAttempts = (tentativas: OrderOrAttempt[], pedidos: Or
 };
 
 export const combineAndSortData = (pedidos: OrderOrAttempt[], tentativas: OrderOrAttempt[]): OrderOrAttempt[] => {
-  // Primeiro filtrar tentativas inválidas (valor zero ou muito baixo)
+  // Filtrar apenas tentativas com valor <= 0 (claramente inválidas)
   const tentativasValidas = tentativas.filter(tentativa => {
-    // Remover tentativas com valor muito baixo (provavelmente erros)
-    if (tentativa.valor_total < 1) {
+    // Manter tentativas com valor > 0, incluindo R$ 0,05 e similares
+    if (tentativa.valor_total <= 0) {
       console.log(`🚫 Tentativa com valor inválido removida: ${tentativa.id} (Valor: R$ ${tentativa.valor_total})`);
       return false;
     }
