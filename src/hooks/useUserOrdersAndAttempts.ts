@@ -104,8 +104,8 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
 
       // Filtrar tentativas órfãs antes de combinar
       const validAttempts = processedAttempts.filter(attempt => {
-        // Filtrar tentativas com valor muito baixo
-        if (attempt.valor_total < 1) {
+        // Filtrar tentativas com valor inválido (menor ou igual a zero)
+        if (attempt.valor_total <= 0) {
           console.log(`🚫 Tentativa com valor inválido removida: ${attempt.id} (Valor: R$ ${attempt.valor_total})`);
           return false;
         }

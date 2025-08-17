@@ -41,8 +41,8 @@ export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) 
           label: 'Finalizar Compra',
           variant: 'default',
           onClick: () => {
-            // Redirecionar para a página de checkout/pagamento
-            window.location.href = '/checkout';
+            // This will be handled by the component that uses this hook
+            console.log('Finalizar Compra clicked for attempt:', order.id);
           }
         }
       };

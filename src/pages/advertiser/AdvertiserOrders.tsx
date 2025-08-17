@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderPixPayment } from '@/hooks/useOrderPixPayment';
+import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { 
@@ -48,6 +49,7 @@ const AdvertiserOrders = () => {
   });
   
   const { generatePixForOrder, isProcessing } = useOrderPixPayment();
+  const { finalizeAttemptToOrder, isProcessing: isProcessingAttempt } = useAttemptFinalizer();
 
   // Listen for video display popup events
   useEffect(() => {
@@ -147,6 +149,13 @@ const AdvertiserOrders = () => {
     const statusInfo = useOrderStatus(item, handlePixPayment);
     const StatusIcon = statusInfo.icon;
     const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
+    
+    // Handle "Finalizar Compra" for attempts
+    const handleFinalizarCompra = async () => {
+      if (item.type === 'attempt') {
+        await finalizeAttemptToOrder(item.id);
+      }
+    };
 
     return (
       <Card className={cn(
@@ -217,10 +226,11 @@ const AdvertiserOrders = () => {
                   <Button
                     variant={statusInfo.action.variant}
                     size="sm"
-                    onClick={statusInfo.action.onClick}
+                    onClick={item.type === 'attempt' ? handleFinalizarCompra : statusInfo.action.onClick}
+                    disabled={item.type === 'attempt' && isProcessingAttempt}
                     className="mr-2"
                   >
-                    {statusInfo.action.label}
+                    {item.type === 'attempt' && isProcessingAttempt ? 'Processando...' : statusInfo.action.label}
                   </Button>
                 )}
                 
