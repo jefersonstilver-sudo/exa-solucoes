@@ -27,14 +27,11 @@ export const fetchBuildingActionLogs = async (buildingId: string) => {
 export const fetchBuildingSales = async (buildingId: string) => {
   console.log('🔍 [BUILDING DETAILS SERVICE] Buscando vendas para prédio ID:', buildingId);
   
+  // Buscar pedidos primeiro
   const { data: salesData } = await supabase
     .from('pedidos')
     .select(`
       *,
-      client:client_id (
-        email,
-        id
-      ),
       pedido_videos (
         id,
         approval_status,
@@ -51,7 +48,24 @@ export const fetchBuildingSales = async (buildingId: string) => {
     .contains('lista_predios', [buildingId])
     .order('created_at', { ascending: false });
 
-  return salesData || [];
+  if (!salesData || salesData.length === 0) {
+    return [];
+  }
+
+  // Buscar dados dos clientes separadamente
+  const clientIds = salesData.map(sale => sale.client_id).filter(Boolean);
+  const { data: clientsData } = await supabase
+    .from('users')
+    .select('id, email, role')
+    .in('id', clientIds);
+
+  // Combinar dados
+  const salesWithClients = salesData.map(sale => ({
+    ...sale,
+    client: clientsData?.find(client => client.id === sale.client_id) || null
+  }));
+
+  return salesWithClients;
 };
 
 export const fetchBuildingPanels = async (buildingId: string) => {
