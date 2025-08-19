@@ -227,48 +227,41 @@ const UserMenu = () => {
                           {/* MENU PARA ADMIN REGULAR */}
                           {isAdmin && !isSuperAdmin && <>
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin" className="flex items-center">
+                                <Link to="/admin" className="flex items-center">
                                   <LayoutDashboard className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Dashboard Administrativo</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/pedidos" className="flex items-center">
+                                <Link to="/admin/pedidos" className="flex items-center">
                                   <Package className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Gerenciar Pedidos</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/predios" className="flex items-center">
+                                <Link to="/admin/predios" className="flex items-center">
                                   <Building className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Gerenciar Prédios</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/paineis" className="flex items-center">
+                                <Link to="/admin/paineis" className="flex items-center">
                                   <Monitor className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Gerenciar Painéis</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/super_admin/aprovacoes" className="flex items-center">
+                                <Link to="/admin/aprovacoes" className="flex items-center">
                                   <CheckCircle className="mr-3 h-5 w-5 text-blue-600" />
                                   <span className="font-medium">Aprovações</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuSeparator className="my-2 bg-gray-200" />
-                              
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
-                                <Link to="/configuracoes" className="flex items-center">
-                                  <Settings className="mr-3 h-5 w-5 text-blue-600" />
-                                  <span className="font-medium">Configurações</span>
-                                </Link>
-                              </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/alterar-senha" className="flex items-center">

@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { 
   Bell, 
   Search, 
@@ -27,6 +28,7 @@ interface AdminHeaderProps {
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   const { userProfile, logout, isSuperAdmin } = useAuth();
+  const { buildPath } = useAdminBasePath();
   const navigate = useNavigate();
   
   const handleSignOut = async () => {
@@ -104,10 +106,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
-              <DropdownMenuItem onClick={() => navigate('/super_admin/configuracoes')} className="text-gray-900 hover:bg-gray-100">
-                <Settings className="mr-3 h-4 w-4" />
-                <span>Configurações</span>
-              </DropdownMenuItem>
+              {isSuperAdmin && (
+                <DropdownMenuItem onClick={() => navigate(buildPath('configuracoes'))} className="text-gray-900 hover:bg-gray-100">
+                  <Settings className="mr-3 h-4 w-4" />
+                  <span>Configurações</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator className="bg-gray-200" />
               <DropdownMenuItem onClick={handleSignOut} className="text-red-600 hover:bg-red-50">
                 <LogOut className="mr-3 h-4 w-4" />

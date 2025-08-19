@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
@@ -41,6 +42,7 @@ import NotificationCenter from '@/components/notifications/NotificationCenter';
 const AdminSidebar = () => {
   const { userProfile, session, isSuperAdmin, logout } = useAuth();
   const { permissions, userInfo } = useUserPermissions();
+  const { basePath, buildPath } = useAdminBasePath();
   const navigate = useNavigate();
   
   console.log('AdminSidebar - Debug:', {
@@ -67,7 +69,7 @@ const AdminSidebar = () => {
     {
       label: 'Dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      href: '/super_admin',
+      href: basePath,
       requireSuperAdmin: false,
       section: 'main',
       permission: 'canViewDashboard'
@@ -75,7 +77,7 @@ const AdminSidebar = () => {
     {
       label: 'Pedidos',
       icon: <ShoppingBag className="h-5 w-5" />,
-      href: '/super_admin/pedidos',
+      href: buildPath('pedidos'),
       requireSuperAdmin: false,
       section: 'main',
       permission: 'canViewOrders'
@@ -83,7 +85,7 @@ const AdminSidebar = () => {
     {
       label: 'Aprovações',
       icon: <CheckSquare className="h-5 w-5" />,
-      href: '/super_admin/aprovacoes',
+      href: buildPath('aprovacoes'),
       requireSuperAdmin: false,
       section: 'main',
       permission: 'canViewApprovals'
@@ -93,7 +95,7 @@ const AdminSidebar = () => {
     {
       label: 'Prédios',
       icon: <Building2 className="h-5 w-5" />,
-      href: '/super_admin/predios',
+      href: buildPath('predios'),
       requireSuperAdmin: false,
       section: 'assets',
       permission: 'canManageBuildings'
@@ -101,7 +103,7 @@ const AdminSidebar = () => {
     {
       label: 'Painéis',
       icon: <MonitorPlay className="h-5 w-5" />,
-      href: '/super_admin/paineis',
+      href: buildPath('paineis'),
       requireSuperAdmin: false,
       section: 'assets',
       permission: 'canManagePanels'
@@ -111,7 +113,7 @@ const AdminSidebar = () => {
     {
       label: 'Síndicos Interessados',
       icon: <UserCheck className="h-5 w-5" />,
-      href: '/super_admin/sindicos-interessados',
+      href: buildPath('sindicos-interessados'),
       requireSuperAdmin: false,
       section: 'leads',
       permission: 'canViewSindicosInteressados'
@@ -119,7 +121,7 @@ const AdminSidebar = () => {
     {
       label: 'Leads Produtora',
       icon: <Coffee className="h-5 w-5" />,
-      href: '/super_admin/leads-produtora',
+      href: buildPath('leads-produtora'),
       requireSuperAdmin: false,
       section: 'leads',
       permission: 'canViewLeadsProdutora'
@@ -127,7 +129,7 @@ const AdminSidebar = () => {
     {
       label: 'Leads LINKAÊ',
       icon: <Megaphone className="h-5 w-5" />,
-      href: '/super_admin/leads-linkae',
+      href: buildPath('leads-linkae'),
       requireSuperAdmin: false,
       section: 'leads',
       permission: 'canViewLeadsLinkae'
@@ -135,7 +137,7 @@ const AdminSidebar = () => {
     {
       label: 'Leads EXA',
       icon: <Zap className="h-5 w-5" />,
-      href: '/super_admin/leads-exa',
+      href: buildPath('leads-exa'),
       requireSuperAdmin: false,
       section: 'leads',
       permission: 'canViewLeadsExa'
@@ -145,7 +147,7 @@ const AdminSidebar = () => {
     {
       label: 'Usuários',
       icon: <Users className="h-5 w-5" />,
-      href: '/super_admin/usuarios',
+      href: buildPath('usuarios'),
       requireSuperAdmin: true,
       section: 'system',
       permission: 'canManageUsers'
@@ -153,7 +155,7 @@ const AdminSidebar = () => {
     {
       label: 'Cupons',
       icon: <Ticket className="h-5 w-5" />,
-      href: '/super_admin/cupons',
+      href: buildPath('cupons'),
       requireSuperAdmin: false,
       section: 'system',
       permission: 'canManageCoupons'
@@ -161,7 +163,7 @@ const AdminSidebar = () => {
     {
       label: 'Homepage Config',
       icon: <Images className="h-5 w-5" />,
-      href: '/super_admin/homepage-config',
+      href: buildPath('homepage-config'),
       requireSuperAdmin: false, // Marketing admin também pode acessar
       section: 'system',
       permission: 'canManageHomepageConfig'
@@ -169,7 +171,7 @@ const AdminSidebar = () => {
     {
       label: 'Configurações',
       icon: <Settings className="h-5 w-5" />,
-      href: '/super_admin/configuracoes',
+      href: buildPath('configuracoes'),
       requireSuperAdmin: true,
       section: 'system',
       permission: 'canManageSystemSettings'
@@ -179,7 +181,7 @@ const AdminSidebar = () => {
     {
       label: 'Vídeos',
       icon: <Video className="h-5 w-5" />,
-      href: '/super_admin/videos',
+      href: buildPath('videos'),
       requireSuperAdmin: false,
       section: 'content',
       permission: 'canManageVideos'
@@ -187,7 +189,7 @@ const AdminSidebar = () => {
     {
       label: 'Portfólio Produtora',
       icon: <Film className="h-5 w-5" />,
-      href: '/super_admin/portfolio-produtora',
+      href: buildPath('portfolio-produtora'),
       requireSuperAdmin: false,
       section: 'content',
       permission: 'canManagePortfolio'
@@ -195,7 +197,7 @@ const AdminSidebar = () => {
     {
       label: 'Notificações',
       icon: <Bell className="h-5 w-5" />,
-      href: '/super_admin/notificacoes',
+      href: buildPath('notificacoes'),
       requireSuperAdmin: false,
       section: 'content',
       permission: 'canManageNotifications'
@@ -309,13 +311,15 @@ const AdminSidebar = () => {
                   </p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => navigate('/super_admin/configuracoes')}
-                  className="text-gray-700 hover:bg-gray-100"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configurações</span>
-                </DropdownMenuItem>
+                {isSuperAdmin && (
+                  <DropdownMenuItem 
+                    onClick={() => navigate(buildPath('configuracoes'))}
+                    className="text-gray-700 hover:bg-gray-100"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configurações</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleSignOut}

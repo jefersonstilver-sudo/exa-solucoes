@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -35,6 +36,7 @@ import {
 const ModernAdminSidebar = () => {
   const { state } = useSidebar();
   const location = useLocation();
+  const { buildPath } = useAdminBasePath();
 
   const navigationGroups = [
     {
@@ -42,7 +44,7 @@ const ModernAdminSidebar = () => {
       items: [
         {
           title: 'Dashboard',
-          href: '/super_admin',
+          href: buildPath(''),
           icon: LayoutDashboard,
         }
       ]
@@ -52,22 +54,22 @@ const ModernAdminSidebar = () => {
       items: [
         {
           title: 'Prédios',
-          href: '/super_admin/predios',
+          href: buildPath('predios'),
           icon: Building2,
         },
         {
           title: 'Painéis',
-          href: '/super_admin/paineis',
+          href: buildPath('paineis'),
           icon: Monitor,
         },
         {
           title: 'Vídeos',
-          href: '/super_admin/videos',
+          href: buildPath('videos'),
           icon: Play,
         },
         {
           title: 'Config Homepage',
-          href: '/super_admin/homepage-config',
+          href: buildPath('homepage-config'),
           icon: ImageIcon,
         }
       ]
@@ -77,17 +79,17 @@ const ModernAdminSidebar = () => {
       items: [
         {
           title: 'Pedidos',
-          href: '/super_admin/pedidos',
+          href: buildPath('pedidos'),
           icon: ShoppingCart,
         },
         {
           title: 'Usuários',
-          href: '/super_admin/usuarios',
+          href: buildPath('usuarios'),
           icon: Users,
         },
         {
           title: 'Cupons',
-          href: '/super_admin/cupons',
+          href: buildPath('cupons'),
           icon: Ticket,
         }
       ]
@@ -97,17 +99,17 @@ const ModernAdminSidebar = () => {
       items: [
         {
           title: 'Aprovações',
-          href: '/super_admin/aprovacoes',
+          href: buildPath('aprovacoes'),
           icon: CheckSquare,
         },
         {
           title: 'Síndicos Interessados',
-          href: '/super_admin/sindicos-interessados',
+          href: buildPath('sindicos-interessados'),
           icon: UserCheck,
         },
         {
           title: 'Leads Produtora',
-          href: '/super_admin/leads-produtora',
+          href: buildPath('leads-produtora'),
           icon: Coffee,
         }
       ]
@@ -117,12 +119,12 @@ const ModernAdminSidebar = () => {
       items: [
         {
           title: 'Notificações',
-          href: '/super_admin/notificacoes',
+          href: buildPath('notificacoes'),
           icon: Bell,
         },
         {
           title: 'Configurações',
-          href: '/super_admin/configuracoes',
+          href: buildPath('configuracoes'),
           icon: Settings,
         }
       ]
