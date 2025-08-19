@@ -14,6 +14,9 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
   const primaryImage = getImageUrl(building.imagem_principal);
   const imageUrls = getBuildingImageUrls(building);
   const totalImages = imageUrls.length;
+  
+  // Verificar se é PRE VENDA (status instalação)
+  const isPreVenda = building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao';
 
   return (
     <div className={mode === 'fill' ? "relative w-full h-full min-h-[280px]" : "relative w-full aspect-square"}>
@@ -35,6 +38,15 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
           {building.venue_type || 'Residencial'}
         </Badge>
       </div>
+      
+      {/* Tarja PRE VENDA */}
+      {isPreVenda && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-12 z-20">
+          <div className="bg-blue-600 text-white px-6 py-2 text-lg font-bold tracking-wider shadow-lg border-2 border-white">
+            PRÉ-VENDA
+          </div>
+        </div>
+      )}
       
       {/* Contador de fotos */}
       {totalImages > 0 && (
