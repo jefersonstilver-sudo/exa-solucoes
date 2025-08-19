@@ -29,7 +29,7 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       const buildings = await fetchBuildingsForStore();
       console.log('📊 [BUILDING STORE] Prédios atualizados:', buildings.length);
       
-      const activeBuildings = buildings.filter(building => building.status === 'ativo');
+      const activeBuildings = buildings.filter(building => ['ativo', 'instalação', 'instalacao'].includes(building.status));
       console.log('🔄 [BUILDING STORE] Prédios ativos após refresh:', activeBuildings.length);
       
       set({ 
@@ -99,7 +99,7 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       });
       
       // CORREÇÃO CRÍTICA: Garantir que o estado seja atualizado corretamente
-      const activeBuildings = buildings.filter(building => building.status === 'ativo');
+      const activeBuildings = buildings.filter(building => ['ativo', 'instalação', 'instalacao'].includes(building.status));
       console.log('🔄 [BUILDING STORE] Prédios ativos encontrados:', activeBuildings.length);
       
       set({ 
