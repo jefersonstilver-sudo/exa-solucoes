@@ -106,6 +106,10 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                   <p className="font-medium">{building.numero_unidades || 'N/A'}</p>
                 </div>
                 <div>
+                  <span className="text-gray-500">Público Aprox.:</span>
+                  <p className="font-medium">{building.publico_estimado || 'N/A'}</p>
+                </div>
+                <div>
                   <span className="text-gray-500">Elevadores:</span>
                   <p className="font-medium">{building.numero_elevadores || 'N/A'}</p>
                 </div>

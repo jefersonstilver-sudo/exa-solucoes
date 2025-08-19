@@ -17,6 +17,7 @@ interface CommercialDataFormProps {
     numero_andares: number;
     numero_elevadores: number;
     numero_blocos: number;
+    publico_estimado: number;
     preco_base: number;
     status: string;
   };
@@ -24,6 +25,15 @@ interface CommercialDataFormProps {
 }
 
 const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpdate }) => {
+  // Função para calcular público estimado automaticamente
+  const handleUnidadesChange = (value: number) => {
+    const publicoCalculado = value * 3;
+    onUpdate({ 
+      numero_unidades: value,
+      publico_estimado: publicoCalculado 
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -37,12 +47,29 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
               id="numero_unidades"
               type="number"
               value={formData.numero_unidades}
-              onChange={(e) => onUpdate({ numero_unidades: parseInt(e.target.value) || 0 })}
+              onChange={(e) => handleUnidadesChange(parseInt(e.target.value) || 0)}
               min="0"
               placeholder="Ex: 120 (opcional)"
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="publico_estimado">Público Aproximado</Label>
+            <Input
+              id="publico_estimado"
+              type="number"
+              value={formData.publico_estimado}
+              onChange={(e) => onUpdate({ publico_estimado: parseInt(e.target.value) || 0 })}
+              min="0"
+              placeholder="Calculado automaticamente (editável)"
+            />
+            <p className="text-xs text-muted-foreground">
+              Calculado como: {formData.numero_unidades} unidades × 3 = {formData.numero_unidades * 3}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="numero_andares">Número de Andares</Label>
             <Input
@@ -54,9 +81,7 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
               placeholder="Ex: 15 (opcional)"
             />
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="numero_elevadores">Número de Elevadores</Label>
             <Input
@@ -68,18 +93,18 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
               placeholder="Ex: 2 (opcional)"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="numero_blocos">Número de Blocos</Label>
-            <Input
-              id="numero_blocos"
-              type="number"
-              value={formData.numero_blocos}
-              onChange={(e) => onUpdate({ numero_blocos: parseInt(e.target.value) || 1 })}
-              min="1"
-              placeholder="Ex: 1 (opcional)"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="numero_blocos">Número de Blocos</Label>
+          <Input
+            id="numero_blocos"
+            type="number"
+            value={formData.numero_blocos}
+            onChange={(e) => onUpdate({ numero_blocos: parseInt(e.target.value) || 1 })}
+            min="1"
+            placeholder="Ex: 1 (opcional)"
+          />
         </div>
 
         <div className="space-y-2">

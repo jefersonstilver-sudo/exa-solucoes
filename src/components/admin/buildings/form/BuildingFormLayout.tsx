@@ -60,6 +60,7 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
             numero_andares: formData.numero_andares,
             numero_elevadores: formData.numero_elevadores,
             numero_blocos: formData.numero_blocos,
+            publico_estimado: formData.publico_estimado,
             preco_base: formData.preco_base,
             status: formData.status
           }}
