@@ -128,20 +128,6 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               </div>
             </div>
 
-            {/* Contact Info */}
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">Contato</h4>
-              <div className="space-y-1 text-sm">
-                {building.contato_telefone && <div className="flex items-center text-gray-600">
-                    <Phone className="h-4 w-4 mr-2" />
-                    <span>{building.contato_telefone}</span>
-                  </div>}
-                {building.contato_email && <div className="flex items-center text-gray-600">
-                    <Mail className="h-4 w-4 mr-2" />
-                    <span>{building.contato_email}</span>
-                  </div>}
-              </div>
-            </div>
           </div>
           
           {/* Metrics and Price Section */}
