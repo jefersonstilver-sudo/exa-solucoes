@@ -66,6 +66,10 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState('admin');
   const [creating, setCreating] = useState(false);
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
+  const [promoteUserEmail, setPromoteUserEmail] = useState('');
+  const [promoteToRole, setPromoteToRole] = useState('admin');
+  const [promoting, setPromoting] = useState(false);
 
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -164,6 +168,78 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
     }
   };
 
+  const promoteUserToAdmin = async () => {
+    if (!promoteUserEmail.trim()) {
+      toast.error('Email é obrigatório');
+      return;
+    }
+
+    try {
+      setPromoting(true);
+      console.log('🔄 Promovendo usuário:', { email: promoteUserEmail, newRole: promoteToRole });
+
+      // Verificar se o usuário existe
+      const { data: existingUser, error: findError } = await supabase
+        .from('users')
+        .select('id, email, role')
+        .eq('email', promoteUserEmail.trim())
+        .single();
+
+      if (findError) {
+        console.error('❌ Usuário não encontrado:', findError);
+        toast.error('Usuário não encontrado no sistema');
+        return;
+      }
+
+      if (existingUser.role !== 'client') {
+        toast.error(`Usuário já possui role "${existingUser.role}". Apenas clientes podem ser promovidos.`);
+        return;
+      }
+
+      // Usar a função admin_update_user_role_secure do Supabase
+      const { data, error } = await supabase.rpc('admin_update_user_role_secure', {
+        p_user_id: existingUser.id,
+        p_new_role: promoteToRole
+      });
+
+      if (error) {
+        console.error('❌ Erro ao promover usuário:', error);
+        toast.error('Erro ao promover usuário: ' + error.message);
+        return;
+      }
+
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error('Erro ao promover usuário: ' + (result?.error || 'Erro desconhecido'));
+        return;
+      }
+
+      const roleLabels = {
+        admin: 'Administrador Geral',
+        admin_marketing: 'Administrador Marketing',
+        super_admin: 'Super Administrador'
+      };
+
+      toast.success(`Usuário promovido com sucesso!`, {
+        description: `${promoteUserEmail} agora é ${roleLabels[promoteToRole as keyof typeof roleLabels]}`
+      });
+
+      // Limpar formulário e fechar dialog
+      setPromoteUserEmail('');
+      setPromoteToRole('admin');
+      setIsPromoteDialogOpen(false);
+      
+      // Atualizar lista
+      onRefresh();
+
+    } catch (error: any) {
+      console.error('💥 Erro crítico ao promover usuário:', error);
+      toast.error('Erro crítico ao promover usuário');
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   const deleteSelectedUsers = async () => {
     if (selectedUsers.length === 0) {
       toast.error('Nenhum usuário selecionado');
@@ -254,6 +330,93 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
+          <Dialog open={isPromoteDialogOpen} onOpenChange={setIsPromoteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50">
+                <Edit className="h-4 w-4 mr-2" />
+                Promover Cliente
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-white">
+              <DialogHeader>
+                <DialogTitle className="text-black">Promover Cliente para Administrador</DialogTitle>
+                <DialogDescription className="text-gray-600">
+                  Converta uma conta de cliente existente para administrador
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="promote-email" className="text-black">Email do Cliente</Label>
+                  <Input
+                    id="promote-email"
+                    type="email"
+                    value={promoteUserEmail}
+                    onChange={(e) => setPromoteUserEmail(e.target.value)}
+                    placeholder="cliente@exemplo.com"
+                    className="bg-white border-gray-300 text-black"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Digite o email do cliente que deseja promover
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="promote-role" className="text-black">Promover para</Label>
+                  <Select value={promoteToRole} onValueChange={setPromoteToRole}>
+                    <SelectTrigger className="bg-white border-gray-300 text-black">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-gray-300">
+                      <SelectItem value="admin">
+                        <div className="flex items-center space-x-2">
+                          <Shield className="h-4 w-4 text-blue-500" />
+                          <div>
+                            <div className="font-medium">Administrador Geral</div>
+                            <div className="text-xs text-gray-500">Gestão completa de prédios, painéis e pedidos</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="admin_marketing">
+                        <div className="flex items-center space-x-2">
+                          <UserCheck className="h-4 w-4 text-purple-500" />
+                          <div>
+                            <div className="font-medium">Administrador Marketing</div>
+                            <div className="text-xs text-gray-500">Apenas leads, campanhas e homepage</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="super_admin">
+                        <div className="flex items-center space-x-2">
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                          <div>
+                            <div className="font-medium">Super Administrador</div>
+                            <div className="text-xs text-gray-500">Acesso total ao sistema</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>⚠️ Atenção:</strong> Esta ação converterá uma conta de cliente em administrador. 
+                    O usuário manterá acesso aos seus pedidos existentes e ganhará as permissões administrativas.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsPromoteDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={promoteUserToAdmin}
+                  disabled={promoting}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {promoting ? 'Promovendo...' : 'Promover Usuário'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-indexa-purple hover:bg-indexa-purple-dark text-white">
