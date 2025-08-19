@@ -29,8 +29,26 @@ export const fetchBuildingSales = async (buildingId: string) => {
   
   const { data: salesData } = await supabase
     .from('pedidos')
-    .select('*')
-    .contains('lista_paineis', [buildingId])
+    .select(`
+      *,
+      client:client_id (
+        email,
+        id
+      ),
+      pedido_videos (
+        id,
+        approval_status,
+        approved_at,
+        is_active,
+        selected_for_display,
+        videos (
+          id,
+          nome,
+          url
+        )
+      )
+    `)
+    .contains('lista_predios', [buildingId])
     .order('created_at', { ascending: false });
 
   return salesData || [];
