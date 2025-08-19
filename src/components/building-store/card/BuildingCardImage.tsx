@@ -17,6 +17,9 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
   
   // Verificar se é PRE VENDA (status instalação)
   const isPreVenda = building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao';
+  
+  // Debug do status
+  console.log(`🏗️ [PRE-VENDA] Prédio: ${building.nome}, Status: "${building.status}", É Pre-Venda: ${isPreVenda}`);
 
   return (
     <div className={mode === 'fill' ? "relative w-full h-full min-h-[280px]" : "relative w-full aspect-square"}>
@@ -39,10 +42,10 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
         </Badge>
       </div>
       
-      {/* Tarja PRE VENDA */}
+      {/* Tarja PRE VENDA - Canto superior direito */}
       {isPreVenda && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-12 z-20">
-          <div className="bg-blue-600 text-white px-6 py-2 text-lg font-bold tracking-wider shadow-lg border-2 border-white">
+        <div className="absolute top-3 right-3 z-20">
+          <div className="bg-blue-600 text-white px-3 py-1.5 text-sm font-bold tracking-wide shadow-lg rounded-md border border-blue-700">
             PRÉ-VENDA
           </div>
         </div>
