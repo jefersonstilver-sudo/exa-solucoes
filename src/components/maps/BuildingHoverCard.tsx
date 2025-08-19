@@ -77,18 +77,24 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   }, [side, computeInCart]);
 
   const getStatusVariant = (status: string) => {
-    switch (status?.toLowerCase()) {
+    const normalizedStatus = status?.toLowerCase();
+    switch (normalizedStatus) {
       case 'ativo': return 'default';
       case 'manutenção': return 'secondary';
+      case 'instalação':
+      case 'instalacao': return 'outline';
       case 'inativo': return 'destructive';
       default: return 'outline';
     }
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status?.toLowerCase()) {
+    const normalizedStatus = status?.toLowerCase();
+    switch (normalizedStatus) {
       case 'ativo': return 'Ativo';
       case 'manutenção': return 'Manutenção';
+      case 'instalação':
+      case 'instalacao': return 'PRE VENDA';
       case 'inativo': return 'Inativo';
       default: return 'Status não definido';
     }

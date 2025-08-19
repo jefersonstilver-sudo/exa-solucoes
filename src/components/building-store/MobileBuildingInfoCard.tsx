@@ -20,10 +20,22 @@ const MobileBuildingInfoCard: React.FC<MobileBuildingInfoCardProps> = ({ buildin
     }).format(price);
   };
 
+  const getDisplayStatus = (status: string) => {
+    const normalizedStatus = status?.toLowerCase();
+    if (normalizedStatus === 'instalação' || normalizedStatus === 'instalacao') {
+      return 'PRE VENDA';
+    }
+    return status || 'N/A';
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
+    const normalizedStatus = status?.toLowerCase();
+    switch (normalizedStatus) {
       case 'ativo':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'instalação':
+      case 'instalacao':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'inativo':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'manutencao':
@@ -61,7 +73,7 @@ const MobileBuildingInfoCard: React.FC<MobileBuildingInfoCardProps> = ({ buildin
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">Status:</span>
             <Badge variant="outline" className={`text-xs px-2 py-1 ${getStatusColor(building.status)}`}>
-              {building.status || 'N/A'}
+              {getDisplayStatus(building.status)}
             </Badge>
           </div>
 
