@@ -5,7 +5,7 @@ import {
   AdminBuilding, 
   fetchAllBuildingsForAdmin 
 } from '@/services/buildingsAdminService';
-import { processBuildingsData } from '@/services/buildingsProcessor';
+import { processAdminBuildingsData } from '@/services/buildingsAdminProcessor';
 import { BuildingStats, calculateBuildingStats } from '@/services/buildingsStatsService';
 import { 
   updateBuildingInDatabase, 
@@ -29,7 +29,7 @@ export const useAdminBuildingsData = () => {
       console.log('🏢 [ADMIN BUILDINGS HOOK] Buscando todos os prédios para administração...');
       
       const { buildings: buildingsData, panels: panelsData } = await fetchAllBuildingsForAdmin();
-      const processedBuildings = processBuildingsData(buildingsData, panelsData);
+      const processedBuildings = processAdminBuildingsData(buildingsData);
       
       setBuildings(processedBuildings);
       

@@ -33,6 +33,8 @@ export interface AdminBuilding {
   contato_vice_sindico: string;
   nome_contato_predio: string;
   numero_contato_predio: string;
+  paineis_ativos: number;
+  vendas_mes_atual: number;
 }
 
 export const fetchAllBuildingsForAdmin = async () => {
@@ -42,22 +44,35 @@ export const fetchAllBuildingsForAdmin = async () => {
     // Use secure function that excludes sensitive contact information by default
     const buildingsPromise = supabase.rpc('get_admin_buildings_safe');
 
+    // Buscar painéis ativos por prédio
     const panelsPromise = supabase
       .from('painels')
-      .select('building_id');
+      .select('building_id, status')
+      .eq('status', 'online');
+
+    // Buscar vendas do mês atual por prédio
+    const currentMonth = new Date();
+    const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    
+    const salesPromise = supabase
+      .from('pedidos')
+      .select('lista_predios')
+      .in('status', ['pago', 'ativo', 'video_aprovado', 'pago_pendente_video'])
+      .gte('created_at', firstDayOfMonth.toISOString());
 
     // Implementar timeout de 10 segundos
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Timeout na busca de dados')), 10000);
     });
 
-    const [buildingsResult, panelsResult] = await Promise.race([
-      Promise.all([buildingsPromise, panelsPromise]),
+    const [buildingsResult, panelsResult, salesResult] = await Promise.race([
+      Promise.all([buildingsPromise, panelsPromise, salesPromise]),
       timeoutPromise
     ]) as any;
 
     const { data: buildingsData, error: buildingsError } = buildingsResult;
     const { data: panelsData, error: panelsError } = panelsResult;
+    const { data: salesData, error: salesError } = salesResult;
 
     if (buildingsError) {
       console.error('❌ [ADMIN BUILDINGS SERVICE] Erro ao buscar prédios:', buildingsError);
@@ -65,18 +80,47 @@ export const fetchAllBuildingsForAdmin = async () => {
       return { buildings: [], panels: [] };
     }
 
+    // Processar dados dos painéis ativos
+    const activePanelsByBuilding = (panelsData || []).reduce((acc: any, panel: any) => {
+      if (panel.building_id) {
+        acc[panel.building_id] = (acc[panel.building_id] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    // Processar dados das vendas do mês
+    const salesByBuilding = (salesData || []).reduce((acc: any, pedido: any) => {
+      if (pedido.lista_predios && Array.isArray(pedido.lista_predios)) {
+        pedido.lista_predios.forEach((buildingId: string) => {
+          acc[buildingId] = (acc[buildingId] || 0) + 1;
+        });
+      }
+      return acc;
+    }, {});
+
+    // Enriquecer dados dos prédios com as novas métricas
+    const enrichedBuildings = (buildingsData || []).map((building: any) => ({
+      ...building,
+      paineis_ativos: activePanelsByBuilding[building.id] || 0,
+      vendas_mes_atual: salesByBuilding[building.id] || 0
+    }));
+
     console.log('✅ [ADMIN BUILDINGS SERVICE] Prédios carregados para administração:', {
-      total: buildingsData?.length || 0,
-      ativos: buildingsData?.filter((b: any) => b.status === 'ativo').length || 0,
-      inativos: buildingsData?.filter((b: any) => b.status === 'inativo').length || 0
+      total: enrichedBuildings.length,
+      ativos: enrichedBuildings.filter((b: any) => b.status === 'ativo').length,
+      inativos: enrichedBuildings.filter((b: any) => b.status === 'inativo').length
     });
 
     if (panelsError) {
       console.error('⚠️ [ADMIN BUILDINGS SERVICE] Erro ao buscar painéis (não crítico):', panelsError);
     }
 
+    if (salesError) {
+      console.error('⚠️ [ADMIN BUILDINGS SERVICE] Erro ao buscar vendas (não crítico):', salesError);
+    }
+
     return {
-      buildings: buildingsData || [],
+      buildings: enrichedBuildings,
       panels: panelsData || []
     };
   } catch (error: any) {

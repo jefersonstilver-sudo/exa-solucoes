@@ -49,11 +49,10 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
     }
   };
 
-  // Calculate panel stats directly
-  const panelStats = {
-    total: building.quantidade_telas || 0,
-    occupied: building.paineis_ocupados || 0,
-    available: (building.quantidade_telas || 0) - (building.paineis_ocupados || 0)
+  // New building metrics
+  const buildingMetrics = {
+    paineis_ativos: building.paineis_ativos || 0,
+    vendas_mes_atual: building.vendas_mes_atual || 0
   };
   return <Card className={`transition-all duration-200 hover:shadow-lg ${building.status === 'manutenção' ? 'border-orange-200 bg-orange-50/30' : building.status === 'instalação' ? 'border-blue-200 bg-blue-50/30' : building.status === 'inativo' ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200'}`}>
       <CardContent className="p-6">
@@ -135,24 +134,23 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
           
           {/* Metrics and Price Section */}
           <div className="lg:col-span-3 space-y-4">
-            {/* Panel Metrics */}
+            {/* Building Metrics */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                <Monitor className="h-4 w-4 mr-2" />
-                Painéis
-              </h4>
-              <div className="grid grid-cols-1 gap-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total:</span>
-                  <span className="font-medium">{panelStats.total}</span>
+              <h4 className="font-semibold text-gray-900 mb-3">Métricas</h4>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
+                  <div className="flex items-center">
+                    <Monitor className="h-4 w-4 mr-2 text-green-600" />
+                    <span className="text-sm text-gray-600">Painéis Ativos</span>
+                  </div>
+                  <span className="font-bold text-green-600">{buildingMetrics.paineis_ativos}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ocupados:</span>
-                  <span className="font-medium text-red-600">{panelStats.occupied}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Disponíveis:</span>
-                  <span className="font-medium text-green-600">{panelStats.available}</span>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
+                  <div className="flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
+                    <span className="text-sm text-gray-600">Vendas do Mês</span>
+                  </div>
+                  <span className="font-bold text-blue-600">{buildingMetrics.vendas_mes_atual}</span>
                 </div>
               </div>
             </div>
