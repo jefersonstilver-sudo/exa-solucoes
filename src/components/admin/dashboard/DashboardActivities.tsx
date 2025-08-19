@@ -40,9 +40,6 @@ const DashboardActivities = ({
     type: 'neutral',
     icon: ShoppingBag
   }];
-  return <Card className="lg:col-span-2 shadow-lg border-0">
-      
-      
-    </Card>;
+  return;
 };
 export default DashboardActivities;
