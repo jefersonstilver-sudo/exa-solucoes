@@ -116,18 +116,22 @@ export const useBuildingFormData = (building: any, open: boolean) => {
     setLoading(true);
 
     try {
-      const dataToSave = {
-        ...formData,
-        amenities: formData.caracteristicas,
-        venue_type: (formData.venue_type === 'Residencial' || formData.venue_type === 'Comercial') 
-          ? formData.venue_type 
-          : 'Residencial',
-      };
+      // Montar payload sem tentar atualizar a coluna gerada "publico_estimado"
+      const { publico_estimado, caracteristicas, ...rest } = formData as any;
+
+      const payload = {
+        ...rest,
+        amenities: caracteristicas,
+        venue_type:
+          formData.venue_type === 'Residencial' || formData.venue_type === 'Comercial'
+            ? formData.venue_type
+            : 'Residencial',
+      } as any;
 
       if (building) {
         const { error } = await supabase
           .from('buildings')
-          .update(dataToSave)
+          .update(payload)
           .eq('id', building.id);
 
         if (error) throw error;
@@ -135,15 +139,15 @@ export const useBuildingFormData = (building: any, open: boolean) => {
         await supabase.rpc('log_building_action', {
           p_building_id: building.id,
           p_action_type: 'update',
-          p_description: `Prédio "${formData.nome}" atualizado - Tipo: ${dataToSave.venue_type}`,
-          p_new_values: dataToSave
+          p_description: `Prédio "${formData.nome}" atualizado - Tipo: ${payload.venue_type}`,
+          p_new_values: payload,
         });
 
         toast.success('Prédio atualizado com sucesso!');
       } else {
         const { data, error } = await supabase
           .from('buildings')
-          .insert([dataToSave])
+          .insert([payload])
           .select()
           .single();
 
@@ -152,8 +156,8 @@ export const useBuildingFormData = (building: any, open: boolean) => {
         await supabase.rpc('log_building_action', {
           p_building_id: data.id,
           p_action_type: 'create',
-          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${dataToSave.venue_type}`,
-          p_new_values: dataToSave
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${payload.venue_type}`,
+          p_new_values: payload,
         });
 
         // Enviar para webhook (não bloquear criação se falhar)
