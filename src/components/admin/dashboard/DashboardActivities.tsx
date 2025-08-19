@@ -40,6 +40,51 @@ const DashboardActivities = ({
     type: 'neutral',
     icon: ShoppingBag
   }];
-  return;
+  
+  return (
+    <Card className="col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Atividades Recentes
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {recentActivities.map((activity) => {
+            const IconComponent = activity.icon;
+            return (
+              <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg border">
+                <div className={`p-2 rounded-full ${
+                  activity.type === 'success' ? 'bg-green-100 text-green-600' :
+                  activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                  'bg-blue-100 text-blue-600'
+                }`}>
+                  <IconComponent className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {activity.action}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {activity.time}
+                  </p>
+                </div>
+                <Badge variant={
+                  activity.type === 'success' ? 'default' :
+                  activity.type === 'warning' ? 'secondary' :
+                  'outline'
+                }>
+                  {activity.type === 'success' ? 'Sucesso' :
+                   activity.type === 'warning' ? 'Atenção' :
+                   'Info'}
+                </Badge>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 export default DashboardActivities;
