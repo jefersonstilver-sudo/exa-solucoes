@@ -3,7 +3,6 @@ import React from 'react';
 import { Building2, MapPin, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import LaunchCountdown from './LaunchCountdown';
 
 const BuildingStoreHeader = () => {
   const isMobile = useIsMobile();
@@ -51,9 +50,6 @@ const BuildingStoreHeader = () => {
             Encontre o local perfeito para sua campanha publicitária. 
             Explore nossos prédios em localizações estratégicas da cidade.
           </motion.p>
-          
-          {/* Contador Regressivo */}
-          <LaunchCountdown />
         </div>
 
         {/* Features */}
