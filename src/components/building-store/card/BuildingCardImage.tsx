@@ -42,14 +42,6 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
         </Badge>
       </div>
       
-      {/* Tarja PRE VENDA - Diagonal na parte branca */}
-      {isPreVenda && (
-        <div className="absolute top-2 right-2 z-20 transform rotate-12">
-          <div className="bg-blue-600 text-white px-4 py-2 text-sm font-bold tracking-wide shadow-xl rounded-lg border-2 border-white">
-            PRÉ-VENDA
-          </div>
-        </div>
-      )}
       
       {/* Contador de fotos */}
       {totalImages > 0 && (

@@ -32,6 +32,14 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
     // Layout mobile: Card vertical compacto com título no topo
     return (
       <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
+        {/* Banner PRÉ-VENDA no topo direito do card */}
+        {(building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao') && (
+          <div className="absolute top-3 right-3 z-30 transform rotate-12">
+            <div className="bg-blue-600 text-white px-3 py-1.5 text-xs font-bold tracking-wide shadow-xl rounded-lg border-2 border-white">
+              PRÉ-VENDA
+            </div>
+          </div>
+        )}
         <CardContent className="p-0 relative">
           <div className="flex flex-col">
             {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
@@ -98,6 +106,14 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   // Layout desktop: Card horizontal com título no topo
   return (
     <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
+      {/* Banner PRÉ-VENDA no topo direito do card */}
+      {(building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao') && (
+        <div className="absolute top-3 right-3 z-30 transform rotate-12">
+          <div className="bg-blue-600 text-white px-3 py-1.5 text-xs font-bold tracking-wide shadow-xl rounded-lg border-2 border-white">
+            PRÉ-VENDA
+          </div>
+        </div>
+      )}
       <CardContent className="p-0 relative">
         <div className={`flex flex-col lg:flex-row ${wideMode ? 'min-h-[420px]' : 'min-h-[320px]'}`}>
           {/* Imagem Principal - Desktop: Lado esquerdo */}
