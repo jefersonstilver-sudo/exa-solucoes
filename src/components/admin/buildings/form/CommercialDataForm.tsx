@@ -73,17 +73,6 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="monthly_traffic">Tráfego Mensal</Label>
-          <Input
-            id="monthly_traffic"
-            type="number"
-            value={formData.monthly_traffic}
-            onChange={(e) => onUpdate({ monthly_traffic: parseInt(e.target.value) || 0 })}
-            min="0"
-            placeholder="Visitantes por mês (opcional)"
-          />
-        </div>
       </CardContent>
     </Card>
   );
