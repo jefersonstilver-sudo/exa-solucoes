@@ -1848,6 +1848,9 @@ export type Database = {
           longitude: number
           monthly_traffic: number
           nome: string
+          numero_andares: number
+          numero_blocos: number
+          numero_elevadores: number
           numero_unidades: number
           padrao_publico: string
           preco_base: number
