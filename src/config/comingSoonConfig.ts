@@ -8,4 +8,4 @@ export const MAINTENANCE_MODE = true;
 export const SHOW_DEV_ACCESS = true;
 
 // ISO date string for the launch date (used by the countdown and display text)
-export const LAUNCH_DATE_ISO = '2025-08-15T00:00:00';
+export const LAUNCH_DATE_ISO = '2025-08-22T00:00:00';
