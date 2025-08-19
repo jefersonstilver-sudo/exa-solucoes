@@ -2,7 +2,7 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import {
   Select,
   SelectContent,
@@ -48,12 +48,18 @@ const BasicInfoForm: React.FC<BasicInfoFormProps> = ({ formData, onUpdate }) => 
 
         <div className="space-y-2">
           <Label htmlFor="endereco">Endereço Completo</Label>
-          <Textarea
-            id="endereco"
+          <AddressAutocomplete
             value={formData.endereco}
-            onChange={(e) => onUpdate({ endereco: e.target.value })}
-            placeholder="Rua, número, complemento... (opcional)"
-            rows={2}
+            onChange={(value) => onUpdate({ endereco: value })}
+            onPlaceSelect={(place) => {
+              onUpdate({ 
+                endereco: place.address,
+                latitude: place.coordinates.lat,
+                longitude: place.coordinates.lng
+              });
+            }}
+            placeholder="Digite o endereço completo..."
+            className="w-full"
           />
         </div>
 
