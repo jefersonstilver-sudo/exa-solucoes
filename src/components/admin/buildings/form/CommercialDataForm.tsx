@@ -14,9 +14,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface CommercialDataFormProps {
   formData: {
     numero_unidades: number;
+    numero_andares: number;
+    numero_elevadores: number;
+    numero_blocos: number;
     preco_base: number;
     status: string;
-    monthly_traffic: number;
   };
   onUpdate: (updates: Partial<CommercialDataFormProps['formData']>) => void;
 }
@@ -42,17 +44,55 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="preco_base">Preço Base (R$)</Label>
+            <Label htmlFor="numero_andares">Número de Andares</Label>
             <Input
-              id="preco_base"
+              id="numero_andares"
               type="number"
-              step="0.01"
-              value={formData.preco_base}
-              onChange={(e) => onUpdate({ preco_base: parseFloat(e.target.value) || 0 })}
+              value={formData.numero_andares}
+              onChange={(e) => onUpdate({ numero_andares: parseInt(e.target.value) || 0 })}
               min="0"
-              placeholder="Ex: 1500.00 (opcional)"
+              placeholder="Ex: 15 (opcional)"
             />
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="numero_elevadores">Número de Elevadores</Label>
+            <Input
+              id="numero_elevadores"
+              type="number"
+              value={formData.numero_elevadores}
+              onChange={(e) => onUpdate({ numero_elevadores: parseInt(e.target.value) || 0 })}
+              min="0"
+              placeholder="Ex: 2 (opcional)"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="numero_blocos">Número de Blocos</Label>
+            <Input
+              id="numero_blocos"
+              type="number"
+              value={formData.numero_blocos}
+              onChange={(e) => onUpdate({ numero_blocos: parseInt(e.target.value) || 1 })}
+              min="1"
+              placeholder="Ex: 1 (opcional)"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="preco_base">Preço Base (R$)</Label>
+          <Input
+            id="preco_base"
+            type="number"
+            step="0.01"
+            value={formData.preco_base}
+            onChange={(e) => onUpdate({ preco_base: parseFloat(e.target.value) || 0 })}
+            min="0"
+            placeholder="Ex: 1500.00 (opcional)"
+          />
         </div>
 
         <div className="space-y-2">

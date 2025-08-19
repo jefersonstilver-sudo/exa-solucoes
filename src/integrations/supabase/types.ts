@@ -161,7 +161,10 @@ export type Database = {
           nome_contato_predio: string | null
           nome_sindico: string | null
           nome_vice_sindico: string | null
+          numero_andares: number | null
+          numero_blocos: number | null
           numero_contato_predio: string | null
+          numero_elevadores: number | null
           numero_unidades: number | null
           padrao_publico: string | null
           peak_hours: string | null
@@ -201,7 +204,10 @@ export type Database = {
           nome_contato_predio?: string | null
           nome_sindico?: string | null
           nome_vice_sindico?: string | null
+          numero_andares?: number | null
+          numero_blocos?: number | null
           numero_contato_predio?: string | null
+          numero_elevadores?: number | null
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null
@@ -241,7 +247,10 @@ export type Database = {
           nome_contato_predio?: string | null
           nome_sindico?: string | null
           nome_vice_sindico?: string | null
+          numero_andares?: number | null
+          numero_blocos?: number | null
           numero_contato_predio?: string | null
+          numero_elevadores?: number | null
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null

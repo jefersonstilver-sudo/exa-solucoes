@@ -106,12 +106,20 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                   <p className="font-medium">{building.numero_unidades || 'N/A'}</p>
                 </div>
                 <div>
+                  <span className="text-gray-500">Elevadores:</span>
+                  <p className="font-medium">{building.numero_elevadores || 'N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Blocos:</span>
+                  <p className="font-medium">{building.numero_blocos || 'N/A'}</p>
+                </div>
+                <div>
                   <span className="text-gray-500">Padrão:</span>
                   <p className="font-medium">{building.padrao_publico || 'N/A'}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Categoria:</span>
-                  <p className="font-medium">{building.categoria || 'N/A'}</p>
+                  <span className="text-gray-500">Tipo:</span>
+                  <p className="font-medium">{building.venue_type || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -156,7 +164,24 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
             </div>
 
             {/* Price Section */}
-            
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                <DollarSign className="h-4 w-4 mr-1 text-green-600" />
+                Preço Base
+              </h4>
+              <div className="text-center">
+                <span className="text-2xl font-bold text-green-600">
+                  {building.preco_base ? 
+                    new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(building.preco_base) : 
+                    'Não definido'
+                  }
+                </span>
+                <p className="text-xs text-gray-500 mt-1">por mês</p>
+              </div>
+            </div>
           </div>
         </div>
 

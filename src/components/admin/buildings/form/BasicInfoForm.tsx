@@ -110,31 +110,6 @@ const BasicInfoForm: React.FC<BasicInfoFormProps> = ({ formData, onUpdate }) => 
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="latitude">Latitude</Label>
-            <Input
-              id="latitude"
-              type="number"
-              step="any"
-              value={formData.latitude}
-              onChange={(e) => onUpdate({ latitude: parseFloat(e.target.value) || 0 })}
-              placeholder="Coordenada (opcional)"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="longitude">Longitude</Label>
-            <Input
-              id="longitude"
-              type="number"
-              step="any"
-              value={formData.longitude}
-              onChange={(e) => onUpdate({ longitude: parseFloat(e.target.value) || 0 })}
-              placeholder="Coordenada (opcional)"
-            />
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

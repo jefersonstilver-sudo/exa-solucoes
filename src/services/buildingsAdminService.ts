@@ -14,6 +14,9 @@ export interface AdminBuilding {
   latitude: number;
   longitude: number;
   numero_unidades: number;
+  numero_andares: number;
+  numero_elevadores: number;
+  numero_blocos: number;
   publico_estimado: number;
   preco_base: number;
   image_urls: string[];

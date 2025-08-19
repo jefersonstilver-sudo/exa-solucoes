@@ -8,6 +8,9 @@ interface BuildingFormData {
   endereco: string;
   bairro: string;
   numero_unidades: number;
+  numero_andares: number;
+  numero_elevadores: number;
+  numero_blocos: number;
   preco_base: number;
   padrao_publico: 'alto' | 'medio' | 'normal';
   status: string;
@@ -30,6 +33,9 @@ const initialFormData: BuildingFormData = {
   endereco: '',
   bairro: '',
   numero_unidades: 0,
+  numero_andares: 0,
+  numero_elevadores: 0,
+  numero_blocos: 1,
   preco_base: 0,
   padrao_publico: 'normal',
   status: 'ativo',
@@ -58,6 +64,9 @@ export const useBuildingFormData = (building: any, open: boolean) => {
         endereco: building.endereco || '',
         bairro: building.bairro || '',
         numero_unidades: building.numero_unidades || 0,
+        numero_andares: building.numero_andares || 0,
+        numero_elevadores: building.numero_elevadores || 0,
+        numero_blocos: building.numero_blocos || 1,
         preco_base: building.preco_base || 0,
         padrao_publico: building.padrao_publico || 'normal',
         status: building.status || 'ativo',

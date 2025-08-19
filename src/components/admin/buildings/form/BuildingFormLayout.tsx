@@ -57,9 +57,11 @@ const BuildingFormLayout: React.FC<BuildingFormLayoutProps> = ({
         <CommercialDataForm
           formData={{
             numero_unidades: formData.numero_unidades,
+            numero_andares: formData.numero_andares,
+            numero_elevadores: formData.numero_elevadores,
+            numero_blocos: formData.numero_blocos,
             preco_base: formData.preco_base,
-            status: formData.status,
-            monthly_traffic: formData.monthly_traffic
+            status: formData.status
           }}
           onUpdate={onFormUpdate}
         />
