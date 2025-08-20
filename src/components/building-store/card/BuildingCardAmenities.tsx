@@ -8,6 +8,7 @@ import {
   Gamepad2,
   Dumbbell
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BuildingStore } from '@/services/buildingStoreService';
 
 interface BuildingCardAmenitiesProps {
@@ -49,9 +50,27 @@ const BuildingCardAmenities: React.FC<BuildingCardAmenitiesProps> = ({ building 
           );
         })}
         {building.amenities.length > 4 && (
-          <span className="text-xs text-gray-500 px-2 py-1 bg-gray-50 rounded-full">
-            +{building.amenities.length - 4} mais
-          </span>
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-gray-500 px-2 py-1 bg-gray-50 hover:bg-gray-100 transition-colors rounded-full cursor-help">
+                  +{building.amenities.length - 4} mais
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="center">
+                <div className="max-w-xs">
+                  <p className="text-xs font-medium mb-1">Outras comodidades:</p>
+                  <div className="space-y-1">
+                    {building.amenities.slice(4).map((amenity, index) => (
+                      <div key={index} className="text-xs text-gray-600 capitalize">
+                        • {amenity.replace('_', ' ')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
     </div>
