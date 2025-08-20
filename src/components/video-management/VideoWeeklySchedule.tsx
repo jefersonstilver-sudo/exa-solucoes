@@ -151,7 +151,7 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
   const getVideoThumbnail = (video: VideoSlot) => {
     if (video.video_data?.url) {
       return (
-        <div className="w-16 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+        <div className="w-10 h-8 sm:w-16 sm:h-12 rounded-md sm:rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
           <video 
             src={video.video_data.url} 
             className="w-full h-full object-cover"
@@ -164,8 +164,8 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
     
     // Fallback para ícone
     return (
-      <div className="w-16 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-        <Film className="h-6 w-6 text-white" />
+      <div className="w-10 h-8 sm:w-16 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0">
+        <Film className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
       </div>
     );
   };
@@ -186,15 +186,18 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
             <p className="text-sm">Aguarde a aprovação dos vídeos para visualizar a programação</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {DAYS_OF_WEEK.map(day => {
               const daySchedule = weeklySchedule[day.value] || [];
               
               return (
-                <div key={day.value} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-                    <span className="w-20">{day.label}</span>
-                    <Badge variant="outline" className="text-xs">
+                <div key={day.value} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                    <span className="text-sm sm:text-base sm:w-20">
+                      <span className="sm:hidden">{day.short}</span>
+                      <span className="hidden sm:inline">{day.label}</span>
+                    </span>
+                    <Badge variant="outline" className="text-xs w-fit">
                       {daySchedule.length} vídeo(s)
                     </Badge>
                   </h3>
@@ -204,43 +207,48 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
                       Nenhum vídeo programado
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {daySchedule.map((item, index) => (
-                        <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                        <div key={index} className="flex items-start sm:items-center space-x-2 sm:space-x-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
                           {/* Thumbnail */}
                           {getVideoThumbnail(item.video)}
                           
                           {/* Informações do vídeo */}
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-medium text-gray-900">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-1 sm:mb-1">
+                              <span className="font-medium text-gray-900 text-sm sm:text-base truncate">
                                 {item.title}
                               </span>
-                              {item.type === 'scheduled' ? (
-                                <Badge className="bg-blue-600 text-white">
-                                  AGENDADO
-                                </Badge>
-                              ) : (
-                                 <Badge variant="outline">
-                                   Vídeo Principal
-                                 </Badge>
-                              )}
-                               {isVideoCurrentlyDisplaying(item.video) && (
-                                 <Badge className="bg-green-600 text-white">
-                                   <Play className="h-3 w-3 mr-1" />
-                                   EM EXIBIÇÃO
-                                 </Badge>
-                               )}
+                              <div className="flex flex-wrap gap-1 mt-1 sm:mt-0">
+                                {item.type === 'scheduled' ? (
+                                  <Badge className="bg-blue-600 text-white text-xs">
+                                    <span className="sm:hidden">AGD</span>
+                                    <span className="hidden sm:inline">AGENDADO</span>
+                                  </Badge>
+                                ) : (
+                                   <Badge variant="outline" className="text-xs">
+                                     <span className="sm:hidden">Principal</span>
+                                     <span className="hidden sm:inline">Vídeo Principal</span>
+                                   </Badge>
+                                )}
+                                 {isVideoCurrentlyDisplaying(item.video) && (
+                                   <Badge className="bg-green-600 text-white text-xs">
+                                     <Play className="h-3 w-3 mr-1" />
+                                     <span className="sm:hidden">ATIVO</span>
+                                     <span className="hidden sm:inline">EM EXIBIÇÃO</span>
+                                   </Badge>
+                                 )}
+                              </div>
                             </div>
                             
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-600 space-y-1 sm:space-y-0">
                               <span className="flex items-center space-x-1">
-                                <Clock className="h-4 w-4" />
-                                <span>{formatTimeRange(item.startTime, item.endTime, item.isAllDay)}</span>
+                                <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                                <span className="truncate">{formatTimeRange(item.startTime, item.endTime, item.isAllDay)}</span>
                               </span>
                               
                               {item.video.video_data?.duracao && (
-                                <span>
+                                <span className="hidden sm:inline">
                                   Duração: {Math.floor(item.video.video_data.duracao / 60)}:{String(item.video.video_data.duracao % 60).padStart(2, '0')}
                                 </span>
                               )}
