@@ -15,6 +15,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const { logos, loading, error } = useLogos();
   const [isPaused, setIsPaused] = useState(false);
   const [hoveredLogoId, setHoveredLogoId] = useState<string | null>(null);
+  const [showFallback, setShowFallback] = useState(false);
   const trackARef = useRef<HTMLDivElement>(null);
   const trackBRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,7 +34,9 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
 
     const containerWidth = containerRef.current?.offsetWidth || 0;
     const trackWidth = tracks[0].scrollWidth;
-    const duration = trackWidth / speed;
+    const duration = trackWidth > 0 ? trackWidth / speed : 30; // fallback de 30s
+    // Se não conseguimos medir a largura, ativa fallback estático
+    setShowFallback(trackWidth < 100);
 
     tracks.forEach((track, index) => {
       if (!track) return;
@@ -189,8 +192,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             id="ticker-portal-left"
             className="absolute left-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
             style={{
-              background: 'radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(1.5px)',
+              background: 'radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0) 100%)',
+              backdropFilter: 'blur(1px)',
               maskImage: 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
             }}
           />
@@ -200,8 +203,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             id="ticker-portal-right"
             className="absolute right-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
             style={{
-              background: 'radial-gradient(120% 100% at 100% 50%, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.14) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(1px)',
+              background: 'radial-gradient(120% 100% at 100% 50%, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0) 100%)',
+              backdropFilter: 'blur(0.5px)',
               maskImage: 'linear-gradient(270deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
             }}
           />
@@ -234,6 +237,13 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             {renderLogos()}
           </div>
         </div>
+        {showFallback && (
+          <div className="mt-4 overflow-x-auto">
+            <div className="flex items-center gap-10 md:gap-12 lg:gap-16 py-2">
+              {renderLogos()}
+            </div>
+          </div>
+        )}
       </section>
     </>
   );
