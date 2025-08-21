@@ -25,18 +25,40 @@ export const useLogos = () => {
       setLoading(true);
       setError(null);
 
-      // Usar a Edge Function para obter logos públicas
+      // Try Edge Function first with POST and action: 'list'
       const { data, error } = await supabase.functions.invoke('logos', {
-        method: 'GET'
+        body: { action: 'list' }
       });
 
       if (error) {
-        console.error('❌ Error fetching logos:', error);
-        setError('Erro ao carregar logos');
+        console.warn('⚠️ Edge Function failed, falling back to direct query:', error);
+        
+        // Fallback to direct Supabase query
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('logos')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (fallbackError) {
+          console.error('❌ Fallback query also failed:', fallbackError);
+          setError('Erro ao carregar logos');
+          return;
+        }
+
+        console.log('✅ Logos fetched via fallback:', fallbackData?.length || 0);
+        
+        // Use fallback data with basic file_url
+        const typedLogos: Logo[] = (fallbackData || []).map(logo => ({
+          ...logo,
+          color_variant: (logo.color_variant as 'white' | 'dark' | 'colored') || 'white'
+        }));
+        
+        setLogos(typedLogos);
         return;
       }
 
-      console.log('✅ Logos fetched successfully:', data?.length || 0);
+      console.log('✅ Logos fetched successfully via Edge Function:', data?.length || 0);
       
       // Garantir tipagem correta dos dados da Edge Function
       const typedLogos: Logo[] = (data || []).map(logo => ({
@@ -47,7 +69,29 @@ export const useLogos = () => {
       setLogos(typedLogos);
     } catch (err) {
       console.error('❌ Unexpected error fetching logos:', err);
-      setError('Erro inesperado ao carregar logos');
+      
+      // Last resort fallback
+      try {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('logos')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (!fallbackError && fallbackData) {
+          console.log('✅ Last resort fallback successful:', fallbackData.length);
+          const typedLogos: Logo[] = fallbackData.map(logo => ({
+            ...logo,
+            color_variant: (logo.color_variant as 'white' | 'dark' | 'colored') || 'white'
+          }));
+          setLogos(typedLogos);
+        } else {
+          setError('Erro inesperado ao carregar logos');
+        }
+      } catch (fallbackErr) {
+        console.error('❌ Last resort fallback failed:', fallbackErr);
+        setError('Erro inesperado ao carregar logos');
+      }
     } finally {
       setLoading(false);
     }

@@ -82,8 +82,22 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (req.method === 'GET') {
-      console.log('📋 Fetching active logos for ticker');
+    // Handle both GET (direct HTTP) and POST (function invoke) for listing logos
+    if (req.method === 'GET' || req.method === 'POST') {
+      let isListRequest = req.method === 'GET';
+      
+      // For POST requests, check if it's a list request
+      if (req.method === 'POST') {
+        try {
+          const body = await req.json();
+          isListRequest = !body || body.action === 'list' || !body.logos; // If no body, action is 'list', or no logos array, treat as list
+        } catch {
+          isListRequest = true; // If can't parse body, assume it's a list request
+        }
+      }
+      
+      if (isListRequest) {
+        console.log('📋 Fetching active logos for ticker');
       
       const { data: logos, error } = await supabase
         .from('logos')
@@ -179,9 +193,10 @@ Deno.serve(async (req) => {
 
       console.log(`✅ Found ${validLogos.length} valid logos with accessible URLs (out of ${logos?.length || 0} active)`);
 
-      return new Response(JSON.stringify(validLogos), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+        return new Response(JSON.stringify(validLogos), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     if (req.method === 'PATCH') {
@@ -217,29 +232,39 @@ Deno.serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json();
-      const { logos: logosData } = body;
+      
+      // Handle bulk logo upload (has logos array)
+      if (body.logos && Array.isArray(body.logos)) {
+        const { logos: logosData } = body;
 
-      if (!logosData || !Array.isArray(logosData)) {
-        return new Response(JSON.stringify({ error: 'Logos array is required' }), {
-          status: 400,
+        if (!logosData || !Array.isArray(logosData)) {
+          return new Response(JSON.stringify({ error: 'Logos array is required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data, error } = await supabase
+          .from('logos')
+          .insert(logosData)
+          .select();
+
+        if (error) {
+          console.error('❌ Error inserting logos:', error);
+          return new Response(JSON.stringify({ error: 'Failed to insert logos' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      const { data, error } = await supabase
-        .from('logos')
-        .insert(logosData)
-        .select();
-
-      if (error) {
-        console.error('❌ Error inserting logos:', error);
-        return new Response(JSON.stringify({ error: 'Failed to insert logos' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      return new Response(JSON.stringify(data), {
+      
+      // If POST but not a bulk upload, might be a list request (handled above)
+      return new Response(JSON.stringify({ error: 'Invalid POST request' }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
