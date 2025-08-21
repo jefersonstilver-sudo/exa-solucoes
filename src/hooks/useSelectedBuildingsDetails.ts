@@ -67,7 +67,13 @@ export const useSelectedBuildingsDetails = (listaPredios: string[] = []) => {
           console.log('   - Total de prédios públicos encontrados:', publicBuildings?.length || 0);
         }
 
-        setBuildings(buildingsData || []);
+        // Adaptar dados para incluir endereco obrigatório
+        const adaptedBuildings = buildingsData.map(building => ({
+          ...building,
+          endereco: building.nome, // Usar nome como endereço temporariamente
+        }));
+
+        setBuildings(adaptedBuildings);
 
       } catch (error) {
         console.error('💥 [BUILDINGS_DETAILS] Erro geral:', error);

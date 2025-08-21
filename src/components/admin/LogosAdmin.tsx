@@ -10,9 +10,10 @@ import {
   Trash2, Upload, Eye, GripVertical, Plus, AlertCircle, 
   Edit2, Check, X, ExternalLink, Image as ImageIcon,
   FileImage, Loader2, Link as LinkIcon, Palette,
-  RotateCcw, Save
+  RotateCcw, Save, Replace
 } from 'lucide-react';
 import { useLogosAdmin, Logo } from '@/hooks/useLogos';
+import { useLogoFileReplace } from '@/hooks/useLogoFileReplace';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LogoTicker from '@/components/exa/LogoTicker';
@@ -26,6 +27,7 @@ interface EditingLogo {
 
 const LogosAdmin: React.FC = () => {
   const { logos, loading, refreshLogos, toggleLogoActive, updateLogo, bulkUploadLogos } = useLogosAdmin();
+  const { replaceLogoFile, uploading: replacingFile } = useLogoFileReplace();
   const [uploading, setUploading] = useState(false);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -33,6 +35,7 @@ const LogosAdmin: React.FC = () => {
   const [deletingLogos, setDeletingLogos] = useState<Set<string>>(new Set());
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
 
   const sanitizeFilename = (filename: string): string => {
     return filename
@@ -175,6 +178,28 @@ const LogosAdmin: React.FC = () => {
     } catch (error) {
       toast.error('Erro ao atualizar logo');
     }
+  };
+
+  const handleReplaceFile = async (logoId: string) => {
+    const input = replaceFileInputRef.current;
+    if (!input) return;
+
+    input.onchange = async (event) => {
+      const target = event.target as HTMLInputElement;
+      const file = target.files?.[0];
+      
+      if (file) {
+        const success = await replaceLogoFile(logoId, file);
+        if (success) {
+          refreshLogos();
+        }
+      }
+      
+      // Limpar input
+      target.value = '';
+    };
+
+    input.click();
   };
 
   const handleCancelEdit = () => {
@@ -578,6 +603,24 @@ const LogosAdmin: React.FC = () => {
                           variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
+                            handleReplaceFile(logo.id);
+                          }}
+                          disabled={replacingFile}
+                          className="h-8 w-8 p-0"
+                          title="Trocar arquivo"
+                        >
+                          {replacingFile ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Replace className="h-4 w-4" />
+                          )}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleStartEdit(logo);
                           }}
                           className="h-8 w-8 p-0"
@@ -620,6 +663,14 @@ const LogosAdmin: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Input oculto para trocar arquivo */}
+      <input
+        ref={replaceFileInputRef}
+        type="file"
+        accept=".png"
+        className="hidden"
+      />
     </div>
   );
 };

@@ -61,12 +61,8 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
         status: building.status,
         bairro: building.bairro,
         venue_type: building.venue_type,
-        publico_estimado: building.publico_estimado,
         quantidade_telas: building.quantidade_telas,
-        preco_base: building.preco_base,
-        manual_latitude: building.manual_latitude,
-        manual_longitude: building.manual_longitude,
-        position_validated: building.position_validated
+        preco_base: building.preco_base
       });
     });
 
