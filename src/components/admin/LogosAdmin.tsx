@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useLogosAdmin, Logo } from '@/hooks/useLogos';
 import { useLogoFileReplace } from '@/hooks/useLogoFileReplace';
+import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
+import LogoImage from '@/components/admin/LogoImage';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LogoTicker from '@/components/exa/LogoTicker';
@@ -473,16 +475,10 @@ const LogosAdmin: React.FC = () => {
                   {editingLogo?.id === logo.id ? (
                     // Modo de Edição
                     <div className="p-4 space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="h-16 w-16 flex-shrink-0 bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
-                          <img
-                            src={logo.file_url}
-                            alt={logo.name}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
+                       <div className="flex items-center gap-4">
+                         <LogoImage logo={logo} size="md" />
 
-                        <div className="flex-1 space-y-3">
+                         <div className="flex-1 space-y-3">
                           <div>
                             <Label htmlFor="edit-name" className="text-sm font-medium">Nome</Label>
                             <Input
@@ -561,14 +557,7 @@ const LogosAdmin: React.FC = () => {
                     >
                       <GripVertical className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       
-                      <div className="h-16 w-16 flex-shrink-0 bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
-                        <img
-                          src={logo.file_url}
-                          alt={logo.name}
-                          className="h-full w-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
+                      <LogoImage logo={logo} size="md" />
 
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2">

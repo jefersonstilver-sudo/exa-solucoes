@@ -30,11 +30,11 @@ export const useLogoFileReplace = () => {
         .replace(/^_|_$/g, '');
 
       const fileName = `logo_${Date.now()}_${sanitizedName}`;
-      const storageKey = `${fileName}`;
+      const storageKey = `PAGINA PRINCIPAL LOGOS/${fileName}`;
 
-      // Upload para o novo bucket "logos"
+      // Upload para o bucket "arquivos" (consistência com bulk upload)
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('logos')
+        .from('arquivos')
         .upload(storageKey, newFile, {
           cacheControl: '3600',
           upsert: false
@@ -48,16 +48,19 @@ export const useLogoFileReplace = () => {
 
       // Obter URL pública do novo arquivo
       const { data: { publicUrl } } = supabase.storage
-        .from('logos')
+        .from('arquivos')
         .getPublicUrl(storageKey);
 
       // Atualizar registro da logo no banco
       const { error: updateError } = await supabase.functions.invoke('logos', {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: {
           id: logoId,
           file_url: publicUrl,
-          storage_bucket: 'logos',
+          storage_bucket: 'arquivos',
           storage_key: storageKey
         }
       });
@@ -65,7 +68,7 @@ export const useLogoFileReplace = () => {
       if (updateError) {
         console.error('❌ Database update error:', updateError);
         // Limpar arquivo uploadado em caso de erro
-        await supabase.storage.from('logos').remove([storageKey]);
+        await supabase.storage.from('arquivos').remove([storageKey]);
         toast.error('Erro ao atualizar logo no banco');
         return false;
       }
