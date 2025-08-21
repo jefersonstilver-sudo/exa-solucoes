@@ -35,10 +35,11 @@ export interface BuildingStore {
  */
 export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
   try {
-    console.log('🏢 [BUILDING STORE SERVICE] === VERSÃO SIMPLIFICADA ===');
+    console.log('🏢 [BUILDING STORE SERVICE] === SECURE VERSION ===');
     
+    // Use secure function that requires authentication and returns minimal data
     const { data: buildings, error } = await supabase
-      .rpc('get_public_buildings');
+      .rpc('get_buildings_for_authenticated_users');
 
     if (error) {
       console.error('❌ [BUILDING STORE SERVICE] Erro na query:', error);
@@ -69,32 +70,32 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       });
     });
 
-    // Converter dados do banco para BuildingStore
+    // Convert secure minimal data to BuildingStore (with restricted data)
     const buildingStores: BuildingStore[] = buildings.map(building => ({
       id: building.id,
       nome: building.nome,
-      endereco: building.endereco || '',
-      cidade: '', // Database doesn't have this field yet
-      estado: '', // Database doesn't have this field yet
+      endereco: '', // Removed for security - no longer exposed
+      cidade: '', // Not available
+      estado: '', // Not available  
       bairro: building.bairro,
       venue_type: building.venue_type,
       status: building.status,
-      latitude: building.latitude,
-      longitude: building.longitude,
-      manual_latitude: building.manual_latitude,
-      manual_longitude: building.manual_longitude,
-      position_validated: building.position_validated,
-      publico_estimado: building.publico_estimado || 0,
-      visualizacoes_mes: building.visualizacoes_mes || 0,
+      latitude: 0, // Removed for security - no longer exposed
+      longitude: 0, // Removed for security - no longer exposed
+      manual_latitude: 0, // Removed for security
+      manual_longitude: 0, // Removed for security
+      position_validated: false, // Not available in minimal data
+      publico_estimado: 0, // Removed for security - no longer exposed
+      visualizacoes_mes: 0, // Removed for security - no longer exposed
       preco_base: building.preco_base || 280,
       imagem_principal: building.imagem_principal || '',
-      imagem_2: building.imagem_2 || '',
-      imagem_3: building.imagem_3 || '',
-      imagem_4: building.imagem_4 || '',
-      imagens: [], // Database doesn't have this field yet
-      amenities: building.amenities || [],
-      caracteristicas: building.caracteristicas || [],
-      padrao_publico: (['alto', 'medio', 'normal'].includes(building.padrao_publico) ? building.padrao_publico : 'normal') as 'alto' | 'medio' | 'normal',
+      imagem_2: '', // Not available in minimal data
+      imagem_3: '', // Not available in minimal data
+      imagem_4: '', // Not available in minimal data
+      imagens: [], // Not available
+      amenities: [], // Removed for security - no longer exposed
+      caracteristicas: [], // Removed for security - no longer exposed
+      padrao_publico: 'normal' as 'alto' | 'medio' | 'normal', // Default value since removed for security
       quantidade_telas: building.quantidade_telas || 1
     }));
 

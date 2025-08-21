@@ -41,9 +41,9 @@ export const useSelectedBuildingsDetails = (listaPredios: string[] = []) => {
         console.log('   - Lista de IDs:', listaPredios);
         console.log('   - Quantidade:', listaPredios.length);
 
-        // Usar função get_public_buildings() para acessar dados públicos
+        // Use secure function that requires authentication
         const { data: publicBuildings, error: buildingsError } = await supabase
-          .rpc('get_public_buildings');
+          .rpc('get_buildings_for_authenticated_users');
 
         if (buildingsError) {
           console.error('❌ [BUILDINGS_DETAILS] Erro ao buscar prédios públicos:', buildingsError);

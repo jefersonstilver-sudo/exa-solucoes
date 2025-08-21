@@ -1947,11 +1947,31 @@ export type Database = {
           numero_contato_predio: string
         }[]
       }
+      get_building_names_public: {
+        Args: { building_ids: string[] }
+        Returns: {
+          id: string
+          nome: string
+        }[]
+      }
       get_buildings_current_video_count: {
         Args: { p_building_ids: string[] }
         Returns: {
           building_id: string
           current_videos_count: number
+        }[]
+      }
+      get_buildings_for_authenticated_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bairro: string
+          id: string
+          imagem_principal: string
+          nome: string
+          preco_base: number
+          quantidade_telas: number
+          status: string
+          venue_type: string
         }[]
       }
       get_coupon_stats: {
@@ -2086,37 +2106,6 @@ export type Database = {
           video_nome: string
           video_orientacao: string
           video_url: string
-        }[]
-      }
-      get_public_buildings: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          amenities: string[]
-          bairro: string
-          caracteristicas: string[]
-          created_at: string
-          endereco: string
-          id: string
-          image_urls: string[]
-          imagem_2: string
-          imagem_3: string
-          imagem_4: string
-          imagem_principal: string
-          latitude: number
-          longitude: number
-          manual_latitude: number
-          manual_longitude: number
-          monthly_traffic: number
-          nome: string
-          numero_unidades: number
-          padrao_publico: string
-          position_validated: boolean
-          preco_base: number
-          publico_estimado: number
-          quantidade_telas: number
-          status: string
-          venue_type: string
-          visualizacoes_mes: number
         }[]
       }
       get_real_approval_stats: {

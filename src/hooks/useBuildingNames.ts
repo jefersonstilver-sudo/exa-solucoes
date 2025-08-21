@@ -49,19 +49,14 @@ export const useBuildingNames = (listaPaineis: string[], listaPredios?: string[]
         setLoading(true);
         setError(null);
 
-        console.log('🔗 [BUILDING_NAMES] Tentando conectar ao Supabase...');
+        console.log('🔗 [BUILDING_NAMES] Using secure authenticated access...');
         
-        // Usar função get_public_buildings() para acessar dados públicos
+        // Use secure function that requires authentication
         const { data: publicBuildings, error: buildingsError } = await supabase
-          .rpc('get_public_buildings');
+          .rpc('get_building_names_public', { building_ids: listaPredios });
 
-        let buildings = null;
-        if (!buildingsError && publicBuildings) {
-          // Filtrar apenas os prédios solicitados
-          buildings = publicBuildings.filter(building => 
-            listaPredios.includes(building.id)
-          );
-        }
+        // Function already filters by provided IDs, no need to filter again
+        let buildings = publicBuildings;
 
         console.log('📊 [BUILDING_NAMES] Resposta do Supabase:', {
           data: buildings,
@@ -178,17 +173,9 @@ export const useBuildingNames = (listaPaineis: string[], listaPredios?: string[]
         return;
       }
 
-      // Buscar nomes dos prédios usando função pública
-      const { data: publicBuildings, error: buildingsError } = await supabase
-        .rpc('get_public_buildings');
-
-      let buildings = null;
-      if (!buildingsError && publicBuildings) {
-        // Filtrar apenas os prédios solicitados
-        buildings = publicBuildings.filter(building => 
-          buildingIds.includes(building.id)
-        );
-      }
+      // Use secure function for building names only
+      const { data: buildings, error: buildingsError } = await supabase
+        .rpc('get_building_names_public', { building_ids: buildingIds });
 
       console.log('📊 [BUILDING_NAMES] Resposta prédios (fallback):', {
         data: buildings,

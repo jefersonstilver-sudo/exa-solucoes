@@ -45,11 +45,11 @@ export const buildImageUrlsArray = (building: any) => {
 
 export const fetchBuildingsData = async () => {
   try {
-    console.log('🏢 [BUILDINGS DATA SERVICE] Iniciando busca de prédios para acesso público...');
+    console.log('🏢 [BUILDINGS DATA SERVICE] Secure authenticated building access...');
     
-    // Consulta segura via função RPC (sem expor dados sensíveis)
+    // Use secure function that requires authentication and returns minimal data
     const buildingsPromise = supabase
-      .rpc('get_public_buildings');
+      .rpc('get_buildings_for_authenticated_users');
 
     const panelsPromise = supabase
       .from('painels')
