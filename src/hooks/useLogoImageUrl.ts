@@ -19,6 +19,7 @@ export const useLogoImageUrl = (logo: { file_url: string; storage_bucket?: strin
         if (!logo.storage_bucket || !logo.storage_key || logo.file_url.startsWith('http')) {
           const urlWithCacheBuster = `${logo.file_url}?v=${Date.now()}`;
           setImageUrl(urlWithCacheBuster);
+          setLoading(false);
           return;
         }
 
