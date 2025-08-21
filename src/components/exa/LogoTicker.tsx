@@ -22,46 +22,57 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   // Detectar preferência de movimento reduzido
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Configurar animação contínua
+  // Configurar animação contínua com CSS puro
   useEffect(() => {
-    if (prefersReducedMotion || loading || !logos.length || !containerRef.current) {
+    if (prefersReducedMotion || loading || !logos.length) {
       return;
     }
 
-    const container = containerRef.current;
-    const track1 = track1Ref.current;
-    const track2 = track2Ref.current;
-
-    if (!track1 || !track2) return;
-
-    // Calcular largura do conteúdo
-    const trackWidth = track1.scrollWidth;
-    const duration = trackWidth / speed;
-
-    // Aplicar animação CSS
-    const animationName = direction === 'ltr' ? 'scrollLeft' : 'scrollRight';
+    // Injetar CSS dinâmico para animação suave
+    const style = document.createElement('style');
+    const animationDuration = 20; // seconds for smooth animation
     
-    track1.style.animation = isPaused ? 'none' : `${animationName} ${duration}s linear infinite`;
-    track2.style.animation = isPaused ? 'none' : `${animationName} ${duration}s linear infinite`;
-    track2.style.animationDelay = `-${duration / 2}s`;
-
-    // Limpar animações ao desmontar
+    style.textContent = `
+      @keyframes logoTickerScroll {
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-100%); }
+      }
+      
+      .logo-ticker-track {
+        animation: logoTickerScroll ${animationDuration}s linear infinite;
+        animation-play-state: running;
+      }
+      
+      .logo-ticker-container:hover .logo-ticker-track {
+        animation-play-state: ${pauseOnHover ? 'paused' : 'running'};
+      }
+    `;
+    
+    document.head.appendChild(style);
+    
     return () => {
-      track1.style.animation = 'none';
-      track2.style.animation = 'none';
+      document.head.removeChild(style);
     };
-  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion]);
+  }, [logos, loading, prefersReducedMotion, pauseOnHover]);
 
-  // Handlers de hover
+  // Handlers de hover - usando CSS animation-play-state
   const handleMouseEnter = () => {
-    if (pauseOnHover) {
-      setIsPaused(true);
+    if (pauseOnHover && containerRef.current) {
+      containerRef.current.style.animationPlayState = 'paused';
+      const tracks = containerRef.current.querySelectorAll('[data-ticker-track]');
+      tracks.forEach(track => {
+        (track as HTMLElement).style.animationPlayState = 'paused';
+      });
     }
   };
 
   const handleMouseLeave = () => {
-    if (pauseOnHover) {
-      setIsPaused(false);
+    if (pauseOnHover && containerRef.current) {
+      containerRef.current.style.animationPlayState = 'running';
+      const tracks = containerRef.current.querySelectorAll('[data-ticker-track]');
+      tracks.forEach(track => {
+        (track as HTMLElement).style.animationPlayState = 'running';
+      });
     }
   };
 
@@ -70,6 +81,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     return logos.map((logo) => (
       <div
         key={logo.id}
+        data-logo-item
         className="flex-shrink-0 h-12 lg:h-14 px-4 lg:px-6 transition-all duration-300 ease-out cursor-pointer hover:scale-110"
         onClick={() => logo.link_url && window.open(logo.link_url, '_blank')}
         aria-label={`Logo da ${logo.name}`}
@@ -81,8 +93,12 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           loading="lazy"
           draggable={false}
           onError={(e) => {
-            console.error(`❌ Failed to load logo ${logo.name}:`, logo.file_url);
-            (e.target as HTMLImageElement).style.display = 'none';
+            console.error(`❌ Failed to load logo ${logo.name} (ID: ${logo.id}):`, logo.file_url);
+            // Hide the parent container to maintain ticker stability
+            const parentDiv = (e.target as HTMLElement).closest('[data-logo-item]') as HTMLElement;
+            if (parentDiv) {
+              parentDiv.style.display = 'none';
+            }
           }}
         />
       </div>
@@ -157,45 +173,33 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       >
         <div 
           ref={containerRef}
-          className="ticker h-20 lg:h-24 relative overflow-hidden rounded-2xl bg-gradient-to-r from-black/20 via-black/10 to-black/20"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          className="logo-ticker-container ticker h-20 lg:h-24 relative overflow-hidden rounded-2xl bg-gradient-to-r from-black/20 via-black/10 to-black/20"
         >
-          {/* Gradientes laterais mais suaves */}
+          {/* Gradientes laterais suaves */}
           <div 
-            className="absolute left-0 top-0 h-full w-16 lg:w-20 z-10 pointer-events-none"
+            className="absolute left-0 top-0 h-full w-8 lg:w-12 z-10 pointer-events-none"
             style={{
-              background: 'linear-gradient(90deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)'
+              background: 'linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 80%, transparent 100%)'
             }}
           />
           <div 
-            className="absolute right-0 top-0 h-full w-16 lg:w-20 z-10 pointer-events-none"
+            className="absolute right-0 top-0 h-full w-8 lg:w-12 z-10 pointer-events-none"
             style={{
-              background: 'linear-gradient(270deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)'
+              background: 'linear-gradient(270deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 80%, transparent 100%)'
             }}
           />
 
-          {/* Trilha 1 */}
+          {/* Trilha única com CSS animation */}
           <div 
-            ref={track1Ref}
-            className="absolute inset-0 flex items-center whitespace-nowrap"
+            data-ticker-track
+            className="logo-ticker-track flex items-center absolute inset-0 whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'
             }}
           >
             {renderLogos()}
-          </div>
-
-          {/* Trilha 2 - Para loop contínuo */}
-          <div 
-            ref={track2Ref}
-            className="absolute inset-0 flex items-center whitespace-nowrap"
-            style={{ 
-              willChange: 'transform',
-              width: 'max-content'
-            }}
-          >
+            {/* Duplicar logos para loop contínuo */}
             {renderLogos()}
           </div>
         </div>
