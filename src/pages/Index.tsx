@@ -6,6 +6,7 @@ import ServiceCard from '@/components/ui/service-card';
 import { HomepageBannerCarousel } from '@/components/ui/homepage-banner';
 import { supabase } from '@/integrations/supabase/client';
 import { useHomepageBanners } from '@/hooks/useHomepageBanners';
+import LogoTicker from '@/components/exa/LogoTicker';
 import { Loader2 } from 'lucide-react';
 
 interface HomepageConfig {
@@ -192,6 +193,15 @@ const Index = () => {
                 />
               ))}
             </div>
+          </div>
+          
+          {/* Logo Ticker Section - Positioned after main content */}
+          <div className="mt-8 lg:mt-12">
+            <LogoTicker 
+              speed={50}
+              direction="ltr"
+              pauseOnHover={true}
+            />
           </div>
         </div>
       </section>
