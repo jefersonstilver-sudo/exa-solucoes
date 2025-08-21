@@ -115,8 +115,12 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           draggable={false}
           onError={(e) => {
             const el = e.currentTarget as HTMLImageElement;
-            el.style.visibility = 'hidden';
-            console.warn('[LogoTicker] Falha ao carregar logo:', logo.name, logo.file_url);
+            // Fallback para placeholder para manter o layout visível
+            el.onerror = null;
+            el.src = '/placeholder.svg';
+            el.style.visibility = 'visible';
+            el.style.opacity = '0.6';
+            console.warn('[LogoTicker] Falha ao carregar logo, usando placeholder:', logo.name, logo.file_url);
           }}
         />
       </div>
