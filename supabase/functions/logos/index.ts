@@ -74,8 +74,38 @@ serve(async (req) => {
         return null; // External URL or unrecognized format
       };
 
-      // Create signed URLs when possible; try decoded + raw; fallback to public URL
+      // Create signed or public URLs, preferring storage_bucket/storage_key when available
       const signedLogos: Logo[] = await Promise.all((logos || []).map(async (logo: any) => {
+        // 1) Prefer explicit storage mapping when present
+        if (logo.storage_bucket && logo.storage_key) {
+          const bucket = logo.storage_bucket as string;
+          const keyRaw = (logo.storage_key as string).includes('/')
+            ? logo.storage_key as string
+            : `PAGINA PRINCIPAL LOGOS/${logo.storage_key}`;
+
+          try {
+            // Try signing with raw key
+            let { data: s1, error: e1 } = await supabaseClient
+              .storage.from(bucket)
+              .createSignedUrl(keyRaw, 60 * 60 * 24 * 7);
+            if (s1?.signedUrl) {
+              return { ...logo, file_url: s1.signedUrl } as Logo;
+            }
+            if (e1) {
+              console.warn('⚠️ Sign (storage key) failed', { logoId: logo.id, bucket, keyRaw, err: (e1 as any)?.message || e1 });
+            }
+
+            // Fallback to public URL
+            const { data: pub } = supabaseClient.storage.from(bucket).getPublicUrl(keyRaw);
+            if (pub?.publicUrl) {
+              return { ...logo, file_url: pub.publicUrl } as Logo;
+            }
+          } catch (e) {
+            console.warn('⚠️ Storage-based URL build failed for logo', logo.id, e);
+          }
+        }
+
+        // 2) Fallback to parsing file_url directly
         const info = extractBucketAndPath(logo.file_url);
         if (!info) {
           return logo; // Keep original (likely external/public URL)

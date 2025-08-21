@@ -191,9 +191,12 @@ const LogosAdmin: React.FC = () => {
       
       // Deletar do Storage se tiver informações de storage
       if (logo?.storage_bucket && logo?.storage_key) {
+        const normalizedKey = logo.storage_key.includes('/')
+          ? logo.storage_key
+          : `PAGINA PRINCIPAL LOGOS/${logo.storage_key}`;
         await supabase.storage
           .from(logo.storage_bucket)
-          .remove([logo.storage_key]);
+          .remove([normalizedKey]);
       }
 
       // Deletar do banco
