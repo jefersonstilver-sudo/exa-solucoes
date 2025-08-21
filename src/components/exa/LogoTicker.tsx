@@ -35,7 +35,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     style.textContent = `
       @keyframes logoTickerScroll {
         0% { transform: translateX(0%); }
-        100% { transform: translateX(-100%); }
+        100% { transform: translateX(-50%); }
       }
       
       .logo-ticker-track {

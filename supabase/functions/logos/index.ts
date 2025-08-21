@@ -160,7 +160,37 @@ Deno.serve(async (req) => {
             }
           }
           
-          // Priority 2: Use existing file_url if storage method failed
+          // Priority 2: Derive storage info from file_url when missing
+          if (!isValidUrl && logo.file_url) {
+            try {
+              const publicPrefix = '/storage/v1/object/public/';
+              const urlObj = new URL(logo.file_url);
+              const pathname = decodeURIComponent(urlObj.pathname);
+              const idx = pathname.indexOf(publicPrefix);
+              if (idx !== -1) {
+                const rest = pathname.substring(idx + publicPrefix.length); // e.g., 'arquivos/PAGINA PRINCIPAL LOGOS/file.png'
+                const firstSlash = rest.indexOf('/');
+                if (firstSlash > -1) {
+                  const bucket = rest.substring(0, firstSlash);
+                  const key = rest.substring(firstSlash + 1);
+                  console.log(`🧭 Derived storage from file_url for "${logo.name}": ${bucket}/${key}`);
+                  
+                  const { data: signedFromUrl, error: signFromUrlErr } = await supabase.storage
+                    .from(bucket)
+                    .createSignedUrl(key, 3600);
+                  if (signedFromUrl?.signedUrl && !signFromUrlErr) {
+                    finalUrl = signedFromUrl.signedUrl;
+                    isValidUrl = true;
+                    console.log(`✅ Signed URL from derived info for "${logo.name}"`);
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn(`⚠️ Could not derive storage from file_url for "${logo.name}":`, e);
+            }
+          }
+          
+          // Priority 3: Use existing file_url if storage method failed
           if (!isValidUrl && logo.file_url) {
             console.log(`ℹ️ Testing existing file_url for logo "${logo.name}": ${logo.file_url}`);
             
