@@ -17,11 +17,9 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
 }) => {
   const { logos, loading, error } = useLogos();
   const [isPaused, setIsPaused] = useState(false);
-  const [hoveredLogoId, setHoveredLogoId] = useState<string | null>(null);
   const [recalcKey, setRecalcKey] = useState(0);
   const [validLogosCount, setValidLogosCount] = useState(0);
-  const trackARef = useRef<HTMLDivElement>(null);
-  const trackBRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Detectar preferência de movimento reduzido
@@ -33,36 +31,31 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       return;
     }
 
-    const tracks = [trackARef.current, trackBRef.current];
-    if (!tracks[0] || !tracks[1]) return;
+    const track = trackRef.current;
+    if (!track) return;
 
-    const containerWidth = containerRef.current?.offsetWidth || 0;
-    const trackWidth = tracks[0].scrollWidth;
+    const trackWidth = track.scrollWidth / 2; // Divide by 2 since we duplicate content
     const duration = trackWidth / speed;
-
-    tracks.forEach((track, index) => {
-      if (!track) return;
-
-      // Remove animações anteriores
-      track.style.animation = 'none';
-      
-      // Aplica nova animação se não estiver pausada
-      if (!isPaused) {
-        const delay = index === 1 ? -duration / 2 : 0; // usar delay negativo para iniciar já no meio do ciclo
-        const animationDirection = direction === 'ltr' ? 'normal' : 'reverse';
-        
-        track.style.animation = `logoTicker ${duration}s linear ${delay}s infinite ${animationDirection}`;
-      }
-    });
+    const animationDirection = direction === 'ltr' ? 'normal' : 'reverse';
+    
+    // Set animation and control with animationPlayState
+    track.style.animation = `logoTicker ${duration}s linear infinite ${animationDirection}`;
+    track.style.animationPlayState = isPaused ? 'paused' : 'running';
 
     return () => {
-      tracks.forEach(track => {
-        if (track) {
-          track.style.animation = 'none';
-        }
-      });
+      if (track) {
+        track.style.animation = 'none';
+      }
     };
-  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion, recalcKey]);
+  }, [logos, speed, direction, loading, prefersReducedMotion, recalcKey]);
+
+  // Control animation play state separately for smooth pause/resume
+  useEffect(() => {
+    const track = trackRef.current;
+    if (track && track.style.animation !== 'none') {
+      track.style.animationPlayState = isPaused ? 'paused' : 'running';
+    }
+  }, [isPaused]);
 
   // Handlers de hover
   const handleMouseEnter = () => {
@@ -74,12 +67,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const handleMouseLeave = () => {
     if (pauseOnHover) {
       setIsPaused(false);
-      setHoveredLogoId(null);
     }
-  };
-
-  const handleLogoHover = (logoId: string | null) => {
-    setHoveredLogoId(logoId);
   };
 
   // Controle touch para mobile
@@ -105,16 +93,13 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     setValidLogosCount(0);
   }, [logos]);
 
-  // Renderização das logos
+  // Renderização das logos - duplicadas para loop infinito
   const renderLogos = () => {
     return logos.map((logo) => (
       <TickerLogoItem
         key={logo.id}
         logo={logo}
-        className={`
-          h-14 lg:h-14 md:h-12 sm:h-10 transition-all duration-300 ease-out
-          ${hoveredLogoId === logo.id ? 'transform scale-110 z-10' : ''}
-        `}
+        className="h-14 lg:h-14 md:h-12 sm:h-10 transition-all duration-300 ease-out hover:scale-110"
         onImageLoad={handleLogoLoad}
         onImageError={handleLogoError}
       />
@@ -168,7 +153,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             transform: translate3d(0, 0, 0);
           }
           to {
-            transform: translate3d(-100%, 0, 0);
+            transform: translate3d(-50%, 0, 0);
           }
         }
       `}</style>
@@ -211,35 +196,19 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             />
           )}
 
-          {/* Layer interativo para capturar hover */}
+          {/* Trilha única com conteúdo duplicado para loop infinito */}
           <div 
-            id="ticker-interactive-layer"
-            className="absolute inset-0 z-10 cursor-pointer"
-          />
-
-          {/* Trilha A */}
-          <div 
-            ref={trackARef}
-            id="ticker-track-a"
+            ref={trackRef}
+            id="ticker-track"
             className="ticker-track absolute inset-0 flex items-center gap-16 lg:gap-20 md:gap-12 sm:gap-8 px-24 lg:px-28 whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'
             }}
           >
+            {/* Primeiro conjunto de logos */}
             {renderLogos()}
-          </div>
-
-          {/* Trilha B - Duplicada para loop infinito */}
-          <div 
-            ref={trackBRef}
-            id="ticker-track-b"
-            className="ticker-track absolute inset-0 flex items-center gap-16 lg:gap-20 md:gap-12 sm:gap-8 px-24 lg:px-28 whitespace-nowrap"
-            style={{ 
-              willChange: 'transform',
-              width: 'max-content'
-            }}
-          >
+            {/* Segundo conjunto de logos para continuidade */}
             {renderLogos()}
           </div>
         </div>
