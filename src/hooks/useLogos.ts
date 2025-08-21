@@ -23,10 +23,12 @@ export const useLogos = () => {
       setLoading(true);
       setError(null);
 
-      // Usar a Edge Function para obter logos públicas
-      const { data, error } = await supabase.functions.invoke('logos', {
-        method: 'GET'
-      });
+      // Buscar diretamente as logos públicas da tabela com RLS (is_active = true)
+      const { data, error } = await supabase
+        .from('logos')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
@@ -34,14 +36,45 @@ export const useLogos = () => {
         return;
       }
 
-      console.log('✅ Logos fetched successfully:', data?.length || 0);
-      
-      // Garantir tipagem correta dos dados da Edge Function
-      const typedLogos: Logo[] = (data || []).map(logo => ({
-        ...logo,
-        color_variant: (logo.color_variant as 'white' | 'dark') || 'white'
-      }));
-      
+      const rawLogos = data || [];
+
+      // Tentar resolver URL assinada (funciona mesmo se o bucket não for público);
+      // se falhar, cai para a URL pública padrão
+      const resolveUrl = async (url: string): Promise<string> => {
+        try {
+          const u = new URL(url);
+          const parts = u.pathname.split('/').filter(Boolean);
+          const objectIdx = parts.findIndex((p) => p === 'object');
+          if (objectIdx === -1) return url;
+
+          const maybePublic = parts[objectIdx + 1]; // 'public' ou bucket
+          const bucket = maybePublic === 'public' ? parts[objectIdx + 2] : maybePublic;
+          const pathStart = maybePublic === 'public' ? objectIdx + 3 : objectIdx + 2;
+          const objectPath = decodeURIComponent(parts.slice(pathStart).join('/'));
+
+          // 1) Tenta URL assinada (para buckets privados)
+          const { data: signed, error: signErr } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(objectPath, 60 * 60);
+          if (!signErr && signed?.signedUrl) return signed.signedUrl;
+
+          // 2) Fallback para URL pública (para buckets públicos)
+          const { data: pub } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+          return pub.publicUrl || url;
+        } catch {
+          return url;
+        }
+      };
+
+      const typedLogos: Logo[] = await Promise.all(
+        rawLogos.map(async (logo: any) => ({
+          ...logo,
+          file_url: await resolveUrl(logo.file_url),
+          color_variant: (logo.color_variant as 'white' | 'dark') || 'white',
+        }))
+      );
+
+      console.log('✅ Logos fetched successfully:', typedLogos.length);
       setLogos(typedLogos);
     } catch (err) {
       console.error('❌ Unexpected error fetching logos:', err);
@@ -50,7 +83,6 @@ export const useLogos = () => {
       setLoading(false);
     }
   };
-
   const refreshLogos = () => {
     fetchLogos();
   };
