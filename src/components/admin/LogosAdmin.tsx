@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 const LogosAdmin = () => {
   const { logos, loading, error, refreshLogos, updateLogo, toggleLogoActive, bulkUploadLogos } = useLogosAdmin();
   const [uploading, setUploading] = useState(false);
+  const [normalizing, setNormalizing] = useState(false);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   // Upload de arquivo
@@ -156,6 +157,58 @@ const LogosAdmin = () => {
     }
   };
 
+  // Normalizar URLs das logos
+  const handleNormalizeLogos = async () => {
+    setNormalizing(true);
+    try {
+      let normalizedCount = 0;
+      
+      for (const logo of logos) {
+        // Skip logos that already have proper storage info
+        if (logo.storage_bucket && logo.storage_key) continue;
+        
+        // Only normalize signed URLs (with token=)
+        if (!logo.file_url?.includes('token=')) continue;
+        
+        try {
+          // Extract path from signed URL
+          const url = new URL(logo.file_url);
+          const pathMatch = url.pathname.match(/\/storage\/v1\/object\/[^/]+\/([^/]+)\/(.+)$/);
+          
+          if (pathMatch) {
+            const [, bucket, key] = pathMatch;
+            const decodedKey = decodeURIComponent(key);
+            
+            console.log(`Normalizing logo "${logo.name}": ${bucket}/${decodedKey}`);
+            
+            // Update logo with storage info and clear old URL
+            await updateLogo(logo.id, {
+              storage_bucket: bucket,
+              storage_key: decodedKey,
+              file_url: '' // Clear the old signed URL
+            });
+            
+            normalizedCount++;
+          }
+        } catch (err) {
+          console.error(`Error normalizing logo "${logo.name}":`, err);
+        }
+      }
+      
+      if (normalizedCount > 0) {
+        toast.success(`${normalizedCount} logo(s) normalizadas com sucesso!`);
+        refreshLogos();
+      } else {
+        toast.info('Nenhuma logo precisava ser normalizada.');
+      }
+    } catch (err) {
+      console.error('Error in normalization:', err);
+      toast.error('Erro ao normalizar logos');
+    } finally {
+      setNormalizing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -219,16 +272,31 @@ const LogosAdmin = () => {
         </CardContent>
       </Card>
 
-      {/* Diagnóstico */}
+      {/* Diagnóstico e Normalização */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            Diagnóstico do Sistema
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Diagnóstico do Sistema
+            </span>
+            <Button 
+              onClick={handleNormalizeLogos}
+              variant="outline" 
+              size="sm"
+              disabled={normalizing}
+            >
+              {normalizing ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-2" />
+              )}
+              Normalizar URLs
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-4">
             <div className="bg-green-50 p-3 rounded-lg">
               <div className="font-medium text-green-800">Total de Logos</div>
               <div className="text-2xl font-bold text-green-600">{logos.length}</div>
@@ -245,7 +313,25 @@ const LogosAdmin = () => {
                 {logos.filter(l => l.storage_bucket && l.storage_key).length}
               </div>
             </div>
+            <div className="bg-orange-50 p-3 rounded-lg">
+              <div className="font-medium text-orange-800">URLs Antigas</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {logos.filter(l => !l.storage_bucket && l.file_url?.includes('token=')).length}
+              </div>
+            </div>
           </div>
+          
+          {logos.filter(l => !l.storage_bucket && l.file_url?.includes('token=')).length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-yellow-800 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <span className="font-medium">
+                  {logos.filter(l => !l.storage_bucket && l.file_url?.includes('token=')).length} logo(s) 
+                  usando URLs antigas que podem expirar. Use "Normalizar URLs" para corrigir.
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

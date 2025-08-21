@@ -76,12 +76,22 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     }
   };
 
-  // Renderização das logos
+  // Track logos that successfully load
+  const [loadedLogos, setLoadedLogos] = useState<string[]>([]);
+  const [failedLogos, setFailedLogos] = useState<string[]>([]);
+
+  // Reset counters when logos change
+  useEffect(() => {
+    setLoadedLogos([]);
+    setFailedLogos([]);
+  }, [logos]);
+
+  // Renderização das logos com controle de carregamento
   const renderLogos = () => {
     return logos.map((logo) => (
       <div
         key={logo.id}
-        data-logo-item
+        data-logo-item={logo.id}
         className="flex-shrink-0 h-12 lg:h-14 px-4 lg:px-6 transition-all duration-300 ease-out cursor-pointer hover:scale-110"
         onClick={() => logo.link_url && window.open(logo.link_url, '_blank')}
         aria-label={`Logo da ${logo.name}`}
@@ -92,10 +102,15 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           className="h-full w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300"
           loading="lazy"
           draggable={false}
+          onLoad={() => {
+            setLoadedLogos(prev => [...prev.filter(id => id !== logo.id), logo.id]);
+          }}
           onError={(e) => {
             console.error(`❌ Failed to load logo ${logo.name} (ID: ${logo.id}):`, logo.file_url);
-            // Hide the parent container to maintain ticker stability
-            const parentDiv = (e.target as HTMLElement).closest('[data-logo-item]') as HTMLElement;
+            setFailedLogos(prev => [...prev.filter(id => id !== logo.id), logo.id]);
+            
+            // Hide the failed logo container
+            const parentDiv = (e.target as HTMLElement).closest(`[data-logo-item="${logo.id}"]`) as HTMLElement;
             if (parentDiv) {
               parentDiv.style.display = 'none';
             }
@@ -104,6 +119,26 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       </div>
     ));
   };
+
+  // Hide ticker if no logos load successfully after a reasonable time
+  useEffect(() => {
+    if (logos.length > 0 && !prefersReducedMotion) {
+      const timer = setTimeout(() => {
+        if (loadedLogos.length === 0 && failedLogos.length === logos.length) {
+          console.warn('LogoTicker: All logos failed to load, hiding ticker');
+        }
+      }, 3000); // Give 3 seconds for logos to load
+
+      return () => clearTimeout(timer);
+    }
+  }, [logos, loadedLogos, failedLogos, prefersReducedMotion]);
+
+  // Don't render ticker if all logos failed to load
+  const allLogosFailed = logos.length > 0 && failedLogos.length === logos.length && loadedLogos.length === 0;
+  if (allLogosFailed) {
+    console.warn('LogoTicker: All logos failed to load, hiding component');
+    return null;
+  }
 
   if (loading) {
     return (
@@ -117,8 +152,14 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     );
   }
 
-  if (error || !logos.length) {
+  if (error) {
+    console.error('LogoTicker error:', error);
     return null; // Falha silenciosa para não quebrar a página
+  }
+
+  if (!logos.length) {
+    console.warn('LogoTicker: No logos available');
+    return null; // Esconder ticker se não há logos válidas
   }
 
   // Fallback para usuários com preferência de movimento reduzido
@@ -173,7 +214,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       >
         <div 
           ref={containerRef}
-          className="logo-ticker-container ticker h-20 lg:h-24 relative overflow-hidden rounded-2xl bg-gradient-to-r from-black/20 via-black/10 to-black/20"
+          className="logo-ticker-container ticker h-20 lg:h-24 relative overflow-hidden rounded-2xl bg-gradient-to-r from-black/10 via-black/5 to-black/10"
         >
           {/* Gradientes laterais suaves */}
           <div 

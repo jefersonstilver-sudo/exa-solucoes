@@ -99,11 +99,16 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Create signed URLs with enhanced logging
-      const signedLogos: Logo[] = await Promise.all((logos || []).map(async (logo: any) => {
-        // Generate signed URL with enhanced logging
-        if (logo.storage_bucket && logo.storage_key) {
-          try {
+      // Enhanced URL validation and generation
+      const validLogos: Logo[] = [];
+      
+      for (const logo of logos || []) {
+        try {
+          let finalUrl = '';
+          let isValidUrl = false;
+          
+          // Priority 1: Generate signed URL from storage_bucket/storage_key
+          if (logo.storage_bucket && logo.storage_key) {
             console.log(`🔄 Attempting to sign URL for logo "${logo.name}" (ID: ${logo.id})`);
             console.log(`   Storage: ${logo.storage_bucket}/${logo.storage_key}`);
             
@@ -112,37 +117,69 @@ Deno.serve(async (req) => {
               .createSignedUrl(logo.storage_key, 3600);
             
             if (signedData?.signedUrl && !signError) {
+              finalUrl = signedData.signedUrl;
+              isValidUrl = true;
               console.log(`✅ Successfully signed URL for logo "${logo.name}"`);
-              return { ...logo, file_url: signedData.signedUrl } as Logo;
             } else {
-              console.warn(`⚠️ Failed to sign URL for logo "${logo.name}" (${logo.id}):`, signError?.message || 'Unknown error');
-              console.log(`   Falling back to file_url: ${logo.file_url}`);
+              console.warn(`⚠️ Failed to sign URL for logo "${logo.name}":`, signError?.message);
               
-              // Try fallback to public URL
+              // Try public URL as fallback
               const { data: publicData } = supabase.storage
                 .from(logo.storage_bucket)
                 .getPublicUrl(logo.storage_key);
               
               if (publicData?.publicUrl) {
+                finalUrl = publicData.publicUrl;
                 console.log(`🔄 Using public URL for logo ${logo.name}`);
-                return { ...logo, file_url: publicData.publicUrl } as Logo;
+                
+                // Test if public URL is accessible
+                try {
+                  const response = await fetch(finalUrl, { method: 'HEAD' });
+                  isValidUrl = response.ok;
+                  if (isValidUrl) {
+                    console.log(`✅ Public URL verified for logo "${logo.name}"`);
+                  }
+                } catch {
+                  console.warn(`❌ Public URL not accessible for logo "${logo.name}"`);
+                }
               }
             }
-          } catch (error) {
-            console.error(`⚠️ Could not sign URL for logo "${logo.name}" (${logo.id}):`, error);
-            console.log(`   Falling back to file_url: ${logo.file_url}`);
           }
-        } else {
-          console.log(`ℹ️ Logo "${logo.name}" (${logo.id}) using direct file_url: ${logo.file_url}`);
+          
+          // Priority 2: Use existing file_url if storage method failed
+          if (!isValidUrl && logo.file_url) {
+            console.log(`ℹ️ Testing existing file_url for logo "${logo.name}": ${logo.file_url}`);
+            
+            // Test if existing URL is still valid
+            try {
+              const response = await fetch(logo.file_url, { method: 'HEAD' });
+              if (response.ok) {
+                finalUrl = logo.file_url;
+                isValidUrl = true;
+                console.log(`✅ Existing file_url is valid for logo "${logo.name}"`);
+              } else {
+                console.warn(`❌ Existing file_url is invalid for logo "${logo.name}" (${response.status})`);
+              }
+            } catch (error) {
+              console.warn(`❌ Error testing file_url for logo "${logo.name}":`, error);
+            }
+          }
+          
+          // Only include logos with valid, accessible URLs
+          if (isValidUrl && finalUrl) {
+            validLogos.push({ ...logo, file_url: finalUrl } as Logo);
+          } else {
+            console.error(`❌ Logo "${logo.name}" (${logo.id}) excluded - no valid URL found`);
+          }
+          
+        } catch (error) {
+          console.error(`❌ Error processing logo "${logo.name}" (${logo.id}):`, error);
         }
-        
-        return logo as Logo;
-      }));
+      }
 
-      const activeLogos = signedLogos.filter(logo => logo.file_url);
-      console.log(`✅ Found ${activeLogos.length} active logos (signed URLs ready)`);
+      console.log(`✅ Found ${validLogos.length} valid logos with accessible URLs (out of ${logos?.length || 0} active)`);
 
-      return new Response(JSON.stringify(activeLogos), {
+      return new Response(JSON.stringify(validLogos), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
