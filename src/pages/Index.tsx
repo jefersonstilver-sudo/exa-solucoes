@@ -202,6 +202,9 @@ const Index = () => {
               direction="ltr"
               pauseOnHover={true}
             />
+            <p className="mt-4 text-center text-white/90 text-sm md:text-base font-medium">
+              Nossos clientes e parceiros
+            </p>
           </div>
         </div>
       </section>

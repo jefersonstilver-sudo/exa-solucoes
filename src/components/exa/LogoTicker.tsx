@@ -106,9 +106,15 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         <img
           src={logo.file_url}
           alt={logo.name}
-          className="h-full w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200"
+          className="h-full w-auto object-contain opacity-95 hover:opacity-100 transition-opacity duration-200"
           loading="lazy"
+          decoding="async"
           draggable={false}
+          onError={(e) => {
+            const el = e.currentTarget as HTMLImageElement;
+            el.style.visibility = 'hidden';
+            console.warn('[LogoTicker] Falha ao carregar logo:', logo.name, logo.file_url);
+          }}
         />
       </div>
     ));
@@ -200,11 +206,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             }}
           />
 
-          {/* Layer interativo para capturar hover */}
-          <div 
-            id="ticker-interactive-layer"
-            className="absolute inset-0 z-10 cursor-pointer"
-          />
+          {/* interactive layer removed to avoid overlay issues */}
 
           {/* Trilha A */}
           <div 
