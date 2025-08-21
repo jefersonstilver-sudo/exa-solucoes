@@ -1,5 +1,5 @@
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,96 +10,32 @@ interface Logo {
   id: string;
   name: string;
   file_url: string;
-  color_variant: 'white' | 'dark' | 'colored';
+  color_variant: string;
   link_url?: string;
   sort_order: number;
   is_active: boolean;
-  storage_bucket?: string;
-  storage_key?: string;
-  created_at: string;
-  updated_at: string;
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-  const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
-  const diagnoseMode = urlParams.get('diagnose') === 'true';
-
-  if (diagnoseMode) {
-    console.log('🔍 Running diagnostic mode for logos');
-    
-    try {
-      // List all files in the logos directory
-      const { data: files, error: listError } = await supabase.storage
-        .from('arquivos')
-        .list('PAGINA PRINCIPAL LOGOS', { limit: 100 });
-
-      if (listError) {
-        console.error('❌ Error listing storage files:', listError);
-      } else {
-        console.log(`📁 Found ${files?.length || 0} files in storage:`, files?.map(f => f.name));
-      }
-
-      // Get all logos from database
-      const { data: dbLogos, error: dbError } = await supabase
-        .from('logos')
-        .select('id, name, storage_key, storage_bucket, file_url, is_active')
-        .order('sort_order', { ascending: true });
-
-      if (dbError) {
-        console.error('❌ Error fetching database logos:', dbError);
-      } else {
-        console.log(`💾 Found ${dbLogos?.length || 0} logos in database`);
-        dbLogos?.forEach(logo => {
-          const fileExists = files?.some(f => f.name === logo.storage_key?.replace('PAGINA PRINCIPAL LOGOS/', ''));
-          console.log(`${fileExists ? '✅' : '❌'} Logo "${logo.name}": storage_key=${logo.storage_key}, file_exists=${fileExists}`);
-        });
-      }
-
-      return new Response(JSON.stringify({ 
-        success: true,
-        storage_files: files,
-        database_logos: dbLogos,
-        diagnostic: true 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    } catch (error) {
-      console.error('❌ Diagnostic error:', error);
-      return new Response(JSON.stringify({ success: false, error: error.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-  }
-
   try {
-    // Handle both GET (direct HTTP) and POST (function invoke) for listing logos
-    if (req.method === 'GET' || req.method === 'POST') {
-      let isListRequest = req.method === 'GET';
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const url = new URL(req.url);
+    const path = url.pathname.replace('/logos', '');
+    
+    // GET /logos - Lista todas as logos ativas (endpoint público)
+    if (req.method === 'GET' && path === '') {
+      console.log('📋 Fetching active logos for ticker');
       
-      // For POST requests, check if it's a list request
-      if (req.method === 'POST') {
-        try {
-          const body = await req.json();
-          isListRequest = !body || body.action === 'list' || !body.logos; // If no body, action is 'list', or no logos array, treat as list
-        } catch {
-          isListRequest = true; // If can't parse body, assume it's a list request
-        }
-      }
-      
-      if (isListRequest) {
-        console.log('📋 Fetching active logos for ticker');
-      
-      const { data: logos, error } = await supabase
+      const { data: logos, error } = await supabaseClient
         .from('logos')
         .select('*')
         .eq('is_active', true)
@@ -107,208 +43,426 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
-        return new Response(JSON.stringify({ error: 'Failed to fetch logos' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch logos' }), 
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
 
-      // Enhanced URL validation and generation
-      const validLogos: Logo[] = [];
-      
-      for (const logo of logos || []) {
+      // Helper to extract bucket and path (decoded and raw) from a stored URL or path
+      const extractBucketAndPath = (
+        urlOrPath: string
+      ): { bucket: string; pathDecoded: string; pathRaw: string } | null => {
+        if (!urlOrPath) return null;
         try {
-          let finalUrl = '';
-          let isValidUrl = false;
-          
-          // Priority 1: Generate signed URL from storage_bucket/storage_key
-          if (logo.storage_bucket && logo.storage_key) {
-            console.log(`🔄 Attempting to sign URL for logo "${logo.name}" (ID: ${logo.id})`);
-            console.log(`   Storage: ${logo.storage_bucket}/${logo.storage_key}`);
-            
-            const { data: signedData, error: signError } = await supabase.storage
-              .from(logo.storage_bucket)
-              .createSignedUrl(logo.storage_key, 3600);
-            
-            if (signedData?.signedUrl && !signError) {
-              finalUrl = signedData.signedUrl;
-              isValidUrl = true;
-              console.log(`✅ Successfully signed URL for logo "${logo.name}"`);
-            } else {
-              console.warn(`⚠️ Failed to sign URL for logo "${logo.name}":`, signError?.message);
-              
-              // Try public URL as fallback
-              const { data: publicData } = supabase.storage
-                .from(logo.storage_bucket)
-                .getPublicUrl(logo.storage_key);
-              
-              if (publicData?.publicUrl) {
-                finalUrl = publicData.publicUrl;
-                console.log(`🔄 Using public URL for logo ${logo.name}`);
-                
-                // Test if public URL is accessible
-                try {
-                  const response = await fetch(finalUrl, { method: 'HEAD' });
-                  isValidUrl = response.ok;
-                  if (isValidUrl) {
-                    console.log(`✅ Public URL verified for logo "${logo.name}"`);
-                  }
-                } catch {
-                  console.warn(`❌ Public URL not accessible for logo "${logo.name}"`);
-                }
-              }
-            }
+          // Matches .../storage/v1/object/public/<bucket>/<path> or .../storage/v1/object/<bucket>/<path>
+          const match = urlOrPath.match(/\/storage\/v1\/object\/(?:public\/)?([^/]+)\/(.+)$/);
+          if (match) {
+            const raw = match[2];
+            return { bucket: match[1], pathDecoded: decodeURIComponent(raw), pathRaw: raw };
           }
-          
-          // Priority 2: Derive storage info from file_url when missing
-          if (!isValidUrl && logo.file_url) {
-            try {
-              const publicPrefix = '/storage/v1/object/public/';
-              const urlObj = new URL(logo.file_url);
-              const pathname = decodeURIComponent(urlObj.pathname);
-              const idx = pathname.indexOf(publicPrefix);
-              if (idx !== -1) {
-                const rest = pathname.substring(idx + publicPrefix.length); // e.g., 'arquivos/PAGINA PRINCIPAL LOGOS/file.png'
-                const firstSlash = rest.indexOf('/');
-                if (firstSlash > -1) {
-                  const bucket = rest.substring(0, firstSlash);
-                  const key = rest.substring(firstSlash + 1);
-                  console.log(`🧭 Derived storage from file_url for "${logo.name}": ${bucket}/${key}`);
-                  
-                  const { data: signedFromUrl, error: signFromUrlErr } = await supabase.storage
-                    .from(bucket)
-                    .createSignedUrl(key, 3600);
-                  if (signedFromUrl?.signedUrl && !signFromUrlErr) {
-                    finalUrl = signedFromUrl.signedUrl;
-                    isValidUrl = true;
-                    console.log(`✅ Signed URL from derived info for "${logo.name}"`);
-                  }
-                }
-              }
-            } catch (e) {
-              console.warn(`⚠️ Could not derive storage from file_url for "${logo.name}":`, e);
-            }
-          }
-          
-          // Priority 3: Use existing file_url if storage method failed
-          if (!isValidUrl && logo.file_url) {
-            console.log(`ℹ️ Testing existing file_url for logo "${logo.name}": ${logo.file_url}`);
-            
-            // Test if existing URL is still valid
-            try {
-              const response = await fetch(logo.file_url, { method: 'HEAD' });
-              if (response.ok) {
-                finalUrl = logo.file_url;
-                isValidUrl = true;
-                console.log(`✅ Existing file_url is valid for logo "${logo.name}"`);
-              } else {
-                console.warn(`❌ Existing file_url is invalid for logo "${logo.name}" (${response.status})`);
-              }
-            } catch (error) {
-              console.warn(`❌ Error testing file_url for logo "${logo.name}":`, error);
-            }
-          }
-          
-          // Only include logos with valid, accessible URLs
-          if (isValidUrl && finalUrl) {
-            validLogos.push({ ...logo, file_url: finalUrl } as Logo);
-          } else {
-            console.error(`❌ Logo "${logo.name}" (${logo.id}) excluded - no valid URL found`);
-          }
-          
-        } catch (error) {
-          console.error(`❌ Error processing logo "${logo.name}" (${logo.id}):`, error);
+        } catch (_) {}
+        // If looks like bucket/path (no protocol)
+        if (!urlOrPath.startsWith('http') && urlOrPath.includes('/')) {
+          const [bucket, ...rest] = urlOrPath.split('/');
+          const raw = rest.join('/');
+          return { bucket, pathDecoded: decodeURIComponent(raw), pathRaw: raw };
         }
-      }
+        return null; // External URL or unrecognized format
+      };
 
-      console.log(`✅ Found ${validLogos.length} valid logos with accessible URLs (out of ${logos?.length || 0} active)`);
+      // Create signed URLs when possible; try decoded + raw; fallback to public URL
+      const signedLogos: Logo[] = await Promise.all((logos || []).map(async (logo: any) => {
+        const info = extractBucketAndPath(logo.file_url);
+        if (!info) {
+          return logo; // Keep original (likely external/public URL)
+        }
+        try {
+          // Attempt 1: decoded path
+          let { data: s1, error: e1 } = await supabaseClient
+            .storage.from(info.bucket)
+            .createSignedUrl(info.pathDecoded, 60 * 60 * 24 * 7);
+          if (s1?.signedUrl) {
+            return { ...logo, file_url: s1.signedUrl } as Logo;
+          }
+          if (e1) {
+            console.warn('⚠️ Sign (decoded) failed', { logoId: logo.id, bucket: info.bucket, path: info.pathDecoded, err: (e1 as any)?.message || e1 });
+          }
 
-        return new Response(JSON.stringify(validLogos), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+          // Attempt 2: raw path (without decode)
+          let { data: s2, error: e2 } = await supabaseClient
+            .storage.from(info.bucket)
+            .createSignedUrl(info.pathRaw, 60 * 60 * 24 * 7);
+          if (s2?.signedUrl) {
+            return { ...logo, file_url: s2.signedUrl } as Logo;
+          }
+          if (e2) {
+            console.warn('⚠️ Sign (raw) failed', { logoId: logo.id, bucket: info.bucket, path: info.pathRaw, err: (e2 as any)?.message || e2 });
+          }
+
+          // Attempt 3: get public URL (for public buckets)
+          const { data: pub1 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathDecoded);
+          if (pub1?.publicUrl) {
+            return { ...logo, file_url: pub1.publicUrl } as Logo;
+          }
+          const { data: pub2 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathRaw);
+          if (pub2?.publicUrl) {
+            return { ...logo, file_url: pub2.publicUrl } as Logo;
+          }
+
+          console.warn('⚠️ All attempts failed for logo', { logoId: logo.id, bucket: info.bucket, decoded: info.pathDecoded, raw: info.pathRaw });
+          return logo;
+        } catch (e) {
+          console.warn('⚠️ Signing process threw for logo', logo.id, e);
+          return logo;
+        }
+      }));
+
+      console.log(`✅ Found ${signedLogos?.length || 0} active logos (signed or public URLs ready)`);
+      return new Response(
+        JSON.stringify(signedLogos || []), 
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    if (req.method === 'PATCH') {
-      const body = await req.json();
-      const { id, ...updates } = body;
+    // POST /logos - Regular logo upload (admin apenas)
+    if (req.method === 'POST' && path === '') {
+      console.log('📤 Processing logo upload or update');
+      
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization required' }), 
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
 
-      if (!id) {
-        return new Response(JSON.stringify({ error: 'Logo ID is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      const payload = await req.json();
+
+      // Check if it's a bulk upload or single update
+      if (payload.logos) {
+        // Handle bulk upload
+        const { logos } = payload;
+        
+        if (!Array.isArray(logos) || logos.length === 0) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid logos array' }), 
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Obter próximo sort_order
+        const { data: lastLogo } = await supabaseClient
+          .from('logos')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
+          .limit(1)
+          .single();
+
+        let nextSortOrder = (lastLogo?.sort_order || 0) + 1;
+
+        // Inserir logos em batch
+        const logosToInsert = logos.map((logo: any) => ({
+          name: logo.name,
+          file_url: logo.file_url,
+          storage_bucket: logo.storage_bucket,
+          storage_key: logo.storage_key,
+          color_variant: logo.color_variant || 'white',
+          link_url: logo.link_url,
+          sort_order: logo.sort_order || nextSortOrder++,
+          is_active: logo.is_active !== false
+        }));
+
+        const { data: insertedLogos, error: insertError } = await supabaseClient
+          .from('logos')
+          .insert(logosToInsert)
+          .select();
+
+        if (insertError) {
+          console.error('❌ Error inserting logos:', insertError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to insert logos' }), 
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        console.log(`✅ Successfully inserted ${insertedLogos?.length || 0} logos`);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            count: insertedLogos?.length || 0,
+            logos: insertedLogos
+          }), 
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      } else if (payload.id) {
+        // Handle single logo update via POST (for compatibility)
+        const { id, ...updates } = payload;
+        
+        const { data: updatedLogo, error: updateError } = await supabaseClient
+          .from('logos')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('❌ Error updating logo:', updateError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to update logo' }), 
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        console.log('✅ Logo updated successfully:', id);
+        return new Response(JSON.stringify(updatedLogo), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      const { data, error } = await supabase
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format' }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // POST /logos/bulk - Upload múltiplo de logos (admin apenas) - backward compatibility
+    if (req.method === 'POST' && path === '/bulk') {
+      console.log('📤 Processing bulk logo upload');
+      
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization required' }), 
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Verificar se é admin
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      );
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authentication' }), 
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      const { data: userData } = await supabaseClient
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!userData || !['admin', 'super_admin'].includes(userData.role)) {
+        return new Response(
+          JSON.stringify({ error: 'Admin access required' }), 
+          { 
+            status: 403, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      const { logos } = await req.json();
+      
+      if (!Array.isArray(logos) || logos.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid logos array' }), 
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Obter próximo sort_order
+      const { data: lastLogo } = await supabaseClient
         .from('logos')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .single();
+
+      let nextSortOrder = (lastLogo?.sort_order || 0) + 1;
+
+      // Inserir logos em batch
+      const logosToInsert = logos.map((logo: Partial<Logo>) => ({
+        name: logo.name,
+        file_url: logo.file_url,
+        storage_bucket: (logo as any).storage_bucket,
+        storage_key: (logo as any).storage_key,
+        color_variant: logo.color_variant || 'white',
+        link_url: logo.link_url,
+        sort_order: nextSortOrder++,
+        is_active: true
+      }));
+
+      const { data: insertedLogos, error: insertError } = await supabaseClient
+        .from('logos')
+        .insert(logosToInsert)
+        .select();
+
+      if (insertError) {
+        console.error('❌ Error inserting logos:', insertError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to insert logos' }), 
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      console.log(`✅ Successfully inserted ${insertedLogos?.length || 0} logos`);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          count: insertedLogos?.length || 0,
+          logos: insertedLogos
+        }), 
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // PATCH - Handle logo updates (admin apenas)
+    if (req.method === 'PATCH') {
+      console.log('📝 Processing logo update');
+      
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization required' }), 
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      const payload = await req.json();
+      const { id, ...updates } = payload;
+      
+      if (!id) {
+        return new Response(
+          JSON.stringify({ error: 'Logo ID required' }), 
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      console.log('📝 Updating logo:', id, updates);
+
+      const { data: updatedLogo, error: updateError } = await supabaseClient
+        .from('logos')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single();
 
-      if (error) {
-        console.error('❌ Error updating logo:', error);
-        return new Response(JSON.stringify({ error: 'Failed to update logo' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      if (updateError) {
+        console.error('❌ Error updating logo:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update logo' }), 
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
 
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      console.log('✅ Logo updated successfully:', id);
+      return new Response(JSON.stringify(updatedLogo), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    if (req.method === 'POST') {
-      const body = await req.json();
+    // DELETE /logos/:id - Inativar logo (admin apenas)
+    if (req.method === 'DELETE' && path.startsWith('/')) {
+      const logoId = path.substring(1);
       
-      // Handle bulk logo upload (has logos array)
-      if (body.logos && Array.isArray(body.logos)) {
-        const { logos: logosData } = body;
+      const { data: updatedLogo, error: deleteError } = await supabaseClient
+        .from('logos')
+        .update({ is_active: false })
+        .eq('id', logoId)
+        .select()
+        .single();
 
-        if (!logosData || !Array.isArray(logosData)) {
-          return new Response(JSON.stringify({ error: 'Logos array is required' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        const { data, error } = await supabase
-          .from('logos')
-          .insert(logosData)
-          .select();
-
-        if (error) {
-          console.error('❌ Error inserting logos:', error);
-          return new Response(JSON.stringify({ error: 'Failed to insert logos' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      if (deleteError) {
+        console.error('❌ Error deactivating logo:', deleteError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to deactivate logo' }), 
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
-      
-      // If POST but not a bulk upload, might be a list request (handled above)
-      return new Response(JSON.stringify({ error: 'Invalid POST request' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+
+      return new Response(
+        JSON.stringify({ success: true, logo: updatedLogo }), 
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }), 
+      { 
+        status: 405, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
 
   } catch (error) {
-    console.error('💥 Unexpected error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('🚨 Unexpected error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }), 
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
