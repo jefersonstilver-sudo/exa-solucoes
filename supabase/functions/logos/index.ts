@@ -52,46 +52,76 @@ serve(async (req) => {
         );
       }
 
-      // Helper to extract bucket and path from a stored URL or path
-      const extractBucketAndPath = (urlOrPath: string): { bucket: string; path: string } | null => {
+      // Helper to extract bucket and path (decoded and raw) from a stored URL or path
+      const extractBucketAndPath = (
+        urlOrPath: string
+      ): { bucket: string; pathDecoded: string; pathRaw: string } | null => {
         if (!urlOrPath) return null;
-        // Full storage URL e.g. /storage/v1/object/public/<bucket>/<path> or /storage/v1/object/<bucket>/<path>
         try {
+          // Matches .../storage/v1/object/public/<bucket>/<path> or .../storage/v1/object/<bucket>/<path>
           const match = urlOrPath.match(/\/storage\/v1\/object\/(?:public\/)?([^/]+)\/(.+)$/);
           if (match) {
-            return { bucket: match[1], path: decodeURIComponent(match[2]) };
+            const raw = match[2];
+            return { bucket: match[1], pathDecoded: decodeURIComponent(raw), pathRaw: raw };
           }
         } catch (_) {}
-        // If looks like bucket/path
+        // If looks like bucket/path (no protocol)
         if (!urlOrPath.startsWith('http') && urlOrPath.includes('/')) {
           const [bucket, ...rest] = urlOrPath.split('/');
-          return { bucket, path: rest.join('/') };
+          const raw = rest.join('/');
+          return { bucket, pathDecoded: decodeURIComponent(raw), pathRaw: raw };
         }
         return null; // External URL or unrecognized format
       };
 
-      // Create signed URLs when possible to avoid 401/403 from private buckets
+      // Create signed URLs when possible; try decoded + raw; fallback to public URL
       const signedLogos: Logo[] = await Promise.all((logos || []).map(async (logo: any) => {
         const info = extractBucketAndPath(logo.file_url);
         if (!info) {
           return logo; // Keep original (likely external/public URL)
         }
         try {
-          const { data: signed, error: signErr } = await supabaseClient
+          // Attempt 1: decoded path
+          let { data: s1, error: e1 } = await supabaseClient
             .storage.from(info.bucket)
-            .createSignedUrl(info.path, 60 * 60 * 24 * 7); // 7 days
-          if (signErr || !signed?.signedUrl) {
-            console.warn('⚠️ Could not sign URL for logo', logo.id, signErr);
-            return logo;
+            .createSignedUrl(info.pathDecoded, 60 * 60 * 24 * 7);
+          if (s1?.signedUrl) {
+            return { ...logo, file_url: s1.signedUrl } as Logo;
           }
-          return { ...logo, file_url: signed.signedUrl } as Logo;
+          if (e1) {
+            console.warn('⚠️ Sign (decoded) failed', { logoId: logo.id, bucket: info.bucket, path: info.pathDecoded, err: (e1 as any)?.message || e1 });
+          }
+
+          // Attempt 2: raw path (without decode)
+          let { data: s2, error: e2 } = await supabaseClient
+            .storage.from(info.bucket)
+            .createSignedUrl(info.pathRaw, 60 * 60 * 24 * 7);
+          if (s2?.signedUrl) {
+            return { ...logo, file_url: s2.signedUrl } as Logo;
+          }
+          if (e2) {
+            console.warn('⚠️ Sign (raw) failed', { logoId: logo.id, bucket: info.bucket, path: info.pathRaw, err: (e2 as any)?.message || e2 });
+          }
+
+          // Attempt 3: get public URL (for public buckets)
+          const { data: pub1 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathDecoded);
+          if (pub1?.publicUrl) {
+            return { ...logo, file_url: pub1.publicUrl } as Logo;
+          }
+          const { data: pub2 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathRaw);
+          if (pub2?.publicUrl) {
+            return { ...logo, file_url: pub2.publicUrl } as Logo;
+          }
+
+          console.warn('⚠️ All attempts failed for logo', { logoId: logo.id, bucket: info.bucket, decoded: info.pathDecoded, raw: info.pathRaw });
+          return logo;
         } catch (e) {
-          console.warn('⚠️ Signing failed for logo', logo.id, e);
+          console.warn('⚠️ Signing process threw for logo', logo.id, e);
           return logo;
         }
       }));
 
-      console.log(`✅ Found ${signedLogos?.length || 0} active logos (signed URLs ready)`);
+      console.log(`✅ Found ${signedLogos?.length || 0} active logos (signed or public URLs ready)`);
       return new Response(
         JSON.stringify(signedLogos || []), 
         { 
