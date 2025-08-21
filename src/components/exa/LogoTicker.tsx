@@ -1,21 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLogos } from '@/hooks/useLogos';
+import TickerLogoItem from './TickerLogoItem';
 
 interface LogoTickerProps {
   speed?: number; // px/s
   direction?: 'ltr' | 'rtl';
   pauseOnHover?: boolean;
+  showPortals?: boolean;
 }
 
 const LogoTicker: React.FC<LogoTickerProps> = ({ 
   speed = 60, 
   direction = 'ltr',
-  pauseOnHover = true 
+  pauseOnHover = true,
+  showPortals = false
 }) => {
   const { logos, loading, error } = useLogos();
   const [isPaused, setIsPaused] = useState(false);
   const [hoveredLogoId, setHoveredLogoId] = useState<string | null>(null);
   const [recalcKey, setRecalcKey] = useState(0);
+  const [validLogosCount, setValidLogosCount] = useState(0);
   const trackARef = useRef<HTMLDivElement>(null);
   const trackBRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -87,33 +91,33 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     }
   };
 
+  const handleLogoLoad = useCallback(() => {
+    setValidLogosCount(prev => prev + 1);
+    setRecalcKey((k) => k + 1);
+  }, []);
+
+  const handleLogoError = useCallback(() => {
+    setRecalcKey((k) => k + 1);
+  }, []);
+
+  // Reset count when logos change
+  useEffect(() => {
+    setValidLogosCount(0);
+  }, [logos]);
+
   // Renderização das logos
   const renderLogos = () => {
     return logos.map((logo) => (
-      <div
+      <TickerLogoItem
         key={logo.id}
+        logo={logo}
         className={`
-          flex-shrink-0 h-14 lg:h-14 md:h-12 sm:h-10 transition-all duration-300 ease-out cursor-pointer
+          h-14 lg:h-14 md:h-12 sm:h-10 transition-all duration-300 ease-out
           ${hoveredLogoId === logo.id ? 'transform scale-110 z-10' : ''}
         `}
-        style={{
-          filter: hoveredLogoId === logo.id ? 'drop-shadow(0 8px 22px rgba(0,0,0,0.25))' : 'none'
-        }}
-        onMouseEnter={() => handleLogoHover(logo.id)}
-        onMouseLeave={() => handleLogoHover(null)}
-        onClick={() => logo.link_url && window.open(logo.link_url, '_blank')}
-        aria-label={`Logo da ${logo.name}`}
-      >
-        <img
-          src={logo.file_url}
-          alt={logo.name}
-          className="h-full w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200"
-          loading="lazy"
-          draggable={false}
-          onLoad={() => setRecalcKey((k) => k + 1)}
-          onError={() => setRecalcKey((k) => k + 1)}
-        />
-      </div>
+        onImageLoad={handleLogoLoad}
+        onImageError={handleLogoError}
+      />
     ));
   };
 
@@ -182,26 +186,30 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           onTouchStart={handleTouchStart}
         >
           {/* Portal Esquerdo - Efeito de saída */}
-          <div 
-            id="ticker-portal-left"
-            className="absolute left-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
-            style={{
-              background: 'radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(1.5px)',
-              maskImage: 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
-            }}
-          />
+          {showPortals && (
+            <div 
+              id="ticker-portal-left"
+              className="absolute left-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
+              style={{
+                background: 'radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.19) 0%, rgba(0,0,0,0.11) 50%, rgba(0,0,0,0) 100%)',
+                backdropFilter: 'blur(1px)',
+                maskImage: 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
+              }}
+            />
+          )}
 
           {/* Portal Direito - Efeito de entrada */}
-          <div 
-            id="ticker-portal-right"
-            className="absolute right-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
-            style={{
-              background: 'radial-gradient(120% 100% at 100% 50%, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.14) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(1px)',
-              maskImage: 'linear-gradient(270deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
-            }}
-          />
+          {showPortals && (
+            <div 
+              id="ticker-portal-right"
+              className="absolute right-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
+              style={{
+                background: 'radial-gradient(120% 100% at 100% 50%, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0) 100%)',
+                backdropFilter: 'blur(0.5px)',
+                maskImage: 'linear-gradient(270deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
+              }}
+            />
+          )}
 
           {/* Layer interativo para capturar hover */}
           <div 

@@ -75,10 +75,12 @@ serve(async (req) => {
       };
 
       // Create signed URLs when possible; try decoded + raw; fallback to public URL
-      const signedLogos: Logo[] = await Promise.all((logos || []).map(async (logo: any) => {
+      const signedLogos: (Logo | null)[] = await Promise.all((logos || []).map(async (logo: any) => {
         const info = extractBucketAndPath(logo.file_url);
         if (!info) {
-          return logo; // Keep original (likely external/public URL)
+          // External URL - add cache buster
+          const cacheBustedUrl = logo.file_url + (logo.file_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
+          return { ...logo, file_url: cacheBustedUrl };
         }
         try {
           // Attempt 1: decoded path
@@ -114,16 +116,18 @@ serve(async (req) => {
           }
 
           console.warn('⚠️ All attempts failed for logo', { logoId: logo.id, bucket: info.bucket, decoded: info.pathDecoded, raw: info.pathRaw });
-          return logo;
+          return null; // Filter out invalid logos
         } catch (e) {
           console.warn('⚠️ Signing process threw for logo', logo.id, e);
-          return logo;
+          return null; // Filter out invalid logos
         }
       }));
 
-      console.log(`✅ Found ${signedLogos?.length || 0} active logos (signed or public URLs ready)`);
+      // Filter out null entries (failed logos)
+      const validLogos = signedLogos.filter((logo): logo is Logo => logo !== null);
+      console.log(`✅ Found ${validLogos?.length || 0} active logos (signed or public URLs ready)`);
       return new Response(
-        JSON.stringify(signedLogos || []), 
+        JSON.stringify(validLogos || []), 
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
