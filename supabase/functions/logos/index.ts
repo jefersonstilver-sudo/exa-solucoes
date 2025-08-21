@@ -27,13 +27,65 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
+  const diagnoseMode = urlParams.get('diagnose') === 'true';
+
+  if (diagnoseMode) {
+    console.log('🔍 Running diagnostic mode for logos');
+    
+    try {
+      // List all files in the logos directory
+      const { data: files, error: listError } = await supabase.storage
+        .from('arquivos')
+        .list('PAGINA PRINCIPAL LOGOS', { limit: 100 });
+
+      if (listError) {
+        console.error('❌ Error listing storage files:', listError);
+      } else {
+        console.log(`📁 Found ${files?.length || 0} files in storage:`, files?.map(f => f.name));
+      }
+
+      // Get all logos from database
+      const { data: dbLogos, error: dbError } = await supabase
+        .from('logos')
+        .select('id, name, storage_key, storage_bucket, file_url, is_active')
+        .order('sort_order', { ascending: true });
+
+      if (dbError) {
+        console.error('❌ Error fetching database logos:', dbError);
+      } else {
+        console.log(`💾 Found ${dbLogos?.length || 0} logos in database`);
+        dbLogos?.forEach(logo => {
+          const fileExists = files?.some(f => f.name === logo.storage_key?.replace('PAGINA PRINCIPAL LOGOS/', ''));
+          console.log(`${fileExists ? '✅' : '❌'} Logo "${logo.name}": storage_key=${logo.storage_key}, file_exists=${fileExists}`);
+        });
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true,
+        storage_files: files,
+        database_logos: dbLogos,
+        diagnostic: true 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('❌ Diagnostic error:', error);
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  }
 
   try {
     if (req.method === 'GET') {
       console.log('📋 Fetching active logos for ticker');
       
-      const { data: logos, error } = await supabaseClient
+      const { data: logos, error } = await supabase
         .from('logos')
         .select('*')
         .eq('is_active', true)
@@ -47,25 +99,27 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Criar URLs assinadas usando storage_bucket/storage_key quando disponível
+      // Create signed URLs with enhanced logging
       const signedLogos: Logo[] = await Promise.all((logos || []).map(async (logo: any) => {
-        // Priorizar storage_bucket/storage_key quando disponível
+        // Generate signed URL with enhanced logging
         if (logo.storage_bucket && logo.storage_key) {
           try {
-            const { data: signedData, error: signError } = await supabaseClient
-              .storage
+            console.log(`🔄 Attempting to sign URL for logo "${logo.name}" (ID: ${logo.id})`);
+            console.log(`   Storage: ${logo.storage_bucket}/${logo.storage_key}`);
+            
+            const { data: signedData, error: signError } = await supabase.storage
               .from(logo.storage_bucket)
-              .createSignedUrl(logo.storage_key, 60 * 60 * 24 * 7); // 1 semana
-
+              .createSignedUrl(logo.storage_key, 3600);
+            
             if (signedData?.signedUrl && !signError) {
-              console.log(`✅ Signed URL created for logo ${logo.name}`);
+              console.log(`✅ Successfully signed URL for logo "${logo.name}"`);
               return { ...logo, file_url: signedData.signedUrl } as Logo;
             } else {
-              console.warn(`⚠️ Could not sign URL for logo ${logo.id}:`, signError);
+              console.warn(`⚠️ Failed to sign URL for logo "${logo.name}" (${logo.id}):`, signError?.message || 'Unknown error');
+              console.log(`   Falling back to file_url: ${logo.file_url}`);
               
-              // Fallback para URL pública
-              const { data: publicData } = supabaseClient
-                .storage
+              // Try fallback to public URL
+              const { data: publicData } = supabase.storage
                 .from(logo.storage_bucket)
                 .getPublicUrl(logo.storage_key);
               
@@ -74,13 +128,14 @@ Deno.serve(async (req) => {
                 return { ...logo, file_url: publicData.publicUrl } as Logo;
               }
             }
-          } catch (err) {
-            console.warn(`⚠️ Storage error for logo ${logo.id}:`, err);
+          } catch (error) {
+            console.error(`⚠️ Could not sign URL for logo "${logo.name}" (${logo.id}):`, error);
+            console.log(`   Falling back to file_url: ${logo.file_url}`);
           }
+        } else {
+          console.log(`ℹ️ Logo "${logo.name}" (${logo.id}) using direct file_url: ${logo.file_url}`);
         }
         
-        // Usar file_url original como fallback
-        console.log(`📎 Using original file_url for logo ${logo.name}`);
         return logo as Logo;
       }));
 
@@ -103,7 +158,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('logos')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id)
@@ -134,7 +189,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('logos')
         .insert(logosData)
         .select();
