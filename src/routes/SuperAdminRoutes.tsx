@@ -17,6 +17,7 @@ import PortfolioProdutoraPage from '@/pages/admin/PortfolioProdutoraPage';
 import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
+import LogosPage from '@/pages/admin/LogosPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -46,6 +47,7 @@ const SuperAdminRoutes = () => {
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />
       <Route path="portfolio-produtora" element={<PortfolioProdutoraPage />} />
+      <Route path="logos" element={<LogosPage />} />
       <Route path="notificacoes" element={<NotificationsPage />} />
     </Routes>
   );

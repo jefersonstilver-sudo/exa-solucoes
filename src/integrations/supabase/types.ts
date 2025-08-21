@@ -916,6 +916,8 @@ export type Database = {
           link_url: string | null
           name: string
           sort_order: number
+          storage_bucket: string | null
+          storage_key: string | null
           updated_at: string
         }
         Insert: {
@@ -927,6 +929,8 @@ export type Database = {
           link_url?: string | null
           name: string
           sort_order?: number
+          storage_bucket?: string | null
+          storage_key?: string | null
           updated_at?: string
         }
         Update: {
@@ -938,6 +942,8 @@ export type Database = {
           link_url?: string | null
           name?: string
           sort_order?: number
+          storage_bucket?: string | null
+          storage_key?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -5,10 +5,12 @@ export interface Logo {
   id: string;
   name: string;
   file_url: string;
-  color_variant: 'white' | 'dark';
+  color_variant: 'white' | 'dark' | 'colored';
   link_url?: string;
   sort_order: number;
   is_active: boolean;
+  storage_bucket?: string;
+  storage_key?: string;
   created_at: string;
   updated_at: string;
 }
@@ -39,7 +41,7 @@ export const useLogos = () => {
       // Garantir tipagem correta dos dados da Edge Function
       const typedLogos: Logo[] = (data || []).map(logo => ({
         ...logo,
-        color_variant: (logo.color_variant as 'white' | 'dark') || 'white'
+        color_variant: (logo.color_variant as 'white' | 'dark' | 'colored') || 'white'
       }));
       
       setLogos(typedLogos);
@@ -124,7 +126,7 @@ export const useLogosAdmin = () => {
       // Garantir tipagem correta dos dados do Supabase
       const typedLogos: Logo[] = (data || []).map(logo => ({
         ...logo,
-        color_variant: (logo.color_variant as 'white' | 'dark') || 'white'
+        color_variant: (logo.color_variant as 'white' | 'dark' | 'colored') || 'white'
       }));
       
       setLogos(typedLogos);
@@ -140,7 +142,7 @@ export const useLogosAdmin = () => {
     try {
       const { data, error } = await supabase.functions.invoke('logos', {
         method: 'PATCH',
-        body: updates,
+        body: { id, ...updates },
         headers: {
           'Content-Type': 'application/json'
         }

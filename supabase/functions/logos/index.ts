@@ -130,7 +130,128 @@ serve(async (req) => {
       );
     }
 
-    // POST /logos/bulk - Upload múltiplo de logos (admin apenas)
+    // POST /logos - Regular logo upload (admin apenas)
+    if (req.method === 'POST' && path === '') {
+      console.log('📤 Processing logo upload or update');
+      
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization required' }), 
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      const payload = await req.json();
+
+      // Check if it's a bulk upload or single update
+      if (payload.logos) {
+        // Handle bulk upload
+        const { logos } = payload;
+        
+        if (!Array.isArray(logos) || logos.length === 0) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid logos array' }), 
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Obter próximo sort_order
+        const { data: lastLogo } = await supabaseClient
+          .from('logos')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
+          .limit(1)
+          .single();
+
+        let nextSortOrder = (lastLogo?.sort_order || 0) + 1;
+
+        // Inserir logos em batch
+        const logosToInsert = logos.map((logo: any) => ({
+          name: logo.name,
+          file_url: logo.file_url,
+          storage_bucket: logo.storage_bucket,
+          storage_key: logo.storage_key,
+          color_variant: logo.color_variant || 'white',
+          link_url: logo.link_url,
+          sort_order: logo.sort_order || nextSortOrder++,
+          is_active: logo.is_active !== false
+        }));
+
+        const { data: insertedLogos, error: insertError } = await supabaseClient
+          .from('logos')
+          .insert(logosToInsert)
+          .select();
+
+        if (insertError) {
+          console.error('❌ Error inserting logos:', insertError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to insert logos' }), 
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        console.log(`✅ Successfully inserted ${insertedLogos?.length || 0} logos`);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            count: insertedLogos?.length || 0,
+            logos: insertedLogos
+          }), 
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      } else if (payload.id) {
+        // Handle single logo update via POST (for compatibility)
+        const { id, ...updates } = payload;
+        
+        const { data: updatedLogo, error: updateError } = await supabaseClient
+          .from('logos')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('❌ Error updating logo:', updateError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to update logo' }), 
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        console.log('✅ Logo updated successfully:', id);
+        return new Response(JSON.stringify(updatedLogo), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format' }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // POST /logos/bulk - Upload múltiplo de logos (admin apenas) - backward compatibility
     if (req.method === 'POST' && path === '/bulk') {
       console.log('📤 Processing bulk logo upload');
       
@@ -202,6 +323,8 @@ serve(async (req) => {
       const logosToInsert = logos.map((logo: Partial<Logo>) => ({
         name: logo.name,
         file_url: logo.file_url,
+        storage_bucket: (logo as any).storage_bucket,
+        storage_key: (logo as any).storage_key,
         color_variant: logo.color_variant || 'white',
         link_url: logo.link_url,
         sort_order: nextSortOrder++,
@@ -237,9 +360,9 @@ serve(async (req) => {
       );
     }
 
-    // PATCH /logos/:id - Editar logo específica (admin apenas)
-    if (req.method === 'PATCH' && path.startsWith('/')) {
-      const logoId = path.substring(1);
+    // PATCH - Handle logo updates (admin apenas)
+    if (req.method === 'PATCH') {
+      console.log('📝 Processing logo update');
       
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
@@ -252,12 +375,28 @@ serve(async (req) => {
         );
       }
 
-      const updates = await req.json();
+      const payload = await req.json();
+      const { id, ...updates } = payload;
+      
+      if (!id) {
+        return new Response(
+          JSON.stringify({ error: 'Logo ID required' }), 
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      console.log('📝 Updating logo:', id, updates);
 
       const { data: updatedLogo, error: updateError } = await supabaseClient
         .from('logos')
-        .update(updates)
-        .eq('id', logoId)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
         .select()
         .single();
 
@@ -272,12 +411,10 @@ serve(async (req) => {
         );
       }
 
-      return new Response(
-        JSON.stringify(updatedLogo), 
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      console.log('✅ Logo updated successfully:', id);
+      return new Response(JSON.stringify(updatedLogo), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // DELETE /logos/:id - Inativar logo (admin apenas)
