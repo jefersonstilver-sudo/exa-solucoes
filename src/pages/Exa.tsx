@@ -7,6 +7,7 @@ import ExaStrategicDifferentialsSection from '@/components/exa/ExaStrategicDiffe
 import ExaRealTimeAttractionsSection from '@/components/exa/ExaRealTimeAttractionsSection';
 import ExaScaleExpansionSection from '@/components/exa/ExaScaleExpansionSection';
 import ExaFinalPurchaseSection from '@/components/exa/ExaFinalPurchaseSection';
+import LogoTicker from '@/components/exa/LogoTicker';
 
 const Exa = () => {
   console.log('🚀 EXA: Renderizando página Publicidade Inteligente');
@@ -32,6 +33,7 @@ const Exa = () => {
         <ExaStrategicDifferentialsSection />
         <ExaRealTimeAttractionsSection />
         <ExaScaleExpansionSection />
+        <LogoTicker />
         <ExaFinalPurchaseSection />
       </div>
     </Layout>

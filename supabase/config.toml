@@ -39,3 +39,6 @@ verify_jwt = false
 
 [functions.geocode_v1]
 verify_jwt = false
+
+[functions.logos]
+verify_jwt = false

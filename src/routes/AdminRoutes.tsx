@@ -15,6 +15,7 @@ import PortfolioProdutoraPage from '@/pages/admin/PortfolioProdutoraPage';
 import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
+import LogosAdmin from '@/components/admin/LogosAdmin';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const AdminRoutes = () => {
@@ -47,6 +48,9 @@ const AdminRoutes = () => {
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />
       <Route path="portfolio-produtora" element={<PortfolioProdutoraPage />} />
+      {(userInfo.role === 'admin_marketing' || userInfo.role === 'admin' || userInfo.role === 'super_admin') && (
+        <Route path="logos" element={<LogosAdmin />} />
+      )}
       <Route path="notificacoes" element={<NotificationsPage />} />
     </Routes>
   );

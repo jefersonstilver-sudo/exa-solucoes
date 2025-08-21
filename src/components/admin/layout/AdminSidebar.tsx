@@ -195,6 +195,14 @@ const AdminSidebar = () => {
       permission: 'canManagePortfolio'
     },
     {
+      label: 'Logos EXA',
+      icon: <Images className="h-5 w-5" />,
+      href: buildPath('logos'),
+      requireSuperAdmin: false,
+      section: 'content',
+      permission: 'canManageHomepageConfig'
+    },
+    {
       label: 'Notificações',
       icon: <Bell className="h-5 w-5" />,
       href: buildPath('notificacoes'),

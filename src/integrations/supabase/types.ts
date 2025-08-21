@@ -906,6 +906,42 @@ export type Database = {
         }
         Relationships: []
       }
+      logos: {
+        Row: {
+          color_variant: string
+          created_at: string
+          file_url: string
+          id: string
+          is_active: boolean
+          link_url: string | null
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color_variant?: string
+          created_at?: string
+          file_url: string
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color_variant?: string
+          created_at?: string
+          file_url?: string
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
