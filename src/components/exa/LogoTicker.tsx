@@ -15,6 +15,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const { logos, loading, error } = useLogos();
   const [isPaused, setIsPaused] = useState(false);
   const [hoveredLogoId, setHoveredLogoId] = useState<string | null>(null);
+  const [recalcKey, setRecalcKey] = useState(0);
   const trackARef = useRef<HTMLDivElement>(null);
   const trackBRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         }
       });
     };
-  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion]);
+  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion, recalcKey]);
 
   // Handlers de hover
   const handleMouseEnter = () => {
@@ -109,6 +110,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           className="h-full w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200"
           loading="lazy"
           draggable={false}
+          onLoad={() => setRecalcKey((k) => k + 1)}
+          onError={() => setRecalcKey((k) => k + 1)}
         />
       </div>
     ));

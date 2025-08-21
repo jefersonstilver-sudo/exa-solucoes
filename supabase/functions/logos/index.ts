@@ -52,9 +52,48 @@ serve(async (req) => {
         );
       }
 
-      console.log(`✅ Found ${logos?.length || 0} active logos`);
+      // Helper to extract bucket and path from a stored URL or path
+      const extractBucketAndPath = (urlOrPath: string): { bucket: string; path: string } | null => {
+        if (!urlOrPath) return null;
+        // Full storage URL e.g. /storage/v1/object/public/<bucket>/<path> or /storage/v1/object/<bucket>/<path>
+        try {
+          const match = urlOrPath.match(/\/storage\/v1\/object\/(?:public\/)?([^/]+)\/(.+)$/);
+          if (match) {
+            return { bucket: match[1], path: decodeURIComponent(match[2]) };
+          }
+        } catch (_) {}
+        // If looks like bucket/path
+        if (!urlOrPath.startsWith('http') && urlOrPath.includes('/')) {
+          const [bucket, ...rest] = urlOrPath.split('/');
+          return { bucket, path: rest.join('/') };
+        }
+        return null; // External URL or unrecognized format
+      };
+
+      // Create signed URLs when possible to avoid 401/403 from private buckets
+      const signedLogos: Logo[] = await Promise.all((logos || []).map(async (logo: any) => {
+        const info = extractBucketAndPath(logo.file_url);
+        if (!info) {
+          return logo; // Keep original (likely external/public URL)
+        }
+        try {
+          const { data: signed, error: signErr } = await supabaseClient
+            .storage.from(info.bucket)
+            .createSignedUrl(info.path, 60 * 60 * 24 * 7); // 7 days
+          if (signErr || !signed?.signedUrl) {
+            console.warn('⚠️ Could not sign URL for logo', logo.id, signErr);
+            return logo;
+          }
+          return { ...logo, file_url: signed.signedUrl } as Logo;
+        } catch (e) {
+          console.warn('⚠️ Signing failed for logo', logo.id, e);
+          return logo;
+        }
+      }));
+
+      console.log(`✅ Found ${signedLogos?.length || 0} active logos (signed URLs ready)`);
       return new Response(
-        JSON.stringify(logos || []), 
+        JSON.stringify(signedLogos || []), 
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
