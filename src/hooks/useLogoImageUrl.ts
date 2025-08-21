@@ -17,8 +17,18 @@ export const useLogoImageUrl = (logo: { file_url: string; storage_bucket?: strin
       try {
         // Se já é uma URL externa ou não tem informações de storage, usar diretamente
         if (!logo.storage_bucket || !logo.storage_key || logo.file_url.startsWith('http')) {
-          const urlWithCacheBuster = `${logo.file_url}?v=${Date.now()}`;
-          setImageUrl(urlWithCacheBuster);
+          // Detectar se é URL assinada (não aplicar cache-busting pois quebra o token)
+          const isSignedUrl = logo.file_url.includes('/storage/v1/object/sign/') || logo.file_url.includes('token=');
+          
+          if (isSignedUrl) {
+            // URLs assinadas já têm token - usar como está
+            setImageUrl(logo.file_url);
+          } else {
+            // URLs públicas/externas - aplicar cache-busting com separador correto
+            const separator = logo.file_url.includes('?') ? '&' : '?';
+            const urlWithCacheBuster = `${logo.file_url}${separator}v=${Date.now()}`;
+            setImageUrl(urlWithCacheBuster);
+          }
           setLoading(false);
           return;
         }
@@ -37,7 +47,9 @@ export const useLogoImageUrl = (logo: { file_url: string; storage_bucket?: strin
             .getPublicUrl(logo.storage_key);
           
           if (publicData?.publicUrl) {
-            const urlWithCacheBuster = `${publicData.publicUrl}?v=${Date.now()}`;
+            // Aplicar cache-busting com separador correto
+            const separator = publicData.publicUrl.includes('?') ? '&' : '?';
+            const urlWithCacheBuster = `${publicData.publicUrl}${separator}v=${Date.now()}`;
             setImageUrl(urlWithCacheBuster);
           } else {
             setImageUrl(logo.file_url);

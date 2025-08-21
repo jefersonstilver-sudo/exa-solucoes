@@ -26,6 +26,7 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
   const [imageError, setImageError] = useState(false);
 
   const handleImageError = () => {
+    console.warn(`Failed to load logo image: ${imageUrl} for logo: ${logo.name}`);
     setImageError(true);
     onImageError?.();
   };
