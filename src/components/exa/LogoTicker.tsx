@@ -48,7 +48,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       
       // Aplica nova animação se não estiver pausada
       if (!isPaused) {
-        const delay = index === 1 ? duration / 2 : 0;
+        const delay = index === 1 ? -duration / 2 : 0; // usar delay negativo para iniciar já no meio do ciclo
         const animationDirection = direction === 'ltr' ? 'normal' : 'reverse';
         
         track.style.animation = `logoTicker ${duration}s linear ${delay}s infinite ${animationDirection}`;
