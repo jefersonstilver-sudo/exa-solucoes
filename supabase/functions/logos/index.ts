@@ -34,7 +34,7 @@ serve(async (req) => {
     // GET /logos - Lista todas as logos ativas (endpoint público)
     if (req.method === 'GET' && path === '') {
       console.log('📋 Fetching active logos for ticker');
-
+      
       const { data: logos, error } = await supabaseClient
         .from('logos')
         .select('*')
@@ -44,52 +44,18 @@ serve(async (req) => {
       if (error) {
         console.error('❌ Error fetching logos:', error);
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch logos' }),
-          {
-            status: 500,
+          JSON.stringify({ error: 'Failed to fetch logos' }), 
+          { 
+            status: 500, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
 
-      // Resolve signed URLs for private buckets; fallback to public URLs when possible
-      const resolveSignedUrl = async (url: string): Promise<string> => {
-        try {
-          const u = new URL(url);
-          const parts = u.pathname.split('/').filter(Boolean); // ['', 'storage', 'v1', 'object', 'public', 'bucket', 'path']
-          const objectIdx = parts.findIndex((p) => p === 'object');
-          if (objectIdx === -1) return url;
-
-          const next = parts[objectIdx + 1]; // 'public' | 'sign' | bucket
-          const bucket = next === 'public' || next === 'sign' ? parts[objectIdx + 2] : next;
-          const pathStart = next === 'public' || next === 'sign' ? objectIdx + 3 : objectIdx + 2;
-          const objectPath = decodeURIComponent(parts.slice(pathStart).join('/'));
-
-          // Try to create a signed URL (works for private buckets with service role)
-          const { data: signed, error: signErr } = await supabaseClient.storage
-            .from(bucket)
-            .createSignedUrl(objectPath, 60 * 60 * 24); // 24h
-          if (!signErr && signed?.signedUrl) return signed.signedUrl;
-
-          // Fallback to public URL
-          const { data: pub } = supabaseClient.storage.from(bucket).getPublicUrl(objectPath);
-          return pub.publicUrl || url;
-        } catch (_e) {
-          return url;
-        }
-      };
-
-      const enriched = await Promise.all(
-        (logos || []).map(async (logo: any) => ({
-          ...logo,
-          file_url: await resolveSignedUrl(logo.file_url)
-        }))
-      );
-
-      console.log(`✅ Returning ${enriched.length} active logos (signed when needed)`);
+      console.log(`✅ Found ${logos?.length || 0} active logos`);
       return new Response(
-        JSON.stringify(enriched),
-        {
+        JSON.stringify(logos || []), 
+        { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );

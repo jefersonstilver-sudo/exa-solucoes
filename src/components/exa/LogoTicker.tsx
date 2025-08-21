@@ -15,8 +15,6 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const { logos, loading, error } = useLogos();
   const [isPaused, setIsPaused] = useState(false);
   const [hoveredLogoId, setHoveredLogoId] = useState<string | null>(null);
-  const [showFallback, setShowFallback] = useState(false);
-  const [loadedCount, setLoadedCount] = useState(0);
   const trackARef = useRef<HTMLDivElement>(null);
   const trackBRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,9 +33,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
 
     const containerWidth = containerRef.current?.offsetWidth || 0;
     const trackWidth = tracks[0].scrollWidth;
-    const duration = trackWidth > 0 ? trackWidth / speed : 30; // fallback de 30s
-    // Se a largura da trilha ainda não foi medida ou é menor que o container, usa fallback temporário
-    setShowFallback(trackWidth === 0 || trackWidth <= containerWidth);
+    const duration = trackWidth / speed;
 
     tracks.forEach((track, index) => {
       if (!track) return;
@@ -61,11 +57,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         }
       });
     };
-  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion, loadedCount]);
-  // Reset carregamento quando as logos mudarem
-  useEffect(() => {
-    setLoadedCount(0);
-  }, [logos]);
+  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion]);
 
   // Handlers de hover
   const handleMouseEnter = () => {
@@ -114,21 +106,9 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         <img
           src={logo.file_url}
           alt={logo.name}
-          className="h-full w-auto object-contain opacity-95 hover:opacity-100 transition-opacity duration-200"
+          className="h-full w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200"
           loading="lazy"
-          decoding="async"
           draggable={false}
-          onLoad={() => setLoadedCount((c) => c + 1)}
-          onError={(e) => {
-            const el = e.currentTarget as HTMLImageElement;
-            // Fallback para placeholder para manter o layout visível
-            el.onerror = null;
-            el.src = '/placeholder.svg';
-            el.style.visibility = 'visible';
-            el.style.opacity = '0.6';
-            setLoadedCount((c) => c + 1);
-            console.warn('[LogoTicker] Falha ao carregar logo, usando placeholder:', logo.name, logo.file_url);
-          }}
         />
       </div>
     ));
@@ -203,8 +183,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             id="ticker-portal-left"
             className="absolute left-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
             style={{
-              background: 'radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(1px)',
+              background: 'radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0) 100%)',
+              backdropFilter: 'blur(1.5px)',
               maskImage: 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
             }}
           />
@@ -214,13 +194,17 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             id="ticker-portal-right"
             className="absolute right-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
             style={{
-              background: 'radial-gradient(120% 100% at 100% 50%, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(0.5px)',
+              background: 'radial-gradient(120% 100% at 100% 50%, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.14) 50%, rgba(0,0,0,0) 100%)',
+              backdropFilter: 'blur(1px)',
               maskImage: 'linear-gradient(270deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
             }}
           />
 
-          {/* interactive layer removed to avoid overlay issues */}
+          {/* Layer interativo para capturar hover */}
+          <div 
+            id="ticker-interactive-layer"
+            className="absolute inset-0 z-10 cursor-pointer"
+          />
 
           {/* Trilha A */}
           <div 
@@ -248,13 +232,6 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             {renderLogos()}
           </div>
         </div>
-        {showFallback && (
-          <div className="mt-4 overflow-x-auto">
-            <div className="flex items-center gap-10 md:gap-12 lg:gap-16 py-2">
-              {renderLogos()}
-            </div>
-          </div>
-        )}
       </section>
     </>
   );
