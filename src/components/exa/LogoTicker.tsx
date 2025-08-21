@@ -16,6 +16,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [hoveredLogoId, setHoveredLogoId] = useState<string | null>(null);
   const [showFallback, setShowFallback] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
   const trackARef = useRef<HTMLDivElement>(null);
   const trackBRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,8 +36,8 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     const containerWidth = containerRef.current?.offsetWidth || 0;
     const trackWidth = tracks[0].scrollWidth;
     const duration = trackWidth > 0 ? trackWidth / speed : 30; // fallback de 30s
-    // Se não conseguimos medir a largura, ativa fallback estático
-    setShowFallback(trackWidth < 100);
+    // Se a largura da trilha ainda não foi medida ou é menor que o container, usa fallback temporário
+    setShowFallback(trackWidth === 0 || trackWidth <= containerWidth);
 
     tracks.forEach((track, index) => {
       if (!track) return;
@@ -60,7 +61,11 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
         }
       });
     };
-  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion]);
+  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion, loadedCount]);
+  // Reset carregamento quando as logos mudarem
+  useEffect(() => {
+    setLoadedCount(0);
+  }, [logos]);
 
   // Handlers de hover
   const handleMouseEnter = () => {
@@ -113,6 +118,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           loading="lazy"
           decoding="async"
           draggable={false}
+          onLoad={() => setLoadedCount((c) => c + 1)}
           onError={(e) => {
             const el = e.currentTarget as HTMLImageElement;
             // Fallback para placeholder para manter o layout visível
@@ -120,6 +126,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             el.src = '/placeholder.svg';
             el.style.visibility = 'visible';
             el.style.opacity = '0.6';
+            setLoadedCount((c) => c + 1);
             console.warn('[LogoTicker] Falha ao carregar logo, usando placeholder:', logo.name, logo.file_url);
           }}
         />
