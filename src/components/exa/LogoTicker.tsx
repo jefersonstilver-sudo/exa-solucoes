@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useEffect, useRef, useState } from 'react';
 import { useLogos } from '@/hooks/useLogos';
 
 interface LogoTickerProps {
-  speed?: number; // px/s
+  speed?: number;
   direction?: 'ltr' | 'rtl';
   pauseOnHover?: boolean;
 }
@@ -14,51 +15,42 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
 }) => {
   const { logos, loading, error } = useLogos();
   const [isPaused, setIsPaused] = useState(false);
-  const [hoveredLogoId, setHoveredLogoId] = useState<string | null>(null);
-  const [recalcKey, setRecalcKey] = useState(0);
-  const trackARef = useRef<HTMLDivElement>(null);
-  const trackBRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const track1Ref = useRef<HTMLDivElement>(null);
+  const track2Ref = useRef<HTMLDivElement>(null);
 
   // Detectar preferência de movimento reduzido
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Controle da animação
+  // Configurar animação contínua
   useEffect(() => {
-    if (prefersReducedMotion || loading || !logos.length) {
+    if (prefersReducedMotion || loading || !logos.length || !containerRef.current) {
       return;
     }
 
-    const tracks = [trackARef.current, trackBRef.current];
-    if (!tracks[0] || !tracks[1]) return;
+    const container = containerRef.current;
+    const track1 = track1Ref.current;
+    const track2 = track2Ref.current;
 
-    const containerWidth = containerRef.current?.offsetWidth || 0;
-    const trackWidth = tracks[0].scrollWidth;
+    if (!track1 || !track2) return;
+
+    // Calcular largura do conteúdo
+    const trackWidth = track1.scrollWidth;
     const duration = trackWidth / speed;
 
-    tracks.forEach((track, index) => {
-      if (!track) return;
+    // Aplicar animação CSS
+    const animationName = direction === 'ltr' ? 'scrollLeft' : 'scrollRight';
+    
+    track1.style.animation = isPaused ? 'none' : `${animationName} ${duration}s linear infinite`;
+    track2.style.animation = isPaused ? 'none' : `${animationName} ${duration}s linear infinite`;
+    track2.style.animationDelay = `-${duration / 2}s`;
 
-      // Remove animações anteriores
-      track.style.animation = 'none';
-      
-      // Aplica nova animação se não estiver pausada
-      if (!isPaused) {
-        const delay = index === 1 ? duration / 2 : 0;
-        const animationDirection = direction === 'ltr' ? 'normal' : 'reverse';
-        
-        track.style.animation = `logoTicker ${duration}s linear ${delay}s infinite ${animationDirection}`;
-      }
-    });
-
+    // Limpar animações ao desmontar
     return () => {
-      tracks.forEach(track => {
-        if (track) {
-          track.style.animation = 'none';
-        }
-      });
+      track1.style.animation = 'none';
+      track2.style.animation = 'none';
     };
-  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion, recalcKey]);
+  }, [logos, speed, direction, isPaused, loading, prefersReducedMotion]);
 
   // Handlers de hover
   const handleMouseEnter = () => {
@@ -70,20 +62,6 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const handleMouseLeave = () => {
     if (pauseOnHover) {
       setIsPaused(false);
-      setHoveredLogoId(null);
-    }
-  };
-
-  const handleLogoHover = (logoId: string | null) => {
-    setHoveredLogoId(logoId);
-  };
-
-  // Controle touch para mobile
-  const handleTouchStart = () => {
-    if (pauseOnHover) {
-      setIsPaused(true);
-      // Auto-resume após 2.5s
-      setTimeout(() => setIsPaused(false), 2500);
     }
   };
 
@@ -92,26 +70,20 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     return logos.map((logo) => (
       <div
         key={logo.id}
-        className={`
-          flex-shrink-0 h-14 lg:h-14 md:h-12 sm:h-10 transition-all duration-300 ease-out cursor-pointer
-          ${hoveredLogoId === logo.id ? 'transform scale-110 z-10' : ''}
-        `}
-        style={{
-          filter: hoveredLogoId === logo.id ? 'drop-shadow(0 8px 22px rgba(0,0,0,0.25))' : 'none'
-        }}
-        onMouseEnter={() => handleLogoHover(logo.id)}
-        onMouseLeave={() => handleLogoHover(null)}
+        className="flex-shrink-0 h-12 lg:h-14 px-4 lg:px-6 transition-all duration-300 ease-out cursor-pointer hover:scale-110"
         onClick={() => logo.link_url && window.open(logo.link_url, '_blank')}
         aria-label={`Logo da ${logo.name}`}
       >
         <img
           src={logo.file_url}
           alt={logo.name}
-          className="h-full w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200"
+          className="h-full w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300"
           loading="lazy"
           draggable={false}
-          onLoad={() => setRecalcKey((k) => k + 1)}
-          onError={() => setRecalcKey((k) => k + 1)}
+          onError={(e) => {
+            console.error(`❌ Failed to load logo ${logo.name}:`, logo.file_url);
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
         />
       </div>
     ));
@@ -120,7 +92,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   if (loading) {
     return (
       <section id="home-logo-ticker" aria-label="Marcas parceiras" className="relative container mx-auto px-4 lg:px-8">
-        <div className="ticker h-24 md:h-20 sm:h-16 relative overflow-hidden rounded-2xl bg-white/5 animate-pulse">
+        <div className="ticker h-20 lg:h-24 relative overflow-hidden rounded-2xl bg-white/5 animate-pulse">
           <div className="flex items-center justify-center h-full">
             <div className="text-white/60 text-sm">Carregando logos...</div>
           </div>
@@ -137,14 +109,14 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   if (prefersReducedMotion) {
     return (
       <section id="home-logo-ticker" aria-label="Marcas parceiras" className="relative container mx-auto px-4 lg:px-8">
-        <div className="ticker h-24 md:h-20 sm:h-16 relative overflow-hidden rounded-2xl">
+        <div className="ticker h-20 lg:h-24 relative overflow-hidden rounded-2xl bg-gradient-to-r from-black/20 via-black/10 to-black/20">
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center h-full px-8">
             {logos.slice(0, 6).map((logo) => (
-              <div key={logo.id} className="h-12 lg:h-14">
+              <div key={logo.id} className="h-10 lg:h-12">
                 <img
                   src={logo.file_url}
                   alt={logo.name}
-                  className="h-full w-auto object-contain opacity-90"
+                  className="h-full w-auto object-contain opacity-80"
                   loading="lazy"
                 />
               </div>
@@ -157,14 +129,23 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
 
   return (
     <>
-      {/* CSS para animação - injetado apenas uma vez */}
+      {/* CSS para animação */}
       <style>{`
-        @keyframes logoTicker {
+        @keyframes scrollLeft {
           from {
-            transform: translate3d(0, 0, 0);
+            transform: translateX(0);
           }
           to {
-            transform: translate3d(-100%, 0, 0);
+            transform: translateX(-100%);
+          }
+        }
+        
+        @keyframes scrollRight {
+          from {
+            transform: translateX(-100%);
+          }
+          to {
+            transform: translateX(0);
           }
         }
       `}</style>
@@ -176,44 +157,28 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       >
         <div 
           ref={containerRef}
-          className="ticker h-24 md:h-20 sm:h-16 relative overflow-hidden rounded-2xl"
+          className="ticker h-20 lg:h-24 relative overflow-hidden rounded-2xl bg-gradient-to-r from-black/20 via-black/10 to-black/20"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onTouchStart={handleTouchStart}
         >
-          {/* Portal Esquerdo - Efeito de saída */}
+          {/* Gradientes laterais mais suaves */}
           <div 
-            id="ticker-portal-left"
-            className="absolute left-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
+            className="absolute left-0 top-0 h-full w-16 lg:w-20 z-10 pointer-events-none"
             style={{
-              background: 'radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(1.5px)',
-              maskImage: 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
+              background: 'linear-gradient(90deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)'
+            }}
+          />
+          <div 
+            className="absolute right-0 top-0 h-full w-16 lg:w-20 z-10 pointer-events-none"
+            style={{
+              background: 'linear-gradient(270deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)'
             }}
           />
 
-          {/* Portal Direito - Efeito de entrada */}
+          {/* Trilha 1 */}
           <div 
-            id="ticker-portal-right"
-            className="absolute right-0 top-0 h-full w-20 lg:w-24 z-20 pointer-events-none"
-            style={{
-              background: 'radial-gradient(120% 100% at 100% 50%, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.14) 50%, rgba(0,0,0,0) 100%)',
-              backdropFilter: 'blur(1px)',
-              maskImage: 'linear-gradient(270deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 35%)'
-            }}
-          />
-
-          {/* Layer interativo para capturar hover */}
-          <div 
-            id="ticker-interactive-layer"
-            className="absolute inset-0 z-10 cursor-pointer"
-          />
-
-          {/* Trilha A */}
-          <div 
-            ref={trackARef}
-            id="ticker-track-a"
-            className="ticker-track absolute inset-0 flex items-center gap-16 lg:gap-20 md:gap-12 sm:gap-8 px-24 lg:px-28 whitespace-nowrap"
+            ref={track1Ref}
+            className="absolute inset-0 flex items-center whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'
@@ -222,11 +187,10 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
             {renderLogos()}
           </div>
 
-          {/* Trilha B - Duplicada para loop infinito */}
+          {/* Trilha 2 - Para loop contínuo */}
           <div 
-            ref={trackBRef}
-            id="ticker-track-b"
-            className="ticker-track absolute inset-0 flex items-center gap-16 lg:gap-20 md:gap-12 sm:gap-8 px-24 lg:px-28 whitespace-nowrap"
+            ref={track2Ref}
+            className="absolute inset-0 flex items-center whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'
