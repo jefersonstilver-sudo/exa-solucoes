@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Panel } from '@/types/panel';
 import { MapPin } from 'lucide-react';
+import { FOZ_DO_IGUACU_CENTER, DEFAULT_MAP_CONFIG, MAP_STYLES } from '@/utils/mapConstants';
 
 // Declare global Google Maps types
 declare global {
@@ -34,23 +35,16 @@ const PanelMap: React.FC<PanelMapProps> = ({
     if (mapInstance || !mapRef.current) return;
     
     const initMap = () => {
-      // Default to São Paulo if no location selected
-      const defaultCenter = { lat: -23.5505, lng: -46.6333 };
-      const mapCenter = selectedLocation || defaultCenter;
+      // Default to Foz do Iguaçu region where the panels are located
+      const mapCenter = selectedLocation || FOZ_DO_IGUACU_CENTER;
       
       const mapOptions: google.maps.MapOptions = {
         center: mapCenter,
-        zoom: 13,
+        zoom: DEFAULT_MAP_CONFIG.zoom,
         mapTypeControl: false,
         fullscreenControl: false,
         streetViewControl: false,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }]
-          }
-        ]
+        styles: MAP_STYLES
       };
       
       const map = new window.google.maps.Map(mapRef.current, mapOptions);

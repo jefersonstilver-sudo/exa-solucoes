@@ -5,7 +5,9 @@ import { FilterOptions } from '@/types/filter';
 import { Map, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PanelFilters from '@/components/panels/PanelFilters';
+import PanelMap from '@/components/panels/PanelMap';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { usePanelStore } from '@/hooks/usePanelStore';
 
 interface PanelFilterSidebarProps {
   filters: FilterOptions;
@@ -24,6 +26,9 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
 }) => {
   // Map toggle state
   const [mapOpen, setMapOpen] = useState(false);
+  
+  // Get panels and location from store
+  const { panels, selectedLocation } = usePanelStore();
 
   return (
     <div className="space-y-6 sticky top-24">
@@ -49,17 +54,16 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
       <AnimatePresence>
         {mapOpen && (
           <motion.div 
-            className="w-full rounded-xl overflow-hidden bg-gray-100 relative"
+            className="w-full rounded-xl overflow-hidden"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 300 }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-gray-500 text-sm bg-white/80 px-3 py-2 rounded-lg">
-                Mapa será implementado em breve
-              </p>
-            </div>
+            <PanelMap 
+              panels={panels}
+              selectedLocation={selectedLocation}
+            />
           </motion.div>
         )}
       </AnimatePresence>
