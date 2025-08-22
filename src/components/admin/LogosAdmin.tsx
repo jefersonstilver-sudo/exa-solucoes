@@ -205,7 +205,7 @@ const LogosAdmin: React.FC = () => {
     if (!logo) return;
     
     const currentScale = logo.scale_factor || 1;
-    const newScale = Math.min(currentScale + 0.3, 2.0);
+    const newScale = Math.min(currentScale + 0.3, 3.0);
     
     try {
       await updateLogo(logoId, { scale_factor: newScale });
@@ -485,7 +485,7 @@ const LogosAdmin: React.FC = () => {
                             e.stopPropagation();
                             handleScaleUp(logo.id);
                           }}
-                          disabled={((logo.scale_factor || 1) >= 2.0)}
+                          disabled={((logo.scale_factor || 1) >= 3.0)}
                           className="h-8 w-8 p-0"
                           title="Aumentar tamanho"
                         >
