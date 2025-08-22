@@ -11,6 +11,7 @@ import { useLogosAdmin, Logo } from '@/hooks/useLogos';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LogoTicker from '@/components/exa/LogoTicker';
+import LogoImage from '@/components/admin/LogoImage';
 interface EditingLogo {
   id: string;
   name: string;
@@ -436,9 +437,13 @@ const LogosAdmin: React.FC = () => {
             <div draggable onDragStart={() => handleDragStart(logo.id)} onDragOver={handleDragOver} onDrop={e => handleDrop(e, logo.id)} className="flex items-center gap-4 p-4 cursor-move hover:bg-muted/50 transition-colors">
                       <GripVertical className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       
-                      <div className="h-16 w-16 flex-shrink-0 bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
-                        <img src={logo.file_url} alt={logo.name} className="h-full w-full object-contain" loading="lazy" />
-                      </div>
+                      <LogoImage 
+                        logo={{ 
+                          ...logo,
+                          scale_factor: logo.scale_factor 
+                        }}
+                        size="md" 
+                      />
 
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2">

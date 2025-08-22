@@ -141,13 +141,13 @@ export const useLogosAdmin = () => {
 
   const updateLogo = async (id: string, updates: Partial<Logo>) => {
     try {
-      const { data, error } = await supabase.functions.invoke('logos', {
-        method: 'PATCH',
-        body: { id, ...updates },
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      // Use direct Supabase client instead of edge function for reliability
+      const { data, error } = await supabase
+        .from('logos')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) {
         throw error;

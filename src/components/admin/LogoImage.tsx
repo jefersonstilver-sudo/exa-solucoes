@@ -8,6 +8,7 @@ interface LogoImageProps {
     storage_bucket?: string;
     storage_key?: string;
     name: string;
+    scale_factor?: number;
   };
   className?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -15,6 +16,7 @@ interface LogoImageProps {
 
 const LogoImage: React.FC<LogoImageProps> = ({ logo, className = '', size = 'md' }) => {
   const { imageUrl, loading } = useLogoImageUrl(logo);
+  const scaleFactor = logo.scale_factor || 1;
 
   const sizeClasses = {
     sm: 'h-8 w-8',
@@ -23,7 +25,7 @@ const LogoImage: React.FC<LogoImageProps> = ({ logo, className = '', size = 'md'
   };
 
   const containerClass = `
-    ${sizeClasses[size]} flex-shrink-0 bg-muted rounded-lg flex items-center justify-center overflow-hidden border
+    ${sizeClasses[size]} flex-shrink-0 bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 rounded-lg flex items-center justify-center overflow-hidden border
     ${className}
   `;
 
@@ -48,7 +50,8 @@ const LogoImage: React.FC<LogoImageProps> = ({ logo, className = '', size = 'md'
       <img
         src={imageUrl}
         alt={logo.name}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-contain filter brightness-0 invert opacity-60 hover:opacity-80 transition-all duration-300"
+        style={{ transform: `scale(${scaleFactor})` }}
         loading="lazy"
         onError={(e) => {
           // Fallback em caso de erro na imagem
@@ -58,7 +61,7 @@ const LogoImage: React.FC<LogoImageProps> = ({ logo, className = '', size = 'md'
           const parent = target.parentElement;
           if (parent) {
             const icon = document.createElement('div');
-            icon.className = 'h-4 w-4 text-muted-foreground flex items-center justify-center';
+            icon.className = 'h-4 w-4 text-white flex items-center justify-center';
             icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
             parent.appendChild(icon);
           }
