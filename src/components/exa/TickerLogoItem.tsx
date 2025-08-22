@@ -10,6 +10,7 @@ interface TickerLogoItemProps {
     storage_key?: string;
     color_variant?: string;
     link_url?: string;
+    scale_factor?: number;
   };
   className?: string;
   onImageLoad?: () => void;
@@ -17,11 +18,12 @@ interface TickerLogoItemProps {
 }
 
 const TickerLogoItem: React.FC<TickerLogoItemProps> = ({ 
-  logo, 
-  className = '',
-  onImageLoad,
-  onImageError
+    logo, 
+    className = '',
+    onImageLoad,
+    onImageError
 }) => {
+  const scaleFactor = logo.scale_factor || 1;
   const { imageUrl, loading } = useLogoImageUrl(logo);
   const [imageError, setImageError] = useState(false);
 
@@ -56,7 +58,8 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
       <img
         src={imageUrl}
         alt={logo.name}
-        className="max-h-12 max-w-32 object-contain filter brightness-0 invert opacity-60 hover:opacity-80 transition-opacity duration-300"
+        className="max-h-12 max-w-32 object-contain filter brightness-0 invert opacity-60 hover:opacity-80 transition-all duration-300"
+        style={{ transform: `scale(${scaleFactor})` }}
         onLoad={handleImageLoad}
         onError={handleImageError}
         loading="lazy"

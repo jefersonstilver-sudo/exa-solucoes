@@ -915,6 +915,7 @@ export type Database = {
           is_active: boolean
           link_url: string | null
           name: string
+          scale_factor: number | null
           sort_order: number
           storage_bucket: string | null
           storage_key: string | null
@@ -928,6 +929,7 @@ export type Database = {
           is_active?: boolean
           link_url?: string | null
           name: string
+          scale_factor?: number | null
           sort_order?: number
           storage_bucket?: string | null
           storage_key?: string | null
@@ -941,6 +943,7 @@ export type Database = {
           is_active?: boolean
           link_url?: string | null
           name?: string
+          scale_factor?: number | null
           sort_order?: number
           storage_bucket?: string | null
           storage_key?: string | null

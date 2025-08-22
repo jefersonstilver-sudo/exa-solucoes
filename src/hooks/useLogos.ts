@@ -11,6 +11,7 @@ export interface Logo {
   is_active: boolean;
   storage_bucket?: string;
   storage_key?: string;
+  scale_factor?: number;
   created_at: string;
   updated_at: string;
 }

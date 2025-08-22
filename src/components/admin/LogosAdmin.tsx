@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Upload, Eye, GripVertical, Plus, AlertCircle, Edit2, Check, X, ExternalLink, Image as ImageIcon, FileImage, Loader2, Link as LinkIcon, Palette, RotateCcw, Save } from 'lucide-react';
+import { Trash2, Upload, Eye, GripVertical, Plus, AlertCircle, Edit2, Check, X, ExternalLink, Image as ImageIcon, FileImage, Loader2, Link as LinkIcon, Palette, RotateCcw, Save, Minus } from 'lucide-react';
 import { useLogosAdmin, Logo } from '@/hooks/useLogos';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -196,6 +196,36 @@ const LogosAdmin: React.FC = () => {
         newSet.delete(logoId);
         return newSet;
       });
+    }
+  };
+
+  const handleScaleUp = async (logoId: string) => {
+    const logo = logos.find(l => l.id === logoId);
+    if (!logo) return;
+    
+    const currentScale = logo.scale_factor || 1;
+    const newScale = Math.min(currentScale + 0.1, 2.0);
+    
+    try {
+      await updateLogo(logoId, { scale_factor: newScale });
+      toast.success(`Tamanho aumentado para ${Math.round(newScale * 100)}%`);
+    } catch (error) {
+      toast.error('Erro ao alterar tamanho da logo');
+    }
+  };
+
+  const handleScaleDown = async (logoId: string) => {
+    const logo = logos.find(l => l.id === logoId);
+    if (!logo) return;
+    
+    const currentScale = logo.scale_factor || 1;
+    const newScale = Math.max(currentScale - 0.1, 0.5);
+    
+    try {
+      await updateLogo(logoId, { scale_factor: newScale });
+      toast.success(`Tamanho reduzido para ${Math.round(newScale * 100)}%`);
+    } catch (error) {
+      toast.error('Erro ao alterar tamanho da logo');
     }
   };
   const handleDragStart = (logoId: string) => {
@@ -419,6 +449,9 @@ const LogosAdmin: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>Ordem: {logo.sort_order}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {Math.round((logo.scale_factor || 1) * 100)}%
+                          </Badge>
                           <Badge variant={logo.color_variant === 'white' ? 'secondary' : 'outline'} className="text-xs">
                             <Palette className="h-3 w-3 mr-1" />
                             {logo.color_variant}
@@ -427,6 +460,32 @@ const LogosAdmin: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleScaleDown(logo.id);
+                          }}
+                          disabled={((logo.scale_factor || 1) <= 0.5)}
+                          className="h-8 w-8 p-0"
+                          title="Diminuir tamanho"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleScaleUp(logo.id);
+                          }}
+                          disabled={((logo.scale_factor || 1) >= 2.0)}
+                          className="h-8 w-8 p-0"
+                          title="Aumentar tamanho"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={e => {
                   e.stopPropagation();
                   handleStartEdit(logo);
