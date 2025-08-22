@@ -1977,6 +1977,21 @@ export type Database = {
           venue_type: string
         }[]
       }
+      get_buildings_for_public_store: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bairro: string
+          id: string
+          imagem_principal: string
+          latitude: number
+          longitude: number
+          nome: string
+          preco_base: number
+          quantidade_telas: number
+          status: string
+          venue_type: string
+        }[]
+      }
       get_coupon_stats: {
         Args: Record<PropertyKey, never>
         Returns: {

@@ -37,9 +37,17 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
   try {
     console.log('🏢 [BUILDING STORE SERVICE] === SECURE VERSION ===');
     
-    // Use secure function that requires authentication and returns minimal data
-    const { data: buildings, error } = await supabase
-      .rpc('get_buildings_for_authenticated_users');
+    // Use public function for store (returns coords for map without requiring auth)
+    let { data: buildings, error } = await supabase
+      .rpc('get_buildings_for_public_store');
+
+    // Fallback to authenticated function if public one fails
+    if (error) {
+      console.warn('⚠️ [BUILDING STORE SERVICE] Public RPC falhou, tentando authenticated:', error);
+      const fallback = await supabase.rpc('get_buildings_for_authenticated_users');
+      buildings = fallback.data as any;
+      error = fallback.error as any;
+    }
 
     if (error) {
       console.error('❌ [BUILDING STORE SERVICE] Erro na query:', error);
@@ -76,14 +84,14 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       bairro: building.bairro,
       venue_type: building.venue_type,
       status: building.status,
-      latitude: 0, // Removed for security - no longer exposed
-      longitude: 0, // Removed for security - no longer exposed
-      manual_latitude: 0, // Removed for security
-      manual_longitude: 0, // Removed for security
-      position_validated: false, // Not available in minimal data
-      publico_estimado: 0, // Removed for security - no longer exposed
-      visualizacoes_mes: 0, // Removed for security - no longer exposed
-      preco_base: building.preco_base || 280,
+      latitude: Number((building as any).latitude) || 0,
+      longitude: Number((building as any).longitude) || 0,
+      manual_latitude: undefined,
+      manual_longitude: undefined,
+      position_validated: undefined,
+      publico_estimado: 0, // not exposed publicly
+      visualizacoes_mes: 0, // not exposed publicly
+      preco_base: Number(building.preco_base) || 280,
       imagem_principal: building.imagem_principal || '',
       imagem_2: '', // Not available in minimal data
       imagem_3: '', // Not available in minimal data

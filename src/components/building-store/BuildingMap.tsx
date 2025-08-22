@@ -26,7 +26,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   scrollwheel = false, 
   defaultZoom = 14, 
   requirePreciseGeocode = true,
-  enableClustering = true 
+  enableClustering = false 
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -544,8 +544,11 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       } else if (markersRef.current.length > 0) {
         const b = new maps.LatLngBounds();
         markersRef.current.forEach(m => {
-          const pos = m.getPosition();
-          if (pos) b.extend(pos);
+          const getPos = (m as any)?.getPosition;
+          if (typeof getPos === 'function') {
+            const pos = getPos.call(m);
+            if (pos) b.extend(pos as any);
+          }
         });
         map.fitBounds(b, 40);
       }
