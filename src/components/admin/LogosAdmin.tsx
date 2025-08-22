@@ -200,17 +200,16 @@ const LogosAdmin: React.FC = () => {
       });
     }
   };
-
   const handleScaleUp = async (logoId: string) => {
     const logo = logos.find(l => l.id === logoId);
     if (!logo) return;
-
     const currentScale = Number(logo.scale_factor ?? 1);
     const newScale = Math.min(Number((currentScale + 0.3).toFixed(2)), 3.0);
-
     setUpdatingScale(prev => new Set(prev).add(logoId));
     try {
-      await updateLogo(logoId, { scale_factor: newScale });
+      await updateLogo(logoId, {
+        scale_factor: newScale
+      });
       toast.success(`Tamanho aumentado para ${Math.round(newScale * 100)}%`);
     } catch (error: any) {
       console.error('❌ Scale up error:', error);
@@ -223,17 +222,16 @@ const LogosAdmin: React.FC = () => {
       });
     }
   };
-
   const handleScaleDown = async (logoId: string) => {
     const logo = logos.find(l => l.id === logoId);
     if (!logo) return;
-
     const currentScale = logo.scale_factor || 1;
     const newScale = Math.max(Number((currentScale - 0.3).toFixed(2)), 0.5);
-
     setUpdatingScale(prev => new Set(prev).add(logoId));
     try {
-      await updateLogo(logoId, { scale_factor: newScale });
+      await updateLogo(logoId, {
+        scale_factor: newScale
+      });
       toast.success(`Tamanho reduzido para ${Math.round(newScale * 100)}%`);
     } catch (error: any) {
       console.error('❌ Scale down error:', error);
@@ -454,13 +452,10 @@ const LogosAdmin: React.FC = () => {
             <div draggable onDragStart={() => handleDragStart(logo.id)} onDragOver={handleDragOver} onDrop={e => handleDrop(e, logo.id)} className="flex items-center gap-4 p-4 cursor-move hover:bg-muted/50 transition-colors">
                       <GripVertical className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       
-                      <LogoImage 
-                        logo={{ 
-                          ...logo,
-                          scale_factor: logo.scale_factor 
-                        }}
-                        size="md" 
-                      />
+                      <LogoImage logo={{
+                ...logo,
+                scale_factor: logo.scale_factor
+              }} size="md" />
 
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
@@ -474,38 +469,21 @@ const LogosAdmin: React.FC = () => {
                           <Badge variant="outline" className="text-xs">
                             {Math.round(Number(logo.scale_factor ?? 1) * 100)}%
                           </Badge>
-                          <Badge variant={logo.color_variant === 'white' ? 'secondary' : 'outline'} className="text-xs">
-                            <Palette className="h-3 w-3 mr-1" />
-                            {logo.color_variant}
-                          </Badge>
+                          
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleScaleDown(logo.id);
-                          }}
-                          disabled={(Number(logo.scale_factor ?? 1) <= 0.5) || updatingScale.has(logo.id)}
-                          className="h-8 w-8 p-0"
-                          title="Diminuir tamanho"
-                        >
+                        <Button size="sm" variant="ghost" onClick={e => {
+                  e.stopPropagation();
+                  handleScaleDown(logo.id);
+                }} disabled={Number(logo.scale_factor ?? 1) <= 0.5 || updatingScale.has(logo.id)} className="h-8 w-8 p-0" title="Diminuir tamanho">
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleScaleUp(logo.id);
-                          }}
-                          disabled={(Number(logo.scale_factor ?? 1) >= 3.0) || updatingScale.has(logo.id)}
-                          className="h-8 w-8 p-0"
-                          title="Aumentar tamanho"
-                        >
+                        <Button size="sm" variant="ghost" onClick={e => {
+                  e.stopPropagation();
+                  handleScaleUp(logo.id);
+                }} disabled={Number(logo.scale_factor ?? 1) >= 3.0 || updatingScale.has(logo.id)} className="h-8 w-8 p-0" title="Aumentar tamanho">
                           <Plus className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={e => {
