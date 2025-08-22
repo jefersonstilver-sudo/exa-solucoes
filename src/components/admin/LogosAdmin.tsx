@@ -205,7 +205,7 @@ const LogosAdmin: React.FC = () => {
     if (!logo) return;
     
     const currentScale = logo.scale_factor || 1;
-    const newScale = Math.min(currentScale + 0.1, 2.0);
+    const newScale = Math.min(currentScale + 0.3, 2.0);
     
     try {
       await updateLogo(logoId, { scale_factor: newScale });
@@ -220,7 +220,7 @@ const LogosAdmin: React.FC = () => {
     if (!logo) return;
     
     const currentScale = logo.scale_factor || 1;
-    const newScale = Math.max(currentScale - 0.1, 0.5);
+    const newScale = Math.max(currentScale - 0.3, 0.5);
     
     try {
       await updateLogo(logoId, { scale_factor: newScale });
