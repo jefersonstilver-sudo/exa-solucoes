@@ -205,7 +205,7 @@ const LogosAdmin: React.FC = () => {
     const logo = logos.find(l => l.id === logoId);
     if (!logo) return;
 
-    const currentScale = logo.scale_factor || 1;
+    const currentScale = Number(logo.scale_factor ?? 1);
     const newScale = Math.min(Number((currentScale + 0.3).toFixed(2)), 3.0);
 
     setUpdatingScale(prev => new Set(prev).add(logoId));
@@ -472,7 +472,7 @@ const LogosAdmin: React.FC = () => {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>Ordem: {logo.sort_order}</span>
                           <Badge variant="outline" className="text-xs">
-                            {Math.round((logo.scale_factor || 1) * 100)}%
+                            {Math.round(Number(logo.scale_factor ?? 1) * 100)}%
                           </Badge>
                           <Badge variant={logo.color_variant === 'white' ? 'secondary' : 'outline'} className="text-xs">
                             <Palette className="h-3 w-3 mr-1" />
@@ -489,7 +489,7 @@ const LogosAdmin: React.FC = () => {
                             e.stopPropagation();
                             handleScaleDown(logo.id);
                           }}
-                          disabled={((logo.scale_factor || 1) <= 0.5) || updatingScale.has(logo.id)}
+                          disabled={(Number(logo.scale_factor ?? 1) <= 0.5) || updatingScale.has(logo.id)}
                           className="h-8 w-8 p-0"
                           title="Diminuir tamanho"
                         >
@@ -502,7 +502,7 @@ const LogosAdmin: React.FC = () => {
                             e.stopPropagation();
                             handleScaleUp(logo.id);
                           }}
-                          disabled={((logo.scale_factor || 1) >= 3.0) || updatingScale.has(logo.id)}
+                          disabled={(Number(logo.scale_factor ?? 1) >= 3.0) || updatingScale.has(logo.id)}
                           className="h-8 w-8 p-0"
                           title="Aumentar tamanho"
                         >
