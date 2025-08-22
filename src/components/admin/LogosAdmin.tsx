@@ -431,9 +431,45 @@ const LogosAdmin: React.FC = () => {
                     } : null)} className="mt-1" />
                           </div>
 
-                          
+                          <div>
+                            <Label htmlFor="edit-link" className="text-sm font-medium flex items-center gap-2">
+                              <LinkIcon className="h-4 w-4" />
+                              Link (URL)
+                            </Label>
+                            <Input 
+                              id="edit-link" 
+                              placeholder="https://exemplo.com ou https://instagram.com/empresa" 
+                              value={editingLogo.link_url} 
+                              onChange={e => setEditingLogo(prev => prev ? {
+                                ...prev,
+                                link_url: e.target.value
+                              } : null)} 
+                              className="mt-1" 
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Link que será aberto quando clicar na logo
+                            </p>
+                          </div>
 
-                          
+                          <div>
+                            <Label htmlFor="edit-color" className="text-sm font-medium flex items-center gap-2">
+                              <Palette className="h-4 w-4" />
+                              Variação de Cor
+                            </Label>
+                            <Select value={editingLogo.color_variant} onValueChange={value => setEditingLogo(prev => prev ? {
+                              ...prev,
+                              color_variant: value as 'white' | 'dark' | 'colored'
+                            } : null)}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="white">Branco</SelectItem>
+                                <SelectItem value="dark">Escuro</SelectItem>
+                                <SelectItem value="colored">Colorido</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
 
                         <div className="flex flex-col gap-2">
