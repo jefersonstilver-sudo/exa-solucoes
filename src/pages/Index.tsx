@@ -197,6 +197,11 @@ const Index = () => {
           
           {/* Logo Ticker Section - Positioned after main content */}
           <div className="mt-8 lg:mt-12">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl lg:text-3xl font-semibold text-muted-foreground/80">
+                Nossos clientes e parceiros
+              </h2>
+            </div>
             <LogoTicker 
               speed={50}
               direction="ltr"
