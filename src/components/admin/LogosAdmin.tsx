@@ -32,6 +32,7 @@ const LogosAdmin: React.FC = () => {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [editingLogo, setEditingLogo] = useState<EditingLogo | null>(null);
   const [deletingLogos, setDeletingLogos] = useState<Set<string>>(new Set());
+  const [updatingScale, setUpdatingScale] = useState<Set<string>>(new Set());
   const [uploadProgress, setUploadProgress] = useState<{
     [key: string]: number;
   }>({});
@@ -203,30 +204,46 @@ const LogosAdmin: React.FC = () => {
   const handleScaleUp = async (logoId: string) => {
     const logo = logos.find(l => l.id === logoId);
     if (!logo) return;
-    
+
     const currentScale = logo.scale_factor || 1;
-    const newScale = Math.min(currentScale + 0.3, 3.0);
-    
+    const newScale = Math.min(Number((currentScale + 0.3).toFixed(2)), 3.0);
+
+    setUpdatingScale(prev => new Set(prev).add(logoId));
     try {
       await updateLogo(logoId, { scale_factor: newScale });
       toast.success(`Tamanho aumentado para ${Math.round(newScale * 100)}%`);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Scale up error:', error);
       toast.error('Erro ao alterar tamanho da logo');
+    } finally {
+      setUpdatingScale(prev => {
+        const next = new Set(prev);
+        next.delete(logoId);
+        return next;
+      });
     }
   };
 
   const handleScaleDown = async (logoId: string) => {
     const logo = logos.find(l => l.id === logoId);
     if (!logo) return;
-    
+
     const currentScale = logo.scale_factor || 1;
-    const newScale = Math.max(currentScale - 0.3, 0.5);
-    
+    const newScale = Math.max(Number((currentScale - 0.3).toFixed(2)), 0.5);
+
+    setUpdatingScale(prev => new Set(prev).add(logoId));
     try {
       await updateLogo(logoId, { scale_factor: newScale });
       toast.success(`Tamanho reduzido para ${Math.round(newScale * 100)}%`);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Scale down error:', error);
       toast.error('Erro ao alterar tamanho da logo');
+    } finally {
+      setUpdatingScale(prev => {
+        const next = new Set(prev);
+        next.delete(logoId);
+        return next;
+      });
     }
   };
   const handleDragStart = (logoId: string) => {
@@ -472,7 +489,7 @@ const LogosAdmin: React.FC = () => {
                             e.stopPropagation();
                             handleScaleDown(logo.id);
                           }}
-                          disabled={((logo.scale_factor || 1) <= 0.5)}
+                          disabled={((logo.scale_factor || 1) <= 0.5) || updatingScale.has(logo.id)}
                           className="h-8 w-8 p-0"
                           title="Diminuir tamanho"
                         >
@@ -485,7 +502,7 @@ const LogosAdmin: React.FC = () => {
                             e.stopPropagation();
                             handleScaleUp(logo.id);
                           }}
-                          disabled={((logo.scale_factor || 1) >= 3.0)}
+                          disabled={((logo.scale_factor || 1) >= 3.0) || updatingScale.has(logo.id)}
                           className="h-8 w-8 p-0"
                           title="Aumentar tamanho"
                         >
