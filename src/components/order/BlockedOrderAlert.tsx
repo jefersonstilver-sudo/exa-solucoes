@@ -2,34 +2,27 @@ import { AlertTriangle, Phone, Mail, MessageCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 interface BlockedOrderAlertProps {
   reason?: string;
   blockedAt?: string;
 }
-
-export const BlockedOrderAlert = ({ reason, blockedAt }: BlockedOrderAlertProps) => {
+export const BlockedOrderAlert = ({
+  reason,
+  blockedAt
+}: BlockedOrderAlertProps) => {
   const supportWhatsApp = "5511999999999"; // Número do WhatsApp do suporte
   const supportEmail = "suporte@indexadigital.com.br";
   const supportPhone = "(11) 9999-9999";
-
   const handleWhatsAppContact = () => {
-    const message = encodeURIComponent(
-      `Olá! Meu pedido foi bloqueado e preciso de ajuda para resolver esta situação. Por favor, me auxiliem com mais informações.`
-    );
+    const message = encodeURIComponent(`Olá! Meu pedido foi bloqueado e preciso de ajuda para resolver esta situação. Por favor, me auxiliem com mais informações.`);
     window.open(`https://wa.me/${supportWhatsApp}?text=${message}`, '_blank');
   };
-
   const handleEmailContact = () => {
     const subject = encodeURIComponent('Pedido Bloqueado - Solicitação de Suporte');
-    const body = encodeURIComponent(
-      `Olá,\n\nMeu pedido foi bloqueado e gostaria de entender os motivos e como proceder para resolver esta situação.\n\nAguardo retorno.\n\nObrigado(a).`
-    );
+    const body = encodeURIComponent(`Olá,\n\nMeu pedido foi bloqueado e gostaria de entender os motivos e como proceder para resolver esta situação.\n\nAguardo retorno.\n\nObrigado(a).`);
     window.open(`mailto:${supportEmail}?subject=${subject}&body=${body}`, '_blank');
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Alert Principal */}
       <Alert className="border-red-200 bg-red-50">
         <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -42,16 +35,12 @@ export const BlockedOrderAlert = ({ reason, blockedAt }: BlockedOrderAlertProps)
               Este pedido não pode ser visualizado ou modificado no momento. 
               Por favor, entre em contato com nosso suporte para mais informações.
             </p>
-            {reason && (
-              <p className="text-sm bg-red-100 p-2 rounded border">
+            {reason && <p className="text-sm bg-red-100 p-2 rounded border">
                 <strong>Motivo:</strong> {reason}
-              </p>
-            )}
-            {blockedAt && (
-              <p className="text-xs text-red-600">
+              </p>}
+            {blockedAt && <p className="text-xs text-red-600">
                 <strong>Bloqueado em:</strong> {new Date(blockedAt).toLocaleString('pt-BR')}
-              </p>
-            )}
+              </p>}
           </div>
         </AlertDescription>
       </Alert>
@@ -80,10 +69,7 @@ export const BlockedOrderAlert = ({ reason, blockedAt }: BlockedOrderAlertProps)
                     <p className="text-sm text-gray-600">Atendimento mais rápido</p>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleWhatsAppContact}
-                  className="bg-green-600 hover:bg-green-700"
-                >
+                <Button onClick={handleWhatsAppContact} className="bg-green-600 hover:bg-green-700">
                   Conversar
                 </Button>
               </div>
@@ -97,32 +83,13 @@ export const BlockedOrderAlert = ({ reason, blockedAt }: BlockedOrderAlertProps)
                     <p className="text-sm text-gray-600">{supportEmail}</p>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleEmailContact}
-                  variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                >
+                <Button onClick={handleEmailContact} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
                   Enviar E-mail
                 </Button>
               </div>
 
               {/* Telefone */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-gray-600" />
-                  <div>
-                    <p className="font-semibold text-gray-800">Telefone</p>
-                    <p className="text-sm text-gray-600">{supportPhone}</p>
-                  </div>
-                </div>
-                <Button 
-                  variant="outline"
-                  className="border-gray-600 text-gray-600"
-                  onClick={() => window.open(`tel:${supportPhone.replace(/\D/g, '')}`)}
-                >
-                  Ligar
-                </Button>
-              </div>
+              
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg border">
@@ -139,6 +106,5 @@ export const BlockedOrderAlert = ({ reason, blockedAt }: BlockedOrderAlertProps)
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
