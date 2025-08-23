@@ -15,7 +15,7 @@ import {
   getPeriod, 
   getTypeBadge 
 } from '../utils/orderTableUtils';
-import ActiveVideosColumn from '../ActiveVideosColumn';
+import { ActiveVideosColumn } from '../ActiveVideosColumn';
 
 interface OrdersTableRowProps {
   item: OrderOrAttempt & { daysRemaining?: number | null };

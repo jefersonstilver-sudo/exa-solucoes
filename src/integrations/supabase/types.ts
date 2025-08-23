@@ -1222,6 +1222,50 @@ export type Database = {
           },
         ]
       }
+      pedido_blocking_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          pedido_id: string
+          performed_by: string
+          reason: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          pedido_id: string
+          performed_by: string
+          reason?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          pedido_id?: string
+          performed_by?: string
+          reason?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_blocking_logs_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedido_videos: {
         Row: {
           approval_status: string
@@ -1287,6 +1331,9 @@ export type Database = {
       }
       pedidos: {
         Row: {
+          blocked_at: string | null
+          blocked_by: string | null
+          blocked_reason: string | null
           client_id: string
           compliance_data: Json | null
           created_at: string | null
@@ -1308,6 +1355,9 @@ export type Database = {
           valor_total: number | null
         }
         Insert: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          blocked_reason?: string | null
           client_id: string
           compliance_data?: Json | null
           created_at?: string | null
@@ -1329,6 +1379,9 @@ export type Database = {
           valor_total?: number | null
         }
         Update: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          blocked_reason?: string | null
           client_id?: string
           compliance_data?: Json | null
           created_at?: string | null
@@ -1777,6 +1830,15 @@ export type Database = {
       }
       auto_recovery_system: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      block_order_secure: {
+        Args: {
+          p_ip_address?: string
+          p_pedido_id: string
+          p_reason: string
+          p_user_agent?: string
+        }
         Returns: Json
       }
       can_access_building_contacts: {
@@ -2305,6 +2367,10 @@ export type Database = {
       switch_video_selection: {
         Args: { p_pedido_video_id: string }
         Returns: boolean
+      }
+      unblock_order_secure: {
+        Args: { p_pedido_id: string; p_reason?: string }
+        Returns: Json
       }
       update_expired_contracts: {
         Args: Record<PropertyKey, never>

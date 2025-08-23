@@ -7,7 +7,8 @@ import { useVideoManagement } from '@/hooks/useVideoManagement';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
-import { VideoManagementLogs } from '@/components/video-management/VideoManagementLogs';
+// import { VideoManagementLogs } from '@/components/order/VideoManagementLogs';
+import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
 import { Loader2, Package, AlertTriangle, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,6 +43,21 @@ const OrderDetails: React.FC = () => {
               <span>Pedido não encontrado</span>
             </CardContent>
           </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Se o pedido está bloqueado, mostrar tela especial
+  if (orderDetails.status === 'bloqueado') {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-2xl font-bold mb-6">Detalhes do Pedido #{orderDetails.id.slice(-8)}</h1>
+          <BlockedOrderAlert 
+            reason={(orderDetails as any).blocked_reason} 
+            blockedAt={(orderDetails as any).blocked_at} 
+          />
         </div>
       </Layout>
     );
@@ -139,7 +155,7 @@ const OrderDetails: React.FC = () => {
         />
 
         {/* Log de Agendamentos */}
-        <VideoManagementLogs orderId={orderId || ''} />
+        {/* <VideoManagementLogs orderId={orderId || ''} /> */}
       </div>
     </Layout>
   );

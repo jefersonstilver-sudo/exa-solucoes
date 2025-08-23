@@ -94,30 +94,45 @@ export const useActiveVideosForAllOrders = () => {
     }
   };
 
-  const blockVideo = async (pedidoVideoId: string) => {
+  const blockVideo = async (pedidoVideoId: string, reason: string) => {
     try {
-      console.log('🚫 [ACTIVE_VIDEOS] Bloqueando vídeo:', pedidoVideoId);
+      console.log('🚫 [ACTIVE_VIDEOS] Bloqueando pedido por motivo de segurança:', reason);
 
-      const { error } = await supabase
+      // Primeiro buscar o pedido_id do vídeo
+      const { data: videoData, error: videoError } = await supabase
         .from('pedido_videos')
-        .update({ 
-          is_active: false,
-          selected_for_display: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', pedidoVideoId);
+        .select('pedido_id')
+        .eq('id', pedidoVideoId)
+        .single();
+
+      if (videoError) {
+        console.error('❌ [ACTIVE_VIDEOS] Erro ao buscar vídeo:', videoError);
+        throw videoError;
+      }
+
+      const { data, error } = await supabase.rpc('block_order_secure', {
+        p_pedido_id: videoData.pedido_id,
+        p_reason: reason,
+        p_ip_address: null, // Será capturado pela função se necessário
+        p_user_agent: navigator.userAgent
+      });
 
       if (error) {
-        console.error('❌ [ACTIVE_VIDEOS] Erro ao bloquear vídeo:', error);
+        console.error('❌ [ACTIVE_VIDEOS] Erro ao bloquear pedido:', error);
         throw error;
+      }
+
+      const response = data as any;
+      if (!response?.success) {
+        throw new Error(response?.error || 'Falha ao bloquear pedido');
       }
 
       // Atualizar lista local
       await fetchActiveVideos();
-      console.log('✅ [ACTIVE_VIDEOS] Vídeo bloqueado com sucesso');
+      console.log('✅ [ACTIVE_VIDEOS] Pedido bloqueado com sucesso:', response?.message);
       
     } catch (error) {
-      console.error('❌ [ACTIVE_VIDEOS] Erro ao bloquear vídeo:', error);
+      console.error('❌ [ACTIVE_VIDEOS] Erro ao bloquear pedido:', error);
       throw error;
     }
   };

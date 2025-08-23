@@ -180,6 +180,15 @@ export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) 
           }
         };
 
+      case 'bloqueado':
+        return {
+          label: 'Pedido Bloqueado',
+          description: 'Pedido bloqueado por questões de segurança. Entre em contato com o suporte.',
+          color: 'text-white',
+          bgColor: 'bg-red-600 border-red-700',
+          icon: AlertTriangle
+        };
+      
       case 'cancelado':
         return {
           label: 'Cancelado',

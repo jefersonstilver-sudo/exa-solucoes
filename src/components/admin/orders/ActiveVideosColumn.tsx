@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
-import { Play, Shield, Trash2, AlertTriangle, Calendar, Clock } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { Eye, EyeOff, Trash2, AlertTriangle, Clock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useActiveVideosForAllOrders } from '@/hooks/useActiveVideosForAllOrders';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { useOrderBlocking } from '@/hooks/useOrderBlocking';
+import { BlockOrderModal } from './BlockOrderModal';
+import { toast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ActiveVideosColumnProps {
   orderId: string;
@@ -25,9 +27,18 @@ interface ConfirmationDialog {
   pedidoVideoId: string;
 }
 
-const ActiveVideosColumn: React.FC<ActiveVideosColumnProps> = ({ orderId }) => {
-  const { activeVideos, loading, blockVideo, deleteVideo } = useActiveVideosForAllOrders();
-  const [confirmation, setConfirmation] = useState<ConfirmationDialog>({
+interface BlockDialog {
+  isOpen: boolean;
+  videoName: string;
+  pedidoVideoId: string;
+  orderId: string;
+}
+
+export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
+  const { activeVideos, loading, deleteVideo } = useActiveVideosForAllOrders();
+  const { blockOrder, isBlocking } = useOrderBlocking();
+
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmationDialog>({
     isOpen: false,
     type: null,
     videoId: '',
@@ -35,60 +46,94 @@ const ActiveVideosColumn: React.FC<ActiveVideosColumnProps> = ({ orderId }) => {
     pedidoVideoId: ''
   });
 
+  const [blockDialog, setBlockDialog] = useState<BlockDialog>({
+    isOpen: false,
+    videoName: '',
+    pedidoVideoId: '',
+    orderId: ''
+  });
+
   // Filtrar vídeos para este pedido específico
   const orderVideos = activeVideos.filter(video => video.orderId === orderId);
 
-  const handleAction = (
-    type: 'block' | 'delete', 
-    videoId: string, 
-    videoName: string, 
-    pedidoVideoId: string
-  ) => {
-    setConfirmation({
+  const handleBlockClick = (video: any) => {
+    setBlockDialog({
       isOpen: true,
-      type,
-      videoId,
-      videoName,
-      pedidoVideoId
+      videoName: video.videoName,
+      pedidoVideoId: video.pedidoVideoId,
+      orderId: video.orderId
     });
   };
 
-  const executeAction = async () => {
-    if (!confirmation.type || !confirmation.pedidoVideoId) return;
+  const handleDeleteClick = (video: any) => {
+    setConfirmDialog({
+      isOpen: true,
+      type: 'delete',
+      videoId: video.videoId,
+      videoName: video.videoName,
+      pedidoVideoId: video.pedidoVideoId
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmDialog.type) return;
 
     try {
-      if (confirmation.type === 'block') {
-        await blockVideo(confirmation.pedidoVideoId);
-        toast.success('Vídeo bloqueado com sucesso');
-      } else if (confirmation.type === 'delete') {
-        await deleteVideo(confirmation.pedidoVideoId);
-        toast.success('Vídeo removido com sucesso');
+      if (confirmDialog.type === 'delete') {
+        await deleteVideo(confirmDialog.pedidoVideoId);
+        toast({
+          title: "Vídeo Removido",
+          description: `O vídeo "${confirmDialog.videoName}" foi removido com sucesso.`,
+        });
       }
-    } catch (error) {
-      toast.error(`Erro ao ${confirmation.type === 'block' ? 'bloquear' : 'remover'} vídeo`);
-    } finally {
-      setConfirmation({
-        isOpen: false,
-        type: null,
-        videoId: '',
-        videoName: '',
-        pedidoVideoId: ''
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || `Erro ao remover vídeo`,
+        variant: "destructive"
       });
+    }
+
+    setConfirmDialog({
+      isOpen: false,
+      type: null,
+      videoId: '',
+      videoName: '',
+      pedidoVideoId: ''
+    });
+  };
+
+  const handleBlockConfirm = async (reason: string) => {
+    try {
+      const result = await blockOrder(blockDialog.orderId, reason);
+      if (result.success) {
+        setBlockDialog({
+          isOpen: false,
+          videoName: '',
+          pedidoVideoId: '',
+          orderId: ''
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao bloquear pedido:', error);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+      <div className="flex items-center justify-center py-4">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+          Carregando...
+        </div>
       </div>
     );
   }
 
   if (orderVideos.length === 0) {
     return (
-      <div className="text-center py-2">
-        <Badge variant="outline" className="border-gray-300 text-gray-500">
+      <div className="text-center py-4">
+        <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-300">
           <Clock className="h-3 w-3 mr-1" />
           Nenhum vídeo ativo
         </Badge>
@@ -97,97 +142,110 @@ const ActiveVideosColumn: React.FC<ActiveVideosColumnProps> = ({ orderId }) => {
   }
 
   return (
-    <>
-      <div className="space-y-2">
-        {orderVideos.map((video) => (
-          <div key={video.videoId} className="border border-green-200 rounded-lg p-3 bg-green-50">
-            {/* Status Badge */}
-            <div className="flex items-center justify-between mb-2">
-              <Badge variant="default" className="bg-green-600 text-white">
-                <Play className="h-3 w-3 mr-1" />
-                EM EXIBIÇÃO
+    <div className="space-y-3">
+      {/* Lista de Vídeos Ativos */}
+      {orderVideos.map((video) => (
+        <div key={video.videoId} className="border border-green-200 rounded-lg p-3 bg-green-50">
+          {/* Header com Status */}
+          <div className="flex items-center justify-between mb-2">
+            <Badge variant="default" className="bg-green-600 hover:bg-green-600">
+              <Eye className="h-3 w-3 mr-1" />
+              EM EXIBIÇÃO
+            </Badge>
+            {video.isScheduled && (
+              <Badge variant="outline" className="border-blue-500 text-blue-700 text-xs">
+                <Clock className="h-3 w-3 mr-1" />
+                Agendado
               </Badge>
-              {video.isScheduled && (
-                <Badge variant="outline" className="border-blue-500 text-blue-700 text-xs">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Agendado
-                </Badge>
-              )}
-            </div>
-
-            {/* Video Info */}
-            <div className="text-sm text-gray-700 mb-2 font-medium truncate">
-              {video.videoName}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleAction('block', video.videoId, video.videoName, video.pedidoVideoId)}
-                className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 text-xs px-2 py-1 h-auto"
-              >
-                <Shield className="h-3 w-3 mr-1" />
-                Bloquear
-              </Button>
-              
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleAction('delete', video.videoId, video.videoName, video.pedidoVideoId)}
-                className="border-red-500 text-red-700 hover:bg-red-50 text-xs px-2 py-1 h-auto"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Remover
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Confirmation Dialog */}
-      <Dialog open={confirmation.isOpen} onOpenChange={(open) => 
-        setConfirmation(prev => ({ ...prev, isOpen: open }))
-      }>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Ação de Segurança
-            </DialogTitle>
-            <DialogDescription className="text-gray-700">
-              {confirmation.type === 'block' 
-                ? 'Tem certeza que deseja bloquear este vídeo? Esta ação pode ser desfeita posteriormente.'
-                : 'Tem certeza que deseja remover este vídeo permanentemente? Esta ação NÃO pode ser desfeita.'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="text-sm text-gray-600">Vídeo:</div>
-            <div className="font-medium text-gray-900">{confirmation.videoName}</div>
+            )}
           </div>
 
-          <DialogFooter className="gap-2">
+          {/* Info do Vídeo */}
+          <div className="text-sm font-medium text-gray-800 mb-3 truncate">
+            {video.videoName}
+          </div>
+
+          {/* Botões de Ação */}
+          <div className="flex gap-2">
             <Button
-              variant="outline"
-              onClick={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+              size="sm"
+              variant="destructive"
+              onClick={() => handleBlockClick(video)}
+              className="h-7 px-2 text-xs"
+              disabled={isBlocking}
             >
-              Cancelar
+              <Shield className="h-3 w-3 mr-1" />
+              Block
             </Button>
             <Button
-              variant={confirmation.type === 'delete' ? 'destructive' : 'default'}
-              onClick={executeAction}
-              className={confirmation.type === 'block' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+              size="sm"
+              variant="outline"
+              onClick={() => handleDeleteClick(video)}
+              className="h-7 px-2 text-xs border-red-500 text-red-600 hover:bg-red-50"
             >
-              {confirmation.type === 'block' ? 'Bloquear Vídeo' : 'Remover Permanentemente'}
+              <Trash2 className="h-3 w-3 mr-1" />
+              Remove
+            </Button>
+          </div>
+        </div>
+      ))}
+
+      {/* Block Order Modal */}
+      <BlockOrderModal
+        isOpen={blockDialog.isOpen}
+        onClose={() => setBlockDialog({
+          isOpen: false,
+          videoName: '',
+          pedidoVideoId: '',
+          orderId: ''
+        })}
+        onConfirm={handleBlockConfirm}
+        isBlocking={isBlocking}
+        videoName={blockDialog.videoName}
+        orderId={blockDialog.orderId}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setConfirmDialog({
+            isOpen: false,
+            type: null,
+            videoId: '',
+            videoName: '',
+            pedidoVideoId: ''
+          });
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Remover Vídeo
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover permanentemente o vídeo "{confirmDialog.videoName}"? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDialog({
+              isOpen: false,
+              type: null,
+              videoId: '',
+              videoName: '',
+              pedidoVideoId: ''
+            })}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmAction}
+            >
+              Remover
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
-
-export default ActiveVideosColumn;
