@@ -137,7 +137,7 @@ const Index = () => {
   return (
     <Layout>
       <section 
-        className="py-4 md:py-16 px-4 relative min-h-screen flex items-center pt-28 lg:pt-24" 
+        className="py-4 md:py-16 px-4 relative min-h-screen flex items-center pt-36 lg:pt-32"
         style={{
           backgroundImage: "url('https://cdn.pixabay.com/photo/2015/05/04/20/03/purple-wallpaper-752886_1280.jpg')",
           backgroundSize: 'cover',
