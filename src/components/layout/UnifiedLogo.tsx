@@ -36,7 +36,7 @@ const UnifiedLogo = ({
   const LogoImage = () => (
     <div className={`${size !== 'custom' ? sizeClasses[size] : ''} flex flex-col items-center justify-center ${className}`}>
       <img 
-        src={logoUrl || "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png"}
+        src={logoUrl || "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/1%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzLzEgKDEpLnBuZyIsImlhdCI6MTc1NTk2MzY0OCwiZXhwIjoxNzg3NDk5NjQ4fQ.mOAwou7PaHVlMXO5bErSXrgC_8eTyi6em7y4jcqWmtg"}
         alt={logoUrl ? altText : "Indexa Logo"}
         className={`w-full h-auto object-contain mt-1 ${filterClasses[variant]} ${showSubtitle ? 'mb-1' : ''}`}
       />
