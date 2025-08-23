@@ -21,6 +21,7 @@ export const AdminOrderHeader: React.FC<AdminOrderHeaderProps> = ({
       pending: { variant: 'secondary', label: 'Pendente' },
       processing: { variant: 'default', label: 'Processando' },
       completed: { variant: 'success', label: 'Concluído' },
+      bloqueado: { variant: 'destructive', label: 'Bloqueado' },
       cancelled: { variant: 'destructive', label: 'Cancelado' }
     };
     

@@ -45,6 +45,13 @@ const BLOCK_REASONS = [
     color: 'text-purple-500'
   },
   {
+    id: 'pendencia_financeira',
+    label: 'Pendência Financeira',
+    description: 'Problemas relacionados ao pagamento ou cobrança',
+    icon: Flag,
+    color: 'text-yellow-600'
+  },
+  {
     id: 'outros',
     label: 'Outros Motivos',
     description: 'Especificar motivo customizado',
@@ -69,9 +76,12 @@ export const BlockOrderModal = ({
     
     const selectedReasonData = BLOCK_REASONS.find(r => r.id === selectedReason);
     if (selectedReasonData) {
-      finalReason = selectedReasonData.label;
-      if (selectedReason === 'outros' && customReason.trim()) {
+      if (selectedReason === 'pendencia_financeira') {
+        finalReason = 'Pendência Financeira';
+      } else if (selectedReason === 'outros' && customReason.trim()) {
         finalReason = customReason.trim();
+      } else {
+        finalReason = selectedReasonData.label;
       }
     }
 
@@ -93,7 +103,7 @@ export const BlockOrderModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="h-5 w-5" />
@@ -116,7 +126,7 @@ export const BlockOrderModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
           <div>
             <Label className="text-base font-semibold">Motivo do Bloqueio</Label>
             <RadioGroup 
@@ -180,7 +190,7 @@ export const BlockOrderModal = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 pt-4 border-t">
           <Button 
             variant="outline" 
             onClick={handleClose}

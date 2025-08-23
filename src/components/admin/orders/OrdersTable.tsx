@@ -44,6 +44,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
         return <Badge className="bg-gray-700 text-white text-xs px-2 py-1 font-semibold border-0">Pendente</Badge>;
       case 'ativo':
         return <Badge className="bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0">Ativo</Badge>;
+      case 'bloqueado':
+        return <Badge className="bg-red-600 text-white text-xs px-2 py-1 font-semibold border-0">Bloqueado</Badge>;
       case 'cancelado':
         return <Badge className="bg-red-600 text-white text-xs px-2 py-1 font-semibold border-0">Cancelado</Badge>;
       default:

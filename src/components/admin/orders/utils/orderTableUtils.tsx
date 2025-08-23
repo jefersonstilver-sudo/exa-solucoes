@@ -59,6 +59,13 @@ export const getStatusBadge = (item: OrderOrAttempt) => {
           Rejeitado
         </Badge>
       );
+    case 'bloqueado':
+      return (
+        <Badge className="bg-red-100 text-red-800 border-red-300">
+          <AlertTriangle className="h-3 w-3 mr-1" />
+          Bloqueado
+        </Badge>
+      );
     case 'cancelado':
       return (
         <Badge className="bg-red-100 text-red-800 border-red-300">
