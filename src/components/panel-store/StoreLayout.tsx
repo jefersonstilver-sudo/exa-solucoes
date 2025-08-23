@@ -60,6 +60,8 @@ const StoreLayout: React.FC<StoreLayoutProps> = ({
             handleFilterChange={handleFilterChange}
             isLoading={isLoading}
             isSearching={isSearching}
+            panels={panels}
+            selectedLocation={selectedLocation}
           />
         </div>
         

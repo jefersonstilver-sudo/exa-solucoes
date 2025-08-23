@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PanelFilters from '@/components/panels/PanelFilters';
 import PanelMap from '@/components/panels/PanelMap';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { usePanelStore } from '@/hooks/usePanelStore';
+import { Panel } from '@/types/panel';
 
 interface PanelFilterSidebarProps {
   filters: FilterOptions;
@@ -15,6 +15,8 @@ interface PanelFilterSidebarProps {
   isLoading: boolean;
   isSearching: boolean;
   onSearch?: (location: string) => void;
+  panels?: Panel[];
+  selectedLocation?: { lat: number; lng: number } | null;
 }
 
 const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
@@ -22,13 +24,12 @@ const PanelFilterSidebar: React.FC<PanelFilterSidebarProps> = ({
   handleFilterChange,
   isLoading,
   isSearching,
-  onSearch = () => {}
+  onSearch = () => {},
+  panels = [],
+  selectedLocation = null
 }) => {
   // Map toggle state
   const [mapOpen, setMapOpen] = useState(false);
-  
-  // Get panels and location from store
-  const { panels, selectedLocation } = usePanelStore();
 
   return (
     <div className="space-y-6 sticky top-24">
