@@ -75,18 +75,7 @@ export const BlockedOrderAlert = ({
               </div>
 
               {/* Email */}
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-blue-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="font-semibold text-blue-800">E-mail</p>
-                    <p className="text-sm text-gray-600">{supportEmail}</p>
-                  </div>
-                </div>
-                <Button onClick={handleEmailContact} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-                  Enviar E-mail
-                </Button>
-              </div>
+              
 
               {/* Telefone */}
               
