@@ -16,6 +16,8 @@ interface OrderComplete {
   client_email: string;
   client_name: string;
   video_status: string;
+  video_count: number;
+  correct_status: string;
 }
 
 export const useOrdersDataComplete = () => {
@@ -49,7 +51,7 @@ export const useOrdersDataComplete = () => {
       console.log('✅ Usuário autenticado:', user.email);
 
       // Usar a função corrigida do banco
-      const { data, error } = await supabase.rpc('get_pedidos_com_clientes');
+      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto');
 
       if (error) {
         console.error('❌ Erro detalhado ao buscar pedidos:', error);
@@ -102,11 +104,11 @@ export const useOrdersDataComplete = () => {
       const completed = ordersList.filter(o => ['pago', 'video_aprovado', 'ativo'].includes(o.status)).length;
       const cancelled = ordersList.filter(o => o.status === 'cancelado').length;
       const revenue = ordersList
-        .filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(o.status))
+        .filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(o.correct_status))
         .reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0);
       
       // Estatísticas de vídeo
-      const awaiting_video = ordersList.filter(o => o.status === 'pago_pendente_video').length;
+      const awaiting_video = ordersList.filter(o => o.correct_status === 'pago_pendente_video').length;
       const video_sent = ordersList.filter(o => o.status === 'video_enviado').length;
       const video_approved = ordersList.filter(o => o.status === 'video_aprovado').length;
       const video_rejected = ordersList.filter(o => o.status === 'video_rejeitado').length;

@@ -16,6 +16,8 @@ interface OrderWithClient {
   client_email: string;
   client_name: string;
   video_status: string;
+  video_count: number;
+  correct_status: string;
 }
 
 interface EnhancedOrderStats {
@@ -46,7 +48,7 @@ export const useEnhancedOrdersData = () => {
       setLoading(true);
       console.log('📊 Buscando pedidos com dados corrigidos...');
       
-      const { data, error } = await supabase.rpc('get_pedidos_com_clientes');
+      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto');
       
       if (error) {
         console.error('❌ Erro ao buscar pedidos:', error);
@@ -61,10 +63,10 @@ export const useEnhancedOrdersData = () => {
         // Calcular estatísticas detalhadas
         const total = data.length;
         const revenue = data
-          .filter(order => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(order.status))
+          .filter(order => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(order.correct_status))
           .reduce((sum, order) => sum + (order.valor_total || 0), 0);
         
-        const awaiting_video = data.filter(order => order.status === 'pago_pendente_video').length;
+        const awaiting_video = data.filter(order => order.correct_status === 'pago_pendente_video').length;
         const video_sent = data.filter(order => order.status === 'video_enviado').length;
         const video_approved = data.filter(order => order.status === 'video_aprovado').length;
         const video_rejected = data.filter(order => order.status === 'video_rejeitado').length;

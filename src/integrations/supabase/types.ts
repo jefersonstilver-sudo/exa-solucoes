@@ -2189,6 +2189,25 @@ export type Database = {
           video_status: string
         }[]
       }
+      get_pedidos_com_status_correto: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          client_email: string
+          client_id: string
+          client_name: string
+          correct_status: string
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          lista_paineis: string[]
+          plano_meses: number
+          status: string
+          valor_total: number
+          video_count: number
+          video_status: string
+        }[]
+      }
       get_pending_approval_videos: {
         Args: Record<PropertyKey, never>
         Returns: {
