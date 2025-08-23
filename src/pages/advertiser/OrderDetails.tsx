@@ -23,6 +23,7 @@ import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSe
 import { VideoScheduleManager } from '@/components/video-management/VideoScheduleManager';
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
+import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
 
 interface OrderDetails {
   id: string;
@@ -36,6 +37,8 @@ interface OrderDetails {
   data_fim?: string;
   client_id: string;
   log_pagamento?: any;
+  blocked_reason?: string;
+  blocked_at?: string;
 }
 
 const OrderDetails = () => {
@@ -201,6 +204,24 @@ const OrderDetails = () => {
   });
 
   console.log('🔍 [ORDER_DETAILS] Building IDs para exibição:', displayBuildingIds);
+
+  // Verificar se o pedido está bloqueado
+  if (orderDetails.status === 'bloqueado') {
+    return (
+      <>
+        <div className="space-y-6">
+          {/* Header */}
+          <OrderHeader orderId={orderDetails.id} />
+
+          {/* Alerta de Pedido Bloqueado */}
+          <BlockedOrderAlert 
+            reason={orderDetails.blocked_reason}
+            blockedAt={orderDetails.blocked_at}
+          />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
