@@ -137,7 +137,7 @@ const Index = () => {
   return (
     <Layout>
       <section 
-        className="py-4 md:py-16 px-4 relative min-h-screen flex items-center pt-20 lg:pt-16" 
+        className="py-4 md:py-16 px-4 relative min-h-screen flex items-center pt-28 lg:pt-24" 
         style={{
           backgroundImage: "url('https://cdn.pixabay.com/photo/2015/05/04/20/03/purple-wallpaper-752886_1280.jpg')",
           backgroundSize: 'cover',
@@ -203,7 +203,7 @@ const Index = () => {
               pauseOnHover={true}
             />
             <div className="text-center mt-4">
-              <h2 className="text-lg font-medium text-muted-foreground/70">
+              <h2 className="text-lg font-light text-white/40 font-inter tracking-wide">
                 Nossos clientes e parceiros
               </h2>
             </div>
