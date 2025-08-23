@@ -1808,6 +1808,17 @@ export type Database = {
         Args: { p_admin_id?: string; p_new_role: string; p_user_id: string }
         Returns: Json
       }
+      admin_update_user_secure: {
+        Args: {
+          p_cpf?: string
+          p_documento_estrangeiro?: string
+          p_email?: string
+          p_role?: string
+          p_tipo_documento?: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       apply_coupon_secure: {
         Args: { p_codigo: string; p_pedido_id: string }
         Returns: Json
@@ -2404,6 +2415,15 @@ export type Database = {
       update_panel_secure: {
         Args: { p_panel_id: string; p_updates: Json }
         Returns: Json
+      }
+      update_user_profile_secure: {
+        Args: {
+          p_avatar_url?: string
+          p_email_verified_at?: string
+          p_privacy_accepted_at?: string
+          p_terms_accepted_at?: string
+        }
+        Returns: boolean
       }
       validate_coupon_secure: {
         Args: { p_codigo: string; p_valor_pedido?: number }
