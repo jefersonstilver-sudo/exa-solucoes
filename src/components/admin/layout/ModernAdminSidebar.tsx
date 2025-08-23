@@ -332,7 +332,7 @@ export function ModernAdminSidebar() {
                           to={item.href}
                           className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 font-medium text-sm group ${
                             isActive 
-                              ? "bg-white !text-[#1e1b4b] font-bold shadow-lg" 
+                              ? "bg-white !text-[#1e1b4b] font-bold shadow-lg hover:!bg-white hover:!text-[#1e1b4b]" 
                               : "text-white hover:bg-white/20 hover:text-white"
                           }`}
                         >
