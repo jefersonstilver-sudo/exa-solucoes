@@ -204,15 +204,14 @@ serve(async (req) => {
         throw updateError;
       }
 
-      // Tracking do status
-      await supabase
-        .from('payment_status_tracking')
-        .insert({
-          pedido_id: pedido.id,
-          status_anterior: pedido.status,
-          status_novo: 'pago_pendente_video',
-          origem: 'mercadopago_webhook_pix_completo',
-          detalhes: {
+      // Tracking do status usando função segura
+      const { error: statusTrackingError } = await supabase
+        .rpc('log_payment_status_change_secure', {
+          p_pedido_id: pedido.id,
+          p_status_anterior: pedido.status,
+          p_status_novo: 'pago_pendente_video',
+          p_origem: 'mercadopago_webhook_pix_completo',
+          p_detalhes: {
             payment_id: paymentId,
             external_reference: externalReference,
             amount: amount,
@@ -220,6 +219,11 @@ serve(async (req) => {
             lista_paineis: pedido.lista_paineis
           }
         });
+
+      if (statusTrackingError) {
+        console.error("⚠️ [MercadoPago Webhook] Erro ao registrar tracking de status:", statusTrackingError);
+        // Não falhar o webhook por isso, apenas logar
+      }
 
       console.log("✅ [MercadoPago Webhook] Pedido atualizado com sucesso:", {
         pedidoId: pedido.id,
@@ -229,10 +233,11 @@ serve(async (req) => {
 
       // 🔒 REGISTRAR CONTROLE DE PROCESSAMENTO (evitar duplicatas futuras)
       const { data: controlId, error: controlError } = await supabase
-        .rpc('register_payment_processing', {
+        .rpc('log_payment_processing_secure', {
           p_payment_id: paymentId.toString(),
-          p_pedido_id: pedido.id,
+          p_webhook_source: 'mercadopago-pix-completo',
           p_external_reference: externalReference,
+          p_pedido_id: pedido.id,
           p_amount: amount,
           p_details: {
             webhook_source: 'mercadopago-pix-completo',

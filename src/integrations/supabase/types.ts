@@ -2270,6 +2270,27 @@ export type Database = {
         }
         Returns: string
       }
+      log_payment_processing_secure: {
+        Args: {
+          p_amount?: number
+          p_details?: Json
+          p_external_reference?: string
+          p_payment_id: string
+          p_pedido_id?: string
+          p_webhook_source?: string
+        }
+        Returns: string
+      }
+      log_payment_status_change_secure: {
+        Args: {
+          p_detalhes?: Json
+          p_origem?: string
+          p_pedido_id: string
+          p_status_anterior: string
+          p_status_novo: string
+        }
+        Returns: string
+      }
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: boolean
