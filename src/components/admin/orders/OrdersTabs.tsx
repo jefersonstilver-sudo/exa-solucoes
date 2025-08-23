@@ -43,10 +43,11 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
     return today >= startDate && today <= endDate;
   };
 
-  // 1. Pedidos Ativos - pagos, com vídeo ativo/selecionado e ainda dentro do período
+  // 1. Pedidos Ativos - usando correct_status da função SQL para classificação correta
   const activePedidos = ordersAndAttempts.filter(item => 
     item.type === 'order' && 
-    ['ativo', 'video_aprovado'].includes(item.status) &&
+    ((item as any).correct_status === 'ativo' || 
+     ['ativo', 'video_aprovado'].includes(item.status)) &&
     isWithinActivePeriod(item)
   );
 
@@ -56,9 +57,10 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
      (['ativo', 'video_aprovado'].includes(item.status) && !isWithinActivePeriod(item)))
   );
 
+  // CORRIGIDO: Apenas pedidos que nunca tiveram vídeos ativos (usando correct_status da função SQL)
   const waitingVideoPedidos = ordersAndAttempts.filter(item => 
     item.type === 'order' && 
-    ['pago', 'pago_pendente_video', 'video_enviado', 'video_rejeitado'].includes(item.status)
+    (item as any).correct_status === 'pago_pendente_video'
   );
 
   // CORREÇÃO: Filtrar corretamente tentativas abandonadas E pedidos cancelados/pendentes
@@ -245,7 +247,7 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
               Pedidos Pagos Aguardando Vídeo ({waitingVideoPedidos.length})
             </CardTitle>
             <CardDescription className="text-gray-700">
-              Pedidos que foram pagos mas ainda não têm vídeo enviado, aprovado ou estão rejeitados
+              Pedidos que foram pagos mas nunca tiveram vídeos ativos (aguardando primeiro envio)
             </CardDescription>
           </CardHeader>
           <CardContent>

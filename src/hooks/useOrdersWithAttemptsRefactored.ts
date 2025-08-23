@@ -31,20 +31,38 @@ export const useOrdersWithAttemptsRefactored = () => {
     try {
       setLoading(true);
       
-      // Buscar dados
-      const [pedidos, tentativas] = await Promise.all([
-        fetchOrdersData(),
-        fetchAttemptsData()
-      ]);
+      // Usar a função SQL corrigida para pedidos (com correct_status)
+      const { data: pedidosComStatus, error: pedidosError } = await supabase.rpc('get_pedidos_com_status_correto');
       
-      // Enriquecer com emails
-      const [pedidosComEmails, tentativasComEmails] = await Promise.all([
-        enrichOrdersWithEmails(pedidos),
-        enrichAttemptsWithEmails(tentativas)
-      ]);
+      if (pedidosError) {
+        console.error('❌ Erro ao buscar pedidos com status correto:', pedidosError);
+        throw pedidosError;
+      }
       
-      // Formatar dados
-      const pedidosFormatados = formatOrdersData(pedidosComEmails);
+      // Buscar tentativas normalmente
+      const tentativas = await fetchAttemptsData();
+      
+      // Enriquecer tentativas com emails
+      const tentativasComEmails = await enrichAttemptsWithEmails(tentativas);
+      
+      // Formatar dados - pedidos já vêm formatados da função SQL
+      const pedidosFormatados = pedidosComStatus?.map((pedido: any) => ({
+        id: pedido.id,
+        type: 'order' as const,
+        created_at: pedido.created_at,
+        status: pedido.status,
+        correct_status: pedido.correct_status, // IMPORTANTE: incluir correct_status
+        valor_total: pedido.valor_total,
+        lista_paineis: pedido.lista_paineis,
+        plano_meses: pedido.plano_meses,
+        data_inicio: pedido.data_inicio,
+        data_fim: pedido.data_fim,
+        client_id: pedido.client_id,
+        client_email: pedido.client_email,
+        client_name: pedido.client_name,
+        video_status: pedido.video_status
+      })) || [];
+      
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
       
       // Combinar e ordenar
