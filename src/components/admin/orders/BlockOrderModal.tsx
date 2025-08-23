@@ -20,6 +20,7 @@ interface BlockOrderModalProps {
   isBlocking: boolean;
   videoName?: string;
   orderId?: string;
+  mode?: 'block' | 'unblock';
 }
 
 const BLOCK_REASONS = [
@@ -66,10 +67,12 @@ export const BlockOrderModal = ({
   onConfirm,
   isBlocking,
   videoName,
-  orderId
+  orderId,
+  mode = 'block'
 }: BlockOrderModalProps) => {
   const [selectedReason, setSelectedReason] = useState('');
   const [customReason, setCustomReason] = useState('');
+  const isUnblock = mode === 'unblock';
 
   const handleConfirm = () => {
     let finalReason = '';
@@ -105,13 +108,17 @@ export const BlockOrderModal = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          <DialogTitle className={`flex items-center gap-2 ${isUnblock ? 'text-green-600' : 'text-red-600'}`}>
             <AlertTriangle className="h-5 w-5" />
-            Bloquear Pedido por Segurança
+            {isUnblock ? 'Desbloquear Pedido' : 'Bloquear Pedido por Segurança'}
           </DialogTitle>
           <DialogDescription className="space-y-2">
             <p>
-              Esta ação irá <strong>bloquear todo o pedido</strong> imediatamente por questões de segurança.
+              {isUnblock ? (
+                <>Esta ação irá <strong>desbloquear todo o pedido</strong> imediatamente.</>
+              ) : (
+                <>Esta ação irá <strong>bloquear todo o pedido</strong> imediatamente por questões de segurança.</>
+              )}
             </p>
             {videoName && (
               <p className="text-sm bg-red-50 p-2 rounded border border-red-200">
@@ -128,7 +135,7 @@ export const BlockOrderModal = ({
 
         <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
           <div>
-            <Label className="text-base font-semibold">Motivo do Bloqueio</Label>
+            <Label className="text-base font-semibold">{isUnblock ? 'Motivo do Desbloqueio' : 'Motivo do Bloqueio'}</Label>
             <RadioGroup 
               value={selectedReason} 
               onValueChange={setSelectedReason}
@@ -162,7 +169,7 @@ export const BlockOrderModal = ({
               <Label htmlFor="custom-reason">Especificar Motivo</Label>
               <Textarea
                 id="custom-reason"
-                placeholder="Descreva o motivo específico para o bloqueio..."
+                placeholder={isUnblock ? "Descreva o motivo específico para o desbloqueio..." : "Descreva o motivo específico para o bloqueio..."}
                 value={customReason}
                 onChange={(e) => setCustomReason(e.target.value)}
                 className="min-h-[80px]"
@@ -174,20 +181,36 @@ export const BlockOrderModal = ({
             </div>
           )}
 
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-semibold text-orange-800">Atenção:</p>
-                <ul className="mt-1 space-y-1 text-orange-700">
-                  <li>• O cliente será notificado sobre o bloqueio</li>
-                  <li>• Todos os vídeos do pedido serão desativados</li>
-                  <li>• O cliente deverá contatar o suporte</li>
-                  <li>• Esta ação será registrada nos logs de auditoria</li>
-                </ul>
+          {isUnblock ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-green-600 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-semibold text-green-800">Aviso:</p>
+                  <ul className="mt-1 space-y-1 text-green-700">
+                    <li>• O cliente será notificado sobre o desbloqueio</li>
+                    <li>• Vídeos poderão ser reativados conforme regras</li>
+                    <li>• Esta ação será registrada nos logs de auditoria</li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-semibold text-orange-800">Atenção:</p>
+                  <ul className="mt-1 space-y-1 text-orange-700">
+                    <li>• O cliente será notificado sobre o bloqueio</li>
+                    <li>• Todos os vídeos do pedido serão desativados</li>
+                    <li>• O cliente deverá contatar o suporte</li>
+                    <li>• Esta ação será registrada nos logs de auditoria</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2 pt-4 border-t">
@@ -199,18 +222,18 @@ export const BlockOrderModal = ({
             Cancelar
           </Button>
           <Button 
-            variant="destructive" 
+            variant={isUnblock ? "default" : "destructive"}
             onClick={handleConfirm}
             disabled={!canConfirm || isBlocking}
-            className="min-w-[120px]"
+            className="min-w-[160px]"
           >
             {isBlocking ? (
               <>
                 <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Bloqueando...
+                {isUnblock ? 'Desbloqueando...' : 'Bloqueando...'}
               </>
             ) : (
-              'Bloquear Pedido'
+              isUnblock ? 'Desbloquear Pedido' : 'Bloquear Pedido'
             )}
           </Button>
         </DialogFooter>

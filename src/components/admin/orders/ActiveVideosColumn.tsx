@@ -233,6 +233,7 @@ export const ActiveVideosColumn = ({ orderId, orderStatus }: ActiveVideosColumnP
         isBlocking={isOrderBlocked ? isUnblocking : isBlocking}
         videoName={blockDialog.videoName}
         orderId={blockDialog.orderId}
+        mode={isOrderBlocked ? 'unblock' : 'block'}
       />
 
       {/* Delete Confirmation Dialog */}

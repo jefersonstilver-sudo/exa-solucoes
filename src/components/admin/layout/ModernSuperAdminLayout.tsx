@@ -18,7 +18,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
       } as React.CSSProperties}
     >
       <div className="flex h-screen w-full bg-background overflow-hidden">
-        <ModernAdminSidebar />
+        <div className="relative z-30"><ModernAdminSidebar /></div>
         <SidebarInset className="flex flex-col w-full overflow-x-hidden">
           {/* Header with hamburger menu - always visible */}
           <header className="sticky top-0 z-10 h-16 flex items-center border-b border-border px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
