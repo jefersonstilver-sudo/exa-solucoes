@@ -75,6 +75,12 @@ export const BlockOrderModal = ({
   const isUnblock = mode === 'unblock';
 
   const handleConfirm = () => {
+    if (isUnblock) {
+      // Para desbloqueio, não precisa de motivo específico
+      onConfirm('Pedido desbloqueado pelo administrador');
+      return;
+    }
+
     let finalReason = '';
     
     const selectedReasonData = BLOCK_REASONS.find(r => r.id === selectedReason);
@@ -102,7 +108,7 @@ export const BlockOrderModal = ({
   };
 
   const isCustomSelected = selectedReason === 'outros';
-  const canConfirm = selectedReason && (!isCustomSelected || customReason.trim());
+  const canConfirm = isUnblock || (selectedReason && (!isCustomSelected || customReason.trim()));
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -134,42 +140,44 @@ export const BlockOrderModal = ({
         </DialogHeader>
 
         <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
-          <div>
-            <Label className="text-base font-semibold">{isUnblock ? 'Motivo do Desbloqueio' : 'Motivo do Bloqueio'}</Label>
-            <RadioGroup 
-              value={selectedReason} 
-              onValueChange={setSelectedReason}
-              className="mt-3"
-            >
-              {BLOCK_REASONS.map((reason) => {
-                const Icon = reason.icon;
-                return (
-                  <div key={reason.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <RadioGroupItem value={reason.id} id={reason.id} className="mt-1" />
-                    <div className="flex-1">
-                      <Label 
-                        htmlFor={reason.id} 
-                        className="flex items-center gap-2 cursor-pointer font-medium"
-                      >
-                        <Icon className={`h-4 w-4 ${reason.color}`} />
-                        {reason.label}
-                      </Label>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {reason.description}
-                      </p>
+          {!isUnblock && (
+            <div>
+              <Label className="text-base font-semibold">Motivo do Bloqueio</Label>
+              <RadioGroup 
+                value={selectedReason} 
+                onValueChange={setSelectedReason}
+                className="mt-3"
+              >
+                {BLOCK_REASONS.map((reason) => {
+                  const Icon = reason.icon;
+                  return (
+                    <div key={reason.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <RadioGroupItem value={reason.id} id={reason.id} className="mt-1" />
+                      <div className="flex-1">
+                        <Label 
+                          htmlFor={reason.id} 
+                          className="flex items-center gap-2 cursor-pointer font-medium"
+                        >
+                          <Icon className={`h-4 w-4 ${reason.color}`} />
+                          {reason.label}
+                        </Label>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {reason.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </RadioGroup>
-          </div>
+                  );
+                })}
+              </RadioGroup>
+            </div>
+          )}
 
-          {isCustomSelected && (
+          {!isUnblock && isCustomSelected && (
             <div className="space-y-2">
               <Label htmlFor="custom-reason">Especificar Motivo</Label>
               <Textarea
                 id="custom-reason"
-                placeholder={isUnblock ? "Descreva o motivo específico para o desbloqueio..." : "Descreva o motivo específico para o bloqueio..."}
+                placeholder="Descreva o motivo específico para o bloqueio..."
                 value={customReason}
                 onChange={(e) => setCustomReason(e.target.value)}
                 className="min-h-[80px]"
